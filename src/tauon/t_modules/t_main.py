@@ -99,7 +99,7 @@ import requests
 import sdl3
 from bs4 import BeautifulSoup
 from mutagen.easyid3 import EasyID3
-from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 from send2trash import send2trash
 from unidecode import unidecode
 
@@ -173,6 +173,8 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	get_split_artists,
 	get_year_from_string,
 	grow_rect,
+	hls_hue_mix,
+	hls_pull_contrast,
 	hls_to_rgb,
 	hms_to_seconds,
 	hsl_to_rgb,
@@ -606,6 +608,11 @@ class GuiVar:
 		self.spec_level_tex = sdl3.SDL_CreateTexture(
 			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
 		sdl3.SDL_SetTextureBlendMode(self.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
+		# Blend so a translucent vis_bg (frosted art background) lets the
+		# panel and art beneath show through
+		sdl3.SDL_SetTextureBlendMode(self.spec1_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetTextureBlendMode(self.spec2_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetTextureBlendMode(self.spec_level_tex, sdl3.SDL_BLENDMODE_BLEND)
 		self.artist_panel_height = 320 * self.scale
 		self.last_artist_panel_height = self.artist_panel_height
 
@@ -945,6 +952,11 @@ class GuiVar:
 		self.max_window_tex = max_window_tex # Both X and Y of maximal Tauon window texture size
 		self.main_texture = main_texture
 		self.main_texture_overlay_temp = main_texture_overlay_temp
+
+		# True while the current frame has the album-art background drawn
+		# underneath the UI; panels must blend over it rather than clearing
+		# or replacing their region's pixels
+		self.have_art_bg: bool = False
 
 		self.preview_artist: str = ""
 		self.preview_artist_location = (0, 0)
@@ -1617,15 +1629,54 @@ class ColoursClass:
 		self.artist_bio_background = ColourRGBA(27, 27, 27, 255)
 		self.artist_bio_text       = ColourRGBA(230, 230, 230, 255)
 
-	def apply_transparency(self) -> None:
+		# Theme-supplied alphas of the fills the art background shows through,
+		# filled in by post_config
+		self.base_alpha: dict[str, int] = {}
+
+	# The art background draws underneath the UI, so these fills are made
+	# translucent to let it show through. Panels take the bulk of it; the
+	# smaller furniture sitting on them lets less through.
+	art_bg_panel_colours = (
+		"playlist_panel_background",
+		"side_panel_background",
+		"top_panel_background",
+		"bottom_panel_colour",
+		"gallery_background",
+		"queue_background",
+		"playlist_box_background",
+		"lyrics_panel_background",
+	)
+	art_bg_element_colours = (
+		"tab_background",
+		"tab_background_active",
+		"seek_bar_background",
+		"volume_bar_background",
+		"column_bar_background",
+		"folder_line",
+	)
+
+	def apply_transparency(self, full: bool = False) -> None:
+		"""Translucent panel fills for compositor window transparency.
+
+		Accent mode leaves the tracklist area opaque; full mode makes every
+		panel see-through."""
 		self.top_panel_background.a = 140
 		self.side_panel_background.a = 140
 		self.art_box.a = 100
 		self.window_frame.a = 100
 		self.bottom_panel_colour.a = 200
 
-		# colours.playlist_panel_background.a = 220
-		# colours.playlist_box_background  = [0, 0, 0, 100]
+		if full:
+			for name in (
+				"playlist_panel_background",
+				"gallery_background",
+				"queue_background",
+				"playlist_box_background",
+				"lyrics_panel_background",
+			):
+				c = getattr(self, name, None)
+				if c is not None:
+					c.a = 175
 
 	def post_config(self) -> None:
 		if self.box_thumb_background is None:
@@ -1689,6 +1740,17 @@ class ColoursClass:
 		if test_lumi(self.column_bar_background) < 0.4:
 			self.column_bar_text = ColourRGBA(40, 40, 40, 200)
 			self.column_grip     = ColourRGBA(255, 255, 255, 20)
+
+		# Snapshot the alphas the theme actually asked for. The art background
+		# scales these down each frame and must clamp against them: a theme
+		# whose seek bar or tabs are deliberately translucent (Carbon's seek
+		# background is white at alpha 60) must not be forced opaque when no
+		# art background is showing.
+		self.base_alpha = {}
+		for name in self.art_bg_panel_colours + self.art_bg_element_colours:
+			colour = getattr(self, name, None)
+			if colour is not None:
+				self.base_alpha[name] = colour.a
 
 	def light_mode(self) -> None:
 		self.lm = True
@@ -6546,8 +6608,7 @@ class Tauon:
 		# Create top menu
 		self.view_menu: Menu             = Menu(self, 170)
 		self.set_menu_hidden: Menu       = Menu(self, 100)
-		self.vis_menu: Menu              = Menu(self, 140)
-		self.window_menu: Menu           = Menu(self, 140)
+		self.window_menu: Menu           = Menu(self, 160)
 		self.x_menu: Menu                = Menu(self, 190, show_icons=True)
 		self.set_menu: Menu              = Menu(self, 150)
 		self.field_menu: Menu            = Menu(self, 140)
@@ -6618,6 +6679,7 @@ class Tauon:
 		self.lastfm:                               LastFMapi = self.pctl.lastfm
 		self.lfm_scrobbler:                        LastScrob = self.pctl.lfm_scrobbler
 		self.artist_list_box:                     ArtistList = self.pctl.artist_list_box
+		self.touch_input_tracker:          TouchInputTracker = TouchInputTracker(tauon=self)
 		self.guitar_chords:                     GuitarChords = GuitarChords(tauon=self, mouse_wheel=self.inp.mouse_wheel, mouse_position=self.inp.mouse_position, window_size=self.window_size)
 		self.search_over:                      SearchOverlay = SearchOverlay(tauon=self)
 		self.stats_gen:                               GStats = GStats(tauon=self)
@@ -8844,6 +8906,9 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def toggle_milky(self, _track_object: TrackClass) -> None:
+		if not self.prefs.milk and not milky_ready:
+			self.show_message(_("MilkDrop visualiser is not available"), milky_error, mode="error")
+			return
 		if not self.prefs.milk:
 			self.milky.projectm.rescan_presets()
 			if not self.milky.projectm.presets:
@@ -9018,10 +9083,6 @@ class Tauon:
 	def toggle_milky_settings(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.milk
-
-		if not self.prefs.milk and not milky_ready:
-			self.show_message(_("Not supported on this platform"), mode="error")
-			return None
 
 		self.toggle_milky(self.pctl.playing_object())
 		return None
@@ -14404,6 +14465,59 @@ class Tauon:
 		else:
 			prefs.art_bg_opacity = 10
 
+		# The art background draws underneath the UI, so panel fills are made
+		# translucent to let it show through; strength maps to panel alpha
+		colours = self.colours
+		panel_colours = [
+			(name, c) for name in colours.art_bg_panel_colours
+			if (c := getattr(colours, name, None)) is not None]
+
+		# Smaller UI furniture sitting on the panels also lets the art
+		# through, but less so than the panels themselves
+		element_colours = [
+			(name, c) for name in colours.art_bg_element_colours
+			if (c := getattr(colours, name, None)) is not None]
+
+		# Menus, dialogs and their controls draw over other UI and must stay
+		# readable; de-alias any that share an object with a colour being
+		# made translucent before changing alphas
+		modified_colours = panel_colours + element_colours
+		for keep_name in ("menu_background", "toggle_box_on", "sys_tab_bg", "sys_tab_hl"):
+			keep = getattr(colours, keep_name, None)
+			if keep is not None and any(keep is c for _name, c in modified_colours):
+				setattr(colours, keep_name, ColourRGBA(keep.r, keep.g, keep.b, keep.a))
+
+		panel_alpha = 255
+		element_alpha = 255
+		if prefs.art_bg:
+			panel_alpha = max(120, 255 - round(prefs.art_bg_opacity * 2.5))
+			# Elements draw on top of the translucent panel fills, so their
+			# translucency stacks with the panel's: with fill alpha `a` the
+			# element region ends up (1 - a/255) as transparent as the bare
+			# panel — e.g. 115 keeps ~55% extra opacity over the panel while
+			# still letting the art through
+			element_alpha = 115
+		# Clamp against the theme's own alpha rather than assigning outright,
+		# so a fill the theme deliberately made translucent stays that way
+		for name, colour in panel_colours:
+			colour.a = min(colours.base_alpha.get(name, 255), panel_alpha)
+		# At frosted high strength the tracklist gets hard to read over busy
+		# art; keep its panel a touch more opaque than the others
+		if prefs.art_bg and prefs.art_bg_frosted and prefs.art_bg_stronger >= 3:
+			colours.playlist_panel_background.a = min(
+				colours.base_alpha.get("playlist_panel_background", 255), panel_alpha + 20)
+		for name, colour in element_colours:
+			colour.a = min(colours.base_alpha.get(name, 255), element_alpha)
+
+		# The frosted looks let the art show through the visualizer backing
+		# too (the vis fills draw with replace-blend so this doesn't stack)
+		colours.vis_bg.a = element_alpha if prefs.art_bg_frosted else 255
+
+		# The window-transparency styles set their own panel alphas at theme
+		# (re)load; don't clobber them back to opaque here
+		if not prefs.art_bg and prefs.transparent_mode:
+			colours.apply_transparency(full=prefs.transparent_mode == 2)
+
 		# -----
 
 		# Adjust for for compact window sizes ----
@@ -14750,7 +14864,16 @@ class Tauon:
 				sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
 				sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 				sdl3.SDL_RenderClear(renderer)
-				sdl3.SDL_SetTextureBlendMode(gui.tracklist_texture, sdl3.SDL_BLENDMODE_BLEND)
+				# Premultiplied src-over: the texture holds premultiplied
+				# content (see creation site in main())
+				sdl3.SDL_SetTextureBlendMode(gui.tracklist_texture, sdl3.SDL_ComposeCustomBlendMode(
+					sdl3.SDL_BLENDFACTOR_ONE,
+					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+					sdl3.SDL_BLENDOPERATION_ADD,
+					sdl3.SDL_BLENDFACTOR_ONE,
+					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+					sdl3.SDL_BLENDOPERATION_ADD,
+				))
 
 				# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 				# sdl3.SDL_RenderClear(renderer)
@@ -16551,11 +16674,23 @@ class Tauon:
 		self.gui.message_box = False
 		self.gui.preview_artist_loading = ""
 
+	def column_area_width(self) -> int:
+		"""Width available to the tracklist columns. In custom mode this is the
+		Tracklist widget's segment, not gui.plw — sizing runs from menu
+		callbacks outside the widget's draw, where gui.plw holds the preset
+		value."""
+		wid = self.gui.plw
+		if self.gui.custom_mode:
+			rect = self.custom.tracklist_rect()
+			if rect:
+				wid = rect[2]
+		elif self.gui.tracklist_center_mode:
+			wid = self.gui.tracklist_highlight_width
+		return wid - round(self.gui.pl_st_left * self.gui.scale)
+
 	def update_set(self) -> None:
 		"""This is used to scale columns when windows is resized or items added/removed"""
-		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
-		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
+		wid = self.column_area_width()
 
 		total = 0
 		for item in self.gui.pl_st:
@@ -16573,9 +16708,7 @@ class Tauon:
 	def auto_size_columns(self) -> None:
 		fixed_n = 0
 
-		wid = self.gui.plw - round(self.gui.pl_st_left * self.gui.scale)
-		if self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width - round(self.gui.pl_st_left * self.gui.scale)
+		wid = self.column_area_width()
 
 		total = wid
 		for item in self.gui.pl_st:
@@ -18756,6 +18889,18 @@ class Tauon:
 			artistc = self.colours.playlist_text_missing
 			albumc  = self.colours.playlist_text_missing
 
+		# Over the art background, grey row text picks up a hint of the
+		# art hue (hls_hue_mix passes coloured text through; no lightness
+		# boost for row text). One averaged sample serves the whole
+		# tracklist so every row tints the same way.
+		so = self.style_overlay
+		if so.tracklist_sample is not None:
+			timec   = so.tint_from_sample(timec, so.tracklist_sample, 0.2)
+			titlec  = so.tint_from_sample(titlec, so.tracklist_sample, 0.2)
+			indexc  = so.tint_from_sample(indexc, so.tracklist_sample, 0.2)
+			artistc = so.tint_from_sample(artistc, so.tracklist_sample, 0.2)
+			albumc  = so.tint_from_sample(albumc, so.tracklist_sample, 0.2)
+
 		artistoffset = 0
 		indexLine = ""
 
@@ -18963,7 +19108,6 @@ class Tauon:
 	def clear_img_cache(self, delete_disk: bool = True) -> None:
 		self.album_art_gen.clear_cache()
 		self.prefs.failed_artists.clear()
-		self.prefs.failed_background_artists.clear()
 		self.gall_ren.key_list = []
 
 		i = 0
@@ -19198,7 +19342,7 @@ class Tauon:
 			pctl.random_mode,
 			pctl.repeat_mode,
 			prefs.art_bg_stronger,
-			prefs.art_bg_always_blur,
+			None,  # was prefs.art_bg_always_blur
 			prefs.failed_artists,
 			prefs.artist_list,
 			None,  # prefs.auto_sort,
@@ -19271,6 +19415,7 @@ class Tauon:
 			_pcols["pl_st_left"],  # 192
 			prefs.milk_cut_out,  # 193
 			prefs.milk_favorite_presets,  # 194
+			prefs.art_bg_frosted,  # 195
 		]
 
 		try:
@@ -19668,88 +19813,107 @@ class Tauon:
 			self.gui.rspw = self.gui.pref_rspw
 		return None
 
-	def toggle_auto_theme(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.colour_from_image
+	# --- Background style: one mutually exclusive choice between the plain
+	# theme, window transparency, auto-theming from art, and the album-art
+	# backgrounds (settings → theme card)
 
-		self.prefs.colour_from_image ^= True
-		self.gui.theme_temp_current = -1
-		self.gui.reload_theme = True
-
-		# if self.prefs.colour_from_image and self.prefs.art_bg and not self.inp.key_shift_down:
-		# 	toggle_auto_bg()
-		return None
-
-	def toggle_transparent_accent(self, mode: int= 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.transparent_mode == 1
-
-		if self.prefs.transparent_mode == 1:
+	def _clear_background_style(self) -> None:
+		"""Turn every background-style mode off (back to the base theme)"""
+		if self.prefs.art_bg:
+			self.prefs.art_bg = False
+			self.style_overlay.flush()
+			self.thread_manager.ready("style")
+		if self.prefs.transparent_mode:
 			self.prefs.transparent_mode = 0
-		else:
-			self.prefs.transparent_mode = 1
-
-		self.gui.reload_theme = True
+			self.gui.reload_theme = True  # Restores panel alphas
+		if self.prefs.colour_from_image:
+			self.prefs.colour_from_image = False
+			self.gui.theme_temp_current = -1
+			self.gui.reload_theme = True
+		self.gui.update_layout = True  # Removes panel translucency
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
+
+	def set_bg_style_base(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return not self.prefs.art_bg and not self.prefs.transparent_mode and not self.prefs.colour_from_image
+		self._clear_background_style()
 		return None
 
-	def toggle_auto_bg(self, mode: int= 0) -> bool | None:
+	def set_bg_style_transparent_accent(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg
-		self.prefs.art_bg ^= True
-
-		if self.prefs.art_bg:
-			self.gui.request_frame()
-
-		self.style_overlay.flush()
-		self.thread_manager.ready("style")
-		# if self.prefs.colour_from_image and self.prefs.art_bg and not self.inp.key_shift_down:
-		# 	toggle_auto_theme()
+			return self.prefs.transparent_mode == 1 and not self.prefs.art_bg and not self.prefs.colour_from_image
+		self._clear_background_style()
+		self.prefs.transparent_mode = 1
+		self.gui.reload_theme = True
 		return None
 
-	def toggle_auto_bg_strong(self, mode: int = 0) -> bool | None:
+	def set_bg_style_full_transparent(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg_stronger == 2
-
-		if self.prefs.art_bg_stronger == 2:
-			self.prefs.art_bg_stronger = 1
-		else:
-			self.prefs.art_bg_stronger = 2
-		self.gui.update_layout = True
+			return self.prefs.transparent_mode == 2 and not self.prefs.art_bg and not self.prefs.colour_from_image
+		self._clear_background_style()
+		self.prefs.transparent_mode = 2
+		self.gui.reload_theme = True
 		return None
 
-	def toggle_auto_bg_strong1(self, mode: int = 0) -> bool | None:
+	def set_bg_style_colourise(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg_stronger == 1
-		self.prefs.art_bg_stronger = 1
-		self.gui.update_layout = True
+			return self.prefs.colour_from_image and not self.prefs.art_bg
+		self._clear_background_style()
+		self.prefs.colour_from_image = True
+		self.gui.theme_temp_current = -1
+		self.gui.reload_theme = True
 		return None
 
-	def toggle_auto_bg_strong2(self, mode: int = 0) -> bool | None:
+	def _set_art_bg(self, frosted: bool, stronger: int, fanart: bool = False) -> None:
+		# Leaving the other background styles
+		if self.prefs.transparent_mode:
+			self.prefs.transparent_mode = 0
+			self.gui.reload_theme = True
+		if self.prefs.colour_from_image:
+			self.prefs.colour_from_image = False
+			self.gui.theme_temp_current = -1
+			self.gui.reload_theme = True
+		# The blur image only needs regenerating when the look or source
+		# changes; strength is applied at draw time via panel translucency
+		regenerate = (
+			not self.prefs.art_bg
+			or self.prefs.art_bg_frosted != frosted
+			or self.prefs.enable_fanart_bg != fanart)
+		self.prefs.art_bg = True
+		self.prefs.art_bg_frosted = frosted
+		self.prefs.art_bg_stronger = stronger
+		self.prefs.enable_fanart_bg = fanart
+		self.gui.update_layout = True  # Applies panel translucency at the new level
+		if regenerate:
+			self.style_overlay.flush()
+			self.thread_manager.ready("style")
+		self.gui.request_frame()
+
+	def set_art_bg_clear(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg_stronger == 2
-		self.prefs.art_bg_stronger = 2
-		self.gui.update_layout = True
-		if self.prefs.art_bg:
-			self.gui.request_frame()
+			return self.prefs.art_bg and not self.prefs.art_bg_frosted and not self.prefs.enable_fanart_bg
+		self._set_art_bg(frosted=False, stronger=1)
 		return None
 
-	def toggle_auto_bg_strong3(self, mode: int = 0) -> bool | None:
+	def set_art_bg_artist(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg_stronger == 3
-		self.prefs.art_bg_stronger = 3
-		self.gui.update_layout = True
-		if self.prefs.art_bg:
-			self.gui.request_frame()
+			return self.prefs.art_bg and self.prefs.enable_fanart_bg
+		self._set_art_bg(frosted=False, stronger=1, fanart=True)
 		return None
 
-	def toggle_auto_bg_blur(self, mode: int = 0) -> bool | None:
+	def set_art_bg_frosted_low(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.art_bg_always_blur
-		self.prefs.art_bg_always_blur ^= True
-		self.style_overlay.flush()
-		self.thread_manager.ready("style")
+			return self.prefs.art_bg and self.prefs.art_bg_frosted \
+				and not self.prefs.enable_fanart_bg and self.prefs.art_bg_stronger < 3
+		self._set_art_bg(frosted=True, stronger=1)
+		return None
+
+	def set_art_bg_frosted_high(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.art_bg and self.prefs.art_bg_frosted \
+				and not self.prefs.enable_fanart_bg and self.prefs.art_bg_stronger >= 3
+		self._set_art_bg(frosted=True, stronger=3)
 		return None
 
 	def toggle_notifications(self, mode: int = 0) -> bool | None:
@@ -19780,18 +19944,6 @@ class Tauon:
 			return self.prefs.showcase_vis
 
 		self.prefs.showcase_vis ^= True
-		self.gui.update_layout = True
-		return None
-
-	def toggle_level_meter(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.gui.vis_want != 0
-
-		if self.gui.vis_want == 0:
-			self.gui.vis_want = 1
-		else:
-			self.gui.vis_want = 0
-
 		self.gui.update_layout = True
 		return None
 
@@ -21545,15 +21697,10 @@ class TimedLyricsRen:
 			self.temp_line = line_active
 
 
-		if self.inp.mouse_wheel:
-			scroll_distance = self.smooth_scroll.scroll("timed lyrics", 30*self.gui.scale)
-			if side_panel:
-				if self.coll((x, y, w, h)):
-					self.scroll_position += scroll_distance
-				self.recenter_timeout.set()
-			elif self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY:
-				self.scroll_position += scroll_distance
-				self.recenter_timeout.set()
+		scroll = self.scroll_position
+		self.scroll_position -= self.smooth_scroll.get_scroll("timed lyrics",(x,y,w,h),30*self.gui.scale)
+		if self.scroll_position != scroll:
+			self.recenter_timeout.set()
 
 
 		self.scroll_position = round(self.scroll_position)
@@ -23136,6 +23283,8 @@ class AlbumArt:
 
 		self.blur_texture = None
 		self.blur_rect = None
+
+		# What get_blur_im last loaded: 0 = album art, 1 = artist background
 		self.loaded_bg_type: int = 0
 
 		self.download_in_progress: bool = False
@@ -23676,9 +23825,9 @@ class AlbumArt:
 			if artist and artist in self.prefs.bg_flips:
 				im = im.transpose(Image.FLIP_LEFT_RIGHT)
 
-		if (ox_size < 500 or self.prefs.art_bg_always_blur) or self.gui.mode == GuiMode.MINI:
+		if self.gui.mode == GuiMode.MINI:
 			blur = self.prefs.art_bg_blur
-			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI:
+			if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
 				blur = 160
 				pix = im.getpixel((new_x // 2, new_y // 4 * 3))
 				pixel_sum = sum(pix) / (255 * 3)
@@ -23691,9 +23840,24 @@ class AlbumArt:
 				self.gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 4 * 3))
 
 			im = im.filter(ImageFilter.GaussianBlur(blur))
+		elif self.prefs.art_bg_frosted:
+			# Frosted glass / sandblasted: heavy blur, mute the colour, then
+			# add fine monochrome grain (noise is mean-128, so adding with
+			# -128 offset leaves brightness unchanged)
+			im = im.filter(ImageFilter.GaussianBlur(max(self.prefs.art_bg_blur, 60)))
+			im = ImageEnhance.Color(im).enhance(0.7)
+			grain = Image.effect_noise(im.size, 10).convert("L")
+			grain = Image.merge("RGB", (grain, grain, grain))
+			im = ImageChops.add(im, grain, 1.0, -128)
+		elif ox_size < 500:
+			# Clear look; still soften low-res art to hide scaling artifacts
+			im = im.filter(ImageFilter.GaussianBlur(self.prefs.art_bg_blur))
 
 
 		self.gui.center_blur_pixel = im.getpixel((new_x // 2, new_y // 2))
+
+		# Keep a small copy for sampling local colour under UI elements
+		self.style_overlay.sample_source = im.resize((64, 40)).convert("RGB")
 
 		g = io.BytesIO()
 		g.seek(0)
@@ -24261,7 +24425,7 @@ class AlbumArt:
 				self.gui.theme_temp_current = track.album
 
 				if self.prefs.transparent_mode:
-					colours.apply_transparency()
+					colours.apply_transparency(full=self.prefs.transparent_mode == 2)
 
 		except Exception:
 			logging.exception("Error extracting theme colours from image")
@@ -24378,6 +24542,8 @@ class StyleOverlay:
 		self.stage: int = 0
 
 		self.im = None
+		# SDL surface decoded by the worker, awaiting texture upload
+		self.surface = None
 
 		self.a_texture = None
 		self.a_rect = None
@@ -24385,6 +24551,7 @@ class StyleOverlay:
 		self.b_texture = None
 		self.b_rect = None
 
+		# 0 = album art, 1 = artist background (anchored to the window top)
 		self.a_type = 0
 		self.b_type = 0
 
@@ -24393,6 +24560,24 @@ class StyleOverlay:
 
 		self.hole_punches: list[sdl3.SDL_FRect] = []
 		#self.hole_refills = []
+
+		# Small copy of the processed blur image for sampling local colour
+		# under UI elements (see sample_background). `sample_source` is set
+		# by the worker thread, promoted to `sample_a` alongside a_texture;
+		# the previous sample is kept as `sample_b` so sampled colours can
+		# crossfade in step with the art transition.
+		self.sample_source: Image.Image | None = None
+		self.sample_a: Image.Image | None = None
+		self.sample_b: Image.Image | None = None
+
+		# Averaged sample for the whole tracklist area, refreshed at the
+		# start of each tracklist render so all its text shares one tint
+		self.tracklist_sample: ColourRGBA | None = None
+
+		# Fade progress quantised into 8 steps: the tracklist only re-renders
+		# on step changes, and text colours only take 8 values per fade
+		# instead of a new cache entry every frame
+		self._fade_step: int = -1
 
 		self.go_to_sleep: bool = False
 
@@ -24430,6 +24615,13 @@ class StyleOverlay:
 					self.min_on_timer.force_set(-4)
 					return
 
+				# Decode to an SDL surface here on the worker thread; a
+				# full-size image decode on the main thread would hitch the
+				# start of the fade
+				self.surface = self.ddt.load_image(self.im)
+				self.im.close()
+				self.im = None
+
 				self.stage = 1
 				self.gui.request_frame()
 				return
@@ -24441,6 +24633,14 @@ class StyleOverlay:
 		if self.b_texture is not None:
 			sdl3.SDL_DestroyTexture(self.b_texture)
 			self.b_texture = None
+		if self.surface is not None:
+			sdl3.SDL_DestroySurface(self.surface)
+			self.surface = None
+		self.sample_a = None
+		self.sample_b = None
+		self._fade_step = -1
+		# Drop any baked-in tints from the tracklist
+		self.gui.request_tracklist_redraw()
 		self.min_on_timer.force_set(-0.2)
 		self.parent_path = "None"
 		self.stage = 0
@@ -24449,39 +24649,157 @@ class StyleOverlay:
 		self.gui.delay_frame(0.25)
 		self.gui.request_frame()
 
-	def display(self) -> None:
+	def sample_background(self, x: float, y: float) -> ColourRGBA | None:
+		"""Local colour of the blurred art background near window point (x, y).
+
+		While a new art background is fading in over the old one, the two
+		samples are crossfaded with the same timing so derived colours
+		follow the transition instead of jumping. Returns None when the art
+		background isn't currently displayed. (No stage check: while the
+		worker prepares the next track's blur the old background is still
+		on screen, and its sample stays valid.)"""
+		sample = self.sample_a
+		if sample is None or self.a_rect is None or not self.gui.have_art_bg:
+			return None
+		# Offscreen Custom Layout widgets draw in a local space at the
+		# scratch origin; map to true window coordinates so they sample
+		# the art actually behind them
+		x, y = self.tauon.inp.to_screen(x, y)
+		fx = min(1.0, max(0.0, (x - self.a_rect.x) / max(1.0, self.a_rect.w)))
+		fy = min(1.0, max(0.0, (y - self.a_rect.y) / max(1.0, self.a_rect.h)))
+		w, h = sample.size
+		r, g, b = sample.getpixel((int(fx * (w - 1)), int(fy * (h - 1))))[:3]
+		t = self.fade_on_timer.get()
+		if t < 0.4 and self.sample_b is not None:
+			w2, h2 = self.sample_b.size
+			r2, g2, b2 = self.sample_b.getpixel((int(fx * (w2 - 1)), int(fy * (h2 - 1))))[:3]
+			f = min(1.0, max(0.0, int(t / 0.4 * 8) / 8))
+			r = round(r2 + (r - r2) * f)
+			g = round(g2 + (g - g2) * f)
+			b = round(b2 + (b - b2) * f)
+		return ColourRGBA(r, g, b, 255)
+
+	def sample_background_average(self, x: float, y: float, w: float, h: float) -> ColourRGBA | None:
+		"""Average of a grid of local samples across the given window rect,
+		for tinting a whole region's text with one uniform colour."""
+		rt = gt = bt = 0
+		points = (0.17, 0.5, 0.83)
+		for fx in points:
+			for fy in points:
+				s = self.sample_background(x + w * fx, y + h * fy)
+				if s is None:
+					return None
+				rt += s.r
+				gt += s.g
+				bt += s.b
+		n = len(points) ** 2
+		return ColourRGBA(round(rt / n), round(gt / n), round(bt / n), 255)
+
+	def adjust_strength(self) -> float:
+		"""0..1 weight for background-derived colour adjustments.
+
+		Ramps up with the art fade-in when there is no previous art to
+		crossfade from, and back down with the fade-out, so tinted/boosted
+		colours track the background's actual visibility. Quantised to the
+		same 8 steps as the sample crossfade."""
+		if self.go_to_sleep:
+			t = self.fade_off_timer.get()
+			if t > 1:
+				return max(0.0, 1.0 - int(min(0.4, t - 1) / 0.4 * 8) / 8)
+			return 1.0
+		if self.sample_b is None:
+			return min(1.0, int(max(0.0, self.fade_on_timer.get()) / 0.4 * 8) / 8)
+		return 1.0
+
+	def tint_from_background(
+		self, colour: ColourRGBA, x: float, y: float, amount: float = 0.15,
+		panel: ColourRGBA | None = None, boost: float = 1.0,
+	) -> ColourRGBA:
+		"""Mix a little of the background art's local hue/saturation into
+		colour (keeping its lightness and alpha), so grey furniture doesn't
+		clash with a coloured backdrop. Passes colour through unchanged when
+		no art background is showing.
+
+		If `panel` (the translucent panel fill the element sits on) is given,
+		the colour's lightness is also boosted away from the effective
+		backdrop — the panel blended over the local art — so buttons can't
+		land at the same lightness as the art behind them. The boost is
+		gentler below high art strength; `boost` scales it further."""
+		return self.tint_from_sample(colour, self.sample_background(x, y), amount, panel, boost)
+
+	def tint_from_sample(
+		self, colour: ColourRGBA, sample: ColourRGBA | None, amount: float = 0.15,
+		panel: ColourRGBA | None = None, boost: float = 1.0,
+	) -> ColourRGBA:
+		"""tint_from_background against an already-sampled background colour
+		(e.g. the averaged tracklist sample)."""
+		if sample is None:
+			return colour
+		strength = self.adjust_strength()
+		if strength <= 0:
+			return colour
+		colour = hls_hue_mix(colour, sample, amount * strength)
+		if panel is not None:
+			f = panel.a / 255
+			backdrop = ColourRGBA(
+				round(panel.r * f + sample.r * (1 - f)),
+				round(panel.g * f + sample.g * (1 - f)),
+				round(panel.b * f + sample.b * (1 - f)), 255)
+			floor = 0.18 if self.prefs.art_bg_stronger >= 3 else 0.12
+			colour = hls_pull_contrast(colour, backdrop, floor * strength * boost)
+		return colour
+
+	def display(self, background: bool = False) -> None:
+		if background:
+			# True-background mode: draw an opaque base directly onto the
+			# current render target at the start of the frame; the art fades
+			# in over it and the UI (translucent panels, text) draws on top.
+			base = self.tauon.colours.playlist_panel_background
+			self.ddt.rect(
+				(0, 0, self.window_size[0], self.window_size[1]),
+				ColourRGBA(base.r, base.g, base.b, 255))
+
 		if self.min_on_timer.get() < 0:
 			return
 
+		if self.stage == 1 and self.surface is None:
+			# Flushed between the worker's decode and the upload; start over
+			self.stage = 0
+
 		if self.stage == 1:
 
-			s_image = self.ddt.load_image(self.im)
+			# The surface was decoded on the worker thread; only the texture
+			# upload happens here. (Streaming the upload in strips across
+			# frames was tried and made things worse: on Metal every
+			# mid-frame SDL_UpdateTexture splits the render pass, turning
+			# one stall into many.)
+			surf = self.surface.contents
 
-			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-
-			tex_w = pointer(c_float(0))
-			tex_h = pointer(c_float(0))
-			sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
+			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
 
 			dst = sdl3.SDL_FRect(-40)
-			dst.w = int(tex_w.contents.value)
-			dst.h = int(tex_h.contents.value)
+			dst.w = surf.w
+			dst.h = surf.h
 
-			# Clean uo
-			sdl3.SDL_DestroySurface(s_image)
-			self.im.close()
+			sdl3.SDL_DestroySurface(self.surface)
+			self.surface = None
 
-			# sdl3.SDL_SetTextureAlphaMod(c, 10)
 			self.fade_on_timer.set()
+			# Step 0 of the colour crossfade reproduces the on-screen
+			# colours; skip its tracklist redraw — this frame already
+			# carries the texture upload
+			self._fade_step = 0
 
 			if self.a_texture is not None:
 				self.b_texture = self.a_texture
 				self.b_rect = self.a_rect
 				self.b_type = self.a_type
+				self.sample_b = self.sample_a
 
 			self.a_texture = c
 			self.a_rect = dst
 			self.a_type = self.album_art_gen.loaded_bg_type
+			self.sample_a = self.sample_source
 
 			self.stage = 2
 			self.radio_meta = None
@@ -24511,9 +24829,10 @@ class StyleOverlay:
 			pass
 
 		t = self.fade_on_timer.get()
-		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
-		sdl3.SDL_RenderClear(self.renderer)
+		if not background:
+			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
+			sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
+			sdl3.SDL_RenderClear(self.renderer)
 
 		if self.a_texture is not None and self.window_size_int != self.window_size:
 			self.flush()
@@ -24525,13 +24844,21 @@ class StyleOverlay:
 				self.b_rect.y = 0
 
 			if t < 0.4:
-
+				if background:
+					# The alpha mod may be left over from when this was the
+					# fading-in front texture
+					sdl3.SDL_SetTextureAlphaMod(self.b_texture, 255)
 				sdl3.SDL_RenderTexture(self.renderer, self.b_texture, None, self.b_rect)
 
-			else:
+			elif t > 0.55:
+				# Deferred a beat past the fade's end: releasing a large
+				# texture on the same frame the animation lands is a
+				# visible hitch
 				sdl3.SDL_DestroyTexture(self.b_texture)
 				self.b_texture = None
 				self.b_rect = None
+			else:
+				self.gui.request_frame()
 
 		if self.a_texture is not None:
 
@@ -24542,13 +24869,30 @@ class StyleOverlay:
 			if t < 0.4:
 				fade = round(t / 0.4 * 255)
 				self.gui.request_frame()
+				# Tracklist text colours derived from the background are
+				# baked into its cached texture; re-render it through the
+				# fade, but only at each quantised colour step
+				step = int(t / 0.4 * 8)
+				if step != self._fade_step:
+					self._fade_step = step
+					self.gui.request_tracklist_redraw()
 
 			else:
 				fade = 255
+				if self._fade_step != -1:
+					# One last re-render at the fade's final colours
+					self._fade_step = -1
+					self.gui.request_tracklist_redraw()
 
 			if self.go_to_sleep:
 				t = self.fade_off_timer.get()
 				self.gui.request_frame()
+				# Colour adjustments only ramp down in the 1..1.4 stretch
+				if t > 1:
+					step = int(min(0.4, t - 1) / 0.4 * 8)
+					if step != self._fade_step:
+						self._fade_step = step
+						self.gui.request_tracklist_redraw()
 
 				if t < 1:
 					fade = 255
@@ -24564,6 +24908,15 @@ class StyleOverlay:
 				self.a_rect.x = (self.window_size[0] // 2) - self.a_rect.w // 2
 			else:
 				self.a_rect.x = -40
+
+			if background:
+				# Drawn straight onto the frame background; panel translucency
+				# (set in update_layout_do) controls how strongly it shows
+				# through, so no whole-window opacity pass or hole punching
+				# is needed.
+				sdl3.SDL_SetTextureAlphaMod(self.a_texture, fade)
+				sdl3.SDL_RenderTexture(self.renderer, self.a_texture, None, self.a_rect)
+				return
 
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
 
@@ -24588,7 +24941,7 @@ class StyleOverlay:
 
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
-		else:
+		elif not background:
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
 class ToolTip:
@@ -27217,7 +27570,7 @@ class Over:
 	def apply_theme_preview_colours(self, source: ColoursClass) -> None:
 		preview = clone_theme_colours(source)
 		if self.prefs.transparent_mode:
-			preview.apply_transparency()
+			preview.apply_transparency(full=self.prefs.transparent_mode == 2)
 		self.colours.__dict__.clear()
 		self.colours.__dict__.update(copy.deepcopy(preview.__dict__))
 		if self.colours.deco:
@@ -28526,8 +28879,8 @@ class Over:
 				accent,
 			)
 
-			# ("Tabs in top panel" switch moved to the main menu under
-			# Top Panel Layout…)
+			# ("Tabs in top panel" switch moved to the top-panel right-click
+			# window menu)
 
 			y += row_h + row_gap + round(4 * gui.scale)
 			ddt.text((x, y), _("End of playlist action"), colours.box_text_label, 11)
@@ -29524,58 +29877,134 @@ class Over:
 		# menu; "Showcase visualisation" to the showcase view's right-click
 		# menu; the Gallery section to the gallery's background right-click
 		# menu.)
-		return self.render_settings_window_category(x, y, w, accent, draw)
+		h = self.render_settings_window_category(x, y, w, accent, draw)
+		h += round(12 * self.gui.scale)
+		h += self.render_settings_layouts_card(x, y + h, w, accent, draw)
+		return h
+
+	def draw_move_up_icon(self, rect: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		x, y, w, h = rect
+		unit = max(round(1.5 * self.gui.scale), 1)
+		steps = 4
+		cx = x + w // 2
+		top = y + (h - steps * unit) // 2
+		for k in range(steps):
+			row_w = (k * 2 + 1) * unit
+			self.ddt.rect((cx - row_w // 2, top + k * unit, row_w, unit), colour)
+
+	def draw_move_down_icon(self, rect: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		x, y, w, h = rect
+		unit = max(round(1.5 * self.gui.scale), 1)
+		steps = 4
+		cx = x + w // 2
+		top = y + (h - steps * unit) // 2
+		for k in range(steps):
+			row_w = ((steps - 1 - k) * 2 + 1) * unit
+			self.ddt.rect((cx - row_w // 2, top + k * unit, row_w, unit), colour)
+
+	def request_delete_layout(self, slot: int) -> None:
+		custom = self.tauon.custom
+		self.gui.message_box_confirm_callback = custom.delete_slot
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = (slot,)
+		self.show_message(_("Delete layout '%s'?") % custom.slot_title(slot), mode="confirm")
+
+	def render_settings_layouts_card(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
+		gui = self.gui
+		custom = self.tauon.custom
+		custom.ensure_loaded()
+		row_h = round(30 * gui.scale)
+		row_gap = round(6 * gui.scale)
+		slot_count = len(custom.slots)
+		# Header + rows + the New Empty Slot tile + bottom pad
+		card_h = round(128 * gui.scale) + slot_count * (row_h + row_gap)
+		card_rect = (x, y, w, card_h)
+		if not draw:
+			return card_h
+
+		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
+			card_rect,
+			_("Custom Layouts"),
+			_("The order layouts appear in the layout menu. The current layout is highlighted."),
+			accent,
+		)
+		button_w = round(26 * gui.scale)
+		button_gap = round(4 * gui.scale)
+		buttons_x = inner_x + inner_w - (button_w * 3 + button_gap * 2) - round(6 * gui.scale)
+		for i in range(slot_count):
+			active = gui.custom_mode and i == custom.active_slot
+			fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+			if active:
+				fill = alpha_blend(alpha_mod(accent, 26), fill)
+			border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			if active:
+				border = alpha_blend(alpha_mod(accent, 90), border)
+			self.ddt.bordered_rect((inner_x, inner_y, inner_w, row_h), fill, border, round(1 * gui.scale))
+			self.ddt.text(
+				(inner_x + round(14 * gui.scale), inner_y + round(7 * gui.scale)),
+				custom.slot_title(i),
+				self.colours.box_text,
+				212,
+				bg=fill,
+				max_w=buttons_x - inner_x - round(22 * gui.scale),
+			)
+			if i > 0:
+				self.settings_icon_button(
+					(buttons_x, inner_y, button_w, row_h),
+					lambda i=i: custom.move_slot(i, -1),
+					accent=accent,
+					draw_icon=self.draw_move_up_icon,
+					tooltip=_("Move up"),
+				)
+			if i < slot_count - 1:
+				self.settings_icon_button(
+					(buttons_x + button_w + button_gap, inner_y, button_w, row_h),
+					lambda i=i: custom.move_slot(i, 1),
+					accent=accent,
+					draw_icon=self.draw_move_down_icon,
+					tooltip=_("Move down"),
+				)
+			self.settings_icon_button(
+				(buttons_x + (button_w + button_gap) * 2, inner_y, button_w, row_h),
+				lambda i=i: self.request_delete_layout(i),
+				accent=accent,
+				icon=self.gui.delete_icon,
+				tooltip=_("Delete"),
+			)
+			inner_y += row_h + row_gap
+
+		self.settings_action_tile(
+			(inner_x, inner_y, round(200 * gui.scale), round(34 * gui.scale)),
+			_("New Empty Slot"),
+			plug=custom.add_slot,
+			accent=accent,
+			show_arrow=False,
+		)
+		return card_h
 
 	def render_settings_theme_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		prefs = self.prefs
-		column_gap = round(12 * gui.scale)
-		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(250 * gui.scale)))
-		right_w = w - left_w - column_gap
-		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
 		action_h = round(36 * gui.scale)
 		preset_gap = round(6 * gui.scale)
 		preset_w = round(28 * gui.scale)
 		preset_h = round(16 * gui.scale)
-		right_inner_w = right_w - round(36 * gui.scale)
+		style_label_h = round(20 * gui.scale)
+		style_bar_h = round(32 * gui.scale)
+		card_inner_w = w - round(36 * gui.scale)
 		theme_count = max(len(self.themes), 1)
-		preset_columns = max(1, min(theme_count, (right_inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
+		preset_columns = max(1, min(theme_count, (card_inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
 		preset_rows = max(1, math.ceil(theme_count / preset_columns))
 		preset_grid_h = preset_rows * preset_h + max(0, preset_rows - 1) * preset_gap
-		left_min_h = round(80 * gui.scale) + row_h * 5 + row_gap * 4
-		right_min_h = round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h + row_h
-		card_h = max(left_min_h, right_min_h)
-		left_rect = (x, y, left_w, card_h)
-		right_rect = (x + left_w + column_gap, y, right_w, card_h)
+		# Preset grid, action buttons, then the Background Style bar at the bottom
+		card_h = round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h + style_label_h + style_bar_h
+		card_rect = (x, y, w, card_h)
 		if not draw:
-			return max(left_rect[3], right_rect[3])
+			return card_rect[3]
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			left_rect,
-			_("Background"),
-			_("Artwork and automatic theme changes."),
-			accent,
-		)
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg, _("Use album art as background"), accent=accent)
-		inner_y += row_h + row_gap
-		old_fanart = prefs.enable_fanart_bg
-		prefs.enable_fanart_bg = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.enable_fanart_bg, _("Prefer artist backgrounds"), accent=accent)
-		if prefs.enable_fanart_bg and prefs.enable_fanart_bg != old_fanart and not prefs.auto_dl_artist_data:
-			prefs.auto_dl_artist_data = True
-			self.show_message(
-				_("Also enabling 'auto-fetch artist data' to scrape last.fm."),
-				_("You can toggle this back off under Settings > General"),
-			)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg_strong, _("Stronger background"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_bg_blur, _("Blur background"), accent=accent)
-		inner_y += row_h + row_gap
-		self.settings_switch_row((inner_x, inner_y, inner_w, row_h), self.tauon.toggle_auto_theme, _("Auto-theme from album art"), accent=accent)
-
-		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
-			right_rect,
+			card_rect,
 			_("Theme preset"),
 				gui.theme_name,
 			accent,
@@ -29655,8 +30084,9 @@ class Over:
 					segment_width = segment_w
 				self.ddt.rect((segment_x, strip_y, segment_width, strip_h), colour_value)
 
-		toggle_y = right_rect[1] + right_rect[3] - round(14 * gui.scale) - row_h
-		action_y = toggle_y - row_gap - action_h
+		style_bar_y = card_rect[1] + card_rect[3] - round(14 * gui.scale) - style_bar_h
+		style_label_y = style_bar_y - style_label_h
+		action_y = style_label_y - row_gap - action_h
 		icon_button_w = round(26 * gui.scale)
 		icon_gap = round(4 * gui.scale)
 		action_total_w = icon_button_w * 3 + icon_gap * 2
@@ -29682,9 +30112,27 @@ class Over:
 			icon=self.gui.delete_icon,
 			tooltip=_("Delete"),
 		)
-		self.settings_switch_row((inner_x, toggle_y, inner_w, row_h), self.tauon.toggle_transparent_accent, _("Transparent accent"), accent=accent)
 
-		return max(left_rect[3], right_rect[3])
+		# One mutually exclusive choice between the plain theme, window
+		# transparency, auto-theming and the album-art backgrounds
+		self.ddt.text((inner_x, style_label_y), _("Background Style"), self.colours.box_text_label, 11)
+		self.settings_segmented_bar(
+			(inner_x, style_bar_y),
+			(
+				(_("Standard"), self.tauon.set_bg_style_base(1), self.tauon.set_bg_style_base),
+				(_("Glass"), self.tauon.set_bg_style_transparent_accent(1), self.tauon.set_bg_style_transparent_accent),
+				(_("Glass+"), self.tauon.set_bg_style_full_transparent(1), self.tauon.set_bg_style_full_transparent),
+				(_("Colourise"), self.tauon.set_bg_style_colourise(1), self.tauon.set_bg_style_colourise),
+				(_("Art"), self.tauon.set_art_bg_clear(1), self.tauon.set_art_bg_clear),
+				(_("Artist"), self.tauon.set_art_bg_artist(1), self.tauon.set_art_bg_artist),
+				(_("Frost lo"), self.tauon.set_art_bg_frosted_low(1), self.tauon.set_art_bg_frosted_low),
+				(_("Frost hi"), self.tauon.set_art_bg_frosted_high(1), self.tauon.set_art_bg_frosted_high),
+			),
+			accent,
+			width=inner_w,
+		)
+
+		return card_rect[3]
 
 	def render_settings_window_category(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
@@ -29736,8 +30184,8 @@ class Over:
 		prefs.mini_mode_on_top = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.mini_mode_on_top, _("Mini-mode always on top"), accent=accent)
 		if self.wayland and prefs.mini_mode_on_top and prefs.mini_mode_on_top != old_on_top:
 			self.show_message(_("Always-on-top feature not yet implemented for Wayland mode"))
-		# ("Top-panel visualiser" switch moved to the main menu under
-		# Top Panel Layout…)
+		# ("Top-panel visualiser" switch moved to the top-panel right-click
+		# window menu)
 
 		inner_y += row_h + row_gap
 		self.settings_switch_row(
@@ -31949,8 +32397,10 @@ class TopPanel:
 			# gui.pl_update = 1
 			gui.update_on_drag = True
 
-		# Draw the background
-		ddt.clear_rect((0, 0, window_size[0], gui.panelY))
+		# Draw the background (blend over the art background if active,
+		# otherwise clear first so window transparency works)
+		if not gui.have_art_bg:
+			ddt.clear_rect((0, 0, window_size[0], gui.panelY))
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
@@ -32053,6 +32503,9 @@ class TopPanel:
 			colour = colours.corner_button
 			if self.coll(rect):
 				colour = colours.corner_button_active
+		colour = self.tauon.style_overlay.tint_from_background(
+			colour, wwx + 60 * gui.scale, yy + 16 * gui.scale, 0.2,
+			colours.bottom_panel_colour)
 
 		if not prefs.shuffle_lock and not gui.custom_mode:
 			# The panel button hides in custom mode (the layout/edit button below
@@ -32076,6 +32529,9 @@ class TopPanel:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
 			lcol = colours.corner_button_active if self.tauon.layout_menu.active else colours.corner_button
+			lcol = self.tauon.style_overlay.tint_from_background(
+				lcol, wwx + 20 * gui.scale, yy + 16 * gui.scale, 0.2,
+				colours.bottom_panel_colour)
 			gw = round(18 * gui.scale)
 			gh = round(13 * gui.scale)
 			draw_layout_glyph(
@@ -32632,6 +33088,8 @@ class TopPanel:
 			bg = colours.status_text_over
 		else:
 			bg = colours.status_text_normal
+		bg = tauon.style_overlay.tint_from_background(
+			bg, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
 		ddt.text((x, y), word, bg, 212)
 
 		if hit and inp.mouse_click:
@@ -32715,6 +33173,8 @@ class TopPanel:
 					if tauon.dl_mon.ready:
 						colour = colours.corner_button_active  # ColourRGBA(60, 60, 60, 255)
 
+			colour = tauon.style_overlay.tint_from_background(
+				colour, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
 			self.dl_button.render(x, y + 1 * gui.scale, colour)
 			if dl > 0:
 				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pulse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
@@ -32811,11 +33271,15 @@ class TopPanel:
 			status = False
 
 		if status:
+			bg = tauon.style_overlay.tint_from_background(
+				bg, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
 			x += ddt.text((x, y), text, bg, 311)
 			# x += ddt.get_text_w(text, 11)
 		# TODO(Taiko): list listening clients
 		elif tauon.transcode_list:
-			bg = colours.status_info_text
+			bg = tauon.style_overlay.tint_from_background(
+				colours.status_info_text, x, y + 8 * gui.scale, 0.2,
+				colours.top_panel_background)
 			# if inp.key_ctrl_down and inp.key_c_press:
 			# 	del tauon.transcode_list[1:]
 			# 	gui.tc_cancel = True
@@ -32949,11 +33413,47 @@ class BottomBarType1:
 		colours     = self.colours
 		fonts       = self.tauon.fonts
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		# Replace pixels (for window transparency) unless the art background
+		# is underneath, in which case blend over it
+		if not self.gui.have_art_bg:
+			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, colours.seek_bar_background)
+		# Let the grey furniture inherit a hint of the local art hue/saturation
+		so = tauon.style_overlay
+		seek_bg = so.tint_from_background(
+			colours.seek_bar_background,
+			self.seek_bar_position[0] + self.seek_bar_size[0] / 2,
+			self.seek_bar_position[1] + self.seek_bar_size[1] / 2,
+			panel=colours.bottom_panel_colour, boost=0.6)
+
+		# If a bright art backdrop forced the seek background lighter than its
+		# base grey, the fill (normally the lighter of the two) can be left
+		# dimmer than the boosted background. When that boost happened, pull
+		# the fill's lightness back above the background so the played portion
+		# stays distinct.
+		seek_fill = colours.seek_bar_fill
+		seek_bg_l = rgb_to_hls(seek_bg.r, seek_bg.g, seek_bg.b)[1]
+		seek_base_l = rgb_to_hls(
+			colours.seek_bar_background.r, colours.seek_bar_background.g, colours.seek_bar_background.b)[1]
+		if seek_bg_l > seek_base_l + 0.01:
+			seek_fill = hls_pull_contrast(seek_fill, seek_bg, floor=0.12)
+		volume_bg = so.tint_from_background(
+			colours.volume_bar_background,
+			self.volume_bar_position[0] + self.volume_bar_size[0] / 2,
+			self.volume_bar_position[1] + self.volume_bar_size[1] / 2,
+			panel=colours.bottom_panel_colour)
+		buttons_y = window_size[1] - self.control_line_bottom
+		panel_bg = colours.bottom_panel_colour
+		mb_off = so.tint_from_background(colours.media_buttons_off, 150 * gui.scale, buttons_y, 0.2, panel_bg)
+		mb_active = so.tint_from_background(colours.media_buttons_active, 150 * gui.scale, buttons_y, 0.2, panel_bg)
+		mb_over = so.tint_from_background(colours.media_buttons_over, 150 * gui.scale, buttons_y, 0.2, panel_bg)
+		md_off = so.tint_from_background(colours.mode_button_off, window_size[0] - 120 * gui.scale, buttons_y, 0.2, panel_bg)
+		md_active = so.tint_from_background(colours.mode_button_active, window_size[0] - 120 * gui.scale, buttons_y, 0.2, panel_bg)
+		md_over = so.tint_from_background(colours.mode_button_over, window_size[0] - 120 * gui.scale, buttons_y, 0.2, panel_bg)
+
+		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, seek_bg)
 
 		right_offset = 0
 		if gui.display_time_mode >= 2:
@@ -33094,7 +33594,7 @@ class BottomBarType1:
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
 				self.seek_bar_size[1])
-			ddt.rect(gui.seek_bar_rect, colours.seek_bar_fill)
+			ddt.rect(gui.seek_bar_rect, seek_fill)
 			tauon.draw_ab_repeat_markers(
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				self.seek_bar_size[0], self.seek_bar_size[1])
@@ -33182,24 +33682,24 @@ class BottomBarType1:
 
 						pctl.set_volume()
 
-				colour = colours.mode_button_off
+				colour = md_off
 
 				if bar == 0 and pctl.player_volume > 0:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 1 and pctl.player_volume >= 10:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 2 and pctl.player_volume >= 20:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 3 and pctl.player_volume >= 30:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 4 and pctl.player_volume >= 45:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 5 and pctl.player_volume >= 55:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 6 and pctl.player_volume >= 70:
-					colour = colours.mode_button_active
+					colour = md_active
 				elif bar == 7 and pctl.player_volume >= 95:
-					colour = colours.mode_button_active
+					colour = md_active
 
 				ddt.rect(rect, colour)
 				x += spacing
@@ -33248,7 +33748,7 @@ class BottomBarType1:
 
 			ddt.rect_a(
 				(self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
-				self.volume_bar_size, colours.volume_bar_background)  # 22
+				self.volume_bar_size, volume_bg)  # 22
 
 			gui.volume_bar_rect = (
 				self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
@@ -33423,23 +33923,23 @@ class BottomBarType1:
 			if window_size[0] < 650 * gui.scale:
 				compact = True
 
-			play_colour = colours.media_buttons_off
-			pause_colour = colours.media_buttons_off
-			stop_colour = colours.media_buttons_off
-			forward_colour = colours.media_buttons_off
-			back_colour = colours.media_buttons_off
+			play_colour = mb_off
+			pause_colour = mb_off
+			stop_colour = mb_off
+			forward_colour = mb_off
+			back_colour = mb_off
 
 			if pctl.playing_state == PlayingState.PLAYING:
-				play_colour = colours.media_buttons_active
+				play_colour = mb_active
 
 			if pctl.stop_mode != StopMode.OFF:
-				stop_colour = colours.media_buttons_active
+				stop_colour = mb_active
 
 			if pctl.playing_state == PlayingState.PAUSED:
-				pause_colour = colours.media_buttons_active
-				play_colour = colours.media_buttons_active
+				pause_colour = mb_active
+				play_colour = mb_active
 			elif pctl.playing_state == PlayingState.URL_STREAM:
-				play_colour = colours.media_buttons_active
+				play_colour = mb_active
 				if tauon.stream_proxy.encode_running:
 					play_colour = ColourRGBA(220, 50, 50, 255)
 
@@ -33449,7 +33949,7 @@ class BottomBarType1:
 				50 * gui.scale, 40 * gui.scale)
 				self.fields.add(rect)
 				if self.coll(rect):
-					play_colour = colours.media_buttons_over
+					play_colour = mb_over
 					if inp.mouse_click:
 						if compact and pctl.playing_state == PlayingState.PLAYING:
 							pctl.pause()
@@ -33478,7 +33978,7 @@ class BottomBarType1:
 				rect = (x - 15 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
 				self.fields.add(rect)
 				if self.coll(rect) and pctl.playing_state != PlayingState.URL_STREAM:
-					pause_colour = colours.media_buttons_over
+					pause_colour = mb_over
 					if inp.mouse_click:
 						pctl.pause()
 					if inp.right_click:
@@ -33494,7 +33994,7 @@ class BottomBarType1:
 			rect = (x - 14 * gui.scale, y - 13 * gui.scale, 50 * gui.scale, 40 * gui.scale)
 			self.fields.add(rect)
 			if self.coll(rect):
-				stop_colour = colours.media_buttons_over
+				stop_colour = mb_over
 				if inp.mouse_click:
 					pctl.stop()
 				if inp.right_click:
@@ -33513,7 +34013,7 @@ class BottomBarType1:
 					50 * gui.scale, 35 * gui.scale)
 			self.fields.add(rect)
 			if self.coll(rect) and pctl.playing_state != PlayingState.URL_STREAM:
-				forward_colour = colours.media_buttons_over
+				forward_colour = mb_over
 				if inp.mouse_click:
 					pctl.advance()
 					gui.tool_tip_lock_off_f = True
@@ -33548,7 +34048,7 @@ class BottomBarType1:
 					50 * gui.scale, 35 * gui.scale)
 			self.fields.add(rect)
 			if self.coll(rect) and pctl.playing_state != PlayingState.URL_STREAM:
-				back_colour = colours.media_buttons_over
+				back_colour = mb_over
 				if inp.mouse_click:
 					pctl.back()
 					gui.tool_tip_lock_off_b = True
@@ -33579,19 +34079,19 @@ class BottomBarType1:
 
 			x = window_size[0] - 252 * gui.scale - right_offset
 			y = window_size[1] - round(26 * gui.scale)
-			rpbc = colours.mode_button_off
+			rpbc = md_off
 			rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
 			self.fields.add(rect)
 			if self.coll(rect):
 				if not tauon.extra_menu.active:
 					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Playback menu"))
-				rpbc = colours.mode_button_over
+				rpbc = md_over
 				if inp.mouse_click:
 					tauon.extra_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale), bottom_anchor=True)
 				elif inp.right_click:
 					tauon.mode_menu.activate(position=(x - 115 * gui.scale, y - 6 * gui.scale))
 			if tauon.extra_menu.active:
-				rpbc = colours.mode_button_active
+				rpbc = md_active
 
 			spacing = round(5 * gui.scale)
 			ddt.rect_a((x, y), (24 * gui.scale, 2 * gui.scale), rpbc)
@@ -33609,7 +34109,7 @@ class BottomBarType1:
 				rect = (x - 5 * gui.scale, y - 5 * gui.scale, 60 * gui.scale, 25 * gui.scale)
 				self.fields.add(rect)
 
-				rpbc = colours.mode_button_off
+				rpbc = md_off
 				off = True
 				if (inp.mouse_click or inp.right_click) and self.coll(rect):
 					if inp.mouse_click:
@@ -33621,24 +34121,24 @@ class BottomBarType1:
 						tauon.shuffle_menu.activate(position=(x + 30 * gui.scale, y - 7 * gui.scale))
 
 				if pctl.random_mode:
-					rpbc = colours.mode_button_active
+					rpbc = md_active
 					off = False
 					if self.coll(rect):
 						tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
 				elif self.coll(rect):
 					tauon.tool_tip.test(x, y - 28 * gui.scale, _("Shuffle"))
 					if self.random_click_off is True:
-						rpbc = colours.mode_button_off
+						rpbc = md_off
 					elif pctl.random_mode is True:
-						rpbc = colours.mode_button_active
+						rpbc = md_active
 					else:
-						rpbc = colours.mode_button_over
+						rpbc = md_over
 				else:
 					self.random_click_off = False
 
 				# Keep hover highlight on if menu is open
 				if tauon.shuffle_menu.active and not pctl.random_mode:
-					rpbc = colours.mode_button_over
+					rpbc = md_over
 
 				#self.shuffle_button.render(x + round(1 * gui.scale), y + round(1 * gui.scale), rpbc)
 
@@ -33662,7 +34162,7 @@ class BottomBarType1:
 				x = window_size[0] - round(380 * gui.scale) - right_offset
 				y = window_size[1] - round(27 * gui.scale)
 
-				rpbc = colours.mode_button_off
+				rpbc = md_off
 				off = True
 
 				rect = (x - 6 * gui.scale, y - 5 * gui.scale, 61 * gui.scale, 25 * gui.scale)
@@ -33679,7 +34179,7 @@ class BottomBarType1:
 						#     self.repeat_click_off = True
 
 				if pctl.repeat_mode:
-					rpbc = colours.mode_button_active
+					rpbc = md_active
 					off = False
 					if self.coll(rect):
 						if pctl.album_repeat_mode:
@@ -33696,17 +34196,17 @@ class BottomBarType1:
 							tauon.tool_tip.test(x, y - 28 * gui.scale, _("Repeat track"))
 
 					if self.repeat_click_off is True:
-						rpbc = colours.mode_button_off
+						rpbc = md_off
 					elif pctl.repeat_mode is True:
-						rpbc = colours.mode_button_active
+						rpbc = md_active
 					else:
-						rpbc = colours.mode_button_over
+						rpbc = md_over
 				else:
 					self.repeat_click_off = False
 
 				# Keep hover highlight on if menu is open
 				if tauon.repeat_menu.active and not pctl.repeat_mode:
-					rpbc = colours.mode_button_over
+					rpbc = md_over
 
 				rpbc = alpha_blend(rpbc, colours.bottom_panel_colour)  # bake in alpha in case of overlap
 
@@ -33793,7 +34293,10 @@ class BottomBarType_ao1:
 
 	def render(self) -> None:
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		# Replace pixels (for window transparency) unless the art background
+		# is underneath, in which case blend over it
+		if not self.gui.have_art_bg:
+			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
@@ -35733,6 +36236,9 @@ class StandardPlaylist:
 		sdl3.SDL_RenderClear(self.renderer)
 
 		rect = (left, gui.panelY, width, window_size[1] - (gui.panelBY + gui.panelY))
+
+		# One averaged art-bg sample shared by all tracklist text this render
+		tauon.style_overlay.tracklist_sample = tauon.style_overlay.sample_background_average(*rect)
 		ddt.rect(rect, colours.playlist_panel_background)
 
 		# This draws an optional background image
@@ -35794,7 +36300,7 @@ class StandardPlaylist:
 					"playlist", -inp.mouse_wheel, gui.playlist_row_height * mx, SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE
 				)
 
-			if inp.touch_released:
+			if inp.touch_released and coll_point(self.smooth_scroll.start_location, scroll_area):
 				self.smooth_scroll.release_touch("playlist")
 			elif touch_scroll:
 				self.smooth_scroll.apply_touch_drag("playlist", -inp.touch_scroll_y)
@@ -36358,6 +36864,14 @@ class StandardPlaylist:
 
 				height = line_y + gui.playlist_row_height - 19 * gui.scale  # gui.pl_title_y_offset
 
+				# Over the art background the title line gets the hue mix-in
+				# and lightness boost like the panel buttons do, from the
+				# tracklist's shared averaged sample
+				folder_title_colour = tauon.style_overlay.tint_from_sample(
+					colours.folder_title,
+					tauon.style_overlay.tracklist_sample,
+					0.2, colours.playlist_panel_background)
+
 				star_offset = 0
 				if gui.show_album_ratings:
 					star_offset = round(72 * gui.scale)
@@ -36408,7 +36922,7 @@ class StandardPlaylist:
 					was = False
 					run = 0
 					duration = get_display_time(total_time)
-					colour = copy.deepcopy(colours.folder_title)
+					colour = copy.deepcopy(folder_title_colour)
 					colour.a = max(colour.a - 50, 0)
 
 					if prefs.append_total_time and duration:
@@ -36435,12 +36949,12 @@ class StandardPlaylist:
 							(ex - run, height, 1), tr.genre, colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 
-					w2 = ddt.text((xx, height), title_line, colours.folder_title, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale) + folder_title_right_pad))
+					w2 = ddt.text((xx, height), title_line, folder_title_colour, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale) + folder_title_right_pad))
 				else:
 					date_w = 0
 					if date:
 						date_w = ddt.text(
-							(ex, height, 1), date, colours.folder_title,
+							(ex, height, 1), date, folder_title_colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 						date_w += 4 * gui.scale
 						if qq > 1:
@@ -36458,13 +36972,13 @@ class StandardPlaylist:
 						date_w += 19 * gui.scale
 						ddt.text(
 							(left + gui.highlight_left + 8 * gui.scale + extra, height), line,
-							colours.folder_title,
+							folder_title_colour,
 							gui.row_font_size + gui.pl_title_font_offset,
 							highlight_width - date_w - extra - star_offset - folder_title_right_pad)
 					else:
 						ddt.text(
 							(ex - date_w, height, 1), line,
-							colours.folder_title,
+							folder_title_colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 
 				# -----
@@ -36839,6 +37353,13 @@ class StandardPlaylist:
 							col_left = text_x - 6 * gui.scale
 							wid = max(0, wid)
 
+							# Grey column text picks up a hint of the art hue
+							# over the art background (coloured text passes
+							# through; no lightness boost for row text), from
+							# the tracklist's shared averaged sample
+							colour = tauon.style_overlay.tint_from_sample(
+								colour, tauon.style_overlay.tracklist_sample, 0.2)
+
 							# # Hacky. Places a dark background behind light text for readability over mascot
 							# if pl_bg and gui.set_mode and colour_value(norm_colour) < 400 and not colours.lm:
 							# 	w, h = ddt.get_text_wh(text, font, wid)
@@ -36907,15 +37428,30 @@ class StandardPlaylist:
 		ddt.alpha_bg = False
 
 	def _blit_tracklist(self) -> None:
-		"""Copy the tracklist texture to the main texture. In the preset path the
-		whole texture is copied; with a clip rect (Custom Layout) only that segment
-		is copied so the tracklist can't draw past its region."""
+		"""Copy the tracklist texture to the main texture, constrained to the
+		tracklist's region (the widget rect in Custom Layout, the playlist
+		viewport in the preset path) so partially scrolled rows can't draw
+		over — or show through — the surrounding panels."""
+		gui = self.gui
 		if self._clip_rect is not None:
 			cx, cy, cw, ch = self._clip_rect
-			r = sdl3.SDL_FRect(cx, cy, cw, ch)
-			sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, r, r)
+			bar_top = cy
 		else:
-			sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, None, self.gui.tracklist_texture_rect)
+			cx = gui.playlist_left
+			cy = gui.panelY
+			cw = gui.plw
+			ch = self.window_size[1] - gui.panelY - gui.panelBY
+			bar_top = cy
+			if gui.artist_info_panel:
+				bar_top += gui.artist_panel_height
+		# The columns header bar draws translucent over the art background,
+		# so rows scrolled up behind it would show through; crop them out
+		if gui.set_mode and gui.set_bar and not gui.combo_mode:
+			cut = bar_top + gui.set_height - cy
+			cy += cut
+			ch -= cut
+		r = sdl3.SDL_FRect(round(cx), round(cy), round(cw), round(ch))
+		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, r, r)
 
 	def cache_render(self) -> None:
 		self.update_album_rating_hover()
@@ -36984,7 +37520,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -36992,7 +37528,8 @@ class ArtBox:
 		inp     = self.inp
 
 		# Draw a background for whole area
-		ddt.clear_rect((x, y, w, h))
+		if not gui.have_art_bg:
+			ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
 		# ddt.rect_r((x, y, w ,h), [255, 0, 0, 200], True)
 
@@ -37050,7 +37587,8 @@ class ArtBox:
 			else:
 				border = rect
 		else:
-			ddt.rect_s(rect, colours.art_box, 1 * gui.scale)
+			if draw_border:  # Custom Layout passes False when the segment border is on
+				ddt.rect_s(rect, colours.art_box, 1 * gui.scale)
 			border = rect
 
 		self.fields.add(border)
@@ -38594,23 +39132,7 @@ class PlaylistBox:
 			tab_start = x + 4 * self.gui.scale
 
 		scroll_area = (x, y, w, h)
-		scroll_source = "playlist side pane"
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
-		use_smooth_scroll = (
-			self.tauon.smooth_scroll.enabled()
-			or touch_scroll
-			or self.tauon.smooth_scroll.active(scroll_source)
-		)
-		if use_smooth_scroll:
-			if self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-				self.tauon.smooth_scroll.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, row_step)
-			if self.inp.touch_released:
-				self.tauon.smooth_scroll.release_touch(scroll_source)
-			elif touch_scroll:
-				self.tauon.smooth_scroll.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
-			self.scroll_on += self.tauon.smooth_scroll.step_motion(scroll_source) / max(row_step, 1)
-		elif self.inp.mouse_wheel != 0 and self.coll(scroll_area):
-			self.scroll_on -= self.inp.mouse_wheel
+		self.scroll_on += self.tauon.smooth_scroll.get_scroll("playlist side pane", scroll_area, row_step)  / max(row_step, 1)
 
 		self.scroll_on = min(self.scroll_on, max_scroll)
 		self.scroll_on = max(self.scroll_on, 0)
@@ -41046,8 +41568,10 @@ class MetaBox:
 				self.showcase_menu.activate(track)
 
 		# Test for scroll wheel input
-		if self.inp.mouse_wheel != 0 and self.coll((x + 10, y, w - 10, h)):
-			self.lyrics_ren_mini.lyrics_position += self.inp.mouse_wheel * 30 * self.gui.scale
+		scroll_area = (x + 10, y, w - 10, h)
+		lp = self.lyrics_ren_mini.lyrics_position
+		self.lyrics_ren_mini.lyrics_position -= self.tauon.smooth_scroll.get_scroll("sidebar lyrics", scroll_area, (30*self.gui.scale))
+		if self.lyrics_ren_mini.lyrics_position != lp:
 			if self.lyrics_ren_mini.lyrics_position > 0:
 				self.lyrics_ren_mini.lyrics_position = 0
 				self.tauon.lyric_side_top_pulse.pulse()
@@ -41095,7 +41619,8 @@ class MetaBox:
 		# context menu and the "Lyrics" showcase link.
 		bg = self.colours.side_panel_background
 		self.ddt.text_background_colour = bg
-		self.ddt.clear_rect((x, y, w, h))
+		if not self.gui.have_art_bg:
+			self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
 
 
@@ -41249,7 +41774,8 @@ class MetaBox:
 		radiobox = self.tauon.radiobox
 		target_track = track
 
-		ddt.clear_rect((x, y, w, h))
+		if not gui.have_art_bg:
+			ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
 		small_mode = window_size[1] < 550 * gui.scale
 		text_y = y + round(h * 0.40)
@@ -41548,25 +42074,8 @@ class ArtistInfoBox:
 				self.w = width
 
 			scroll_max = max(self.th - text_area_h, 0)
-
-			touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, (x, y, w, h))
-			use_smooth_scroll = (
-				self.smooth_scroll.enabled()
-				or touch_scroll
-				or self.smooth_scroll.active("artistinfo")
-			)
-			artistinfo_scroll_step = round(10 * self.gui.scale)
-			if use_smooth_scroll:
-				if self.coll((x, y, w, h)) and self.inp.mouse_wheel:
-					self.smooth_scroll.add_wheel_motion("artistinfo", -self.inp.mouse_wheel, artistinfo_scroll_step)
-				if self.inp.touch_released:
-					self.smooth_scroll.release_touch("artistinfo")
-				elif touch_scroll:
-					self.smooth_scroll.apply_touch_drag("artistinfo", -self.inp.touch_scroll_y)
-				self.scroll_y += self.smooth_scroll.step_motion("artistinfo")
-			elif self.coll((x, y, w, h)):
-				scroll_distance = self.smooth_scroll.scroll("artistinfo", artistinfo_scroll_step)
-				self.scroll_y -= scroll_distance
+			coll = (x, y, w, h)
+			self.scroll_y += self.smooth_scroll.get_scroll("artistinfo",coll,round(20*self.gui.scale))
 			self.scroll_y = max(self.scroll_y, 0)
 			self.scroll_y = min(self.scroll_y, scroll_max)
 
@@ -42212,6 +42721,7 @@ def renderer_name_supports_milkdrop(renderer_name: str | None) -> bool:
 
 
 milky_ready = True
+milky_error = ""
 try:
 	import OpenGL
 	# Disable error checking as SDL can generate errors we do not otherwise catch, crashing PyOpenGL
@@ -42291,9 +42801,11 @@ try:
 except ModuleNotFoundError:
 	logging.warning("PyOpenGL not found, Milkdrop visualizer will be disabled")
 	milky_ready = False
+	milky_error = "Optional module PyOpenGL is not installed"
 except Exception:
 	logging.exception("Unknown error importing PyOpenGL, Milkdrop visualizer will be disabled")
 	milky_ready = False
+	milky_error = "PyOpenGL failed to load"
 
 
 def find_projectm_library() -> str | None:
@@ -42323,6 +42835,8 @@ def find_projectm_library() -> str | None:
 
 if not find_projectm_library():
 	milky_ready = False
+	if not milky_error:
+		milky_error = "libprojectM library was not found"
 
 class ProjectM:
 	def __init__(self, tauon: Tauon) -> None:
@@ -42656,6 +43170,10 @@ class ProjectM:
 		self.loaded_preset = preset
 		self.tauon.prefs.loaded_preset = preset
 		logging.info(f"Loading preset: {preset.stem}")
+		if not self.lib or not self.pm_instance:
+			# Not initialised (visualiser off or unavailable); the preset is
+			# remembered in prefs and loads on next init
+			return
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 		self.log_preset_load_event("LOADED_OK", preset, fade)
 		self.auto_frames = 0
@@ -42772,6 +43290,11 @@ class Milky:
 
 		self.projectm = ProjectM(tauon)
 
+	@property
+	def available(self) -> bool:
+		"""False when PyOpenGL/libprojectM are missing or the renderer isn't OpenGL"""
+		return milky_ready
+
 	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
 			return
@@ -42805,6 +43328,11 @@ class Milky:
 		glFinish()
 
 	def render(self, discard: bool = False) -> None:
+		if not milky_ready:
+			# PyOpenGL missing, no libprojectM, or non-OpenGL renderer. prefs.milk
+			# can still be set (stale config); rendering would NameError on the
+			# module-level GL imports.
+			return
 		if self.projectm.lib_error is True:
 			return
 
@@ -42819,12 +43347,18 @@ class Milky:
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
-			sdl3.SDL_FlushRenderer(self.renderer)
 			context = sdl3.SDL_GL_GetCurrentContext()
 			if context:
 				sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+			saved_target = sdl3.SDL_GetRenderTarget(self.renderer)
+			sdl3.SDL_SetRenderTarget(self.renderer, None)
+			sdl3.SDL_FlushRenderer(self.renderer)
+			saved_fbo_init = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
+			glBindFramebuffer(GL_FRAMEBUFFER, 0)
 			self.projectm.load_library()
 			self.projectm.init()
+			glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo_init)
+			sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
 			if self.projectm.lib:
 				self.ready = True
 		if self.projectm.lib_error is True:
@@ -43587,7 +44121,8 @@ class Showcase:
 						self.guitar_chords.auto_scroll = True
 			elif True and self.prefs.show_lyrics_showcase and timed_ready:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
-				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w)
+				h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
+				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w, h=h)
 			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				x = int(x + box + (self.window_size[0] - x - box) / 2)
@@ -44713,22 +45248,67 @@ SCROLL_PHYSICS_DAMPING = 0.95
 SCROLL_PHYSICS_FIXED_DAMPING = SCROLL_PHYSICS_DAMPING ** (SCROLL_PHYSICS_FIXED_TIMESTEP * 60)
 SCROLL_PHYSICS_MAX_VELOCITY = 2100.0
 SCROLL_PHYSICS_MIN_VELOCITY = 8.0
+SCROLL_PHYSICS_MIN_PIXELS = 10
 
 TOUCH_LOGIC_TAP_VS_LONG_NS = 300 * 1000000
 TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK = 150
 
-@dataclass
 class TouchInputTracker:
-	is_down: bool = False
-	start_position_px: tuple[int, int] = (0, 0)
-	time_started_ns: int = 0
-	duration_so_far_ns: int = 0
-	is_scroll: bool = False
-	is_rightclick: bool = False
-	is_dragndrop: bool = False
-	has_moved: bool = False
-	is_gesture: bool = False
-	was_gesture: bool = False
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon:             Tauon = tauon
+		self.gui: GuiVar              = tauon.gui
+		self.ddt: TDraw               = tauon.ddt
+		self.colours: ColoursClass    = tauon.colours
+
+		self.is_down: bool = False
+		self.start_position_px: tuple[int, int] = (0, 0)
+		self.time_started_ns: int = 0
+		self.duration_so_far_ns: int = 0
+		self.is_scroll: bool = False
+		self.is_rightclick: bool = False
+		self.is_dragndrop: bool = False
+		self.has_moved: bool = False
+		self.is_gesture: bool = False
+		self.was_gesture: bool = False
+		self.x: int = 0
+		self.y: int = 0
+
+		self.rect_size: int = round(40*self.gui.scale)
+		self.rect_distance: int = round(40*self.gui.scale)
+
+	def reset(self) -> None:
+		self.is_down: bool = False
+		self.start_position_px: tuple[int, int] = (0, 0)
+		self.time_started_ns: int = 0
+		self.duration_so_far_ns: int = 0
+		self.is_scroll: bool = False
+		self.is_rightclick: bool = False
+		self.is_dragndrop: bool = False
+		self.has_moved: bool = False
+		self.is_gesture: bool = False
+		self.was_gesture: bool = False
+
+	def draw_update(self) -> None:
+		if not self.is_down or self.is_scroll or self.is_rightclick or self.is_dragndrop or self.is_gesture or self.was_gesture:
+			return
+		if TOUCH_LOGIC_TAP_VS_LONG_NS < self.duration_so_far_ns:
+			self.is_rightclick = True
+			return
+		self.duration_so_far_ns = time.monotonic_ns() - self.time_started_ns
+		if TOUCH_LOGIC_TAP_VS_LONG_NS/2 > self.duration_so_far_ns:
+			self.gui.request_frame()
+			return
+
+		rect = [
+			int(self.x-0.5*self.rect_size),
+			int(self.y-self.rect_distance),
+			self.rect_size,
+			round(10*self.gui.scale)
+		]
+		self.ddt.rect( rect, self.colours.media_buttons_off)
+		rect[2] *= (self.duration_so_far_ns/TOUCH_LOGIC_TAP_VS_LONG_NS)
+		self.ddt.rect( rect, self.colours.media_buttons_active)
+		self.gui.request_frame()
 
 @dataclass
 class ScrollMotionState:
@@ -44751,12 +45331,14 @@ class SmoothScroll:
 		self.tauon = tauon
 		self.inp = tauon.inp
 		self.gui = tauon.gui
+		self.coll = tauon.coll
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.scroll_debug_modes: dict[str, str] = {}
 		self.scroll_debug_last_logs: dict[str, float] = {}
 		self.timeout = 0.5
+		self.start_location: tuple[int, int] = (0,0)
 
 	def _pixel_scale(self) -> float:
 		return max(self.gui.scale, 0.1)
@@ -44836,6 +45418,26 @@ class SmoothScroll:
 		self.scroll_timeouts[source].set()
 
 		return scroll_distance
+
+	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0) -> float:
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.start_location, scroll_area)
+		use_smooth_scroll = (
+			self.enabled()
+			or touch_scroll
+			or self.active(scroll_source)
+		)
+		if use_smooth_scroll:
+			if self.coll(scroll_area) and self.inp.mouse_wheel:
+				self.add_wheel_motion(scroll_source, -self.inp.mouse_wheel, coeff)
+			if self.inp.touch_released and coll_point(self.start_location, scroll_area):
+				self.release_touch(scroll_source)
+			elif touch_scroll:
+				self.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
+			return self.step_motion(scroll_source)
+		elif self.coll(scroll_area):
+			return self.scroll(scroll_source, coeff)
+		else:
+			return 0.0
 
 	def _state(self, source: str) -> ScrollMotionState:
 		if source not in self.physics_states:
@@ -46209,9 +46811,8 @@ class TimedLyricsEdit:
 
 		# scroll
 		old_scroll_pos = self.scroll_position
-		if self.inp.mouse_wheel and not (self.inp.key_lalt or self.inp.key_ralt):
-			scroll_distance = self.scroll.scroll("timed lyrics", 30*self.gui.scale)
-			self.scroll_position += scroll_distance
+		if not (self.inp.key_lalt or self.inp.key_ralt):
+			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(x,y,w,h),30*self.gui.scale)
 			self.recenter_timeout.set()
 
 		highlight = True
@@ -46722,8 +47323,7 @@ class TimedLyricsEdit:
 		# 	self.lyrics_position += 35 * self.gui.scale
 		# if self.inp.key_down_press:
 		# 	self.lyrics_position -= 35 * self.gui.scale
-		if self.inp.mouse_wheel:
-			self.lyrics_position += self.scroll.scroll("timed lyrics", 30*self.gui.scale)
+		self.lyrics_position -= self.scroll.get_scroll("lyrics edit", (x,y,w,h), 30*self.gui.scale)
 		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
 
 		tw, th = self.ddt.get_text_wh(self.text + "\n", self.font, w, True)
@@ -46995,9 +47595,10 @@ class TimedLyricsEdit:
 					round( gcx + 30*self.gui.scale ), # vertical highlight for text column while paused
 					]
 				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
+			h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
 
 			if self.view_is_synced:
-				self.synced_render(track.index, gcx, y, hide_art, w)
+				self.synced_render(track.index, gcx, y, hide_art, w, h)
 			else:
 				self.unsynced_render(x, y, box, hide_art)
 
@@ -47762,7 +48363,7 @@ def load_prefs(bag: Bag) -> None:
 	cf.add_text("[ui]")
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents")
+	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents, 2=full")
 	if first_run and prefs.macos:
 		# Round by default on macOS where every other window has rounded corners
 		prefs.rounded_corners = True
@@ -49849,6 +50450,7 @@ def menu_is_open() -> bool:
 
 def main(holder: Holder) -> None:
 	global milky_ready
+	global milky_error
 
 	t_window               = holder.t_window
 	renderer               = holder.renderer
@@ -49881,6 +50483,8 @@ def main(holder: Holder) -> None:
 	if not renderer_name_supports_milkdrop(renderer_name):
 		logging.warning("SDL renderer is not OpenGL; disabling Milkdrop visualizer")
 		milky_ready = False
+		if not milky_error:
+			milky_error = "SDL renderer is not OpenGL"
 
 	tls_context = setup_tls(holder)
 	last_fm_enable = is_module_loaded("pylast")
@@ -50171,7 +50775,18 @@ def main(holder: Holder) -> None:
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, max_window_tex,
 		max_window_tex)
 	tracklist_texture_rect = sdl3.SDL_FRect(0, 0, max_window_tex, max_window_tex)
-	sdl3.SDL_SetTextureBlendMode(tracklist_texture, sdl3.SDL_BLENDMODE_BLEND)
+	# The tracklist texture is built over a transparent clear, so its content
+	# is effectively premultiplied (translucent panel fills, premultiplied
+	# text textures); composite it src-over in premultiplied form —
+	# SDL_BLENDMODE_BLEND would multiply by alpha a second time
+	sdl3.SDL_SetTextureBlendMode(tracklist_texture, sdl3.SDL_ComposeCustomBlendMode(
+		sdl3.SDL_BLENDFACTOR_ONE,
+		sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+		sdl3.SDL_BLENDOPERATION_ADD,
+		sdl3.SDL_BLENDFACTOR_ONE,
+		sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
+		sdl3.SDL_BLENDOPERATION_ADD,
+	))
 
 	sdl3.SDL_SetRenderTarget(renderer, None)
 
@@ -50818,8 +51433,6 @@ def main(holder: Holder) -> None:
 				prefs.repeat_mode = save[120]
 			if len(save) > 121 and save[121] is not None:
 				prefs.art_bg_stronger = save[121]
-			if len(save) > 122 and save[122] is not None:
-				prefs.art_bg_always_blur = save[122]
 			if len(save) > 123 and save[123] is not None:
 				prefs.failed_artists = save[123]
 			if len(save) > 124 and save[124] is not None:
@@ -50976,6 +51589,8 @@ def main(holder: Holder) -> None:
 				prefs.milk_cut_out = save[193]
 			if len(save) > 194 and save[194] is not None:
 				prefs.milk_favorite_presets = save[194]
+			if len(save) > 195 and save[195] is not None:
+				prefs.art_bg_frosted = save[195]
 
 			del save
 			break
@@ -51072,8 +51687,6 @@ def main(holder: Holder) -> None:
 
 	if prefs.use_gamepad:
 		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
-
-	active_touch: TouchInputTracker = TouchInputTracker()
 
 	if bag.windows and win_ver >= 10:
 		#logging.info(sss.info.win.window)
@@ -52433,7 +53046,6 @@ def main(holder: Holder) -> None:
 	view_menu       = tauon.view_menu
 	set_menu        = tauon.set_menu
 	set_menu_hidden = tauon.set_menu_hidden
-	vis_menu        = tauon.vis_menu
 	window_menu     = tauon.window_menu
 	field_menu      = tauon.field_menu
 
@@ -52443,6 +53055,19 @@ def main(holder: Holder) -> None:
 	tauon.stop_menu.add(MenuItem(_("Stop after track"), tauon.stop_mode_track))
 	tauon.stop_menu.add(MenuItem(_("Continue Play"), tauon.stop_mode_off))
 
+	window_menu.add(MenuItem(
+		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
+		check_test=lambda: tauon.toggle_top_tabs(1)))
+	window_menu.br()
+	# Top-panel visualiser mode (radio items; was its own right-click menu
+	# over the visualiser area)
+	window_menu.add(MenuItem(_("Off"), tauon.vis_off, no_exit=True,
+		check_test=lambda: gui.vis_want == 0))
+	window_menu.add(MenuItem(_("Level Meter"), tauon.level_on, no_exit=True,
+		check_test=lambda: gui.vis_want == 1))
+	window_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on, no_exit=True,
+		check_test=lambda: gui.vis_want == 2))
+	window_menu.br()
 	window_menu.add(MenuItem(_("Minimize"), tauon.do_minimize_button))
 	window_menu.add(MenuItem(_("Maximize"), tauon.do_maximize_button))
 	window_menu.add(MenuItem(_("Exit"),     tauon.do_exit_button))
@@ -52453,11 +53078,6 @@ def main(holder: Holder) -> None:
 	field_menu.add(MenuItem(_("Paste"), field_paste, pass_ref=True))
 	# Clear text
 	field_menu.add(MenuItem(_("Clear"), field_clear, pass_ref=True))
-
-	vis_menu.add(MenuItem(_("Off"), tauon.vis_off))
-	vis_menu.add(MenuItem(_("Level Meter"), tauon.level_on))
-	vis_menu.add(MenuItem(_("Spectrum Visualizer"), tauon.spec_on))
-	# vis_menu.add(_("Spectrogram"), spec2_def)
 
 	# Mark for translation
 	_("Time")
@@ -52505,16 +53125,6 @@ def main(holder: Holder) -> None:
 		x_menu.add_sub(_("Dev Mode"), 190)
 		x_menu.add_to_sub(1, MenuItem(_("Enable Saving State"), tauon.dev_mode_enable_save_state))
 		x_menu.add_to_sub(1, MenuItem(_("Disable Saving State"), tauon.dev_mode_disable_save_state))
-
-	# Top panel layout settings (moved here from the Settings UI)
-	top_panel_sub = x_menu.sub_number
-	x_menu.add_sub(_("Top Panel Layout…"), 180)
-	x_menu.add_to_sub(top_panel_sub, MenuItem(
-		_("Show Tabs"), tauon.toggle_top_tabs, no_exit=True,
-		check_test=lambda: tauon.toggle_top_tabs(1)))
-	x_menu.add_to_sub(top_panel_sub, MenuItem(
-		_("Show Visualiser"), tauon.toggle_level_meter, no_exit=True,
-		check_test=lambda: tauon.toggle_level_meter(1)))
 
 	x_menu.br()
 
@@ -52777,6 +53387,7 @@ def main(holder: Holder) -> None:
 	# time.sleep(3)
 
 	sdl3.SDL_StartTextInput(t_window)
+	active_touch = tauon.touch_input_tracker
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 	# SDL_EventState(SDL_SYSWMEVENT, 1)
@@ -53016,6 +53627,12 @@ def main(holder: Holder) -> None:
 			if not gui.show_playlist and x > gui.playlist_left:
 				ddt.rect([gui.playlist_left, gui.panelY, x - gui.playlist_left, h], colours.gallery_background)
 			ddt.rect(rect, colours.gallery_background)
+
+			# Tiles at the scroll edges render partially outside the gallery
+			# area; clip so they can't draw over (or show through) the panels
+			# above and below. Reset in the finally below.
+			gallery_clip = sdl3.SDL_Rect(round(x), round(gui.panelY), round(w), round(h))
+			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(gallery_clip))
 
 			# ddt.rect_r(rect, [255, 0, 0, 200], True)
 
@@ -54088,6 +54705,8 @@ def main(holder: Holder) -> None:
 			)
 		except Exception:
 			logging.exception("Gallery render error!")
+		finally:
+			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
 		# END POWER BAR ------------------------
 
 	tauon.gallery_render = render_gallery  # exposed for the Custom Layout Album Gallery widget
@@ -54493,8 +55112,22 @@ def main(holder: Holder) -> None:
 			else:
 				ddt.rect(rect, c_bar_background)
 
+			# At low art strength the surrounding panels are fairly opaque
+			# and the (translucent) bar reads too bright against them; add
+			# an extra layer. High strength keeps the lighter look.
+			if gui.have_art_bg and prefs.art_bg_stronger < 3:
+				if gui.tracklist_center_mode:
+					ddt.rect((0, top, window_size[0], gui.set_height), c_bar_background)
+				else:
+					ddt.rect(rect, c_bar_background)
+
 			start = x + gui.pl_st_left * gui.scale
 			c_width = width - gui.pl_st_left * gui.scale
+
+			# The column cells below re-fill the (translucent) bar colour on
+			# top of the base fill; give the lead-in strip before the first
+			# column the same second layer so it doesn't read brighter
+			ddt.rect((x, top, start - x, gui.set_height), c_bar_background)
 
 			run = 0
 
@@ -55095,8 +55728,11 @@ def main(holder: Holder) -> None:
 					active_touch.time_started_ns = time.monotonic_ns()
 					inp.touch_released = False
 					inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+					active_touch.x = int(event.tfinger.x * window_size[0])
 					inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+					active_touch.y = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
+					tauon.smooth_scroll.start_location = active_touch.start_position_px
 					gui.request_frame()
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
 					active_touch.is_gesture = True
@@ -55112,7 +55748,9 @@ def main(holder: Holder) -> None:
 						inp.k_input = True
 						inp.touch_active = True
 						inp.touch_position[0] = int(event.tfinger.x * window_size[0])
+						active_touch.x = int(event.tfinger.x * window_size[0])
 						inp.touch_position[1] = int(event.tfinger.y * window_size[1])
+						active_touch.y = int(event.tfinger.y * window_size[1])
 						active_touch.duration_so_far_ns = time.monotonic_ns() - active_touch.time_started_ns
 
 						if active_touch.is_scroll:
@@ -55163,7 +55801,7 @@ def main(holder: Holder) -> None:
 								inp.touch_released = True
 							else:
 								inp.mouse_click = True
-						active_touch = TouchInputTracker()
+						active_touch.reset()
 					else:
 						if inp.touch_position[0] - active_touch.start_position_px[0] > TOUCH_LOGIC_COOL_GESTURE_PIXELS_TO_SKIP_TRACK:
 							pctl.advance()
@@ -55171,9 +55809,14 @@ def main(holder: Holder) -> None:
 							pctl.back()
 						else:
 							pctl.play_pause()
-						active_touch = TouchInputTracker()
-						active_touch.was_gesture = True
+						gest = active_touch.was_gesture
+						active_touch.reset()
+						if not gest:
+							active_touch.was_gesture = True
 					gui.request_frame()
+				else: # bugfix regarding the order you lift off your fingers during gesture
+					if active_touch.is_gesture:
+						active_touch.was_gesture = True
 			elif event.type >= sdl3.SDL_EVENT_WINDOW_FIRST and event.type <= sdl3.SDL_EVENT_WINDOW_LAST:
 				# logging.info(event.type)
 
@@ -55210,6 +55853,18 @@ def main(holder: Holder) -> None:
 					tauon.close_menu_popup()  # no-op if nothing is open
 					inp.key_focused = 1
 					gui.request_frame()
+
+				elif event.type == sdl3.SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+					# Alt+F4 / taskbar-close arrive as a close request on the main
+					# window. SDL never promotes that to SDL_EVENT_QUIT while an
+					# SDL tray icon is active (the app is expected to decide close
+					# behaviour itself, e.g. minimize-to-tray), so the close
+					# request must be handled here directly.
+					if gui.tray_active and prefs.min_to_tray and not inp.key_shift_down:
+						tauon.min_to_tray()
+					else:
+						tauon.exit("Main window received close request")
+						break
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 					# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
@@ -55743,13 +56398,14 @@ def main(holder: Holder) -> None:
 
 			if gui.mode == GuiMode.MAIN:
 				if keymaps.test("toggle-auto-theme"):
-					prefs.colour_from_image ^= True
+					# Background styles are mutually exclusive; go through the
+					# setters so the other modes get cleared
 					if prefs.colour_from_image:
-						tauon.show_message(_("Enabled auto theme"))
-					else:
+						tauon.set_bg_style_base()
 						tauon.show_message(_("Disabled auto theme"))
-						gui.reload_theme = True
-						gui.theme_temp_current = -1
+					else:
+						tauon.set_bg_style_colourise()
+						tauon.show_message(_("Enabled auto theme"))
 
 				if keymaps.test("transfer-playtime-to"):
 					if (
@@ -56298,13 +56954,26 @@ def main(holder: Holder) -> None:
 				tauon.deco.unload()
 
 			if prefs.transparent_mode:
-				colours.apply_transparency()
+				colours.apply_transparency(full=prefs.transparent_mode == 2)
 
 			prefs.theme_name = gui.theme_name
 
 			# logging.info("Theme number: " + str(prefs.theme))
 			gui.reload_theme = False
 			ddt.text_background_colour = colours.playlist_panel_background
+			# Re-apply art-bg panel translucency to the fresh colour objects
+			gui.update_layout = True
+
+			# With Colourise active, scan the current track's art over the
+			# freshly loaded theme right away instead of waiting for album
+			# art to next be drawn (cached temp themes embed the previous
+			# base theme, so drop them)
+			if prefs.colour_from_image:
+				gui.theme_temp_current = -1
+				gui.temp_themes.clear()
+				colourise_track = pctl.playing_object()
+				if colourise_track:
+					tauon.album_art_gen.display(colourise_track, (0, 0), (50, 50), theme_only=True)
 
 		# ---------------------------------------------------------------------------------------------------------
 		# GUI DRAWING------
@@ -56341,6 +57010,13 @@ def main(holder: Holder) -> None:
 			sdl3.SDL_RenderClear(renderer)
 			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
 			sdl3.SDL_RenderClear(renderer)
+
+			# Blurred album art background: drawn first so all panels and
+			# text composite on top of it (panel colours are made translucent
+			# in update_layout_do while this is active)
+			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN
+			if gui.have_art_bg:
+				tauon.style_overlay.display(background=True)
 
 			# tauon.perf_timer.set()
 			gui.update_on_drag = False
@@ -56757,23 +57433,13 @@ def main(holder: Holder) -> None:
 					if not gui.custom_mode:
 						render_column_bar_draw()
 
-					# Switch Vis:
+					# Window menu (covers the whole empty top-panel area,
+					# including the visualiser at the far right)
 					if (
-						inp.right_click
-						and tauon.coll(
-							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
-						)
-						and not gui.top_bar_mode2
-					):
-						tauon.vis_menu.activate(
-							None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale)
-						)
-					elif (
 						inp.right_click
 						and tauon.top_panel.tabs_right_x < inp.mouse_position[0]
 						and inp.mouse_position[1] < gui.panelY
-						and inp.mouse_position[0] > tauon.top_panel.tabs_right_x
-						and inp.mouse_position[0] < window_size[0] - 130 * gui.scale - gui.offset_extra
+						and inp.mouse_position[0] < window_size[0] - gui.offset_extra
 					):
 						tauon.window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
 
@@ -56963,7 +57629,8 @@ def main(holder: Holder) -> None:
 							y = gui.panelY
 							w = gui.rspw
 
-							ddt.clear_rect((x, y, w, h))
+							if not gui.have_art_bg:
+								ddt.clear_rect((x, y, w, h))
 							ddt.rect((x, y, w, h), colours.side_panel_background)
 							tauon.test_auto_lyrics(target_track)
 							# Draw lyrics if available
@@ -57296,14 +57963,8 @@ def main(holder: Holder) -> None:
 				else:
 					tauon.bottom_bar1.render()
 
-				if prefs.art_bg:
-					tauon.style_overlay.display()
-					# if inp.key_shift_down:
-					#     ddt.rect_r(gui.seek_bar_rect,
-					#                alpha_mod([150, 150, 150 ,255], 20), True)
-					#     ddt.rect_r(gui.volume_bar_rect,
-					#                alpha_mod(colours.volume_bar_fill, 100), True)
-
+				# (The blurred art background is now drawn at the start of the
+				# frame, underneath the UI, rather than composited over it here)
 				tauon.style_overlay.hole_punches.clear()
 
 				# Custom Layout System: composite over the standard layout once
@@ -57312,25 +57973,25 @@ def main(holder: Holder) -> None:
 				if gui.custom_mode:
 					tauon.custom.render()
 
-					# The top-panel visualiser is drawn over the custom layout at
-					# the window's far right (absolute coords). Its right-click
-					# "switch visualiser" menu is normally handled in the standard
-					# top-panel input pass, which is skipped in custom mode — and
+					# The window menu is normally opened in the standard top-panel
+					# input pass, which is skipped in custom mode — and
 					# custom.handle_input() neutralised the click earlier in the
 					# frame, only restoring it inside custom.render() above. Handle
-					# it here (view mode only) so the menu works in custom layouts.
-					if (
-						not gui.custom_edit
-						and inp.right_click
-						and tauon.coll(
+					# it here (view mode only): the empty Header Bar widget area
+					# right of the tabs (segment coords + reframed tabs_right_x),
+					# plus the visualiser strip, which is drawn over the layout at
+					# the window's far right (absolute coords).
+					if not gui.custom_edit and inp.right_click:
+						over_vis = tauon.coll(
 							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
-						)
-						and not gui.top_bar_mode2
-					):
-						tauon.vis_menu.activate(
-							None, (window_size[0] - 100 * gui.scale - gui.offset_extra, 30 * gui.scale)
-						)
-						inp.right_click = False
+						) and not gui.top_bar_mode2
+						tpr = tauon.custom.top_panel_rect()
+						over_panel = tpr is not None and tauon.coll((
+							tpr[0] + tauon.top_panel.tabs_right_x, tpr[1],
+							tpr[2] - tauon.top_panel.tabs_right_x, tpr[3]))
+						if over_vis or over_panel:
+							tauon.window_menu.activate(None, (inp.mouse_position[0], inp.mouse_position[1]))
+							inp.right_click = False
 
 				if gui.set_mode:
 					if (
@@ -58368,6 +59029,7 @@ def main(holder: Holder) -> None:
 							pctl.jump(pctl.default_playlist[pctl.selected_in_playlist], pctl.selected_in_playlist)
 							if prefs.album_mode:
 								tauon.goto_album(pctl.playlist_playing_position)
+				tauon.touch_input_tracker.draw_update()
 			elif gui.mode == GuiMode.MINI:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == MiniModeMode.TAB:
@@ -58923,8 +59585,12 @@ def main(holder: Holder) -> None:
 					vis_update = False
 
 					sdl3.SDL_SetRenderTarget(renderer, gui.spec2_tex)
+					# Replace-blend: vis_bg may be translucent (frosted art
+					# bg) and old column pixels must not show through it
+					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect([gui.spec2_position, i, 1, 1], colours.vis_bg)
+					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 					del gui.spec2_buffers[0]
 
@@ -59010,8 +59676,11 @@ def main(holder: Holder) -> None:
 				if not gui.test:
 					sdl3.SDL_SetRenderTarget(renderer, gui.spec1_tex)
 
-					# ddt.rect_r(gui.spec_rect, colours.top_panel_background, True)
+					# Replace-blend: vis_bg may be translucent (frosted art
+					# bg) and the texture persists between frames
+					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 					ddt.rect((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg)
+					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 					# xx = 0
 					gui.bar.x = 0
@@ -59076,7 +59745,14 @@ def main(holder: Holder) -> None:
 				y = 0
 
 				gui.spec_level_rec.x = round(x - 70 * gui.scale)
-				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), colours.grey(10))
+				# Frosted art bg: translucent backing (replace-blend, since
+				# the texture persists between frames)
+				level_bg = colours.grey(10)
+				if gui.have_art_bg and prefs.art_bg_frosted:
+					level_bg = ColourRGBA(10, 10, 10, 115)
+				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), level_bg)
+				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale

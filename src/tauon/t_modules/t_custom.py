@@ -92,6 +92,10 @@ class Widget:
 	# When True the engine routes the widget through the offscreen scratch
 	# texture before compositing (for widgets that may draw out of bounds).
 	offscreen: bool = True
+	# Whether the leaf hosting this widget has the engine's segment border on;
+	# set by _draw_leaf before each draw so widgets that paint their own border
+	# (e.g. the Art Box) can skip it rather than double up.
+	leaf_border: bool = False
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		raise NotImplementedError
@@ -132,7 +136,8 @@ class ArtBoxWidget(Widget):
 		cm = tauon.custom
 		dragging = cm.drag is not None or cm.widget_drag is not None
 		tauon.art_box.draw(round(x), round(y), round(w), round(h),
-			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging)
+			target_track=tauon.pctl.show_object(), inset=False, quick_draw=dragging,
+			draw_border=not self.leaf_border)
 
 
 class MilkDropWidget(Widget):
@@ -166,12 +171,13 @@ class MilkDropWidget(Widget):
 		track = tauon.pctl.show_object()
 		hover = tauon.coll(rect) and tauon.is_level_zero(False)
 
-		if not tauon.prefs.milk:
+		if not tauon.prefs.milk or not tauon.milky.available:
+			text = _t("MilkDrop is disabled") if tauon.milky.available else _t("MilkDrop is unavailable")
 			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			ddt.text(
 				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
-				_t("MilkDrop is disabled"), ColourRGBA(110, 110, 110, 255), 212,
+				text, ColourRGBA(110, 110, 110, 255), 212,
 				max_w=rect[2] - round(8 * gui.scale))
 			if hover and inp.right_click:
 				tauon.milky_menu.activate(in_reference=track)
@@ -1875,6 +1881,12 @@ class CustomLayout:
 		body.resizable = True
 		return self._bars(body)
 
+	def ensure_loaded(self) -> None:
+		"""Load the slot lists from disk if they haven't been yet (the settings
+		card reads and edits them without entering custom mode)."""
+		if not self._loaded:
+			self.load_slots()
+
 	def ensure_slot(self) -> Node:
 		if not self._loaded:
 			self.load_slots()
@@ -2317,10 +2329,46 @@ class CustomLayout:
 		self.gui.request_frame()
 
 	def act_delete_slot(self) -> None:
-		"""Delete the active slot (its layout, name and columns config). The
-		list never goes empty — deleting the last slot leaves one fresh empty
-		slot. Stays in custom mode, showing the next slot."""
-		i = self.active_slot
+		"""Delete the active slot. Stays in custom mode, showing the next slot."""
+		self.delete_slot(self.active_slot)
+
+	def add_slot(self) -> None:
+		"""Append a fresh empty slot without switching to it (the settings
+		card's New Empty Slot; act_new_slot is the in-custom-mode variant
+		that also switches)."""
+		self.ensure_loaded()
+		self.slots.append(None)
+		self.slot_names.append(None)
+		self.slot_columns.append(None)
+		self.save_slots()
+		self._refresh_layout_menu()
+
+	def move_slot(self, i: int, delta: int) -> None:
+		"""Swap slot ``i`` with a neighbour (reorders the layout menu).
+		active_slot and the live-columns owner follow their slots."""
+		self.ensure_loaded()
+		j = i + delta
+		if i == j or not (0 <= i < len(self.slots) and 0 <= j < len(self.slots)):
+			return
+		for lst in (self.slots, self.slot_names, self.slot_columns):
+			lst[i], lst[j] = lst[j], lst[i]
+
+		def follow(v: int) -> int:
+			return j if v == i else i if v == j else v
+		self.active_slot = follow(self.active_slot)
+		if self._columns_owner is not None:
+			self._columns_owner = follow(self._columns_owner)
+		self.save_slots()
+		self._refresh_layout_menu()
+
+	def delete_slot(self, i: int) -> None:
+		"""Delete slot ``i`` (its layout, name and columns config). The list
+		never goes empty — deleting the last slot leaves one fresh empty slot.
+		Works on any slot, in or out of custom mode."""
+		self.ensure_loaded()
+		if not 0 <= i < len(self.slots):
+			return
+		was_owner = self._columns_owner == i
 		del self.slots[i]
 		del self.slot_names[i]
 		del self.slot_columns[i]
@@ -2328,17 +2376,24 @@ class CustomLayout:
 			self.slots = [None]
 			self.slot_names = [None]
 			self.slot_columns = [None]
-		self.active_slot = min(i, len(self.slots) - 1)
-		self.ensure_slot()
-		# gui currently holds the deleted slot's columns; discard them and
-		# adopt the new active slot's directly (going through
-		# _activate_columns would stash the dead config somewhere live).
-		cfg = self.slot_columns[self.active_slot]
-		if cfg is None:
-			cfg = self._copy_columns(self._preset_columns or self._capture_columns())
-			self.slot_columns[self.active_slot] = cfg
-		self._apply_columns(cfg)
-		self._columns_owner = self.active_slot
+		if self._columns_owner is not None and self._columns_owner > i:
+			self._columns_owner -= 1
+		if self.active_slot > i:
+			self.active_slot -= 1
+		else:
+			self.active_slot = min(self.active_slot, len(self.slots) - 1)
+		if was_owner:
+			# The deleted slot was the one being viewed: gui currently holds
+			# its columns; discard them and adopt the new active slot's
+			# directly (going through _activate_columns would stash the dead
+			# config somewhere live).
+			self.ensure_slot()
+			cfg = self.slot_columns[self.active_slot]
+			if cfg is None:
+				cfg = self._copy_columns(self._preset_columns or self._capture_columns())
+				self.slot_columns[self.active_slot] = cfg
+			self._apply_columns(cfg)
+			self._columns_owner = self.active_slot
 		self.save_slots()
 		self._refresh_layout_menu()
 		self.gui.request_tracklist_redraw()
@@ -2844,6 +2899,40 @@ class CustomLayout:
 	def _t_border_off(self, ref=None) -> bool:
 		return self.menu_target is not None and not self.menu_target.border
 
+	def top_panel_rect(self) -> tuple[float, float, float, float] | None:
+		"""The active layout's Header Bar (top panel) widget content rect, or
+		None when custom mode is off / no top panel is placed. Used by the main
+		loop's window-menu right-click fallback, which needs the panel's real
+		on-screen geometry (the widget itself renders reframed to a (0,0)
+		origin).
+		"""
+		if not self.gui.custom_mode:
+			return None
+		root = self.slots[self.active_slot]
+		if root is None:
+			return None
+		for lf in iter_leaves(root):
+			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
+				return content_rect(lf, self.gui.scale)
+		return None
+
+	def tracklist_rect(self) -> tuple[int, int, int, int] | None:
+		"""The active layout's Tracklist widget segment rect as last drawn, or
+		None when custom mode is off / no tracklist is placed / it hasn't drawn
+		yet. Column sizing (Auto Resize, update_set) runs from menu callbacks
+		outside the widget's draw, where gui.plw holds the preset width — this
+		gives those the real segment geometry.
+		"""
+		if not self.gui.custom_mode:
+			return None
+		root = self.slots[self.active_slot]
+		if root is None:
+			return None
+		for lf in iter_leaves(root):
+			if isinstance(lf, Leaf) and isinstance(lf.widget, TracklistWidget):
+				return lf.widget._last_rect
+		return None
+
 	def gallery_locate(self, playlist_no: int, highlight: bool = False, force: bool = False) -> bool:
 		"""Locate an album in a custom-layout gallery widget (Gallery: Classic /
 		Compact) the way the preset gallery's show-playing does: run
@@ -2952,7 +3041,14 @@ class CustomLayout:
 			inp.mouse_position[0], inp.mouse_position[1] = mx, my
 		self._held_mouse = None
 
-		ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
+		# Cover the standard layout rendered underneath. With the art
+		# background active the panel colour carries alpha and would let the
+		# standard UI ghost through, so lay down the opaque base + blurred
+		# art again and let the translucent widget fills blend over that.
+		if gui.have_art_bg:
+			tauon.style_overlay.display(background=True)
+		else:
+			ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
 
 		root = self.ensure_slot()
 		# Make sure the active slot's columns config is applied. Covers a restart
@@ -2961,6 +3057,9 @@ class CustomLayout:
 		if self._columns_owner != self.active_slot:
 			self._activate_columns(self.active_slot)
 		layout(root, 0, 0, ww, wh, gui.scale)
+
+		if gui.have_art_bg:
+			self._draw_art_bg_veil(root, ww, wh)
 
 		# The MilkDrop Box widget owns the (singleton) visualiser while it is in
 		# the layout: gates the ArtBox / MetaBox milk paths off so both never
@@ -3087,43 +3186,60 @@ class CustomLayout:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
 			for l in iter_leaves(root))
 
+	def _leaf_paint_rect(self, leaf: Leaf) -> tuple[float, float, float, float] | None:
+		"""The rect the leaf's widget actually paints: the content rect snapped
+		to whole pixels, inset by padding, shrunk to a centred square for aspect
+		leaves. None when nothing paints (empty segment, or below the widget's
+		minimum size — _draw_leaf fills those itself). Shared between _draw_leaf
+		and the art-background veil so its holes can't drift from the widgets."""
+		widget = leaf.widget
+		if widget is None:
+			return None
+		gui = self.gui
+		cx, cy, cw, ch = content_rect(leaf, gui.scale)
+		# Snap to whole pixels up front so the border (drawn by _draw_leaf at
+		# these exact coords) and the widget's own draw rect land on the same
+		# edges. Widgets like the Art Box round their rect independently (and
+		# blit the visualiser at those rounded coords); with a fractional cx/cy
+		# that rounding pushed the art/visualiser a pixel past the float border
+		# — flush at padding 0, but a 1px overhang here, a 1px gap once padded.
+		cx, cy, cw, ch = round(cx), round(cy), round(cw), round(ch)
+		# Padding: inset the widget's drawable rect inside the border (which is
+		# drawn at cx/cy/cw/ch). Clamped so it can never invert on tiny segments.
+		pad = leaf.padding * gui.scale
+		px = min(pad, cw / 2)
+		py = min(pad, ch / 2)
+		dx, dy, dw, dh = cx + px, cy + py, cw - px * 2, ch - py * 2
+		if dw < widget.min_w * gui.scale or dh < widget.min_h * gui.scale:
+			return None
+		if leaf.aspect:
+			# Keep a square content region (Art Box-style), centred.
+			side = min(dw, dh)
+			dx = cx + (cw - side) / 2
+			dy = cy + (ch - side) / 2
+			dw = dh = side
+		return dx, dy, dw, dh
+
 	def _draw_leaf(self, leaf: Leaf, interactive: bool) -> None:
 		tauon = self.tauon
 		gui = self.gui
 		ddt = self.ddt
 		cx, cy, cw, ch = content_rect(leaf, gui.scale)
-		# Snap to whole pixels up front so the border (drawn below at these exact
-		# coords) and the widget's own draw rect land on the same edges. Widgets
-		# like the Art Box round their rect independently (and blit the visualiser
-		# at those rounded coords); with a fractional cx/cy that rounding pushed the
-		# art/visualiser a pixel past the float border — flush at padding 0, but a
-		# 1px overhang here, a 1px gap once padded.
 		cx, cy, cw, ch = round(cx), round(cy), round(cw), round(ch)
 		widget = leaf.widget
 
 		if widget is None:
 			return  # empty segment: just background
 
-		# Padding: inset the widget's drawable rect inside the border (which is
-		# drawn at cx/cy/cw/ch). Clamped so it can never invert on tiny segments.
-		pad = leaf.padding * gui.scale
-		px = min(pad, cw / 2)
-		py = min(pad, ch / 2)
-		pcx, pcy, pcw, pch = cx + px, cy + py, cw - px * 2, ch - py * 2
-
-		if pcw < widget.min_w * gui.scale or pch < widget.min_h * gui.scale:
+		widget.leaf_border = leaf.border
+		paint = self._leaf_paint_rect(leaf)
+		if paint is None:
 			ddt.rect((cx, cy, cw, ch), ColourRGBA(40, 20, 20, 255))
 			ddt.text_background_colour = ColourRGBA(40, 20, 20, 255)
 			ddt.text((round(cx + cw / 2), round(cy + ch / 2) - 8 * gui.scale, 2),
 				"Size too small", ColourRGBA(200, 120, 120, 255), 211)
 		else:
-			dx, dy, dw, dh = pcx, pcy, pcw, pch
-			if leaf.aspect:
-				# Keep a square content region (Art Box-style), centred.
-				side = min(dw, dh)
-				dx = cx + (cw - side) / 2
-				dy = cy + (ch - side) / 2
-				dw = dh = side
+			dx, dy, dw, dh = paint
 			if not widget.offscreen:
 				widget.draw(tauon, dx, dy, dw, dh)
 			else:
@@ -3230,6 +3346,39 @@ class CustomLayout:
 		src = sdl3.SDL_FRect(0, 0, iw, ih)
 		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
 		sdl3.SDL_RenderTexture(renderer, scratch, src, dst)
+
+	def _draw_art_bg_veil(self, root: Node, ww: int, wh: int) -> None:
+		"""Dim the art background between widgets. Widgets dim their own rects
+		with translucent panel fills, but the gutters, border gaps and empty
+		segments have no fill and would show the art at full brightness. Fill
+		the scratch texture with the panel colour, punch zero-alpha holes at
+		each widget's painted rect, and composite over the art — one continuous
+		veil, so the gaps match widget interiors with no bright seams.
+
+		Runs after layout() (the holes need the leaf rects) and before the
+		leaves draw, so the offscreen widgets are free to reuse the scratch
+		texture afterwards."""
+		renderer = self.renderer
+		veil = self._get_scratch()
+		sdl3.SDL_SetRenderTarget(renderer, veil)
+		# Blend NONE writes store the exact straight-alpha colour (and zeros in
+		# the holes) for the texture's BLENDMODE_BLEND composite below
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		colour = self.tauon.colours.playlist_panel_background
+		sdl3.SDL_SetRenderDrawColor(renderer, colour.r, colour.g, colour.b, colour.a)
+		area = sdl3.SDL_FRect(0, 0, ww, wh)
+		sdl3.SDL_RenderFillRect(renderer, area)
+		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		for leaf in iter_leaves(root):
+			if not isinstance(leaf, Leaf):
+				continue
+			paint = self._leaf_paint_rect(leaf)
+			if paint is None:
+				continue
+			sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(paint[0], paint[1], paint[2], paint[3]))
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderTarget(renderer, self.gui.main_texture)
+		sdl3.SDL_RenderTexture(renderer, veil, area, area)
 
 	def _get_scratch(self):
 		"""Lazily create (and resize) the offscreen scratch texture, kept separate

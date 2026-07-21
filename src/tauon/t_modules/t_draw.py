@@ -456,7 +456,7 @@ class TDraw:
 		force_gray = self.force_gray
 		# real_bg = True
 
-		if bg.a < 200:
+		if bg.a < 246:
 			alpha_bg = True
 			force_gray = True
 
@@ -583,7 +583,7 @@ class TDraw:
 			if force_gray:
 				options = context.get_font_options()
 				options.set_antialias(cairo.ANTIALIAS_GRAY)
-				# options.set_hint_style(cairo.HINT_STYLE_NONE)
+				options.set_hint_style(cairo.HINT_STYLE_SLIGHT)
 				context.set_font_options(options)
 			elif self.force_subpixel_text:
 				options = context.get_font_options()
@@ -644,6 +644,13 @@ class TDraw:
 			y_off = round(round(y_off) - 13 * self.scale)  # 13 for compat with way text position used to work
 
 			PangoCairo.show_layout(context, layout)
+
+			# A second, partial-strength pass over the translucent path boosts
+			# partial-coverage AA edge pixels (adding weight without touching
+			# metrics); 0.25 alpha keeps it subtle rather than a full re-draw
+			if force_gray:
+				context.set_source_rgba(colour.r / 255, colour.g / 255, colour.b / 255, 0.25)
+				PangoCairo.show_layout(context, layout)
 
 			self.was_truncated = layout.is_ellipsized()
 			surf.flush()

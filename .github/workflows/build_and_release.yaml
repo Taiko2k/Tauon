@@ -136,8 +136,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      - name: brew update and upgrade
-        run: brew update && brew upgrade
+      - name: brew update
+        run: brew untap aws/tap && brew update
 
       - name: Install brew dependencies
         run: |
