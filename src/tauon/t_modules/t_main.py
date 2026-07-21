@@ -45435,7 +45435,7 @@ class SmoothScroll:
 				self.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
 			return self.step_motion(scroll_source)
 		elif self.coll(scroll_area):
-			return self.scroll(scroll_source, coeff)
+			return -self.scroll(scroll_source, coeff)
 		else:
 			return 0.0
 
