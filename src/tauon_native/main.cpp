@@ -6,6 +6,7 @@
 #include <cerrno>
 #include <charconv>
 #include <cctype>
+#include <cstring>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -22,6 +23,8 @@
 #include <windows.h>
 #else
 #include <dlfcn.h>
+#include <fcntl.h>
+#include <unistd.h>
 #endif
 
 namespace {
@@ -71,6 +74,9 @@ struct NativeState {
 	WindowState window_state;
 	bool sdl_initialised = false;
 	bool hidden = false;
+#if !defined(_WIN32)
+	int instance_lock_fd = -1;
+#endif
 };
 
 NativeState* g_state = nullptr;
@@ -155,6 +161,56 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 		return std::filesystem::path(home) / ".local" / "share" / "TauonMusicBox";
 	}
 	return std::filesystem::current_path() / "user-data";
+}
+
+enum class InstanceLockResult {
+	Acquired,
+	AlreadyRunning,
+	Unavailable,
+};
+
+InstanceLockResult acquire_instance_lock(NativeState& state, const char* executable_argument) {
+#if defined(_WIN32)
+	// Windows still uses the legacy Python-side lock. Keep the native path
+	// functional there until the launcher has a matching Win32 lock.
+	(void)state;
+	(void)executable_argument;
+	return InstanceLockResult::Unavailable;
+#else
+	state.user_data_directory = user_data_directory(executable_argument);
+	std::error_code error;
+	std::filesystem::create_directories(state.user_data_directory, error);
+	if (error) {
+		std::cerr << "Tauon: unable to create user data directory for instance lock: " << error.message() << '\n';
+		return InstanceLockResult::Unavailable;
+	}
+
+	const std::filesystem::path lock_path = state.user_data_directory / "program.pid";
+	state.instance_lock_fd = open(lock_path.c_str(), O_WRONLY | O_CREAT, 0600);
+	if (state.instance_lock_fd == -1) {
+		std::cerr << "Tauon: unable to open instance lock " << lock_path << ": " << std::strerror(errno) << '\n';
+		return InstanceLockResult::Unavailable;
+	}
+
+	struct flock lock {};
+	lock.l_type = F_WRLCK;
+	lock.l_whence = SEEK_SET;
+	if (fcntl(state.instance_lock_fd, F_SETLK, &lock) == -1) {
+		const int lock_error = errno;
+		close(state.instance_lock_fd);
+		state.instance_lock_fd = -1;
+		if (lock_error == EACCES || lock_error == EAGAIN) {
+			return InstanceLockResult::AlreadyRunning;
+		}
+		std::cerr << "Tauon: unable to acquire instance lock " << lock_path << ": " << std::strerror(lock_error) << '\n';
+		return InstanceLockResult::Unavailable;
+	}
+
+	ftruncate(state.instance_lock_fd, 0);
+	const std::string pid = std::to_string(getpid()) + '\n';
+	write(state.instance_lock_fd, pid.data(), pid.size());
+	return InstanceLockResult::Acquired;
+#endif
 }
 
 std::optional<std::size_t> json_value_position(const std::string& document, std::string_view key) {
@@ -486,13 +542,23 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 	return true;
 }
 
-void shutdown_native_app(NativeState& state) {
+void shutdown_native_sdl(NativeState& state) {
 	state.renderer.reset();
 	state.window.reset();
 	if (state.sdl_initialised) {
 		SDL_Quit();
 		state.sdl_initialised = false;
 	}
+}
+
+void shutdown_native_app(NativeState& state) {
+	shutdown_native_sdl(state);
+#if !defined(_WIN32)
+	if (state.instance_lock_fd != -1) {
+		close(state.instance_lock_fd);
+		state.instance_lock_fd = -1;
+	}
+#endif
 }
 
 PyObject* bridge_is_active(PyObject*, PyObject*) {
@@ -584,7 +650,7 @@ bool prepend_python_path(const std::filesystem::path& directory) {
 	return result == 0;
 }
 
-int run_python(int argc, char** argv) {
+int run_python(NativeState& state, int argc, char** argv, bool transfer_to_existing_instance = false) {
 	if (PyImport_AppendInittab("tauon_native", &PyInit_tauon_native) == -1) {
 		std::cerr << "Tauon: failed to register the native Python bridge\n";
 		return 1;
@@ -621,6 +687,11 @@ int run_python(int argc, char** argv) {
 			"renderer = ctypes.cast(tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))\n"
 			"assert sdl3.SDL_GetWindowID(window) > 0\n"
 			"assert sdl3.SDL_GetRendererName(renderer) is not None\n"
+			"window_count = ctypes.c_int()\n"
+			"windows = sdl3.SDL_GetWindows(ctypes.byref(window_count))\n"
+			"assert window_count.value == 1\n"
+			"assert ctypes.addressof(windows[0].contents) == tauon_native.window_address()\n"
+			"sdl3.SDL_free(windows)\n"
 			"state_path = Path(tauon_native.user_data_directory()) / 'window-state.json'\n"
 			"if state_path.is_file():\n"
 			"    state = json.loads(state_path.read_text(encoding='utf-8'))\n"
@@ -635,14 +706,24 @@ int run_python(int argc, char** argv) {
 			exit_code = 1;
 		}
 	} else {
-		const char* launch_tauon =
-			"import runpy\n"
-			"runpy.run_module('tauon.__main__', run_name='__main__')\n";
+		const char* launch_tauon = transfer_to_existing_instance
+			? "import runpy\n"
+			  "import os\n"
+			  "os.environ['TAUON_FORWARD_ARGS_ONLY'] = '1'\n"
+			  "runpy.run_module('tauon.__main__', run_name='__main__')\n"
+			: "import runpy\n"
+			  "runpy.run_module('tauon.__main__', run_name='__main__')\n";
 		if (PyRun_SimpleString(launch_tauon) != 0) {
 			PyErr_Print();
 			exit_code = 1;
 		}
 	}
+	// SDL's Wayland backend can dispatch callbacks registered by PySDL3 while
+	// destroying the renderer and window.  Those callbacks use ctypes, so SDL
+	// must be torn down before Py_FinalizeEx() releases Python's callback
+	// machinery.  Doing this afterwards causes a use-after-finalize segfault.
+	shutdown_native_sdl(state);
+	g_state = nullptr;
 	if (Py_FinalizeEx() < 0 && exit_code == 0) {
 		exit_code = 120;
 	}
@@ -654,13 +735,20 @@ int run_python(int argc, char** argv) {
 int main(int argc, char** argv) {
 	NativeState state;
 	g_state = &state;
+	const InstanceLockResult instance_lock = acquire_instance_lock(state, argv[0]);
+	if (instance_lock == InstanceLockResult::AlreadyRunning || has_argument(argc, argv, "--no-start")) {
+		const int exit_code = run_python(state, argc, argv, true);
+		shutdown_native_app(state);
+		g_state = nullptr;
+		return exit_code;
+	}
 	if (!initialise_native_app(state, argc, argv)) {
 		shutdown_native_app(state);
 		g_state = nullptr;
 		return 1;
 	}
 
-	const int exit_code = run_python(argc, argv);
+	const int exit_code = run_python(state, argc, argv);
 	shutdown_native_app(state);
 	g_state = nullptr;
 	return exit_code;
