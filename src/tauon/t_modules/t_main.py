@@ -41997,6 +41997,7 @@ try:
 		GL_LINEAR,
 		GL_LINK_STATUS,
 		GL_PACK_ALIGNMENT,
+		GL_PIXEL_UNPACK_BUFFER,
 		GL_RGBA,
 		GL_TEXTURE0,
 		GL_TEXTURE_2D,
@@ -42006,6 +42007,14 @@ try:
 		GL_TEXTURE_WRAP_S,
 		GL_TEXTURE_WRAP_T,
 		GL_TRIANGLES,
+		GL_UNPACK_ALIGNMENT,
+		GL_UNPACK_IMAGE_HEIGHT,
+		GL_UNPACK_LSB_FIRST,
+		GL_UNPACK_ROW_LENGTH,
+		GL_UNPACK_SKIP_IMAGES,
+		GL_UNPACK_SKIP_PIXELS,
+		GL_UNPACK_SKIP_ROWS,
+		GL_UNPACK_SWAP_BYTES,
 		GL_UNSIGNED_BYTE,
 		GL_VERSION,
 		GL_VERTEX_ARRAY_BINDING,
@@ -42013,6 +42022,7 @@ try:
 		GL_VIEWPORT,
 		glActiveTexture,
 		glAttachShader,
+		glBindBuffer,
 		glBindFramebuffer,
 		glBindTexture,
 		glBindVertexArray,
@@ -42295,6 +42305,25 @@ class ProjectM:
 		if self.renderer_gl_context:
 			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.renderer_gl_context)
 
+	@staticmethod
+	def prepare_opengl() -> None:
+		"""Reset pixel-unpack state inherited from SDL before projectM uploads textures.
+
+		projectM 4.1.6 only overrides GL_UNPACK_ALIGNMENT while uploading its
+		embedded textures. SDL's renderer can leave row-length/skip state or a
+		pixel-unpack buffer bound, causing projectM's 256x256 noise upload to
+		read beyond its 256 KiB source buffer inside Mesa.
+		"""
+		glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0)
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 1)
+		glPixelStorei(GL_UNPACK_ROW_LENGTH, 0)
+		glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0)
+		glPixelStorei(GL_UNPACK_LSB_FIRST, 0)
+		glPixelStorei(GL_UNPACK_SKIP_PIXELS, 0)
+		glPixelStorei(GL_UNPACK_SKIP_ROWS, 0)
+		glPixelStorei(GL_UNPACK_SKIP_IMAGES, 0)
+		glPixelStorei(GL_UNPACK_SWAP_BYTES, 0)
+
 	def init(self, width: int = 800, height: int = 600, preset_path=None) -> bool:
 		"""Initialize projectM with basic settings"""
 		if not self.lib:
@@ -42334,6 +42363,8 @@ class ProjectM:
 			self.lib_error = True
 			self.lib = None
 			return False
+
+		self.prepare_opengl()
 
 		# Create projectM instance
 		try:
@@ -42429,6 +42460,7 @@ class ProjectM:
 			# Not initialised (visualiser off or unavailable); the preset is
 			# remembered in prefs and loads on next init
 			return
+		self.prepare_opengl()
 		self.lib.projectm_load_preset_file(self.pm_instance, str(preset).encode("utf-8"), fade)
 		self.log_preset_load_event("LOADED_OK", preset, fade)
 		self.auto_frames = 0
@@ -42602,12 +42634,23 @@ class Milky:
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
-			context = sdl3.SDL_GL_GetCurrentContext()
-			if context:
-				sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
 			saved_target = sdl3.SDL_GetRenderTarget(self.renderer)
 			sdl3.SDL_SetRenderTarget(self.renderer, None)
 			sdl3.SDL_FlushRenderer(self.renderer)
+			context = sdl3.SDL_GL_GetCurrentContext()
+			if not context:
+				logging.error("Cannot initialize projectM: SDL has no current OpenGL context")
+				sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
+				self.projectm.lib_error = True
+				return
+			# SDL may create or switch its GL context while submitting queued work.
+			# Capture it after the flush and make it current immediately before
+			# projectM creates GL resources; a stale context crashes Mesa here.
+			if not sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context):
+				logging.error(f"Cannot initialize projectM: {sdl3.SDL_GetError()}")
+				sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
+				self.projectm.lib_error = True
+				return
 			saved_fbo_init = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
 			glBindFramebuffer(GL_FRAMEBUFFER, 0)
 			self.projectm.load_library()
