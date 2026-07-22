@@ -13,9 +13,9 @@ Keywords=Music;MP3;OGG;FLAC;OPUS;Convert;Stream;Podcast;Playlist;Last.fm;PHAzOR;
 Keywords[pt_BR]=Música;MP3;OGG;FLAC;OPUS;Converter;Transmissão;Podcast;Playlist;Last.fm;PHAzOR;Rádio;
 Name=Tauon
 Name[pt_BR]=Tauon
-Exec=tauon %U
+Exec=tauonmb %U
 Icon=tauonmb
-MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u;application/xspf+xml
+MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mpeg;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u;application/xspf+xml
 StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
@@ -25,17 +25,17 @@ Actions=PlayPause;Previous;Next;Stop
 X-GNOME-UsesNotifications=true
 
 [Desktop Action PlayPause]
-Exec=tauon --no-start --play-pause
+Exec=tauon playpause
 Name=Play/Pause
 
 [Desktop Action Previous]
-Exec=tauon --no-start --previous
+Exec=tauon prev
 Name=Previous Track
 
 [Desktop Action Next]
-Exec=tauon --no-start --next
+Exec=tauon next
 Name=Next Track
 
 [Desktop Action Stop]
-Exec=tauon --no-start --stop
+Exec=tauon stop
 Name=Stop

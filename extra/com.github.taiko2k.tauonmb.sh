@@ -43,6 +43,9 @@ while [[ "$#" -gt 0 ]]; do
     echo -e "${RED}${BOLD}Error:${RESTORE} Unknown option: $1" >&2
     usage
     ;;
+  file://* | /*)
+    exec python3 /app/bin/src/tauon/__main__.py "$@"
+    ;;
   *)
     COMMAND=$1
     shift
@@ -52,7 +55,7 @@ while [[ "$#" -gt 0 ]]; do
 done
 
 if [ -z "$COMMAND" ]; then
-  python3 /app/bin/src/tauon/__main__.py "$@"
+	exec python3 /app/bin/src/tauon/__main__.py "$@"
 fi
 
 case "$COMMAND" in
