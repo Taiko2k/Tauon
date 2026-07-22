@@ -3,8 +3,10 @@
 `tauon-native` is the C++17 entrypoint for Tauon. It owns SDL initialisation,
 the main window, the renderer, the first loading-screen frame, and final SDL
 shutdown. The window is created hidden, painted, explicitly shown, and
-synchronized with the platform compositor before it embeds CPython and
-executes `tauon.__main__`.
+synchronized with the platform compositor before it dynamically loads
+`tauon-python-host`. That host library links and initializes CPython, registers
+the bridge, and executes `tauon.__main__`; the launcher itself does not link
+Python and therefore does not load it before the splash is visible.
 
 The built-in `tauon_native` Python module exposes the bootstrap window and
 renderer to the existing Python UI. PySDL3 is still used as a transitional
@@ -24,6 +26,10 @@ cmake -S . -B build/native \
 cmake --build build/native --parallel
 ./build/native/tauon-native
 ```
+
+The build produces the adjacent `tauon-native` executable and
+`tauon-python-host` shared library. Set `TAUON_PYTHON_HOST_PATH` to override the
+host-library location when developing or packaging a different layout.
 
 The build embeds the source and Python site-packages locations selected by
 CMake. Packaging can override them at runtime with `TAUON_PYTHONPATH` and
