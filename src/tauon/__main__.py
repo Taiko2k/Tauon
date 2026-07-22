@@ -20,7 +20,6 @@ import ctypes
 import ctypes.util
 import logging
 import os
-import pickle
 import subprocess
 import sys
 from ctypes import c_int, pointer
@@ -33,6 +32,18 @@ sys.path.insert(0, str(install_directory.parent))
 
 from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
 from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
+from tauon.t_modules.t_window_state import WINDOW_STATE_FILENAME, WindowState, load_window_state  # noqa: E402
+
+try:
+	import tauon_native as _tauon_native
+except ImportError:
+	_tauon_native = None
+
+native_bootstrap = bool(
+	_tauon_native is not None
+	and callable(getattr(_tauon_native, "is_active", None))
+	and _tauon_native.is_active()
+)
 
 pyinstaller_mode = bool(
 	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
@@ -212,6 +223,9 @@ else:
 	# logging.info("Running in portable mode")
 	user_directory = install_directory / "user-data"
 
+if native_bootstrap:
+	user_directory = Path(_tauon_native.user_data_directory())
+
 debug = bool((user_directory / "debug").is_file())
 
 # INFO+ to std_err
@@ -308,6 +322,15 @@ os.environ["SDL_FIND_BINARIES"] = "1"
 if pyinstaller_mode:
 	os.environ["SDL_FIND_BINARIES"]            = "0" # Disable binary searching,                   "1"        by default.
 
+if native_bootstrap:
+	# PySDL3 remains a transitional compatibility layer while its call sites are
+	# migrated to tauon_native. It must resolve symbols from the exact SDL shared
+	# library that created the native window and renderer.
+	native_sdl_library = _tauon_native.sdl_library_path()
+	if native_sdl_library:
+		os.environ["SDL_BINARY_PATH"] = str(Path(native_sdl_library).parent)
+	os.environ["SDL_FIND_BINARIES"] = "0"
+
 os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
 os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
 os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
@@ -324,7 +347,8 @@ if sethint_result is None:
 	)
 	sys.exit(1)
 
-set_sdl_app_metadata()
+if not native_bootstrap:
+	set_sdl_app_metadata()
 
 sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
 sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
@@ -352,28 +376,22 @@ if phone:
 maximized = False
 old_window_position: tuple[int, int] | None = None
 
-window_p = user_directory / "window.p"
-if window_p.is_file() and not fs_mode:
+window_state_path = user_directory / WINDOW_STATE_FILENAME
+if window_state_path.is_file() and not fs_mode:
 	try:
-		state_file = window_p.open("rb")
-		save = pickle.load(state_file)
-		state_file.close()
-
-		draw_border = save[0]
-		window_size = save[1]
-		w, h = save[1]
-		if 100 < w < 10000 and 100 < h < 5000:
-			logical_size[0], logical_size[1] = w, h
-		window_opacity = save[2]
-		scale = save[3]
-		maximized = save[4]
-		old_window_position = save[5]
-		del save
-
-	except Exception:
-		logging.exception("Corrupted window state file?! Please restart app!")
-		window_p.unlink()
-		sys.exit(1)
+		window_state = load_window_state(
+			window_state_path,
+			WindowState(width=w, height=h, scale=scale),
+		)
+		draw_border = window_state.borderless
+		window_size = [window_state.width, window_state.height]
+		logical_size = [window_state.width, window_state.height]
+		window_opacity = window_state.opacity
+		scale = window_state.scale
+		maximized = window_state.maximized
+		old_window_position = window_state.position
+	except (OSError, ValueError):
+		logging.exception("Ignoring invalid window state file: %s", window_state_path)
 else:
 	logging.info("No window state file")
 
@@ -395,7 +413,8 @@ else:
 # 	except Exception:
 # 		logging.exception("Failed to set cursor")
 
-sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
+if not native_bootstrap:
+	sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
 
 err = sdl3.SDL_GetError()
 if err and "GLX" in err.decode():
@@ -430,13 +449,18 @@ if "--tray" in sys.argv:
 	flags |= sdl3.SDL_WINDOW_HIDDEN
 
 
-t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
-	window_title,
-	# o_x, o_y,
-	logical_size[0],
-	logical_size[1],
-	flags,
-)
+if native_bootstrap:
+	t_window = ctypes.cast(_tauon_native.window_address(), ctypes.POINTER(sdl3.SDL_Window))
+	sdl3.SDL_SetWindowBordered(t_window, not draw_border)
+	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+else:
+	t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
+		window_title,
+		# o_x, o_y,
+		logical_size[0],
+		logical_size[1],
+		flags,
+	)
 
 if not t_window:
 	logging.error("ERROR CREATING WINDOW!")
@@ -470,6 +494,9 @@ if not t_window:
 			logging.critical(f"Failed to find {x11_path} but got 'x11 not available' error, hm?")
 			sys.exit(1)
 
+if old_window_position is not None and not fs_mode:
+	sdl3.SDL_SetWindowPosition(t_window, old_window_position[0], old_window_position[1])
+
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
@@ -485,17 +512,20 @@ while True:
 logging.debug(f"SDL available drivers: {drivers}")
 logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
 
-driver = None
-if b"opengl" in drivers:
-	driver = b"opengl"
+if native_bootstrap:
+	renderer = ctypes.cast(_tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))
+else:
+	driver = None
+	if b"opengl" in drivers:
+		driver = b"opengl"
 
-renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
-if not renderer and driver == b"opengl":
-	renderer_error = sdl3.SDL_GetError()
-	logging.warning(f"Failed to create OpenGL renderer: {renderer_error}")
-	logging.warning("Trying SDL default renderer")
-	sdl3.SDL_ClearError()
-	renderer = sdl3.SDL_CreateRenderer(t_window, None)
+	renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
+	if not renderer and driver == b"opengl":
+		renderer_error = sdl3.SDL_GetError()
+		logging.warning(f"Failed to create OpenGL renderer: {renderer_error}")
+		logging.warning("Trying SDL default renderer")
+		sdl3.SDL_ClearError()
+		renderer = sdl3.SDL_CreateRenderer(t_window, None)
 
 if not renderer:
 	logging.error("ERROR CREATING RENDERER!")
@@ -593,6 +623,7 @@ holder = Holder(
 	dev_mode=dev_mode,
 	instance_lock=fp,
 	log=log,
+	native_bootstrap=native_bootstrap,
 )
 
 del flags

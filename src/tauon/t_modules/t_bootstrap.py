@@ -43,4 +43,5 @@ class Holder:
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
+	native_bootstrap:       bool # The C++ launcher owns SDL shutdown and the main window/renderer lifetime
 	# fmt:on

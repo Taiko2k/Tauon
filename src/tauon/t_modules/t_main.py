@@ -201,6 +201,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
+from tauon.t_modules.t_window_state import WINDOW_STATE_FILENAME, WindowState, serialize_window_state
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
@@ -19361,18 +19362,18 @@ class Tauon:
 			if not prefs.save_window_position:
 				old_position = None
 
-			save = [
-				self.draw_border,
-				gui.save_size,
-				prefs.window_opacity,
-				gui.scale,
-				gui.maximized,
-				old_position,
-			]
-
 			if not self.fs_mode:
-				with atomic_save(self.user_directory / "window.p") as file:
-					pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+				window_state = WindowState(
+					width=gui.save_size[0],
+					height=gui.save_size[1],
+					opacity=prefs.window_opacity,
+					scale=gui.scale,
+					borderless=self.draw_border,
+					maximized=gui.maximized,
+					position=old_position,
+				)
+				with atomic_save(self.user_directory / WINDOW_STATE_FILENAME, "w") as file:
+					file.write(serialize_window_state(window_state))
 
 			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
 				json.dump(prefs.lyrics_subs, file)
@@ -58770,7 +58771,8 @@ def main(holder: Holder) -> None:
 	ddt.clear_text_cache()
 	tauon.clear_img_cache(False)
 
-	sdl3.SDL_DestroyWindow(t_window)
+	if not holder.native_bootstrap:
+		sdl3.SDL_DestroyWindow(t_window)
 
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
@@ -58843,7 +58845,8 @@ def main(holder: Holder) -> None:
 
 	# sdl3.IMG_Quit()
 	# sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
-	sdl3.SDL_Quit()
+	if not holder.native_bootstrap:
+		sdl3.SDL_Quit()
 	# logging.info("SDL unloaded")
 
 	exit_timer = Timer()
