@@ -305,6 +305,12 @@ void configure_python_sdl_loader(const NativeState& state) {
 	if (!state.sdl_library_path.empty()) {
 		set_environment("SDL_BINARY_PATH", state.sdl_library_path.parent_path().string());
 	}
+	// PySDL3 normally installs an atexit handler that enters SDL's Python main
+	// wrapper.  tauon-native already owns the process main function and tears
+	// down the SDL objects after CPython has finalized, so letting that handler
+	// run re-enters SDL during interpreter shutdown and can dereference state
+	// that is already being finalized.
+	set_environment("SDL_MAIN_NOIMPL", "1");
 	set_environment("SDL_FIND_BINARIES", "0");
 	set_environment("SDL_DISABLE_METADATA", "1");
 	set_environment("SDL_CHECK_VERSION", "0");
@@ -606,9 +612,11 @@ int run_python(int argc, char** argv) {
 		const char* smoke_test =
 			"import ctypes\n"
 			"import json\n"
+			"import os\n"
 			"from pathlib import Path\n"
 			"import sdl3\n"
 			"import tauon_native\n"
+			"assert os.environ.get('SDL_MAIN_NOIMPL') == '1'\n"
 			"window = ctypes.cast(tauon_native.window_address(), ctypes.POINTER(sdl3.SDL_Window))\n"
 			"renderer = ctypes.cast(tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))\n"
 			"assert sdl3.SDL_GetWindowID(window) > 0\n"
