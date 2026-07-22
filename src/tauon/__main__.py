@@ -196,7 +196,7 @@ def transfer_args_and_exit() -> None:
 	sys.exit()
 
 
-if "--no-start" in sys.argv:
+if "--no-start" in sys.argv or os.environ.get("TAUON_FORWARD_ARGS_ONLY") == "1":
 	transfer_args_and_exit()
 
 ## TODO(Martin): This code is partially duped in t_main.py
