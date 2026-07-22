@@ -1,6 +1,6 @@
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
 #include <SDL3/SDL.h>
-
-#include "host_api.h"
 
 #include <cmath>
 #include <cerrno>
@@ -72,6 +72,8 @@ struct NativeState {
 	bool sdl_initialised = false;
 	bool hidden = false;
 };
+
+NativeState* g_state = nullptr;
 
 std::filesystem::path linked_sdl_library_path() {
 #if defined(_WIN32)
@@ -459,10 +461,9 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 			std::cerr << "Tauon: failed to show the startup window: " << SDL_GetError() << '\n';
 			return false;
 		}
-		// A window created with SDL_WINDOW_HIDDEN is not necessarily activated
-		// when it is later shown. Request foreground focus explicitly so normal
-		// launches behave like SDL_CreateWindow() with an initially visible
-		// window. Compositors may decline the request; that is not fatal.
+		// A window created hidden is not treated like a newly created visible
+		// application window by every backend. Explicitly request focus now that
+		// the splash is mapped, matching the legacy Python startup path.
 		if (!SDL_RaiseWindow(state.window.get())) {
 			std::cerr << "Tauon: startup window focus request was declined: " << SDL_GetError() << '\n';
 		}
@@ -488,65 +489,155 @@ void shutdown_native_app(NativeState& state) {
 	}
 }
 
-std::filesystem::path executable_directory(const char* executable_argument) {
-	std::error_code error;
-	const std::filesystem::path executable = std::filesystem::weakly_canonical(executable_argument, error);
-	if (!error) {
-		return executable.parent_path();
-	}
-	return std::filesystem::absolute(executable_argument).parent_path();
+PyObject* bridge_is_active(PyObject*, PyObject*) {
+	return PyBool_FromLong(g_state != nullptr ? 1 : 0);
 }
 
-int run_python_host(const NativeState& state, int argc, char** argv) {
-	std::filesystem::path host_path;
-	if (const char* override_path = std::getenv("TAUON_PYTHON_HOST_PATH")) {
-		host_path = override_path;
+PyObject* bridge_window_address(PyObject*, PyObject*) {
+	if (g_state == nullptr || !g_state->window) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's native window is unavailable");
+		return nullptr;
+	}
+	return PyLong_FromVoidPtr(g_state->window.get());
+}
+
+PyObject* bridge_renderer_address(PyObject*, PyObject*) {
+	if (g_state == nullptr || !g_state->renderer) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's native renderer is unavailable");
+		return nullptr;
+	}
+	return PyLong_FromVoidPtr(g_state->renderer.get());
+}
+
+PyObject* bridge_sdl_library_path(PyObject*, PyObject*) {
+	if (g_state == nullptr || g_state->sdl_library_path.empty()) {
+		Py_RETURN_NONE;
+	}
+	return PyUnicode_DecodeFSDefault(g_state->sdl_library_path.string().c_str());
+}
+
+PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
+	if (g_state == nullptr || g_state->user_data_directory.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's user data directory is unavailable");
+		return nullptr;
+	}
+	return PyUnicode_DecodeFSDefault(g_state->user_data_directory.string().c_str());
+}
+
+PyMethodDef bridge_methods[] = {
+	{"is_active", bridge_is_active, METH_NOARGS, "Return whether Tauon is running under the native bootstrap."},
+	{"window_address", bridge_window_address, METH_NOARGS, "Return the transitional native SDL_Window address."},
+	{"renderer_address", bridge_renderer_address, METH_NOARGS, "Return the transitional native SDL_Renderer address."},
+	{"sdl_library_path", bridge_sdl_library_path, METH_NOARGS, "Return the SDL library used by the native executable."},
+	{"user_data_directory", bridge_user_data_directory, METH_NOARGS, "Return Tauon's native-resolved user data directory."},
+	{nullptr, nullptr, 0, nullptr},
+};
+
+PyModuleDef bridge_module = {
+	PyModuleDef_HEAD_INIT,
+	"tauon_native",
+	"Bridge to Tauon's native SDL bootstrap.",
+	-1,
+	bridge_methods,
+	nullptr,
+	nullptr,
+	nullptr,
+	nullptr,
+};
+
+PyMODINIT_FUNC PyInit_tauon_native() {
+	return PyModule_Create(&bridge_module);
+}
+
+std::filesystem::path source_directory() {
+	if (const char* override_path = std::getenv("TAUON_PYTHONPATH")) {
+		return std::filesystem::path(override_path);
+	}
+	return std::filesystem::path(TAUON_SOURCE_DIR);
+}
+
+std::filesystem::path python_site_packages_directory() {
+	if (const char* override_path = std::getenv("TAUON_PYTHON_SITE_PACKAGES")) {
+		return std::filesystem::path(override_path);
+	}
+	return std::filesystem::path(TAUON_PYTHON_SITE_PACKAGES);
+}
+
+bool prepend_python_path(const std::filesystem::path& directory) {
+	if (directory.empty()) {
+		return true;
+	}
+	PyObject* sys_path = PySys_GetObject("path");
+	PyObject* path = PyUnicode_DecodeFSDefault(directory.string().c_str());
+	if (sys_path == nullptr || path == nullptr) {
+		Py_XDECREF(path);
+		return false;
+	}
+	const int result = PyList_Insert(sys_path, 0, path);
+	Py_DECREF(path);
+	return result == 0;
+}
+
+int run_python(int argc, char** argv) {
+	if (PyImport_AppendInittab("tauon_native", &PyInit_tauon_native) == -1) {
+		std::cerr << "Tauon: failed to register the native Python bridge\n";
+		return 1;
+	}
+
+	PyConfig config;
+	PyConfig_InitPythonConfig(&config);
+	config.parse_argv = 0;
+	PyStatus status = PyConfig_SetBytesArgv(&config, argc, argv);
+	if (!PyStatus_Exception(status)) {
+		status = Py_InitializeFromConfig(&config);
+	}
+	PyConfig_Clear(&config);
+	if (PyStatus_Exception(status)) {
+		std::cerr << "Tauon: Python initialisation failed: "
+			<< (status.err_msg != nullptr ? status.err_msg : "unknown error") << '\n';
+		return 1;
+	}
+
+	int exit_code = 0;
+	if (!prepend_python_path(python_site_packages_directory()) || !prepend_python_path(source_directory())) {
+		PyErr_Print();
+		exit_code = 1;
+	} else if (has_argument(argc, argv, "--native-smoke-test")) {
+		const char* smoke_test =
+			"import ctypes\n"
+			"import json\n"
+			"from pathlib import Path\n"
+			"import sdl3\n"
+			"import tauon_native\n"
+			"window = ctypes.cast(tauon_native.window_address(), ctypes.POINTER(sdl3.SDL_Window))\n"
+			"renderer = ctypes.cast(tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))\n"
+			"assert sdl3.SDL_GetWindowID(window) > 0\n"
+			"assert sdl3.SDL_GetRendererName(renderer) is not None\n"
+			"state_path = Path(tauon_native.user_data_directory()) / 'window-state.json'\n"
+			"if state_path.is_file():\n"
+			"    state = json.loads(state_path.read_text(encoding='utf-8'))\n"
+			"    if not state.get('maximized', False):\n"
+			"        width, height = ctypes.c_int(), ctypes.c_int()\n"
+			"        assert sdl3.SDL_GetWindowSize(window, ctypes.byref(width), ctypes.byref(height))\n"
+			"        assert (width.value, height.value) == (state['width'], state['height'])\n"
+			"    borderless = bool(sdl3.SDL_GetWindowFlags(window) & sdl3.SDL_WINDOW_BORDERLESS)\n"
+			"    assert borderless == state.get('borderless', True)\n";
+		if (PyRun_SimpleString(smoke_test) != 0) {
+			PyErr_Print();
+			exit_code = 1;
+		}
 	} else {
-		host_path = executable_directory(argv[0]) / TAUON_PYTHON_HOST_FILENAME;
+		const char* launch_tauon =
+			"import runpy\n"
+			"runpy.run_module('tauon.__main__', run_name='__main__')\n";
+		if (PyRun_SimpleString(launch_tauon) != 0) {
+			PyErr_Print();
+			exit_code = 1;
+		}
 	}
-
-#if defined(_WIN32)
-	HMODULE library = LoadLibraryW(host_path.wstring().c_str());
-	if (library == nullptr) {
-		std::cerr << "Tauon: failed to load Python host: " << host_path << '\n';
-		return 1;
+	if (Py_FinalizeEx() < 0 && exit_code == 0) {
+		exit_code = 120;
 	}
-	auto host_run = reinterpret_cast<TauonPythonHostRun>(GetProcAddress(library, "tauon_python_host_run"));
-#else
-	void* library = dlopen(host_path.c_str(), RTLD_NOW | RTLD_GLOBAL);
-	if (library == nullptr) {
-		std::cerr << "Tauon: failed to load Python host " << host_path << ": " << dlerror() << '\n';
-		return 1;
-	}
-	auto host_run = reinterpret_cast<TauonPythonHostRun>(dlsym(library, "tauon_python_host_run"));
-#endif
-	if (host_run == nullptr) {
-		std::cerr << "Tauon: Python host is missing tauon_python_host_run: " << host_path << '\n';
-#if defined(_WIN32)
-		FreeLibrary(library);
-#else
-		dlclose(library);
-#endif
-		return 1;
-	}
-
-	const std::string sdl_library_path = state.sdl_library_path.string();
-	const std::string user_directory_path = state.user_data_directory.string();
-	const TauonPythonHostContext context{
-		TAUON_PYTHON_HOST_ABI_VERSION,
-		state.window.get(),
-		state.renderer.get(),
-		sdl_library_path.c_str(),
-		user_directory_path.c_str(),
-		TAUON_SOURCE_DIR,
-		TAUON_PYTHON_SITE_PACKAGES,
-	};
-	const int exit_code = host_run(&context, argc, argv);
-#if defined(_WIN32)
-	FreeLibrary(library);
-#else
-	dlclose(library);
-#endif
 	return exit_code;
 }
 
@@ -554,12 +645,15 @@ int run_python_host(const NativeState& state, int argc, char** argv) {
 
 int main(int argc, char** argv) {
 	NativeState state;
+	g_state = &state;
 	if (!initialise_native_app(state, argc, argv)) {
 		shutdown_native_app(state);
+		g_state = nullptr;
 		return 1;
 	}
 
-	const int exit_code = run_python_host(state, argc, argv);
+	const int exit_code = run_python(argc, argv);
 	shutdown_native_app(state);
+	g_state = nullptr;
 	return exit_code;
 }
