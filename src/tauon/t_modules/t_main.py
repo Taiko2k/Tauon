@@ -22432,6 +22432,7 @@ class MultiLineTextBox:
 		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
 
 		if autoscroll:
+			self.map_lines()
 			return self.get_scroll_output(scroll, headroom, height)
 		return 0
 
@@ -46024,7 +46025,10 @@ class TimedLyricsEdit:
 		chooser_bar = self.tauon.pref_box.settings_segmented_bar
 
 		w = 500 * gui.scale
-		h = 200 * gui.scale
+		if self.view_is_synced:
+			h = 200 * gui.scale
+		else:
+			h = 130 * gui.scale
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
@@ -46126,14 +46130,14 @@ class TimedLyricsEdit:
 				_("(Specifically the Lyrics metadata field)"),
 				click=self.inp.mouse_click and nomb
 			)
-			if self.prefs.save_lyrics_changes_to_files:
-				y += row_h + row_gap
-				ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
-			else:
-				y += row_h + row_gap
-				y += round(20*self.gui.scale)
+			# if self.prefs.save_lyrics_changes_to_files:
+			# 	y += row_h + row_gap
+			# 	ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
+			# else:
+			# 	y += row_h + row_gap
+			# 	y += round(20*self.gui.scale)
 
-			y += row_h + row_gap
+			y += row_h + row_gap + round(2*gui.scale)
 
 			self.prefs.show_lyrics_save_menu = st.toggle_square(
 				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
@@ -46144,7 +46148,7 @@ class TimedLyricsEdit:
 
 			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
 				self.show_save_dialog = False
-				self.save()
+				self.save(False)
 
 			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
 				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
