@@ -58771,6 +58771,17 @@ def main(holder: Holder) -> None:
 	ddt.clear_text_cache()
 	tauon.clear_img_cache(False)
 
+	# Tray entries hold ctypes callbacks as well. Destroy the tray before this
+	# function drops Tauon's references to those callbacks.
+	if tauon.sdl_tray is not None:
+		tauon.destroy_sdl_tray()
+
+	# SDL can synchronously invoke the hit-test callback while the Wayland
+	# backend tears down the window. The native bootstrap destroys the window
+	# after this function returns, at which point c_hit_callback would no longer
+	# keep the Python callback alive. Clear it while its closure is still valid.
+	sdl3.SDL_SetWindowHitTest(t_window, ctypes.cast(None, sdl3.SDL_HitTest), None)
+
 	if not holder.native_bootstrap:
 		sdl3.SDL_DestroyWindow(t_window)
 
