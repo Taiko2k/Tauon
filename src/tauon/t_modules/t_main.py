@@ -21983,6 +21983,7 @@ class MultiLineTextBox:
 				text = highlight_info[1]
 				self.ddt.text(pos, text, text_color, self.font, bg=highlight_color)
 
+
 	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
 		test_y = self.pixel_position_from_cursor_position()[1] - scroll
 		scroll_output = 0
@@ -22046,7 +22047,7 @@ class MultiLineTextBox:
 		return ""
 
 	def draw(
-			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13,
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, font: int = 13,
 			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
 			headroom: int = 0, scroll: int = 0) -> int:
 		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
@@ -22195,6 +22196,7 @@ class MultiLineTextBox:
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
+			# up and down to switch lines
 			if self.inp.key_up_press:
 				autoscroll = True
 				if self.which_line_by_char(self.cursor_position) != 0:
@@ -22313,21 +22315,15 @@ class MultiLineTextBox:
 				self.down_lock = False
 			if self.down_lock:
 				text = self.text
-				if secret:
-					text = "●" * len(self.text)
 				if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
 					self.cursor_position = len(self.text)
 				else:
 					self.set_cursor_from_click(scroll, True)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
-			if secret:
-				text = "●" * len(text)
 			a = self.ddt.get_text_w(text, font)
 
 			text = self.text[0: len(self.text) - self.selection]
-			if secret:
-				text = "●" * len(text)
 			b = self.ddt.get_text_w(text, font)
 
 			top = self.y
@@ -22338,38 +22334,16 @@ class MultiLineTextBox:
 
 			self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
-
-			# 	inf_comp = 0
-			# 	text = self.get_selection(0)
-			# 	if secret:
-			# 		text = "●" * len(text)
-			# 	space = self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
-			# 	text = self.get_selection(1)
-			# 	if secret:
-			# 		text = "●" * len(text)
-			# 	space += self.ddt.text((0 + space - inf_comp, headroom-scroll, 4, width, 40000), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255), max_w=width)
-			# 	text = self.get_selection(2)
-			# 	if secret:
-			# 		text = "●" * len(text)
-			# 	self.ddt.text((0 + space - (inf_comp * 2), headroom-scroll, 4, width, 40000), text, colour, font, max_w=width)
-			# else:
-				# no selection
-
-
 			text = self.text
-			if secret:
-				text = "●" * len(text)
 			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
 
 			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
-			if secret:
-				text = "●" * len(text)
 			space = self.ddt.get_text_w(text, font)
 
 			line = self.which_line_by_char(self.cursor_position)
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
-				self.ddt.rect((0 + space, line*self.text_height  + headroom-scroll, 1 * self.gui.scale, 14 * self.gui.scale), colour)
+				self.ddt.rect((0 + space, line*self.text_height  + headroom-scroll - 0.2*self.text_height, 1 * self.gui.scale, 0.8*self.text_height), colour)
 
 			if click:
 				self.selection = self.cursor_position
@@ -22380,11 +22354,9 @@ class MultiLineTextBox:
 		else:
 			width -= round(15 * self.gui.scale)
 			text = self.text
-			if secret:
-				text = "●" * len(text)
 			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
-			logging.info("this")
-			self.ddt.text((0, headroom-scroll,4,2,1), text, colour, font, max_w=width)
+			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
+			# self.ddt.text((0, headroom-scroll,4,2,1), text, colour, font, max_w=width)
 			self.offset = 0
 			if self.coll(rect) and not self.tauon.field_menu.active:
 				self.gui.cursor_want = 2
@@ -46388,7 +46360,10 @@ class TimedLyricsEdit:
 					# we don't want to upload any synced lyrics to LRCLIB
 					# that are not actually synced properly
 				track.lyrics = lyrics
-				if save_tags and self.tauon.write_lyrics(track, False, True):
+				logging.info(save_tags)
+				saved = self.tauon.write_lyrics(track, False, True)
+				logging.info(saved)
+				if save_tags and saved:
 					if over:
 						self.tauon.show_message(
 							_("Unsynced lyrics saved successfully"),
@@ -46830,6 +46805,7 @@ class TimedLyricsEdit:
 
 	def update_edit_point(self, text_coll: tuple[int, int, int, int], full_coll: tuple[int, int, int, int]) -> tuple[tuple[int,int], bool]:
 		ctf = False
+		not_cleared_already = self.edit_point is not None
 		if self.inp.mouse_click:
 			if self.coll(text_coll): # set edit point if clicking in text
 				self.edit_point = copy.deepcopy(self.inp.mouse_position)
@@ -46838,11 +46814,11 @@ class TimedLyricsEdit:
 				ctf = False # overengineered as fuck but now we can click a timestamp but can't instanly delete shit
 			else:
 				self.edit_point = None
-				ctf = True
+				ctf = True and not_cleared_already
 		if self.inp.key_esc_press:
 			self.edit_point = None
 			self.inp.key_esc_press = False
-			ctf = True
+			ctf = True and not_cleared_already
 		return self.edit_point if self.edit_point is not None else self.inp.mouse_position, ctf
 
 	def get_edit_point(self) -> tuple[int, int]:
@@ -46866,8 +46842,9 @@ class TimedLyricsEdit:
 		# scroll
 		old_scroll_pos = self.scroll_position
 		if not (self.inp.key_lalt or self.inp.key_ralt):
-			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(x,y,w,h),30*self.gui.scale)
-			self.recenter_timeout.set()
+			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(0,y,self.window_size[0],h),30*self.gui.scale)
+			if old_scroll_pos != self.scroll_position:
+				self.recenter_timeout.set()
 
 		highlight = True
 
@@ -46977,7 +46954,13 @@ class TimedLyricsEdit:
 		)
 
 		# column headers
-		if len(self.structure) < 2:
+		# first we check if we have any real timestamps
+		has_timestamps = True
+		for line in self.structure:
+			if line[1] < 0 and line[0] != "tag":
+				has_timestamps = False
+				break
+		if len(self.structure) < 2 or not has_timestamps:
 			tsw = self.ddt.get_text_w(_("Timestamps"), self.font, True)
 			if playing:
 				text_color = self.faded_active_color
@@ -47076,7 +47059,7 @@ class TimedLyricsEdit:
 						elif self.gui.panelY > position[1]: # scroll up
 							self.scroll_position -= min(position[1] - self.gui.panelY, 0) - self.yy
 							self.edit_point = (self.edit_point[0], self.edit_point[1] - min(position[1] - self.gui.panelY, 0) + self.yy)
-						self.text_leftovers = self.inp.input_text
+						self.text_leftovers = self.inp.input_text # we can't put what they typed into the text box now so save it for next frame
 
 			# KEYBOARD SHORTCUTS
 			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
@@ -47133,15 +47116,15 @@ class TimedLyricsEdit:
 				self.ddt.get_text_w(_("⇧"), self.font),
 				max( self.ddt.get_text_w(_("TIME⏎"), self.big_font), self.ddt.get_text_w(_("TIME+"), self.big_font), self.ddt.get_text_w(_("TIME⇨"), self.big_font)),
 				self.ddt.get_text_w("🖫", self.font),
-				self.ddt.get_text_w(_("Save to .lrc"), self.font),
-				self.ddt.get_text_w(_("Save to tags"), self.font),
-				self.ddt.get_text_w("🗑", self.font),
-				self.ddt.get_text_w("   ", self.font)
+				# self.ddt.get_text_w(_("Save to .lrc"), self.font),
+				# self.ddt.get_text_w(_("Save to tags"), self.font),
+				self.ddt.get_text_w("🗑", self.font),#6
+				self.ddt.get_text_w("   ", self.font)#7
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
 				buttons_x = 10*self.gui.scale
-				x_gap = 18*self.gui.scale #min( self.yy, (self.window_size[0]-sum(widths))/4 )
+				x_gap = 18*self.gui.scale
 			else:
 				buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 				buttons_x = 25*self.gui.scale
@@ -47167,14 +47150,13 @@ class TimedLyricsEdit:
 				self.view_is_synced = False
 				self.queue_next_frame = True
 			self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
-			buttons_x += widths[7] + x_gap
+			buttons_x += widths[5] + x_gap
 
 			# SAVE AND DISCARD
 			gn = copy.deepcopy(self.colours.level_green)
 			gn.a = round(gn.a * 0.3)
 			saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
 			if saving is not None:
-				#self.save()
 				if self.prefs.show_lyrics_save_menu or saving==False:
 					self.show_save_dialog = True
 					self.inp.mouse_click = False
@@ -47196,7 +47178,7 @@ class TimedLyricsEdit:
 			rd.a = round(rd.a * 0.3)
 			if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 				self.structurize_current(self.pctl.master_library[self.struct_track])
-			buttons_x += widths[6] + x_gap
+			buttons_x += widths[4] + x_gap
 
 			if not hide_art:
 				btx_top: float = 25*self.gui.scale
@@ -47232,10 +47214,10 @@ class TimedLyricsEdit:
 			else:
 				x_pos = btx_top
 
+			# the giant TIME button. most important thing in the whole window
 			off = self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)
 			advance, advance_rect = self.button(text, x_pos, bty_top, self.big_font,
 				off=off, big=True, return_rect=True)
-
 			match advance:
 				case True:
 					self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
@@ -47249,7 +47231,9 @@ class TimedLyricsEdit:
 							self.previous( max(test_time-5, 0, prev) )
 					elif self.coll(advance_rect) and self.inp.mouse_click:
 						self.pctl.play() # wht a terrible bit of code
+						# if user clicks the giant TIME button while it's grayed out, start playing
 
+			# lyrics search status
 			if btx_top + widths[2] + x_gap + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
 				btx_top = (25 - 15*hide_art) * self.gui.scale
 				bty_top -= self.yy+10*self.gui.scale
@@ -47364,103 +47348,85 @@ class TimedLyricsEdit:
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
 
-
 		x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 		x -= 100 * self.gui.scale
 		w = self.window_size[0] - x - 30 * self.gui.scale
 		y = int(self.gui.panelY)
-		h = int(self.window_size[1] - self.gui.panelBY - self.gui.panelY) #int(self.window_size[1] - 100 * self.gui.scale)
+		h = int(self.window_size[1] - self.gui.panelBY - self.gui.panelY)
 		offset = 20*self.gui.scale
 
+		# scroll
 		old_pos = self.lyrics_position
-		# if self.inp.key_up_press:
-		# 	self.lyrics_position += 35 * self.gui.scale
-		# if self.inp.key_down_press:
-		# 	self.lyrics_position -= 35 * self.gui.scale
 		self.lyrics_position -= self.scroll.get_scroll("lyrics edit", (x,y,w,h), 30*self.gui.scale)
-		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
-
 		tw, th = self.ddt.get_text_wh(self.text + "\n", self.font, w, True)
-
 		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
-		# self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
+
+		# text focus and keyboard shortcuts are mutually exclusive
+		edit_pos, ignore = self.update_edit_point((x,y,w,h),(x,y,w,h))
+		self.gui.timed_lyrics_editing_now = coll_point(edit_pos,(x,y,w,h))
+
+		# main editing functionality
 		self.unsynced_text_box.text = self.text
+		# the draw function returns scroll info for if arrow keys move the cursor offscreen
 		self.lyrics_position -= self.unsynced_text_box.draw(
-			x, y, self.colours.lyrics, True,
-			font = self.font, width = ( w ), height = h, headroom=0,#70*self.gui.scale,
+			x, y, self.colours.lyrics, self.gui.timed_lyrics_editing_now,
+			font = self.font, width = ( w ), height = h, headroom=0,
 			scroll=-self.lyrics_position
 		)
-		# the draw function returns scroll info for if arrow keys move the cursor offscreen
 		self.text = self.unsynced_text_box.text
-		self.gui.timed_lyrics_editing_now = True
 
-
+		# buttons. start by measuring them
 		widths = [
 			self.ddt.get_text_w("   ", self.font),
-			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
-			self.ddt.get_text_w(_("Read Back"), self.font),
-			self.ddt.get_text_w(_("Cancel"), self.font),
 			self.ddt.get_text_w(_("🖫"), self.font),
-			self.ddt.get_text_w(_("Save to tags"), self.font),
 			self.ddt.get_text_w(_("🗑"), self.font),
-			self.ddt.get_text_w(_("Reopen Editor"), self.font)
 		]
 		if hide_art:
 			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
 			buttons_x = 10*self.gui.scale
-			x_gap = 18*self.gui.scale #min( self.yy, (self.window_size[0]-sum(widths))/4 )
+			x_gap = 18*self.gui.scale
 		else:
 			buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 			buttons_x = 25*self.gui.scale
 			x_gap = self.yy
 		save_gap = round(12 * self.gui.scale)
 
-		lyric_file = Path( self.tauon.config_directory / "lyrics-editor" / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-		can_load = lyric_file.is_file()
-
+		# view switcher button
 		if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Synced View")[0]:
 			self.view_is_synced = True
 		self.unsynced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
 		buttons_x += widths[0] + x_gap
 
-		# SAVE AND DISCARD
+		# save button
 		gn = copy.deepcopy(self.colours.level_green)
 		gn.a = round(gn.a * 0.3)
 		saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
 		if saving is not None:
-			#self.save()
-			if self.prefs.show_lyrics_save_menu or saving==False:
+			if self.prefs.show_lyrics_save_menu or saving==False: # happens when right clicking
 				self.show_save_dialog = True
 				self.inp.mouse_click = False
 				self.inp.right_click = False
 				self.inp.level_2_right_click = False
 			else:
 				self.save(False)
-		# if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-		# 	self.save(False)
-		buttons_x += widths[4] + x_gap
+		buttons_x += widths[1] + x_gap
 
-		# if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-		# 	self.save(False, save_to_tags=True)
-		# buttons_x += widths[5] + save_gap
-
+		# discard button
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
 		if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 			self.structurize_current(self.pctl.master_library[self.struct_track])
-		buttons_x += widths[6] + x_gap
+		buttons_x += widths[2] + x_gap
 
+		# lyrics search status
 		if not hide_art:
 			btx_top = 25*self.gui.scale
 			bty_top = buttons_y-self.yy-10*self.gui.scale
 		else:
 			btx_top = buttons_x
 			bty_top = buttons_y
-
-		# if self.button(_("Edit Lyrics"), btx_top, bty_top, self.font, tooltip=_("Opens an external editor."))[0]:
-		# 	self.edit_static()
-		# btx_top += widths[1] + x_gap -7*self.gui.scale
 
 		match self.tauon.now_searching:
 			case "off":
@@ -47479,49 +47445,14 @@ class TimedLyricsEdit:
 				self.test_update()
 				self.tauon.now_searching = "off"
 
-		# if can_load and not self.box_open:
-		# 	# measure box height
-		# 	box_width = 400*self.gui.scale
-		# 	drop_w, text_height = self.ddt.get_text_wh(
-		# 			_("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""),
-		# 			self.font,
-		# 			box_width - 2*offset,
-		# 			True
-		# 		)
-		# 	too_wide = widths[2] + widths[3] + widths[6] + 3*offset > box_width
-		# 	if too_wide:
-		# 		button_height = self.line_height + 28*self.gui.scale + offset/2
-		# 	else:
-		# 		button_height = self.line_height/2 + 14*self.gui.scale
-		# 	box_height = text_height + button_height + offset
-		# 	x, y = self.window_size[0]/2, self.window_size[1]/2
+		# ctrl + s to save
+		if (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_s_press:
+			if self.prefs.show_lyrics_save_menu or (self.inp.key_shift_down or self.inp.key_shiftr_down):
+				self.show_save_dialog = True
+			else:
+				self.save(False)
+			self.inp.key_s_press = False
 
-		# 	rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
-		# 	self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
-		# 	txt = self.colours.box_button_text
-		# 	x0 = rect[0] + offset
-		# 	y0 = rect[1] + offset
-		# 	self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""), txt, self.font)
-
-		# 	y0 += text_height - 7*self.gui.scale
-		# 	x0 = rect[0] + offset
-		# 	if self.button(_("Read Back"), x0, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes."))[0]:
-		# 		self.reload_lyric_file()
-		# 	x0 += offset + widths[2]
-		# 	if self.button(_("Cancel"), x0, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file."))[0]:
-		# 		lyric_file.unlink()
-		# 	if too_wide:
-		# 		x0 = rect[0] + offset/2
-		# 		y0 += self.line_height/2 + 14*self.gui.scale + offset
-		# 	else:
-		# 		x0 += offset + widths[3]
-		# 	if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident."))[0]:
-		# 		if self.tauon.windows:
-		# 			os.startfile(lyric_file)
-		# 		elif self.tauon.macos:
-		# 			subprocess.call(["open", "-t", lyric_file])
-		# 		else:
-		# 			subprocess.call(["xdg-open", lyric_file])
 		if self.show_save_dialog:
 			self.save_dialog()
 
