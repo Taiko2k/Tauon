@@ -6,11 +6,10 @@ shutdown. The window is created hidden, painted, explicitly shown, and
 synchronized with the platform compositor before it embeds CPython and
 executes `tauon.__main__`.
 
-The built-in `tauon_native` Python module exposes the bootstrap window and
-renderer to the existing Python UI. PySDL3 is still used as a transitional
-compatibility layer, but the launcher forces it to resolve symbols from the
-same SDL shared library as the native executable. Python must not destroy the
-main window, renderer, or SDL runtime when `Holder.native_bootstrap` is true.
+The built-in `tauon_native` Python module exposes native event, window,
+renderer, texture, tray, cursor, clipboard, and text-input operations to the
+existing Python UI. Python never loads SDL itself and must not destroy the main
+window, renderer, or SDL runtime.
 
 The native entry point also provides the shell launcher's command and
 single-instance forwarding behavior. Playback and control flags are sent
@@ -42,8 +41,8 @@ For a bridge-only check that does not import the full Tauon application:
 ./build/native/tauon-native --tray --native-smoke-test
 ```
 
-The smoke test imports PySDL3, reconstructs its typed pointers to the
-C++-created window and renderer, and verifies both handles through SDL.
+The smoke test exercises the built-in bridge and verifies the C++-created
+window, renderer, texture upload, secondary-window lifecycle, and event path.
 
 ## Window state
 
@@ -58,7 +57,6 @@ migrated.
 
 ## Migration boundary
 
-The integer address functions in `tauon_native` are deliberately transitional
-and private to the bootstrap. Native `Window`, `Renderer`, `Texture`, and
-`Event` Python types should replace them as SDL call sites are migrated. The
-C++ process remains the sole lifetime owner throughout the transition.
+The integer handles in `tauon_native` are deliberately private to the bridge.
+The C++ process remains the sole SDL runtime owner, while Python-owned
+secondary resources are created and destroyed through explicit native calls.

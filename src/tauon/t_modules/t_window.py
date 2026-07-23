@@ -31,8 +31,7 @@ import ctypes
 import logging
 from typing import TYPE_CHECKING
 
-import sdl3
-
+from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_draw import TDraw
 from tauon.t_modules.t_extra import ColourRGBA
 

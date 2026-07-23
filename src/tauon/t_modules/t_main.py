@@ -84,6 +84,7 @@ from ctypes import (
 )
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import SimpleNamespace
 from typing import TYPE_CHECKING, Literal
 
 import certifi
@@ -96,11 +97,12 @@ import mutagen.mp4
 import mutagen.oggopus
 import mutagen.oggvorbis
 import requests
-import sdl3
 from bs4 import BeautifulSoup
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 from send2trash import send2trash
 from unidecode import unidecode
+
+from tauon.t_modules import t_native as sdl3
 
 builtins._ = lambda x: x
 
@@ -6578,6 +6580,7 @@ class Tauon:
 		self.folder_image_offsets: dict[str, int] = bag.folder_image_offsets
 		self.inp: Input                          = gui.inp
 		self.instance_lock: io.TextIOWrapper[io._WrappedBuffer] | None = holder.instance_lock
+		self.native_bootstrap: bool                = holder.native_bootstrap
 		self.n_version: str                    = holder.n_version
 		self.t_window                     = holder.t_window
 		self.t_title: str                         = holder.t_title
@@ -6638,7 +6641,7 @@ class Tauon:
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
 		self.move_in_progress:       bool = False
 		self.worker2_lock: threading.LockType                 = threading.Lock()
-		self.dummy_event:          sdl3.SDL_Event = sdl3.SDL_Event()
+		self.dummy_event = None
 		self.temp_dest:            sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0)
 		self.text_box_canvas_rect:      sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
 		self.text_box_canvas_hide_rect: sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
@@ -7261,7 +7264,7 @@ class Tauon:
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a track")
 
-	def hit_callback(self, win, point, data):
+	def hit_callback(self, point_x, point_y):
 		gui          = self.gui
 		inp          = self.inp
 		windows         = self.windows
@@ -7270,8 +7273,8 @@ class Tauon:
 		logical_size = self.logical_size
 		window_size  = self.window_size
 
-		x = point.contents.x / logical_size[0] * window_size[0]
-		y = point.contents.y / logical_size[0] * window_size[0]
+		x = point_x / logical_size[0] * window_size[0]
+		y = point_y / logical_size[0] * window_size[0]
 
 		# Special layout modes
 		if gui.mode == GuiMode.MINI:
@@ -9387,10 +9390,10 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def paste_lyrics(self, track_object: TrackClass) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText()
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 			#logging.info(clip)
-			track_object.lyrics = clip.decode("utf-8")
+			track_object.lyrics = clip
 			if self.prefs.save_lyrics_changes_to_files:
 				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
@@ -9484,7 +9487,7 @@ class Tauon:
 			self.lyrics_ren_mini.to_reload = True
 
 	def paste_lyrics_deco(self) -> Decorator:
-		line_colour = self.colours.menu_text if sdl3.SDL_HasClipboardText() else self.colours.menu_text_disabled
+		line_colour = self.colours.menu_text if has_clipboard_text() else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def chord_lyrics_paste_show_test(self, _) -> bool:
@@ -10003,7 +10006,7 @@ class Tauon:
 		line = None
 		if len(self.pctl.cargo) > 0:
 			active = True
-		elif sdl3.SDL_HasClipboardText():
+		elif has_clipboard_text():
 			text = copy_from_clipboard()
 			if text.startswith("/") or "file://" in text:
 				active = True
@@ -12539,14 +12542,14 @@ class Tauon:
 
 	def clip_ar_al(self, index: int) -> None:
 		line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].album
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def clip_ar(self, index: int) -> None:
 		if self.pctl.master_library[index].album_artist:
 			line = self.pctl.master_library[index].album_artist
 		else:
 			line = self.pctl.master_library[index].artist
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def clip_title(self, ref: MenuTrackRef) -> None:
 		n_track = self.pctl.get_track(ref.track_id)
@@ -12555,7 +12558,7 @@ class Tauon:
 			line = n_track.album_artist + " - " + n_track.album
 		else:
 			line = n_track.parent_folder_name
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def lightning_copy(self) -> None:
 		self.s_copy()
@@ -13768,9 +13771,7 @@ class Tauon:
 		(driver override, occluded window) this still caps the loop near the
 		refresh rate instead of letting it spin unbounded."""
 		hz = 0.0
-		mode = sdl3.SDL_GetCurrentDisplayMode(sdl3.SDL_GetDisplayForWindow(self.t_window))
-		if mode:
-			hz = mode.contents.refresh_rate
+		hz = sdl3.get_display_refresh_rate(self.t_window)
 		if not 0 < hz < 1000:
 			hz = 60.0
 		return 0.85 / hz
@@ -15484,7 +15485,7 @@ class Tauon:
 			line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].album
 		else:
 			line = self.pctl.master_library[index].album_artist + " - " + self.pctl.master_library[index].album
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def ser_gen_thread(self, tr: TrackClass) -> None:
 		s_artist = tr.artist
@@ -15528,7 +15529,7 @@ class Tauon:
 	def clip_ar_tr(self, ref: MenuTrackRef) -> None:
 		index = ref.track_id
 		line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].title
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def tidal_copy_album(self, ref: MenuTrackRef) -> None:
 		index = ref.track_id
@@ -20924,7 +20925,9 @@ class Tauon:
 		return self.pctl.pl_to_id(self.pctl.active_playlist_playing)
 
 	def wake(self) -> None:
-		sdl3.SDL_PushEvent(ctypes.byref(self.dummy_event))
+		import tauon_native
+
+		tauon_native.wake_event_loop()
 
 class PlexService:
 
@@ -22570,8 +22573,8 @@ class TextBox2:
 		self.paste_text: str = ""
 
 	def paste(self) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 			self.paste_text = clip
 
 	def copy(self) -> None:
@@ -22579,7 +22582,7 @@ class TextBox2:
 		if not text:
 			text = self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+			copy_to_clipboard(text)
 
 	def set_text(self, text: str) -> None:
 		self.text = text
@@ -22761,7 +22764,7 @@ class TextBox2:
 
 			# Paste via ctrl-v
 			if self.inp.key_ctrl_down and self.inp.key_v_press:
-				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				clip = copy_from_clipboard()
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
@@ -22772,7 +22775,7 @@ class TextBox2:
 			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
 				text = self.get_selection()
 				if text:
-					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+					copy_to_clipboard(text)
 				self.eliminate_selection()
 
 			if self.inp.key_ctrl_down and self.inp.key_a_press:
@@ -22991,8 +22994,8 @@ class TextBox:
 		self.down_lock: bool = False
 
 	def paste(self) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 
 			if "http://" in self.text and "http://" in clip:
 				self.text = ""
@@ -23009,7 +23012,7 @@ class TextBox:
 		if not text:
 			text = self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+			copy_to_clipboard(text)
 
 	def set_text(self, text: str) -> None:
 		self.text = text
@@ -23174,7 +23177,7 @@ class TextBox:
 
 			# Paste via ctrl-v
 			if inp.key_ctrl_down and inp.key_v_press:
-				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				clip = copy_from_clipboard()
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
@@ -23185,7 +23188,7 @@ class TextBox:
 			if inp.key_ctrl_down and inp.key_x_press and len(self.get_selection()) > 0:
 				text = self.get_selection()
 				if text:
-					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+					copy_to_clipboard(text)
 				self.eliminate_selection()
 
 			if inp.key_ctrl_down and inp.key_a_press:
@@ -24886,13 +24889,13 @@ class StyleOverlay:
 			# frames was tried and made things worse: on Metal every
 			# mid-frame SDL_UpdateTexture splits the render pass, turning
 			# one stall into many.)
-			surf = self.surface.contents
+			surf = self.surface
 
 			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
 
 			dst = sdl3.SDL_FRect(-40)
-			dst.w = surf.w
-			dst.h = surf.h
+			dst.w = surf.width
+			dst.h = surf.height
 
 			sdl3.SDL_DestroySurface(self.surface)
 			self.surface = None
@@ -49355,9 +49358,22 @@ def recode(text: str, enc: str) -> str:
 	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
 
 def copy_to_clipboard(text: str) -> None:
+	try:
+		import tauon_native
+		if tauon_native.is_active():
+			tauon_native.set_clipboard_text(text)
+			return
+	except ImportError:
+		pass
 	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
 
 def copy_from_clipboard() -> str:
+	try:
+		import tauon_native
+		if tauon_native.is_active():
+			return tauon_native.get_clipboard_text()
+	except ImportError:
+		pass
 	try:
 		return sdl3.SDL_GetClipboardText().decode()
 	except UnicodeDecodeError:
@@ -49366,6 +49382,15 @@ def copy_from_clipboard() -> str:
 	except Exception:
 		logging.exception("Unknown clipboard text decode error")
 		return ""
+
+def has_clipboard_text() -> bool:
+	try:
+		import tauon_native
+		if tauon_native.is_active():
+			return tauon_native.has_clipboard_text()
+	except ImportError:
+		pass
+	return bool(sdl3.SDL_HasClipboardText())
 
 def field_copy(text_field) -> None:
 	text_field.copy()
@@ -53428,8 +53453,7 @@ def main(holder: Holder) -> None:
 	# Set SDL window drag areas
 	# if system != "Windows":
 
-	c_hit_callback = sdl3.SDL_HitTest(tauon.hit_callback)
-	sdl3.SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
+	sdl3.SDL_SetWindowHitTest(t_window, tauon.hit_callback)
 
 	# --------------------------------------------------------------------------------------------
 
@@ -53636,7 +53660,33 @@ def main(holder: Holder) -> None:
 	# MAIN LOOP
 	# main_loop(tauon)
 
-	event = sdl3.SDL_Event()
+	import tauon_native
+
+	def poll_application_events():
+		"""Yield SDL events without exposing SDL's union layout to Python."""
+		for raw in tauon_native.poll_events():
+			x = raw.get("x", 0.0)
+			y = raw.get("y", 0.0)
+			window_id = raw.get("window_id", 0)
+			yield SimpleNamespace(
+				type=raw["type"],
+				gdevice=SimpleNamespace(which=raw.get("which", 0)),
+				gaxis=SimpleNamespace(axis=raw.get("axis", 0), value=raw.get("value", 0)),
+				gbutton=SimpleNamespace(button=raw.get("button", 0)),
+				drop=SimpleNamespace(data=raw.get("data", b""), x=x, y=y),
+				edit=SimpleNamespace(text=raw.get("text", b"")),
+				text=SimpleNamespace(text=raw.get("text", b"")),
+				motion=SimpleNamespace(windowID=window_id, x=x, y=y),
+				button=SimpleNamespace(windowID=window_id, button=raw.get("button", 0), x=x, y=y),
+				key=SimpleNamespace(key=raw.get("key", 0), scancode=raw.get("scancode", 0)),
+				wheel=SimpleNamespace(y=y, integer_y=raw.get("integer_y", 0)),
+				tfinger=SimpleNamespace(
+					fingerID=raw.get("finger_id", 0), x=x, y=y, dy=raw.get("dy", 0.0)
+				),
+				window=SimpleNamespace(
+					windowID=window_id, data1=raw.get("data1", 0), data2=raw.get("data2", 0)
+				),
+			)
 
 	# ---------------------------------------------------------------------
 	# Player variables
@@ -55415,7 +55465,7 @@ def main(holder: Holder) -> None:
 		inp.mouse_click = False
 		# gui.update = 2
 
-		while sdl3.SDL_PollEvent(ctypes.byref(event)) != 0:
+		for event in poll_application_events():
 			# if event.type == sdl3.SDL_SYSWMEVENT:
 			#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
@@ -56245,7 +56295,7 @@ def main(holder: Holder) -> None:
 			else:
 				tauon.sleep_timer.set()
 			if tauon.sleep_timer.get() > 2:
-				sdl3.SDL_WaitEventTimeout(None, 1000)
+				tauon_native.wait_for_event(1000)
 			continue
 
 		gui.new_playlist_cooldown = False
@@ -60075,14 +60125,9 @@ def main(holder: Holder) -> None:
 	if tauon.sdl_tray is not None:
 		tauon.destroy_sdl_tray()
 
-	# SDL can synchronously invoke the hit-test callback while the Wayland
-	# backend tears down the window. The native bootstrap destroys the window
-	# after this function returns, at which point c_hit_callback would no longer
-	# keep the Python callback alive. Clear it while its closure is still valid.
-	sdl3.SDL_SetWindowHitTest(t_window, ctypes.cast(None, sdl3.SDL_HitTest), None)
-
-	if not holder.native_bootstrap:
-		sdl3.SDL_DestroyWindow(t_window)
+	# Clear the Python hit-test callback while Python and its closure are still
+	# alive; the native bootstrap destroys the window after this function returns.
+	sdl3.SDL_SetWindowHitTest(t_window, None, None)
 
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
@@ -60152,12 +60197,6 @@ def main(holder: Holder) -> None:
 		tauon.instance_lock.close()
 	except Exception:
 		logging.exception("No lock object to close")
-
-	# sdl3.IMG_Quit()
-	# sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
-	if not holder.native_bootstrap:
-		sdl3.SDL_Quit()
-	# logging.info("SDL unloaded")
 
 	exit_timer = Timer()
 	exit_timer.set()

@@ -7,6 +7,7 @@ find_package(SDL3 CONFIG REQUIRED)
 
 add_executable(tauon-native
 	src/tauon_native/main.cpp
+	src/tauon_native/native_render.cpp
 )
 
 target_compile_features(tauon-native PRIVATE cxx_std_17)

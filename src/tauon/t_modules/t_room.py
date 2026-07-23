@@ -22,13 +22,12 @@ Implementation notes:
 """
 from __future__ import annotations
 
-import ctypes
 import math
 import random
 import time
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -106,26 +105,14 @@ class _Batch:
 		if not self.idx:
 			self.verts.clear()
 			return
-		n = len(self.verts)
-		arr = (sdl3.SDL_Vertex * n)()
-		for i, (x, y, u, v, r, g, b, a) in enumerate(self.verts):
-			w = arr[i]
-			w.position.x = x
-			w.position.y = y
-			w.tex_coord.x = u
-			w.tex_coord.y = v
-			c = w.color
-			c.r = r
-			c.g = g
-			c.b = b
-			c.a = a
-		ind = (ctypes.c_int * len(self.idx))(*self.idx)
 		mode = sdl3.SDL_BLENDMODE_ADD if self.additive else sdl3.SDL_BLENDMODE_BLEND
 		if self.texture is not None:
 			sdl3.SDL_SetTextureBlendMode(self.texture, mode)
 		else:
 			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, mode)
-		sdl3.SDL_RenderGeometry(self.renderer, self.texture, arr, n, ind, len(self.idx))
+		sdl3.SDL_RenderGeometry(
+			self.renderer, self.texture, self.verts, len(self.verts), self.idx, len(self.idx)
+		)
 		self.verts.clear()
 		self.idx.clear()
 

@@ -38,7 +38,7 @@ import math
 import time
 from typing import TYPE_CHECKING, Callable
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
 from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time

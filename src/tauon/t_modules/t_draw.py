@@ -18,17 +18,15 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
-import ctypes
 import io
 import logging
 import math
 from collections import OrderedDict
-from ctypes import byref, c_bool, c_float, c_size_t
 from typing import TYPE_CHECKING
 
-import sdl3
 from PIL import Image
 
+from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_extra import ColourRGBA, Timer, alpha_blend, coll_rect
 
 if TYPE_CHECKING:
@@ -98,11 +96,7 @@ class QuickThumbnail:
 		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
 		sdl3.SDL_DestroySurface(self.surface)
 		self.surface = None
-		tex_w = c_float(0.0)
-		tex_h = c_float(0.0)
-		sdl3.SDL_GetTextureSize(texture, byref(tex_w), byref(tex_h))
-		self.rect.w = int(tex_w.value)
-		self.rect.h = int(tex_h.value)
+		self.rect.w, self.rect.h = sdl3.get_texture_size(texture)
 		self.texture = texture
 
 	def draw(self, x: int, y: int) -> bool | None:
@@ -177,11 +171,11 @@ class TDraw:
 
 		self._locate_cache: dict[tuple[str, int], Pango.Layout] = {}
 
-	def load_image(self, g: BytesIO) -> sdl3.LP_SDL_Surface:
-		size = g.getbuffer().nbytes
-		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
-		stream = sdl3.SDL_IOFromMem(pointer, c_size_t(size))
-		return sdl3.IMG_Load_IO(stream, c_bool(True))
+	def load_image(self, g: BytesIO) -> sdl3.ImageData:
+		with Image.open(g) as image:
+			if image.mode != "RGBA":
+				image = image.convert("RGBA")
+			return sdl3.ImageData(image.width, image.height, image.tobytes())
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA, thickness: int) -> None:
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
@@ -526,11 +520,7 @@ class TDraw:
 			logging.info(f"Font not loaded: {font!s}")
 			return 10
 
-		format = sdl3.SDL_PIXELFORMAT_ARGB8888 if alpha_bg else sdl3.SDL_PIXELFORMAT_XRGB8888
-		surface = None
-		surface_locked = False
-		pixel_data = None
-		data = None
+		data: bytearray | None = None
 		surf = None
 		context = None
 		layout = None
@@ -546,39 +536,16 @@ class TDraw:
 				elif align == 2:
 					box.x -= int(box.w / 2)
 
-				ssurf = sdl3.SDL_RenderReadPixels(self.renderer, box)
-				if not ssurf:
-					logging.warning("SDL_RenderReadPixels failed while rendering text background")
-					return 0
-
-				if ssurf.contents.format != format:
-					surface = sdl3.SDL_ConvertSurface(ssurf, format)
-					sdl3.SDL_DestroySurface(ssurf)
-					if not surface:
-						logging.warning("SDL_ConvertSurface failed while rendering text background")
-						return 0
-				else:
-					surface = ssurf
+				pixels, pitch = sdl3.read_render_pixels(self.renderer, box, alpha_bg)
+				data = bytearray(pixels)
 			else:
-				surface = sdl3.SDL_CreateSurface(w, h, format)
-				if not surface:
-					logging.warning("SDL_CreateSurface failed while rendering text")
-					return 0
-				ctypes.memset(surface.contents.pixels, 0, surface.contents.pitch * h)
-
-			if not sdl3.SDL_LockSurface(surface):
-				logging.warning("SDL_LockSurface failed while rendering text")
-				return 0
-			surface_locked = True
-
-			pixel_size = surface.contents.pitch * h
-			pixel_data = (ctypes.c_ubyte * pixel_size).from_address(surface.contents.pixels)
-			data = memoryview(pixel_data)
+				pitch = w * 4
+				data = bytearray(pitch * h)
 
 			if alpha_bg:
-				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h, surface.contents.pitch)
+				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_ARGB32, w, h, pitch)
 			else:
-				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h, surface.contents.pitch)
+				surf = cairo.ImageSurface.create_for_data(data, cairo.FORMAT_RGB24, w, h, pitch)
 
 			context = cairo.Context(surf)
 
@@ -660,25 +627,8 @@ class TDraw:
 			surf = None
 			layout = None
 			context = None
-			data.release()
-			data = None
-			pixel_data = None
-			sdl3.SDL_UnlockSurface(surface)
-			surface_locked = False
-
-			# Here the background colour is keyed out allowing lines to overlap slightly
-			if not real_bg and not alpha_bg:
-				format_details = sdl3.SDL_GetPixelFormatDetails(format)
-				ke = sdl3.SDL_MapRGB(format_details, None, bg.r, bg.g, bg.b)
-				sdl3.SDL_SetSurfaceColorKey(surface, True, ke)
-
-			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
-			if not c:
-				logging.warning("SDL_CreateTextureFromSurface failed while rendering text")
-				return 0
-
-			sdl3.SDL_DestroySurface(surface)
-			surface = None
+			colour_key = (bg.r, bg.g, bg.b) if not real_bg and not alpha_bg else None
+			c = sdl3.create_texture_from_cairo(self.renderer, w, h, pitch, data, alpha_bg, colour_key)
 
 			if alpha_bg:
 				blend_mode = sdl3.SDL_ComposeCustomBlendMode(
@@ -695,13 +645,7 @@ class TDraw:
 			context = None
 			if surf is not None:
 				surf.finish()
-			if data is not None:
-				data.release()
-			pixel_data = None
-			if surface_locked and surface is not None:
-				sdl3.SDL_UnlockSurface(surface)
-			if surface is not None:
-				sdl3.SDL_DestroySurface(surface)
+			data = None
 
 		dst = sdl3.SDL_FRect(round(x), round(y))
 		dst.w = round(w)

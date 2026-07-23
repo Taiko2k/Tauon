@@ -28,6 +28,8 @@
 #include <utility>
 #include <vector>
 
+#include "native_render.h"
+
 #if !defined(_WIN32)
 #include <arpa/inet.h>
 #include <dlfcn.h>
@@ -883,6 +885,33 @@ PyObject* bridge_renderer_address(PyObject*, PyObject*) {
 	return PyLong_FromVoidPtr(g_state->renderer.get());
 }
 
+PyObject* bridge_window_size(PyObject*, PyObject*) {
+	if (g_state == nullptr || !g_state->window) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's native window is unavailable");
+		return nullptr;
+	}
+	int width = 0;
+	int height = 0;
+	if (!SDL_GetWindowSize(g_state->window.get(), &width, &height)) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	return Py_BuildValue("(ii)", width, height);
+}
+
+PyObject* bridge_renderer_name(PyObject*, PyObject*) {
+	if (g_state == nullptr || !g_state->renderer) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's native renderer is unavailable");
+		return nullptr;
+	}
+	const char* name = SDL_GetRendererName(g_state->renderer.get());
+	if (name == nullptr) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	return PyUnicode_FromString(name);
+}
+
 PyObject* bridge_sdl_library_path(PyObject*, PyObject*) {
 	if (g_state == nullptr || g_state->sdl_library_path.empty()) {
 		Py_RETURN_NONE;
@@ -909,13 +938,362 @@ PyObject* bridge_owns_instance_lock(PyObject*, PyObject*) {
 #endif
 }
 
+bool dict_set_owned(PyObject* dictionary, const char* key, PyObject* value) {
+	if (value == nullptr) {
+		return false;
+	}
+	const int result = PyDict_SetItemString(dictionary, key, value);
+	Py_DECREF(value);
+	return result == 0;
+}
+
+bool dict_set_long(PyObject* dictionary, const char* key, long long value) {
+	return dict_set_owned(dictionary, key, PyLong_FromLongLong(value));
+}
+
+bool dict_set_unsigned(PyObject* dictionary, const char* key, unsigned long long value) {
+	return dict_set_owned(dictionary, key, PyLong_FromUnsignedLongLong(value));
+}
+
+bool dict_set_float(PyObject* dictionary, const char* key, double value) {
+	return dict_set_owned(dictionary, key, PyFloat_FromDouble(value));
+}
+
+bool dict_set_bytes(PyObject* dictionary, const char* key, const char* value) {
+	return dict_set_owned(dictionary, key, PyBytes_FromString(value != nullptr ? value : ""));
+}
+
+PyObject* event_to_dictionary(const SDL_Event& event) {
+	PyObject* result = PyDict_New();
+	if (result == nullptr || !dict_set_unsigned(result, "type", event.type)) {
+		Py_XDECREF(result);
+		return nullptr;
+	}
+
+	bool valid = true;
+	switch (event.type) {
+	case SDL_EVENT_GAMEPAD_ADDED:
+		valid = dict_set_unsigned(result, "which", event.gdevice.which);
+		break;
+	case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+		valid = dict_set_unsigned(result, "axis", event.gaxis.axis) &&
+			dict_set_long(result, "value", event.gaxis.value);
+		break;
+	case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+	case SDL_EVENT_GAMEPAD_BUTTON_UP:
+		valid = dict_set_unsigned(result, "button", event.gbutton.button);
+		break;
+	case SDL_EVENT_DROP_TEXT:
+	case SDL_EVENT_DROP_FILE:
+		valid = dict_set_bytes(result, "data", event.drop.data) &&
+			dict_set_float(result, "x", event.drop.x) &&
+			dict_set_float(result, "y", event.drop.y);
+		break;
+	case SDL_EVENT_DROP_BEGIN:
+	case SDL_EVENT_DROP_POSITION:
+	case SDL_EVENT_DROP_COMPLETE:
+		valid = dict_set_float(result, "x", event.drop.x) &&
+			dict_set_float(result, "y", event.drop.y);
+		break;
+	case SDL_EVENT_TEXT_EDITING:
+		valid = dict_set_bytes(result, "text", event.edit.text);
+		break;
+	case SDL_EVENT_TEXT_INPUT:
+		valid = dict_set_bytes(result, "text", event.text.text);
+		break;
+	case SDL_EVENT_MOUSE_MOTION:
+		valid = dict_set_unsigned(result, "window_id", event.motion.windowID) &&
+			dict_set_float(result, "x", event.motion.x) &&
+			dict_set_float(result, "y", event.motion.y);
+		break;
+	case SDL_EVENT_MOUSE_BUTTON_DOWN:
+	case SDL_EVENT_MOUSE_BUTTON_UP:
+		valid = dict_set_unsigned(result, "window_id", event.button.windowID) &&
+			dict_set_unsigned(result, "button", event.button.button) &&
+			dict_set_float(result, "x", event.button.x) &&
+			dict_set_float(result, "y", event.button.y);
+		break;
+	case SDL_EVENT_KEY_DOWN:
+	case SDL_EVENT_KEY_UP:
+		valid = dict_set_unsigned(result, "key", event.key.key) &&
+			dict_set_unsigned(result, "scancode", event.key.scancode);
+		break;
+	case SDL_EVENT_MOUSE_WHEEL:
+		valid = dict_set_float(result, "y", event.wheel.y) &&
+			dict_set_long(result, "integer_y", event.wheel.integer_y);
+		break;
+	case SDL_EVENT_FINGER_DOWN:
+	case SDL_EVENT_FINGER_UP:
+	case SDL_EVENT_FINGER_MOTION:
+	case SDL_EVENT_FINGER_CANCELED:
+		valid = dict_set_unsigned(result, "finger_id", event.tfinger.fingerID) &&
+			dict_set_float(result, "x", event.tfinger.x) &&
+			dict_set_float(result, "y", event.tfinger.y) &&
+			dict_set_float(result, "dy", event.tfinger.dy);
+		break;
+	default:
+		if (event.type >= SDL_EVENT_WINDOW_FIRST && event.type <= SDL_EVENT_WINDOW_LAST) {
+			valid = dict_set_unsigned(result, "window_id", event.window.windowID) &&
+				dict_set_long(result, "data1", event.window.data1) &&
+				dict_set_long(result, "data2", event.window.data2);
+		}
+		break;
+	}
+
+	if (!valid) {
+		Py_DECREF(result);
+		return nullptr;
+	}
+	return result;
+}
+
+PyObject* bridge_poll_events(PyObject*, PyObject*) {
+	PyObject* events = PyList_New(0);
+	if (events == nullptr) {
+		return nullptr;
+	}
+
+	SDL_Event event;
+	while (SDL_PollEvent(&event)) {
+		PyObject* dictionary = event_to_dictionary(event);
+		if (dictionary == nullptr || PyList_Append(events, dictionary) != 0) {
+			Py_XDECREF(dictionary);
+			Py_DECREF(events);
+			return nullptr;
+		}
+		Py_DECREF(dictionary);
+	}
+	return events;
+}
+
+PyObject* bridge_wait_for_event(PyObject*, PyObject* argument) {
+	const long timeout = PyLong_AsLong(argument);
+	if (timeout == -1 && PyErr_Occurred()) {
+		return nullptr;
+	}
+	if (timeout < 0 || timeout > 60000) {
+		PyErr_SetString(PyExc_ValueError, "event wait timeout must be between 0 and 60000 milliseconds");
+		return nullptr;
+	}
+	bool received = false;
+	Py_BEGIN_ALLOW_THREADS
+	received = SDL_WaitEventTimeout(nullptr, static_cast<Sint32>(timeout));
+	Py_END_ALLOW_THREADS
+	return PyBool_FromLong(received ? 1 : 0);
+}
+
+PyObject* bridge_wake_event_loop(PyObject*, PyObject*) {
+	SDL_Event event{};
+	event.type = SDL_EVENT_USER;
+	if (!SDL_PushEvent(&event)) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_key_from_name(PyObject*, PyObject* argument) {
+	const char* name = PyUnicode_AsUTF8(argument);
+	if (name == nullptr) return nullptr;
+	return PyLong_FromUnsignedLong(SDL_GetKeyFromName(name));
+}
+
+PyObject* bridge_scancode_from_name(PyObject*, PyObject* argument) {
+	const char* name = PyUnicode_AsUTF8(argument);
+	if (name == nullptr) return nullptr;
+	return PyLong_FromLong(SDL_GetScancodeFromName(name));
+}
+
+PyObject* bridge_init_subsystem(PyObject*, PyObject* argument) {
+	const unsigned long flags = PyLong_AsUnsignedLong(argument);
+	if (PyErr_Occurred()) return nullptr;
+	if (!SDL_InitSubSystem(static_cast<SDL_InitFlags>(flags))) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_pump_events(PyObject*, PyObject*) {
+	SDL_PumpEvents();
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_is_gamepad(PyObject*, PyObject* argument) {
+	const unsigned long identifier = PyLong_AsUnsignedLong(argument);
+	if (PyErr_Occurred()) return nullptr;
+	return PyBool_FromLong(SDL_IsGamepad(static_cast<SDL_JoystickID>(identifier)) ? 1 : 0);
+}
+
+PyObject* bridge_open_gamepad(PyObject*, PyObject* argument) {
+	const unsigned long identifier = PyLong_AsUnsignedLong(argument);
+	if (PyErr_Occurred()) return nullptr;
+	SDL_Gamepad* gamepad = SDL_OpenGamepad(static_cast<SDL_JoystickID>(identifier));
+	if (gamepad == nullptr) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	return PyLong_FromVoidPtr(gamepad);
+}
+
+PyObject* bridge_gamepad_name(PyObject*, PyObject* argument) {
+	const unsigned long identifier = PyLong_AsUnsignedLong(argument);
+	if (PyErr_Occurred()) return nullptr;
+	const char* name = SDL_GetGamepadNameForID(static_cast<SDL_JoystickID>(identifier));
+	if (name == nullptr) Py_RETURN_NONE;
+	return PyUnicode_FromString(name);
+}
+
+PyObject* bridge_sdl_version(PyObject*, PyObject*) {
+	return PyLong_FromLong(SDL_GetVersion());
+}
+
+PyObject* bridge_set_clipboard_text(PyObject*, PyObject* argument) {
+	if (!PyUnicode_Check(argument)) {
+		PyErr_SetString(PyExc_TypeError, "clipboard text must be a string");
+		return nullptr;
+	}
+
+	PyObject* encoded = PyUnicode_AsEncodedString(argument, "utf-8", "surrogateescape");
+	if (encoded == nullptr) {
+		return nullptr;
+	}
+	const bool success = SDL_SetClipboardText(PyBytes_AS_STRING(encoded));
+	Py_DECREF(encoded);
+	if (!success) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_get_clipboard_text(PyObject*, PyObject*) {
+	char* text = SDL_GetClipboardText();
+	if (text == nullptr) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	PyObject* result = PyUnicode_DecodeUTF8(text, -1, "surrogateescape");
+	SDL_free(text);
+	return result;
+}
+
+PyObject* bridge_has_clipboard_text(PyObject*, PyObject*) {
+	return PyBool_FromLong(SDL_HasClipboardText() ? 1 : 0);
+}
+
+PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
+	const char* title = nullptr;
+	const char* message = nullptr;
+	if (!PyArg_ParseTuple(args, "ss", &title, &message)) return nullptr;
+	if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, message, g_state != nullptr ? g_state->window.get() : nullptr)) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	Py_RETURN_NONE;
+}
+
 PyMethodDef bridge_methods[] = {
 	{"is_active", bridge_is_active, METH_NOARGS, "Return whether Tauon is running under the native bootstrap."},
 	{"window_address", bridge_window_address, METH_NOARGS, "Return the transitional native SDL_Window address."},
 	{"renderer_address", bridge_renderer_address, METH_NOARGS, "Return the transitional native SDL_Renderer address."},
+	{"window_size", bridge_window_size, METH_NOARGS, "Return the main window size in logical points."},
+	{"renderer_name", bridge_renderer_name, METH_NOARGS, "Return the main renderer name."},
 	{"sdl_library_path", bridge_sdl_library_path, METH_NOARGS, "Return the SDL library used by the native executable."},
 	{"user_data_directory", bridge_user_data_directory, METH_NOARGS, "Return Tauon's native-resolved user data directory."},
 	{"owns_instance_lock", bridge_owns_instance_lock, METH_NOARGS, "Return whether the native launcher owns Tauon's instance lock."},
+	{"poll_events", bridge_poll_events, METH_NOARGS, "Poll pending SDL events into Python-owned dictionaries."},
+	{"wait_for_event", bridge_wait_for_event, METH_O, "Wait for SDL activity without removing the pending event."},
+	{"wake_event_loop", bridge_wake_event_loop, METH_NOARGS, "Wake the native SDL event loop."},
+	{"key_from_name", bridge_key_from_name, METH_O, "Return an SDL keycode by name."},
+	{"scancode_from_name", bridge_scancode_from_name, METH_O, "Return an SDL scancode by name."},
+	{"init_subsystem", bridge_init_subsystem, METH_O, "Initialize an SDL subsystem."},
+	{"pump_events", bridge_pump_events, METH_NOARGS, "Pump SDL events."},
+	{"is_gamepad", bridge_is_gamepad, METH_O, "Return whether a joystick is a gamepad."},
+	{"open_gamepad", bridge_open_gamepad, METH_O, "Open a gamepad."},
+	{"gamepad_name", bridge_gamepad_name, METH_O, "Return a gamepad name."},
+	{"sdl_version", bridge_sdl_version, METH_NOARGS, "Return the linked SDL version."},
+	{"create_texture", native_create_texture, METH_VARARGS, "Create an SDL texture and return its native handle."},
+	{"create_texture_from_rgba", native_create_texture_from_rgba, METH_VARARGS, "Create a texture from packed RGBA pixels."},
+	{"destroy_texture", native_destroy_texture, METH_O, "Destroy an SDL texture handle."},
+	{"get_render_target", native_get_render_target, METH_O, "Return the current render-target handle."},
+	{"set_render_target", native_set_render_target, METH_VARARGS, "Set the renderer target."},
+	{"set_render_draw_blend_mode", native_set_render_draw_blend_mode, METH_VARARGS, "Set renderer blend mode."},
+	{"set_render_draw_color", native_set_render_draw_color, METH_VARARGS, "Set renderer draw colour."},
+	{"render_clear", native_render_clear, METH_O, "Clear the renderer target."},
+	{"render_fill_rect", native_render_fill_rect, METH_VARARGS, "Fill a rectangle."},
+	{"render_texture", native_render_texture, METH_VARARGS, "Render a texture."},
+	{"set_texture_blend_mode", native_set_texture_blend_mode, METH_VARARGS, "Set texture blend mode."},
+	{"set_texture_scale_mode", native_set_texture_scale_mode, METH_VARARGS, "Set texture scale mode."},
+	{"set_texture_alpha_mod", native_set_texture_alpha_mod, METH_VARARGS, "Set texture alpha modulation."},
+	{"update_texture", native_update_texture, METH_VARARGS, "Upload texture pixels."},
+	{"set_render_clip_rect", native_set_render_clip_rect, METH_VARARGS, "Set renderer clipping."},
+	{"get_window_flags", native_get_window_flags, METH_O, "Return window flags."},
+	{"maximize_window", native_maximize_window, METH_O, "Maximize a window."},
+	{"minimize_window", native_minimize_window, METH_O, "Minimize a window."},
+	{"restore_window", native_restore_window, METH_O, "Restore a window."},
+	{"render_geometry", native_render_geometry, METH_VARARGS, "Render indexed geometry."},
+	{"create_popup_window", native_create_popup_window, METH_VARARGS, "Create a popup window."},
+	{"create_window", native_create_window, METH_VARARGS, "Create an SDL window."},
+	{"create_renderer", native_create_renderer, METH_VARARGS, "Create a renderer for a window."},
+	{"destroy_renderer", native_destroy_renderer, METH_O, "Destroy a renderer."},
+	{"destroy_window", native_destroy_window, METH_O, "Destroy a window."},
+	{"get_window_id", native_get_window_id, METH_O, "Return a window ID."},
+	{"get_window_size", native_get_window_size, METH_VARARGS, "Return logical or pixel window size."},
+	{"set_window_size", native_set_window_size, METH_VARARGS, "Set window size."},
+	{"set_window_position", native_set_window_position, METH_VARARGS, "Set window position."},
+	{"set_window_mouse_grab", native_set_window_mouse_grab, METH_VARARGS, "Set window mouse grab."},
+	{"capture_mouse", native_capture_mouse, METH_O, "Set global mouse capture."},
+	{"show_window", native_show_window, METH_O, "Show a window."},
+	{"hide_window", native_hide_window, METH_O, "Hide a window."},
+	{"raise_window", native_raise_window, METH_O, "Raise a window."},
+	{"render_present", native_render_present, METH_O, "Present a renderer."},
+	{"render_line", native_render_line, METH_VARARGS, "Render a line."},
+	{"get_texture_size", native_get_texture_size, METH_O, "Return texture dimensions."},
+	{"create_texture_from_cairo", native_create_texture_from_cairo, METH_VARARGS, "Upload a Cairo ARGB32/RGB24 buffer."},
+	{"read_render_pixels", native_read_render_pixels, METH_VARARGS, "Read renderer pixels into a Python-owned buffer."},
+	{"compose_blend_mode", native_compose_blend_mode, METH_VARARGS, "Compose an SDL custom blend mode."},
+	{"set_window_minimum_size", native_set_window_minimum_size, METH_VARARGS, "Set minimum window size."},
+	{"set_window_resizable", native_set_window_resizable, METH_VARARGS, "Set resizable state."},
+	{"set_window_bordered", native_set_window_bordered, METH_VARARGS, "Set window borders."},
+	{"set_window_opacity", native_set_window_opacity, METH_VARARGS, "Set window opacity."},
+	{"set_window_always_on_top", native_set_window_always_on_top, METH_VARARGS, "Set always-on-top state."},
+	{"set_window_title", native_set_window_title, METH_VARARGS, "Set window title."},
+	{"set_window_fullscreen", native_set_window_fullscreen, METH_VARARGS, "Set fullscreen state."},
+	{"sync_window", native_sync_window, METH_O, "Synchronize pending window operations."},
+	{"get_window_position", native_get_window_position, METH_O, "Return window position."},
+	{"get_mouse_state", native_get_mouse_state, METH_O, "Return mouse buttons and coordinates."},
+	{"set_texture_color_mod", native_set_texture_color_mod, METH_VARARGS, "Set texture colour modulation."},
+	{"create_system_cursor", native_create_system_cursor, METH_O, "Create a system cursor."},
+	{"set_cursor", native_set_cursor, METH_O, "Set the active cursor."},
+	{"create_color_cursor", native_create_color_cursor, METH_VARARGS, "Create a colour cursor from ARGB pixels."},
+	{"set_window_hit_test", native_set_window_hit_test, METH_VARARGS, "Set a Python window hit-test callback."},
+	{"start_text_input", native_start_text_input, METH_O, "Start text input for a window."},
+	{"stop_text_input", native_stop_text_input, METH_O, "Stop text input for a window."},
+	{"set_text_input_area", native_set_text_input_area, METH_VARARGS, "Set the active text input area."},
+	{"get_display_refresh_rate", native_get_display_refresh_rate, METH_O, "Get the window display refresh rate."},
+	{"create_tray", native_create_tray, METH_VARARGS, "Create a system tray icon."},
+	{"set_tray_icon", native_set_tray_icon, METH_VARARGS, "Update a system tray icon."},
+	{"set_tray_tooltip", native_set_tray_tooltip, METH_VARARGS, "Update a system tray tooltip."},
+	{"create_tray_menu", native_create_tray_menu, METH_O, "Create a tray menu."},
+	{"insert_tray_entry", native_insert_tray_entry, METH_VARARGS, "Insert a tray menu entry."},
+	{"set_tray_entry_callback", native_set_tray_entry_callback, METH_VARARGS, "Set a tray entry callback."},
+	{"destroy_tray", native_destroy_tray, METH_O, "Destroy a tray icon."},
+	{"set_window_icon", native_set_window_icon, METH_VARARGS, "Set a window icon from RGBA pixels."},
+	{"set_window_progress_state", native_set_window_progress_state, METH_VARARGS, "Set taskbar progress state."},
+	{"set_window_progress_value", native_set_window_progress_value, METH_VARARGS, "Set taskbar progress value."},
+	{"video_driver", native_video_driver, METH_NOARGS, "Get the active SDL video driver."},
+	{"flush_renderer", native_flush_renderer, METH_O, "Flush queued renderer commands."},
+	{"render_texture_rotated", native_render_texture_rotated, METH_VARARGS, "Render a rotated texture."},
+	{"gl_get_current_context", native_gl_get_current_context, METH_NOARGS, "Get the current OpenGL context."},
+	{"gl_set_attribute", native_gl_set_attribute, METH_VARARGS, "Set an OpenGL context attribute."},
+	{"gl_create_context", native_gl_create_context, METH_O, "Create an OpenGL context."},
+	{"gl_make_current", native_gl_make_current, METH_VARARGS, "Make an OpenGL context current."},
+	{"create_texture_from_opengl", native_create_texture_from_opengl, METH_VARARGS, "Wrap an OpenGL texture for SDL rendering."},
+	{"set_clipboard_text", bridge_set_clipboard_text, METH_O, "Set UTF-8 text on the system clipboard."},
+	{"get_clipboard_text", bridge_get_clipboard_text, METH_NOARGS, "Get UTF-8 text from the system clipboard."},
+	{"has_clipboard_text", bridge_has_clipboard_text, METH_NOARGS, "Return whether the clipboard contains text."},
+	{"show_error_message", bridge_show_error_message, METH_VARARGS, "Show a native error message box."},
 	{nullptr, nullptr, 0, nullptr},
 };
 
@@ -990,31 +1368,33 @@ int run_python(NativeState& state, int argc, char** argv) {
 		exit_code = 1;
 	} else if (has_argument(argc, argv, "--native-smoke-test")) {
 		const char* smoke_test =
-			"import ctypes\n"
 			"import json\n"
 			"import os\n"
 			"from pathlib import Path\n"
-			"import sdl3\n"
 			"import tauon_native\n"
 			"assert os.environ.get('SDL_MAIN_NOIMPL') == '1'\n"
 			"assert tauon_native.owns_instance_lock()\n"
-			"window = ctypes.cast(tauon_native.window_address(), ctypes.POINTER(sdl3.SDL_Window))\n"
-			"renderer = ctypes.cast(tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))\n"
-			"assert sdl3.SDL_GetWindowID(window) > 0\n"
-			"assert sdl3.SDL_GetRendererName(renderer) is not None\n"
-			"window_count = ctypes.c_int()\n"
-			"windows = sdl3.SDL_GetWindows(ctypes.byref(window_count))\n"
-			"assert window_count.value == 1\n"
-			"assert ctypes.addressof(windows[0].contents) == tauon_native.window_address()\n"
-			"sdl3.SDL_free(windows)\n"
+			"window = tauon_native.window_address()\n"
+			"renderer = tauon_native.renderer_address()\n"
+			"assert window > 0 and renderer > 0\n"
+			"assert tauon_native.renderer_name()\n"
+			"texture = tauon_native.create_texture(renderer, 372645892, 1, 2, 2)\n"
+			"tauon_native.update_texture(texture, None, bytes(16), 8)\n"
+			"tauon_native.destroy_texture(texture)\n"
+			"test_window = tauon_native.create_window('Tauon native smoke test', 8, 8, 0x8)\n"
+			"test_renderer = tauon_native.create_renderer(test_window, None)\n"
+			"tauon_native.set_render_draw_color(test_renderer, 1, 2, 3, 255)\n"
+			"tauon_native.render_clear(test_renderer)\n"
+			"tauon_native.render_present(test_renderer)\n"
+			"tauon_native.destroy_renderer(test_renderer)\n"
+			"tauon_native.destroy_window(test_window)\n"
+			"assert isinstance(tauon_native.poll_events(), list)\n"
 			"state_path = Path(tauon_native.user_data_directory()) / 'window-state.json'\n"
 			"if state_path.is_file():\n"
 			"    state = json.loads(state_path.read_text(encoding='utf-8'))\n"
 			"    if not state.get('maximized', False):\n"
-			"        width, height = ctypes.c_int(), ctypes.c_int()\n"
-			"        assert sdl3.SDL_GetWindowSize(window, ctypes.byref(width), ctypes.byref(height))\n"
-			"        assert (width.value, height.value) == (state['width'], state['height'])\n"
-			"    borderless = bool(sdl3.SDL_GetWindowFlags(window) & sdl3.SDL_WINDOW_BORDERLESS)\n"
+			"        assert tauon_native.window_size() == (state['width'], state['height'])\n"
+			"    borderless = bool(tauon_native.get_window_flags(window) & 0x10)\n"
 			"    assert borderless == state.get('borderless', True)\n";
 		if (PyRun_SimpleString(smoke_test) != 0) {
 			PyErr_Print();

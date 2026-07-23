@@ -6,7 +6,6 @@ PlexAPI
 PyGObject
 pylast>=3.1.0
 pyobjc-framework-Cocoa;     sys_platform == 'darwin'
-PySDL3
 #python-magic # optional
 rapidfuzz
 requests
