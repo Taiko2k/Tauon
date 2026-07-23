@@ -21790,6 +21790,9 @@ class MultiLineTextBox:
 		self.x: int
 		self.y: int
 		self.font: int
+		self.known_window_size: list[int] = [0,0]
+		self.known_scale: float = self.gui.scale
+
 
 	def initialize(self, x: int, y: int, width: int, height: int) -> None:
 		gui = self.gui
@@ -21811,6 +21814,8 @@ class MultiLineTextBox:
 		for i, line in enumerate(lines):
 			self.lines.append(line)
 			self.line_ys.append(i * self.text_height)
+		self.known_scale = self.gui.scale
+		self.known_window_size = copy.deepcopy(self.gui.window_size)
 
 	def which_line_by_y(self, y_position: int) -> int:
 		return min(len(self.line_ys)-1, round(y_position/self.text_height))
@@ -21865,7 +21870,10 @@ class MultiLineTextBox:
 		line = self.which_line_by_char(pos)
 
 		#get substring to measure
-		width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], self.font)
+		if pos == 0:
+			width = self.ddt.get_text_w(self.text.split('\n')[-1], self.font)
+		else:
+			width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], self.font)
 		return width,line*self.text_height
 
 
@@ -21918,7 +21926,10 @@ class MultiLineTextBox:
 			)
 			point1 = max(self.selection, self.cursor_position)
 			point2 = min(self.selection, self.cursor_position)
-			hl_text = self.text[-point1:-point2]
+			if point2 == 0:
+				hl_text = self.text[-point1:]
+			else:
+				hl_text = self.text[-point1:-point2]
 			xx = min(rect1[0], rect2[0])
 			self.ddt.text(
 				(xx, rect1[1] - scroll),
@@ -21931,16 +21942,19 @@ class MultiLineTextBox:
 			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
 				# need to get FIRST section of cursor line and SECOND section of selection line
 				cursor_line = self.which_line_by_char(self.cursor_position)
-				cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+				if self.cursor_position == 0:
+					cursor_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
+				else:
+					cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
 					highlight_color
 				)
 				select_line = self.which_line_by_char(self.selection)
-				partial_temp = len(self.text[:-self.selection].split('\n')[-1])
-				select_start = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+				txt = self.text[:-self.selection].split('\n')[-1]
+				partial_line_text = self.lines[select_line][len(txt):]
+				select_start = self.ddt.get_text_w(txt, font)
 				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
-				partial_line_text = self.lines[select_line][partial_temp:]
 				self.ddt.rect(
 					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
 					highlight_color
@@ -21954,16 +21968,20 @@ class MultiLineTextBox:
 				)
 			else:
 				select_line = self.which_line_by_char(self.selection)
-				select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+				if self.selection == 0:
+					select_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
+				else:
+					select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
 				self.ddt.rect(
 					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
 					highlight_color
 				)
 				cursor_line = self.which_line_by_char(self.cursor_position)
-				partial_temp = len(self.text[:-self.cursor_position].split('\n')[-1])
-				cursor_start = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+				txt = self.text[:-self.cursor_position].split('\n')[-1]
+				partial_line_text = self.lines[cursor_line][len(txt):]
+				cursor_start = self.ddt.get_text_w(txt, font)
 				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
-				partial_line_text = self.lines[cursor_line][partial_temp:]
+				# partial_line_text = self.lines[cursor_line][partial_temp:]
 				self.ddt.rect(
 					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
 					highlight_color
@@ -22059,7 +22077,8 @@ class MultiLineTextBox:
 			self.x = x
 			self.y = y
 			self.font = font
-		if self.text_height == 0:
+		if self.text_height == 0 or self.known_window_size != self.gui.window_size \
+		or self.known_scale != self.gui.scale:
 			self.map_lines()
 
 		autoscroll = False
@@ -22305,7 +22324,7 @@ class MultiLineTextBox:
 			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
-					if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
+					if self.inp.mouse_position[1] < self.y -headroom -scroll + 1 and not self.down_lock:
 						self.cursor_position = len(self.text)
 					else:
 						self.set_cursor_from_click(scroll, False)
@@ -22316,7 +22335,7 @@ class MultiLineTextBox:
 			if self.down_lock:
 				text = self.text
 				if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
-					self.cursor_position = len(self.text)
+					self.selection = len(self.text)
 				else:
 					self.set_cursor_from_click(scroll, True)
 
@@ -45931,6 +45950,8 @@ class TimedLyricsEdit:
 		for line in self.structure:
 			self.text += line[2] + "\n"
 		self.text = self.text.strip()
+		self.unsynced_text_box.text = self.text
+		self.unsynced_text_box.map_lines()
 
 	def upload_both_to_lrclib(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
@@ -47342,6 +47363,19 @@ class TimedLyricsEdit:
 				self.text += line[pos:] + "\n"
 			else:
 				self.text += line + "\n"
+		else:
+			self.text = \
+			  _("You don't yet have any static lyrics for this song.") + '\n' \
+			+ _("To start, you can either replace this text immediately,") + '\n' \
+			+ _("or you can right-click and select \"copy from synced\"") + '\n' \
+			+ _("if you already have synced lyrics.") + '\n\n' \
+			+ _("The right-click menu will also let you search and") + '\n' \
+			+ _("download lyrics if you think someone else might know them.")
+			self.unsynced_text_box.text = self.text
+			self.unsynced_text_box.font = self.font
+			self.unsynced_text_box.map_lines()
+			self.unsynced_text_box.cursor_position = len(self.text)
+			self.unsynced_text_box.selection = len(self.text)
 
 
 	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
