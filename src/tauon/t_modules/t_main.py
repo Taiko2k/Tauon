@@ -22151,14 +22151,14 @@ class MultiLineTextBox:
 			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
 					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
 				self.text):
-				while g() == " ":
+				while g() not in (" ", "\n"):
 					d()
-				while g() != " " and g() is not None:
+				while g() in (" ", "\n") and g() is not None:
 					d()
 
 			# Ctrl + left to move cursor back a word
 			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
-				while g() == " ":
+				while g() in (" ", "\n"):
 					self.cursor_position += 1
 					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
@@ -22166,7 +22166,7 @@ class MultiLineTextBox:
 					self.cursor_position += 1
 					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
-					if g() == " ":
+					if g() in (" ", "\n"):
 						self.cursor_position -= 1
 						if not self.inp.key_shift_down:
 							self.selection = self.cursor_position
@@ -22174,7 +22174,7 @@ class MultiLineTextBox:
 
 			# Ctrl + right to move cursor forward a word
 			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
-				while g2() == " ":
+				while g2() in (" ", "\n"):
 					self.cursor_position -= 1
 					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
@@ -22182,7 +22182,7 @@ class MultiLineTextBox:
 					self.cursor_position -= 1
 					if not self.inp.key_shift_down:
 						self.selection = self.cursor_position
-					if g2() == " ":
+					if g2() in (" ", "\n"):
 						self.cursor_position += 1
 						if not self.inp.key_shift_down:
 							self.selection = self.cursor_position
