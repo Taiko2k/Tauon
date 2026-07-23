@@ -4,6 +4,7 @@ import logging
 import socket
 import threading
 from typing import TYPE_CHECKING
+from uuid import UUID
 
 import pychromecast
 import zeroconf
@@ -19,15 +20,18 @@ if TYPE_CHECKING:
 
 
 DISCOVERY_TIMEOUT = 5.0
+CAST_CONNECT_TIMEOUT = 10.0
 STYLED_RECEIVER_APP_ID = "2F76715B"
 
 
-def get_ip() -> str:
+def get_ip(target_host: str | None = None) -> str:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	s.settimeout(0)
 	try:
-		# doesn't even have to be reachable
-		s.connect(("10.255.255.255", 1))
+		# This does not send traffic, but asks the OS which interface it would use
+		# to reach the Chromecast. Falling back to a private address preserves the
+		# previous behaviour when no cast host is available.
+		s.connect((target_host or "10.255.255.255", 8009))
 		ipv4 = s.getsockname()[0]
 	except Exception:
 		logging.exception("Failed to get socket name.")
@@ -49,7 +53,7 @@ class StyledMediaController(MediaController):
 class Chrome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon: Tauon = tauon
-		self.services: list[list[str]] = []
+		self.services: list[tuple[str, str]] = []
 		self.active: bool = False
 		self.cast: Chromecast | None = None
 		self.save_vol: float = 100
@@ -57,7 +61,7 @@ class Chrome:
 		self.browser: CastBrowser | None = None
 		self.media_controller: StyledMediaController | None = None
 
-	def discover_services(self, timeout: float = DISCOVERY_TIMEOUT) -> list[list[str]]:
+	def discover_services(self, timeout: float = DISCOVERY_TIMEOUT) -> list[tuple[str, str]]:
 		zconf = zeroconf.Zeroconf()
 		try:
 			browser = pychromecast.discovery.CastBrowser(
@@ -74,7 +78,7 @@ class Chrome:
 			browser.stop_discovery()
 		return sorted(
 			[
-				[str(device.uuid), str(device.friendly_name)]
+				(str(device.uuid), str(device.friendly_name))
 				for device in browser.devices.values()
 			],
 			key=lambda service: service[1].casefold(),
@@ -117,26 +121,63 @@ class Chrome:
 				logging.exception("Failed to get chromecasts")
 				raise
 
-	def three(self, _, item: tuple) -> None:
+	def three(self, _, item: tuple[str, str]) -> None:
 		shooter(self.four, [item])
 
-	def four(self, item: list) -> None:
+	def _release_connection(self) -> None:
+		"""Release pychromecast's socket and discovery resources."""
+		cast = self.cast
+		browser = self.browser
+		media_controller = self.media_controller
+		self.cast = None
+		self.browser = None
+		self.media_controller = None
+
+		if cast and media_controller:
+			try:
+				cast.unregister_handler(media_controller)
+			except Exception:
+				logging.exception("Failed to unregister Chromecast media controller")
+		if cast:
+			try:
+				cast.disconnect(timeout=0)
+			except TimeoutError:
+				logging.debug("Chromecast connection is shutting down asynchronously")
+			except Exception:
+				logging.exception("Failed to disconnect Chromecast")
+		if browser:
+			try:
+				browser.stop_discovery()
+			except Exception:
+				logging.exception("Failed to stop Chromecast discovery")
+
+	def four(self, item: tuple[str, str]) -> None:
 		if self.active:
 			self.end()
+		else:
+			self._release_connection()
 		self.tauon.start_remote()
-		ccs, browser = pychromecast.get_listed_chromecasts(friendly_names=[item[1]], discovery_timeout=3.0)
+		ccs, browser = pychromecast.get_listed_chromecasts(
+			uuids=[UUID(item[0])], discovery_timeout=3.0
+		)
 		self.browser = browser
 		if not ccs:
 			logging.error("No Chromecast found for selected device")
+			self._release_connection()
 			return
 		self.cast = ccs[0]
-		self.cast.wait()
+		try:
+			self.cast.wait(timeout=CAST_CONNECT_TIMEOUT)
+		except Exception:
+			logging.exception("Failed to connect to Chromecast")
+			self._release_connection()
+			return
 		self.save_vol = self.tauon.pctl.player_volume
 		volume = self.cast.status.volume_level if self.cast.status else 0
 		if not self.cast.status:
 			logging.critical("self.cast.status was None, this should not happen!")
 		self.tauon.pctl.player_volume = min(volume * 100, 100)
-		self.ip = get_ip()
+		self.ip = get_ip(self.cast.cast_info.host)
 		self.media_controller = StyledMediaController(STYLED_RECEIVER_APP_ID)
 		self.cast.register_handler(self.media_controller)
 
@@ -164,15 +205,23 @@ class Chrome:
 			status.duration,
 		)
 
-	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> None:
+	def start(self, track_id: int, enqueue: bool = False, t: int = 0, url: str | None = None) -> bool:
 		if self.cast is None:
 			logging.critical("self.cast was None, this should not happen!")
-			return
+			return False
 		if self.media_controller is None:
 			logging.critical("self.media_controller was None, this should not happen!")
-			return
-		self.cast.wait()
-		self.cast.start_app(STYLED_RECEIVER_APP_ID)
+			return False
+		try:
+			self.cast.wait(timeout=CAST_CONNECT_TIMEOUT)
+		except Exception:
+			logging.exception("Chromecast connection timed out while starting playback")
+			return False
+		try:
+			self.cast.start_app(STYLED_RECEIVER_APP_ID)
+		except Exception:
+			logging.exception("Failed to start Chromecast receiver")
+			return False
 		tr = self.tauon.pctl.get_track(track_id)
 		n = 0
 		try:
@@ -200,9 +249,24 @@ class Chrome:
 			url = url.replace("localhost", self.ip)
 			url = url.replace("127.0.0.1", self.ip)
 
-		self.media_controller.play_media(
-			url, "audio/mpeg", media_info=m, metadata=d, current_time=t, enqueue=enqueue
-		)
+		try:
+			self.media_controller.play_media(
+				url, self._mime_type(tr.file_ext), media_info=m, metadata=d, current_time=t, enqueue=enqueue
+			)
+		except Exception:
+			logging.exception("Failed to start Chromecast media")
+			return False
+		return True
+
+	@staticmethod
+	def _mime_type(file_ext: str) -> str:
+		return {
+			"FLAC": "audio/flac",
+			"OGG": "audio/ogg",
+			"OPUS": "audio/ogg",
+			"OGA": "audio/ogg",
+			"M4A": "audio/mp4",
+		}.get(file_ext.upper(), "audio/mpeg")
 
 	def stop(self) -> None:
 		if self.media_controller is None:
@@ -239,8 +303,11 @@ class Chrome:
 		self.tauon.pctl.playerCommandReady = True
 		if self.active:
 			if self.media_controller:
-				self.media_controller.stop()
+				try:
+					self.media_controller.stop()
+				except Exception:
+					logging.exception("Failed to stop Chromecast playback")
 			self.active = False
 		self.tauon.chrome_mode = False
 		self.tauon.pctl.player_volume = self.save_vol
-		self.media_controller = None
+		self._release_connection()

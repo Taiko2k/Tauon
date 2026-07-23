@@ -1188,24 +1188,28 @@ def player4(tauon: Tauon) -> None:
 		if end and pctl.playing_time > 1:
 			pctl.test_progress()
 
-	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> None:
+	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> bool:
 		track = pctl.get_track(track_id)
 		# if track.is_cue:
 		# 	logging.error("CUE cast not supported")
-		# 	return
+		# 	return False
 		if track.is_network:
 			if track.file_ext == "SPTY":
 				logging.error("Unsupported network source for cast")
-				return
+				tauon.chrome.end()
+				return False
 			network_url, params = pctl.get_url(track)
 			if params:
 				req = PreparedRequest()
 				req.prepare_url(network_url, params)
 				network_url = req.url
 
-			tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
+			started = tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
 		else:
-			tauon.chrome.start(track.index, enqueue=enqueue, t=t)
+			started = tauon.chrome.start(track.index, enqueue=enqueue, t=t)
+		if not started:
+			tauon.chrome.end()
+		return started
 
 	# fmt:off
 	gui   = tauon.gui
@@ -1330,7 +1334,8 @@ def player4(tauon: Tauon) -> None:
 
 						if d and t and 1 < d - t < 5:
 							# logging.info("Enqueue next chromecast")
-							chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target)
+							if not chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target):
+								continue
 							chrome_cool_timer.set()
 							time.sleep(d - t)
 							if pctl.commit:
@@ -1338,7 +1343,8 @@ def player4(tauon: Tauon) -> None:
 								pctl.commit = None
 							continue
 
-					chrome_start(target_object.index, t=pctl.start_time_target)
+					if not chrome_start(target_object.index, t=pctl.start_time_target):
+						continue
 					chrome_cool_timer.set()
 					if pctl.commit:
 						pctl.advance(quiet=True, end=True)
@@ -1407,7 +1413,9 @@ def player4(tauon: Tauon) -> None:
 			if command == "startchrome":
 				aud.stop()
 				if tauon.player4_state == PlayerState.PLAYING:
-					chrome_start(loaded_track.index, t=pctl.playing_time)
+					if not chrome_start(loaded_track.index, t=pctl.playing_time):
+						chrome_mode = True
+						continue
 				chrome_mode = True
 
 			if command == "reload":
