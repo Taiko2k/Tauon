@@ -821,7 +821,7 @@ class TDraw:
 			for i, line in enumerate(layout.get_lines_readonly()):
 				start = line.start_index
 				end = start + line.length
-				if i == 0:
+				if i == 0 and all_lines:
 					all_lines.append('\n' + encoded[start:end].decode("utf-8"))
 				else:
 					all_lines.append(encoded[start:end].decode("utf-8"))

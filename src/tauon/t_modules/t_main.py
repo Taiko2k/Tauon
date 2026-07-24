@@ -21837,6 +21837,8 @@ class MultiLineTextBox:
 		# 		running_count += 1
 		# 		self.visible_lines.append(line)
 		# 		self.line_ys.append(running_count * self.text_height)
+		# for line in self.visible_lines:
+		# 	logging.info(repr(line))
 		self.known_scale = self.gui.scale
 		self.known_window_size = copy.deepcopy(self.gui.window_size)
 
@@ -21849,19 +21851,20 @@ class MultiLineTextBox:
 		orig_char = char
 		while char < len(self.text):
 			try:
+				# logging.info(f"wlbc: {self.visible_lines[self.line_counts[char]+1]}")
 				return self.line_counts[char]+1
 			except:
 				char += 1
 		return 0 #self.text[:len(self.text)-char].count('\n')
 
 	def partial_line_from_char(self, char: int) -> str:
-		# WORKING i fucking think
+		# WORKING
 		line = self.which_line_by_char(char)
-		fucker = "".join(self.visible_lines[line:]).strip()
-		return fucker[:-char]
+		fucker = "".join(self.visible_lines[line:]).lstrip("\n")
+		return fucker[:-char+1]
 
 	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int]|None = None) -> None:
-		# WORKING
+		# WORKING FINALLY
 		if in_pos is None:
 			in_pos = self.inp.mouse_position
 
@@ -21873,13 +21876,15 @@ class MultiLineTextBox:
 		text = self.visible_lines[line]
 		temp = 0
 
-		meas = text.strip()
+		logging.info(repr(text))
+		meas = text.lstrip('\n')
+		logging.info(meas)
 
 		full = self.ddt.get_text_w(meas, self.font)
 		if self.x + full <= in_pos[0]:
-			out_val = temp_total
+			out_val = temp_total + 1 # WORKING - click after end of line
 		elif in_pos[0] <= self.x:
-			out_val = temp_total + len(meas)
+			out_val = temp_total + len(meas) # IRRELEVANT - cannot click here anyway
 		else:
 			for i in range(len(meas)):
 				post = self.ddt.get_text_w(meas[0:i + 1], self.font)
@@ -21891,7 +21896,7 @@ class MultiLineTextBox:
 						temp = len(meas) - i - 1
 					else:
 						temp = len(meas) - i
-					out_val = temp + temp_total
+					out_val = temp + temp_total + 1
 					# logging.info(self.text[-temp - temp_total:-temp_total])
 					break
 
@@ -21903,10 +21908,8 @@ class MultiLineTextBox:
 		else:
 			self.cursor_position = out_val
 
-		return pre, post
-
 	def pixel_position_from_cursor_position(self, selection: bool = False) -> tuple[int, int]:
-		# WORKING more or less fuck me
+		# MUST BE WORKING I GUESS
 		if selection:
 			pos = self.selection
 		else:
@@ -21918,12 +21921,12 @@ class MultiLineTextBox:
 			width = self.ddt.get_text_w(self.text.split('\n')[-1], self.font)
 		else:
 			width = self.ddt.get_text_w(self.partial_line_from_char(pos), self.font)
-			logging.info(self.partial_line_from_char(pos))
 		# self.ddt.rect((width,line*self.text_height,5,5), ColourRGBA(255,0,0,255))
 		return width,line*self.text_height
 
 
 	def switch_lines(self, scroll: int, up: bool) -> None:
+		#WORKING
 		pos = self.pixel_position_from_cursor_position()
 		if self.temp_x_pos is not None:
 			pos = self.temp_x_pos, pos[1]
@@ -21943,22 +21946,27 @@ class MultiLineTextBox:
 		if -1 < test < 1:
 			return None
 		if test in (-1, 1):
-			temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+			# WORKING OMG
+			# temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+			temp = self.partial_line_from_char(min(self.selection,self.cursor_position))
 			return [0, (min(start_line,end_line)+1) * self.text_height - scroll, 4, 0, 40000], temp
 		else:
+			# WORKING
 			highlight_color = ColourRGBA(40, 120, 180, 255)
 			start = min(start_line,end_line)
 			end = max(start_line, end_line)
-			for i, line in enumerate(self.lines[start+1:end]):
-				x = self.ddt.get_text_w(line, self.font)
+			for i, line in enumerate(self.visible_lines[start+1:end]):
+				x = self.ddt.get_text_w(line.lstrip('\n'), self.font)
 				y = (start+i+1) * self.text_height - scroll
 				self.ddt.rect(
 					(0, y - 0.25*self.text_height, x, self.text_height),
 					highlight_color
 				)
 
-		text = '\n'.join(self.lines[start+1:end])
-		temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+		# text = '\n'.join(self.lines[start+1:end])
+		# temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+		text = ''.join(self.visible_lines[start+1:end]).lstrip('\n')
+		temp = self.partial_line_from_char(min(self.selection,self.cursor_position))
 		return [0, (start+1) * self.text_height - scroll, 4, 0, 40000], text + '\n' + temp
 
 
@@ -21966,7 +21974,10 @@ class MultiLineTextBox:
 		highlight_color = ColourRGBA(40, 120, 180, 255)
 		rect1 = self.pixel_position_from_cursor_position()
 		rect2 = self.pixel_position_from_cursor_position(True)
+		logging.info(sum(len(line) for line in self.visible_lines))
+		logging.info(len(self.text))
 		if rect1[1] == rect2[1]:
+			# WORKING
 			self.ddt.rect(
 				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
 				highlight_color
@@ -21974,9 +21985,9 @@ class MultiLineTextBox:
 			point1 = max(self.selection, self.cursor_position)
 			point2 = min(self.selection, self.cursor_position)
 			if point2 == 0:
-				hl_text = self.text[-point1:]
+				hl_text = self.text[-point1+1:]
 			else:
-				hl_text = self.text[-point1:-point2]
+				hl_text = self.text[-point1+1:-point2+1]
 			xx = min(rect1[0], rect2[0])
 			self.ddt.text(
 				(xx, rect1[1] - scroll),
@@ -21986,22 +21997,23 @@ class MultiLineTextBox:
 				bg=highlight_color,
 			)
 		else:
+			# WORKING EXCEPT FOR THE LINES
 			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
 				# need to get FIRST section of cursor line and SECOND section of selection line
 				cursor_line = self.which_line_by_char(self.cursor_position)
 				if self.cursor_position == 0:
 					cursor_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
 				else:
-					cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+					cursor_width = self.ddt.get_text_w(self.partial_line_from_char(self.cursor_position), font)
 				self.ddt.rect(
 					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
 					highlight_color
 				)
 				select_line = self.which_line_by_char(self.selection)
-				txt = self.text[:-self.selection].split('\n')[-1]
-				partial_line_text = self.lines[select_line][len(txt):]
+				txt = self.partial_line_from_char(self.selection)
+				partial_line_text = self.visible_lines[select_line].lstrip('\n')[len(txt):]
 				select_start = self.ddt.get_text_w(txt, font)
-				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
+				select_width = self.ddt.get_text_w(self.visible_lines[select_line].lstrip('\n'), font) - select_start
 				self.ddt.rect(
 					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
 					highlight_color
@@ -22018,16 +22030,16 @@ class MultiLineTextBox:
 				if self.selection == 0:
 					select_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
 				else:
-					select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+					select_width = self.ddt.get_text_w(self.partial_line_from_char(self.selection), font)
 				self.ddt.rect(
 					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
 					highlight_color
 				)
 				cursor_line = self.which_line_by_char(self.cursor_position)
-				txt = self.text[:-self.cursor_position].split('\n')[-1]
-				partial_line_text = self.lines[cursor_line][len(txt):]
+				txt = self.partial_line_from_char(self.cursor_position)
+				partial_line_text = self.visible_lines[cursor_line].lstrip('\n')[len(txt):]
 				cursor_start = self.ddt.get_text_w(txt, font)
-				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
+				cursor_width = self.ddt.get_text_w(self.visible_lines[cursor_line].lstrip('\n'), font) - cursor_start
 				# partial_line_text = self.lines[cursor_line][partial_temp:]
 				self.ddt.rect(
 					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
@@ -22368,7 +22380,7 @@ class MultiLineTextBox:
 			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
 				t_len += self.ddt.get_text_w(self.gui.editline, font)
 			if not click and not self.down_lock:
-				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+				cursor_x = self.ddt.get_text_w(self.partial_line_from_char(self.cursor_position), font) #self.text[:len(self.text) - self.cursor_position]
 				margin = round(15 * self.gui.scale)
 				max_offset = max(t_len - width, 0)
 				if self.cursor_position == len(self.text):
@@ -22419,7 +22431,9 @@ class MultiLineTextBox:
 			text = self.text
 			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
 
-			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
+			# text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
+			# working i think
+			text = self.partial_line_from_char(self.cursor_position)
 			space = self.ddt.get_text_w(text, font)
 
 			line = self.which_line_by_char(self.cursor_position)
@@ -22455,8 +22469,6 @@ class MultiLineTextBox:
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
-
-		self.pixel_position_from_cursor_position()
 
 		self.text_box_canvas_hide_rect.x = 0
 		self.text_box_canvas_hide_rect.y = 0
