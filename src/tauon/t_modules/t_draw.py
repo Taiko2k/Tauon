@@ -259,6 +259,24 @@ class TDraw:
 		# else:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
+	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		'''x1, y1, x2, y2'''
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+
+		x1 = min(rectangle[0], rectangle[2])
+		y1 = min(rectangle[1], rectangle[3])
+		x2 = max(rectangle[0], rectangle[2])
+		y2 = max(rectangle[1], rectangle[3])
+		self.sdlrect.x = float(x1)
+		self.sdlrect.y = float(y1)
+		self.sdlrect.w = float(x2-x1)
+		self.sdlrect.h = float(y2-y1)
+
+		# if fill:
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		# else:
+		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
+
 	def bordered_rect(
 		self, rectangle: tuple[int, int, int, int], fill_colour: ColourRGBA, outer_colour: ColourRGBA, border_size: int
 	) -> None:
@@ -759,3 +777,53 @@ class TDraw:
 				)
 
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
+
+	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
+		"""
+		Flynn disclaimer: slop function, seems to work though. Wraps the input text and returns the text of the displayed lines.
+		"""
+		if not text:
+			return []
+
+		if font not in self.f_dict:
+			logging.info(f"Font not loaded: {font!s}")
+			return [text]
+
+		max_x += 12
+		max_x = round(max_x)
+
+		layout = self.layout
+		layout.set_auto_dir(False)
+		layout.set_font_description(self._font_description(font))
+		layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+		layout.set_ellipsize(Pango.EllipsizeMode.NONE)
+		layout.set_width(max_x * 1000)
+		layout.set_height(-1)
+
+		all_lines: list[str] = []
+
+		# Split on real newlines ourselves so Pango only ever wraps a single
+		# paragraph at a time — that way every line it returns is a soft wrap,
+		# and every boundary between paragraphs is unambiguously a real \n.
+		for paragraph in text.split("\n"):
+			if paragraph == "":
+				all_lines.append("\n")
+				continue
+
+			try:
+				layout.set_text(paragraph, -1)
+			except Exception:
+				logging.exception(f"Text error on text: {paragraph}")
+				paragraph = paragraph.encode("utf-8", "replace").decode("utf-8")
+				layout.set_text(paragraph, -1)
+
+			encoded = paragraph.encode("utf-8")
+			for i, line in enumerate(layout.get_lines_readonly()):
+				start = line.start_index
+				end = start + line.length
+				if i == 0:
+					all_lines.append('\n' + encoded[start:end].decode("utf-8"))
+				else:
+					all_lines.append(encoded[start:end].decode("utf-8"))
+
+		return all_lines

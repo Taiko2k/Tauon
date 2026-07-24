@@ -21695,6 +21695,736 @@ class TimedLyricsRen:
 
 		return None
 
+class MultiLineTextBox:
+	# TODO(Martin): Global class var!
+	cursor = True
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon:    Tauon = tauon
+		self.coll     = tauon.coll
+		self.ddt:      TDraw = tauon.ddt
+		self.gui:     GuiVar = tauon.gui
+		self.inp:      Input = tauon.inp
+		self.fields:  Fields = tauon.fields
+		self.t_window = tauon.t_window
+		self.renderer = tauon.renderer
+		self.text: str = ""
+		self.lines: list[str] = []
+		self.text_height: int = 0
+		self.visible_lines: list[str] = [] # lines as they are displayed with text wrapping
+		self.line_counts: dict[int:int] = {} # get from cursor position to line number
+		self.line_ys: list[int] = 0
+		self.cursor_position = 0
+		self.selection = 0
+		self.offset = 0
+		self.temp_x_pos: int|None = None
+		self.down_lock: bool = False
+		self.paste_text: str = ""
+
+		self.x: int
+		self.y: int
+		self.font: int
+		self.known_window_size: list[int] = [0,0]
+		self.known_scale: float = self.gui.scale
+
+
+	def initialize(self, x: int, y: int, width: int, height: int) -> None:
+		gui = self.gui
+		if width == 0:
+			width = round(2000*gui.scale)
+		if height == 0:
+			height = round(20000*gui.scale)
+		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
+		self.text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, width, height)
+		self.text_box_canvas = sdl3.SDL_CreateTexture(
+			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
+		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+
+
+	def map_lines(self, width: int) -> None:
+		self.lines = self.text.split("\n")
+		self.line_ys = []
+		# self.lines = []
+		self.visible_lines = []
+		self.line_counts = {}
+		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), self.font, 200)
+		count = len(self.text)
+		for i, line in enumerate(self.ddt.get_wrapped_lines(self.text, self.font, width)):
+			count -= len(line)
+			self.visible_lines.append(line)
+			self.line_ys.append(i * self.text_height)
+			self.line_counts[count] = i
+		# running_count = 0
+		# lookup_counter = len(self.text)
+		# for line in lines:
+		# 	self.lines.append(line)
+		# 	throwaway, height = self.ddt.get_text_wh(line, self.font, width, True)
+		# 	did = False
+		# 	for line2 in self.ddt.get_wrapped_lines(line, self.font, width):
+		# 		did = True
+		# 		running_count += 1
+		# 		self.visible_lines.append(line2)
+		# 		self.line_ys.append(running_count * self.text_height)
+		# 	if not did:
+		# 		running_count += 1
+		# 		self.visible_lines.append(line)
+		# 		self.line_ys.append(running_count * self.text_height)
+		self.known_scale = self.gui.scale
+		self.known_window_size = copy.deepcopy(self.gui.window_size)
+
+	def which_line_by_y(self, y_position: int) -> int:
+		# WORKING
+		return min(len(self.line_ys)-1, round(y_position/self.text_height))
+
+	def which_line_by_char(self, char: int) -> int:
+		# WORKING
+		orig_char = char
+		while char < len(self.text):
+			try:
+				return self.line_counts[char]+1
+			except:
+				char += 1
+		return 0 #self.text[:len(self.text)-char].count('\n')
+
+	def partial_line_from_char(self, char: int) -> str:
+		# WORKING i fucking think
+		line = self.which_line_by_char(char)
+		fucker = "".join(self.visible_lines[line:]).strip()
+		return fucker[:-char]
+
+	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int]|None = None) -> None:
+		# WORKING
+		if in_pos is None:
+			in_pos = self.inp.mouse_position
+
+		pre = 0
+		post = 0
+		line = self.which_line_by_y(in_pos[1] -self.y + scroll -0.25*self.text_height)
+		temp_total = sum(len(tally) for tally in self.visible_lines[line+1:])
+
+		text = self.visible_lines[line]
+		temp = 0
+
+		meas = text.strip()
+
+		full = self.ddt.get_text_w(meas, self.font)
+		if self.x + full <= in_pos[0]:
+			out_val = temp_total
+		elif in_pos[0] <= self.x:
+			out_val = temp_total + len(meas)
+		else:
+			for i in range(len(meas)):
+				post = self.ddt.get_text_w(meas[0:i + 1], self.font)
+				# pre_half = int((post - pre) / 2)
+
+				if self.x + pre - 0 <= in_pos[0] <= self.x + post + 0:
+					diff = post - pre
+					if in_pos[0] >= self.x + pre + int(diff / 2):
+						temp = len(meas) - i - 1
+					else:
+						temp = len(meas) - i
+					out_val = temp + temp_total
+					# logging.info(self.text[-temp - temp_total:-temp_total])
+					break
+
+				pre = post
+		# else:
+		# 	self.cursor_position = temp_total
+		if selection:
+			self.selection = out_val
+		else:
+			self.cursor_position = out_val
+
+		return pre, post
+
+	def pixel_position_from_cursor_position(self, selection: bool = False) -> tuple[int, int]:
+		# WORKING more or less fuck me
+		if selection:
+			pos = self.selection
+		else:
+			pos = self.cursor_position
+		line = self.which_line_by_char(pos)
+
+		#get substring to measure
+		if pos == 0:
+			width = self.ddt.get_text_w(self.text.split('\n')[-1], self.font)
+		else:
+			width = self.ddt.get_text_w(self.partial_line_from_char(pos), self.font)
+			logging.info(self.partial_line_from_char(pos))
+		# self.ddt.rect((width,line*self.text_height,5,5), ColourRGBA(255,0,0,255))
+		return width,line*self.text_height
+
+
+	def switch_lines(self, scroll: int, up: bool) -> None:
+		pos = self.pixel_position_from_cursor_position()
+		if self.temp_x_pos is not None:
+			pos = self.temp_x_pos, pos[1]
+		else:
+			self.temp_x_pos = pos[0]
+		# this is relative
+		if up:
+			offset = -self.text_height
+		else:
+			offset = self.text_height
+		pos = pos[0] + self.x, pos[1] - scroll + self.y + offset
+		self.set_cursor_from_click(scroll, False, pos)
+
+
+	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[list, str]|None:
+		test = start_line - end_line
+		if -1 < test < 1:
+			return None
+		if test in (-1, 1):
+			temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+			return [0, (min(start_line,end_line)+1) * self.text_height - scroll, 4, 0, 40000], temp
+		else:
+			highlight_color = ColourRGBA(40, 120, 180, 255)
+			start = min(start_line,end_line)
+			end = max(start_line, end_line)
+			for i, line in enumerate(self.lines[start+1:end]):
+				x = self.ddt.get_text_w(line, self.font)
+				y = (start+i+1) * self.text_height - scroll
+				self.ddt.rect(
+					(0, y - 0.25*self.text_height, x, self.text_height),
+					highlight_color
+				)
+
+		text = '\n'.join(self.lines[start+1:end])
+		temp = self.text[::-1][min(self.selection,self.cursor_position):].split('\n')[0][::-1]
+		return [0, (start+1) * self.text_height - scroll, 4, 0, 40000], text + '\n' + temp
+
+
+	def draw_selection_highlight(self, scroll: int, font: int, text_color: ColourRGBA, width: int) -> None:
+		highlight_color = ColourRGBA(40, 120, 180, 255)
+		rect1 = self.pixel_position_from_cursor_position()
+		rect2 = self.pixel_position_from_cursor_position(True)
+		if rect1[1] == rect2[1]:
+			self.ddt.rect(
+				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
+				highlight_color
+			)
+			point1 = max(self.selection, self.cursor_position)
+			point2 = min(self.selection, self.cursor_position)
+			if point2 == 0:
+				hl_text = self.text[-point1:]
+			else:
+				hl_text = self.text[-point1:-point2]
+			xx = min(rect1[0], rect2[0])
+			self.ddt.text(
+				(xx, rect1[1] - scroll),
+				hl_text,
+				text_color,
+				self.font,
+				bg=highlight_color,
+			)
+		else:
+			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
+				# need to get FIRST section of cursor line and SECOND section of selection line
+				cursor_line = self.which_line_by_char(self.cursor_position)
+				if self.cursor_position == 0:
+					cursor_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
+				else:
+					cursor_width = self.ddt.get_text_w(self.text[:-self.cursor_position].split('\n')[-1], font)
+				self.ddt.rect(
+					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
+					highlight_color
+				)
+				select_line = self.which_line_by_char(self.selection)
+				txt = self.text[:-self.selection].split('\n')[-1]
+				partial_line_text = self.lines[select_line][len(txt):]
+				select_start = self.ddt.get_text_w(txt, font)
+				select_width = self.ddt.get_text_w(self.lines[select_line], font) - select_start
+				self.ddt.rect(
+					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
+					highlight_color
+				)
+				self.ddt.text(
+					(select_start, rect2[1] - scroll),
+					partial_line_text,
+					text_color,
+					self.font,
+					bg=highlight_color,
+				)
+			else:
+				select_line = self.which_line_by_char(self.selection)
+				if self.selection == 0:
+					select_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
+				else:
+					select_width = self.ddt.get_text_w(self.text[:-self.selection].split('\n')[-1], font)
+				self.ddt.rect(
+					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
+					highlight_color
+				)
+				cursor_line = self.which_line_by_char(self.cursor_position)
+				txt = self.text[:-self.cursor_position].split('\n')[-1]
+				partial_line_text = self.lines[cursor_line][len(txt):]
+				cursor_start = self.ddt.get_text_w(txt, font)
+				cursor_width = self.ddt.get_text_w(self.lines[cursor_line], font) - cursor_start
+				# partial_line_text = self.lines[cursor_line][partial_temp:]
+				self.ddt.rect(
+					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
+					highlight_color
+				)
+				self.ddt.text(
+					(cursor_start, rect1[1] - scroll),
+					partial_line_text,
+					text_color,
+					self.font,
+					bg=highlight_color,
+				)
+
+			highlight_info = self.selection_highlight_inbetweens(select_line, cursor_line, scroll)
+			if highlight_info is not None:
+				highlight_info[0][3] = width
+				pos = tuple(highlight_info[0])
+				text = highlight_info[1]
+				self.ddt.text(pos, text, text_color, self.font, bg=highlight_color)
+
+
+	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
+		test_y = self.pixel_position_from_cursor_position()[1] - scroll
+		scroll_output = 0
+		if test_y < -headroom + self.text_height: # scroll up
+			scroll_output = test_y + headroom - self.text_height
+		elif test_y > height-headroom - self.text_height: # scroll down
+			scroll_output = test_y -height+headroom + self.text_height
+		return scroll_output
+
+
+	def paste(self) -> None:
+		if sdl3.SDL_HasClipboardText():
+			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+			self.paste_text = clip
+
+	def copy(self) -> None:
+		text = self.get_selection()
+		if not text:
+			text = self.text
+		if text:
+			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+
+	def set_text(self, text: str) -> None:
+		self.text = text
+		if self.cursor_position > len(text):
+			self.cursor_position = 0
+			self.selection = 0
+		else:
+			self.selection = self.cursor_position
+
+	def clear(self) -> None:
+		self.text = ""
+		#self.cursor_position = 0
+		self.selection = self.cursor_position
+
+	def highlight_all(self) -> None:
+		self.selection = len(self.text)
+		self.cursor_position = 0
+
+	def eliminate_selection(self) -> None:
+		if self.selection != self.cursor_position:
+			if self.selection > self.cursor_position:
+				self.text = self.text[0: len(self.text) - self.selection] + self.text[len(self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+			else:
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.text[len(self.text) - self.selection:]
+				self.cursor_position = self.selection
+
+	def get_selection(self, p: int = 1) -> str | None:
+		if self.selection != self.cursor_position:
+			if p == 1:
+				if self.selection > self.cursor_position:
+					return self.text[len(self.text) - self.selection: len(self.text) - self.cursor_position]
+
+				return self.text[len(self.text) - self.cursor_position: len(self.text) - self.selection]
+			if p == 0:
+				return self.text[0: len(self.text) - max(self.cursor_position, self.selection)]
+			if p == 2:
+				return self.text[len(self.text) - min(self.cursor_position, self.selection):]
+			return None
+		return ""
+
+	def draw(
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, font: int = 13,
+			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
+			headroom: int = 0, scroll: int = 0) -> int:
+		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
+
+		try:
+			self.text_box_canvas.x
+		except:
+			self.initialize(x,y,width,height)
+			self.x = x
+			self.y = y
+			self.font = font
+		if self.text_height == 0 or self.known_window_size != self.gui.window_size \
+		or self.known_scale != self.gui.scale:
+			self.map_lines(width)
+
+		autoscroll = False
+		# A little bit messy
+		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
+		# otherwise it is fixed to end
+		previous_target = sdl3.SDL_GetRenderTarget(self.renderer)
+		sdl3.SDL_SetRenderTarget(self.renderer, self.text_box_canvas)
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+
+		self.text_box_canvas_rect.x = 0
+		self.text_box_canvas_rect.y = 0
+		# if height != 0:
+		# 	self.text_box_canvas_rect.h = height
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_rect)
+
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+
+		selection_height *= self.gui.scale
+
+		if click is False:
+			click = self.inp.mouse_click
+		if self.inp.mouse_down:
+			self.gui.request_frame()  # TODO(Taiko): more elegant fix
+
+		rect = (x - 3, y - 2 - headroom, width - 3, height)
+		select_rect = (x - 20 * self.gui.scale, y - 2 - headroom, width + 20 * self.gui.scale, height + 21 * self.gui.scale)
+
+		self.fields.add(rect)
+
+		# Activate Menu
+		if self.coll(rect) and (self.inp.right_click or self.inp.level_2_right_click):
+			self.tauon.field_menu.activate(self)
+
+		if width > 0 and active:
+			if click and self.tauon.field_menu.active:
+				# field_menu.click()
+				click = False
+
+			# Add text from input
+			if self.inp.input_text:
+				self.temp_x_pos = None
+				autoscroll = True
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
+					self.text) - self.cursor_position:]
+
+			def g() -> str | None:
+				if len(self.text) == 0 or self.cursor_position == len(self.text):
+					return None
+				return self.text[len(self.text) - self.cursor_position - 1]
+
+			def g2() -> str | None:
+				if len(self.text) == 0 or self.cursor_position == 0:
+					return None
+				return self.text[len(self.text) - self.cursor_position]
+
+			def d() -> None:
+				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
+					self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			def d2() -> None:
+				self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+					self.text) - self.cursor_position + 1:]
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				self.selection = self.cursor_position
+
+			if self.inp.backspace_press or self.inp.key_right_press or \
+				self.inp.key_left_press or self.inp.key_return_press:
+				self.temp_x_pos = None
+				autoscroll = True
+
+			# Ctrl + Backspace to delete word
+			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
+					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
+				self.text):
+				while g() not in (" ", "\n"):
+					d()
+				while g() in (" ", "\n") and g() is not None:
+					d()
+
+			# Ctrl + left to move cursor back a word
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
+				while g() in (" ", "\n"):
+					self.cursor_position += 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position += 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+					if g() in (" ", "\n"):
+						self.cursor_position -= 1
+						if not self.inp.key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Ctrl + right to move cursor forward a word
+			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
+				while g2() in (" ", "\n"):
+					self.cursor_position -= 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
+					self.cursor_position -= 1
+					if not self.inp.key_shift_down:
+						self.selection = self.cursor_position
+					if g2() in (" ", "\n"):
+						self.cursor_position += 1
+						if not self.inp.key_shift_down:
+							self.selection = self.cursor_position
+						break
+
+			# Handle normal backspace
+			elif self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+				while self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
+					if self.selection != self.cursor_position:
+						self.eliminate_selection()
+					else:
+						self.text = self.text[0:len(self.text) - self.cursor_position - 1] + self.text[len(
+							self.text) - self.cursor_position:]
+					self.inp.backspace_press -= 1
+			elif self.inp.backspace_press and len(self.get_selection()) > 0:
+				self.eliminate_selection()
+
+			# Left and right arrow keys to move cursor
+			if self.inp.key_right_press:
+				autoscroll = True
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.inp.key_left_press:
+				autoscroll = True
+				if self.cursor_position < len(self.text):
+					self.cursor_position += 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			# up and down to switch lines
+			if self.inp.key_up_press:
+				autoscroll = True
+				if self.which_line_by_char(self.cursor_position) != 0:
+					self.switch_lines(scroll, True)
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.inp.key_down_press:
+				autoscroll = True
+				if self.which_line_by_char(self.cursor_position) != len(self.visible_lines)-1:
+					self.switch_lines(scroll, False)
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			if self.paste_text:
+				autoscroll = True
+				if "http://" in self.text and "http://" in self.paste_text:
+					self.text = ""
+
+				self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
+				self.paste_text = self.paste_text.replace("\n", " ").replace("\r", "")
+
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
+					self.text) - self.cursor_position:]
+				self.paste_text = ""
+
+			# Paste via ctrl-v
+			if self.inp.key_ctrl_down and self.inp.key_v_press:
+				autoscroll = True
+				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				self.eliminate_selection()
+				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
+					self.text) - self.cursor_position:]
+
+			if self.inp.key_ctrl_down and self.inp.key_c_press:
+				self.copy()
+
+			if self.inp.key_ctrl_down and self.inp.key_x_press and len(self.get_selection()) > 0:
+				autoscroll = True
+				text = self.get_selection()
+				if text:
+					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+				self.eliminate_selection()
+
+			if self.inp.key_ctrl_down and self.inp.key_a_press:
+				self.cursor_position = 0
+				self.selection = len(self.text)
+
+			# self.ddt.rect(rect, [255, 50, 50, 80], True)
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
+
+			# Delete key to remove text in front of cursor
+			if self.inp.key_del and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
+				self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position > 0:
+				autoscroll = True
+				while g2() not in (" ", "\n"):
+					d2()
+				while g2() in (" ", "\n") and g2() is not None:
+					d2()
+			elif self.inp.key_del:
+				autoscroll = True
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				else:
+					self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+						self.text) - self.cursor_position + 1:]
+					if self.cursor_position > 0:
+						self.cursor_position -= 1
+					self.selection = self.cursor_position
+
+			if self.inp.key_return_press:
+				autoscroll = True
+				if self.selection != self.cursor_position:
+					self.eliminate_selection()
+				self.text = self.text[0:len(self.text) - self.cursor_position] + "\n" + self.text[len(
+					self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			if self.inp.key_home_press:
+				autoscroll = True
+				while g() != "\n" and self.cursor_position < len(self.text):
+					self.cursor_position += 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+			if self.inp.key_end_press:
+				autoscroll = True
+				while g2() != "\n" and self.cursor_position > 0:
+					self.cursor_position -= 1
+				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
+					self.selection = self.cursor_position
+
+			# width -= round(15 * self.gui.scale)
+			t_len, t_wid = self.ddt.get_text_wh(self.text, font, width, True)
+			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
+				t_len += self.ddt.get_text_w(self.gui.editline, font)
+			if not click and not self.down_lock:
+				cursor_x = self.ddt.get_text_w(self.text[:len(self.text) - self.cursor_position], font)
+				margin = round(15 * self.gui.scale)
+				max_offset = max(t_len - width, 0)
+				if self.cursor_position == len(self.text):
+					self.offset = 0
+				elif self.cursor_position == 0:
+					self.offset = max_offset
+				elif cursor_x < self.offset + margin:
+					self.offset = max(cursor_x - margin, 0)
+				elif cursor_x > self.offset + width:
+					self.offset = min(cursor_x - width, max_offset)
+				else:
+					self.offset = min(max(self.offset, 0), max_offset)
+
+			x -= self.offset
+
+			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
+				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
+				if click:
+					if self.inp.mouse_position[1] < self.y -headroom -scroll + 1 and not self.down_lock:
+						self.cursor_position = len(self.text)
+					else:
+						self.set_cursor_from_click(scroll, False)
+					self.down_lock = True
+
+			if self.inp.mouse_up:
+				self.down_lock = False
+			if self.down_lock:
+				text = self.text
+				if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
+					self.selection = len(self.text)
+				else:
+					self.set_cursor_from_click(scroll, True)
+
+			# text = self.text[0: len(self.text) - self.cursor_position]
+			# a = self.ddt.get_text_w(text, font)
+
+			# text = self.text[0: len(self.text) - self.selection]
+			# b = self.ddt.get_text_w(text, font)
+
+			# top = self.y
+			# if big:
+			# 	top -= 12 * self.gui.scale
+
+
+
+			# self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
+
+			text = self.text
+			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
+
+			text = self.text[0: len(self.text) - self.cursor_position].split('\n')[-1]
+			space = self.ddt.get_text_w(text, font)
+
+			line = self.which_line_by_char(self.cursor_position)
+			if TextBox.cursor and self.selection == self.cursor_position:
+				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
+				self.ddt.rect((0 + space, line*self.text_height  + headroom-scroll - 0.2*self.text_height, 1 * self.gui.scale, 0.8*self.text_height), colour)
+
+			if click:
+				self.selection = self.cursor_position
+
+			if self.selection != self.cursor_position:
+				# text is selected
+				self.draw_selection_highlight(scroll - headroom, font, colour, width)
+		else:
+			# width -= round(15 * self.gui.scale)
+			text = self.text
+			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
+			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
+			# self.ddt.text((0, headroom-scroll,4,2,1), text, colour, font, max_w=width)
+			self.offset = 0
+			if self.coll(rect) and not self.tauon.field_menu.active:
+				self.gui.cursor_want = 2
+
+		if active:
+			tw, th = self.ddt.get_text_wh(self.text, font, max_x=width)
+			# tw, th = self.ddt.get_text_wh(self.text, font, max_x=width)
+			if self.gui.editline not in ("", self.inp.input_text):
+				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom-scroll), self.gui.editline, ColourRGBA(240, 230, 230, 255), font, max_w=width)
+				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
+
+			pixel_to_logical = self.tauon.pixel_to_logical
+			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
+
+		self.tauon.animate_monitor_timer.set()
+
+		self.pixel_position_from_cursor_position()
+
+		self.text_box_canvas_hide_rect.x = 0
+		self.text_box_canvas_hide_rect.y = 0
+
+		# if height != 0:
+		# 	self.text_box_canvas_hide_rect.h = height
+
+		# if self.offset:
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+
+		self.text_box_canvas_hide_rect.w = round(self.offset)
+		if height != 0:
+			self.text_box_canvas_hide_rect.h = height
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
+
+		self.text_box_canvas_hide_rect.w = round(t_len)
+		# self.text_box_canvas_hide_rect.h = round(t_wid)
+		self.text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * self.gui.scale))
+		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
+
+		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
+
+		self.text_box_canvas_rect.x = round(x)
+		self.text_box_canvas_rect.y = round(y) - headroom
+
+		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
+
+		if autoscroll:
+			self.map_lines(width)
+			return self.get_scroll_output(scroll, headroom, height)
+		return 0
+
+
 class TextBox2:
 	# TODO(Martin): Global class var!
 	cursor = True
@@ -21768,7 +22498,8 @@ class TextBox2:
 		return ""
 
 	def draw(
-			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False) -> None:
+			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False, headroom: int = 0) -> None:
+		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
 
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
@@ -22046,20 +22777,20 @@ class TextBox2:
 				text = self.get_selection(0)
 				if secret:
 					text = "●" * len(text)
-				space = self.ddt.text((0, 0), text, colour, font)
+				space = self.ddt.text((0, headroom), text, colour, font)
 				text = self.get_selection(1)
 				if secret:
 					text = "●" * len(text)
-				space += self.ddt.text((0 + space - inf_comp, 0), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255))
+				space += self.ddt.text((0 + space - inf_comp, headroom), text, ColourRGBA(240, 240, 240, 255), font, bg=ColourRGBA(40, 120, 180, 255))
 				text = self.get_selection(2)
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0 + space - (inf_comp * 2), 0), text, colour, font)
+				self.ddt.text((0 + space - (inf_comp * 2), headroom), text, colour, font)
 			else:
 				text = self.text
 				if secret:
 					text = "●" * len(text)
-				self.ddt.text((0, 0), text, colour, font)
+				self.ddt.text((0, headroom), text, colour, font)
 
 			text = self.text[0: len(self.text) - self.cursor_position]
 			if secret:
@@ -22068,7 +22799,7 @@ class TextBox2:
 
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
-				self.ddt.rect((0 + space, 0 + 2, 1 * self.gui.scale, 14 * self.gui.scale), colour)
+				self.ddt.rect((0 + space, 0  + headroom, 1 * self.gui.scale, 14 * self.gui.scale), colour)
 
 			if click:
 				self.selection = self.cursor_position
@@ -22078,7 +22809,7 @@ class TextBox2:
 			if secret:
 				text = "●" * len(text)
 			t_len = self.ddt.get_text_w(text, font)
-			self.ddt.text((0, 0), text, colour, font)
+			self.ddt.text((0, headroom), text, colour, font)
 			self.offset = 0
 			if self.coll(rect) and not self.tauon.field_menu.active:
 				self.gui.cursor_want = 2
@@ -22086,7 +22817,7 @@ class TextBox2:
 		if active:
 			tw, th = self.ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
-				ex = self.ddt.text((space + round(4 * self.gui.scale), 0), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
+				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
@@ -22114,7 +22845,7 @@ class TextBox2:
 		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
 
 		self.tauon.text_box_canvas_rect.x = round(x)
-		self.tauon.text_box_canvas_rect.y = round(y)
+		self.tauon.text_box_canvas_rect.y = round(y) - headroom
 		sdl3.SDL_RenderTexture(self.renderer, self.tauon.text_box_canvas, None, self.tauon.text_box_canvas_rect)
 
 class TextBox:
@@ -25473,6 +26204,7 @@ class SearchOverlay:
 					return
 
 			if inp.key_esc_press:
+				logging.info("esc received")
 				if self.delay_enter:
 					self.delay_enter = False
 				else:
@@ -27754,6 +28486,7 @@ class Over:
 		options: Sequence[tuple[str, bool, Callable[[], None]]],
 		accent: ColourRGBA | None = None,
 		width: int | None = None,
+		click: bool | None = None,
 	) -> int:
 		"""Compact radio switcher: a single bordered bar of short-label buttons,
 		the active one filled with the accent colour. Segment widths follow the
@@ -27761,6 +28494,8 @@ class Over:
 		slack is shared between segments). Returns the bar height."""
 		if accent is None:
 			accent = self.settings_page_accent()
+		if click is None:
+			click = self.click
 		gui = self.gui
 		x, y = round(pos[0]), round(pos[1])
 		h = round(32 * gui.scale)
@@ -27796,7 +28531,7 @@ class Over:
 				self.ddt.rect((seg_x, y, round(1 * gui.scale), h), border)
 			text_colour = ColourRGBA(20, 20, 25, 255) if active else self.colours.box_text
 			self.ddt.text((seg_x + seg_w // 2, y + round(7 * gui.scale), 2), label, text_colour, font, bg=bg)
-			if hover and self.click and not active:
+			if hover and click and not active:
 				self.inp.global_clicked = True
 				callback()
 			prev_active = active
@@ -45085,6 +45820,7 @@ class TimedLyricsEdit:
 		self.structure: list[ tuple[ str, float, str] ] = [] # backbone of synced editing system
 		                                                     # each line contains a timestamp as a string, that timestamp's actual time, and the line itself
 		self.line_edit_box:                    TextBox2 = TextBox2(tauon=tauon) # there are no multi line text boxes so we have to reuse the same one for every single line
+		self.unsynced_text_box:        MultiLineTextBox = MultiLineTextBox(tauon=tauon)
 		self.x_posns:                         list[int] = [] # to display text editing buttons in the right places
 		self.line_active:                           int = 0  # which lyric is currently playing
 		self.view_is_synced:                       bool = True # which view do we display
@@ -45095,23 +45831,27 @@ class TimedLyricsEdit:
 		self.unsynced_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "unsynced.png", True)
 
 		# these ones are only stored from one frame to the next
-		self.pausing:          bool = False # prevents typing a space in text box when pausing
-		self.cursor:     int | None = None  # tracks text box cursor position across frames
-		self.big_paste:        bool = False # do special things the frame after receiving a multi-line paste
-		self.continuous:       bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
-		self.queue_next_frame: bool = False # update gui when things happen
-		self.temp_line:         int = -1    # special scroll thingy when the line advances while it's offscreen
-		self.temp_w:            int = 0     # these two are used to recalculate self.x_posns when the user...
-		self.temp_scale:      float = self.gui.scale # ...resizes or rescales the window
-		self.editing_line:      int = -1    # clear selection when line changes
-		self.track_time_left:   int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
-		self.repeat_mode:list[bool] = []    # save the global repeat mode yada yada track end behavior
+		self.pausing:                   bool = False # prevents typing a space in text box when pausing
+		self.cursor:              int | None = None  # tracks text box cursor position across frames
+		self.edit_point: tuple[int,int]|None = None  # so user no longer has to hover over the text box forever
+		self.text_leftovers:      str | None = None  # text typed while editing line was offscreen
+		self.big_paste:                 bool = False # do special things the frame after receiving a multi-line paste
+		self.continuous:                bool = True  # track change behavior should only happen if the editor wasn't closed when the track changed
+		self.queue_next_frame:          bool = False # update gui when things happen
+		self.temp_line:                  int = -1    # special scroll thingy when the line advances while it's offscreen
+		self.temp_w:                     int = 0     # these two are used to recalculate self.x_posns when the user...
+		self.temp_scale:               float = self.gui.scale # ...resizes or rescales the window
+		self.editing_line:               int = -1    # clear selection when line changes
+		self.track_time_left:            int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
+		self.repeat_mode:         list[bool] = []    # save the global repeat mode yada yada track end behavior
+		self.recalculate_colors() # can't think of a better place for this
 
 		# scrolling
 		self.scroll_position: int = 0 # measured in pixels - greater means scrolled further down - 0 means centered on active line
 		self.lyrics_position: int = 0 # same thing but for the static view
 		self.allow_scroll:   bool = True # cancels auto scroll correction when adding & removing lines. probably doesn't actually do anything
 		self.font:            int = 20
+		self.big_font:        int = 228
 		self.line_height:     int = round(self.ddt.get_text_w("?", self.font, True))
 		self.yy:              int = self.line_height + round(10 * self.gui.scale) #line height plus spacing
 
@@ -45144,6 +45884,8 @@ class TimedLyricsEdit:
 		self.unsynced_menu.add(MenuItem(_("Search for Lyrics"), self.tauon.get_lyric_wiki, pass_ref=True))
 		self.unsynced_menu.add(MenuItem(_("Copy From Synced"), self.copy_from_synced, pass_ref=False))
 		self.unsynced_menu.add(MenuItem(_("Upload To LRCLIB"), self.upload_both_to_lrclib, pass_ref=False))
+		self.show_save_dialog: bool = False
+		self.will_overwrite: bool = False
 
 
 	# FUNCTIONS FROM THE RIGHT CLICK MENU
@@ -45249,6 +45991,8 @@ class TimedLyricsEdit:
 		for line in self.structure:
 			self.text += line[2] + "\n"
 		self.text = self.text.strip()
+		self.unsynced_text_box.text = self.text
+		self.unsynced_text_box.text_height = 0
 
 	def upload_both_to_lrclib(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
@@ -45274,6 +46018,178 @@ class TimedLyricsEdit:
 			)
 		self.reload_menu()
 
+	# SAVE DIALOG
+
+	def lrc_sidecar_off(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return not self.prefs.save_synced_to_lrc
+		self.prefs.save_synced_to_lrc = False
+		self.tauon.show_message(
+			_("Be careful!"),
+			_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
+			_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
+			mode="warning"
+		)
+		self.reload_menu()
+		return None
+
+	def lrc_sidecar_on(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.save_synced_to_lrc
+		self.prefs.save_synced_to_lrc = True
+		self.reload_menu()
+		return None
+
+	def dummy(self) -> None:
+		return
+
+	def save_dialog(self) -> None:
+		"""settings we need:
+		- note that says changes always save to tauon's db
+		- note that says what type of lyrics we're currently saving
+
+		- checkbox to save edits to the disk as well
+		- grayed out chooser: synced lyrics will save to (audio file, .lrc file)
+		- checkbox for don't show again
+		"""
+		gui = self.gui
+		ddt = self.ddt
+		colours = self.colours
+		st = self.tauon.pref_box
+		chooser_bar = self.tauon.pref_box.settings_segmented_bar
+
+		w = 500 * gui.scale
+		if self.view_is_synced:
+			h = 200 * gui.scale
+		else:
+			h = 130 * gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
+
+		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), self.colours.box_border)
+		ddt.rect_a((x, y), (w, h), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		if self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
+				(x, y, w, h)) and not gui.message_box):
+			self.show_save_dialog = False
+			gui.box_over = False
+
+		nomb = not gui.message_box
+
+		if self.view_is_synced:
+			# Title
+			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Synced Lyrics"), colours.box_title_text, 213)
+
+			# Path entry
+			x += round(15 * gui.scale)
+			y += round(25 * gui.scale)
+
+			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
+			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
+			# 	self.tauon.show_message(
+			# 		_("Enable relative paths when keeping playlist files together with audio"),
+			# 		_("Disable to move playlist files while keeping audio in one location"))
+
+			# y += round(25 * gui.scale)
+			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
+			y += round(25 * gui.scale)
+			row_gap = round(6 * gui.scale)
+			row_h = round(42*self.gui.scale)
+			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
+				(x,y,w - round(30*gui.scale),row_h),
+				self.prefs.save_lyrics_changes_to_files,
+				_("Also save lyrics to files on disk"),
+				_("(Specifically the Lyrics metadata field)"),
+				click=self.inp.mouse_click and nomb
+			)
+			if self.prefs.save_lyrics_changes_to_files:
+				y += row_h + row_gap
+				ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
+				y += round(20*self.gui.scale)
+				chooser_bar(
+					(x, y),
+					(
+						(_("...also to file metadata"), self.lrc_sidecar_off(1), self.lrc_sidecar_off),
+						(_("...to a separate .lrc file"), self.lrc_sidecar_on(1), self.lrc_sidecar_on),
+					),
+					width=w - round(30*gui.scale),
+					click=self.inp.mouse_click and nomb,
+				)
+			else:
+				y += row_h + row_gap
+				y += round(20*self.gui.scale)
+
+			y += row_h + row_gap
+
+			self.prefs.show_lyrics_save_menu = st.toggle_square(
+				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
+				self.inp.mouse_click and nomb)
+
+			ww = ddt.get_text_w(_("Save lyrics"), 211)
+			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
+				self.show_save_dialog = False
+				self.save()
+
+			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
+				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
+				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
+				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
+
+		else: # unsynced save box
+			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Static Lyrics"), colours.box_title_text, 213)
+
+			# Path entry
+			x += round(15 * gui.scale)
+			y += round(25 * gui.scale)
+
+			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
+			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
+			# 	self.tauon.show_message(
+			# 		_("Enable relative paths when keeping playlist files together with audio"),
+			# 		_("Disable to move playlist files while keeping audio in one location"))
+
+			# y += round(25 * gui.scale)
+			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
+			y += round(25 * gui.scale)
+			row_gap = round(6 * gui.scale)
+			row_h = round(42*self.gui.scale)
+			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
+				(x,y,w - round(30*gui.scale),row_h),
+				self.prefs.save_lyrics_changes_to_files,
+				_("Also save lyrics to files on disk"),
+				_("(Specifically the Lyrics metadata field)"),
+				click=self.inp.mouse_click and nomb
+			)
+			# if self.prefs.save_lyrics_changes_to_files:
+			# 	y += row_h + row_gap
+			# 	ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
+			# else:
+			# 	y += row_h + row_gap
+			# 	y += round(20*self.gui.scale)
+
+			y += row_h + row_gap + round(2*gui.scale)
+
+			self.prefs.show_lyrics_save_menu = st.toggle_square(
+				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
+				self.inp.mouse_click and nomb)
+
+			ww = ddt.get_text_w(_("Save lyrics"), 211)
+			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
+				self.show_save_dialog = False
+				self.save(False)
+
+			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
+				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
+				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
+				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
+
 
 
 
@@ -45281,7 +46197,7 @@ class TimedLyricsEdit:
 			self, text: str, x_pos: int, y_pos: int, font: int,
 			bg: ColourRGBA | None = None, active_bg: ColourRGBA | None = None,
 			txt: ColourRGBA | None = None, active_txt: ColourRGBA | None = None,
-			tooltip: str = "", off: bool = False, return_rect: bool = False) -> tuple[ bool | None, tuple[int, int, int, int] | None ]:
+			tooltip: str = "", off: bool = False, return_rect: bool = False, big: bool = False) -> tuple[ bool | None, tuple[int, int, int, int] | None ]:
 		"""Button centered around text display. off will disable the button if the condition is true,
 		return_rect will return the rect as a second parameter. returns True for click, False for right click,
 		None for nothing
@@ -45303,14 +46219,15 @@ class TimedLyricsEdit:
 		inner_border = 7*self.gui.scale
 		width = self.ddt.get_text_w(text, font)
 		height = self.ddt.get_text_w("?", font, True) /2
-		rect = (x_pos - inner_border, y_pos - inner_border, width + 2*inner_border, height + 2*inner_border)
+		if big:
+			rect = (x_pos - inner_border, y_pos - 2.5*inner_border, width + 2*inner_border, height + 2*inner_border)
+		else:
+			rect = (x_pos - inner_border, y_pos - inner_border, width + 2*inner_border, height + 2*inner_border)
 		self.tauon.fields.add(rect)
 		t_rect = (x_pos, y_pos)
 		if self.coll(rect) and not off:
 			self.ddt.bordered_rect( rect, active_bg, self.colours.box_text_border, round(1*self.gui.scale))
 			self.ddt.text( t_rect, text, active_txt, font, bg=active_bg)
-			if tooltip:
-				self.tauon.tool_tip.test(x_pos + 15 * self.gui.scale, y_pos - 28 * self.gui.scale, tooltip)
 			if self.inp.mouse_click:
 				if return_rect:
 					return True, rect
@@ -45323,6 +46240,9 @@ class TimedLyricsEdit:
 		else:
 			self.ddt.bordered_rect( rect, bg, self.colours.box_text_border, round(1*self.gui.scale))
 			self.ddt.text( t_rect, text, txt, font, bg=bg)
+
+		if tooltip and self.coll(rect):
+			self.tauon.tool_tip.test(x_pos + 15 * self.gui.scale, y_pos - 28 * self.gui.scale, tooltip)
 		if return_rect:
 			return None, rect
 		return None, None
@@ -45502,7 +46422,10 @@ class TimedLyricsEdit:
 					# we don't want to upload any synced lyrics to LRCLIB
 					# that are not actually synced properly
 				track.lyrics = lyrics
-				if save_tags and self.tauon.write_lyrics(track, False, True):
+				saved = False
+				if save_tags:
+					saved = self.tauon.write_lyrics(track, False, True)
+				if save_tags and saved:
 					if over:
 						self.tauon.show_message(
 							_("Unsynced lyrics saved successfully"),
@@ -45608,7 +46531,20 @@ class TimedLyricsEdit:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	def recalculate_colors(self) -> None:
+		self.normal_color = self.colours.lyrics
+		self.faded_color = copy.deepcopy(self.normal_color)
+		self.faded_color.a *= 0.6
+		self.faded_color.a = round(self.faded_color.a)
 
+		self.active_color = self.colours.active_lyric
+		self.faded_active_color = copy.deepcopy(self.active_color)
+		self.faded_active_color.a *= 0.6
+		self.faded_active_color.a = round(self.faded_active_color.a)
+
+		self.highlight = copy.deepcopy(self.active_color)
+		self.highlight.a *= 0.1
+		self.highlight.a = round(self.highlight.a)
 
 	# SYNCED EDITING FUNCTIONS
 
@@ -45631,10 +46567,12 @@ class TimedLyricsEdit:
 		time = self.pctl.decode_time
 		if current:
 			self.alted = True
-		if (self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time or current) and self.structure[self.line_active][0] != "tag":
+		if (int(self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time) + int(current) == 1) and self.structure[self.line_active][0] != "tag":
 			# if current line needs to be timed, time it
 			full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active][2] )
 			self.structure[self.line_active] = full_line
+		elif current and self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time:
+			return # special behavior at the start of the song is confusing
 		else:
 			while ( self.line_active < len(self.structure)-1 and self.structure[self.line_active+1][0] == "tag"):
 				self.line_active += 1 # increment until we're not going to timestanmp a tag
@@ -45762,15 +46700,19 @@ class TimedLyricsEdit:
 	def settings_for_one_line(self, line_number: int, y_pos: int) -> None:
 		"""Deals with editing and manipulating synced lines while paused"""
 		# x_posns contains in order: position for delete timestamp button, position for stamp teleport, position for text box, position for end of line
-		if self.pausing:
+		if self.pausing or self.show_save_dialog:
 			return
 
 		stamp, time, line = self.structure[line_number]
 		temp = self.structure[line_number]
+		if self.line_active == line_number:
+			text_color = self.colours.active_lyric
+		else:
+			text_color = self.colours.box_input_text
 
 		# TIMESTAMP - TELEPORT, DELETE AND SCROLL EDIT
 		if stamp != "??:??.??" and stamp != "tag":
-			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True) # timestamp button
+			button, rect = self.button(stamp, self.x_posns[1], y_pos, self.font, tooltip=_("Teleport to timestamp"), return_rect=True, txt=text_color) # timestamp button
 			if time >= 0 and button:
 				self.pctl.stop()
 				self.pctl.jump_time = time + self.prefs.sync_lyrics_time_offset/1000
@@ -45818,8 +46760,9 @@ class TimedLyricsEdit:
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, height)
 		self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale) )
 		self.line_edit_box.draw(
-			self.x_posns[2], y_pos, self.colours.box_input_text, True,
-			font = self.font, width = ( x ), big=True
+			self.x_posns[2], y_pos, text_color, True,
+			font = self.font, width = ( x ), big=True,
+			headroom=6
 		)
 		line = self.line_edit_box.text
 		full_line = ( stamp, time, line )
@@ -45857,7 +46800,7 @@ class TimedLyricsEdit:
 			self.accept_paste(line_number)
 
 		rect = (self.x_posns[2]-height/4, y_pos-height/4, x, self.yy)
-		if self.coll(rect):
+		if coll_point(self.get_edit_point(), rect):
 			position = len( self.line_edit_box.text ) - self.line_edit_box.cursor_position
 			# ENTER
 			if self.inp.key_return_press:
@@ -45922,6 +46865,27 @@ class TimedLyricsEdit:
 			self.autosave_timer.set()
 			self.autosaved = False
 
+	def update_edit_point(self, text_coll: tuple[int, int, int, int], full_coll: tuple[int, int, int, int]) -> tuple[tuple[int,int], bool]:
+		ctf = False
+		not_cleared_already = self.edit_point is not None
+		if self.inp.mouse_click:
+			if self.coll(text_coll): # set edit point if clicking in text
+				self.edit_point = copy.deepcopy(self.inp.mouse_position)
+			elif self.coll(full_coll): # clear edit point if clicking away
+				self.edit_point = None
+				ctf = False # overengineered as fuck but now we can click a timestamp but can't instanly delete shit
+			else:
+				self.edit_point = None
+				ctf = True and not_cleared_already
+		if self.inp.key_esc_press and not_cleared_already:
+			self.edit_point = None
+			self.inp.key_esc_press = False
+			ctf = True and not_cleared_already
+		return self.edit_point if self.edit_point is not None else self.inp.mouse_position, ctf
+
+	def get_edit_point(self) -> tuple[int, int]:
+		return self.edit_point if self.edit_point is not None else self.inp.mouse_position
+
 	def synced_render(self, index: int, x: int, y: int, hide_art: bool = False, w: int = 0, h: int = 0) -> None:
 		line_ys: list[ tuple[ tuple[ int, int ], float ] | None ] = []
 		# saves collider positions alongside their respective lines
@@ -45938,14 +46902,18 @@ class TimedLyricsEdit:
 			self.inp.key_right_press = False
 
 		# scroll
+		old_scroll_pos = self.scroll_position
 		if not (self.inp.key_lalt or self.inp.key_ralt):
-			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(x,y,w,h),30*self.gui.scale)
-			self.recenter_timeout.set()
+			self.scroll_position -= self.tauon.smooth_scroll.get_scroll("timed lyrics editor",(0,y,self.window_size[0],h),30*self.gui.scale)
+			if old_scroll_pos != self.scroll_position:
+				self.recenter_timeout.set()
 
 		highlight = True
 
 		scroll_to = 0
 		bg = self.colours.lyrics_panel_background
+		if vars(self.normal_color) != vars(self.colours.lyrics) or vars(self.active_color) != vars(self.colours.active_lyric):
+			self.recalculate_colors()
 		spacing = round(10 * self.gui.scale)
 		y_center = self.window_size[1]/2
 
@@ -45954,6 +46922,12 @@ class TimedLyricsEdit:
 			self.scroll_position = 0
 
 		test_time = self.tauon.get_real_time()
+
+		playing = self.pctl.playing_state == PlayingState.PLAYING
+
+		if self.text_leftovers is not None:
+			self.inp.input_text = self.inp.input_text + self.text_leftovers
+			self.text_leftovers = None
 
 		# determine active lyric
 		if self.pctl.track_queue[self.pctl.queue_step] == index and self.allow_scroll:
@@ -45997,6 +46971,12 @@ class TimedLyricsEdit:
 			self.scroll_position = max( self.scroll_position, -(len(self.structure)-self.line_active)*(self.yy) - self.window_size[1]/2 +(self.yy + self.gui.panelY) )
 		self.allow_scroll = True
 
+		# edit point follows all scrolling
+		if old_scroll_pos != self.scroll_position:
+			distance = self.scroll_position - old_scroll_pos
+			if self.edit_point is not None:
+				self.edit_point = (self.edit_point[0], self.edit_point[1] + distance)
+
 		center = y_center + self.scroll_position
 		# scroll position refers to y offset (in pixels) from the active lyric
 
@@ -46011,27 +46991,82 @@ class TimedLyricsEdit:
 			maximum_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 		else:
 			maximum_y = self.window_size[1]
+
+		# highlight for active section
+		hy = center + self.yy*(0-self.line_active) - self.yy*0.8
+		highlight_y = max(hy, self.gui.panelY)
+		highlight_rect = (
+			self.x_posns[6-int(playing)],
+			highlight_y,
+			self.x_posns[6-int(playing)] + self.yy,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y)
+		)
+		self.ddt.rect_abs(highlight_rect, self.highlight)
+		text_boxes_rect = (
+			self.x_posns[2],
+			highlight_y,
+			round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
+		)
+		full_coll_rect = (
+			self.x_posns[1],
+			highlight_y,
+			round( (self.x_posns[3]-self.x_posns[2]) * 0.9 ) + 7*self.gui.scale + (self.x_posns[2]-self.x_posns[1]),# collider_width,
+			min(max(hy + self.yy*(len(self.structure)+0.8), self.gui.panelY), maximum_y) - highlight_y,
+		)
+
+		# column headers
+		# first we check if we have any real timestamps
+		has_timestamps = True
+		for line in self.structure:
+			if line[1] < 0 and line[0] != "tag":
+				has_timestamps = False
+				break
+		if len(self.structure) < 2 or not has_timestamps:
+			tsw = self.ddt.get_text_w(_("Timestamps"), self.font, True)
+			if playing:
+				text_color = self.faded_active_color
+				time_color = self.active_color
+			else:
+				time_color = self.faded_active_color
+				text_color = self.active_color
+			possible_y = center + self.yy*(-1-self.line_active)
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
+				location[1] = round(possible_y)
+				self.ddt.text(location, _("Lyrics text"), text_color, self.font, w, bg) # line
+				location[0] = self.x_posns[1] - tsw
+				self.ddt.text(location, _("Timestamps"), time_color, self.font, 100 * self.gui.scale, bg) # timestamp
+				location[0] = self.x_posns[2]
+
+		# render lines
 		for i, line in enumerate(self.structure):
 			# determine y val
 			possible_y = center + self.yy*(i-self.line_active)
-
-			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y:
-				colour = self.colours.lyrics
-
+			if possible_y > 0 and possible_y+self.line_height/2 < maximum_y: # if line will be visible
 				if i < self.line_active:
 					prev = max( prev, line[1] )
-
-				if i == self.line_active and highlight and test_time >= line[1]:
-					colour = self.colours.active_lyric
+				active = i == self.line_active and highlight and test_time >= line[1]
+				match (active, playing):
+					case (True, True):
+						text_color = self.faded_active_color
+						time_color = self.active_color
+					case (False, True):
+						text_color = self.faded_color
+						time_color = self.normal_color
+					case (True, False):
+						time_color = self.faded_active_color
+						text_color = self.active_color
+					case (False, False):
+						time_color = self.faded_color
+						text_color = self.normal_color
 
 				location[1] = round(possible_y)
 				text = line[2]
 				if text.rstrip() == "":
 					text = "♪♪♪"
-				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
-				self.ddt.text(location, text, colour, self.font, w, bg) # line
+				self.ddt.text(location, text, text_color, self.font, w, bg) # line
 				location[0] = self.x_posns[1]
-				self.ddt.text(location, line[0], colour, self.font, 100 * self.gui.scale, bg) # timestamp
+				self.ddt.text(location, line[0], time_color, self.font, 100 * self.gui.scale, bg) # timestamp
 				location[0] = self.x_posns[2]
 
 				collider = ( round(possible_y), round(possible_y + self.yy) )
@@ -46042,14 +47077,13 @@ class TimedLyricsEdit:
 				line_ys.append( None )
 
 
-
-		# CLICK LINE TO SEEK or LET USER EDIT LINE
+		# all line interactions
 		did_one_line = False
 		if not (self.gui.box_over or self.tauon.pref_box.enabled or self.box_open):
 			self.gui.timed_lyrics_editing_now = False
 			# click a lyric to seek to it
-			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3]:
-				if self.pctl.playing_state == PlayingState.PLAYING:
+			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3] or self.edit_point is not None:
+				if playing:
 					if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
 					and (not h or y < self.inp.mouse_position[1] < y+h):
 						for i, rendered_line in enumerate(line_ys):
@@ -46066,29 +47100,35 @@ class TimedLyricsEdit:
 										self.line_active = i
 										self.time_next_line(True)
 								break
-
-				elif (self.window_size[1]-self.gui.panelBY < self.inp.mouse_position[1] or self.inp.mouse_position[1] < self.gui.panelY) or \
-					(line_ys[0] is not None and line_ys[0][0][0]-0.25*self.line_height > self.inp.mouse_position[1]) or \
-					(line_ys[ len(line_ys)-1 ] is not None and line_ys[ len(line_ys)-1 ][0][0]+0.75*self.line_height < self.inp.mouse_position[1]):
-					pass
-					# if self.check:
-					# 	self.check = False # if mouse is below or above relevant area, or first line is visible and mouse is above it, or last line is visible and mouse is below
-					# i'm only guessing this is more efficient than not doing it
 				else:
-					self.queue_next_frame = True
-					self.gui.timed_lyrics_editing_now = True
-					for i, rendered_line in enumerate(line_ys):
-						if rendered_line is None:
-							continue
-						if (rendered_line[0][0]-0.25*self.line_height) < self.inp.mouse_position[1] < (rendered_line[0][1]-0.25*self.line_height):
-							self.settings_for_one_line(i, rendered_line[0][0])
-							did_one_line = True
+					# do line editing while paused
+					position, cleared_this_frame = self.update_edit_point(text_boxes_rect, full_coll_rect)
+					if self.edit_point is not None:
+						self.gui.timed_lyrics_editing_now = True
+					if not cleared_this_frame:
+						for i, rendered_line in enumerate(line_ys):
+							if rendered_line is None:
+								continue
+							if (rendered_line[0][0]-0.25*self.line_height) < position[1] < (rendered_line[0][1]-0.25*self.line_height):
+								self.settings_for_one_line(i, rendered_line[0][0])
+								self.gui.timed_lyrics_editing_now = True
+								did_one_line = True
+					# if user types, scroll to show editing line if it's off screen
+					if self.edit_point is not None and self.inp.input_text and (position[1] > self.gui.panelBY or self.gui.panelY > position[1]) and not did_one_line:
+						if position[1] > self.gui.panelBY: # scroll down
+							self.scroll_position -= max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) + self.yy + int(hide_art)*self.yy
+							self.edit_point = (self.edit_point[0], self.edit_point[1] - max(position[1] - (self.window_size[1]-self.gui.panelBY), 0) - self.yy - int(hide_art)*self.yy)
+						elif self.gui.panelY > position[1]: # scroll up
+							self.scroll_position -= min(position[1] - self.gui.panelY, 0) - self.yy
+							self.edit_point = (self.edit_point[0], self.edit_point[1] - min(position[1] - self.gui.panelY, 0) + self.yy)
+						self.text_leftovers = self.inp.input_text # we can't put what they typed into the text box now so save it for next frame
 
 			# KEYBOARD SHORTCUTS
 			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
 				if (self.inp.key_lalt or self.inp.key_ralt):
 					self.scroll_timestamp(self.line_active)
 
+			# alt + up/down arrows to switch lines while playing
 			if (self.inp.key_lalt or self.inp.key_ralt) and (self.inp.key_up_press or self.inp.key_down_press):
 				if self.inp.key_up_press and self.line_active == 0:
 					pass
@@ -46124,7 +47164,10 @@ class TimedLyricsEdit:
 
 			# ctrl s to save
 			if (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_s_press:
-				self.save()
+				if self.prefs.show_lyrics_save_menu or (self.inp.key_shift_down or self.inp.key_shiftr_down):
+					self.show_save_dialog = True
+				else:
+					self.save()
 				self.inp.key_s_press = False
 
 
@@ -46132,18 +47175,18 @@ class TimedLyricsEdit:
 			# BUTTONS IN THE CORNER
 			widths = [
 				self.ddt.get_text_w("≪5", self.font),
-				self.ddt.get_text_w(_("Previous"), self.font),
-				max( self.ddt.get_text_w(_("TIME"), self.font), self.ddt.get_text_w(_("ADD TIME"), self.font), self.ddt.get_text_w(_("CURRENT"), self.font)),
-				self.ddt.get_text_w(_("SAVE"), self.font),
-				self.ddt.get_text_w(_("Save to .lrc"), self.font),
-				self.ddt.get_text_w(_("Save to tags"), self.font),
-				self.ddt.get_text_w(_("Discard"), self.font),
-				self.ddt.get_text_w("   ", self.font)
+				self.ddt.get_text_w(_("⇧"), self.font),
+				max( self.ddt.get_text_w(_("TIME⏎"), self.big_font), self.ddt.get_text_w(_("TIME+"), self.big_font), self.ddt.get_text_w(_("TIME⇨"), self.big_font)),
+				self.ddt.get_text_w("🖫", self.font),
+				# self.ddt.get_text_w(_("Save to .lrc"), self.font),
+				# self.ddt.get_text_w(_("Save to tags"), self.font),
+				self.ddt.get_text_w("🗑", self.font),#6
+				self.ddt.get_text_w("   ", self.font)#7
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
 				buttons_x = 10*self.gui.scale
-				x_gap = 18*self.gui.scale #min( self.yy, (self.window_size[0]-sum(widths))/4 )
+				x_gap = 18*self.gui.scale
 			else:
 				buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 				buttons_x = 25*self.gui.scale
@@ -46169,28 +47212,35 @@ class TimedLyricsEdit:
 				self.view_is_synced = False
 				self.queue_next_frame = True
 			self.synced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
-			buttons_x += widths[7] + x_gap
+			buttons_x += widths[5] + x_gap
 
 			# SAVE AND DISCARD
 			gn = copy.deepcopy(self.colours.level_green)
 			gn.a = round(gn.a * 0.3)
-			if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save()
-			buttons_x += widths[3] + save_gap
+			saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
+			if saving is not None:
+				if self.prefs.show_lyrics_save_menu or saving==False:
+					self.show_save_dialog = True
+					self.inp.mouse_click = False
+					self.inp.right_click = False
+					self.inp.level_2_right_click = False
+				else:
+					self.save()
+			buttons_x += widths[3] + x_gap
 
-			if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save(save_to_lrc=True, save_to_tags=False)
-			buttons_x += widths[4] + save_gap
+			# if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+			# 	self.save(save_to_lrc=True, save_to_tags=False)
+			# buttons_x += widths[4] + save_gap
 
-			if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-				self.save(save_to_lrc=False, save_to_tags=True)
-			buttons_x += widths[5] + save_gap
+			# if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
+			# 	self.save(save_to_lrc=False, save_to_tags=True)
+			# buttons_x += widths[5] + save_gap
 
 			rd = copy.deepcopy(self.colours.level_red)
 			rd.a = round(rd.a * 0.3)
-			if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
+			if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 				self.structurize_current(self.pctl.master_library[self.struct_track])
-			buttons_x += widths[6] + x_gap
+			buttons_x += widths[4] + x_gap
 
 			if not hide_art:
 				btx_top: float = 25*self.gui.scale
@@ -46200,44 +47250,52 @@ class TimedLyricsEdit:
 				bty_top = buttons_y
 
 			# BACK 5 AND PREVIOUS
-			if self.button("≪5", btx_top, bty_top, self.font)[0]:
+			if self.button("≪5", btx_top, bty_top, self.font, off=not playing,
+				tooltip=_("Go back 5 seconds"))[0]:
 				self.previous( max(test_time-5, 0) )
 			btx_top += widths[0] + x_gap
 
-			if self.button(_("Previous"), btx_top, bty_top, self.font,
-				off = ( not prev))[0]:
+			if self.button(_("⇧"), btx_top, bty_top, self.font,
+				off = ( not prev or not playing ), tooltip=_("Go to previous line"))[0]:
 				self.previous(prev)
 			btx_top += widths[1] + x_gap
 
 			# TIME or CURRENT or ADD TIME: click button or go to previous
 			if self.inp.key_lalt or self.inp.key_ralt:
-				text = _("CURRENT")
-				time_width = self.ddt.get_text_w(_("CURRENT"), self.font)
+				text = _("TIME⇨")
+				time_width = self.ddt.get_text_w(_("TIME⇨"), self.big_font)
 			elif self.inp.key_ctrl_down or self.inp.key_rctrl_down:
-				text = _("ADD TIME")
-				time_width = self.ddt.get_text_w(_("ADD TIME"), self.font)
+				text = _("TIME+")
+				time_width = self.ddt.get_text_w(_("TIME+"), self.big_font)
 			else:
-				text = _("TIME")
-				time_width = self.ddt.get_text_w(_("TIME"), self.font)
-			width = self.ddt.get_text_w(text, self.font)
+				text = _("TIME⏎")
+				time_width = self.ddt.get_text_w(_("TIME⏎"), self.big_font)
+			width = self.ddt.get_text_w(text, self.big_font)
 			if hide_art:
 				x_pos = btx_top + (widths[2] - width)/2
 			else:
 				x_pos = btx_top
 
-			match self.button(text, x_pos, bty_top, self.font,
-				off=self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0) )[0]:
+			# the giant TIME button. most important thing in the whole window
+			off = self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)
+			advance, advance_rect = self.button(text, x_pos, bty_top, self.big_font,
+				off=off, big=True, return_rect=True)
+			match advance:
 				case True:
 					self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
 				case False:
 					self.previous( max(prev, self.pctl.decode_time-5, 0) )
 				case None:
-					if not (self.pctl.playing_state!=PlayingState.PLAYING or not (len(self.structure)>=self.line_active or self.structure[self.line_active][1]<0)):
+					if not off:
 						if self.inp.key_return_press:
 							self.time_next_line(self.inp.key_lalt or self.inp.key_ralt)
 						elif self.inp.key_backspace_press:
 							self.previous( max(test_time-5, 0, prev) )
+					elif self.coll(advance_rect) and self.inp.mouse_click:
+						self.pctl.play() # wht a terrible bit of code
+						# if user clicks the giant TIME button while it's grayed out, start playing
 
+			# lyrics search status
 			if btx_top + widths[2] + x_gap + max( self.ddt.get_text_w(_("Searching..."), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
 				btx_top = (25 - 15*hide_art) * self.gui.scale
 				bty_top -= self.yy+10*self.gui.scale
@@ -46262,8 +47320,8 @@ class TimedLyricsEdit:
 					self.structurize_current(track)
 					self.tauon.now_searching = "off"
 
-			if self.coll((0,0,self.window_size[0],self.window_size[1])): # DIRTY - always refresh if cursor is on window
-				pass
+			if self.show_save_dialog:
+				self.save_dialog()
 
 		# end of stuff blocked by boxes being open
 
@@ -46290,39 +47348,39 @@ class TimedLyricsEdit:
 
 	# UNSYNCED EDITING FUNCTIONS
 
-	def edit_static(self) -> None:
-		track_object = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
-		if not target.parent.is_dir():
-			target.parent.mkdir()
-		with open(target, "w", encoding="utf-8") as lyrics_file:
-			if self.text:
-				lyrics_file.write( self.text )
-			else:
-				lyrics_file.write( _("Put the lyrics in this file and save it."))
-		if self.tauon.windows:
-			os.startfile(target)
-		elif self.tauon.macos:
-			subprocess.call(["open", "-t", target])
-		else:
-			subprocess.call(["xdg-open", target])
+	# def edit_static(self) -> None:
+	# 	track_object = self.pctl.master_library[self.struct_track]
+	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
+	# 	if not target.parent.is_dir():
+	# 		target.parent.mkdir()
+	# 	with open(target, "w", encoding="utf-8") as lyrics_file:
+	# 		if self.text:
+	# 			lyrics_file.write( self.text )
+	# 		else:
+	# 			lyrics_file.write( _("Put the lyrics in this file and save it."))
+	# 	if self.tauon.windows:
+	# 		os.startfile(target)
+	# 	elif self.tauon.macos:
+	# 		subprocess.call(["open", "-t", target])
+	# 	else:
+	# 		subprocess.call(["xdg-open", target])
 
 
-	def reload_lyric_file(self) -> None:
-		track = self.pctl.master_library[self.struct_track]
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
-		with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
-			new_lyrics = lyric_file.read().strip()
-		track = self.pctl.master_library[self.struct_track]
-		if not new_lyrics == _("Put the lyrics in this file and save it."):
-			if not new_lyrics == track.lyrics:
-				self.text = new_lyrics
-				if self.inp.key_lalt or self.inp.key_ralt:
-					track.lyrics = new_lyrics
-				# self.tauon.write_lyrics(track)
-		#self.test_update()
-		target.unlink()
-		self.queue_next_frame = True
+	# def reload_lyric_file(self) -> None:
+	# 	track = self.pctl.master_library[self.struct_track]
+	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
+	# 	with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
+	# 		new_lyrics = lyric_file.read().strip()
+	# 	track = self.pctl.master_library[self.struct_track]
+	# 	if not new_lyrics == _("Put the lyrics in this file and save it."):
+	# 		if not new_lyrics == track.lyrics:
+	# 			self.text = new_lyrics
+	# 			if self.inp.key_lalt or self.inp.key_ralt:
+	# 				track.lyrics = new_lyrics
+	# 			# self.tauon.write_lyrics(track)
+	# 	#self.test_update()
+	# 	target.unlink()
+	# 	self.queue_next_frame = True
 
 
 	def test_update(self) -> None:
@@ -46337,7 +47395,9 @@ class TimedLyricsEdit:
 			except ValueError:
 				return False
 
+		i = 0
 		for line in track_object.lyrics.split("\n"):
+			i += 1
 			if any(tag in line for tag in LRC_tags):
 				continue
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -46346,89 +47406,99 @@ class TimedLyricsEdit:
 				self.text += line[pos:] + "\n"
 			else:
 				self.text += line + "\n"
+		if i == 0:
+			self.text = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
+			self.unsynced_text_box.text = self.text
+			self.unsynced_text_box.font = self.font
+			self.unsynced_text_box.text_height = 0 # triggers map_lines
+			self.lyrics_position = 200
+			self.unsynced_text_box.cursor_position = len(self.text)
+			self.unsynced_text_box.selection = len(self.text)
 
 
 	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
 		colour = self.colours.lyrics
 		bg = self.colours.lyrics_panel_background
 
-
 		x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 		x -= 100 * self.gui.scale
 		w = self.window_size[0] - x - 30 * self.gui.scale
-		h = int(self.window_size[1] - 100 * self.gui.scale)
+		y = int(self.gui.panelY)
+		h = int(self.window_size[1] - self.gui.panelBY - self.gui.panelY)
 		offset = 20*self.gui.scale
 
+		# scroll
 		old_pos = self.lyrics_position
-		if self.inp.key_up_press:
-			self.lyrics_position += 35 * self.gui.scale
-		if self.inp.key_down_press:
-			self.lyrics_position -= 35 * self.gui.scale
 		self.lyrics_position -= self.scroll.get_scroll("lyrics edit", (x,y,w,h), 30*self.gui.scale)
-		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
-
 		tw, th = self.ddt.get_text_wh(self.text + "\n", self.font, w, True)
-
 		self.lyrics_position = max(self.lyrics_position, th * -1 + 100 * self.gui.scale)
 		self.lyrics_position = min(self.lyrics_position, 70 * self.gui.scale)
-		self.ddt.text((x, y + self.lyrics_position, 4, w), self.text, colour, self.font, w, bg)
+		self.queue_next_frame = self.queue_next_frame or old_pos != self.lyrics_position
 
+		# text focus and keyboard shortcuts are mutually exclusive
+		edit_pos, ignore = self.update_edit_point((x,y,w,h),(x,y,w,h))
+		self.gui.timed_lyrics_editing_now = coll_point(edit_pos,(x,y,w,h))
 
+		# main editing functionality
+		self.unsynced_text_box.text = self.text
+		# the draw function returns scroll info for if arrow keys move the cursor offscreen
+		self.lyrics_position -= self.unsynced_text_box.draw(
+			x, y, self.colours.lyrics, self.gui.timed_lyrics_editing_now,
+			font = self.font, width = ( w ), height = h, headroom=0,
+			scroll=-self.lyrics_position
+		)
+		self.text = self.unsynced_text_box.text
+
+		# buttons. start by measuring them
 		widths = [
 			self.ddt.get_text_w("   ", self.font),
-			self.ddt.get_text_w(_("Edit Lyrics"), self.font),
-			self.ddt.get_text_w(_("Read Back"), self.font),
-			self.ddt.get_text_w(_("Cancel"), self.font),
-			self.ddt.get_text_w(_("SAVE"), self.font),
-			self.ddt.get_text_w(_("Save to tags"), self.font),
-			self.ddt.get_text_w(_("Discard"), self.font),
-			self.ddt.get_text_w(_("Reopen Editor"), self.font)
+			self.ddt.get_text_w(_("🖫"), self.font),
+			self.ddt.get_text_w(_("🗑"), self.font),
 		]
 		if hide_art:
 			buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
 			buttons_x = 10*self.gui.scale
-			x_gap = 18*self.gui.scale #min( self.yy, (self.window_size[0]-sum(widths))/4 )
+			x_gap = 18*self.gui.scale
 		else:
 			buttons_y = self.window_size[1]-self.gui.panelBY-35*self.gui.scale
 			buttons_x = 25*self.gui.scale
 			x_gap = self.yy
 		save_gap = round(12 * self.gui.scale)
 
-		lyric_file = Path( self.tauon.config_directory / "lyrics-editor" / str( self.pctl.track_queue[self.pctl.queue_step] )).with_suffix(".txt")
-		can_load = lyric_file.is_file()
-
+		# view switcher button
 		if self.button("   ", buttons_x, buttons_y, self.font, tooltip="Go to Synced View")[0]:
 			self.view_is_synced = True
 		self.unsynced_img.render(buttons_x-6*self.gui.scale, buttons_y-6*self.gui.scale, self.colours.box_button_text)
 		buttons_x += widths[0] + x_gap
 
-		# SAVE AND DISCARD
+		# save button
 		gn = copy.deepcopy(self.colours.level_green)
 		gn.a = round(gn.a * 0.3)
-		if self.button( _("SAVE"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			self.save(False)
-		buttons_x += widths[4] + save_gap
+		saving = self.button( "🖫", buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]
+		if saving is not None:
+			if self.prefs.show_lyrics_save_menu or saving==False: # happens when right clicking
+				self.show_save_dialog = True
+				self.inp.mouse_click = False
+				self.inp.right_click = False
+				self.inp.level_2_right_click = False
+			else:
+				self.save(False)
+		buttons_x += widths[1] + x_gap
 
-		if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			self.save(False, save_to_tags=True)
-		buttons_x += widths[5] + save_gap
-
+		# discard button
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
-		if self.button(_("Discard"), buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
+		if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
 			self.structurize_current(self.pctl.master_library[self.struct_track])
-		buttons_x += widths[6] + x_gap
+		buttons_x += widths[2] + x_gap
 
+		# lyrics search status
 		if not hide_art:
 			btx_top = 25*self.gui.scale
 			bty_top = buttons_y-self.yy-10*self.gui.scale
 		else:
 			btx_top = buttons_x
 			bty_top = buttons_y
-
-		if self.button(_("Edit Lyrics"), btx_top, bty_top, self.font, tooltip=_("Opens an external editor."))[0]:
-			self.edit_static()
-		btx_top += widths[1] + x_gap -7*self.gui.scale
 
 		match self.tauon.now_searching:
 			case "off":
@@ -46447,51 +47517,16 @@ class TimedLyricsEdit:
 				self.test_update()
 				self.tauon.now_searching = "off"
 
-		if can_load and not self.box_open:
-			# measure box height
-			box_width = 400*self.gui.scale
-			drop_w, text_height = self.ddt.get_text_wh(
-					_("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""),
-					self.font,
-					box_width - 2*offset,
-					True
-				)
-			too_wide = widths[2] + widths[3] + widths[6] + 3*offset > box_width
-			if too_wide:
-				button_height = self.line_height + 28*self.gui.scale + offset/2
+		# ctrl + s to save
+		if (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_s_press:
+			if self.prefs.show_lyrics_save_menu or (self.inp.key_shift_down or self.inp.key_shiftr_down):
+				self.show_save_dialog = True
 			else:
-				button_height = self.line_height/2 + 14*self.gui.scale
-			box_height = text_height + button_height + offset
-			x, y = self.window_size[0]/2, self.window_size[1]/2
+				self.save(False)
+			self.inp.key_s_press = False
 
-			rect = ( x - 0.5*box_width, y - 0.5*box_height, box_width, box_height)
-			self.ddt.bordered_rect( rect, self.colours.box_background, self.colours.box_text_border, round(1*self.gui.scale))
-			txt = self.colours.box_button_text
-			x0 = rect[0] + offset
-			y0 = rect[1] + offset
-			self.ddt.text( [x0,y0,4,box_width-2*offset], _("Edit the opened lyrics in your text editor, then save the file and click \"Read Back.\""), txt, self.font)
-
-			y0 += text_height - 7*self.gui.scale
-			x0 = rect[0] + offset
-			if self.button(_("Read Back"), x0, y0, self.font, gn, self.colours.level_green, tooltip=_("Make sure to save your changes."))[0]:
-				self.reload_lyric_file()
-			x0 += offset + widths[2]
-			if self.button(_("Cancel"), x0, y0, self.font, rd, self.colours.level_red, tooltip=_("Delete the file."))[0]:
-				lyric_file.unlink()
-			if too_wide:
-				x0 = rect[0] + offset/2
-				y0 += self.line_height/2 + 14*self.gui.scale + offset
-			else:
-				x0 += offset + widths[3]
-			if self.button(_("Reopen Editor"), x0, y0, self.font, tooltip=_("In case you closed it by accident."))[0]:
-				if self.tauon.windows:
-					os.startfile(lyric_file)
-				elif self.tauon.macos:
-					subprocess.call(["open", "-t", lyric_file])
-				else:
-					subprocess.call(["xdg-open", lyric_file])
-
-
+		if self.show_save_dialog:
+			self.save_dialog()
 
 
 	def render(self) -> None:
@@ -46513,10 +47548,12 @@ class TimedLyricsEdit:
 					case "full save":
 						self.save()
 			self.structurize_current(track)
-			self.test_update()
 			self.lyrics_position = 0
+			self.test_update()
 			self.continuous = True
+			self.edit_point = None
 			self.clicks = 0
+			self.will_overwrite = self.will_overwrite_lyrics(track)
 		if self.pctl.decode_time < 1.0 and len(self.repeat_mode) == 2:
 			self.pctl.repeat_mode, self.pctl.album_repeat_mode = self.repeat_mode
 			self.repeat_mode = []
@@ -46609,7 +47646,10 @@ class TimedLyricsEdit:
 					round( max( gcx - 100*self.gui.scale, self.yy) ),
 					round( gcx ),
 					round( max(self.window_size[0] - 90*self.gui.scale, self.window_size[0]*0.98) ),
-					round( max( gcx - 145*self.gui.scale, 0 )) ]
+					round( max( gcx - 145*self.gui.scale, 0 )),
+					round( gcx - 70*self.gui.scale ), # vertical highlight for time column while playing
+					round( gcx + 30*self.gui.scale ), # vertical highlight for text column while paused
+					]
 				self.x_posns[2] = max(self.x_posns[1] + 90*self.gui.scale, gcx)
 			h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
 
@@ -47160,6 +48200,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("playlist_folder_path", prefs.playlist_folder_path)
 
 	cf.update_value("save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files)
+	cf.update_value("show_lyrics_save_menu", prefs.show_lyrics_save_menu)
 	cf.update_value("use_lrc_instead", prefs.save_synced_to_lrc)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
@@ -47331,6 +48372,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.save_lyrics_changes_to_files = cf.sync_add(
 		"bool", "save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files,
 		"Save lyrics edits to tags when searching, clearing, pasting, or using the editor.")
+	prefs.show_lyrics_save_menu = cf.sync_add(
+		"bool", "show_lyrics_save_menu", prefs.show_lyrics_save_menu,
+		"Show the save lyrics dialog every time. (Even if this is False you can open it by right-clicking the save button.)")
 	prefs.synced_lyrics_editor_track_end_mode = cf.sync_add(
 		"string", "synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode,
 		"What to do when you reach the end of the track in the lyrics editor. Can be either \"stop\", \"autosave\" or \"full save\"."
@@ -55103,13 +56147,13 @@ def main(holder: Holder) -> None:
 		)
 
 		if inp.k_input and inp.key_focused == 0:
-			if gui.timed_lyrics_editing_now:
-				keymaps.hits.clear()
-			elif text_entry_shortcuts_blocked and keymaps.hits:
+			if text_entry_shortcuts_blocked and keymaps.hits:
 				escape_pressed = keymaps.test("escape")
 				keymaps.hits.clear()
 				if escape_pressed:
 					inp.key_esc_press = True
+			elif gui.timed_lyrics_editing_now:
+				keymaps.hits.clear()
 			if keymaps.hits:
 				n = 1
 				while n < 10:

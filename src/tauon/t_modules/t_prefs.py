@@ -341,6 +341,7 @@ class Prefs:
 
 	synced_lyrics_editor_track_end_mode: Literal["stop", "autosave", "full save", "repeat"] = "repeat"
 	save_lyrics_changes_to_files: bool = False
+	show_lyrics_save_menu: bool = True
 
 	sep_genre_multi: bool = False
 	topchart_sorts_played: bool = True
