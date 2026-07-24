@@ -2374,18 +2374,34 @@ int get_audio(int max, float* buff) {
 		//struct pw_stream *stream = userdata;
 		struct pw_buffer *buffer;
 		struct spa_buffer *buf;
-		//void *data;
-		int size;
+		struct spa_data *data;
+		uint32_t frames;
+		const uint32_t stride = sizeof(float) * 2;
 
 
 		if ((buffer = pw_stream_dequeue_buffer(global_stream)) == NULL)
 			return;
 
 		buf = buffer->buffer;
+		data = &buf->datas[0];
 
-		size = get_audio(buffer->requested * 2, buf->datas[0].data) * 4;
+		// `requested` is the number of source frames wanted by PipeWire's
+		// resampler, not a guarantee that the mapped buffer is that large.
+		// Respect the actual capacity or high-rate streams can advance our
+		// position counter for frames that do not fit in the output buffer.
+		frames = data->maxsize / stride;
+		if (buffer->requested > 0 && buffer->requested < frames) {
+			frames = buffer->requested;
+		}
 
-		buf->datas[0].chunk->size = size;
+		if (frames > 0) {
+			data->chunk->size = get_audio(frames * 2, data->data) * sizeof(float);
+		} else {
+			data->chunk->size = 0;
+		}
+		data->chunk->offset = 0;
+		data->chunk->stride = stride;
+		buffer->size = data->chunk->size / stride;
 		pw_stream_queue_buffer(global_stream, buffer);
 
 	}
@@ -2410,6 +2426,18 @@ int get_audio(int max, float* buff) {
 	// rate is only a preference; the graph may settle on something else. Track
 	// the real value in sample_rate_out so the internal resampler bridges any
 	// residual gap instead of pump_decode spinning trying to force a match.
+	static void pipe_apply_output_rate(int rate) {
+		if (rate <= 0 || (rate == sample_rate_out && rate == current_sample_rate)) return;
+
+		pthread_mutex_lock(&buffer_mutex);
+		if (current_sample_rate > 0 && current_sample_rate != rate && position_count > 0) {
+			position_count = (int) (position_count * ((double) rate / current_sample_rate));
+		}
+		sample_rate_out = rate;
+		current_sample_rate = rate;
+		pthread_mutex_unlock(&buffer_mutex);
+	}
+
 	static void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param) {
 		if (param == NULL || id != SPA_PARAM_Format) return;
 
@@ -2420,9 +2448,14 @@ int get_audio(int max, float* buff) {
 		struct spa_audio_info_raw info = { 0 };
 		if (spa_format_audio_raw_parse(param, &info) < 0) return;
 
-		if (info.rate > 0 && (int) info.rate != sample_rate_out) {
-			log_msg(LOG_INFO, "ph: PipeWire negotiated samplerate %u", info.rate);
-			sample_rate_out = info.rate;
+		if (info.rate > 0 && (
+			(int) info.rate != sample_rate_out ||
+			(int) info.rate != current_sample_rate
+		)) {
+			if ((int) info.rate != sample_rate_out) {
+				log_msg(LOG_INFO, "ph: PipeWire negotiated samplerate %u", info.rate);
+			}
+			pipe_apply_output_rate(info.rate);
 		}
 	}
 
@@ -3591,7 +3624,10 @@ void pump_decode() {
 		buff_reset();
 		pipe_requested_rate = sample_rate_src;
 		pipe_set_samplerate = sample_rate_src;
-		sample_rate_out = sample_rate_src;  // optimistic; on_param_changed corrects it
+		// The buffer is empty here, so move both audio generation and position
+		// timing to the new rate. on_param_changed corrects both if negotiation
+		// settles on a different rate.
+		pipe_apply_output_rate(sample_rate_src);
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 	}
 	#endif
