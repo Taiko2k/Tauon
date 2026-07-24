@@ -21779,6 +21779,8 @@ class MultiLineTextBox:
 		self.text: str = ""
 		self.lines: list[str] = []
 		self.text_height: int = 0
+		self.visible_lines: list[str] = [] # lines as they are displayed with text wrapping
+		self.line_counts: dict[int:int] = {} # get from cursor position to line number
 		self.line_ys: list[int] = 0
 		self.cursor_position = 0
 		self.selection = 0
@@ -21806,50 +21808,91 @@ class MultiLineTextBox:
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
 		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
-	def map_lines(self) -> None:
-		lines = self.text.split("\n")
+
+	def map_lines(self, width: int) -> None:
+		self.lines = self.text.split("\n")
 		self.line_ys = []
-		self.lines = []
+		# self.lines = []
+		self.visible_lines = []
+		self.line_counts = {}
 		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), self.font, 200)
-		for i, line in enumerate(lines):
-			self.lines.append(line)
+		count = len(self.text)
+		for i, line in enumerate(self.ddt.get_wrapped_lines(self.text, self.font, width)):
+			count -= len(line)
+			self.visible_lines.append(line)
 			self.line_ys.append(i * self.text_height)
+			self.line_counts[count] = i
+		# running_count = 0
+		# lookup_counter = len(self.text)
+		# for line in lines:
+		# 	self.lines.append(line)
+		# 	throwaway, height = self.ddt.get_text_wh(line, self.font, width, True)
+		# 	did = False
+		# 	for line2 in self.ddt.get_wrapped_lines(line, self.font, width):
+		# 		did = True
+		# 		running_count += 1
+		# 		self.visible_lines.append(line2)
+		# 		self.line_ys.append(running_count * self.text_height)
+		# 	if not did:
+		# 		running_count += 1
+		# 		self.visible_lines.append(line)
+		# 		self.line_ys.append(running_count * self.text_height)
 		self.known_scale = self.gui.scale
 		self.known_window_size = copy.deepcopy(self.gui.window_size)
 
 	def which_line_by_y(self, y_position: int) -> int:
+		# WORKING
 		return min(len(self.line_ys)-1, round(y_position/self.text_height))
 
 	def which_line_by_char(self, char: int) -> int:
-		return self.text[:len(self.text)-char].count('\n')
+		# WORKING
+		orig_char = char
+		while char < len(self.text):
+			try:
+				return self.line_counts[char]+1
+			except:
+				char += 1
+		return 0 #self.text[:len(self.text)-char].count('\n')
+
+	def partial_line_from_char(self, char: int) -> str:
+		# WORKING i fucking think
+		line = self.which_line_by_char(char)
+		fucker = "".join(self.visible_lines[line:]).strip()
+		return fucker[:-char]
 
 	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int]|None = None) -> None:
+		# WORKING
 		if in_pos is None:
 			in_pos = self.inp.mouse_position
+
 		pre = 0
 		post = 0
 		line = self.which_line_by_y(in_pos[1] -self.y + scroll -0.25*self.text_height)
-		temp_total = sum(len(tally) for tally in self.lines[line+1:]) + len(self.lines)-line-1
-		text = self.lines[line]
+		temp_total = sum(len(tally) for tally in self.visible_lines[line+1:])
+
+		text = self.visible_lines[line]
 		temp = 0
 
-		full = self.ddt.get_text_w(text, self.font)
+		meas = text.strip()
+
+		full = self.ddt.get_text_w(meas, self.font)
 		if self.x + full <= in_pos[0]:
 			out_val = temp_total
 		elif in_pos[0] <= self.x:
-			out_val = temp_total + len(text)
+			out_val = temp_total + len(meas)
 		else:
-			for i in range(len(text)):
-				post = self.ddt.get_text_w(text[0:i + 1], self.font)
+			for i in range(len(meas)):
+				post = self.ddt.get_text_w(meas[0:i + 1], self.font)
 				# pre_half = int((post - pre) / 2)
 
 				if self.x + pre - 0 <= in_pos[0] <= self.x + post + 0:
 					diff = post - pre
 					if in_pos[0] >= self.x + pre + int(diff / 2):
-						temp = len(text) - i - 1
+						temp = len(meas) - i - 1
 					else:
-						temp = len(text) - i
+						temp = len(meas) - i
 					out_val = temp + temp_total
+					# logging.info(self.text[-temp - temp_total:-temp_total])
 					break
 
 				pre = post
@@ -21863,6 +21906,7 @@ class MultiLineTextBox:
 		return pre, post
 
 	def pixel_position_from_cursor_position(self, selection: bool = False) -> tuple[int, int]:
+		# WORKING more or less fuck me
 		if selection:
 			pos = self.selection
 		else:
@@ -21873,7 +21917,9 @@ class MultiLineTextBox:
 		if pos == 0:
 			width = self.ddt.get_text_w(self.text.split('\n')[-1], self.font)
 		else:
-			width = self.ddt.get_text_w(self.text[:-pos].split('\n')[-1], self.font)
+			width = self.ddt.get_text_w(self.partial_line_from_char(pos), self.font)
+			logging.info(self.partial_line_from_char(pos))
+		# self.ddt.rect((width,line*self.text_height,5,5), ColourRGBA(255,0,0,255))
 		return width,line*self.text_height
 
 
@@ -21890,6 +21936,7 @@ class MultiLineTextBox:
 			offset = self.text_height
 		pos = pos[0] + self.x, pos[1] - scroll + self.y + offset
 		self.set_cursor_from_click(scroll, False, pos)
+
 
 	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[list, str]|None:
 		test = start_line - end_line
@@ -22079,7 +22126,7 @@ class MultiLineTextBox:
 			self.font = font
 		if self.text_height == 0 or self.known_window_size != self.gui.window_size \
 		or self.known_scale != self.gui.scale:
-			self.map_lines()
+			self.map_lines(width)
 
 		autoscroll = False
 		# A little bit messy
@@ -22140,6 +22187,13 @@ class MultiLineTextBox:
 			def d() -> None:
 				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
 					self.text) - self.cursor_position:]
+				self.selection = self.cursor_position
+
+			def d2() -> None:
+				self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
+					self.text) - self.cursor_position + 1:]
+				if self.cursor_position > 0:
+					self.cursor_position -= 1
 				self.selection = self.cursor_position
 
 			if self.inp.backspace_press or self.inp.key_right_press or \
@@ -22225,7 +22279,7 @@ class MultiLineTextBox:
 
 			if self.inp.key_down_press:
 				autoscroll = True
-				if self.which_line_by_char(self.cursor_position) != len(self.lines)-1:
+				if self.which_line_by_char(self.cursor_position) != len(self.visible_lines)-1:
 					self.switch_lines(scroll, False)
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
@@ -22270,7 +22324,14 @@ class MultiLineTextBox:
 				self.gui.cursor_want = 2
 
 			# Delete key to remove text in front of cursor
-			if self.inp.key_del:
+			if self.inp.key_del and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
+				self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position > 0:
+				autoscroll = True
+				while g2() not in (" ", "\n"):
+					d2()
+				while g2() in (" ", "\n") and g2() is not None:
+					d2()
+			elif self.inp.key_del:
 				autoscroll = True
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
@@ -22291,17 +22352,19 @@ class MultiLineTextBox:
 
 			if self.inp.key_home_press:
 				autoscroll = True
-				self.cursor_position = len(self.text)
+				while g() != "\n" and self.cursor_position < len(self.text):
+					self.cursor_position += 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 			if self.inp.key_end_press:
 				autoscroll = True
-				self.cursor_position = 0
+				while g2() != "\n" and self.cursor_position > 0:
+					self.cursor_position -= 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			width -= round(15 * self.gui.scale)
-			t_len, t_wid = self.ddt.get_text_wh(self.text, font, width)
+			# width -= round(15 * self.gui.scale)
+			t_len, t_wid = self.ddt.get_text_wh(self.text, font, width, True)
 			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
 				t_len += self.ddt.get_text_w(self.gui.editline, font)
 			if not click and not self.down_lock:
@@ -22339,19 +22402,19 @@ class MultiLineTextBox:
 				else:
 					self.set_cursor_from_click(scroll, True)
 
-			text = self.text[0: len(self.text) - self.cursor_position]
-			a = self.ddt.get_text_w(text, font)
+			# text = self.text[0: len(self.text) - self.cursor_position]
+			# a = self.ddt.get_text_w(text, font)
 
-			text = self.text[0: len(self.text) - self.selection]
-			b = self.ddt.get_text_w(text, font)
+			# text = self.text[0: len(self.text) - self.selection]
+			# b = self.ddt.get_text_w(text, font)
 
-			top = self.y
-			if big:
-				top -= 12 * self.gui.scale
+			# top = self.y
+			# if big:
+			# 	top -= 12 * self.gui.scale
 
 
 
-			self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
+			# self.ddt.rect([a, headroom-scroll-2*self.gui.scale, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
 			text = self.text
 			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
@@ -22371,7 +22434,7 @@ class MultiLineTextBox:
 				# text is selected
 				self.draw_selection_highlight(scroll - headroom, font, colour, width)
 		else:
-			width -= round(15 * self.gui.scale)
+			# width -= round(15 * self.gui.scale)
 			text = self.text
 			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
 			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
@@ -22392,6 +22455,8 @@ class MultiLineTextBox:
 			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
+
+		self.pixel_position_from_cursor_position()
 
 		self.text_box_canvas_hide_rect.x = 0
 		self.text_box_canvas_hide_rect.y = 0
@@ -22423,7 +22488,7 @@ class MultiLineTextBox:
 		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
 
 		if autoscroll:
-			self.map_lines()
+			self.map_lines(width)
 			return self.get_scroll_output(scroll, headroom, height)
 		return 0
 
@@ -26207,6 +26272,7 @@ class SearchOverlay:
 					return
 
 			if inp.key_esc_press:
+				logging.info("esc received")
 				if self.delay_enter:
 					self.delay_enter = False
 				else:
@@ -45951,7 +46017,7 @@ class TimedLyricsEdit:
 			self.text += line[2] + "\n"
 		self.text = self.text.strip()
 		self.unsynced_text_box.text = self.text
-		self.unsynced_text_box.map_lines()
+		self.unsynced_text_box.text_height = 0
 
 	def upload_both_to_lrclib(self) -> None:
 		track = self.pctl.master_library[self.struct_track]
@@ -46381,9 +46447,9 @@ class TimedLyricsEdit:
 					# we don't want to upload any synced lyrics to LRCLIB
 					# that are not actually synced properly
 				track.lyrics = lyrics
-				logging.info(save_tags)
-				saved = self.tauon.write_lyrics(track, False, True)
-				logging.info(saved)
+				saved = False
+				if save_tags:
+					saved = self.tauon.write_lyrics(track, False, True)
 				if save_tags and saved:
 					if over:
 						self.tauon.show_message(
@@ -46836,7 +46902,7 @@ class TimedLyricsEdit:
 			else:
 				self.edit_point = None
 				ctf = True and not_cleared_already
-		if self.inp.key_esc_press:
+		if self.inp.key_esc_press and not_cleared_already:
 			self.edit_point = None
 			self.inp.key_esc_press = False
 			ctf = True and not_cleared_already
@@ -47354,7 +47420,9 @@ class TimedLyricsEdit:
 			except ValueError:
 				return False
 
+		i = 0
 		for line in track_object.lyrics.split("\n"):
+			i += 1
 			if any(tag in line for tag in LRC_tags):
 				continue
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -47363,17 +47431,12 @@ class TimedLyricsEdit:
 				self.text += line[pos:] + "\n"
 			else:
 				self.text += line + "\n"
-		else:
-			self.text = \
-			  _("You don't yet have any static lyrics for this song.") + '\n' \
-			+ _("To start, you can either replace this text immediately,") + '\n' \
-			+ _("or you can right-click and select \"copy from synced\"") + '\n' \
-			+ _("if you already have synced lyrics.") + '\n\n' \
-			+ _("The right-click menu will also let you search and") + '\n' \
-			+ _("download lyrics if you think someone else might know them.")
+		if i == 0:
+			self.text = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
 			self.unsynced_text_box.text = self.text
 			self.unsynced_text_box.font = self.font
-			self.unsynced_text_box.map_lines()
+			self.unsynced_text_box.text_height = 0 # triggers map_lines
+			self.lyrics_position = 200
 			self.unsynced_text_box.cursor_position = len(self.text)
 			self.unsynced_text_box.selection = len(self.text)
 
@@ -47510,8 +47573,8 @@ class TimedLyricsEdit:
 					case "full save":
 						self.save()
 			self.structurize_current(track)
-			self.test_update()
 			self.lyrics_position = 0
+			self.test_update()
 			self.continuous = True
 			self.edit_point = None
 			self.clicks = 0
