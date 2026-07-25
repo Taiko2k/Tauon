@@ -30962,6 +30962,17 @@ class Over:
 		if self.gui.opened_config_file:
 			self.tauon.reload_config_file()
 
+	def theme_editor_component_colour(self, name: str, fallback: ColourRGBA) -> ColourRGBA:
+		"""Helper to either pull a colour from the draft ColoursClass instance or a fallback
+
+		This is needed as some colours can be set to None which is annoying to catch
+		"""
+		if self.theme_editor_draft_colours is None:
+			return fallback
+
+		colour = getattr(self.theme_editor_draft_colours, name, None)
+		return colour if isinstance(colour, ColourRGBA) else fallback
+
 	def render_theme_editor_window(self) -> None:
 		gui = self.gui
 		ddt = self.ddt
@@ -31123,9 +31134,9 @@ class Over:
 
 			subcolors_are_identical = True
 			if len(attr) > 1: # THEME_EDITOR_COMPONENTS is currently set up for a STATIC visible_rows value. if this value ever changes, get smarter.
-				compare_color = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				compare_color = self.theme_editor_component_colour(attr[0], current_colour)
 				for color in attr:
-					component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+					component_colour = self.theme_editor_component_colour(color, current_colour)
 					subcolors_are_identical = subcolors_are_identical and component_colour == compare_color
 					compare_color = component_colour
 
@@ -31168,7 +31179,7 @@ class Over:
 							self.sync_theme_editor_controls_from_current_colour()
 
 
-						component_colour = getattr(self.theme_editor_draft_colours, color, current_colour) if self.theme_editor_draft_colours is not None else current_colour
+						component_colour = self.theme_editor_component_colour(color, current_colour)
 						swatch_rect = (sub_rect[0] + round(8 * gui.scale), sub_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
 						ddt.rect(swatch_rect, component_colour)
 						ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), subrow_border), round(1 * gui.scale))
@@ -31184,7 +31195,7 @@ class Over:
 
 			swatch_rect = (row_rect[0] + round(8 * gui.scale), row_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
 			if subcolors_are_identical:
-				component_colour = getattr(self.theme_editor_draft_colours, attr[0], current_colour) if self.theme_editor_draft_colours is not None else current_colour
+				component_colour = self.theme_editor_component_colour(attr[0], current_colour)
 				ddt.rect(swatch_rect, component_colour)
 				ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
 			else:
