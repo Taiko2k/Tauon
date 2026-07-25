@@ -175,6 +175,8 @@ class TDraw:
 
 		self.was_truncated = False
 
+		self._locate_cache: dict = {}
+
 	def load_image(self, g: BytesIO) -> sdl3.LP_SDL_Surface:
 		size = g.getbuffer().nbytes
 		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
@@ -779,9 +781,8 @@ class TDraw:
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
 
 	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
-		"""
-		Flynn disclaimer: slop function, seems to work though. Wraps the input text and returns the text of the displayed lines.
-		"""
+		# this function is 95% Genuine Slop™
+		# imagines a beautiful world where the input text is wrapped and returns the separated lines as they would appear
 		if not text:
 			return []
 
@@ -827,3 +828,29 @@ class TDraw:
 					all_lines.append(encoded[start:end].decode("utf-8"))
 
 		return all_lines
+
+	def measure_and_locate(self, text: str, font: int, x_pixels: float, y_pixels: float = 0) -> tuple[float, int, bool]:
+		# this function is 100% Genuine Slop™
+		# provides a faster way of setting your cursor position based on mouse position
+		key = (text, font)
+		layout = self._locate_cache.get(key)
+		if layout is None:
+			layout = PangoCairo.create_layout(self.context)
+			layout.set_font_description(self._font_description(font))
+			layout.set_width(-1)
+			layout.set_text(text, -1)
+			self._locate_cache[key] = layout
+			# simple bound so this doesn't grow forever
+			if len(self._locate_cache) > 64:
+				self._locate_cache.pop(next(iter(self._locate_cache)))
+
+		full_w_pango, _ = layout.get_size()
+		full_w_px = full_w_pango / Pango.SCALE
+
+		inside, index, trailing = layout.xy_to_index(
+			round(x_pixels * Pango.SCALE),
+			round(y_pixels * Pango.SCALE),
+		)
+		char_index = len(text.encode("utf-8")[:index].decode("utf-8"))
+
+		return full_w_px, char_index, bool(trailing)
