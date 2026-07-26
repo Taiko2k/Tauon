@@ -45883,6 +45883,7 @@ class TimedLyricsEdit:
 		self.editing_line:               int = -1    # clear selection when line changes
 		self.track_time_left:            int = -1    # we'll try to filter out manual track skips so we don't unexpectedly save
 		self.repeat_mode:         list[bool] = []    # save the global repeat mode yada yada track end behavior
+		self.rescroll:                  bool = False # scroll to the active line when you time it
 		self.recalculate_colors() # can't think of a better place for this
 
 		# scrolling
@@ -46197,7 +46198,7 @@ class TimedLyricsEdit:
 		track = self.pctl.master_library[self.struct_track]
 		over = self.will_overwrite_lyrics(track)
 		will_ovw_synced = self.will_overwrite_synced()
-		save_tags = (self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags) and (not will_ovw_synced or (will_ovw_synced and self.prefs.allow_overwrite_synced_with_static))
+		save_tags = (self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags) and (synced or (not will_ovw_synced or (will_ovw_synced and self.prefs.allow_overwrite_synced_with_static)))
 		save_lrc = self.prefs.save_synced_to_lrc if save_to_lrc is None else save_to_lrc
 
 		if synced:
@@ -46370,6 +46371,18 @@ class TimedLyricsEdit:
 			with Opus(track.fullpath) as audio:
 				audio.read()
 				lyr = ''.join(audio.lyrics)
+		elif track.file_ext in ("WV", "TTA", "APE"):
+			with Ape(track.fullpath) as audio:
+				audio.read()
+				lyr = ''.join(audio.lyrics)
+		else:
+			try:
+				audio = mutagen.File(track.fullpath)
+			except Exception as e:
+				logging.error(e)
+			if type(audio.tags) is mutagen.mp4.MP4Tags:
+				if "\xa9lyr" in audio.tags:
+					lyr = audio.tags["\xa9lyr"][0]
 		if lyr:
 			return lyrics_are_synced(lyr)
 		return False
@@ -46420,7 +46433,7 @@ class TimedLyricsEdit:
 		if self.view_is_synced:
 			h = 200 * gui.scale
 		else:
-			h = 200 * gui.scale
+			h = 180 * gui.scale
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
@@ -46444,13 +46457,6 @@ class TimedLyricsEdit:
 			x += round(15 * gui.scale)
 			y += round(25 * gui.scale)
 
-			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
-			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
-			# 	self.tauon.show_message(
-			# 		_("Enable relative paths when keeping playlist files together with audio"),
-			# 		_("Disable to move playlist files while keeping audio in one location"))
-
-			# y += round(25 * gui.scale)
 			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
 			y += round(25 * gui.scale)
 			row_gap = round(6 * gui.scale)
@@ -46505,13 +46511,6 @@ class TimedLyricsEdit:
 			x += round(15 * gui.scale)
 			y += round(25 * gui.scale)
 
-			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
-			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
-			# 	self.tauon.show_message(
-			# 		_("Enable relative paths when keeping playlist files together with audio"),
-			# 		_("Disable to move playlist files while keeping audio in one location"))
-
-			# y += round(25 * gui.scale)
 			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
 			y += round(25 * gui.scale)
 			row_gap = round(6 * gui.scale)
@@ -46531,10 +46530,8 @@ class TimedLyricsEdit:
 					_("Even if it would overwrite synced lyrics"),
 					click=self.inp.mouse_click and nomb
 				)
-				y += round(20*self.gui.scale)
 			else:
 				y += row_h + row_gap
-				y += round(20*self.gui.scale)
 
 			y += row_h + row_gap + round(2*gui.scale)
 
@@ -46549,9 +46546,23 @@ class TimedLyricsEdit:
 				self.show_save_dialog = False
 				self.save(False)
 
-			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
-				and (not self.prefs.save_synced_to_lrc and ovw_synced and self.prefs.allow_overwrite_synced_with_static) \
-				or self.prefs.save_synced_to_lrc:
+			# are we even going to overwrite stuff in the files?
+			if self.prefs.save_lyrics_changes_to_files and self.will_overwrite:
+				# saving to the files now would mean overwriting
+				if ovw_synced and self.prefs.allow_overwrite_synced_with_static:
+					# we're going to overwrite synced lyrics, but that's ok
+					ovw = True
+				elif not ovw_synced:
+					# we're going to overwrite static lyrics which is always ok
+					ovw = True
+				elif ovw_synced and not self.prefs.allow_overwrite_synced_with_static:
+					# we would overwrite synced lyrics, but we're not allowed to
+					ovw = False
+			else:
+				# we're not writing to disk, or not overwriting
+				ovw = False
+
+			if ovw:
 				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
 				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
 				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
@@ -46658,6 +46669,7 @@ class TimedLyricsEdit:
 				full_line = ( self.get_stamp_from_time(time), time, self.structure[self.line_active+1][2] ) # else time the next line
 				self.structure[self.line_active+1] = full_line
 		self.queue_next_frame = True
+		self.rescroll = True
 
 	def scroll_timestamp(self, current_line: int, active: bool = True) -> bool:
 		stamp, time, line = self.structure[current_line]
@@ -46994,7 +47006,8 @@ class TimedLyricsEdit:
 		y_center = self.window_size[1]/2
 
 		# reset scroll position after 5 seconds
-		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == PlayingState.PLAYING:
+		if self.rescroll or (self.recenter_timeout.get() > 5 and self.pctl.playing_state == PlayingState.PLAYING):
+			self.rescroll = False
 			self.scroll_position = 0
 
 		test_time = self.tauon.get_real_time()
@@ -47093,10 +47106,10 @@ class TimedLyricsEdit:
 
 		# column headers
 		# first we check if we have any real timestamps
-		has_timestamps = True
+		has_timestamps = False
 		for line in self.structure:
-			if line[1] < 0 and line[0] != "tag":
-				has_timestamps = False
+			if line[1] > 0:
+				has_timestamps = True
 				break
 		if len(self.structure) < 2 or not has_timestamps:
 			tsw = self.ddt.get_text_w(_("Timestamps"), self.font, True)
@@ -47462,6 +47475,7 @@ class TimedLyricsEdit:
 				return False
 
 		i = 0
+		track_object.lyrics = track_object.lyrics.replace('\r','\n')
 		for line in track_object.lyrics.split("\n"):
 			i += 1
 			if any(tag in line for tag in LRC_tags):
