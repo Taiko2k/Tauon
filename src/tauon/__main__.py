@@ -430,13 +430,26 @@ if "--tray" in sys.argv:
 	flags |= sdl3.SDL_WINDOW_HIDDEN
 
 
-t_window = sdl3.SDL_CreateWindow(  # TODO(Taiko): use SDL_CreateWindowAndRenderer()
-	window_title,
-	# o_x, o_y,
-	logical_size[0],
-	logical_size[1],
-	flags,
-)
+window_properties = sdl3.SDL_CreateProperties()
+if window_properties:
+	sdl3.SDL_SetStringProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_TITLE_STRING, window_title)
+	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_X_NUMBER, o_x)
+	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_Y_NUMBER, o_y)
+	sdl3.SDL_SetNumberProperty(
+		window_properties,
+		sdl3.SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER,
+		logical_size[0],
+	)
+	sdl3.SDL_SetNumberProperty(
+		window_properties,
+		sdl3.SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
+		logical_size[1],
+	)
+	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags)
+	t_window = sdl3.SDL_CreateWindowWithProperties(window_properties)
+	sdl3.SDL_DestroyProperties(window_properties)
+else:
+	t_window = None
 
 if not t_window:
 	logging.error("ERROR CREATING WINDOW!")
