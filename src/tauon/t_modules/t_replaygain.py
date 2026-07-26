@@ -19,15 +19,24 @@ def parse_r128_gain(value: bytes | str) -> float:
 	return float(value.strip()) / 256 + 5
 
 
-def replaygain_multiplier(gain_db: float | None, peak: float | None, preamp_db: float) -> float:
+def replaygain_multiplier(
+	gain_db: float | None,
+	peak: float | None,
+	preamp_db: float,
+	allow_compression: bool = False,
+) -> float:
 	"""Convert ReplayGain metadata to a clipping-safe linear multiplier.
 
 	Preamp is global, so missing or malformed gain metadata uses the implicit
-	0 dB fallback. Missing or invalid peak metadata is treated as full scale.
+	0 dB fallback. When compression is disabled, missing or invalid peak
+	metadata is treated as full scale. With compression enabled, the full
+	requested gain is returned and the native output compressor controls peaks.
 	"""
 	if gain_db is None or not math.isfinite(gain_db):
 		gain_db = 0.0
 
 	multiplier = 10 ** ((gain_db + preamp_db) / 20)
+	if allow_compression:
+		return multiplier
 	valid_peak = peak if peak is not None and math.isfinite(peak) and peak > 0 else 1.0
 	return min(multiplier, 1 / valid_peak)

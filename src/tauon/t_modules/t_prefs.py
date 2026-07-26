@@ -109,6 +109,7 @@ class Prefs:
 
 	replay_gain:       int  = 0  # 0=off 1=track 2=album
 	replay_preamp:     int  = 0  # db
+	replay_allow_compression: bool = True
 	radio_page_lyrics: bool = True
 
 	show_gimage:      bool = False

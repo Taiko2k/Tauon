@@ -2149,7 +2149,12 @@ class PlayerCtl:
 		self.a_time: float = 0
 		self.b_time: float = 0
 		# self.playlist_backup = []
-		self.active_replaygain: int = 0
+		self.active_replaygain: float = 0
+		self.active_replaygain_gain_db: float = 0
+		self.replaygain_applied: bool = False
+		self.output_compression_enabled: bool = False
+		self.output_compression_active: bool = False
+		self.output_compression_reduction_db: float = 0
 		self.stop_mode: StopMode = StopMode.OFF
 		self.stop_ref: tuple[str, str] | None = None
 
@@ -19348,6 +19353,7 @@ class Tauon:
 			prefs.milk_cut_out,  # 193
 			prefs.milk_favorite_presets,  # 194
 			prefs.art_bg_frosted,  # 195
+			prefs.replay_allow_compression,  # 196
 		]
 
 		try:
@@ -20327,26 +20333,41 @@ class Tauon:
 		if mode == 1:
 			return self.prefs.replay_gain == 0
 		self.prefs.replay_gain = 0
+		self.request_replaygain_update()
 		return None
 
 	def switch_rg_track(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.replay_gain == 1
 		self.prefs.replay_gain = 0 if self.prefs.replay_gain == 1 else 1
-		# self.prefs.replay_gain = 1
+		self.request_replaygain_update()
 		return None
 
 	def switch_rg_album(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.replay_gain == 2
 		self.prefs.replay_gain = 0 if self.prefs.replay_gain == 2 else 2
+		self.request_replaygain_update()
 		return None
 
 	def switch_rg_auto(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return self.prefs.replay_gain == 3
 		self.prefs.replay_gain = 0 if self.prefs.replay_gain == 3 else 3
+		self.request_replaygain_update()
 		return None
+
+	def toggle_replaygain_compression(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.replay_allow_compression
+		self.prefs.replay_allow_compression ^= True
+		self.request_replaygain_update()
+		return None
+
+	def request_replaygain_update(self) -> None:
+		self.pctl.playerCommand = "replaygain"
+		self.pctl.playerCommandReady = True
+		self.gui.request_frame()
 
 	def toggle_jump_crossfade(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -29551,7 +29572,7 @@ class Over:
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
 		row1_h = round(416 * gui.scale)
-		row2_h = round(291 * gui.scale)
+		row2_h = round(355 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
 
@@ -29626,6 +29647,7 @@ class Over:
 			width=inner_w,
 		)
 		inner_y += bar_h + round(12 * gui.scale)
+		old_replay_preamp = prefs.replay_preamp
 		prefs.replay_preamp = int(self.settings_stepper_row(
 			(inner_x, inner_y, inner_w, round(30 * gui.scale)),
 			_("Pre-amp"),
@@ -29635,6 +29657,37 @@ class Over:
 			accent=accent,
 			formatter=lambda number: f"{number:+d} dB" if number else "0 dB",
 		))
+		if prefs.replay_preamp != old_replay_preamp:
+			self.tauon.request_replaygain_update()
+		inner_y += row_h + row_gap
+		self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h),
+			self.tauon.toggle_replaygain_compression,
+			_("Allow compression"),
+			accent=accent,
+		)
+		inner_y += row_h + round(10 * gui.scale)
+
+		if self.pctl.playing_state == PlayingState.STOPPED or not self.pctl.replaygain_applied:
+			applied_text = _("Applied") + ": " + _("Inactive")
+		else:
+			applied_text = _("Applied") + f": {self.pctl.active_replaygain_gain_db:+.2f} dB"
+		self.ddt.text((inner_x, inner_y), applied_text, self.colours.box_text_label, 11)
+		inner_y += round(19 * gui.scale)
+
+		if self.pctl.output_compression_active:
+			compression_text = (
+				_("Compression") + ": " + _("Active")
+				+ f" ({self.pctl.output_compression_reduction_db:.2f} dB)"
+			)
+			compression_colour = accent
+		elif self.pctl.output_compression_enabled:
+			compression_text = _("Compression") + ": " + _("Ready")
+			compression_colour = self.colours.box_text_label
+		else:
+			compression_text = _("Compression") + ": " + _("Off")
+			compression_colour = self.colours.box_sub_text
+		self.ddt.text((inner_x, inner_y), compression_text, compression_colour, 11)
 
 		inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 			right_rect,
@@ -50467,6 +50520,8 @@ def main(holder: Holder) -> None:
 				prefs.milk_favorite_presets = save[194]
 			if len(save) > 195 and save[195] is not None:
 				prefs.art_bg_frosted = save[195]
+			if len(save) > 196 and save[196] is not None:
+				prefs.replay_allow_compression = save[196]
 
 			del save
 			break

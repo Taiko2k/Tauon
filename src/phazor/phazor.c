@@ -227,6 +227,13 @@ int reset_set_byte = 0;
 int rg_byte = 0;
 float rg_value_pending = 1.0;
 float rg_value_current = 1.0;
+float rg_output_base = 1.0f;
+float rg_output_correction = 1.0f;
+float rg_output_correction_target = 1.0f;
+int rg_output_correction_ramp_remaining = 0;
+float rg_output_pending_base = 1.0f;
+float rg_output_pending_correction = 1.0f;
+bool rg_output_boundary_pending = false;
 
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
@@ -278,6 +285,8 @@ int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
 #define LIMITER_THRESHOLD 0.89125093813f // -1 dBFS
 #define LIMITER_ATTACK_MS 1.5f
 #define LIMITER_RELEASE_MS 120.0f
+#define RG_COMPRESSOR_THRESHOLD 0.89125093813f // -1 dBFS
+#define RG_COMPRESSOR_RELEASE_MS 150.0f
 
 typedef struct {
 	float b0;
@@ -306,6 +315,12 @@ float limiter_gain = 1.0f;
 float limiter_attack_coeff = 0.0f;
 float limiter_release_coeff = 0.0f;
 int limiter_coeff_sample_rate = 0;
+// Shared output compressor for ReplayGain and positive EQ boosts.
+int rg_compressor_enabled = 0;
+int rg_compressor_active = 0;
+float rg_compressor_gain = 1.0f;
+float rg_compressor_release_coeff = 0.0f;
+int rg_compressor_coeff_sample_rate = 0;
 
 unsigned int test1 = 0;
 
@@ -1292,10 +1307,6 @@ void fade_fx() {
 	if (rg_value_current != 1.0) {
 		bfr[high] *= rg_value_current;
 		bfl[high] *= rg_value_current;
-		if (bfl[high] > 1) bfl[high] = 1;
-		if (bfl[high] < -1) bfl[high] = -1;
-		if (bfr[high] > 1) bfr[high] = 1;
-		if (bfr[high] < -1) bfr[high] = -1;
 	}
 
 	if (fade_mini < 1.0) {
@@ -2030,6 +2041,81 @@ static void limiter_update_coefficients(int sample_rate) {
 	limiter_coeff_sample_rate = sample_rate;
 }
 
+static void rg_compressor_reset_state() {
+	rg_compressor_gain = 1.0f;
+	rg_compressor_active = 0;
+}
+
+static void rg_compressor_update_coefficients(int sample_rate) {
+	if (sample_rate <= 0) return;
+
+	float release_samples = (RG_COMPRESSOR_RELEASE_MS * 0.001f) * (float)sample_rate;
+	if (release_samples < 1.0f) release_samples = 1.0f;
+
+	rg_compressor_release_coeff = expf(-1.0f / release_samples);
+	rg_compressor_coeff_sample_rate = sample_rate;
+}
+
+static inline void rg_apply_live_correction(float *l, float *r) {
+	if (rg_output_boundary_pending && low == rg_byte) {
+		rg_output_base = rg_output_pending_base;
+		rg_output_correction = rg_output_pending_correction;
+		rg_output_correction_target = rg_output_pending_correction;
+		rg_output_correction_ramp_remaining = 0;
+		rg_output_boundary_pending = false;
+	}
+
+	if (rg_output_correction_ramp_remaining > 0) {
+		// Complete live setting changes in 10 ms without introducing a click.
+		rg_output_correction += (
+			rg_output_correction_target - rg_output_correction
+		) / (float)rg_output_correction_ramp_remaining;
+		rg_output_correction_ramp_remaining--;
+	} else {
+		rg_output_correction = rg_output_correction_target;
+	}
+
+	*l *= rg_output_correction;
+	*r *= rg_output_correction;
+}
+
+static inline void rg_compressor_process_stereo(float *l, float *r) {
+	if (!rg_compressor_enabled) return;
+
+	if (current_sample_rate > 0 && rg_compressor_coeff_sample_rate != current_sample_rate) {
+		rg_compressor_update_coefficients(current_sample_rate);
+	}
+
+	float peak = fmaxf(fabsf(*l), fabsf(*r));
+	float target_gain = 1.0f;
+	if (peak > RG_COMPRESSOR_THRESHOLD) {
+		target_gain = RG_COMPRESSOR_THRESHOLD / (peak + 1e-20f);
+	}
+
+	// An immediate, stereo-linked attack prevents overshoot. Release is
+	// smoothed so isolated peaks do not produce abrupt level changes.
+	if (target_gain < rg_compressor_gain) {
+		rg_compressor_gain = target_gain;
+	} else {
+		rg_compressor_gain = target_gain
+			+ (rg_compressor_release_coeff * (rg_compressor_gain - target_gain));
+	}
+
+	if (!isfinite(rg_compressor_gain) || rg_compressor_gain <= 0.0f) {
+		rg_compressor_gain = 1.0f;
+	}
+
+	*l *= rg_compressor_gain;
+	*r *= rg_compressor_gain;
+	rg_compressor_active = rg_compressor_gain < 0.9995f;
+
+	// Guard against rounding error after gain reduction.
+	if (*l > 1.0f) *l = 1.0f;
+	else if (*l < -1.0f) *l = -1.0f;
+	if (*r > 1.0f) *r = 1.0f;
+	else if (*r < -1.0f) *r = -1.0f;
+}
+
 static float eq_biquad_magnitude(const eq_biquad_t *f, float w) {
 	float cos_w = cosf(w);
 	float sin_w = sinf(w);
@@ -2322,7 +2408,12 @@ int get_audio(int max, float* buff) {
 
 				float l = bfl[low];
 				float r = bfr[low];
+				rg_apply_live_correction(&l, &r);
 				eq_process_stereo(&l, &r);
+				if (eq_enabled && eq_active && !rg_compressor_enabled) {
+					l *= eq_headroom_gain;
+					r *= eq_headroom_gain;
+				}
 
 				if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
 				if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
@@ -2336,9 +2427,11 @@ int get_audio(int max, float* buff) {
 
 				// Apply final volume adjustment
 				float final_vol = pow((gate * volume_on), config_volume_power);
-				if (eq_enabled && eq_active) final_vol *= eq_headroom_gain;
 				l = l * final_vol;
 				r = r * final_vol;
+				// Limiting after soft volume lets ReplayGain and EQ boosts use
+				// its headroom before any compression is applied.
+				rg_compressor_process_stereo(&l, &r);
 				limiter_process_stereo(&l, &r);
 
 				buff[b] = l;
@@ -2954,7 +3047,21 @@ int load_next_inner() {
 
 	if (loaded_target_file[0] == 'h') buffering = 1;
 
+	pthread_mutex_lock(&buffer_mutex);
 	rg_byte = high;
+	if (get_buff_fill() == 0) {
+		rg_output_base = rg_value_current;
+		rg_output_correction = 1.0f;
+		rg_output_correction_target = 1.0f;
+		rg_output_correction_ramp_remaining = 0;
+		rg_output_boundary_pending = false;
+		rg_compressor_reset_state();
+	} else {
+		rg_output_pending_base = rg_value_current;
+		rg_output_pending_correction = 1.0f;
+		rg_output_boundary_pending = true;
+	}
+	pthread_mutex_unlock(&buffer_mutex);
 
 	char peak[35];
 
@@ -4408,6 +4515,56 @@ EXPORT int ramp_volume(int percent, int speed) {
 	volume_ramp_speed = speed;
 	volume_want = percent / 100.0;
 	return 0;
+}
+
+EXPORT void replaygain_set_live(float multiplier) {
+	if (!isfinite(multiplier) || multiplier <= 0.0f) multiplier = 1.0f;
+
+	pthread_mutex_lock(&buffer_mutex);
+	float base = rg_output_base;
+	if (!isfinite(base) || base <= 0.0f) base = 1.0f;
+	rg_output_correction_target = multiplier / base;
+	int sample_rate = current_sample_rate > 0 ? current_sample_rate : 44100;
+	rg_output_correction_ramp_remaining = sample_rate / 100;
+	if (rg_output_correction_ramp_remaining < 1) rg_output_correction_ramp_remaining = 1;
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void replaygain_set_pending(float multiplier) {
+	if (!isfinite(multiplier) || multiplier <= 0.0f) multiplier = 1.0f;
+
+	pthread_mutex_lock(&buffer_mutex);
+	rg_value_pending = multiplier;
+	if (rg_output_boundary_pending) {
+		float base = rg_output_pending_base;
+		if (!isfinite(base) || base <= 0.0f) base = 1.0f;
+		rg_output_pending_correction = multiplier / base;
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void replaygain_set_compressor(int enabled) {
+	pthread_mutex_lock(&buffer_mutex);
+	rg_compressor_enabled = enabled != 0;
+	if (!rg_compressor_enabled) rg_compressor_reset_state();
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT int replaygain_get_compressor_active() {
+	pthread_mutex_lock(&buffer_mutex);
+	int active = rg_compressor_active;
+	pthread_mutex_unlock(&buffer_mutex);
+	return active;
+}
+
+EXPORT float replaygain_get_compressor_reduction_db() {
+	pthread_mutex_lock(&buffer_mutex);
+	float reduction = 0.0f;
+	if (rg_compressor_enabled && isfinite(rg_compressor_gain) && rg_compressor_gain < 1.0f) {
+		reduction = 20.0f * log10f(rg_compressor_gain);
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+	return reduction;
 }
 
 EXPORT void eq_set_enable(int n) {
