@@ -81,6 +81,7 @@ class Prefs:
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
 	save_synced_to_lrc: bool = True
+	allow_overwrite_synced_with_static: bool = False
 
 	use_title:    bool = False
 	auto_extract: bool = False

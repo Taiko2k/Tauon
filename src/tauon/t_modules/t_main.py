@@ -22181,14 +22181,22 @@ class MultiLineTextBox:
 			# 	self.ddt.text(pos, text, text_color, self.font, bg=highlight_color)
 
 
-	def get_scroll_output(self, scroll: int, headroom: int, height: int) -> int:
-		test_y = self.pixel_position_from_cursor_position()[1] - scroll
+	def get_scroll_output(self, scroll: int, headroom: int, height: int, autoscroll: bool) -> int:
 		scroll_output = 0
-		if test_y < -headroom + self.text_height: # scroll up
-			scroll_output = test_y + headroom - self.text_height
-		elif test_y > height-headroom - self.text_height: # scroll down
-			scroll_output = test_y -height+headroom + self.text_height
-		return scroll_output
+		if self.down_lock:
+			if self.inp.mouse_position[1] < self.y:
+				return 0- (self.y - self.inp.mouse_position[1])
+			elif self.inp.mouse_position[1] > self.y+height:
+				return (self.inp.mouse_position[1] - self.y-height)
+		if autoscroll:
+			test_y = self.pixel_position_from_cursor_position()[1] - scroll
+			scroll_output = 0
+			if test_y < -headroom + self.text_height: # scroll up
+				scroll_output = test_y + headroom - self.text_height
+			elif test_y > height-headroom - self.text_height: # scroll down
+				scroll_output = test_y -height+headroom + self.text_height
+			return scroll_output
+		return 0
 
 
 	def paste(self) -> None:
@@ -22633,8 +22641,7 @@ class MultiLineTextBox:
 
 		if autoscroll:
 			self.map_lines(width)
-			return self.get_scroll_output(scroll, headroom, height)
-		return 0
+		return self.get_scroll_output(scroll, headroom, height, autoscroll)
 
 
 class TextBox2:
@@ -46055,6 +46062,7 @@ class TimedLyricsEdit:
 		self.unsynced_menu.add(MenuItem(_("Upload To LRCLIB"), self.upload_both_to_lrclib, pass_ref=False))
 		self.show_save_dialog: bool = False
 		self.will_overwrite: bool = False
+		self.file_has_synced_already: bool|None = None
 
 
 	# FUNCTIONS FROM THE RIGHT CLICK MENU
@@ -46178,7 +46186,7 @@ class TimedLyricsEdit:
 
 	def toggle_lrc(self) -> None:
 		self.prefs.save_synced_to_lrc = not self.prefs.save_synced_to_lrc
-		if not self.prefs.save_synced_to_lrc:
+		if not self.prefs.save_synced_to_lrc and self.prefs.allow_overwrite_synced_with_static:
 			self.tauon.show_message(
 				_("Be careful!"),
 				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
@@ -46186,179 +46194,6 @@ class TimedLyricsEdit:
 				mode="warning"
 			)
 		self.reload_menu()
-
-	# SAVE DIALOG
-
-	def lrc_sidecar_off(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return not self.prefs.save_synced_to_lrc
-		self.prefs.save_synced_to_lrc = False
-		self.tauon.show_message(
-			_("Be careful!"),
-			_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
-			_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
-			mode="warning"
-		)
-		self.reload_menu()
-		return None
-
-	def lrc_sidecar_on(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.save_synced_to_lrc
-		self.prefs.save_synced_to_lrc = True
-		self.reload_menu()
-		return None
-
-	def dummy(self) -> None:
-		return
-
-	def save_dialog(self) -> None:
-		"""settings we need:
-		- note that says changes always save to tauon's db
-		- note that says what type of lyrics we're currently saving
-
-		- checkbox to save edits to the disk as well
-		- grayed out chooser: synced lyrics will save to (audio file, .lrc file)
-		- checkbox for don't show again
-		"""
-		gui = self.gui
-		ddt = self.ddt
-		colours = self.colours
-		st = self.tauon.pref_box
-		chooser_bar = self.tauon.pref_box.settings_segmented_bar
-
-		w = 500 * gui.scale
-		if self.view_is_synced:
-			h = 200 * gui.scale
-		else:
-			h = 130 * gui.scale
-		x = int(self.window_size[0] / 2) - int(w / 2)
-		y = int(self.window_size[1] / 2) - int(h / 2)
-
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), self.colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
-
-		if self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
-				(x, y, w, h)) and not gui.message_box):
-			self.show_save_dialog = False
-			gui.box_over = False
-
-		nomb = not gui.message_box
-
-		if self.view_is_synced:
-			# Title
-			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Synced Lyrics"), colours.box_title_text, 213)
-
-			# Path entry
-			x += round(15 * gui.scale)
-			y += round(25 * gui.scale)
-
-			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
-			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
-			# 	self.tauon.show_message(
-			# 		_("Enable relative paths when keeping playlist files together with audio"),
-			# 		_("Disable to move playlist files while keeping audio in one location"))
-
-			# y += round(25 * gui.scale)
-			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
-			y += round(25 * gui.scale)
-			row_gap = round(6 * gui.scale)
-			row_h = round(42*self.gui.scale)
-			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
-				(x,y,w - round(30*gui.scale),row_h),
-				self.prefs.save_lyrics_changes_to_files,
-				_("Also save lyrics to files on disk"),
-				_("(Specifically the Lyrics metadata field)"),
-				click=self.inp.mouse_click and nomb
-			)
-			if self.prefs.save_lyrics_changes_to_files:
-				y += row_h + row_gap
-				ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
-				y += round(20*self.gui.scale)
-				chooser_bar(
-					(x, y),
-					(
-						(_("...also to file metadata"), self.lrc_sidecar_off(1), self.lrc_sidecar_off),
-						(_("...to a separate .lrc file"), self.lrc_sidecar_on(1), self.lrc_sidecar_on),
-					),
-					width=w - round(30*gui.scale),
-					click=self.inp.mouse_click and nomb,
-				)
-			else:
-				y += row_h + row_gap
-				y += round(20*self.gui.scale)
-
-			y += row_h + row_gap
-
-			self.prefs.show_lyrics_save_menu = st.toggle_square(
-				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
-				self.inp.mouse_click and nomb)
-
-			ww = ddt.get_text_w(_("Save lyrics"), 211)
-			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
-
-			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
-				self.show_save_dialog = False
-				self.save()
-
-			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
-				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
-				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
-				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
-				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
-
-		else: # unsynced save box
-			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Static Lyrics"), colours.box_title_text, 213)
-
-			# Path entry
-			x += round(15 * gui.scale)
-			y += round(25 * gui.scale)
-
-			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
-			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
-			# 	self.tauon.show_message(
-			# 		_("Enable relative paths when keeping playlist files together with audio"),
-			# 		_("Disable to move playlist files while keeping audio in one location"))
-
-			# y += round(25 * gui.scale)
-			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
-			y += round(25 * gui.scale)
-			row_gap = round(6 * gui.scale)
-			row_h = round(42*self.gui.scale)
-			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
-				(x,y,w - round(30*gui.scale),row_h),
-				self.prefs.save_lyrics_changes_to_files,
-				_("Also save lyrics to files on disk"),
-				_("(Specifically the Lyrics metadata field)"),
-				click=self.inp.mouse_click and nomb
-			)
-			# if self.prefs.save_lyrics_changes_to_files:
-			# 	y += row_h + row_gap
-			# 	ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
-			# else:
-			# 	y += row_h + row_gap
-			# 	y += round(20*self.gui.scale)
-
-			y += row_h + row_gap + round(2*gui.scale)
-
-			self.prefs.show_lyrics_save_menu = st.toggle_square(
-				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
-				self.inp.mouse_click and nomb)
-
-			ww = ddt.get_text_w(_("Save lyrics"), 211)
-			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
-
-			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
-				self.show_save_dialog = False
-				self.save(False)
-
-			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
-				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
-				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
-				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
-				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
-
 
 
 
@@ -46498,7 +46333,8 @@ class TimedLyricsEdit:
 
 		track = self.pctl.master_library[self.struct_track]
 		over = self.will_overwrite_lyrics(track)
-		save_tags = self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags
+		will_ovw_synced = self.will_overwrite_synced()
+		save_tags = (self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags) and (not will_ovw_synced or (will_ovw_synced and self.prefs.allow_overwrite_synced_with_static))
 		save_lrc = self.prefs.save_synced_to_lrc if save_to_lrc is None else save_to_lrc
 
 		if synced:
@@ -46620,6 +46456,8 @@ class TimedLyricsEdit:
 		self.tauon.search_field_cache.pop(self.struct_track, None)
 		self.tauon.search_dia_field_cache.pop(self.struct_track, None)
 
+		self.file_has_synced_already = None
+
 		return None
 
 	def will_overwrite_lyrics(self, track: TrackClass) -> bool:
@@ -46649,6 +46487,212 @@ class TimedLyricsEdit:
 			if "\xa9lyr" in audio:
 				return True
 		return False
+
+	def will_overwrite_synced(self) -> bool:
+		if self.file_has_synced_already is not None:
+			return self.file_has_synced_already
+		track = self.pctl.master_library[self.struct_track]
+		lyr = ''
+		if not track.fullpath:
+			return False
+		file = Path(track.fullpath)
+		if track.file_ext == "MP3":
+			audio = mutagen.id3.ID3(track.fullpath)
+			lyr = audio.getall("USLT")[0].text
+		elif track.file_ext == "FLAC":
+			with Flac(track.fullpath) as audio:
+				audio.read()
+				lyr = ''.join(audio.lyrics)
+		elif track.file_ext in ("OPUS", "OGG", "OGA"):
+			with Opus(track.fullpath) as audio:
+				audio.read()
+				lyr = ''.join(audio.lyrics)
+		if lyr:
+			return lyrics_are_synced(lyr)
+		return False
+
+
+	# SAVE DIALOG
+
+	def lrc_sidecar_off(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return not self.prefs.save_synced_to_lrc
+		self.prefs.save_synced_to_lrc = False
+		if self.prefs.allow_overwrite_synced_with_static:
+			self.tauon.show_message(
+				_("Be careful!"),
+				_("A file's metadata can only store ONE type of lyrics data, synced or static, at a time."),
+				_("Saving one type will now OVERWRITE the other in the files. (Tauon itself doesn't care.)"),
+				mode="warning"
+			)
+		self.reload_menu()
+		return None
+
+	def lrc_sidecar_on(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.save_synced_to_lrc
+		self.prefs.save_synced_to_lrc = True
+		self.reload_menu()
+		return None
+
+	def dummy(self) -> None:
+		return
+
+	def save_dialog(self) -> None:
+		"""settings we need:
+		- note that says changes always save to tauon's db
+		- note that says what type of lyrics we're currently saving
+
+		- checkbox to save edits to the disk as well
+		- grayed out chooser: synced lyrics will save to (audio file, .lrc file)
+		- checkbox for don't show again
+		"""
+		gui = self.gui
+		ddt = self.ddt
+		colours = self.colours
+		st = self.tauon.pref_box
+		chooser_bar = self.tauon.pref_box.settings_segmented_bar
+
+		w = 500 * gui.scale
+		if self.view_is_synced:
+			h = 200 * gui.scale
+		else:
+			h = 200 * gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = int(self.window_size[1] / 2) - int(h / 2)
+
+		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), self.colours.box_border)
+		ddt.rect_a((x, y), (w, h), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		if self.inp.key_esc_press or ((self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll(
+				(x, y, w, h)) and not gui.message_box):
+			self.show_save_dialog = False
+			gui.box_over = False
+
+		nomb = not gui.message_box
+		ovw_synced = self.will_overwrite_synced()
+
+		if self.view_is_synced:
+			# Title
+			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Synced Lyrics"), colours.box_title_text, 213)
+
+			# Path entry
+			x += round(15 * gui.scale)
+			y += round(25 * gui.scale)
+
+			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
+			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
+			# 	self.tauon.show_message(
+			# 		_("Enable relative paths when keeping playlist files together with audio"),
+			# 		_("Disable to move playlist files while keeping audio in one location"))
+
+			# y += round(25 * gui.scale)
+			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
+			y += round(25 * gui.scale)
+			row_gap = round(6 * gui.scale)
+			row_h = round(42*self.gui.scale)
+			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
+				(x,y,w - round(30*gui.scale),row_h),
+				self.prefs.save_lyrics_changes_to_files,
+				_("Also save lyrics to files on disk"),
+				_("(Specifically the Lyrics metadata field)"),
+				click=self.inp.mouse_click and nomb
+			)
+			if self.prefs.save_lyrics_changes_to_files:
+				y += row_h + row_gap
+				ddt.text((x,y), _("Synced lyrics will save..."), self.colours.box_text, 11)
+				y += round(20*self.gui.scale)
+				chooser_bar(
+					(x, y),
+					(
+						(_("...also to file metadata"), self.lrc_sidecar_off(1), self.lrc_sidecar_off),
+						(_("...to a separate .lrc file"), self.lrc_sidecar_on(1), self.lrc_sidecar_on),
+					),
+					width=w - round(30*gui.scale),
+					click=self.inp.mouse_click and nomb,
+				)
+			else:
+				y += row_h + row_gap
+				y += round(20*self.gui.scale)
+
+			y += row_h + row_gap
+
+			self.prefs.show_lyrics_save_menu = st.toggle_square(
+				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
+				self.inp.mouse_click and nomb)
+
+			ww = ddt.get_text_w(_("Save lyrics"), 211)
+			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
+				self.show_save_dialog = False
+				self.save()
+
+			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
+				and (not self.view_is_synced or not self.prefs.save_synced_to_lrc):
+				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
+				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
+
+		else: # unsynced save box
+			ddt.text((x + 10 * gui.scale, y + 8 * gui.scale), _("Saving Static Lyrics"), colours.box_title_text, 213)
+
+			# Path entry
+			x += round(15 * gui.scale)
+			y += round(25 * gui.scale)
+
+			# ww = ddt.get_text_w(_("Changes always save to Tauon's database."), 211)
+			# if self.button(_("?"), x + ww + round(45*gui.scale), y - (3*gui.scale), 211):
+			# 	self.tauon.show_message(
+			# 		_("Enable relative paths when keeping playlist files together with audio"),
+			# 		_("Disable to move playlist files while keeping audio in one location"))
+
+			# y += round(25 * gui.scale)
+			ddt.text((x,y), _("Changes always save to Tauon's database."), self.colours.box_text, 11)
+			y += round(25 * gui.scale)
+			row_gap = round(6 * gui.scale)
+			row_h = round(42*self.gui.scale)
+			self.prefs.save_lyrics_changes_to_files = st.settings_switch_row(
+				(x,y,w - round(30*gui.scale),row_h),
+				self.prefs.save_lyrics_changes_to_files,
+				_("Also save lyrics to files on disk"),
+				_("(Specifically the Lyrics metadata field)"),
+				click=self.inp.mouse_click and nomb
+			)
+			if self.prefs.save_lyrics_changes_to_files and self.lrc_sidecar_off(1):
+				y += row_h + row_gap
+				self.prefs.allow_overwrite_synced_with_static = st.settings_switch_row(
+					(x,y,w - round(30*gui.scale),row_h),
+					self.prefs.allow_overwrite_synced_with_static,
+					_("Even if it would overwrite synced lyrics"),
+					click=self.inp.mouse_click and nomb
+				)
+				y += round(20*self.gui.scale)
+			else:
+				y += row_h + row_gap
+				y += round(20*self.gui.scale)
+
+			y += row_h + row_gap + round(2*gui.scale)
+
+			self.prefs.show_lyrics_save_menu = st.toggle_square(
+				x, y, self.prefs.show_lyrics_save_menu, _("Show this every time"),
+				self.inp.mouse_click and nomb)
+
+			ww = ddt.get_text_w(_("Save lyrics"), 211)
+			x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+
+			if self.draw.button(_("Save lyrics"), x, y - (2*gui.scale), press=self.inp.mouse_click and nomb):
+				self.show_save_dialog = False
+				self.save(False)
+
+			if self.will_overwrite and self.prefs.save_lyrics_changes_to_files \
+				and (not self.prefs.save_synced_to_lrc and ovw_synced and self.prefs.allow_overwrite_synced_with_static) \
+				or self.prefs.save_synced_to_lrc:
+				ww += ddt.get_text_w(_("⚠️Overwriting"), 211) + row_gap
+				x = ((int(self.window_size[0] / 2) - int(w / 2)) + w) - (ww + round(40 * gui.scale))
+				ddt.text((x,y), _("⚠️Overwriting"), self.colours.box_button_text_highlight, 211)
+
 
 	def autosave(self) -> None:
 		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
@@ -47254,7 +47298,7 @@ class TimedLyricsEdit:
 			if self.x_posns[4] < self.inp.mouse_position[0] < self.x_posns[3] or self.edit_point is not None:
 				if playing:
 					if self.gui.panelY < self.inp.mouse_position[1] < self.window_size[1] - self.gui.panelBY \
-					and (not h or y < self.inp.mouse_position[1] < y+h):
+					and (not h or y < self.inp.mouse_position[1] < y+h) and not self.show_save_dialog:
 						for i, rendered_line in enumerate(line_ys):
 							if rendered_line is None:
 								continue
@@ -47293,7 +47337,7 @@ class TimedLyricsEdit:
 						self.text_leftovers = self.inp.input_text # we can't put what they typed into the text box now so save it for next frame
 
 			# KEYBOARD SHORTCUTS
-			if not did_one_line: # self.pctl.playing_state != PlayingState.PLAYING and
+			if not did_one_line:
 				if (self.inp.key_lalt or self.inp.key_ralt):
 					self.scroll_timestamp(self.line_active)
 
@@ -47340,17 +47384,14 @@ class TimedLyricsEdit:
 				self.inp.key_s_press = False
 
 
-
 			# BUTTONS IN THE CORNER
 			widths = [
 				self.ddt.get_text_w("≪5", self.font),
 				self.ddt.get_text_w(_("⇧"), self.font),
 				max( self.ddt.get_text_w(_("TIME⏎"), self.big_font), self.ddt.get_text_w(_("TIME+"), self.big_font), self.ddt.get_text_w(_("TIME⇨"), self.big_font)),
 				self.ddt.get_text_w("🖫", self.font),
-				# self.ddt.get_text_w(_("Save to .lrc"), self.font),
-				# self.ddt.get_text_w(_("Save to tags"), self.font),
-				self.ddt.get_text_w("🗑", self.font),#6
-				self.ddt.get_text_w("   ", self.font)#7
+				self.ddt.get_text_w("🗑", self.font),
+				self.ddt.get_text_w("   ", self.font)
 			]
 			if hide_art:
 				buttons_y = self.window_size[1]-self.gui.panelBY-20*self.gui.scale
@@ -47396,14 +47437,6 @@ class TimedLyricsEdit:
 				else:
 					self.save()
 			buttons_x += widths[3] + x_gap
-
-			# if self.button(_("Save to .lrc"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			# 	self.save(save_to_lrc=True, save_to_tags=False)
-			# buttons_x += widths[4] + save_gap
-
-			# if self.button(_("Save to tags"), buttons_x, buttons_y, self.font, gn, self.colours.level_green)[0]:
-			# 	self.save(save_to_lrc=False, save_to_tags=True)
-			# buttons_x += widths[5] + save_gap
 
 			rd = copy.deepcopy(self.colours.level_red)
 			rd.a = round(rd.a * 0.3)
@@ -47553,6 +47586,7 @@ class TimedLyricsEdit:
 
 
 	def test_update(self) -> None:
+		self.file_has_synced_already = None
 		track_object = self.pctl.master_library[self.struct_track]
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
 		self.text = ""
@@ -47575,7 +47609,8 @@ class TimedLyricsEdit:
 				self.text += line[pos:] + "\n"
 			else:
 				self.text += line + "\n"
-		if i == 0 or len(self.text) == 0:
+
+		if len(self.text) <= 1:
 			self.text = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
 			self.unsynced_text_box.text = self.text
 			self.unsynced_text_box.font = self.font
@@ -47612,7 +47647,7 @@ class TimedLyricsEdit:
 		self.unsynced_text_box.text = self.text
 		# the draw function returns scroll info for if arrow keys move the cursor offscreen
 		self.lyrics_position -= self.unsynced_text_box.draw(
-			x, y, self.colours.lyrics, self.gui.timed_lyrics_editing_now,
+			x, y, self.colours.lyrics, self.gui.timed_lyrics_editing_now and not self.show_save_dialog,
 			font = self.font, width = ( w ), height = h, headroom=0,
 			scroll=-self.lyrics_position
 		)
@@ -48371,6 +48406,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files)
 	cf.update_value("show_lyrics_save_menu", prefs.show_lyrics_save_menu)
 	cf.update_value("use_lrc_instead", prefs.save_synced_to_lrc)
+	cf.update_value("allow_overwrite_synced_with_static", prefs.allow_overwrite_synced_with_static)
 
 	cf.update_value("synced_lyrics_editor_track_end_mode", prefs.synced_lyrics_editor_track_end_mode)
 
@@ -48541,6 +48577,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.save_lyrics_changes_to_files = cf.sync_add(
 		"bool", "save_lyrics_changes_to_files", prefs.save_lyrics_changes_to_files,
 		"Save lyrics edits to tags when searching, clearing, pasting, or using the editor.")
+	prefs.allow_overwrite_synced_with_static = cf.sync_add(
+		"bool", "allow_overwrite_synced_with_static", prefs.allow_overwrite_synced_with_static,
+		"When saving lyrics to metadata, allow static lyrics to overwrite existing synced lyrics.")
 	prefs.show_lyrics_save_menu = cf.sync_add(
 		"bool", "show_lyrics_save_menu", prefs.show_lyrics_save_menu,
 		"Show the save lyrics dialog every time. (Even if this is False you can open it by right-clicking the save button.)")
