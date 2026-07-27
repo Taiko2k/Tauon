@@ -9433,9 +9433,6 @@ class Tauon:
 				lrc.write( lyrics )
 				logging.info(f"Edited the LRC file for {track.artist} - {track.title}")
 				return True
-		# fully stop and resume track to prevent severe bug when simultaneously reading and modifying
-		stop = track.index == self.pctl.track_queue[self.pctl.queue_step]
-		resume = stop and self.pctl.playing_state == PlayingState.PLAYING
 		try:
 			if track.file_ext == "MP3":
 				try:
@@ -9474,17 +9471,12 @@ class Tauon:
 					)
 				return False
 
-			if stop:
-				self.pctl.jump_time = self.pctl.decode_time
-				self.pctl.stop(block=True)
 			try:
 				lyrics.encode('latin1')
 				audio.save()
 			except UnicodeEncodeError:
 				audio.save(v1=0)
 			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
-			if resume:
-				self.pctl.play()
 
 		except Exception as e:
 			logging.exception(e)#"Could not write lyrics to file")
@@ -11791,6 +11783,8 @@ class Tauon:
 			)
 
 	def del_selected(self, force_delete: bool = False) -> None:
+		if self.gui.showcase_mode or self.gui.radio_view:
+			return None
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 
