@@ -9438,11 +9438,16 @@ class Tauon:
 		resume = stop and self.pctl.playing_state == PlayingState.PLAYING
 		try:
 			if track.file_ext == "MP3":
-				audio = mutagen.id3.ID3(track.fullpath)
-				if audio.getall("USLT"):
+				try:
+					audio = mutagen.id3.ID3(track.fullpath)
+				except mutagen.id3._util.ID3NoHeaderError:
+					tags = mutagen.id3.ID3()
+					tags.save(track.fullpath)
+					audio = mutagen.id3.ID3(track.fullpath)
+				try:
 					audio.getall("USLT")[0].text = lyrics
 					audio.getall("USLT")[0].encoding = 3
-				else:
+				except IndexError:
 					audio.add( mutagen.id3.USLT( encoding=3,text=lyrics ) )
 			elif track.file_ext == "FLAC":
 				audio = mutagen.flac.FLAC(track.fullpath)
@@ -9481,8 +9486,8 @@ class Tauon:
 			if resume:
 				self.pctl.play()
 
-		except Exception:
-			logging.exception("Could not write lyrics to file")
+		except Exception as e:
+			logging.exception(e)#"Could not write lyrics to file")
 			if loud:
 				self.show_message(
 					_("Could not write lyrics to file"),
@@ -21801,6 +21806,10 @@ class MultiLineTextBox:
 			width = round(2000*gui.scale)
 		if height == 0:
 			height = round(20000*gui.scale)
+		try:
+			sdl3.SDL_DestroyTexture(self.text_box_canvas)
+		except AttributeError:
+			pass # just means we're creating it 4 the first time
 		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
 		self.text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, width, height)
 		self.text_box_canvas = sdl3.SDL_CreateTexture(
@@ -45927,6 +45936,7 @@ class TimedLyricsEdit:
 		self.show_save_dialog: bool = False
 		self.will_overwrite: bool = False
 		self.file_has_synced_already: bool|None = None
+		self.placeholder = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
 
 
 	# FUNCTIONS FROM THE RIGHT CLICK MENU
@@ -46198,7 +46208,9 @@ class TimedLyricsEdit:
 		track = self.pctl.master_library[self.struct_track]
 		over = self.will_overwrite_lyrics(track)
 		will_ovw_synced = self.will_overwrite_synced()
-		save_tags = (self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags) and (synced or (not will_ovw_synced or (will_ovw_synced and self.prefs.allow_overwrite_synced_with_static)))
+		save_tags = self.can_write_at_all() and \
+			(self.prefs.save_lyrics_changes_to_files if save_to_tags is None else save_to_tags) and \
+			(synced or (not will_ovw_synced or (will_ovw_synced and self.prefs.allow_overwrite_synced_with_static)))
 		save_lrc = self.prefs.save_synced_to_lrc if save_to_lrc is None else save_to_lrc
 
 		if synced:
@@ -46290,6 +46302,8 @@ class TimedLyricsEdit:
 					return "failed"
 					# we don't want to upload any synced lyrics to LRCLIB
 					# that are not actually synced properly
+				if search_magic_beefy(lyrics, self.placeholder) > 90:
+					return "failed"
 				track.lyrics = lyrics
 				saved = False
 				if save_tags:
@@ -46326,10 +46340,16 @@ class TimedLyricsEdit:
 
 	def will_overwrite_lyrics(self, track: TrackClass) -> bool:
 		file = Path(track.fullpath)
+		if not self.can_write_at_all():
+			return False
 		if track.file_ext == "MP3":
-			audio = mutagen.id3.ID3(track.fullpath)
-			if audio.getall("USLT"):
-				return True
+			try:
+				audio = mutagen.id3.ID3(track.fullpath)
+				if audio.getall("USLT"):
+					return True
+			except mutagen.id3._util.ID3NoHeaderError:
+				logging.info("no header")
+				return False
 		elif track.file_ext == "FLAC":
 			audio = mutagen.flac.FLAC(track.fullpath)
 			if any(key in audio for key in ("LYRICS", "SYNCEDLYRICS", "UNSYNCEDLYRICS")):
@@ -46352,6 +46372,7 @@ class TimedLyricsEdit:
 				return True
 		return False
 
+
 	def will_overwrite_synced(self) -> bool:
 		if self.file_has_synced_already is not None:
 			return self.file_has_synced_already
@@ -46360,32 +46381,45 @@ class TimedLyricsEdit:
 		if not track.fullpath:
 			return False
 		file = Path(track.fullpath)
-		if track.file_ext == "MP3":
-			audio = mutagen.id3.ID3(track.fullpath)
-			lyr = audio.getall("USLT")[0].text
-		elif track.file_ext == "FLAC":
-			with Flac(track.fullpath) as audio:
-				audio.read()
-				lyr = ''.join(audio.lyrics)
-		elif track.file_ext in ("OPUS", "OGG", "OGA"):
-			with Opus(track.fullpath) as audio:
-				audio.read()
-				lyr = ''.join(audio.lyrics)
-		elif track.file_ext in ("WV", "TTA", "APE"):
-			with Ape(track.fullpath) as audio:
-				audio.read()
-				lyr = ''.join(audio.lyrics)
-		else:
-			try:
-				audio = mutagen.File(track.fullpath)
-			except Exception as e:
-				logging.error(e)
-			if type(audio.tags) is mutagen.mp4.MP4Tags:
-				if "\xa9lyr" in audio.tags:
-					lyr = audio.tags["\xa9lyr"][0]
+		try:
+			if track.file_ext == "MP3":
+				try:
+					audio = mutagen.id3.ID3(track.fullpath)
+					lyr = audio.getall("USLT")[0].text
+				except IndexError:
+					return False
+				except mutagen.id3._util.ID3NoHeaderError:
+					return False
+			elif track.file_ext == "FLAC":
+				with Flac(track.fullpath) as audio:
+					audio.read()
+					lyr = ''.join(audio.lyrics)
+			elif track.file_ext in ("OPUS", "OGG", "OGA"):
+				with Opus(track.fullpath) as audio:
+					audio.read()
+					lyr = ''.join(audio.lyrics)
+			elif track.file_ext in ("WV", "TTA", "APE"):
+				with Ape(track.fullpath) as audio:
+					audio.read()
+					lyr = ''.join(audio.lyrics)
+			else:
+				try:
+					audio = mutagen.File(track.fullpath)
+				except Exception as e:
+					logging.error(e)
+				if type(audio.tags) is mutagen.mp4.MP4Tags:
+					if "\xa9lyr" in audio.tags:
+						lyr = audio.tags["\xa9lyr"][0]
+		except AttributeError:
+			return False
 		if lyr:
 			return lyrics_are_synced(lyr)
 		return False
+
+
+	def can_write_at_all(self) -> bool:
+		return self.pctl.master_library[self.struct_track].file_ext in \
+			("MP3", "FLAC", "OPUS", "OGG", "OGA", "WV", "APE", "TTA", "M4A", "MP4", "M4B","M4P")
 
 
 	# SAVE DIALOG
@@ -47474,10 +47508,7 @@ class TimedLyricsEdit:
 			except ValueError:
 				return False
 
-		i = 0
-		track_object.lyrics = track_object.lyrics.replace('\r','\n')
-		for line in track_object.lyrics.split("\n"):
-			i += 1
+		for line in track_object.lyrics.splitlines():
 			if any(tag in line for tag in LRC_tags):
 				continue
 			if len(line) >= 10 and line[0] == "[" and ":" in line[:10] \
@@ -47488,13 +47519,14 @@ class TimedLyricsEdit:
 				self.text += line + "\n"
 
 		if len(self.text) <= 1:
-			self.text = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
+			self.text = self.placeholder
 			self.unsynced_text_box.text = self.text
 			self.unsynced_text_box.font = self.font
-			self.unsynced_text_box.text_height = 0 # triggers map_lines
 			self.lyrics_position = 200
 			self.unsynced_text_box.cursor_position = len(self.text)
 			self.unsynced_text_box.selection = len(self.text)
+
+		self.unsynced_text_box.text_height = 0 # triggers map_lines
 
 
 	def unsynced_render(self, x: int, y: float, box: float, hide_art: bool) -> None:
@@ -47570,7 +47602,7 @@ class TimedLyricsEdit:
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
 		if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
-			self.structurize_current(self.pctl.master_library[self.struct_track])
+			self.test_update() #self.structurize_current(self.pctl.master_library[self.struct_track])
 		buttons_x += widths[2] + x_gap
 
 		# lyrics search status
