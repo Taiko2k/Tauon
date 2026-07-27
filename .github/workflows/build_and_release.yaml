@@ -63,6 +63,8 @@ jobs:
         # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
       - name: Install Python dependencies and setup venv
+        env:
+          SDL_GITHUB_TOKEN: ${{ github.token }}
         run: |
           python -m pip install --upgrade pip
           python -m venv .venv
