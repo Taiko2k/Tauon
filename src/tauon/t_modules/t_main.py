@@ -46443,14 +46443,6 @@ class TimedLyricsEdit:
 		return
 
 	def save_dialog(self) -> None:
-		"""settings we need:
-		- note that says changes always save to tauon's db
-		- note that says what type of lyrics we're currently saving
-
-		- checkbox to save edits to the disk as well
-		- grayed out chooser: synced lyrics will save to (audio file, .lrc file)
-		- checkbox for don't show again
-		"""
 		gui = self.gui
 		ddt = self.ddt
 		colours = self.colours
@@ -47454,41 +47446,6 @@ class TimedLyricsEdit:
 
 	# UNSYNCED EDITING FUNCTIONS
 
-	# def edit_static(self) -> None:
-	# 	track_object = self.pctl.master_library[self.struct_track]
-	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str(self.struct_track)).with_suffix(".txt")
-	# 	if not target.parent.is_dir():
-	# 		target.parent.mkdir()
-	# 	with open(target, "w", encoding="utf-8") as lyrics_file:
-	# 		if self.text:
-	# 			lyrics_file.write( self.text )
-	# 		else:
-	# 			lyrics_file.write( _("Put the lyrics in this file and save it."))
-	# 	if self.tauon.windows:
-	# 		os.startfile(target)
-	# 	elif self.tauon.macos:
-	# 		subprocess.call(["open", "-t", target])
-	# 	else:
-	# 		subprocess.call(["xdg-open", target])
-
-
-	# def reload_lyric_file(self) -> None:
-	# 	track = self.pctl.master_library[self.struct_track]
-	# 	target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".txt")
-	# 	with open(target, encoding="utf-8-sig", errors="replace") as lyric_file:
-	# 		new_lyrics = lyric_file.read().strip()
-	# 	track = self.pctl.master_library[self.struct_track]
-	# 	if not new_lyrics == _("Put the lyrics in this file and save it."):
-	# 		if not new_lyrics == track.lyrics:
-	# 			self.text = new_lyrics
-	# 			if self.inp.key_lalt or self.inp.key_ralt:
-	# 				track.lyrics = new_lyrics
-	# 			# self.tauon.write_lyrics(track)
-	# 	#self.test_update()
-	# 	target.unlink()
-	# 	self.queue_next_frame = True
-
-
 	def test_update(self) -> None:
 		self.file_has_synced_already = None
 		track_object = self.pctl.master_library[self.struct_track]
@@ -47596,7 +47553,7 @@ class TimedLyricsEdit:
 		rd = copy.deepcopy(self.colours.level_red)
 		rd.a = round(rd.a * 0.3)
 		if self.button("🗑", buttons_x, buttons_y, self.font, rd, self.colours.level_red)[0]:
-			self.test_update() #self.structurize_current(self.pctl.master_library[self.struct_track])
+			self.test_update()
 		buttons_x += widths[2] + x_gap
 
 		# lyrics search status
