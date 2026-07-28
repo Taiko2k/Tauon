@@ -85,6 +85,7 @@ SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER = "opengl_texture"
 SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER = "width"
 SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER = "height"
 SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER = "access"
+SDL_version = 300
 
 
 
@@ -506,6 +507,18 @@ def SDL_SetWindowHitTest(window, callback, _data=None) -> None:
 	tauon_native.set_window_hit_test(_handle(window), callback)
 
 
+def SDL_SetWindowIcon(window, icon: ImageData) -> None:
+	tauon_native.set_window_icon(_handle(window), icon.width, icon.height, icon.pixels)
+
+
+def SDL_SetWindowProgressState(window, state: int) -> None:
+	tauon_native.set_window_progress_state(_handle(window), state)
+
+
+def SDL_SetWindowProgressValue(window, value: float) -> None:
+	tauon_native.set_window_progress_value(_handle(window), value)
+
+
 def SDL_StartTextInput(window) -> None:
 	tauon_native.start_text_input(_handle(window))
 
@@ -555,7 +568,7 @@ def SDL_DestroyTray(tray) -> None:
 
 
 def _text(value) -> str:
-	return value.decode("utf-8") if isinstance(value, bytes) else value
+	return value.decode("utf-8", errors="surrogateescape") if isinstance(value, bytes) else value
 
 
 def SDL_GetKeyFromName(name) -> int:
@@ -589,6 +602,23 @@ def SDL_GetGamepadNameForID(identifier: int) -> bytes | None:
 
 def SDL_GetVersion() -> int:
 	return tauon_native.sdl_version()
+
+
+def SDL_GetCurrentVideoDriver() -> bytes | None:
+	driver = tauon_native.video_driver()
+	return driver.encode("utf-8") if driver is not None else None
+
+
+def SDL_SetClipboardText(text) -> None:
+	tauon_native.set_clipboard_text(_text(text))
+
+
+def SDL_GetClipboardText() -> bytes:
+	return tauon_native.get_clipboard_text().encode("utf-8", errors="surrogateescape")
+
+
+def SDL_HasClipboardText() -> bool:
+	return tauon_native.has_clipboard_text()
 
 
 def SDL_GetWindowProperties(window):
