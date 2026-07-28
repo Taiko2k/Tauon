@@ -3349,16 +3349,12 @@ class CustomLayout:
 		ddt = self.ddt
 		gui = self.gui
 		colours = self.tauon.colours
-		tab_h = min(h, TAB_BAR_HEIGHT * gui.scale)
 		border = SEGMENT_BORDER_COLOUR
 		# Side panels, galleries, metadata, queue, and similar widgets share
 		# this fill; matching it makes the selector strip read as their chrome.
 		bg = colours.side_panel_background
 		line = max(1, round(gui.scale))
 		tab_rects = self._tab_rects(node)
-		# Paint the strip first so the spaces between selectors are a clean,
-		# visible gap even over a translucent art background.
-		ddt.rect((round(x), round(y), round(w), round(tab_h)), bg)
 		outer_left = round(x)
 		outer_top = round(y)
 		outer_right = round(x + w)
@@ -3369,22 +3365,13 @@ class CustomLayout:
 			if rect[2] > 0 and rect[3] > 0:
 				ddt.rect(rect, border)
 
-		if node.border:
-			# The outer frame owns its corner pixels: horizontal edges are
-			# shortened so they never blend over the vertical edges.
-			draw_line((outer_left, outer_top, line, max(0, outer_bottom - outer_top)))
-			draw_line((outer_right - line, outer_top, line, max(0, outer_bottom - outer_top)))
-			draw_line((
-				outer_left + line,
-				outer_bottom - line,
-				max(0, outer_right - outer_left - line * 2),
-				line,
-			))
-
 		for index, (child, rect) in enumerate(zip(node.children, tab_rects)):
 			left, top, tab_w, tab_height = rect
 			right = left + tab_w
 			self.tauon.fields.add(rect)
+			# Fill selectors individually so the inter-tab gap remains
+			# completely untouched (important over art/translucent panels).
+			ddt.rect(rect, bg)
 			bottom = top + tab_height
 			if node.border and index == node.active and bottom < outer_bottom:
 				# Keep the page's border inset, but visually open the selected
@@ -3417,6 +3404,18 @@ class CustomLayout:
 				bg=bg,
 				max_w=max(0, tab_w - round(20 * gui.scale)),
 			)
+		if node.border:
+			# Draw the outer frame after the per-tab backgrounds, otherwise the
+			# first and last selector fills cover its left/right strokes. The
+			# horizontal bottom still excludes the side-owned corner pixels.
+			draw_line((outer_left, outer_top, line, max(0, outer_bottom - outer_top)))
+			draw_line((outer_right - line, outer_top, line, max(0, outer_bottom - outer_top)))
+			draw_line((
+				outer_left + line,
+				outer_bottom - line,
+				max(0, outer_right - outer_left - line * 2),
+				line,
+			))
 		if node.border:
 			# Close the small inter-tab gaps at the content boundary. These
 			# segments start/end outside the tab-side strokes, so no border
