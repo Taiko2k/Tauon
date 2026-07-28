@@ -9492,7 +9492,7 @@ class Tauon:
 			logging.info(f"Edited lyrics in the file for {track.artist} - {track.title}")
 
 		except Exception as e:
-			logging.exception(e)#"Could not write lyrics to file")
+			logging.exception("Could not write lyrics to file")
 			if loud:
 				self.show_message(
 					_("Could not write lyrics to file"),
@@ -21731,12 +21731,12 @@ class MultiLineTextBox:
 		self.lines: list[str] = []
 		self.text_height: int = 0
 		self.visible_lines: list[str] = [] # lines as they are displayed with text wrapping
-		self.line_counts: dict[int:int] = {} # get from cursor position to line number
+		self.line_counts: dict[int, int] = {} # get from cursor position to line number
 		self.line_ys: list[int] = 0
-		self.cursor_position = 0
-		self.selection = 0
-		self.offset = 0
-		self.temp_x_pos: int|None = None
+		self.cursor_position: int = 0
+		self.selection: int = 0
+		self.offset: int = 0
+		self.temp_x_pos: int | None = None
 		self.down_lock: bool = False
 		self.paste_text: str = ""
 
@@ -21767,7 +21767,7 @@ class MultiLineTextBox:
 
 
 	def map_lines(self, width: int) -> None:
-		# this function has been lightly Sloptimized™
+		"""this function has been lightly Sloptimized™"""
 		self.line_ys = []
 		self.visible_lines = []
 		self.line_counts = {}
@@ -21806,8 +21806,8 @@ class MultiLineTextBox:
 		return len(self.visible_lines)-1
 
 
-	def _get_suffix_lengths(self):
-		# this function is 100% Genuine Slop™
+	def _get_suffix_lengths(self) -> list[int]:
+		"""this function is 100% Genuine Slop™"""
 		key_id = id(self.visible_lines)
 		if getattr(self, '_suffix_cache_id', None) != key_id:
 			lengths = [0] * (len(self.visible_lines) + 1)
@@ -21820,7 +21820,7 @@ class MultiLineTextBox:
 		return self._suffix_lengths
 
 	def partial_line_from_char(self, char: int) -> str:
-		# this function has been Sloptimized™
+		"""this function has been Sloptimized™"""
 		line = self.which_line_by_char(char)
 		try:
 			line_text = self.visible_lines[line]
@@ -21838,8 +21838,8 @@ class MultiLineTextBox:
 		return line_text[:cut]
 
 
-	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int]|None = None) -> None:
-		# this function has been Sloptimized™
+	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int] | None = None) -> None:
+		"""this function has been Sloptimized™"""
 		if in_pos is None:
 			in_pos = self.inp.mouse_position
 
@@ -21892,7 +21892,7 @@ class MultiLineTextBox:
 
 
 	def switch_lines(self, scroll: int, up: bool) -> None:
-		# up and down arrow keys
+		"""up and down arrow keys"""
 		pos = self.pixel_position_from_cursor_position()
 		if self.temp_x_pos is not None:
 			pos = self.temp_x_pos, pos[1]
@@ -21907,8 +21907,11 @@ class MultiLineTextBox:
 		self.set_cursor_from_click(scroll, False, pos)
 
 
-	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int):
-		# this function has been Sloptimized™
+	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[ list[ tuple[ str, int ] ], tuple[ int, int], str ]:
+		"""this function has been Sloptimized™. Returns:
+		- a list of text lines paired with their displayed y-values
+		- x and y position of the final partially-highlighted line
+		- the text from that line that's actually highlighted"""
 		test = start_line - end_line
 		if -1 < test < 1:
 			return None
@@ -21938,7 +21941,7 @@ class MultiLineTextBox:
 
 
 	def draw_selection_highlight(self, scroll: int, font: int, text_color: ColourRGBA, width: int) -> None:
-		# this function has been Sloptimized™
+		"""this function has been Sloptimized™"""
 		highlight_color = ColourRGBA(40, 120, 180, 255)
 		rect1 = self.pixel_position_from_cursor_position()
 		rect2 = self.pixel_position_from_cursor_position(True)
@@ -22026,6 +22029,7 @@ class MultiLineTextBox:
 
 
 	def get_scroll_output(self, scroll: int, headroom: int, height: int, autoscroll: bool) -> int:
+		"""Allows us to change scroll position by holding arrow keys, typing offscreen, highlighting while moving mouse offscreen"""
 		scroll_output = 0
 		if self.down_lock:
 			if self.inp.mouse_position[1] < self.y:
@@ -22100,10 +22104,10 @@ class MultiLineTextBox:
 			self, x: int, y: int, colour: ColourRGBA, active: bool = True, font: int = 13,
 			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
 			headroom: int = 0, scroll: int = 0) -> int:
-		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
-		# this function is not very well optimized but i've spent so long on text logic i don't care anymore
-		# if someone is writing a novel in their unsynced lyrics then they will have problems which i will fix. until then this is what u get
-		# (the fix will be drawing the text in pieces so we can cache it better)
+		"""Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
+		this function is not very well optimized but i've spent so long on text logic i don't care anymore
+		if someone is writing a novel in their unsynced lyrics then they will have problems which i will fix. until then this is what u get
+		(the fix will be drawing the text in pieces so we can cache it better)"""
 
 		try:
 			self.text_box_canvas_rect.x
@@ -45969,7 +45973,7 @@ class TimedLyricsEdit:
 		self.show_save_dialog: bool = False
 		self.will_overwrite: bool = False
 		self.file_has_synced_already: bool|None = None
-		self.placeholder = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
+		self.placeholder: str = _("You don't yet have any static lyrics for this song. To start, you can either replace this text immediately, or you can right-click and select \"copy from synced\" if you already have synced lyrics.\n\nThe right-click menu will also let you search and download lyrics from your selected lyrics sources, if you think they may be available online.")
 
 
 	# FUNCTIONS FROM THE RIGHT CLICK MENU
@@ -46183,6 +46187,7 @@ class TimedLyricsEdit:
 		return f"{format(mm,'02d')}:{format(ss,'02d')}.{format(ms,'02d')}"
 
 	def structurize_current(self, track: TrackClass, from_unsynced: bool = False) -> None:
+		"""reload synced data from saved track"""
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"
 		self.structure = []
 		self.struct_track = track.index
@@ -46477,9 +46482,6 @@ class TimedLyricsEdit:
 		self.prefs.save_synced_to_lrc = True
 		self.reload_menu()
 		return None
-
-	def dummy(self) -> None:
-		return
 
 	def save_dialog(self) -> None:
 		gui = self.gui
@@ -46777,9 +46779,8 @@ class TimedLyricsEdit:
 		self.queue_next_frame = True
 		return True
 
-	# for scrolling timestamps - will play one second of audio after 0.5 seconds of waiting
-	# to make sure the timestamp is correct
 	def check_if_time_is_good(self, line_number: int, active: bool) -> None:
+		"""for scrolling timestamps - will play one second of audio after 0.5 seconds of waiting to make sure the timestamp is correct"""
 		if self.check == False and self.structure[line_number][1] >= 0: # and self.check_timer.get > 0.5  and line_number == self.check_line
 			self.recenter_timeout.set()
 			if self.pctl.playing_state != PlayingState.PLAYING:
@@ -47486,6 +47487,7 @@ class TimedLyricsEdit:
 	# UNSYNCED EDITING FUNCTIONS
 
 	def test_update(self) -> None:
+		"""reload unsynced data from saved track"""
 		self.file_has_synced_already = None
 		track_object = self.pctl.master_library[self.struct_track]
 		LRC_tags = "[ti:", "[ar:", "[al:", "[au:", "[lr:", "[length:", "[by:", "[offset:", "[re:", "[tool:", "[ve:", "[#:"

@@ -175,7 +175,7 @@ class TDraw:
 
 		self.was_truncated = False
 
-		self._locate_cache: dict = {}
+		self._locate_cache: dict[ tuple[str, int], Pango.Layout] = {}
 
 	def load_image(self, g: BytesIO) -> sdl3.LP_SDL_Surface:
 		size = g.getbuffer().nbytes
@@ -638,7 +638,7 @@ class TDraw:
 				layout.set_text(text, -1)
 			except Exception:
 				logging.exception(f"Text error on text: {text}")
-				layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
+				layout.set_text(text.encode("utf-8", "replace").decode(), -1)
 
 			# logging.info(layout.get_direction(0))
 
@@ -781,8 +781,8 @@ class TDraw:
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
 
 	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
-		# this function is 95% Genuine Slop™
-		# imagines a beautiful world where the input text is wrapped and returns the separated lines as they would appear
+		"""this function is 95% Genuine Slop™
+		imagines a beautiful world where the input text is wrapped and returns the separated lines as they would appear"""
 		if not text:
 			return []
 
@@ -815,23 +815,23 @@ class TDraw:
 				layout.set_text(paragraph, -1)
 			except Exception:
 				logging.exception(f"Text error on text: {paragraph}")
-				paragraph = paragraph.encode("utf-8", "replace").decode("utf-8")
+				paragraph = paragraph.encode(encoding="replace").decode()
 				layout.set_text(paragraph, -1)
 
-			encoded = paragraph.encode("utf-8")
+			encoded = paragraph.encode()
 			for i, line in enumerate(layout.get_lines_readonly()):
 				start = line.start_index
 				end = start + line.length
 				if i == 0 and all_lines:
-					all_lines.append('\n' + encoded[start:end].decode("utf-8"))
+					all_lines.append('\n' + encoded[start:end].decode())
 				else:
-					all_lines.append(encoded[start:end].decode("utf-8"))
+					all_lines.append(encoded[start:end].decode())
 
 		return all_lines
 
 	def measure_and_locate(self, text: str, font: int, x_pixels: float, y_pixels: float = 0) -> tuple[float, int, bool]:
-		# this function is 100% Genuine Slop™
-		# provides a faster way of setting your cursor position based on mouse position
+		"""this function is 100% Genuine Slop™
+		provides a faster way of setting your cursor position based on mouse position"""
 		key = (text, font)
 		layout = self._locate_cache.get(key)
 		if layout is None:
@@ -851,6 +851,6 @@ class TDraw:
 			round(x_pixels * Pango.SCALE),
 			round(y_pixels * Pango.SCALE),
 		)
-		char_index = len(text.encode("utf-8")[:index].decode("utf-8"))
+		char_index = len(text.encode()[:index].decode())
 
 		return full_w_px, char_index, bool(trailing)
