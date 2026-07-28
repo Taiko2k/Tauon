@@ -96,6 +96,7 @@ jobs:
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG packaging/pyinstaller/linux.spec
           ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
+          touch dist/TauonMusicBox/_internal/portable
 
       - name: Create 7Z
         run: |
@@ -399,6 +400,7 @@ jobs:
         run: |
           source .venv/bin/activate
           pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
+          touch dist/TauonMusicBox/_internal/portable
 
       - name: Create 7Z
         shell: msys2 {0}
@@ -419,6 +421,11 @@ jobs:
         with:
           name: TauonMusicBox-windows
           path: TauonMusicBox-windows.7z
+
+      - name: Remove portable flag
+        shell: msys2 {0}
+        run: |
+          rm dist/TauonMusicBox/_internal/portable
 
       - name: Replace Tauon version in .ISS
         run: |

@@ -6900,7 +6900,7 @@ class Tauon:
 		sdl3.SDL_SetTrayIcon(self.sdl_tray, surf)
 
 
-	def sdl_set_tray_tooltip (self, tooltip: str) -> None:
+	def sdl_set_tray_tooltip(self, tooltip: str) -> None:
 		#logging.debug(f"Setting tray tooltip to '{tooltip}'")
 		sdl3.SDL_SetTrayTooltip(self.sdl_tray, tooltip.encode("utf-8"))
 
@@ -49501,11 +49501,22 @@ def main(holder: Holder) -> None:
 
 	download_directory = Path("~").expanduser() / "Downloads"
 
-	# Detect if we are installed or running portable
+	## Detect if we are installed or running portable
+	##   * Linux is set depending on which directory we're launching from
+	##   * Windows is assumed always installed
+	##   * macOS is assumed always installed
+	##   * Any of the above can be overriden by creating a file called 'portable' in the install directory
+	## TODO(Martin): This code is partially duped in __main__.py
 	install_mode = False
 	flatpak_mode = False
 	snap_mode = False
-	if str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")):
+	# We do not have any fancy directory detection unlike on Linux, so just assume installed mode
+	if macos or windows:
+		install_mode = True
+	# Override to Portable mode if necessary
+	if (install_directory / "portable").is_file():
+		install_mode = False
+	elif str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")):
 		install_mode = True
 		if str(install_directory)[:6] == "/snap/":
 			snap_mode = True
@@ -49515,12 +49526,10 @@ def main(holder: Holder) -> None:
 
 			# [old / no longer used] Symlink fontconfig from host system as workaround for poor font rendering
 			if os.path.exists(os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config")):
-
 				host_fcfg = os.path.join(home_directory, ".config/fontconfig/")
 				flatpak_fcfg = os.path.join(home_directory, ".var/app/com.github.taiko2k.tauonmb/config/fontconfig")
 
 				if os.path.exists(host_fcfg):
-
 					# if os.path.isdir(flatpak_fcfg) and not os.path.islink(flatpak_fcfg):
 					#	 shutil.rmtree(flatpak_fcfg)
 					if os.path.islink(flatpak_fcfg):
@@ -49529,7 +49538,6 @@ def main(holder: Holder) -> None:
 					# else:
 					#	 logging.info("-- Symlinking user fonconfig")
 					#	 #os.symlink(host_fcfg, flatpak_fcfg)
-
 			flatpak_mode = True
 
 	logging.info(f"Platform: {sys.platform}")
@@ -49538,7 +49546,7 @@ def main(holder: Holder) -> None:
 		logging.info("Pyinstaller mode")
 
 	# If we're installed, use home data locations
-	if (install_mode) or macos or windows:
+	if install_mode:
 		cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
 		#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
 		config_directory = user_directory
@@ -49558,7 +49566,6 @@ def main(holder: Holder) -> None:
 
 		if not (user_directory / "encoder").is_dir():
 			os.makedirs(user_directory / "encoder")
-
 	else:
 		logging.info("Running in portable mode")
 		config_directory = user_directory

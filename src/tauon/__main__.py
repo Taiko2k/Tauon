@@ -188,6 +188,7 @@ def transfer_args_and_exit() -> None:
 if "--no-start" in sys.argv:
 	transfer_args_and_exit()
 
+## TODO(Martin): This code is partially duped in t_main.py
 # If we're installed, use home data locations
 install_mode = bool(
 	str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/"))
@@ -201,7 +202,7 @@ if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox
 if (install_directory / "portable").is_file():
 	install_mode = False
 
-# Handle regular install, running from a directory and finally a portable install, usually a venv
+# Handle regular install, running from a git cloned directory and finally a portable install, usually a venv
 if install_mode:
 	# logging.info("Running in installed mode")
 	user_directory = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
