@@ -51125,6 +51125,11 @@ def main(holder: Holder) -> None:
 		for _n in CL_STACK_COUNTS:
 			cl_menu.add_to_sub(_cl_sub_h, MenuItem(str(_n), cm._menu_add_stack, args=("h", _n)))
 
+		cl_menu.add_sub(_("Add Tabbed Switcher"), 60)
+		_cl_sub_tabs = cl_menu.sub_number - 1
+		for _n in CL_STACK_COUNTS:
+			cl_menu.add_to_sub(_cl_sub_tabs, MenuItem(str(_n), cm._menu_add_tabs, args=_n))
+
 		cl_menu.add_sub(_("Add…"), 180)
 		_cl_sub_add = cl_menu.sub_number - 1
 		# Label this submenu "Replace…" when the target segment already has a

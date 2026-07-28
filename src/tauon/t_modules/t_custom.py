@@ -7,17 +7,18 @@ layouts are unaffected.
 
 Implemented here:
 
-* Layout tree (``Stack`` / ``Leaf``) of arbitrary nesting depth, with empty
-  leaves, per-node gutter/border, per-axis pixel locks and an aspect lock.
+* Layout tree (``Stack`` / ``TabStack`` / ``Leaf``) of arbitrary nesting
+  depth, with empty leaves, per-node gutter/border, per-axis pixel locks and an
+  aspect lock.
 * The resize / layout pass: locked children take fixed (scaled) pixels, Square
   Max children take up to the stack's cross extent (so their slot is square,
   yielding so siblings keep their minimum sizes), the rest split the remainder
   by ``weight``; the cross axis fills.
-* Edit mode: hover highlight, right-click context menu (Add stack / Add widget /
-  Remove / Remove Stack / Lock V/H/Aspect / Gutter / Border / Load Template),
-  edge-drag resizing with weight/pixel semantics and resize cursors. Stacks
-  can opt in to view-mode resizing ("Make Stack Resizable"): their child
-  boundaries stay draggable with edit mode off.
+* Edit mode: hover highlight, right-click context menu (Add stack / Add tabbed
+  switcher / Add widget / Remove / Remove Stack / Lock V/H/Aspect / Gutter /
+  Border / Load Template), edge-drag resizing with weight/pixel semantics and
+  resize cursors. Stacks can opt in to view-mode resizing ("Make Stack
+  Resizable"): their child boundaries stay draggable with edit mode off.
 * Validation: single-instance widgets are gated. A row/column may be fully
   locked; leftover space along the axis stays background.
 * Offscreen render-to-rect compositing (shared ``gui.tracklist_texture`` scratch
@@ -1540,8 +1541,47 @@ class Stack(Node):
 		return st
 
 
+class TabStack(Node):
+	"""Pages sharing one layout slot, selected through a tab strip at the top."""
+
+	def __init__(self, children: list[Node], active: int = 0) -> None:
+		super().__init__()
+		self.children = children
+		self.active = active
+
+	def active_child(self) -> Node | None:
+		if not self.children:
+			return None
+		self.active = max(0, min(self.active, len(self.children) - 1))
+		return self.children[self.active]
+
+	def to_dict(self) -> dict:
+		d = self._base_dict()
+		d["type"] = "tabs"
+		d["active"] = self.active
+		d["children"] = [c.to_dict() for c in self.children]
+		return d
+
+	@staticmethod
+	def from_dict(d: dict) -> "TabStack":
+		active = d.get("active", 0)
+		if not isinstance(active, int):
+			active = 0
+		tabs = TabStack(
+			[node_from_dict(c) for c in d.get("children", [])],
+			active,
+		)
+		tabs._load_base(d)
+		tabs.active_child()  # clamp malformed/outdated persisted indexes
+		return tabs
+
+
 def node_from_dict(d: dict) -> Node:
-	return Stack.from_dict(d) if d.get("type") == "stack" else Leaf.from_dict(d)
+	if d.get("type") == "stack":
+		return Stack.from_dict(d)
+	if d.get("type") == "tabs":
+		return TabStack.from_dict(d)
+	return Leaf.from_dict(d)
 
 
 # -- layout pass ------------------------------------------------------------
@@ -1568,6 +1608,11 @@ def _min_on(node: Node, axis: str, scale: float) -> float:
 			return 0.0
 		mins = [_min_on(c, axis, scale) for c in node.children]
 		return sum(mins) if node.orient == axis else max(mins)
+	if isinstance(node, TabStack):
+		if not node.children:
+			return TAB_BAR_HEIGHT * scale if axis == "v" else 0.0
+		child_min = max(_min_on(c, axis, scale) for c in node.children)
+		return child_min + (TAB_BAR_HEIGHT * scale if axis == "v" else 0.0)
 	if isinstance(node, Leaf) and node.widget is not None:
 		return (node.widget.min_h if axis == "v" else node.widget.min_w) * scale
 	return 0.0
@@ -1609,6 +1654,24 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	"""
 	node.rect = (x, y, w, h)
 	node.slot_rect = (x, y, w, h)  # parent overwrites with the pre-gutter slot below
+	if isinstance(node, TabStack):
+		child = node.active_child()
+		if child is not None:
+			tab_h = min(h, TAB_BAR_HEIGHT * scale)
+			available_h = max(0.0, h - tab_h)
+			border_inset = max(1, round(scale)) if node.border else 0
+			g = child.gutter * scale
+			gx = min(g + border_inset, w / 2)
+			gy = min(g + border_inset, available_h / 2)
+			layout(child, x + gx, y + tab_h + gy,
+				max(0.0, w - gx * 2), max(0.0, available_h - gy * 2), scale)
+			child.slot_rect = (
+				x + border_inset,
+				y + tab_h + border_inset,
+				max(0.0, w - border_inset * 2),
+				max(0.0, available_h - border_inset * 2),
+			)
+		return
 	if not isinstance(node, Stack) or not node.children:
 		return
 
@@ -1694,9 +1757,22 @@ def content_rect(leaf: Leaf, scale: float) -> tuple[float, float, float, float]:
 
 
 def iter_leaves(node: Node):
-	if isinstance(node, Stack):
+	if isinstance(node, (Stack, TabStack)):
 		for c in node.children:
 			yield from iter_leaves(c)
+	else:
+		yield node
+
+
+def iter_visible_leaves(node: Node):
+	"""Yield leaves on the selected page of every tab container."""
+	if isinstance(node, Stack):
+		for c in node.children:
+			yield from iter_visible_leaves(c)
+	elif isinstance(node, TabStack):
+		child = node.active_child()
+		if child is not None:
+			yield from iter_visible_leaves(child)
 	else:
 		yield node
 
@@ -1711,11 +1787,21 @@ def leaf_at(node: Node, px: float, py: float) -> Node | None:
 			if hit is not None:
 				return hit
 		return node
+	if isinstance(node, TabStack):
+		child = node.active_child()
+		if child is not None:
+			hit = leaf_at(child, px, py)
+			if hit is not None:
+				return hit
+			# The selector strip and page gutter conceptually target the active
+			# page for edit-mode context actions (not the outer split stack).
+			return child
+		return node
 	return node
 
 
-def find_parent(root: Node, target: Node) -> Stack | None:
-	if isinstance(root, Stack):
+def find_parent(root: Node, target: Node) -> Stack | TabStack | None:
+	if isinstance(root, (Stack, TabStack)):
 		for c in root.children:
 			if c is target:
 				return root
@@ -1727,6 +1813,10 @@ def find_parent(root: Node, target: Node) -> Stack | None:
 
 def count_kind(root: Node, kind: str) -> int:
 	return sum(1 for leaf in iter_leaves(root) if isinstance(leaf, Leaf) and leaf.kind == kind)
+
+
+def count_visible_kind(root: Node, kind: str) -> int:
+	return sum(1 for leaf in iter_visible_leaves(root) if isinstance(leaf, Leaf) and leaf.kind == kind)
 
 
 
@@ -1742,11 +1832,17 @@ CL_INSET_MAX = 64
 # cursor stay aligned — a mismatch makes the cursor stick or show where a drag
 # can't start.
 BOUNDARY_GRAB = 5
+# Height of a tabbed switcher's selector strip (unscaled px).
+TAB_BAR_HEIGHT = 30
+# Space between adjacent selectors (unscaled px).
+TAB_GAP = 3
 # Defaults applied to a segment when a widget is first added to it (Add menu
 # and template leaves). Replacing an existing widget keeps the segment's
 # configured gutter/border.
 DEFAULT_WIDGET_GUTTER = 3
 DEFAULT_WIDGET_BORDER = True
+# Shared by ordinary widget segments and tab-switcher chrome.
+SEGMENT_BORDER_COLOUR = ColourRGBA(60, 60, 68, 255)
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Blank", "Volcano", "Tracks + Gallery (Compact)"]
 
@@ -1906,7 +2002,7 @@ class CustomLayout:
 			return True
 
 		def walk(n: Node) -> bool:
-			if isinstance(n, Stack):
+			if isinstance(n, (Stack, TabStack)):
 				return all(walk(c) for c in n.children)
 			if isinstance(n, Leaf) and n.widget is not None:
 				return n.widget.kind in ("top_panel", "playback_panel")
@@ -2144,6 +2240,34 @@ class CustomLayout:
 		self._replace(root, target, new)
 		self.save_slots()
 
+	def act_add_tab_stack(self, target: Node, count: int) -> None:
+		"""Replace a segment with a tabbed container, preserving its widget as
+		the first page and creating empty pages for the remainder."""
+		if not isinstance(target, Leaf):
+			return
+		count = max(2, count)
+		root = self.ensure_slot()
+		children: list[Node] = []
+		if target.widget is not None:
+			keep = Leaf(target.widget)
+			keep._load_base(target.to_dict())
+			keep.gutter = 0
+			keep.border = False
+			children.append(keep)
+		while len(children) < count:
+			children.append(self._empty())
+		new = TabStack(children)
+		# The container takes the old segment's place in its parent and becomes
+		# the sole default owner of gutter/border chrome; direct pages start
+		# flush and borderless. As with adding a split stack, its parent-axis
+		# size starts flexible so a formerly fixed widget still has room for the
+		# new selector strip.
+		new.weight = target.weight
+		new.gutter = DEFAULT_WIDGET_GUTTER
+		new.border = DEFAULT_WIDGET_BORDER
+		self._replace(root, target, new)
+		self.save_slots()
+
 	def act_add_widget(self, target: Node, kind: str) -> bool:
 		root = self.ensure_slot()
 		spec = SPEC_BY_KIND.get(kind)
@@ -2159,10 +2283,16 @@ class CustomLayout:
 		target._adopt(target.widget)
 		if was_empty:
 			# Fresh add: apply the widget defaults — except fixed-size
-			# (locked-axis) widgets like the Top / Playback panels, which get no
-			# gutter. Replace keeps the segment's configured gutter/border.
-			target.gutter = 0 if (spec.lock_v or spec.lock_h) else DEFAULT_WIDGET_GUTTER
-			target.border = DEFAULT_WIDGET_BORDER
+			# (locked-axis) widgets and direct tab pages, which get no gutter.
+			# The tab container owns the spacing around all its pages. Replace
+			# keeps the segment's configured gutter/border.
+			parent = find_parent(root, target)
+			target.gutter = (
+				0
+				if spec.lock_v or spec.lock_h or isinstance(parent, TabStack)
+				else DEFAULT_WIDGET_GUTTER
+			)
+			target.border = False if isinstance(parent, TabStack) else DEFAULT_WIDGET_BORDER
 		self.save_slots()
 		return True
 
@@ -2207,7 +2337,7 @@ class CustomLayout:
 			parent = find_parent(root, node)
 			if parent is None:
 				return None
-			if parent.orient == axis:
+			if isinstance(parent, Stack) and parent.orient == axis:
 				return node
 			node = parent
 
@@ -2255,7 +2385,7 @@ class CustomLayout:
 			# lock (the drag converts square to a plain px lock). Clear it so
 			# re-enabling from the menu actually takes effect again.
 			parent = find_parent(self.ensure_slot(), target)
-			if parent is not None:
+			if isinstance(parent, Stack):
 				if parent.orient == "v":
 					target.lock_v = False
 				else:
@@ -2470,6 +2600,23 @@ class CustomLayout:
 			self._consume(inp)
 			return
 
+		# Tab selectors are layout chrome and remain clickable in both view and
+		# edit modes. Handle them before widget input or edit-mode dragging.
+		if inp.mouse_click:
+			root = self.ensure_slot()
+			layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
+			tab_hit = self._tab_at(root, inp.mouse_position[0], inp.mouse_position[1])
+			if tab_hit is not None:
+				tabs, index = tab_hit
+				if tabs.active != index:
+					tabs.active = index
+					self.save_slots()
+					gui.request_tracklist_redraw()
+					gui.update_layout = True
+					gui.request_frame()
+				self._consume(inp)
+				return
+
 		if not gui.custom_edit:
 			# Boundary resize on stacks marked resizable works with edit mode off.
 			# While a drag is live (or starting), swallow the buttons/wheel before
@@ -2637,6 +2784,52 @@ class CustomLayout:
 					yield ("h", (sx + sw - grab, y, grab * 2, h), node, i)
 			for c in node.children:
 				yield from self._iter_boundaries(c, grab)
+		elif isinstance(node, TabStack):
+			child = node.active_child()
+			if child is not None:
+				yield from self._iter_boundaries(child, grab)
+
+	def _tab_rects(self, node: TabStack) -> list[tuple[int, int, int, int]]:
+		"""Selector rectangles, with a scaled gap between adjacent tabs."""
+		x, y, w, h = node.rect
+		n = len(node.children)
+		if n == 0:
+			return []
+		gap = max(1, round(TAB_GAP * self.gui.scale))
+		left_edge = round(x)
+		right_edge = round(x + w)
+		usable_w = max(0, right_edge - left_edge - gap * (n - 1))
+		base_w, extra = divmod(usable_w, n)
+		top = round(y)
+		bottom = round(y + min(h, TAB_BAR_HEIGHT * self.gui.scale))
+		rects = []
+		left = left_edge
+		for index in range(n):
+			tab_w = base_w + (1 if index < extra else 0)
+			rects.append((left, top, tab_w, max(0, bottom - top)))
+			left += tab_w + gap
+		return rects
+
+	def _tab_at(self, node: Node, mx: float, my: float) -> tuple[TabStack, int] | None:
+		"""Return the visible tab selector under the pointer, outermost first."""
+		if isinstance(node, TabStack):
+			x, y, w, h = node.rect
+			tab_h = min(h, TAB_BAR_HEIGHT * self.gui.scale)
+			if node.children and x <= mx < x + w and y <= my < y + tab_h:
+				for index, (tx, ty, tw, th) in enumerate(self._tab_rects(node)):
+					if tx <= mx < tx + tw and ty <= my < ty + th:
+						return node, index
+				# The inter-tab gap is chrome too: consume the click without
+				# changing the selected page.
+				return node, node.active
+			child = node.active_child()
+			return self._tab_at(child, mx, my) if child is not None else None
+		if isinstance(node, Stack):
+			for child in node.children:
+				hit = self._tab_at(child, mx, my)
+				if hit is not None:
+					return hit
+		return None
 
 	def _boundary_at(self, node: Node, mx: float, my: float, grab: float,
 			resizable_only: bool = False):
@@ -2727,6 +2920,10 @@ class CustomLayout:
 		if self.menu_target is not None:
 			self.act_add_stack(self.menu_target, orient, count)
 
+	def _menu_add_tabs(self, ref, count) -> None:
+		if self.menu_target is not None:
+			self.act_add_tab_stack(self.menu_target, count)
+
 	def _menu_add_widget(self, ref, kind) -> None:
 		if self.menu_target is not None:
 			self.act_add_widget(self.menu_target, kind)
@@ -2761,8 +2958,9 @@ class CustomLayout:
 			self.act_toggle_stack_resizable(stack)
 
 	def _menu_border(self) -> None:
-		if self.menu_target is not None:
-			self.act_toggle_border(self.menu_target)
+		node = self._border_node()
+		if node is not None:
+			self.act_toggle_border(node)
 
 	# Gutter / padding incrementor rows (see Menu.add_incrementor). The getters
 	# return the current value to display; the +/- steppers adjust by 1px, clamped.
@@ -2883,7 +3081,8 @@ class CustomLayout:
 		if isinstance(self.menu_target, Stack):
 			return self.menu_target
 		root = self.ensure_slot()
-		return find_parent(root, self.menu_target)
+		parent = find_parent(root, self.menu_target)
+		return parent if isinstance(parent, Stack) else None
 
 	def _t_stack_resizable_on(self, ref=None) -> bool:
 		stack = self._resizable_stack_node()
@@ -2893,11 +3092,21 @@ class CustomLayout:
 		stack = self._resizable_stack_node()
 		return stack is not None and not stack.resizable
 
+	def _border_node(self) -> Node | None:
+		"""Border owner for the menu target; direct tab pages delegate to tabs."""
+		if self.menu_target is None:
+			return None
+		root = self.ensure_slot()
+		parent = find_parent(root, self.menu_target)
+		return parent if isinstance(parent, TabStack) else self.menu_target
+
 	def _t_border_on(self, ref=None) -> bool:
-		return self.menu_target is not None and self.menu_target.border
+		node = self._border_node()
+		return node is not None and node.border
 
 	def _t_border_off(self, ref=None) -> bool:
-		return self.menu_target is not None and not self.menu_target.border
+		node = self._border_node()
+		return node is not None and not node.border
 
 	def top_panel_rect(self) -> tuple[float, float, float, float] | None:
 		"""The active layout's Header Bar (top panel) widget content rect, or
@@ -2911,7 +3120,7 @@ class CustomLayout:
 		root = self.slots[self.active_slot]
 		if root is None:
 			return None
-		for lf in iter_leaves(root):
+		for lf in iter_visible_leaves(root):
 			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
 				return content_rect(lf, self.gui.scale)
 		return None
@@ -2928,7 +3137,7 @@ class CustomLayout:
 		root = self.slots[self.active_slot]
 		if root is None:
 			return None
-		for lf in iter_leaves(root):
+		for lf in iter_visible_leaves(root):
 			if isinstance(lf, Leaf) and isinstance(lf.widget, TracklistWidget):
 				return lf.widget._last_rect
 		return None
@@ -2953,7 +3162,7 @@ class CustomLayout:
 		tauon = self.tauon
 		handled = False
 		result = None
-		for lf in iter_leaves(root):
+		for lf in iter_visible_leaves(root):
 			if not (isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget)):
 				continue
 			widget = lf.widget
@@ -3065,23 +3274,29 @@ class CustomLayout:
 		# the layout: gates the ArtBox / MetaBox milk paths off so both never
 		# drive it at once. Set before drawing so it holds regardless of the
 		# widgets' draw order within this frame.
-		gui.milkdrop_in_widget = count_kind(root, "milkdrop") > 0
+		gui.milkdrop_in_widget = count_visible_kind(root, "milkdrop") > 0
 
 		# Same ownership idea for the Sticks visualiser, but the gui.vis mode
 		# switch lives in update_layout_do(), so poke a layout update when the
 		# widget appears/disappears.
-		sticks = count_kind(root, "vis_sticks") > 0
+		sticks = count_visible_kind(root, "vis_sticks") > 0
 		if sticks != gui.vis4_in_widget:
 			gui.vis4_in_widget = sticks
 			gui.update_layout = True
-		spectro = count_kind(root, "vis_spectrogram") > 0
+		spectro = count_visible_kind(root, "vis_spectrogram") > 0
 		if spectro != gui.spectrogram_in_widget:
 			gui.spectrogram_in_widget = spectro
 			gui.update_layout = True
 
-		for leaf in iter_leaves(root):
+		for leaf in iter_visible_leaves(root):
 			if isinstance(leaf, Leaf):
-				self._draw_leaf(leaf, interactive)
+				parent = find_parent(root, leaf)
+				tab_border = isinstance(parent, TabStack) and parent.border
+				self._draw_leaf(leaf, interactive, tab_border)
+
+		# Tab chrome is last among the layout content so the switcher's single,
+		# non-overlapping frame remains the final border at its outer edges.
+		self._draw_tab_bars(root)
 
 		# Widgets receive the deferred mouse-up event above so a later widget can
 		# accept a track drop. Once every widget has had that chance, end the drag
@@ -3105,6 +3320,116 @@ class CustomLayout:
 
 		# Corner edit-toggle button, on top, in both view and edit mode.
 		self._draw_corner_edit_button()
+
+	def _tab_title(self, node: Node, index: int) -> str:
+		"""Derive a page label from the widgets it contains."""
+		names = [
+			leaf.widget.name
+			for leaf in iter_leaves(node)
+			if isinstance(leaf, Leaf) and leaf.widget is not None
+		]
+		if len(names) == 1:
+			return names[0]
+		if names:
+			return _t("Tab %d") % (index + 1)
+		return _t("Empty Tab")
+
+	def _draw_tab_bars(self, node: Node) -> None:
+		"""Draw every visible tab strip and register its selectors for hover."""
+		if isinstance(node, Stack):
+			for child in node.children:
+				self._draw_tab_bars(child)
+			return
+		if not isinstance(node, TabStack):
+			return
+		x, y, w, h = node.rect
+		n = len(node.children)
+		if n == 0:
+			return
+		ddt = self.ddt
+		gui = self.gui
+		colours = self.tauon.colours
+		tab_h = min(h, TAB_BAR_HEIGHT * gui.scale)
+		border = SEGMENT_BORDER_COLOUR
+		# Side panels, galleries, metadata, queue, and similar widgets share
+		# this fill; matching it makes the selector strip read as their chrome.
+		bg = colours.side_panel_background
+		line = max(1, round(gui.scale))
+		tab_rects = self._tab_rects(node)
+		# Paint the strip first so the spaces between selectors are a clean,
+		# visible gap even over a translucent art background.
+		ddt.rect((round(x), round(y), round(w), round(tab_h)), bg)
+		outer_left = round(x)
+		outer_top = round(y)
+		outer_right = round(x + w)
+		outer_bottom = round(y + h)
+
+		def draw_line(rect: tuple[int, int, int, int]) -> None:
+			"""Draw one positive-area border segment."""
+			if rect[2] > 0 and rect[3] > 0:
+				ddt.rect(rect, border)
+
+		if node.border:
+			# The outer frame owns its corner pixels: horizontal edges are
+			# shortened so they never blend over the vertical edges.
+			draw_line((outer_left, outer_top, line, max(0, outer_bottom - outer_top)))
+			draw_line((outer_right - line, outer_top, line, max(0, outer_bottom - outer_top)))
+			draw_line((
+				outer_left + line,
+				outer_bottom - line,
+				max(0, outer_right - outer_left - line * 2),
+				line,
+			))
+
+		for index, (child, rect) in enumerate(zip(node.children, tab_rects)):
+			left, top, tab_w, tab_height = rect
+			right = left + tab_w
+			self.tauon.fields.add(rect)
+			bottom = top + tab_height
+			if node.border and index == node.active and bottom < outer_bottom:
+				# Keep the page's border inset, but visually open the selected
+				# tab through it by extending only its background one border
+				# thickness. Stay inside the vertical strokes so neither the
+				# background nor any translucent border is painted twice.
+				ddt.rect((left + line, bottom, max(0, tab_w - line * 2), line), bg)
+			if node.border:
+				# Each horizontal segment excludes the vertical strokes at its
+				# ends. First/last tab sides are already the outer frame.
+				draw_line((left + line, top, max(0, tab_w - line * 2), line))
+				side_h = (
+					min(tab_height + line, max(0, outer_bottom - top))
+					if bottom < outer_bottom
+					else max(0, outer_bottom - top - line)
+				)
+				if left != outer_left:
+					draw_line((left, top, line, side_h))
+				if right != outer_right:
+					draw_line((right - line, top, line, side_h))
+				if index != node.active and bottom < outer_bottom:
+					draw_line((left + line, bottom, max(0, tab_w - line * 2), line))
+			title = self._tab_title(child, index)
+			text_h = ddt.get_text_w(title, 12, height=True)
+			ddt.text(
+				(left + round(10 * gui.scale), round(top + (tab_height - text_h) / 2)),
+				title,
+				colours.menu_text,
+				12,
+				bg=bg,
+				max_w=max(0, tab_w - round(20 * gui.scale)),
+			)
+		if node.border:
+			# Close the small inter-tab gaps at the content boundary. These
+			# segments start/end outside the tab-side strokes, so no border
+			# pixel is blended twice.
+			for current, following in zip(tab_rects, tab_rects[1:]):
+				gap_left = current[0] + current[2]
+				gap_right = following[0]
+				gap_bottom = current[1] + current[3]
+				if gap_bottom < outer_bottom:
+					draw_line((gap_left, gap_bottom, max(0, gap_right - gap_left), line))
+		child = node.active_child()
+		if child is not None:
+			self._draw_tab_bars(child)
 
 	def _view_resize_hints(self, root: Node) -> None:
 		"""View-mode counterpart of the edit overlay's boundary handling, for
@@ -3184,7 +3509,7 @@ class CustomLayout:
 
 	def _provides_window_controls(self, root: Node) -> bool:
 		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
-			for l in iter_leaves(root))
+			for l in iter_visible_leaves(root))
 
 	def _leaf_paint_rect(self, leaf: Leaf) -> tuple[float, float, float, float] | None:
 		"""The rect the leaf's widget actually paints: the content rect snapped
@@ -3220,7 +3545,7 @@ class CustomLayout:
 			dw = dh = side
 		return dx, dy, dw, dh
 
-	def _draw_leaf(self, leaf: Leaf, interactive: bool) -> None:
+	def _draw_leaf(self, leaf: Leaf, interactive: bool, tab_border: bool = False) -> None:
 		tauon = self.tauon
 		gui = self.gui
 		ddt = self.ddt
@@ -3231,7 +3556,10 @@ class CustomLayout:
 		if widget is None:
 			return  # empty segment: just background
 
-		widget.leaf_border = leaf.border
+		# A direct tab page delegates its outer border to the TabStack. Treat it
+		# as bordered for widgets that otherwise paint their own frame (Art Box),
+		# but don't draw the Leaf border over the switcher's translucent lines.
+		widget.leaf_border = leaf.border or tab_border
 		paint = self._leaf_paint_rect(leaf)
 		if paint is None:
 			ddt.rect((cx, cy, cw, ch), ColourRGBA(40, 20, 20, 255))
@@ -3245,13 +3573,12 @@ class CustomLayout:
 			else:
 				self._draw_offscreen(widget, dx, dy, dw, dh, interactive)
 
-		if leaf.border:
+		if leaf.border and not tab_border:
 			b = max(1, round(1 * gui.scale))
-			col = ColourRGBA(60, 60, 68, 255)
-			ddt.rect((cx, cy, cw, b), col)
-			ddt.rect((cx, cy + ch - b, cw, b), col)
-			ddt.rect((cx, cy, b, ch), col)
-			ddt.rect((cx + cw - b, cy, b, ch), col)
+			ddt.rect((cx, cy, cw, b), SEGMENT_BORDER_COLOUR)
+			ddt.rect((cx, cy + ch - b, cw, b), SEGMENT_BORDER_COLOUR)
+			ddt.rect((cx, cy, b, ch), SEGMENT_BORDER_COLOUR)
+			ddt.rect((cx + cw - b, cy, b, ch), SEGMENT_BORDER_COLOUR)
 
 	def _draw_offscreen(self, widget: Widget, x: float, y: float, w: float, h: float,
 			interactive: bool) -> None:
@@ -3369,7 +3696,7 @@ class CustomLayout:
 		area = sdl3.SDL_FRect(0, 0, ww, wh)
 		sdl3.SDL_RenderFillRect(renderer, area)
 		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		for leaf in iter_leaves(root):
+		for leaf in iter_visible_leaves(root):
 			if not isinstance(leaf, Leaf):
 				continue
 			paint = self._leaf_paint_rect(leaf)
@@ -3405,7 +3732,7 @@ class CustomLayout:
 		# segments and resize boundaries. Tauon only redraws when the set of
 		# fields under the cursor changes (see fields.test() in the main loop),
 		# so these must be added every render regardless of current hover state.
-		for lf in iter_leaves(root):
+		for lf in iter_visible_leaves(root):
 			self.tauon.fields.add(tuple(lf.rect))
 		for _orient, brect, _stack, _idx in self._iter_boundaries(root, grab):
 			self.tauon.fields.add(brect)
@@ -3510,7 +3837,7 @@ class CustomLayout:
 		scale = self.gui.scale
 		pad = round(6 * scale)
 		tag_h = round(18 * scale)
-		for lf in iter_leaves(root):
+		for lf in iter_visible_leaves(root):
 			if lf.widget is None or not lf.widget.edit_label:
 				continue
 			x, y, w, h = lf.rect
