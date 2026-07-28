@@ -12,6 +12,13 @@ compatibility layer, but the launcher forces it to resolve symbols from the
 same SDL shared library as the native executable. Python must not destroy the
 main window, renderer, or SDL runtime when `Holder.native_bootstrap` is true.
 
+The native entry point also provides the shell launcher's command and
+single-instance forwarding behavior. Playback and control flags are sent
+directly to the controller on `127.0.0.1:7813` without starting Python. When
+another Tauon instance owns the instance lock, file paths and `file://` URIs
+are forwarded through the controller's `/open/` endpoint; otherwise they are
+passed to the newly started Python application.
+
 ## Development build
 
 SDL3, CMake 3.20 or later, a C++17 compiler, and the Python development files

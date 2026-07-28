@@ -1,4 +1,13 @@
 #define PY_SSIZE_T_CLEAN
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#include <windows.h>
+#endif
+
 #include <Python.h>
 #include <SDL3/SDL.h>
 
@@ -19,11 +28,13 @@
 #include <utility>
 #include <vector>
 
-#if defined(_WIN32)
-#include <windows.h>
-#else
+#if !defined(_WIN32)
+#include <arpa/inet.h>
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 #endif
 
@@ -74,7 +85,9 @@ struct NativeState {
 	WindowState window_state;
 	bool sdl_initialised = false;
 	bool hidden = false;
-#if !defined(_WIN32)
+#if defined(_WIN32)
+	HANDLE instance_lock_handle = INVALID_HANDLE_VALUE;
+#else
 	int instance_lock_fd = -1;
 #endif
 };
@@ -126,6 +139,248 @@ bool has_argument(int argc, char** argv, std::string_view wanted) {
 	return false;
 }
 
+std::optional<std::string_view> controller_endpoint(std::string_view argument) {
+	if (argument == "--play") {
+		return "play";
+	}
+	if (argument == "--pause") {
+		return "pause";
+	}
+	if (argument == "--playpause" || argument == "--play-pause") {
+		return "playpause";
+	}
+	if (argument == "--stop") {
+		return "stop";
+	}
+	if (argument == "--next") {
+		return "next";
+	}
+	if (argument == "--previous") {
+		return "previous";
+	}
+	if (argument == "--raise") {
+		return "raise";
+	}
+	if (argument == "--reloadtheme" || argument == "--reload-theme") {
+		return "reloadtheme";
+	}
+	if (argument == "--shuffle") {
+		return "shuffle";
+	}
+	if (argument == "--repeat") {
+		return "repeat";
+	}
+	return std::nullopt;
+}
+
+bool has_controller_argument(int argc, char** argv) {
+	for (int index = 1; index < argc; ++index) {
+		if (argv[index] != nullptr && controller_endpoint(argv[index])) {
+			return true;
+		}
+	}
+	return false;
+}
+
+void print_usage(const char* executable) {
+	const std::filesystem::path executable_path(executable != nullptr ? executable : "tauon-native");
+	std::cout
+		<< "Usage: " << executable_path.filename().string() << " [options] [file-or-URI ...]\n\n"
+		<< "Commands (forwarded to a running Tauon instance):\n"
+		<< "  --play           Start playback\n"
+		<< "  --pause          Pause playback\n"
+		<< "  --playpause      Toggle play/pause\n"
+		<< "  --stop           Stop playback\n"
+		<< "  --next           Skip to the next track\n"
+		<< "  --previous       Return to the previous track\n"
+		<< "  --raise          Bring the Tauon window to the front\n"
+		<< "  --reloadtheme    Reload the active UI theme\n"
+		<< "  --shuffle        Toggle shuffle mode\n"
+		<< "  --repeat         Toggle repeat mode\n\n"
+		<< "Options:\n"
+		<< "  -h, --help       Show this help\n"
+		<< "  --tray           Start Tauon hidden in the tray\n"
+		<< "  --no-start       Forward arguments without starting Tauon\n";
+}
+
+std::string urlsafe_base64(std::string_view input) {
+	constexpr std::string_view alphabet =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+	std::string encoded;
+	encoded.reserve(((input.size() + 2) / 3) * 4);
+	for (std::size_t offset = 0; offset < input.size(); offset += 3) {
+		const auto first = static_cast<unsigned char>(input[offset]);
+		const auto second = offset + 1 < input.size() ? static_cast<unsigned char>(input[offset + 1]) : 0;
+		const auto third = offset + 2 < input.size() ? static_cast<unsigned char>(input[offset + 2]) : 0;
+		const unsigned int value = (static_cast<unsigned int>(first) << 16U)
+			| (static_cast<unsigned int>(second) << 8U)
+			| static_cast<unsigned int>(third);
+		encoded.push_back(alphabet[(value >> 18U) & 0x3fU]);
+		encoded.push_back(alphabet[(value >> 12U) & 0x3fU]);
+		encoded.push_back(offset + 1 < input.size() ? alphabet[(value >> 6U) & 0x3fU] : '=');
+		encoded.push_back(offset + 2 < input.size() ? alphabet[value & 0x3fU] : '=');
+	}
+	return encoded;
+}
+
+#if defined(_WIN32)
+using SocketHandle = SOCKET;
+constexpr SocketHandle kInvalidSocket = INVALID_SOCKET;
+
+void close_socket(SocketHandle socket_handle) {
+	closesocket(socket_handle);
+}
+#else
+using SocketHandle = int;
+constexpr SocketHandle kInvalidSocket = -1;
+
+void close_socket(SocketHandle socket_handle) {
+	close(socket_handle);
+}
+#endif
+
+bool send_controller_request(std::string_view endpoint) {
+#if defined(_WIN32)
+	WSADATA winsock_data {};
+	if (WSAStartup(MAKEWORD(2, 2), &winsock_data) != 0) {
+		std::cerr << "Tauon: unable to initialise local IPC networking\n";
+		return false;
+	}
+#endif
+	const SocketHandle socket_handle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	if (socket_handle == kInvalidSocket) {
+		std::cerr << "Tauon: unable to create local IPC socket\n";
+#if defined(_WIN32)
+		WSACleanup();
+#endif
+		return false;
+	}
+
+#if defined(_WIN32)
+	const DWORD timeout_ms = 2000;
+	setsockopt(
+		socket_handle,
+		SOL_SOCKET,
+		SO_RCVTIMEO,
+		reinterpret_cast<const char*>(&timeout_ms),
+		static_cast<int>(sizeof(timeout_ms))
+	);
+	setsockopt(
+		socket_handle,
+		SOL_SOCKET,
+		SO_SNDTIMEO,
+		reinterpret_cast<const char*>(&timeout_ms),
+		static_cast<int>(sizeof(timeout_ms))
+	);
+#else
+	const timeval timeout {2, 0};
+	setsockopt(socket_handle, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+	setsockopt(socket_handle, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+#endif
+
+	sockaddr_in address {};
+	address.sin_family = AF_INET;
+	address.sin_port = htons(7813);
+	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	if (connect(
+		socket_handle,
+		reinterpret_cast<const sockaddr*>(&address),
+		static_cast<int>(sizeof(address))
+	) != 0) {
+		close_socket(socket_handle);
+#if defined(_WIN32)
+		WSACleanup();
+#endif
+		std::cerr << "Tauon: could not connect to the running instance on 127.0.0.1:7813\n";
+		return false;
+	}
+
+	const std::string request =
+		"GET /" + std::string(endpoint) + " HTTP/1.0\r\n"
+		"Host: 127.0.0.1:7813\r\n"
+		"Connection: close\r\n\r\n";
+	std::size_t sent_bytes = 0;
+	while (sent_bytes < request.size()) {
+		const int sent = send(
+			socket_handle,
+			request.data() + sent_bytes,
+			static_cast<int>(request.size() - sent_bytes),
+			0
+		);
+		if (sent <= 0) {
+			close_socket(socket_handle);
+#if defined(_WIN32)
+			WSACleanup();
+#endif
+			std::cerr << "Tauon: failed to send a request to the running instance\n";
+			return false;
+		}
+		sent_bytes += static_cast<std::size_t>(sent);
+	}
+
+	std::string response;
+	char response_buffer[1024];
+	while (response.size() < 8192) {
+		const int received = recv(socket_handle, response_buffer, static_cast<int>(sizeof(response_buffer)), 0);
+		if (received <= 0) {
+			break;
+		}
+		response.append(response_buffer, static_cast<std::size_t>(received));
+	}
+	close_socket(socket_handle);
+#if defined(_WIN32)
+	WSACleanup();
+#endif
+
+	const std::size_t first_space = response.find(' ');
+	if (first_space == std::string::npos || response.size() < first_space + 4) {
+		std::cerr << "Tauon: the running instance returned an invalid IPC response\n";
+		return false;
+	}
+	const int status = std::strtol(response.c_str() + first_space + 1, nullptr, 10);
+	if (status < 200 || status >= 300) {
+		std::cerr << "Tauon: the running instance returned HTTP status " << status << '\n';
+		return false;
+	}
+	return true;
+}
+
+bool is_open_argument(std::string_view argument) {
+	if (argument.empty() || argument.front() == '-') {
+		return false;
+	}
+	if (argument.rfind("file://", 0) == 0) {
+		return true;
+	}
+	std::error_code error;
+	return std::filesystem::exists(std::filesystem::path(argument), error) && !error;
+}
+
+int forward_arguments(int argc, char** argv) {
+	std::vector<std::string> endpoints;
+	for (int index = 1; index < argc; ++index) {
+		if (argv[index] == nullptr) {
+			continue;
+		}
+		const std::string_view argument(argv[index]);
+		if (const std::optional<std::string_view> endpoint = controller_endpoint(argument)) {
+			endpoints.emplace_back(*endpoint);
+		} else if (is_open_argument(argument)) {
+			endpoints.emplace_back("open/" + urlsafe_base64(argument));
+		}
+	}
+	if (argc <= 1) {
+		endpoints.emplace_back("raise");
+	}
+
+	for (const std::string& endpoint : endpoints) {
+		if (!send_controller_request(endpoint)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (const char* override_path = std::getenv("TAUON_USER_DATA_DIR")) {
 		return std::filesystem::path(override_path);
@@ -171,11 +426,38 @@ enum class InstanceLockResult {
 
 InstanceLockResult acquire_instance_lock(NativeState& state, const char* executable_argument) {
 #if defined(_WIN32)
-	// Windows still uses the legacy Python-side lock. Keep the native path
-	// functional there until the launcher has a matching Win32 lock.
-	(void)state;
-	(void)executable_argument;
-	return InstanceLockResult::Unavailable;
+	state.user_data_directory = user_data_directory(executable_argument);
+	std::error_code error;
+	std::filesystem::create_directories(state.user_data_directory, error);
+	if (error) {
+		std::cerr << "Tauon: unable to create user data directory for instance lock: " << error.message() << '\n';
+		return InstanceLockResult::Unavailable;
+	}
+
+	const std::filesystem::path lock_path = state.user_data_directory / "program.pid";
+	state.instance_lock_handle = CreateFileW(
+		lock_path.c_str(),
+		GENERIC_READ | GENERIC_WRITE,
+		FILE_SHARE_READ,
+		nullptr,
+		OPEN_ALWAYS,
+		FILE_ATTRIBUTE_NORMAL,
+		nullptr
+	);
+	if (state.instance_lock_handle == INVALID_HANDLE_VALUE) {
+		const DWORD lock_error = GetLastError();
+		if (lock_error == ERROR_SHARING_VIOLATION || lock_error == ERROR_LOCK_VIOLATION) {
+			return InstanceLockResult::AlreadyRunning;
+		}
+		std::cerr << "Tauon: unable to acquire instance lock " << lock_path.string() << '\n';
+		return InstanceLockResult::Unavailable;
+	}
+	SetFilePointer(state.instance_lock_handle, 0, nullptr, FILE_BEGIN);
+	SetEndOfFile(state.instance_lock_handle);
+	const std::string pid = std::to_string(GetCurrentProcessId()) + "\n";
+	DWORD bytes_written = 0;
+	WriteFile(state.instance_lock_handle, pid.data(), static_cast<DWORD>(pid.size()), &bytes_written, nullptr);
+	return InstanceLockResult::Acquired;
 #else
 	state.user_data_directory = user_data_directory(executable_argument);
 	std::error_code error;
@@ -568,7 +850,12 @@ void shutdown_native_sdl(NativeState& state) {
 
 void shutdown_native_app(NativeState& state) {
 	shutdown_native_sdl(state);
-#if !defined(_WIN32)
+#if defined(_WIN32)
+	if (state.instance_lock_handle != INVALID_HANDLE_VALUE) {
+		CloseHandle(state.instance_lock_handle);
+		state.instance_lock_handle = INVALID_HANDLE_VALUE;
+	}
+#else
 	if (state.instance_lock_fd != -1) {
 		close(state.instance_lock_fd);
 		state.instance_lock_fd = -1;
@@ -611,12 +898,24 @@ PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
 	return PyUnicode_DecodeFSDefault(g_state->user_data_directory.string().c_str());
 }
 
+PyObject* bridge_owns_instance_lock(PyObject*, PyObject*) {
+	if (g_state == nullptr) {
+		Py_RETURN_FALSE;
+	}
+#if defined(_WIN32)
+	return PyBool_FromLong(g_state->instance_lock_handle != INVALID_HANDLE_VALUE ? 1 : 0);
+#else
+	return PyBool_FromLong(g_state->instance_lock_fd != -1 ? 1 : 0);
+#endif
+}
+
 PyMethodDef bridge_methods[] = {
 	{"is_active", bridge_is_active, METH_NOARGS, "Return whether Tauon is running under the native bootstrap."},
 	{"window_address", bridge_window_address, METH_NOARGS, "Return the transitional native SDL_Window address."},
 	{"renderer_address", bridge_renderer_address, METH_NOARGS, "Return the transitional native SDL_Renderer address."},
 	{"sdl_library_path", bridge_sdl_library_path, METH_NOARGS, "Return the SDL library used by the native executable."},
 	{"user_data_directory", bridge_user_data_directory, METH_NOARGS, "Return Tauon's native-resolved user data directory."},
+	{"owns_instance_lock", bridge_owns_instance_lock, METH_NOARGS, "Return whether the native launcher owns Tauon's instance lock."},
 	{nullptr, nullptr, 0, nullptr},
 };
 
@@ -665,7 +964,7 @@ bool prepend_python_path(const std::filesystem::path& directory) {
 	return result == 0;
 }
 
-int run_python(NativeState& state, int argc, char** argv, bool transfer_to_existing_instance = false) {
+int run_python(NativeState& state, int argc, char** argv) {
 	if (PyImport_AppendInittab("tauon_native", &PyInit_tauon_native) == -1) {
 		std::cerr << "Tauon: failed to register the native Python bridge\n";
 		return 1;
@@ -698,6 +997,7 @@ int run_python(NativeState& state, int argc, char** argv, bool transfer_to_exist
 			"import sdl3\n"
 			"import tauon_native\n"
 			"assert os.environ.get('SDL_MAIN_NOIMPL') == '1'\n"
+			"assert tauon_native.owns_instance_lock()\n"
 			"window = ctypes.cast(tauon_native.window_address(), ctypes.POINTER(sdl3.SDL_Window))\n"
 			"renderer = ctypes.cast(tauon_native.renderer_address(), ctypes.POINTER(sdl3.SDL_Renderer))\n"
 			"assert sdl3.SDL_GetWindowID(window) > 0\n"
@@ -721,13 +1021,9 @@ int run_python(NativeState& state, int argc, char** argv, bool transfer_to_exist
 			exit_code = 1;
 		}
 	} else {
-		const char* launch_tauon = transfer_to_existing_instance
-			? "import runpy\n"
-			  "import os\n"
-			  "os.environ['TAUON_FORWARD_ARGS_ONLY'] = '1'\n"
-			  "runpy.run_module('tauon.__main__', run_name='__main__')\n"
-			: "import runpy\n"
-			  "runpy.run_module('tauon.__main__', run_name='__main__')\n";
+		const char* launch_tauon =
+			"import runpy\n"
+			"runpy.run_module('tauon.__main__', run_name='__main__')\n";
 		if (PyRun_SimpleString(launch_tauon) != 0) {
 			PyErr_Print();
 			exit_code = 1;
@@ -748,11 +1044,20 @@ int run_python(NativeState& state, int argc, char** argv, bool transfer_to_exist
 }  // namespace
 
 int main(int argc, char** argv) {
+	if (has_argument(argc, argv, "-h") || has_argument(argc, argv, "--help")) {
+		print_usage(argc > 0 ? argv[0] : "tauon-native");
+		return 0;
+	}
+	// Match the shell launcher: controller commands never start a new player.
+	if (has_controller_argument(argc, argv)) {
+		return forward_arguments(argc, argv);
+	}
+
 	NativeState state;
 	g_state = &state;
 	const InstanceLockResult instance_lock = acquire_instance_lock(state, argv[0]);
 	if (instance_lock == InstanceLockResult::AlreadyRunning || has_argument(argc, argv, "--no-start")) {
-		const int exit_code = run_python(state, argc, argv, true);
+		const int exit_code = forward_arguments(argc, argv);
 		shutdown_native_app(state);
 		g_state = nullptr;
 		return exit_code;
