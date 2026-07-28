@@ -20820,6 +20820,11 @@ class Tauon:
 
 	def exit(self, reason: str) -> None:
 		logging.info(f"Shutting down. Reason: {reason}")
+		if not sdl3.SDL_HideWindow(self.t_window):
+			logging.warning(f"Failed to hide window during shutdown: {sdl3.SDL_GetError()}")
+		elif not sdl3.SDL_SyncWindow(self.t_window):
+			logging.warning(f"Timed out synchronizing hidden window during shutdown: {sdl3.SDL_GetError()}")
+		sdl3.SDL_PumpEvents()
 		self.pctl.running = False
 		self.wake()
 

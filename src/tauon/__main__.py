@@ -247,7 +247,9 @@ if debug:
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
-if dev_mode:
+if native_bootstrap and _tauon_native.owns_instance_lock():
+	logging.debug("Native launcher owns the instance lock")
+elif dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
 	pid_file = user_directory / "program.pid"

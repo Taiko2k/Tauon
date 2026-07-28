@@ -26,6 +26,10 @@ else()
 	target_compile_options(tauon-native PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+if(WIN32)
+	target_link_libraries(tauon-native PRIVATE ws2_32)
+endif()
+
 if(APPLE)
 	target_link_libraries(tauon-native PRIVATE "-framework CoreFoundation")
 endif()
