@@ -15,7 +15,7 @@ Name=Tauon
 Name[pt_BR]=Tauon
 Exec=com.github.taiko2k.tauonmb.sh %U
 Icon=com.github.taiko2k.tauonmb
-MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u;application/xspf+xml
+MimeType=application/ogg;audio/x-vorbis+ogg;application/x-ogg;audio/ogg;audio/x-ogg;audio/x-opus+ogg;audio/flac;audio/x-flac;application/flac;audio/wav;audio/x-wav;audio/tta;audio/x-tta;audio/mpeg;audio/mp3;audio/x-mp3;audio/m4a;audio/x-m4a;audio/ape;audio/x-ape;x-content/audio-player;audio/scpls;audio/x-scpls;audio/x-pls;audio/m3u;application/xspf+xml
 StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
@@ -25,17 +25,17 @@ Actions=PlayPause;Previous;Next;Stop
 X-GNOME-UsesNotifications=true
 
 [Desktop Action PlayPause]
-Exec=com.github.taiko2k.tauonmb.sh --no-start --play-pause
+Exec=com.github.taiko2k.tauonmb.sh playpause
 Name=Play/Pause
 
 [Desktop Action Previous]
-Exec=com.github.taiko2k.tauonmb.sh --no-start --previous
+Exec=com.github.taiko2k.tauonmb.sh prev
 Name=Previous Track
 
 [Desktop Action Next]
-Exec=com.github.taiko2k.tauonmb.sh --no-start --next
+Exec=com.github.taiko2k.tauonmb.sh next
 Name=Next Track
 
 [Desktop Action Stop]
-Exec=com.github.taiko2k.tauonmb.sh --no-start --stop
+Exec=com.github.taiko2k.tauonmb.sh stop
 Name=Stop

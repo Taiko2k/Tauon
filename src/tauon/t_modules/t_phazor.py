@@ -45,6 +45,7 @@ from requests.models import PreparedRequest
 
 from tauon.t_modules.t_enums import PlayerState, PlayingState
 from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
+from tauon.t_modules.t_replaygain import replaygain_multiplier
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
@@ -990,56 +991,95 @@ def player4(tauon: Tauon) -> None:
 	def pause_when_device_unavailable() -> None:
 		pctl.pause_only()
 
-	def calc_rg(track: TrackClass | None) -> float:
-		if prefs.replay_gain == 0 and prefs.replay_preamp == 0:
-			pctl.active_replaygain = 0
-			return 0
+	replaygain_live_controls = False
 
-		g = 0
-		p = 1
+	def equalizer_compressor_wanted() -> bool:
+		if not prefs.use_eq:
+			return False
+		try:
+			return any(float(gain) > 0.01 for gain in (getattr(prefs, "eq", []) or []))
+		except (TypeError, ValueError):
+			return False
 
-		if track is not None:
-			tg = track.replaygain_track_gain
-			tp = track.replaygain_track_peak
-			ag = track.replaygain_album_gain
-			ap = track.replaygain_album_peak
+	def output_compressor_wanted() -> bool:
+		return (
+			replaygain_live_controls
+			and prefs.replay_allow_compression
+			and (
+				prefs.replay_gain != 0
+				or prefs.replay_preamp > 0
+				or equalizer_compressor_wanted()
+			)
+		)
 
-			if prefs.replay_gain > 0:
-				if prefs.replay_gain == 3 and tg is not None and ag is not None:
-					gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
-					if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
-						g = tg
-						if tp is not None:
-							p = tp
-					else:
-						g = ag
-						if ap is not None:
-							p = ap
-				elif (prefs.replay_gain == 1 and tg is not None) or (
-					prefs.replay_gain == 2 and ag is None and tg is not None
-				):
-					g = tg
-					if tp is not None:
-						p = tp
-				elif ag is not None:
-					g = ag
-					if ap is not None:
-						p = ap
-				elif tg is not None and ag is None:
-					g = tg
-					if tp is not None:
-						p = tp
+	def set_replaygain_status(gain_db: float | None, multiplier: float, has_gain_tag: bool) -> None:
+		pctl.active_replaygain = gain_db if gain_db is not None and math.isfinite(gain_db) else 0
+		pctl.active_replaygain_gain_db = 20 * math.log10(multiplier) if multiplier > 0 else 0
+		pctl.replaygain_applied = has_gain_tag or prefs.replay_preamp != 0
+
+	def calc_rg(track: TrackClass | None, *, update_status: bool = True) -> float:
+		allow_compression = output_compressor_wanted()
+		if prefs.replay_gain == 0 or track is None:
+			multiplier = replaygain_multiplier(
+				None,
+				None,
+				prefs.replay_preamp,
+				allow_compression=allow_compression,
+			)
+			if update_status:
+				set_replaygain_status(None, multiplier, False)
+			return multiplier
+
+		g: float | None = None
+		p: float | None = None
+
+		tg = track.replaygain_track_gain
+		tp = track.replaygain_track_peak
+		ag = track.replaygain_album_gain
+		ap = track.replaygain_album_peak
+
+		if prefs.replay_gain == 3 and tg is not None and ag is not None:
+			gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
+			if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
+				g, p = tg, tp
+			else:
+				g, p = ag, ap
+		elif (prefs.replay_gain == 1 and tg is not None) or (
+			prefs.replay_gain == 2 and ag is None and tg is not None
+		):
+			g, p = tg, tp
+		elif ag is not None:
+			g, p = ag, ap
+		elif tg is not None:
+			g, p = tg, tp
+
+		if g is None or not math.isfinite(g):
+			logging.debug("No usable ReplayGain tag detected")
+			multiplier = replaygain_multiplier(
+				None,
+				None,
+				prefs.replay_preamp,
+				allow_compression=allow_compression,
+			)
+			if update_status:
+				set_replaygain_status(None, multiplier, False)
+			return multiplier
 
 		logging.debug("Detected ReplayGain")
 		logging.debug("GAIN: " + str(g))
 		logging.debug("PEAK: " + str(p))
-		logging.debug("FINAL: " + str(min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)))
-
-		if p == 0:
-			logging.warning("Detected ReplayGain peak of 0")
-			return 1
-		pctl.active_replaygain = g
-		return min(10 ** ((g + prefs.replay_preamp) / 20), 1 / p)
+		multiplier = replaygain_multiplier(
+			g,
+			p,
+			prefs.replay_preamp,
+			allow_compression=allow_compression,
+		)
+		logging.debug("FINAL: " + str(multiplier))
+		if p is not None and (not math.isfinite(p) or p <= 0):
+			logging.warning("Ignoring invalid ReplayGain peak: %s", p)
+		if update_status:
+			set_replaygain_status(g, multiplier, True)
+		return multiplier
 
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
@@ -1129,6 +1169,9 @@ def player4(tauon: Tauon) -> None:
 					gui.update_spec = 1
 
 	def run_levels() -> None:
+		if replaygain_live_controls:
+			pctl.output_compression_active = bool(aud.replaygain_get_compressor_active())
+			pctl.output_compression_reduction_db = aud.replaygain_get_compressor_reduction_db()
 		if (tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM)) and gui.vis == 1:
 			amp = aud.get_level_peak_l()
 			l = amp * 12
@@ -1195,24 +1238,28 @@ def player4(tauon: Tauon) -> None:
 		if end and pctl.playing_time > 1:
 			pctl.test_progress()
 
-	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> None:
+	def chrome_start(track_id: int, enqueue: bool = False, t: int = 0) -> bool:
 		track = pctl.get_track(track_id)
 		# if track.is_cue:
 		# 	logging.error("CUE cast not supported")
-		# 	return
+		# 	return False
 		if track.is_network:
 			if track.file_ext == "SPTY":
 				logging.error("Unsupported network source for cast")
-				return
+				tauon.chrome.end()
+				return False
 			network_url, params = pctl.get_url(track)
 			if params:
 				req = PreparedRequest()
 				req.prepare_url(network_url, params)
 				network_url = req.url
 
-			tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
+			started = tauon.chrome.start(track.index, enqueue=enqueue, url=network_url, t=t)
 		else:
-			tauon.chrome.start(track.index, enqueue=enqueue, t=t)
+			started = tauon.chrome.start(track.index, enqueue=enqueue, t=t)
+		if not started:
+			tauon.chrome.end()
+		return started
 
 	# fmt:off
 	gui   = tauon.gui
@@ -1244,6 +1291,20 @@ def player4(tauon: Tauon) -> None:
 		aud.eq_set_band.restype = None
 	except AttributeError:
 		logging.warning("PHAzOR build does not expose EQ controls")
+
+	replaygain_live_controls = True
+	try:
+		aud.replaygain_set_live.argtypes = (ctypes.c_float,)
+		aud.replaygain_set_live.restype = None
+		aud.replaygain_set_pending.argtypes = (ctypes.c_float,)
+		aud.replaygain_set_pending.restype = None
+		aud.replaygain_set_compressor.argtypes = (ctypes.c_int,)
+		aud.replaygain_set_compressor.restype = None
+		aud.replaygain_get_compressor_active.restype = ctypes.c_int
+		aud.replaygain_get_compressor_reduction_db.restype = ctypes.c_float
+	except AttributeError:
+		logging.warning("PHAzOR build does not expose live ReplayGain controls")
+		replaygain_live_controls = False
 
 	bins1 = (ctypes.c_float * 24)()
 	bins2 = (ctypes.c_float * 45)()
@@ -1283,10 +1344,36 @@ def player4(tauon: Tauon) -> None:
 		if feeder.enabled:
 			aud.set_load_net(n)
 
+	def set_native_output_compressor() -> None:
+		compressor_wanted = output_compressor_wanted()
+		pctl.output_compression_enabled = compressor_wanted
+		if replaygain_live_controls:
+			aud.replaygain_set_compressor(1 if compressor_wanted else 0)
+		if not compressor_wanted:
+			pctl.output_compression_active = False
+			pctl.output_compression_reduction_db = 0
+
+	def apply_live_replaygain(track_object: TrackClass | None) -> None:
+		multiplier = calc_rg(track_object)
+		if not replaygain_live_controls:
+			return
+		# Enable protection before raising gain; lower gain before disabling it.
+		if output_compressor_wanted():
+			set_native_output_compressor()
+			aud.replaygain_set_live(ctypes.c_float(multiplier))
+		else:
+			aud.replaygain_set_live(ctypes.c_float(multiplier))
+			set_native_output_compressor()
+
+	def prepare_replaygain(track_object: TrackClass | None) -> float:
+		set_native_output_compressor()
+		return calc_rg(track_object)
+
 	# aud.config_set_samplerate(prefs.samplerate)
 	aud.config_set_resample_quality(prefs.resample)
 
 	set_config()
+	set_native_output_compressor()
 
 	stall_timer = Timer()
 	wall_timer = Timer()
@@ -1337,7 +1424,8 @@ def player4(tauon: Tauon) -> None:
 
 						if d and t and 1 < d - t < 5:
 							# logging.info("Enqueue next chromecast")
-							chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target)
+							if not chrome_start(target_object.index, enqueue=True, t=pctl.start_time_target):
+								continue
 							chrome_cool_timer.set()
 							time.sleep(d - t)
 							if pctl.commit:
@@ -1345,7 +1433,8 @@ def player4(tauon: Tauon) -> None:
 								pctl.commit = None
 							continue
 
-					chrome_start(target_object.index, t=pctl.start_time_target)
+					if not chrome_start(target_object.index, t=pctl.start_time_target):
+						continue
 					chrome_cool_timer.set()
 					if pctl.commit:
 						pctl.advance(quiet=True, end=True)
@@ -1367,6 +1456,7 @@ def player4(tauon: Tauon) -> None:
 					pctl.decode_time = pctl.playing_time
 				if command == "seteq":
 					apply_eq_settings()
+					set_native_output_compressor()
 				if command == "stop":
 					tauon.player4_state = PlayerState.STOPPED
 					tauon.chrome.stop()
@@ -1414,20 +1504,24 @@ def player4(tauon: Tauon) -> None:
 			if command == "startchrome":
 				aud.stop()
 				if tauon.player4_state == PlayerState.PLAYING:
-					chrome_start(loaded_track.index, t=pctl.playing_time)
+					if not chrome_start(loaded_track.index, t=pctl.playing_time):
+						chrome_mode = True
+						continue
 				chrome_mode = True
 
 			if command == "reload":
 				set_config()
 			if command == "set-device":
 				set_config(set_device=True)
+			if command == "replaygain":
+				apply_live_replaygain(loaded_track)
 
 			if command == "url":
 				pctl.download_time = 0
 				w = 0
 				if not tauon.radiobox.run_proxy:
 					set_load_net(0)
-					aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(calc_rg(None)))
+					aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(prepare_replaygain(None)))
 					tauon.player4_state = PlayerState.URL_STREAM
 					player_timer.hit()
 				else:
@@ -1443,7 +1537,7 @@ def player4(tauon: Tauon) -> None:
 					else:
 						aud.config_set_feed_samplerate(prefs.samplerate)
 						set_load_net(0)
-						aud.start(b"RAW FEED", 0, 0, ctypes.c_float(calc_rg(None)))
+						aud.start(b"RAW FEED", 0, 0, ctypes.c_float(prepare_replaygain(None)))
 						tauon.player4_state = PlayerState.URL_STREAM
 						player_timer.hit()
 
@@ -1670,7 +1764,7 @@ def player4(tauon: Tauon) -> None:
 					aud.next(
 						target_path.encode(),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
-						ctypes.c_float(calc_rg(target_object)),
+						ctypes.c_float(prepare_replaygain(target_object)),
 					)
 
 					cont = False
@@ -1719,6 +1813,13 @@ def player4(tauon: Tauon) -> None:
 							r_timer.force_set(r_timer_saved)
 						if pctl.playerCommandReady and pctl.playerCommand == "volume":
 							aud.ramp_volume(int(pctl.player_volume), 750)
+							pctl.playerCommandReady = False
+							pctl.playerCommand = ""
+						if pctl.playerCommandReady and pctl.playerCommand == "replaygain":
+							apply_live_replaygain(loaded_track)
+							if replaygain_live_controls:
+								pending_multiplier = calc_rg(target_object, update_status=False)
+								aud.replaygain_set_pending(ctypes.c_float(pending_multiplier))
 							pctl.playerCommandReady = False
 							pctl.playerCommand = ""
 
@@ -1799,7 +1900,7 @@ def player4(tauon: Tauon) -> None:
 						target_path.encode(errors="surrogateescape"),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
 						fade,
-						ctypes.c_float(calc_rg(target_object)),
+						ctypes.c_float(prepare_replaygain(target_object)),
 					)
 					loaded_track = target_object
 					loaded_track_streamed = stream_url is not None
@@ -1844,7 +1945,7 @@ def player4(tauon: Tauon) -> None:
 									target_path.encode(),
 									int((pctl.start_time_target + pctl.jump_time) * 1000),
 									fade,
-									ctypes.c_float(calc_rg(target_object)),
+									ctypes.c_float(prepare_replaygain(target_object)),
 								)
 								gui.buffering = False
 								player_timer.set()
@@ -1966,7 +2067,7 @@ def player4(tauon: Tauon) -> None:
 							path.encode(),
 							int(pctl.new_time + pctl.start_time_target) * 1000,
 							0,
-							ctypes.c_float(calc_rg(loaded_track)),
+							ctypes.c_float(prepare_replaygain(loaded_track)),
 						)
 						while aud.get_result() == 0:
 							time.sleep(0.01)
@@ -1984,6 +2085,7 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "seteq":
 				apply_eq_settings()
+				set_native_output_compressor()
 
 			if command == "runstop":
 				length = aud.get_length_ms() / 1000
@@ -2007,6 +2109,9 @@ def player4(tauon: Tauon) -> None:
 
 				tauon.player4_state = PlayerState.STOPPED
 				pctl.playing_time = 0
+				pctl.replaygain_applied = False
+				pctl.output_compression_active = False
+				pctl.output_compression_reduction_db = 0
 				aud.stop()
 				time.sleep(0.1)
 				aud.set_volume(int(pctl.player_volume))

@@ -225,7 +225,15 @@ int reset_set_value = 0;
 int reset_set_byte = 0;
 
 int rg_byte = 0;
-float rg_value_want = 0.0;
+float rg_value_pending = 1.0;
+float rg_value_current = 1.0;
+float rg_output_base = 1.0f;
+float rg_output_correction = 1.0f;
+float rg_output_correction_target = 1.0f;
+int rg_output_correction_ramp_remaining = 0;
+float rg_output_pending_base = 1.0f;
+float rg_output_pending_correction = 1.0f;
+bool rg_output_boundary_pending = false;
 
 
 char load_target_file[4096]; // 4069 bytes for max linux filepath
@@ -277,6 +285,8 @@ int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
 #define LIMITER_THRESHOLD 0.89125093813f // -1 dBFS
 #define LIMITER_ATTACK_MS 1.5f
 #define LIMITER_RELEASE_MS 120.0f
+#define RG_COMPRESSOR_THRESHOLD 0.89125093813f // -1 dBFS
+#define RG_COMPRESSOR_RELEASE_MS 150.0f
 
 typedef struct {
 	float b0;
@@ -305,6 +315,12 @@ float limiter_gain = 1.0f;
 float limiter_attack_coeff = 0.0f;
 float limiter_release_coeff = 0.0f;
 int limiter_coeff_sample_rate = 0;
+// Shared output compressor for ReplayGain and positive EQ boosts.
+int rg_compressor_enabled = 0;
+int rg_compressor_active = 0;
+float rg_compressor_gain = 1.0f;
+float rg_compressor_release_coeff = 0.0f;
+int rg_compressor_coeff_sample_rate = 0;
 
 unsigned int test1 = 0;
 
@@ -1288,13 +1304,9 @@ float ramp_step(int sample_rate, int milliseconds) {
 void fade_fx() {
 	//pthread_mutex_lock(&fade_mutex);
 
-	if (rg_value_want != 0.0 && rg_value_want != 1.0) {
-		bfr[high] *= rg_value_want;
-		bfl[high] *= rg_value_want;
-		if (bfl[high] > 1) bfl[high] = 1;
-		if (bfl[high] < -1) bfl[high] = -1;
-		if (bfr[high] > 1) bfr[high] = 1;
-		if (bfr[high] < -1) bfr[high] = -1;
+	if (rg_value_current != 1.0) {
+		bfr[high] *= rg_value_current;
+		bfl[high] *= rg_value_current;
 	}
 
 	if (fade_mini < 1.0) {
@@ -2029,6 +2041,81 @@ static void limiter_update_coefficients(int sample_rate) {
 	limiter_coeff_sample_rate = sample_rate;
 }
 
+static void rg_compressor_reset_state() {
+	rg_compressor_gain = 1.0f;
+	rg_compressor_active = 0;
+}
+
+static void rg_compressor_update_coefficients(int sample_rate) {
+	if (sample_rate <= 0) return;
+
+	float release_samples = (RG_COMPRESSOR_RELEASE_MS * 0.001f) * (float)sample_rate;
+	if (release_samples < 1.0f) release_samples = 1.0f;
+
+	rg_compressor_release_coeff = expf(-1.0f / release_samples);
+	rg_compressor_coeff_sample_rate = sample_rate;
+}
+
+static inline void rg_apply_live_correction(float *l, float *r) {
+	if (rg_output_boundary_pending && low == rg_byte) {
+		rg_output_base = rg_output_pending_base;
+		rg_output_correction = rg_output_pending_correction;
+		rg_output_correction_target = rg_output_pending_correction;
+		rg_output_correction_ramp_remaining = 0;
+		rg_output_boundary_pending = false;
+	}
+
+	if (rg_output_correction_ramp_remaining > 0) {
+		// Complete live setting changes in 10 ms without introducing a click.
+		rg_output_correction += (
+			rg_output_correction_target - rg_output_correction
+		) / (float)rg_output_correction_ramp_remaining;
+		rg_output_correction_ramp_remaining--;
+	} else {
+		rg_output_correction = rg_output_correction_target;
+	}
+
+	*l *= rg_output_correction;
+	*r *= rg_output_correction;
+}
+
+static inline void rg_compressor_process_stereo(float *l, float *r) {
+	if (!rg_compressor_enabled) return;
+
+	if (current_sample_rate > 0 && rg_compressor_coeff_sample_rate != current_sample_rate) {
+		rg_compressor_update_coefficients(current_sample_rate);
+	}
+
+	float peak = fmaxf(fabsf(*l), fabsf(*r));
+	float target_gain = 1.0f;
+	if (peak > RG_COMPRESSOR_THRESHOLD) {
+		target_gain = RG_COMPRESSOR_THRESHOLD / (peak + 1e-20f);
+	}
+
+	// An immediate, stereo-linked attack prevents overshoot. Release is
+	// smoothed so isolated peaks do not produce abrupt level changes.
+	if (target_gain < rg_compressor_gain) {
+		rg_compressor_gain = target_gain;
+	} else {
+		rg_compressor_gain = target_gain
+			+ (rg_compressor_release_coeff * (rg_compressor_gain - target_gain));
+	}
+
+	if (!isfinite(rg_compressor_gain) || rg_compressor_gain <= 0.0f) {
+		rg_compressor_gain = 1.0f;
+	}
+
+	*l *= rg_compressor_gain;
+	*r *= rg_compressor_gain;
+	rg_compressor_active = rg_compressor_gain < 0.9995f;
+
+	// Guard against rounding error after gain reduction.
+	if (*l > 1.0f) *l = 1.0f;
+	else if (*l < -1.0f) *l = -1.0f;
+	if (*r > 1.0f) *r = 1.0f;
+	else if (*r < -1.0f) *r = -1.0f;
+}
+
 static float eq_biquad_magnitude(const eq_biquad_t *f, float w) {
 	float cos_w = cosf(w);
 	float sin_w = sinf(w);
@@ -2321,7 +2408,12 @@ int get_audio(int max, float* buff) {
 
 				float l = bfl[low];
 				float r = bfr[low];
+				rg_apply_live_correction(&l, &r);
 				eq_process_stereo(&l, &r);
+				if (eq_enabled && eq_active && !rg_compressor_enabled) {
+					l *= eq_headroom_gain;
+					r *= eq_headroom_gain;
+				}
 
 				if (fabs(l) > peak_roll_l) peak_roll_l = fabs(l);
 				if (fabs(r) > peak_roll_r) peak_roll_r = fabs(r);
@@ -2335,9 +2427,11 @@ int get_audio(int max, float* buff) {
 
 				// Apply final volume adjustment
 				float final_vol = pow((gate * volume_on), config_volume_power);
-				if (eq_enabled && eq_active) final_vol *= eq_headroom_gain;
 				l = l * final_vol;
 				r = r * final_vol;
+				// Limiting after soft volume lets ReplayGain and EQ boosts use
+				// its headroom before any compression is applied.
+				rg_compressor_process_stereo(&l, &r);
 				limiter_process_stereo(&l, &r);
 
 				buff[b] = l;
@@ -2373,18 +2467,34 @@ int get_audio(int max, float* buff) {
 		//struct pw_stream *stream = userdata;
 		struct pw_buffer *buffer;
 		struct spa_buffer *buf;
-		//void *data;
-		int size;
+		struct spa_data *data;
+		uint32_t frames;
+		const uint32_t stride = sizeof(float) * 2;
 
 
 		if ((buffer = pw_stream_dequeue_buffer(global_stream)) == NULL)
 			return;
 
 		buf = buffer->buffer;
+		data = &buf->datas[0];
 
-		size = get_audio(buffer->requested * 2, buf->datas[0].data) * 4;
+		// `requested` is the number of source frames wanted by PipeWire's
+		// resampler, not a guarantee that the mapped buffer is that large.
+		// Respect the actual capacity or high-rate streams can advance our
+		// position counter for frames that do not fit in the output buffer.
+		frames = data->maxsize / stride;
+		if (buffer->requested > 0 && buffer->requested < frames) {
+			frames = buffer->requested;
+		}
 
-		buf->datas[0].chunk->size = size;
+		if (frames > 0) {
+			data->chunk->size = get_audio(frames * 2, data->data) * sizeof(float);
+		} else {
+			data->chunk->size = 0;
+		}
+		data->chunk->offset = 0;
+		data->chunk->stride = stride;
+		buffer->size = data->chunk->size / stride;
 		pw_stream_queue_buffer(global_stream, buffer);
 
 	}
@@ -2409,6 +2519,18 @@ int get_audio(int max, float* buff) {
 	// rate is only a preference; the graph may settle on something else. Track
 	// the real value in sample_rate_out so the internal resampler bridges any
 	// residual gap instead of pump_decode spinning trying to force a match.
+	static void pipe_apply_output_rate(int rate) {
+		if (rate <= 0 || (rate == sample_rate_out && rate == current_sample_rate)) return;
+
+		pthread_mutex_lock(&buffer_mutex);
+		if (current_sample_rate > 0 && current_sample_rate != rate && position_count > 0) {
+			position_count = (int) (position_count * ((double) rate / current_sample_rate));
+		}
+		sample_rate_out = rate;
+		current_sample_rate = rate;
+		pthread_mutex_unlock(&buffer_mutex);
+	}
+
 	static void on_param_changed(void *userdata, uint32_t id, const struct spa_pod *param) {
 		if (param == NULL || id != SPA_PARAM_Format) return;
 
@@ -2419,9 +2541,14 @@ int get_audio(int max, float* buff) {
 		struct spa_audio_info_raw info = { 0 };
 		if (spa_format_audio_raw_parse(param, &info) < 0) return;
 
-		if (info.rate > 0 && (int) info.rate != sample_rate_out) {
-			log_msg(LOG_INFO, "ph: PipeWire negotiated samplerate %u", info.rate);
-			sample_rate_out = info.rate;
+		if (info.rate > 0 && (
+			(int) info.rate != sample_rate_out ||
+			(int) info.rate != current_sample_rate
+		)) {
+			if ((int) info.rate != sample_rate_out) {
+				log_msg(LOG_INFO, "ph: PipeWire negotiated samplerate %u", info.rate);
+			}
+			pipe_apply_output_rate(info.rate);
 		}
 	}
 
@@ -2888,6 +3015,7 @@ int load_next_inner() {
 	#endif
 
 	stop_decoder();
+	rg_value_current = rg_value_pending;
 
 	strcpy(loaded_target_file, load_target_file);
 	loaded_target_net = load_target_net;
@@ -2919,7 +3047,21 @@ int load_next_inner() {
 
 	if (loaded_target_file[0] == 'h') buffering = 1;
 
+	pthread_mutex_lock(&buffer_mutex);
 	rg_byte = high;
+	if (get_buff_fill() == 0) {
+		rg_output_base = rg_value_current;
+		rg_output_correction = 1.0f;
+		rg_output_correction_target = 1.0f;
+		rg_output_correction_ramp_remaining = 0;
+		rg_output_boundary_pending = false;
+		rg_compressor_reset_state();
+	} else {
+		rg_output_pending_base = rg_value_current;
+		rg_output_pending_correction = 1.0f;
+		rg_output_boundary_pending = true;
+	}
+	pthread_mutex_unlock(&buffer_mutex);
 
 	char peak[35];
 
@@ -3589,7 +3731,10 @@ void pump_decode() {
 		buff_reset();
 		pipe_requested_rate = sample_rate_src;
 		pipe_set_samplerate = sample_rate_src;
-		sample_rate_out = sample_rate_src;  // optimistic; on_param_changed corrects it
+		// The buffer is empty here, so move both audio generation and position
+		// timing to the new rate. on_param_changed corrects both if negotiation
+		// settles on a different rate.
+		pipe_apply_output_rate(sample_rate_src);
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 	}
 	#endif
@@ -4263,7 +4408,7 @@ EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 
 	result_status = WAITING;
 
-	rg_value_want = rg;
+	rg_value_pending = rg;
 	config_fade_jump = fade;
 
 	load_target_seek = start_ms;
@@ -4292,7 +4437,7 @@ EXPORT int next(char *filename, int start_ms, float rg) {
 		load_target_seek = start_ms;
 		strcpy(load_target_file, filename);
 		load_target_net = load_target_net_pending;
-		rg_value_want = rg;
+		rg_value_pending = rg;
 		next_ready = 1;
 	}
 
@@ -4370,6 +4515,56 @@ EXPORT int ramp_volume(int percent, int speed) {
 	volume_ramp_speed = speed;
 	volume_want = percent / 100.0;
 	return 0;
+}
+
+EXPORT void replaygain_set_live(float multiplier) {
+	if (!isfinite(multiplier) || multiplier <= 0.0f) multiplier = 1.0f;
+
+	pthread_mutex_lock(&buffer_mutex);
+	float base = rg_output_base;
+	if (!isfinite(base) || base <= 0.0f) base = 1.0f;
+	rg_output_correction_target = multiplier / base;
+	int sample_rate = current_sample_rate > 0 ? current_sample_rate : 44100;
+	rg_output_correction_ramp_remaining = sample_rate / 100;
+	if (rg_output_correction_ramp_remaining < 1) rg_output_correction_ramp_remaining = 1;
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void replaygain_set_pending(float multiplier) {
+	if (!isfinite(multiplier) || multiplier <= 0.0f) multiplier = 1.0f;
+
+	pthread_mutex_lock(&buffer_mutex);
+	rg_value_pending = multiplier;
+	if (rg_output_boundary_pending) {
+		float base = rg_output_pending_base;
+		if (!isfinite(base) || base <= 0.0f) base = 1.0f;
+		rg_output_pending_correction = multiplier / base;
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT void replaygain_set_compressor(int enabled) {
+	pthread_mutex_lock(&buffer_mutex);
+	rg_compressor_enabled = enabled != 0;
+	if (!rg_compressor_enabled) rg_compressor_reset_state();
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT int replaygain_get_compressor_active() {
+	pthread_mutex_lock(&buffer_mutex);
+	int active = rg_compressor_active;
+	pthread_mutex_unlock(&buffer_mutex);
+	return active;
+}
+
+EXPORT float replaygain_get_compressor_reduction_db() {
+	pthread_mutex_lock(&buffer_mutex);
+	float reduction = 0.0f;
+	if (rg_compressor_enabled && isfinite(rg_compressor_gain) && rg_compressor_gain < 1.0f) {
+		reduction = 20.0f * log10f(rg_compressor_gain);
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+	return reduction;
 }
 
 EXPORT void eq_set_enable(int n) {
