@@ -30,7 +30,6 @@ class Holder:
 	old_window_position:    tuple[int, int] | None # X Y res
 	install_directory:      Path
 	user_directory:         Path
-	pyinstaller_mode:       bool
 	phone:                  bool
 	window_default_size:    tuple[int, int] # X Y res
 	window_title:           bytes # t_title.encode("utf-8")
@@ -44,4 +43,5 @@ class Holder:
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
 	native_bootstrap:       bool # The C++ launcher owns SDL shutdown and the main window/renderer lifetime
+	portable_mode:          bool # The native launcher found a portable marker beside itself
 	# fmt:on

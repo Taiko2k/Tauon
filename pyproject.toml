@@ -30,7 +30,6 @@
 #		"Pillow;                      sys_platform != 'win32'",
 #		"opencc;                      sys_platform != 'win32'", # OPTDEP
 #		"opencc-python-reimplemented; sys_platform == 'win32'", # OPTDEP
-#		"pyinstaller;                 sys_platform != 'linux'", # for macOS at least
 #		"pypresence", # optdep
 #		"natsort", # optdep
 #		"jxlpy", # optdep
@@ -48,9 +47,6 @@
 #	all = [
 #		"opencc;                      sys_platform != 'win32'", # OPTDEP
 #	]
-
-[project.gui-scripts]
-	tauonmb = "tauon.__main__:main"
 
 [project.entry-points."distutils.commands"]
 	compile_translations = "tools.i18n.compile_translations:main"
@@ -106,7 +102,13 @@
 	dependencies = {file = "requirements.txt"}
 
 [tool.setuptools.package-data]
-	"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
+	"tauon" = [
+		"assets/**/*",
+		"locale/*/*/*.mo",
+		"py.typed",
+		"templates/**/*",
+		"theme/**/*",
+	]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]

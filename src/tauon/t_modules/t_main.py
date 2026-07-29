@@ -316,7 +316,7 @@ except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 
 try:
-	# pyLast needs to be imported AFTER setup_tls() else pyinstaller breaks - we reimport it later
+	# pyLast needs to be imported AFTER setup_tls(), so we reimport it later.
 	import pylast
 except Exception:
 	logging.exception("pyLast module not found, Last.fm support will be disabled.")
@@ -42986,10 +42986,9 @@ def find_projectm_library() -> str | None:
 				if path.is_file():
 					return str(path)
 	if sys.platform == "darwin":
-		base_dirs = [Path(sys.executable).parent]
-		if hasattr(sys, "_MEIPASS"):
-			# PyInstaller bundle: dylibs land in Contents/Frameworks
-			base_dirs.append(Path(sys._MEIPASS))
+		import tauon_native
+
+		base_dirs = [Path(tauon_native.executable_directory()), Path(sys.executable).parent]
 		for base_dir in base_dirs:
 			for dylib_name in ("libprojectM-4.4.dylib", "libprojectM-4.dylib"):
 				path = base_dir / dylib_name
@@ -48064,25 +48063,22 @@ def is_module_loaded(module_name: str, object_name: str = "") -> bool:
 		return module_name in sys.modules and hasattr(sys.modules[module_name], object_name)
 	return module_name in sys.modules
 
-def get_cert_path(holder: Holder) -> str:
-	if holder.pyinstaller_mode:
-		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
-	# Running as script
+def get_cert_path() -> str:
 	return certifi.where()
 
-def setup_tls(holder: Holder) -> ssl.SSLContext:
+def setup_tls() -> ssl.SSLContext:
 	"""TLS setup (needed for frozen installs)
 
 	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast - see https://github.com/Taiko2k/Tauon/issues/1442)
 	"""
 	# Set the TLS certificate path environment variable
-	cert_path = get_cert_path(holder)
+	cert_path = get_cert_path()
 	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ["SSL_CERT_FILE"] = cert_path
 	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
 
 	# Create default TLS context
-	return ssl.create_default_context(cafile=get_cert_path(holder))
+	return ssl.create_default_context(cafile=get_cert_path())
 
 def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
@@ -50599,7 +50595,6 @@ def main(holder: Holder) -> None:
 	old_window_position    = holder.old_window_position
 	install_directory      = holder.install_directory
 	user_directory         = holder.user_directory
-	pyinstaller_mode       = holder.pyinstaller_mode
 	phone                  = holder.phone
 	window_default_size    = holder.window_default_size
 	window_title           = holder.window_title
@@ -50611,6 +50606,7 @@ def main(holder: Holder) -> None:
 	t_agent                = holder.t_agent
 	dev_mode               = holder.dev_mode
 	log                    = holder.log
+	portable_mode          = holder.portable_mode
 	logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
 	renderer_name = get_renderer_name(renderer)
 	if renderer_name is not None:
@@ -50621,10 +50617,10 @@ def main(holder: Holder) -> None:
 		if not milky_error:
 			milky_error = "SDL renderer is not OpenGL"
 
-	tls_context = setup_tls(holder)
+	tls_context = setup_tls()
 	last_fm_enable = is_module_loaded("pylast")
 	if last_fm_enable:
-		# pyLast needs to be reimported AFTER setup_tls(), else pyinstaller breaks
+		# pyLast needs to be reimported after setup_tls().
 		importlib.reload(pylast)
 
 	discord_allow = is_module_loaded("pypresence", "ActivityType")
@@ -50709,7 +50705,7 @@ def main(holder: Holder) -> None:
 	if macos or windows:
 		install_mode = True
 	# Override to Portable mode if necessary
-	if (install_directory / "portable").is_file():
+	if portable_mode:
 		install_mode = False
 	elif str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")):
 		install_mode = True
@@ -50736,9 +50732,6 @@ def main(holder: Holder) -> None:
 			flatpak_mode = True
 
 	logging.info(f"Platform: {sys.platform}")
-
-	if pyinstaller_mode:
-		logging.info("Pyinstaller mode")
 
 	# If we're installed, use home data locations
 	if install_mode:
@@ -60193,10 +60186,8 @@ def main(holder: Holder) -> None:
 		except Exception:
 			logging.exception("uninit notification error")
 
-	try:
+	if tauon.instance_lock is not None:
 		tauon.instance_lock.close()
-	except Exception:
-		logging.exception("No lock object to close")
 
 	exit_timer = Timer()
 	exit_timer.set()

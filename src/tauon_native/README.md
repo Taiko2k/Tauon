@@ -26,14 +26,19 @@ for Tauon's environment are required.
 ```sh
 cmake -S . -B build/native \
   -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
+  -DTAUON_DEVELOPMENT_BUILD=ON \
   -DCMAKE_BUILD_TYPE=Debug
 cmake --build build/native --parallel
 ./build/native/tauon-native
 ```
 
-The build embeds the source and Python site-packages locations selected by
-CMake. Packaging can override them at runtime with `TAUON_PYTHONPATH` and
-`TAUON_PYTHON_SITE_PACKAGES`.
+Development builds embed the source and Python site-packages locations
+selected by CMake. Release builds leave `TAUON_DEVELOPMENT_BUILD` disabled and
+use either the system Python installation or a private runtime relative to the
+native executable. `TAUON_PYTHONPATH` and `TAUON_PYTHON_SITE_PACKAGES` remain
+available as explicit development and diagnostic overrides.
+
+See `BUILDING.md` for the supported bundle layout and platform build commands.
 
 For a bridge-only check that does not import the full Tauon application:
 

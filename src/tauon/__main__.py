@@ -43,10 +43,7 @@ native_bootstrap = bool(
 )
 if not native_bootstrap:
 	raise RuntimeError("Tauon must be launched through the tauon-native executable")
-
-pyinstaller_mode = bool(
-	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
-)
+portable_mode = bool(_tauon_native.portable_mode())
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -186,7 +183,7 @@ install_mode = bool(
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
 
-if (install_directory / "portable").is_file():
+if portable_mode:
 	install_mode = False
 
 # Handle regular install, running from a git cloned directory and finally a portable install, usually a venv
@@ -247,9 +244,6 @@ else:
 			logging.exception("Another Tauon instance is already running")
 			# TODO(Martin): Silent crash
 			transfer_args_and_exit()
-	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts")  # "C:\\msys64\\mingw64\\etc\\fonts"
-
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
 if d in ["GNOME:Phosh"]:
@@ -257,9 +251,6 @@ if d in ["GNOME:Phosh"]:
 	phone = True
 
 os.environ["SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"] = "0"  # emergency crash workaround
-
-if pyinstaller_mode:  # and sys.platform == 'darwin':
-	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
@@ -410,7 +401,6 @@ holder = Holder(
 	old_window_position=old_window_position,
 	install_directory=install_directory,
 	user_directory=user_directory,
-	pyinstaller_mode=pyinstaller_mode,
 	phone=phone,
 	window_title=window_title,
 	fs_mode=fs_mode,
@@ -423,6 +413,7 @@ holder = Holder(
 	instance_lock=fp,
 	log=log,
 	native_bootstrap=native_bootstrap,
+	portable_mode=portable_mode,
 )
 
 if __name__ == "__main__":

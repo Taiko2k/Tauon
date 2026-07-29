@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- These are required for binaries built by PyInstaller -->
+  <!-- CPython extensions and ctypes/libffi callbacks can allocate executable
+       memory. Library validation remains enabled; every bundled Mach-O file
+       must be signed with the application identity. -->
   <key>com.apple.security.cs.allow-jit</key>
   <true/>
   <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
-  <true/>
-  <key>com.apple.security.cs.disable-library-validation</key>
   <true/>
 </dict>
 </plist>

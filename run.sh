@@ -3,32 +3,18 @@
 set -euo pipefail
 
 win_build() {
-	rm -rf dist/tauon
-	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
-
-	pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
-
-	mkdir -p dist/TauonMusicBox/etc
-	#mkdir fonts
-	#curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf # 800KB
-	#curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf # 800KB
-	#curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf # 16MB
-	#curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf # 16MB
-	#curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf # 16MB
-	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
-	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
-	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
-	if [[ -e TaskbarLib.tlb ]]; then
-		cp TaskbarLib.tlb dist/TauonMusicBox/
-	elif [[ -e extra/TaskbarLib.tlb ]]; then
-		cp extra/TaskbarLib.tlb dist/TauonMusicBox/TaskbarLib.tlb
-	else
-		echo 'TaskbarLib.tlb is not present!'
-	fi
-	echo -e "Packaged to dist/TauonMusicBox"
+	cmake -S . -B build/native -G Ninja \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_PREFIX_PATH=/mingw64 \
+		-DPython3_EXECUTABLE="${PWD}/.venv/bin/python" \
+		-DTAUON_DEVELOPMENT_BUILD=OFF
+	cmake --build build/native --parallel
+	.venv/bin/python tools/package_bundle.py \
+		--platform windows \
+		--native build/native/tauon-native.exe \
+		--output dist/package \
+		--portable
+	echo -e "Packaged to dist/package/TauonMusicBox"
 }
 
 python_check() {
@@ -38,13 +24,22 @@ python_check() {
 	fi
 }
 
+build_native_dev() {
+	cmake -S . -B build/native \
+		-DCMAKE_BUILD_TYPE=Debug \
+		-DPython3_EXECUTABLE="${PWD}/.venv/bin/python" \
+		-DTAUON_DEVELOPMENT_BUILD=ON
+	cmake --build build/native --parallel
+}
+
 dirty_venv_run() {
 	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
 	export PYTHONPATH=".":"${PYTHONPATH-}"
 	source .venv/bin/activate
-	tauonmb # "${@}" # Passing args is broken atm
+	build_native_dev
+	build/native/tauon-native
 }
 
 clean_venv_run() {
@@ -74,8 +69,9 @@ clean_venv_run() {
 	pip install -r requirements.txt -r requirements_devel.txt build
 	python -m tools.i18n.compile_translations
 	python -m build --wheel
-	pip install --prefix ".venv" dist/*.whl --force-reinstall
-	tauonmb # "${@}" # Passing args is broken atm
+	pip install --no-deps --force-reinstall dist/*.whl
+	build_native_dev
+	build/native/tauon-native
 }
 
 compile_phazor() {

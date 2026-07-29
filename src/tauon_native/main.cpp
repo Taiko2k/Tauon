@@ -6,6 +6,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
+#include <shellapi.h>
 #endif
 
 #include <Python.h>
@@ -29,6 +30,10 @@
 #include <vector>
 
 #include "native_render.h"
+
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
 
 #if !defined(_WIN32)
 #include <arpa/inet.h>
@@ -82,11 +87,13 @@ using RendererPtr = std::unique_ptr<SDL_Renderer, RendererDeleter>;
 struct NativeState {
 	WindowPtr window;
 	RendererPtr renderer;
+	std::filesystem::path executable_path;
 	std::filesystem::path sdl_library_path;
 	std::filesystem::path user_data_directory;
 	WindowState window_state;
 	bool sdl_initialised = false;
 	bool hidden = false;
+	bool portable = false;
 #if defined(_WIN32)
 	HANDLE instance_lock_handle = INVALID_HANDLE_VALUE;
 #else
@@ -95,6 +102,107 @@ struct NativeState {
 };
 
 NativeState* g_state = nullptr;
+
+std::filesystem::path current_executable_path(const char* executable_argument) {
+#if defined(_WIN32)
+	std::vector<wchar_t> buffer(32768);
+	const DWORD length = GetModuleFileNameW(nullptr, buffer.data(), static_cast<DWORD>(buffer.size()));
+	if (length > 0 && length < buffer.size()) {
+		return std::filesystem::weakly_canonical(std::filesystem::path(std::wstring(buffer.data(), length)));
+	}
+#elif defined(__APPLE__)
+	uint32_t size = 0;
+	_NSGetExecutablePath(nullptr, &size);
+	std::vector<char> buffer(size + 1);
+	if (_NSGetExecutablePath(buffer.data(), &size) == 0) {
+		return std::filesystem::weakly_canonical(std::filesystem::path(buffer.data()));
+	}
+#else
+	std::vector<char> buffer(4096);
+	const ssize_t length = readlink("/proc/self/exe", buffer.data(), buffer.size() - 1);
+	if (length > 0) {
+		buffer[static_cast<std::size_t>(length)] = '\0';
+		return std::filesystem::weakly_canonical(std::filesystem::path(buffer.data()));
+	}
+#endif
+	std::error_code error;
+	const std::filesystem::path fallback = std::filesystem::weakly_canonical(
+		executable_argument != nullptr ? executable_argument : "tauon-native",
+		error
+	);
+	return error ? std::filesystem::absolute(executable_argument != nullptr ? executable_argument : "tauon-native") : fallback;
+}
+
+std::filesystem::path bundled_python_directory(const std::filesystem::path& executable) {
+#if defined(__APPLE__)
+	return executable.parent_path().parent_path() / "Resources" / "python";
+#else
+	return executable.parent_path() / "_internal" / "python";
+#endif
+}
+
+std::filesystem::path bundled_library_directory(const std::filesystem::path& executable) {
+#if defined(__APPLE__)
+	return executable.parent_path().parent_path() / "Frameworks";
+#else
+	return executable.parent_path() / "_internal" / "lib";
+#endif
+}
+
+std::filesystem::path bundled_resource_directory(const std::filesystem::path& executable) {
+#if defined(__APPLE__)
+	return executable.parent_path().parent_path() / "Resources";
+#else
+	return executable.parent_path() / "_internal";
+#endif
+}
+
+bool is_bundled_install(const std::filesystem::path& executable) {
+	const std::filesystem::path python_directory = bundled_python_directory(executable);
+	return std::filesystem::is_directory(python_directory / "stdlib")
+		&& std::filesystem::is_directory(python_directory / "site-packages");
+}
+
+void set_environment_variable(const char* name, const std::string& value) {
+#if defined(_WIN32)
+	_putenv_s(name, value.c_str());
+#else
+	setenv(name, value.c_str(), 1);
+#endif
+}
+
+void prepend_environment_path(const char* name, const std::filesystem::path& directory) {
+	if (directory.empty() || !std::filesystem::exists(directory)) {
+		return;
+	}
+	const char separator =
+#if defined(_WIN32)
+		';';
+#else
+		':';
+#endif
+	std::string value = directory.string();
+	if (const char* existing = std::getenv(name); existing != nullptr && existing[0] != '\0') {
+		value.push_back(separator);
+		value.append(existing);
+	}
+	set_environment_variable(name, value);
+}
+
+void configure_bundled_environment(const std::filesystem::path& executable) {
+	if (!is_bundled_install(executable)) {
+		return;
+	}
+	const std::filesystem::path library_directory = bundled_library_directory(executable);
+	const std::filesystem::path resource_directory = bundled_resource_directory(executable);
+	prepend_environment_path("PATH", library_directory);
+	prepend_environment_path("GI_TYPELIB_PATH", resource_directory / "lib" / "girepository-1.0");
+	prepend_environment_path("XDG_DATA_DIRS", resource_directory / "share");
+	const std::filesystem::path fontconfig_directory = resource_directory / "etc" / "fonts";
+	if (std::filesystem::is_directory(fontconfig_directory)) {
+		set_environment_variable("FONTCONFIG_PATH", fontconfig_directory.string());
+	}
+}
 
 std::filesystem::path linked_sdl_library_path() {
 #if defined(_WIN32)
@@ -388,9 +496,8 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 		return std::filesystem::path(override_path);
 	}
 
-	std::error_code error;
-	const std::filesystem::path executable = std::filesystem::weakly_canonical(executable_argument, error);
-	if (!error && std::filesystem::exists(executable.parent_path() / "portable")) {
+	const std::filesystem::path executable = current_executable_path(executable_argument);
+	if (std::filesystem::exists(executable.parent_path() / "portable")) {
 		return executable.parent_path() / "user-data";
 	}
 
@@ -401,12 +508,12 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (const char* app_data = std::getenv("APPDATA")) {
 		return std::filesystem::path(app_data) / "TauonMusicBox";
 	}
-#elif !defined(__APPLE__)
+#elif !defined(__APPLE__) && defined(TAUON_DEVELOPMENT_BUILD)
 	// Match Python's source-tree development mode when this executable is run
 	// from the same checkout. Installed builds use the XDG location below.
 	const std::filesystem::path project_root = std::filesystem::path(TAUON_SOURCE_DIR).parent_path();
 	const std::filesystem::path relative = executable.lexically_relative(project_root);
-	if (!error && !relative.empty() && *relative.begin() != "..") {
+	if (!relative.empty() && *relative.begin() != "..") {
 		return project_root / "user-data";
 	}
 #endif
@@ -927,6 +1034,18 @@ PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
 	return PyUnicode_DecodeFSDefault(g_state->user_data_directory.string().c_str());
 }
 
+PyObject* bridge_executable_directory(PyObject*, PyObject*) {
+	if (g_state == nullptr || g_state->executable_path.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's executable directory is unavailable");
+		return nullptr;
+	}
+	return PyUnicode_DecodeFSDefault(g_state->executable_path.parent_path().string().c_str());
+}
+
+PyObject* bridge_portable_mode(PyObject*, PyObject*) {
+	return PyBool_FromLong(g_state != nullptr && g_state->portable ? 1 : 0);
+}
+
 PyObject* bridge_owns_instance_lock(PyObject*, PyObject*) {
 	if (g_state == nullptr) {
 		Py_RETURN_FALSE;
@@ -1201,6 +1320,8 @@ PyMethodDef bridge_methods[] = {
 	{"renderer_name", bridge_renderer_name, METH_NOARGS, "Return the main renderer name."},
 	{"sdl_library_path", bridge_sdl_library_path, METH_NOARGS, "Return the SDL library used by the native executable."},
 	{"user_data_directory", bridge_user_data_directory, METH_NOARGS, "Return Tauon's native-resolved user data directory."},
+	{"executable_directory", bridge_executable_directory, METH_NOARGS, "Return the directory containing the native executable."},
+	{"portable_mode", bridge_portable_mode, METH_NOARGS, "Return whether a portable marker was found beside the executable."},
 	{"owns_instance_lock", bridge_owns_instance_lock, METH_NOARGS, "Return whether the native launcher owns Tauon's instance lock."},
 	{"poll_events", bridge_poll_events, METH_NOARGS, "Poll pending SDL events into Python-owned dictionaries."},
 	{"wait_for_event", bridge_wait_for_event, METH_O, "Wait for SDL activity without removing the pending event."},
@@ -1317,14 +1438,22 @@ std::filesystem::path source_directory() {
 	if (const char* override_path = std::getenv("TAUON_PYTHONPATH")) {
 		return std::filesystem::path(override_path);
 	}
+#if defined(TAUON_DEVELOPMENT_BUILD)
 	return std::filesystem::path(TAUON_SOURCE_DIR);
+#else
+	return {};
+#endif
 }
 
 std::filesystem::path python_site_packages_directory() {
 	if (const char* override_path = std::getenv("TAUON_PYTHON_SITE_PACKAGES")) {
 		return std::filesystem::path(override_path);
 	}
+#if defined(TAUON_DEVELOPMENT_BUILD)
 	return std::filesystem::path(TAUON_PYTHON_SITE_PACKAGES);
+#else
+	return {};
+#endif
 }
 
 bool prepend_python_path(const std::filesystem::path& directory) {
@@ -1342,16 +1471,72 @@ bool prepend_python_path(const std::filesystem::path& directory) {
 	return result == 0;
 }
 
+PyStatus set_config_path(PyConfig& config, wchar_t** target, const std::filesystem::path& path) {
+#if defined(_WIN32)
+	return PyConfig_SetString(&config, target, path.c_str());
+#else
+	wchar_t* decoded = Py_DecodeLocale(path.string().c_str(), nullptr);
+	if (decoded == nullptr) {
+		return PyStatus_Error("unable to decode a bundled Python path");
+	}
+	const PyStatus status = PyConfig_SetString(&config, target, decoded);
+	PyMem_RawFree(decoded);
+	return status;
+#endif
+}
+
+PyStatus append_config_path(PyConfig& config, const std::filesystem::path& path) {
+#if defined(_WIN32)
+	return PyWideStringList_Append(&config.module_search_paths, path.c_str());
+#else
+	wchar_t* decoded = Py_DecodeLocale(path.string().c_str(), nullptr);
+	if (decoded == nullptr) {
+		return PyStatus_Error("unable to decode a bundled Python search path");
+	}
+	const PyStatus status = PyWideStringList_Append(&config.module_search_paths, decoded);
+	PyMem_RawFree(decoded);
+	return status;
+#endif
+}
+
 int run_python(NativeState& state, int argc, char** argv) {
 	if (PyImport_AppendInittab("tauon_native", &PyInit_tauon_native) == -1) {
 		std::cerr << "Tauon: failed to register the native Python bridge\n";
 		return 1;
 	}
 
+	const bool bundled = is_bundled_install(state.executable_path);
+	const std::filesystem::path python_directory = bundled_python_directory(state.executable_path);
 	PyConfig config;
-	PyConfig_InitPythonConfig(&config);
+	if (bundled) {
+		PyConfig_InitIsolatedConfig(&config);
+		config.module_search_paths_set = 1;
+		config.site_import = 0;
+		config.user_site_directory = 0;
+		config.write_bytecode = 0;
+	} else {
+		PyConfig_InitPythonConfig(&config);
+	}
 	config.parse_argv = 0;
-	PyStatus status = PyConfig_SetBytesArgv(&config, argc, argv);
+	PyStatus status = set_config_path(config, &config.program_name, state.executable_path);
+	if (!PyStatus_Exception(status)) {
+		status = set_config_path(config, &config.executable, state.executable_path);
+	}
+	if (bundled && !PyStatus_Exception(status)) {
+		status = set_config_path(config, &config.home, python_directory);
+	}
+	if (bundled && !PyStatus_Exception(status)) {
+		status = append_config_path(config, python_directory / "stdlib");
+	}
+	if (bundled && !PyStatus_Exception(status)) {
+		status = append_config_path(config, python_directory / "stdlib" / "lib-dynload");
+	}
+	if (bundled && !PyStatus_Exception(status)) {
+		status = append_config_path(config, python_directory / "site-packages");
+	}
+	if (!PyStatus_Exception(status)) {
+		status = PyConfig_SetBytesArgv(&config, argc, argv);
+	}
 	if (!PyStatus_Exception(status)) {
 		status = Py_InitializeFromConfig(&config);
 	}
@@ -1371,7 +1556,24 @@ int run_python(NativeState& state, int argc, char** argv) {
 			"import json\n"
 			"import os\n"
 			"from pathlib import Path\n"
+			"import cairo\n"
+			"import gi\n"
+			"gi.require_version('Gtk', '3.0')\n"
+			"gi.require_version('Pango', '1.0')\n"
+			"gi.require_version('PangoCairo', '1.0')\n"
+			"gi.require_version('Rsvg', '2.0')\n"
+			"from gi.repository import GLib, Gtk, PangoCairo, Rsvg\n"
+			"from PIL import Image\n"
+			"import tauon\n"
 			"import tauon_native\n"
+			"Gtk.Settings.get_default()\n"
+			"surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 16, 16)\n"
+			"context = cairo.Context(surface)\n"
+			"layout = PangoCairo.create_layout(context)\n"
+			"layout.set_text('Tauon smoke test', -1)\n"
+			"PangoCairo.show_layout(context, layout)\n"
+			"surface.flush()\n"
+			"surface.finish()\n"
 			"assert os.environ.get('SDL_MAIN_NOIMPL') == '1'\n"
 			"assert tauon_native.owns_instance_lock()\n"
 			"window = tauon_native.window_address()\n"
@@ -1423,7 +1625,7 @@ int run_python(NativeState& state, int argc, char** argv) {
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int tauon_main(int argc, char** argv) {
 	if (has_argument(argc, argv, "-h") || has_argument(argc, argv, "--help")) {
 		print_usage(argc > 0 ? argv[0] : "tauon-native");
 		return 0;
@@ -1434,6 +1636,9 @@ int main(int argc, char** argv) {
 	}
 
 	NativeState state;
+	state.executable_path = current_executable_path(argc > 0 ? argv[0] : "tauon-native");
+	state.portable = std::filesystem::exists(state.executable_path.parent_path() / "portable");
+	configure_bundled_environment(state.executable_path);
 	g_state = &state;
 	const InstanceLockResult instance_lock = acquire_instance_lock(state, argv[0]);
 	if (instance_lock == InstanceLockResult::AlreadyRunning || has_argument(argc, argv, "--no-start")) {
@@ -1453,3 +1658,43 @@ int main(int argc, char** argv) {
 	g_state = nullptr;
 	return exit_code;
 }
+
+#if defined(_WIN32)
+std::string utf8_from_wide(const wchar_t* value) {
+	if (value == nullptr) {
+		return {};
+	}
+	const int size = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+	if (size <= 1) {
+		return {};
+	}
+	std::string result(static_cast<std::size_t>(size), '\0');
+	WideCharToMultiByte(CP_UTF8, 0, value, -1, result.data(), size, nullptr, nullptr);
+	result.resize(static_cast<std::size_t>(size - 1));
+	return result;
+}
+
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+	int argc = 0;
+	LPWSTR* wide_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
+	if (wide_argv == nullptr) {
+		return 1;
+	}
+	std::vector<std::string> arguments;
+	arguments.reserve(static_cast<std::size_t>(argc));
+	for (int index = 0; index < argc; ++index) {
+		arguments.push_back(utf8_from_wide(wide_argv[index]));
+	}
+	LocalFree(wide_argv);
+	std::vector<char*> argv;
+	argv.reserve(arguments.size());
+	for (std::string& argument : arguments) {
+		argv.push_back(argument.data());
+	}
+	return tauon_main(argc, argv.data());
+}
+#else
+int main(int argc, char** argv) {
+	return tauon_main(argc, argv);
+}
+#endif
