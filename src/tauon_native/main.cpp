@@ -1553,6 +1553,8 @@ int run_python(NativeState& state, int argc, char** argv) {
 		exit_code = 1;
 	} else if (has_argument(argc, argv, "--native-smoke-test")) {
 		const char* smoke_test =
+			"import faulthandler\n"
+			"faulthandler.enable()\n"
 			"import json\n"
 			"import os\n"
 			"from pathlib import Path\n"

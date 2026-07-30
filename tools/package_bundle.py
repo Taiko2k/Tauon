@@ -266,21 +266,25 @@ def copy_gi_shared_libraries(destination: Path) -> None:
 		raise RuntimeError(f"unable to locate GI shared libraries: {', '.join(missing)}")
 
 
-def parse_ldd(binary: Path) -> set[Path]:
+def parse_ldd(binary: Path) -> set[tuple[str, Path]]:
 	try:
 		result = run(["ldd", str(binary)], check=False)
 	except FileNotFoundError:
 		return set()
-	dependencies: set[Path] = set()
+	dependencies: set[tuple[str, Path]] = set()
 	for line in result.stdout.splitlines():
-		match = re.search(r"=>\s+(\S+)\s+\(0x", line)
-		if match is None:
+		match = re.match(r"\s*(\S+)\s+=>\s+(\S+)\s+\(0x", line)
+		if match is not None:
+			name = match.group(1)
+			path = Path(match.group(2))
+		else:
 			match = re.match(r"\s*(/\S+)\s+\(0x", line)
-		if match is None:
-			continue
-		path = Path(match.group(1))
+			if match is None:
+				continue
+			path = Path(match.group(1))
+			name = path.name
 		if path.is_file():
-			dependencies.add(path.resolve())
+			dependencies.add((name, path.resolve()))
 	return dependencies
 
 
@@ -353,14 +357,15 @@ def collect_linux_dependencies(bundle_root: Path, executable: Path, internal_roo
 	library_directory = internal_root / "lib"
 	library_directory.mkdir(parents=True, exist_ok=True)
 	queue = deque(elf_files(bundle_root))
-	seen: set[Path] = set()
+	seen: set[tuple[str, Path]] = set()
 	while queue:
 		binary = queue.popleft()
-		for dependency in parse_ldd(binary):
-			if dependency in seen or dependency.name in LINUX_SYSTEM_LIBRARIES:
+		for dependency_name, dependency in parse_ldd(binary):
+			key = (dependency_name, dependency)
+			if key in seen or dependency_name in LINUX_SYSTEM_LIBRARIES:
 				continue
-			seen.add(dependency)
-			destination = library_directory / dependency.name
+			seen.add(key)
+			destination = library_directory / dependency_name
 			if not destination.exists():
 				shutil.copy2(dependency, destination)
 				queue.append(destination)
