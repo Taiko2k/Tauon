@@ -7883,7 +7883,9 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 12, 515)
 		self.ddt.prime_font(standard_font, 13, 516)
 
-		self.touch_input_tracker.Q_halfwidth = round(self.ddt.get_text_w("Q", 20)/2)
+		qw, qh = self.ddt.get_text_wh("Q", self.touch_input_tracker.font, 3000)
+		self.touch_input_tracker.Q_halfwidth = round(qw/2)
+		self.touch_input_tracker.Q_halfheight = round(qh/2)
 		# touch input tracker is pretty low level so this keeps it from jumping the gun
 
 	def get_real_time(self) -> float:
@@ -45502,9 +45504,11 @@ class TouchInputTracker:
 		self.was_gesture: bool = False
 		self.x: int = 0
 		self.y: int = 0
-		self.x_least: int = 0
+		self.x_least: int = 100000
 		self.x_most: int = 0
 		self.font: int = 20
+		self.Q_halfwidth: int
+		self.Q_halfheight: int # both set when fonts load in
 
 		self.rect_size: int = round(40*self.gui.scale)
 		self.rect_distance: int = round(40*self.gui.scale)
@@ -45522,9 +45526,12 @@ class TouchInputTracker:
 		self.has_moved_horz: bool = False
 		self.is_gesture: bool = False
 		self.was_gesture: bool = False
-		self.x_least: int = 0
+		self.x_least: int = 100000
 		self.x_most: int = 0
-		self.Q_halfwidth: int = round(self.ddt.get_text_w("Q", self.font)/2)
+
+		qhw, qhh = self.ddt.get_text_wh("Q", self.font, 3000)
+		self.Q_halfwidth = round(qhw/2)
+		self.Q_halfheight = round(qhh/2)
 
 	def side_swipe(self, x_pos: int) -> None:
 		if x_pos > self.x_most:
@@ -45540,11 +45547,31 @@ class TouchInputTracker:
 			err = SCROLL_PHYSICS_MIN_PIXELS*self.gui.scale
 			if self.x <= self.x_least+err <= self.start_position_px[0] and self.is_sideswipe == "left" \
 			or self.x >= self.x_most-err >= self.start_position_px[0] and self.is_sideswipe == "right":
+				# origin marker
+				self.ddt.rect(
+					(
+						self.start_position_px[0] - 2*self.gui.scale,
+						self.start_position_px[1] - 2*self.gui.scale,
+						4*self.gui.scale,4*self.gui.scale
+					),
+					self.colours.media_buttons_active
+				)
+				# Q text
+				self.ddt.rect(
+					(
+						self.x-1.5*self.Q_halfwidth,
+						self.y-self.rect_distance-.5*self.Q_halfheight,
+						3*self.Q_halfwidth,
+						2.5*self.Q_halfheight
+					),
+					self.colours.bottom_panel_colour
+				)
 				self.ddt.text(
 					(self.x-self.Q_halfwidth, int(self.y-self.rect_distance)),
 					"Q",
 					self.colours.media_buttons_active,
-					self.font
+					self.font,
+					bg=self.colours.bottom_panel_colour
 				)
 				self.gui.request_frame()
 			return
@@ -55999,7 +56026,7 @@ def main(holder: Holder) -> None:
 							else:
 								# or it could be a proper side swipe
 								if not active_touch.is_sideswipe:
-									active_touch.is_sideswipe = "left" if inp.touch_position[0] - active_touch.start_position_px[0] < 0 else "right"
+									active_touch.is_sideswipe = "left" if inp.touch_position[0] - active_touch.start_position_px[0] <= 0 else "right"
 								active_touch.side_swipe(inp.touch_position[0])
 								mouse_moved = True
 
