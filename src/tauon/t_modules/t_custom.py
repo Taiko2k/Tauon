@@ -34,6 +34,7 @@ import builtins
 import ctypes
 import json
 import logging
+import math
 import time
 from typing import TYPE_CHECKING, Callable
 
@@ -1290,6 +1291,766 @@ class GridGalleryWidget(GalleryWidget):
 			cls._menu_changed()
 
 
+class _AlbumflowBase(GalleryWidget):
+	"""A perspective album browser backed by the normal gallery art cache.
+
+	The centre album is flanked by overlapping, Y-rotated covers. All artwork
+	is submitted as SDL geometry so its filtering, tint, reflections and
+	perspective edges stay on the GPU. Selection uses a time-based spring rather
+	than frame-sized steps, which keeps the motion consistent on both idle and
+	high-refresh displays.
+	"""
+
+	kind = "albumflow"
+	name = "Albumflow"
+	min_w = 220
+	min_h = 160
+	single_instance = False
+	offscreen = True
+
+	# Shared grow-only supersampling target. Custom widgets render sequentially,
+	# so every Albumflow instance can reuse it without resizing churn.
+	_aa_texture = None
+	_aa_size: tuple[int, int] = (0, 0)
+	_AA_SCALE = 2
+
+	def __init__(self) -> None:
+		super().__init__()
+		self.selection: int = 0
+		self.position: float = 0.0
+		self._last_frame: float = 0.0
+		self._wheel_accum: float = 0.0
+		self._drag_origin: tuple[float, float] | None = None
+		self._drag_position: float = 0.0
+		self._dragged: bool = False
+
+	@staticmethod
+	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
+			colours: list[tuple[float, float, float, float]] | None = None,
+			uv: list[tuple[float, float]] | None = None) -> None:
+		"""Submit one blendable quad through SDL's geometry path."""
+		if colours is None:
+			colours = [(1.0, 1.0, 1.0, 1.0)] * 4
+		if uv is None:
+			uv = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
+		vertices = (sdl3.SDL_Vertex * 4)()
+		for index, ((px, py), (u, v), colour) in enumerate(zip(points, uv, colours)):
+			vertex = vertices[index]
+			vertex.position.x = px
+			vertex.position.y = py
+			vertex.tex_coord.x = u
+			vertex.tex_coord.y = v
+			vertex.color.r, vertex.color.g, vertex.color.b, vertex.color.a = colour
+		indices = (ctypes.c_int * 6)(0, 1, 2, 0, 2, 3)
+		if texture is not None:
+			sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		else:
+			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_RenderGeometry(renderer, texture, vertices, 4, indices, 6)
+
+	@classmethod
+	def _render_textured_cover(cls, renderer, points: list[tuple[float, float]],
+			texture, colour: tuple[float, float, float, float]) -> None:
+		"""Subdivide a cover to approximate perspective-correct texture mapping.
+
+		SDL geometry interpolates UVs affinely. Narrow vertical strips make the
+		difference from projective mapping imperceptible without introducing a
+		custom shader or changing Tauon's renderer state.
+		"""
+		strips = 8
+		vertex_count = (strips + 1) * 2
+		vertices = (sdl3.SDL_Vertex * vertex_count)()
+		for strip in range(strips + 1):
+			sx = strip / strips
+			for row in range(2):
+				vertex = vertices[strip * 2 + row]
+				px, py = cls._sample_quad(points, sx, float(row))
+				vertex.position.x = px
+				vertex.position.y = py
+				vertex.tex_coord.x = sx
+				vertex.tex_coord.y = float(row)
+				vertex.color.r, vertex.color.g, vertex.color.b, vertex.color.a = colour
+		index_values = []
+		for strip in range(strips):
+			top_left = strip * 2
+			top_right = top_left + 2
+			index_values.extend((
+				top_left, top_right, top_right + 1,
+				top_left, top_right + 1, top_left + 1,
+			))
+		indices = (ctypes.c_int * len(index_values))(*index_values)
+		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_RenderGeometry(
+			renderer, texture, vertices, vertex_count, indices, len(index_values))
+
+	@classmethod
+	def _render_reflection(cls, renderer, texture,
+			points: list[tuple[float, float]], shade: float,
+			distance: float, scale: float) -> None:
+		"""Render a short mirrored crop without vertically squashing the art."""
+		fraction = 0.13 if distance < 1.4 else 0.085
+		left_height = max(1.0, points[3][1] - points[0][1])
+		right_height = max(1.0, points[2][1] - points[1][1])
+		top_left = (points[3][0], points[3][1] + 2 * scale)
+		top_right = (points[2][0], points[2][1] + 2 * scale)
+		reflection = [
+			top_left,
+			top_right,
+			(top_right[0], top_right[1] + right_height * fraction),
+			(top_left[0], top_left[1] + left_height * fraction),
+		]
+		top_alpha = (0.19 if distance < 0.6 else 0.10) * shade
+		cls._render_quad(
+			renderer,
+			reflection,
+			texture=texture,
+			colours=[
+				(shade, shade, shade, top_alpha),
+				(shade, shade, shade, top_alpha),
+				(shade, shade, shade, 0.0),
+				(shade, shade, shade, 0.0),
+			],
+			uv=[
+				(0.0, 1.0),
+				(1.0, 1.0),
+				(1.0, 1.0 - fraction),
+				(0.0, 1.0 - fraction),
+			],
+		)
+
+	@staticmethod
+	def _sample_quad(points: list[tuple[float, float]], sx: float, sy: float) -> tuple[float, float]:
+		"""Bilinear point inside a perspective quad."""
+		tl, tr, br, bl = points
+		top_x = tl[0] + (tr[0] - tl[0]) * sx
+		top_y = tl[1] + (tr[1] - tl[1]) * sx
+		bottom_x = bl[0] + (br[0] - bl[0]) * sx
+		bottom_y = bl[1] + (br[1] - bl[1]) * sx
+		return top_x + (bottom_x - top_x) * sy, top_y + (bottom_y - top_y) * sy
+
+	@staticmethod
+	def _contains(points: list[tuple[float, float]], x: float, y: float) -> bool:
+		"""Point-in-convex-quad test that accepts either winding direction."""
+		sign = 0
+		for index in range(4):
+			ax, ay = points[index]
+			bx, by = points[(index + 1) % 4]
+			cross = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+			if abs(cross) < 0.01:
+				continue
+			this_sign = 1 if cross > 0 else -1
+			if sign and this_sign != sign:
+				return False
+			sign = this_sign
+		return True
+
+	@staticmethod
+	def _cover_quad(offset: float, width: float, centre_y: float,
+			art_size: float) -> list[tuple[float, float]]:
+		"""Project one card in the traditional overlapping Coverflow fan."""
+		distance = abs(offset)
+		side = min(1.0, distance)
+		far = min(4.0, max(0.0, distance - 1.0))
+		if distance <= 1.0:
+			normal = (1.0 - math.exp(-1.65 * distance)) / (1.0 - math.exp(-1.65))
+			displacement = art_size * 0.72 * normal
+		else:
+			displacement = art_size * (0.72 + (distance - 1.0) * 0.25)
+		centre_x = width / 2 + math.copysign(displacement, offset) if offset else width / 2
+		cover_w = art_size * (1.0 - side * 0.48 - far * 0.025)
+		cover_h = art_size * (1.0 - side * 0.15 - far * 0.025)
+		tilt = cover_h * 0.105 * side
+		# The inner edge recedes toward the selected cover while the outer edge
+		# remains full-height, opening each face toward its viewport edge.
+		left_inset = tilt if offset > 0 else 0.0
+		right_inset = tilt if offset < 0 else 0.0
+		left = centre_x - cover_w / 2
+		right = centre_x + cover_w / 2
+		top = centre_y - cover_h / 2
+		bottom = centre_y + cover_h / 2
+		return [
+			(left, top + left_inset),
+			(right, top + right_inset),
+			(right, bottom - right_inset),
+			(left, bottom - left_inset),
+		]
+
+	@classmethod
+	def _fit_quad(cls, points: list[tuple[float, float]], texture_w: float,
+			texture_h: float) -> list[tuple[float, float]]:
+		"""Letterbox uncommon non-square artwork inside a classic square card."""
+		left = top = 0.0
+		right = bottom = 1.0
+		if texture_w > texture_h and texture_w:
+			inset = (1.0 - texture_h / texture_w) / 2
+			top, bottom = inset, 1.0 - inset
+		elif texture_h > texture_w and texture_h:
+			inset = (1.0 - texture_w / texture_h) / 2
+			left, right = inset, 1.0 - inset
+		return [
+			cls._sample_quad(points, left, top),
+			cls._sample_quad(points, right, top),
+			cls._sample_quad(points, right, bottom),
+			cls._sample_quad(points, left, bottom),
+		]
+
+	@staticmethod
+	def _face_colour(edge: tuple[int, int, int], shade: float,
+			light: float, lift: float = 0.0) -> tuple[float, float, float, float]:
+		return (
+			min(1.0, edge[0] / 255 * shade * light + lift),
+			min(1.0, edge[1] / 255 * shade * light + lift),
+			min(1.0, edge[2] / 255 * shade * light + lift),
+			1.0,
+		)
+
+	@staticmethod
+	def _painter_key(album_index: int, position: float) -> tuple[float, float]:
+		offset = album_index - position
+		return -abs(offset), -offset
+
+	def _sync_playlist(self, tauon: Tauon) -> None:
+		old_playlist_id = self._dex_playlist_id
+		self._ensure_album_dex(tauon)
+		if old_playlist_id == self._dex_playlist_id:
+			return
+		if not tauon.album_dex:
+			self.selection = 0
+			self.position = 0.0
+			self._last_frame = 0.0
+			return
+		selected = tauon.pctl.selected_in_playlist
+		target = 0
+		for album_index, playlist_position in enumerate(tauon.album_dex):
+			if playlist_position > selected:
+				break
+			target = album_index
+		self.selection = target
+		self.position = float(target)
+		self._last_frame = 0.0
+
+	def _select(self, tauon: Tauon, album_index: int, play: bool = False) -> None:
+		if not tauon.album_dex:
+			return
+		album_index = max(0, min(album_index, len(tauon.album_dex) - 1))
+		self.selection = album_index
+		playlist_position = tauon.album_dex[album_index]
+		playlist = tauon.pctl.multi_playlist[tauon.pctl.active_playlist_viewing].playlist_ids
+		if playlist_position >= len(playlist):
+			return
+		tauon.pctl.playlist_view_position = playlist_position
+		tauon.pctl.selected_in_playlist = playlist_position
+		tauon.gui.request_tracklist_redraw()
+		if play:
+			tauon.pctl.jump(playlist[playlist_position], playlist_position)
+			tauon.pctl.show_current()
+		tauon.gui.request_frame()
+
+	def locate(self, tauon: Tauon, playlist_position: int) -> None:
+		"""Move to the album containing a playlist position."""
+		target = 0
+		for album_index, album_start in enumerate(tauon.album_dex):
+			if album_start > playlist_position:
+				break
+			target = album_index
+		self.selection = target
+		tauon.gui.request_frame()
+
+	def _advance_animation(self, tauon: Tauon) -> None:
+		now = time.monotonic()
+		if self._last_frame == 0.0:
+			self._last_frame = now
+		delta = min(0.05, max(0.0, now - self._last_frame))
+		self._last_frame = now
+		if self._drag_origin is not None and self._dragged:
+			return
+		distance = self.selection - self.position
+		if abs(distance) < 0.001:
+			self.position = float(self.selection)
+			return
+		# Exponential ease-out is stable across varying frame rates and never
+		# overshoots when the user reverses direction mid-animation.
+		self.position += distance * (1.0 - math.exp(-delta * 13.0))
+		tauon.gui.request_frame()
+
+	def _handle_input(self, tauon: Tauon, over: bool,
+			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float) -> None:
+		inp = tauon.inp
+		if not over or not tauon.is_level_zero(False):
+			if inp.mouse_up:
+				self._drag_origin = None
+			return
+
+		if inp.mouse_wheel:
+			self._wheel_accum -= inp.mouse_wheel
+			threshold = 0.55 if inp.mouse_wheel_precise else 0.1
+			if abs(self._wheel_accum) >= threshold:
+				steps = max(1, min(3, round(abs(self._wheel_accum))))
+				direction = 1 if self._wheel_accum > 0 else -1
+				self._select(tauon, self.selection + direction * steps)
+				self._wheel_accum = 0.0
+			inp.mouse_wheel = 0
+
+		if inp.key_focused == 0:
+			if inp.key_left_press:
+				self._select(tauon, self.selection - 1)
+				inp.key_left_press = False
+			elif inp.key_right_press:
+				self._select(tauon, self.selection + 1)
+				inp.key_right_press = False
+			elif inp.key_home_press:
+				self._select(tauon, 0)
+				inp.key_home_press = False
+			elif inp.key_end_press:
+				self._select(tauon, len(tauon.album_dex) - 1)
+				inp.key_end_press = False
+			elif inp.key_return_press:
+				self._select(tauon, self.selection, play=True)
+				inp.key_return_press = False
+
+		mx, my = inp.mouse_position
+		if inp.middle_click:
+			# Match the normal album gallery: queue the topmost visible album
+			# where covers overlap.
+			for album_index, points in reversed(hit_quads):
+				if not self._contains(points, mx, my):
+					continue
+				playlist_position = tauon.album_dex[album_index]
+				playlist = tauon.pctl.multi_playlist[
+					tauon.pctl.active_playlist_viewing].playlist_ids
+				if playlist_position < len(playlist):
+					tauon.add_album_to_queue(
+						playlist[playlist_position],
+						playlist_position,
+						tauon.pctl.pl_to_id(tauon.pctl.active_playlist_viewing),
+					)
+				inp.middle_click = False
+				break
+
+		if inp.mouse_click:
+			self._drag_origin = (mx, my)
+			self._drag_position = self.position
+			self._dragged = False
+			# Reverse painter order: the nearest cover wins in overlap regions.
+			for album_index, points in reversed(hit_quads):
+				if self._contains(points, mx, my):
+					play = inp.d_mouse_click and album_index == self.selection
+					self._select(tauon, album_index, play=play)
+					inp.mouse_click = False
+					if play:
+						inp.d_mouse_click = False
+					break
+
+		if inp.mouse_down and self._drag_origin is not None:
+			dx = mx - self._drag_origin[0]
+			if abs(dx) > 7 * tauon.gui.scale:
+				self._dragged = True
+				pitch = max(24.0, art_size * 0.25)
+				last = max(0, len(tauon.album_dex) - 1)
+				self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
+				self.selection = round(self.position)
+				tauon.gui.request_frame()
+		if inp.mouse_up and self._drag_origin is not None:
+			if self._dragged:
+				self._select(tauon, round(self.position))
+			self._drag_origin = None
+
+	@staticmethod
+	def _begin_antialias(renderer, w: float, h: float):
+		"""Switch to a 2x render target and return the state needed to composite."""
+		owner = _AlbumflowBase
+		scale = owner._AA_SCALE
+		target_w = max(1, math.ceil(w * scale))
+		target_h = max(1, math.ceil(h * scale))
+		old_w, old_h = owner._aa_size
+		if owner._aa_texture is None or target_w > old_w or target_h > old_h:
+			if owner._aa_texture is not None:
+				sdl3.SDL_DestroyTexture(owner._aa_texture)
+			old_w = max(target_w, old_w)
+			old_h = max(target_h, old_h)
+			owner._aa_texture = sdl3.SDL_CreateTexture(
+				renderer,
+				sdl3.SDL_PIXELFORMAT_ARGB8888,
+				sdl3.SDL_TEXTUREACCESS_TARGET,
+				old_w,
+				old_h,
+			)
+			if owner._aa_texture is None:
+				owner._aa_size = (0, 0)
+				return None
+			sdl3.SDL_SetTextureBlendMode(owner._aa_texture, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.SDL_SetTextureScaleMode(owner._aa_texture, sdl3.SDL_SCALEMODE_LINEAR)
+			owner._aa_size = (old_w, old_h)
+
+		scale_x = ctypes.c_float(1.0)
+		scale_y = ctypes.c_float(1.0)
+		sdl3.SDL_GetRenderScale(renderer, ctypes.byref(scale_x), ctypes.byref(scale_y))
+		previous_target = sdl3.SDL_GetRenderTarget(renderer)
+		sdl3.SDL_SetRenderTarget(renderer, owner._aa_texture)
+		sdl3.SDL_SetRenderScale(renderer, scale, scale)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderClear(renderer)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		return previous_target, scale_x.value, scale_y.value, target_w, target_h
+
+	@staticmethod
+	def _finish_antialias(renderer, state, w: float, h: float) -> None:
+		previous_target, scale_x, scale_y, target_w, target_h = state
+		sdl3.SDL_SetRenderScale(renderer, scale_x, scale_y)
+		sdl3.SDL_SetRenderTarget(renderer, previous_target)
+		source = sdl3.SDL_FRect(0, 0, target_w, target_h)
+		destination = sdl3.SDL_FRect(0, 0, w, h)
+		sdl3.SDL_RenderTexture(renderer, _AlbumflowBase._aa_texture, source, destination)
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		"""Render through a 2x target so diagonal box and cover edges are AA."""
+		tauon.fields.add((x, y, w, h))
+		state = self._begin_antialias(tauon.renderer, w, h)
+		if state is None:
+			self._draw_scene(tauon, x, y, w, h)
+			return
+		try:
+			self._draw_scene(tauon, x, y, w, h)
+		finally:
+			self._finish_antialias(tauon.renderer, state, w, h)
+
+
+class AlbumflowWidget(_AlbumflowBase):
+	"""A boxed album browser with optional compact edge stacks.
+
+	The readable centre scene uses a traditional Coverflow perspective and
+	spacing. With Stacks enabled, only the outermost covers turn into compact
+	vertical profile stacks. Disabling Stacks keeps the same 3D box treatment
+	while allowing the fan to continue naturally through the viewport edges.
+	"""
+
+	kind = "albumflow"
+	name = "Albumflow"
+	menu_target: AlbumflowWidget | None = None
+	menu_tauon: Tauon | None = None
+
+	def __init__(self) -> None:
+		super().__init__()
+		self.stacks: bool = True
+
+	def get_config(self) -> dict | None:
+		return {"stacks": self.stacks}
+
+	def set_config(self, d: dict) -> None:
+		self.stacks = bool(d.get("stacks", True))
+
+	@classmethod
+	def _menu_changed(cls) -> None:
+		tauon = cls.menu_tauon
+		if tauon is not None:
+			tauon.gui.request_frame()
+			tauon.custom.save_slots()
+
+	@classmethod
+	def menu_stacks_value(cls) -> bool:
+		widget = cls.menu_target
+		return widget.stacks if widget else False
+
+	@classmethod
+	def menu_toggle_stacks(cls, ref=None) -> None:
+		widget = cls.menu_target
+		if widget is not None:
+			widget.stacks = not widget.stacks
+			cls._menu_changed()
+
+	def _open_context_menu(self, tauon: Tauon, over: bool) -> None:
+		inp = tauon.inp
+		if over and inp.right_click and tauon.is_level_zero():
+			inp.right_click = False
+			AlbumflowWidget.menu_target = self
+			AlbumflowWidget.menu_tauon = tauon
+			tauon.albumflow_menu.activate()
+
+	@staticmethod
+	def _face_turn_factor(distance: float) -> float:
+		"""Smoothly project box depth from face-on to a full side turn."""
+		turn = min(1.0, max(0.0, distance))
+		return 0.5 - 0.5 * math.cos(math.pi * turn)
+
+	@staticmethod
+	def _box_geometry(offset: float, width: float, centre_y: float,
+			art_height: float, aspect: float, scale: float, stacks: bool = True):
+		distance = abs(offset)
+		aspect = max(0.35, min(2.4, aspect))
+		classic_front = _AlbumflowBase._cover_quad(
+			offset, width, centre_y, art_height)
+		front = _AlbumflowBase._fit_quad(classic_front, aspect, 1.0)
+
+		transition = 0.0
+		transition_end = math.inf
+		if stacks:
+			# The reference layout completes its turn at neighbour nine. Wider
+			# widgets postpone that point so the readable fan fills the scene;
+			# in narrow widgets the minimum transition lies beyond the edge.
+			half_width_in_covers = width / max(2.0 * art_height, 1.0)
+			transition_end = max(
+				9.0,
+				(half_width_in_covers - 0.89) / 0.25,
+			)
+			transition_start = transition_end - 4.0
+			transition = min(
+				1.0,
+				max(0.0, (distance - transition_start) / 4.0),
+			)
+			transition = transition * transition * (3.0 - 2.0 * transition)
+		angle = math.radians(87.0 * transition)
+		if transition > 0.0:
+			left_height = front[3][1] - front[0][1]
+			right_height = front[2][1] - front[1][1]
+			profile_height = max(left_height, right_height)
+			profile_width = max(
+				2.0 * scale,
+				(front[1][0] - front[0][0]) * 0.12,
+			)
+			stack_distance = max(0.0, distance - transition_end)
+			profile_x = (front[0][0] + front[1][0]) / 2
+			if stack_distance > 0.0:
+				stack_start = art_height * (
+					0.72 + (transition_end - 1.0) * 0.25)
+				stack_limit = max(stack_start, width / 2 - art_height * 0.025)
+				stack_capacity = max(1.0, 29.0 - transition_end)
+				minimum_pitch = max(
+					3.0 * scale,
+					art_height * 0.75 * 0.022 + scale,
+				)
+				curve_span = max(
+					0.0,
+					stack_limit - stack_start - minimum_pitch * stack_capacity,
+				)
+				curve_progress = (
+					1.0 - math.exp(-0.18 * stack_distance)
+				) / (1.0 - math.exp(-0.18 * stack_capacity))
+				profile_shift = (
+					stack_start
+					+ minimum_pitch * stack_distance
+					+ curve_span * curve_progress
+				)
+				profile_x = width / 2 + math.copysign(profile_shift, offset)
+			profile = [
+				(profile_x - profile_width / 2, centre_y - profile_height / 2),
+				(profile_x + profile_width / 2, centre_y - profile_height / 2),
+				(profile_x + profile_width / 2, centre_y + profile_height / 2),
+				(profile_x - profile_width / 2, centre_y + profile_height / 2),
+			]
+			front = [
+				(
+					current[0] + (target[0] - current[0]) * transition,
+					current[1] + (target[1] - current[1]) * transition,
+				)
+				for current, target in zip(front, profile)
+			]
+
+		left_height = front[3][1] - front[0][1]
+		right_height = front[2][1] - front[1][1]
+		box_height = max(left_height, right_height)
+		depth_scale = box_height / max(1.0, art_height)
+		spine_factor = AlbumflowWidget._face_turn_factor(distance)
+		spine_width = max(
+			0.0,
+			box_height * 0.022 * spine_factor,
+		)
+		if distance >= 9.0:
+			spine_width = max(spine_width, 2.0 * scale)
+		if offset < 0:
+			spine = [
+				(front[0][0] - spine_width, front[0][1]),
+				front[0],
+				front[3],
+				(front[3][0] - spine_width, front[3][1]),
+			]
+		else:
+			spine = [
+				front[1],
+				(front[1][0] + spine_width, front[1][1]),
+				(front[2][0] + spine_width, front[2][1]),
+				front[2],
+			]
+		if offset < 0:
+			hit = [spine[0], front[1], front[2], spine[3]]
+		else:
+			hit = [front[0], spine[1], spine[2], front[3]]
+		return front, spine, hit, angle, depth_scale
+
+	@staticmethod
+	def _edge_strip(points: list[tuple[float, float]], right: bool,
+			width: float) -> list[tuple[float, float]]:
+		left_x = points[0][0]
+		right_x = points[1][0]
+		width = min(width, max(0.0, (right_x - left_x) / 2))
+		if right:
+			return [
+				(right_x - width, points[1][1]),
+				points[1],
+				points[2],
+				(right_x - width, points[2][1]),
+			]
+		return [
+			points[0],
+			(left_x + width, points[0][1]),
+			(left_x + width, points[3][1]),
+			points[3],
+		]
+
+	def _draw_scene(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+		self._sync_playlist(tauon)
+		gui = tauon.gui
+		ddt = tauon.ddt
+		renderer = tauon.renderer
+		colours = tauon.colours
+		background = colours.gallery_background
+		ddt.rect((x, y, w, h), background)
+		ddt.text_background_colour = background
+		tauon.fields.add((x, y, w, h))
+
+		if not tauon.album_dex:
+			ddt.text((w / 2, h / 2 - 8 * gui.scale, 2), _t("No albums"),
+				colours.side_bar_line2, 211)
+			return
+
+		art_height = max(72 * gui.scale, min(w * 0.34, h * 0.58))
+		art_height = min(art_height, w * 0.64)
+		centre_y = max(art_height * 0.58, h * 0.39)
+		centre_y = min(centre_y, h - art_height * 0.90)
+		thumbnail_size = max(96, round(art_height / 32) * 32)
+		visible_radius = 29
+		playlist = tauon.pctl.multi_playlist[tauon.pctl.active_playlist_viewing].playlist_ids
+
+		def build_boxes():
+			first = max(0, math.floor(self.position) - visible_radius)
+			last = min(len(tauon.album_dex), math.ceil(self.position) + visible_radius + 1)
+			boxes = []
+			for album_index in range(first, last):
+				playlist_position = tauon.album_dex[album_index]
+				if playlist_position >= len(playlist):
+					continue
+				track = tauon.pctl.get_track(playlist[playlist_position])
+				texture_info = tauon.gall_ren.render(
+					track, (0, 0), size=thumbnail_size, return_texture=True)
+				aspect = 1.0
+				edge_colour = (48, 48, 48)
+				if isinstance(texture_info, tuple):
+					_texture, texture_w, texture_h, edge_colour = texture_info
+					if texture_h > 0:
+						aspect = texture_w / texture_h
+				front, spine, hit, angle, depth_scale = self._box_geometry(
+					album_index - self.position,
+					w,
+					centre_y,
+					art_height,
+					aspect,
+					gui.scale,
+					self.stacks,
+				)
+				boxes.append((
+					album_index, track, texture_info, edge_colour,
+					front, spine, hit, angle, depth_scale,
+				))
+			return boxes
+
+		boxes = build_boxes()
+		hit_order = sorted(
+			boxes,
+			key=lambda box: self._painter_key(box[0], self.position),
+		)
+		hit_quads = [(box[0], box[6]) for box in hit_order]
+		mx, my = tauon.inp.mouse_position
+		over = 0 <= mx < w and 0 <= my < h
+		self._open_context_menu(tauon, over)
+		old_position = self.position
+		self._handle_input(tauon, over, hit_quads, art_height)
+		self._advance_animation(tauon)
+		if self.position != old_position:
+			boxes = build_boxes()
+
+		draw_order = sorted(
+			boxes,
+			key=lambda box: self._painter_key(box[0], self.position),
+		)
+
+		for album_index, _track, texture_info, edge_colour, front, spine, _hit, angle, _depth_scale in draw_order:
+			offset = album_index - self.position
+			distance = abs(offset)
+			shade = max(0.54, 1.0 - min(distance, 5.0) * 0.085)
+			is_centred = distance < 0.01
+
+			if not is_centred:
+				# The only visible side is a thin, solid vertical spine using
+				# the dominant artwork colour. Geometry eases it to sub-pixel
+				# width near face-on; centred covers submit no spine at all.
+				self._render_quad(
+					renderer,
+					spine,
+					colours=[self._face_colour(
+						edge_colour, shade, 0.76, 0.01)] * 4,
+				)
+			outer_right = offset >= 0
+
+			if isinstance(texture_info, tuple):
+				texture, _texture_w, _texture_h, _edge_colour = texture_info
+				self._render_textured_cover(
+					renderer, front, texture, (shade, shade, shade, 1.0))
+				self._render_reflection(
+					renderer, texture, front, shade, distance, gui.scale)
+			else:
+				front_colour = self._face_colour(edge_colour, shade, 0.78)
+				self._render_quad(renderer, front, colours=[front_colour] * 4)
+
+			if not is_centred:
+				# Side covers retain a restrained vertical bevel; the selected
+				# face is rendered as completely flat, unmodified cover art.
+				front_width = front[1][0] - front[0][0]
+				# Keep the full stack treatment, but suppress the bevel more
+				# aggressively while a cover is close to the selected face.
+				bevel_factor = self._face_turn_factor(distance) ** 2
+				full_bevel_width = max(
+					0.8 * gui.scale,
+					min(front_width * 0.08, 2.4 * gui.scale),
+				)
+				bevel_width = full_bevel_width * bevel_factor
+				light_strip = self._edge_strip(front, outer_right, bevel_width)
+				dark_strip = self._edge_strip(front, not outer_right, bevel_width)
+				light = self._face_colour(edge_colour, shade, 1.12, 0.028)
+				light = (
+					light[0], light[1], light[2], 0.42 * bevel_factor)
+				self._render_quad(renderer, light_strip, colours=[light] * 4)
+				self._render_quad(
+					renderer,
+					dark_strip,
+					colours=[(0.0, 0.0, 0.0, 0.24 * bevel_factor)] * 4,
+				)
+
+				# When almost in profile, reinforce the bright seam so the
+				# artwork remains legible as a distinct box.
+				if math.degrees(angle) > 72:
+					seam = self._edge_strip(
+						front,
+						outer_right,
+						max(gui.scale, bevel_width * 0.55),
+					)
+					seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
+					self._render_quad(renderer, seam, colours=[seam_colour] * 4)
+
+		selected_position = tauon.album_dex[self.selection]
+		if selected_position < len(playlist):
+			track = tauon.pctl.get_track(playlist[selected_position])
+			album = track.album or track.parent_folder_name or _t("Unknown Album")
+			artist = track.album_artist or track.artist or _t("Unknown Artist")
+			title_y = min(h - 38 * gui.scale, centre_y + art_height * 0.65)
+			max_text_w = max(40, min(w - 30 * gui.scale, art_height * 1.8))
+			ddt.text((w / 2, title_y, 2), album, colours.side_bar_line1, 211, max_w=max_text_w)
+			ddt.text((w / 2, title_y + 18 * gui.scale, 2), artist,
+				colours.gallery_artist_line, 311, max_w=max_text_w)
+			ddt.text((w - 10 * gui.scale, h - 20 * gui.scale, 1),
+				f"{self.selection + 1} / {len(tauon.album_dex)}",
+				colours.side_bar_line2, 310)
+
+
 class WidgetSpec:
 	"""Registry entry describing an addable widget and its sizing defaults."""
 
@@ -1357,6 +2118,10 @@ def _gallery_grid(spec: WidgetSpec) -> Widget:
 	return GridGalleryWidget()
 
 
+def _albumflow(spec: WidgetSpec) -> Widget:
+	return AlbumflowWidget()
+
+
 def _details(spec: WidgetSpec) -> Widget:
 	return DetailsWidget()
 
@@ -1394,6 +2159,8 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		colour=ColourRGBA(26, 24, 30, 255)),
 	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid,
 		colour=ColourRGBA(26, 24, 30, 255)),
+	WidgetSpec("albumflow", "Albumflow", "Content", _albumflow,
+		colour=ColourRGBA(22, 22, 28, 255)),
 	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
 	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
 		colour=ColourRGBA(24, 26, 30, 255)),
@@ -3143,15 +3910,12 @@ class CustomLayout:
 		return None
 
 	def gallery_locate(self, playlist_no: int, highlight: bool = False, force: bool = False) -> bool:
-		"""Locate an album in a custom-layout gallery widget (Gallery: Classic /
-		Compact) the way the preset gallery's show-playing does: run
-		tauon.goto_album with the widget's segment geometry applied — and, for
-		the Compact grid, its derived art size / gaps / forced row length — so
-		the shared scroll lands on the right row, optionally with the select
-		animation. goto_album is otherwise gated behind prefs.album_mode, which
-		is the preset gallery's flag and off in custom mode. Returns True when
-		handled (a gallery widget is in the active layout and has been laid
-		out); the caller then skips the preset album_mode path.
+		"""Locate an album in a custom-layout gallery widget (Gallery: Classic,
+		Compact, or Albumflow) the way the preset gallery's show-playing does.
+		Classic and Compact run tauon.goto_album with the widget's segment
+		geometry applied; Albumflow moves its selected cover directly. Returns
+		True when a gallery widget handled the locate, so the caller can skip the
+		preset album-mode path.
 		"""
 		gui = self.gui
 		if not gui.custom_mode:
@@ -3166,6 +3930,10 @@ class CustomLayout:
 			if not (isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget)):
 				continue
 			widget = lf.widget
+			if isinstance(widget, AlbumflowWidget):
+				widget.locate(tauon, playlist_no)
+				handled = True
+				continue
 			# The widget's drawable rect: gutter-inset content rect, then the
 			# padding inset (same clamped math as _draw_leaf).
 			cx, cy, cw, ch = content_rect(lf, gui.scale)

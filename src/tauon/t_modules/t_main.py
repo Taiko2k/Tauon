@@ -115,6 +115,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	STACK_COUNTS as CL_STACK_COUNTS,
 	TEMPLATES as CL_TEMPLATES,
 	WIDGET_SPECS as CL_WIDGET_SPECS,
+	AlbumflowWidget,
 	CustomLayout,
 	GridGalleryWidget,
 	draw_layout_glyph,
@@ -6081,7 +6082,10 @@ class GallClass:
 		self.search_over: SearchOverlay = tauon.search_over
 		self.album_art_gen: AlbumArt = tauon.album_art_gen
 		self.size: int = size
-		self.gall: dict[tuple[TrackClass, int, int], list[int | BytesIO | None]] = {}
+		self.gall: dict[
+			tuple[TrackClass, int, int],
+			list[int | BytesIO | tuple[int, int, int] | None],
+		] = {}
 		self.queue:    list[tuple[TrackClass, int, int]] = []
 		self.key_list: list[tuple[TrackClass, int, int]] = []
 		self.save_out: bool = save_out
@@ -6115,6 +6119,54 @@ class GallClass:
 
 		offset = self.album_art_gen.get_offset(track_object.fullpath, sources)
 		return sources[offset], offset
+
+	@staticmethod
+	def border_dominant(image: Image.Image) -> tuple[int, int, int]:
+		"""Return a representative dominant colour from an image's edge.
+
+		Edge pixels are grouped into coarse colour buckets before selecting the
+		most common one. A modest saturation weight prevents unrelated colours
+		from averaging into grey while still allowing genuinely neutral artwork
+		to produce a neutral spine.
+		"""
+		rgb = image if image.mode == "RGB" else image.convert("RGB")
+		width, height = rgb.size
+		if width < 1 or height < 1:
+			return 48, 48, 48
+		band = max(1, min(width, height) // 32)
+		pixels = rgb.load()
+		buckets: dict[tuple[int, int, int], list[int]] = {}
+
+		def add_sample(red: int, green: int, blue: int) -> None:
+			key = red // 32, green // 32, blue // 32
+			stats = buckets.setdefault(key, [0, 0, 0, 0])
+			stats[0] += 1
+			stats[1] += red
+			stats[2] += green
+			stats[3] += blue
+
+		for py in range(band):
+			for px in range(width):
+				for sample_y in (py, height - 1 - py):
+					r, g, b = pixels[px, sample_y]
+					add_sample(r, g, b)
+		for py in range(band, max(band, height - band)):
+			for px in range(band):
+				for sample_x in (px, width - 1 - px):
+					r, g, b = pixels[sample_x, py]
+					add_sample(r, g, b)
+		if not buckets:
+			return 48, 48, 48
+
+		def bucket_score(stats: list[int]) -> float:
+			count, red, green, blue = stats
+			average = red / count, green / count, blue / count
+			highest = max(average)
+			saturation = (highest - min(average)) / max(1.0, highest)
+			return count * (0.75 + saturation)
+
+		count, red, green, blue = max(buckets.values(), key=bucket_score)
+		return round(red / count), round(green / count), round(blue / count)
 
 	def worker_render(self) -> bool:
 		self.lock.acquire()
@@ -6153,7 +6205,7 @@ class GallClass:
 				continue
 
 			if key not in self.gall:
-				order = [1, None, None, None]
+				order = [1, None, None, None, None]
 				self.gall[key] = order
 			else:
 				order = self.gall[key]
@@ -6215,9 +6267,13 @@ class GallClass:
 
 				g = io.BytesIO()
 				g.seek(0)
+				edge_colour = (48, 48, 48)
 
 				if cache_load:
-					g.write(source_image.read())
+					raw_image = source_image.read()
+					g.write(raw_image)
+					with Image.open(io.BytesIO(raw_image)) as cached_image:
+						edge_colour = self.border_dominant(cached_image)
 
 				else:
 					error = False
@@ -6232,6 +6288,7 @@ class GallClass:
 						im = self.album_art_gen.get_error_img(size)
 						error = True
 
+					edge_colour = self.border_dominant(im)
 					im.save(g, "BMP")
 
 					if not error and self.save_out and self.prefs.cache_gallery \
@@ -6242,7 +6299,7 @@ class GallClass:
 
 				# source_image.close()
 
-				order = [2, g, None, None]
+				order = [2, g, None, None, edge_colour]
 				self.gall[key] = order
 
 				self.gui.request_frame()
@@ -6276,7 +6333,17 @@ class GallClass:
 			location,
 			size: int | None = None,
 			force_offset: int | None = None,
-			max_height: int | None = None) -> bool | None:
+			max_height: int | None = None,
+			return_texture: bool = False,
+	) -> bool | tuple[sdl3.LP_SDL_Texture, float, float, tuple[int, int, int]] | None:
+		"""Draw an album thumbnail, or return its prepared SDL texture.
+
+		``return_texture`` lets perspective renderers reuse the gallery cache
+		without first flattening the image into another render target. It still
+		runs the normal asynchronous request/texture-finalisation path; callers
+		receive ``None``/``False`` until the thumbnail is ready, then the texture,
+		its dimensions and the dominant colour of its outer pixel band.
+		"""
 		if self.tauon.gallery_load_delay.get() < 0.5:
 			return None
 
@@ -6319,6 +6386,8 @@ class GallClass:
 				s_image = self.ddt.load_image(order[1])
 				c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
 				sdl3.SDL_DestroySurface(s_image)
+				sdl3.SDL_SetTextureBlendMode(c, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.SDL_SetTextureScaleMode(c, sdl3.SDL_SCALEMODE_LINEAR)
 				tex_w = pointer(c_float(0))
 				tex_h = pointer(c_float(0))
 				sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
@@ -6336,28 +6405,29 @@ class GallClass:
 
 			if order[0] == 3:
 				# ready
-
 				order[3].x = x
 				order[3].y = y
 				order[3].x = int((size - order[3].w) / 2) + order[3].x
 				order[3].y = int((size - order[3].h) / 2) + order[3].y
 
-				if max_height is None:
-					sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
-				else:
-					max_height = round(max_height)
-					clip_top = y
-					clip_bottom = y + max_height
-					dst_top = order[3].y
-					dst_bottom = order[3].y + order[3].h
-					render_top = max(dst_top, clip_top)
-					render_bottom = min(dst_bottom, clip_bottom)
-					if render_bottom > render_top and order[3].h > 0:
-						source_y = ((render_top - dst_top) / order[3].h) * order[3].h
-						source_h = ((render_bottom - render_top) / order[3].h) * order[3].h
-						source_rect = sdl3.SDL_FRect(0, source_y, order[3].w, source_h)
-						dest_rect = sdl3.SDL_FRect(order[3].x, render_top, order[3].w, render_bottom - render_top)
-						sdl3.SDL_RenderTexture(self.renderer, order[2], source_rect, dest_rect)
+				if not return_texture:
+					if max_height is None:
+						sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
+					else:
+						max_height = round(max_height)
+						clip_top = y
+						clip_bottom = y + max_height
+						dst_top = order[3].y
+						dst_bottom = order[3].y + order[3].h
+						render_top = max(dst_top, clip_top)
+						render_bottom = min(dst_bottom, clip_bottom)
+						if render_bottom > render_top and order[3].h > 0:
+							source_y = ((render_top - dst_top) / order[3].h) * order[3].h
+							source_h = ((render_bottom - render_top) / order[3].h) * order[3].h
+							source_rect = sdl3.SDL_FRect(0, source_y, order[3].w, source_h)
+							dest_rect = sdl3.SDL_FRect(
+								order[3].x, render_top, order[3].w, render_bottom - render_top)
+							sdl3.SDL_RenderTexture(self.renderer, order[2], source_rect, dest_rect)
 
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
@@ -6374,6 +6444,11 @@ class GallClass:
 					del self.gall[key]
 					del self.key_list[0]
 
+				if return_texture:
+					edge_colour = order[4] if len(order) > 4 and order[4] is not None else (48, 48, 48)
+					if not isinstance(edge_colour, tuple):
+						edge_colour = (48, 48, 48)
+					return order[2], order[3].w, order[3].h, edge_colour
 				return True
 		else:
 			self.frame_stamp[key] = self.frame
@@ -51310,6 +51385,15 @@ def main(holder: Holder) -> None:
 	for _i, _sp in enumerate(CL_SPECTRO_PRESETS):
 		spectrogram_menu.add(MenuItem(
 			_sp[0], _spectro_set_colour(_i), check_test=_spectro_preset_check(_i)))
+
+	# Per-instance display options for Albumflow.
+	albumflow_menu = Menu(tauon, 150)
+	tauon.albumflow_menu = albumflow_menu
+	albumflow_menu.add(MenuItem(
+		_("Stacks"),
+		AlbumflowWidget.menu_toggle_stacks,
+		check_test=AlbumflowWidget.menu_stacks_value,
+	))
 
 	# Right-click (background) menu for the Album Grid widget. The incrementor
 	# callbacks are classmethods reading GridGalleryWidget.menu_target, which
