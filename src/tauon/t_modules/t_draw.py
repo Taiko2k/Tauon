@@ -175,7 +175,7 @@ class TDraw:
 
 		self.was_truncated = False
 
-		self._locate_cache: dict[ tuple[str, int], Pango.Layout] = {}
+		self._locate_cache: dict[tuple[str, int], Pango.Layout] = {}
 
 	def load_image(self, g: BytesIO) -> sdl3.LP_SDL_Surface:
 		size = g.getbuffer().nbytes
@@ -262,7 +262,7 @@ class TDraw:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
 	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
-		'''x1, y1, x2, y2'''
+		"""x1, y1, x2, y2"""
 		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 		x1 = min(rectangle[0], rectangle[2])

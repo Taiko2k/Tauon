@@ -2,12 +2,16 @@
 Changelog
 ---------
 
-### v11.1.1
+### v11.1.2
 
  - Revamps & refinements to both synced and static lyrics editors
+ - Fixed bug that caused GNOME to occasionally crash when Tauon did
+
+
+### v11.1.1
+
  - Fixed seek and volume bars ignoring theme transparency (Carbon, Neon Love, Sunken)
  - Fixed crash when scrolling by touch
- - Fixed bug that caused GNOME to occasionally crash when Tauon did
 
 
 ### v11.1.0
