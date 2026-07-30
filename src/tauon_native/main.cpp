@@ -1617,9 +1617,15 @@ int run_python(NativeState& state, int argc, char** argv) {
 	// machinery.  Doing this afterwards causes a use-after-finalize segfault.
 	shutdown_native_sdl(state);
 	g_state = nullptr;
+#if defined(_WIN32)
+	// PyGObject and GTK can crash while their DLL state is torn down by
+	// Py_FinalizeEx(). The process exits immediately after this function, so
+	// let Windows reclaim the embedded interpreter instead.
+#else
 	if (Py_FinalizeEx() < 0 && exit_code == 0) {
 		exit_code = 120;
 	}
+#endif
 	return exit_code;
 }
 
