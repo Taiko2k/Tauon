@@ -7883,6 +7883,9 @@ class Tauon:
 		self.ddt.prime_font(standard_font, 12, 515)
 		self.ddt.prime_font(standard_font, 13, 516)
 
+		self.touch_input_tracker.Q_halfwidth = round(self.ddt.get_text_w("Q", 20)/2)
+		# touch input tracker is pretty low level so this keeps it from jumping the gun
+
 	def get_real_time(self) -> float:
 		offset = self.pctl.decode_time - (self.prefs.sync_lyrics_time_offset / 1000)
 		if self.prefs.backend == Backend.PHAZOR:
@@ -45492,11 +45495,16 @@ class TouchInputTracker:
 		self.is_scroll: bool = False
 		self.is_rightclick: bool = False
 		self.is_dragndrop: bool = False
-		self.has_moved: bool = False
+		self.is_sideswipe: Literal["", "left", "right"] = ""
+		self.has_moved_vert: bool = False
+		self.has_moved_horz: bool = False
 		self.is_gesture: bool = False
 		self.was_gesture: bool = False
 		self.x: int = 0
 		self.y: int = 0
+		self.x_least: int = 0
+		self.x_most: int = 0
+		self.font: int = 20
 
 		self.rect_size: int = round(40*self.gui.scale)
 		self.rect_distance: int = round(40*self.gui.scale)
@@ -45509,12 +45517,36 @@ class TouchInputTracker:
 		self.is_scroll: bool = False
 		self.is_rightclick: bool = False
 		self.is_dragndrop: bool = False
-		self.has_moved: bool = False
+		self.is_sideswipe: Literal["", "left", "right"] = ""
+		self.has_moved_vert: bool = False
+		self.has_moved_horz: bool = False
 		self.is_gesture: bool = False
 		self.was_gesture: bool = False
+		self.x_least: int = 0
+		self.x_most: int = 0
+		self.Q_halfwidth: int = round(self.ddt.get_text_w("Q", self.font)/2)
+
+	def side_swipe(self, x_pos: int) -> None:
+		if x_pos > self.x_most:
+			self.x_most = x_pos
+		if x_pos < self.x_least:
+			self.x_least = x_pos
+		self.x = x_pos
 
 	def draw_update(self) -> None:
 		if not self.is_down or self.is_scroll or self.is_rightclick or self.is_dragndrop or self.is_gesture or self.was_gesture:
+			return
+		if self.is_sideswipe:
+			err = SCROLL_PHYSICS_MIN_PIXELS*self.gui.scale
+			if self.x <= self.x_least+err <= self.start_position_px[0] and self.is_sideswipe == "left" \
+			or self.x >= self.x_most-err >= self.start_position_px[0] and self.is_sideswipe == "right":
+				self.ddt.text(
+					(self.x-self.Q_halfwidth, int(self.y-self.rect_distance)),
+					"Q",
+					self.colours.media_buttons_active,
+					self.font
+				)
+				self.gui.request_frame()
 			return
 		if TOUCH_LOGIC_TAP_VS_LONG_NS < self.duration_so_far_ns:
 			self.is_rightclick = True
@@ -55927,11 +55959,18 @@ def main(holder: Holder) -> None:
 							inp.touch_scroll_y += event.tfinger.dy * window_size[1]
 							mouse_moved = True
 							gui.request_tracklist_redraw()
+						
+						elif not (active_touch.has_moved_vert or active_touch.has_moved_horz or active_touch.is_rightclick) \
+							and abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
+							or abs(inp.touch_position[0] - active_touch.start_position_px[0]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
+							movement = abs(inp.touch_position[1] - active_touch.start_position_px[1]) > abs(inp.touch_position[0] - active_touch.start_position_px[0])
+							# pick between vertical & horizontal movement when either exceeds threshold
+							active_touch.has_moved_vert = movement
+							active_touch.has_moved_horz = not movement
 
-						elif active_touch.has_moved or abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
-							# if touch position has MOVED,
-							active_touch.has_moved = True
-							if active_touch.duration_so_far_ns < TOUCH_LOGIC_TAP_VS_LONG_NS:
+						if active_touch.has_moved_vert:
+							# if touch position has MOVED vertically (scroll),
+							if active_touch.duration_so_far_ns < TOUCH_LOGIC_TAP_VS_LONG_NS and not active_touch.is_scroll:
 								# it could be a scroll input
 								active_touch.is_scroll = True
 								inp.touch_scroll_y += inp.touch_position[1] - active_touch.start_position_px[1]
@@ -55946,7 +55985,25 @@ def main(holder: Holder) -> None:
 								inp.mouse_click = True
 								mouse_moved = True
 
-						elif active_touch.duration_so_far_ns > TOUCH_LOGIC_TAP_VS_LONG_NS and not (active_touch.is_rightclick or active_touch.is_dragndrop):
+						elif active_touch.has_moved_horz:
+							# if touch position has moved HORIZONTALLY (side-swipe),
+							if active_touch.is_rightclick:
+								# it could be switching from right click to dragndrop
+								active_touch.is_rightclick = False
+								active_touch.is_dragndrop = True
+								gui.set_drag_source()
+								inp.mouse_down = True
+								inp.mouse_up = False
+								inp.mouse_click = True
+								mouse_moved = True
+							else:
+								# or it could be a proper side swipe
+								if not active_touch.is_sideswipe:
+									active_touch.is_sideswipe = "left" if inp.touch_position[0] - active_touch.start_position_px[0] < 0 else "right"
+								active_touch.side_swipe(inp.touch_position[0])
+								mouse_moved = True
+
+						elif active_touch.duration_so_far_ns > TOUCH_LOGIC_TAP_VS_LONG_NS and not (active_touch.is_rightclick or active_touch.is_dragndrop or active_touch.is_sideswipe):
 							# if it HASN'T moved in the given time, it's at least a rightclick
 							active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 							active_touch.is_rightclick = True
@@ -55966,6 +56023,14 @@ def main(holder: Holder) -> None:
 								inp.right_click = True
 							elif active_touch.is_dragndrop:
 								inp.mouse_down = False
+							elif active_touch.is_sideswipe:
+								at = active_touch
+								err = SCROLL_PHYSICS_MIN_PIXELS*gui.scale
+								if at.x <= at.x_least+err <= at.start_position_px[0] and at.is_sideswipe == "left" \
+								or at.x >= at.x_most-err >= at.start_position_px[0] and at.is_sideswipe == "right":
+									# if user didn't move back towards the center & cancel the input:
+									inp.mouse_position = list(at.start_position_px)
+									inp.middle_click = True
 							elif active_touch.is_scroll:
 								inp.touch_released = True
 							else:
