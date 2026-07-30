@@ -284,6 +284,19 @@ def parse_ldd(binary: Path) -> set[Path]:
 	return dependencies
 
 
+def windows_imports(binary: Path) -> set[str]:
+	try:
+		result = run(["objdump", "-p", str(binary)], check=False)
+	except FileNotFoundError:
+		return set()
+	imports: set[str] = set()
+	for line in result.stdout.splitlines():
+		match = re.match(r"\s*DLL Name:\s*(\S+)", line)
+		if match is not None:
+			imports.add(match.group(1))
+	return imports
+
+
 def collect_windows_dependencies(bundle_root: Path) -> None:
 	queue = deque(
 		path
@@ -291,9 +304,13 @@ def collect_windows_dependencies(bundle_root: Path) -> None:
 		if path.is_file() and path.suffix.lower() in {".exe", ".dll", ".pyd"}
 	)
 	seen: set[Path] = set()
+	search_directories = library_search_directories()
 	while queue:
 		binary = queue.popleft()
-		for dependency in parse_ldd(binary):
+		for name in windows_imports(binary):
+			dependency = locate_shared_library(name, search_directories)
+			if dependency is None:
+				continue
 			if dependency in seen:
 				continue
 			seen.add(dependency)
@@ -313,8 +330,19 @@ def elf_files(bundle_root: Path) -> list[Path]:
 			continue
 		try:
 			with path.open("rb") as file_handle:
-				magic = file_handle.read(4)
-			if magic == b"\x7fELF":
+				header = file_handle.read(18)
+			if header[:4] != b"\x7fELF" or len(header) < 18:
+				continue
+			if header[5] == 1:
+				byte_order = "little"
+			elif header[5] == 2:
+				byte_order = "big"
+			else:
+				continue
+			elf_type = int.from_bytes(header[16:18], byte_order)
+			# patchelf can only update executables and shared objects, not
+			# relocatable files such as Python's static-library object files.
+			if elf_type in {2, 3}:  # ET_EXEC, ET_DYN
 				files.append(path)
 		except OSError:
 			continue
