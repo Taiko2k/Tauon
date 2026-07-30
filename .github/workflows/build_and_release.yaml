@@ -51,6 +51,7 @@ jobs:
             libsamplerate0-dev \
             libvorbis-dev \
             libwavpack-dev \
+            libxss-dev \
             ninja-build \
             patchelf \
             pkg-config \
@@ -210,6 +211,7 @@ jobs:
           $(brew --prefix python@3.14)/libexec/bin/python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install \
+            --no-binary=jxlpy \
             -r requirements.txt \
             build \
             pytest
