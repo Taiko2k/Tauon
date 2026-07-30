@@ -21907,7 +21907,7 @@ class MultiLineTextBox:
 		self.set_cursor_from_click(scroll, False, pos)
 
 
-	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[ list[ tuple[ str, int ] ], tuple[ int, int], str ]:
+	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[list[tuple[str, int]], tuple[int, int], str]:
 		"""this function has been Sloptimized™. Returns:
 		- a list of text lines paired with their displayed y-values
 		- x and y position of the final partially-highlighted line
