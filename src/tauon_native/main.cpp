@@ -949,12 +949,22 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 }
 
 void shutdown_native_sdl(NativeState& state) {
+#if defined(_WIN32)
+	// SDL and GTK can have background DLL callbacks still in flight while the
+	// process is shutting down. Destroying the SDL objects here can race those
+	// callbacks and cause an access violation. The process exits immediately
+	// after this cleanup path, so let Windows reclaim these resources.
+	(void)state.renderer.release();
+	(void)state.window.release();
+	state.sdl_initialised = false;
+#else
 	state.renderer.reset();
 	state.window.reset();
 	if (state.sdl_initialised) {
 		SDL_Quit();
 		state.sdl_initialised = false;
 	}
+#endif
 }
 
 void shutdown_native_app(NativeState& state) {
