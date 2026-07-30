@@ -1716,7 +1716,16 @@ int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
 	for (std::string& argument : arguments) {
 		argv.push_back(argument.data());
 	}
-	return tauon_main(argc, argv.data());
+	const int exit_code = tauon_main(argc, argv.data());
+	std::cout.flush();
+	std::cerr.flush();
+	// Returning from WinMain invokes ExitProcess, which runs DLL detach handlers.
+	// GTK/PyGObject's MinGW DLL graph can still have background callbacks active
+	// at this point and intermittently crashes during that teardown. Tauon has
+	// already performed its application cleanup, so terminate the current
+	// process without running third-party DLL detach code.
+	TerminateProcess(GetCurrentProcess(), static_cast<UINT>(exit_code));
+	return exit_code;
 }
 #else
 int main(int argc, char** argv) {
