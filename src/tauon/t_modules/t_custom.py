@@ -1772,7 +1772,6 @@ class AlbumflowWidget(_AlbumflowBase):
 	def _face_turn_factor(distance: float) -> float:
 		"""Smoothly project box depth from face-on to a full side turn."""
 		turn = min(1.0, max(0.0, distance/20.0))
-		# logging.info(f"{distance} produces turn {0.5 - 0.5 * math.cos(math.pi * turn)}")
 		return 0.5 - 0.5 * math.cos(math.pi * turn)
 
 	@staticmethod
@@ -2018,8 +2017,7 @@ class AlbumflowWidget(_AlbumflowBase):
 				# Keep the full stack treatment, but suppress the bevel more
 				# aggressively while a cover is close to the selected face.
 
-				bevel_factor = math.sin(math.acos(min(1,front_width/art_height)))#self._face_turn_factor(distance)# ** 2
-				logging.info(f"{_track.album} with factor {bevel_factor}")
+				bevel_factor = math.sin(math.acos(min(1,front_width/art_height)))
 				full_bevel_width = art_height * 0.083 * bevel_factor
 				# max(
 				# 	0.8 * gui.scale,
@@ -2915,7 +2913,6 @@ class CustomLayout:
 		gui.pl_st_left = cfg.get("pl_st_left", 16)
 		gui.request_tracklist_redraw()
 		gui.update_layout = True
-		logging.info("columns")
 		gui.request_frame()
 
 	def _activate_columns(self, owner: int | None) -> None:
@@ -2979,7 +2976,6 @@ class CustomLayout:
 		# update_layout_do() runs at the top of the next frame from this flag.
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		logging.info("enter")
 		self.gui.request_frame()
 
 	def exit_mode(self) -> None:
@@ -2999,13 +2995,11 @@ class CustomLayout:
 		# copying only the old segment).
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		logging.info("exit")
 		self.gui.request_frame()
 
 	def toggle_edit(self) -> None:
 		self.gui.custom_edit = not self.gui.custom_edit
 		self._close_menu()
-		logging.info("toggle edit")
 		self.gui.request_frame()
 
 	# -- tree actions (pure; unit-tested) -----------------------------------
@@ -3242,7 +3236,6 @@ class CustomLayout:
 		self._refresh_layout_menu()
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
-		logging.info("act new slot")
 		self.gui.request_frame()
 
 	def act_delete_slot(self) -> None:
@@ -3400,7 +3393,6 @@ class CustomLayout:
 					self.save_slots()
 					gui.request_tracklist_redraw()
 					gui.update_layout = True
-					logging.info("handle input")
 					gui.request_frame()
 				self._consume(inp)
 				return
