@@ -52511,6 +52511,16 @@ def main(holder: Holder) -> None:
 		AlbumflowWidget.menu_toggle_stacks,
 		check_test=AlbumflowWidget.menu_stacks_value,
 	))
+	albumflow_menu.add(MenuItem(
+		_("CD"),
+		AlbumflowWidget.menu_set_cd,
+		check_test=AlbumflowWidget.menu_cd_value,
+	))
+	albumflow_menu.add(MenuItem(
+		_("Vinyl"),
+		AlbumflowWidget.menu_set_vinyl,
+		check_test=AlbumflowWidget.menu_vinyl_value,
+	))
 
 	# Right-click (background) menu for the Album Grid widget. The incrementor
 	# callbacks are classmethods reading GridGalleryWidget.menu_target, which
