@@ -18641,7 +18641,7 @@ class Tauon:
 						except Exception:
 							logging.exception("FFPROBE couldn't supply a duration")
 
-						TrackFile.read_mutagen_tags(audio.tags, nt)
+					TrackFile.read_mutagen_tags(audio.tags, nt)
 				except Exception:
 					logging.exception("Failed loading file through Mutagen")
 					raise
