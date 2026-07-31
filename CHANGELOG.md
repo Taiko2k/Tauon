@@ -2,6 +2,12 @@
 Changelog
 ---------
 
+### v11.1.2
+
+ - Revamps & refinements to both synced and static lyrics editors
+ - Fixed bug that caused GNOME to occasionally crash when Tauon did
+
+
 ### v11.1.1
 
  - Fixed seek and volume bars ignoring theme transparency (Carbon, Neon Love, Sunken)
@@ -11,6 +17,7 @@ Changelog
 ### v11.1.0
 
  - Added new Frost UI backround mode
+ - Improved touch support
  - Combined visualiser and top panel menu
  - Fixed columns auto resize
  - Fixed synced lyrics not showing in lyrics widget

@@ -81,6 +81,7 @@ class Prefs:
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""
 	save_synced_to_lrc: bool = True
+	allow_overwrite_synced_with_static: bool = False
 
 	use_title:    bool = False
 	auto_extract: bool = False
@@ -342,6 +343,7 @@ class Prefs:
 
 	synced_lyrics_editor_track_end_mode: Literal["stop", "autosave", "full save", "repeat"] = "repeat"
 	save_lyrics_changes_to_files: bool = False
+	show_lyrics_save_menu: bool = True
 
 	sep_genre_multi: bool = False
 	topchart_sorts_played: bool = True

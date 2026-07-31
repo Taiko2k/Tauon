@@ -175,6 +175,8 @@ class TDraw:
 
 		self.was_truncated = False
 
+		self._locate_cache: dict[tuple[str, int], Pango.Layout] = {}
+
 	def load_image(self, g: BytesIO) -> sdl3.LP_SDL_Surface:
 		size = g.getbuffer().nbytes
 		pointer = ctypes.c_void_p(ctypes.addressof(ctypes.c_char.from_buffer(g.getbuffer())))
@@ -253,6 +255,24 @@ class TDraw:
 		self.sdlrect.y = float(rectangle[1])
 		self.sdlrect.w = float(rectangle[2])
 		self.sdlrect.h = float(rectangle[3])
+
+		# if fill:
+		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		# else:
+		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
+
+	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
+		"""x1, y1, x2, y2"""
+		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+
+		x1 = min(rectangle[0], rectangle[2])
+		y1 = min(rectangle[1], rectangle[3])
+		x2 = max(rectangle[0], rectangle[2])
+		y2 = max(rectangle[1], rectangle[3])
+		self.sdlrect.x = float(x1)
+		self.sdlrect.y = float(y1)
+		self.sdlrect.w = float(x2-x1)
+		self.sdlrect.h = float(y2-y1)
 
 		# if fill:
 		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
@@ -618,7 +638,7 @@ class TDraw:
 				layout.set_text(text, -1)
 			except Exception:
 				logging.exception(f"Text error on text: {text}")
-				layout.set_text(text.encode("utf-8", "replace").decode("utf-8"), -1)
+				layout.set_text(text.encode("utf-8", "replace").decode(), -1)
 
 			# logging.info(layout.get_direction(0))
 
@@ -759,3 +779,78 @@ class TDraw:
 				)
 
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
+
+	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
+		"""this function is 95% Genuine Slop™
+		imagines a beautiful world where the input text is wrapped and returns the separated lines as they would appear"""
+		if not text:
+			return []
+
+		if font not in self.f_dict:
+			logging.info(f"Font not loaded: {font!s}")
+			return [text]
+
+		max_x += 12
+		max_x = round(max_x)
+
+		layout = self.layout
+		layout.set_auto_dir(False)
+		layout.set_font_description(self._font_description(font))
+		layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+		layout.set_ellipsize(Pango.EllipsizeMode.NONE)
+		layout.set_width(max_x * 1000)
+		layout.set_height(-1)
+
+		all_lines: list[str] = []
+
+		# Split on real newlines ourselves so Pango only ever wraps a single
+		# paragraph at a time — that way every line it returns is a soft wrap,
+		# and every boundary between paragraphs is unambiguously a real \n.
+		for paragraph in text.split("\n"):
+			if paragraph == "":
+				all_lines.append("\n")
+				continue
+
+			try:
+				layout.set_text(paragraph, -1)
+			except Exception:
+				logging.exception(f"Text error on text: {paragraph}")
+				paragraph = paragraph.encode(encoding="replace").decode()
+				layout.set_text(paragraph, -1)
+
+			encoded = paragraph.encode()
+			for i, line in enumerate(layout.get_lines_readonly()):
+				start = line.start_index
+				end = start + line.length
+				if i == 0 and all_lines:
+					all_lines.append('\n' + encoded[start:end].decode())
+				else:
+					all_lines.append(encoded[start:end].decode())
+
+		return all_lines
+
+	def measure_and_locate(self, text: str, font: int, x_pixels: float, y_pixels: float = 0) -> tuple[float, int, bool]:
+		"""this function is 100% Genuine Slop™
+		provides a faster way of setting your cursor position based on mouse position"""
+		key = (text, font)
+		layout = self._locate_cache.get(key)
+		if layout is None:
+			layout = PangoCairo.create_layout(self.context)
+			layout.set_font_description(self._font_description(font))
+			layout.set_width(-1)
+			layout.set_text(text, -1)
+			self._locate_cache[key] = layout
+			# simple bound so this doesn't grow forever
+			if len(self._locate_cache) > 64:
+				self._locate_cache.pop(next(iter(self._locate_cache)))
+
+		full_w_pango, _ = layout.get_size()
+		full_w_px = full_w_pango / Pango.SCALE
+
+		inside, index, trailing = layout.xy_to_index(
+			round(x_pixels * Pango.SCALE),
+			round(y_pixels * Pango.SCALE),
+		)
+		char_index = len(text.encode()[:index].decode())
+
+		return full_w_px, char_index, bool(trailing)
