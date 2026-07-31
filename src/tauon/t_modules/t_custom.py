@@ -1561,7 +1561,6 @@ class _AlbumflowBase(GalleryWidget):
 		if self._last_frame == 0.0:
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
-		logging.info(now - self._last_frame)
 		self._last_frame = now
 		if self._drag_origin is not None and self._dragged:
 			return
@@ -2049,7 +2048,6 @@ class AlbumflowWidget(_AlbumflowBase):
 
 		selected_position = tauon.album_dex[self.selection]
 
-		logging.info(tauon.pctl.get_track(playlist[0]).fullpath)
 		if selected_position < len(playlist):
 			track = tauon.pctl.get_track(playlist[selected_position])
 			album = track.album or track.parent_folder_name or _t("Unknown Album")
