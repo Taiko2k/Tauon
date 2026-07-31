@@ -1819,7 +1819,7 @@ class AlbumflowWidget(_AlbumflowBase):
 				stack_capacity = max(1.0, 29.0 - transition_end)
 				minimum_pitch = max(
 					3.0 * scale,
-					art_height * 0.75 * 0.022 + scale,
+					art_height * 0.75 * 0.083 + scale,
 				)
 				curve_span = max(
 					0.0,
