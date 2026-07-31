@@ -1805,13 +1805,6 @@ class AlbumflowWidget(_AlbumflowBase):
 			AlbumflowWidget.menu_tauon = tauon
 			tauon.albumflow_menu.activate()
 
-	@staticmethod
-	def _face_turn_factor(distance: float) -> float:
-		"""Smoothly project box depth from face-on to a full side turn."""
-		turn = min(1.0, max(0.0, distance/20.0))
-		return 0.5 - 0.5 * math.cos(math.pi * turn)
-
-	# @staticmethod
 	def _box_geometry(self, offset: float, width: float, centre_y: float,
 			art_height: float, aspect: float, scale: float, stacks: bool = True):
 		distance = abs(offset)
@@ -2044,9 +2037,6 @@ class AlbumflowWidget(_AlbumflowBase):
 				# Side covers retain a restrained vertical bevel; the selected
 				# face is rendered as completely flat, unmodified cover art.
 				front_width = front[1][0] - front[0][0]
-				left_height = front[3][1] - front[0][1]
-				right_height = front[2][1] - front[1][1]
-				# box_height = max(left_height, right_height)
 				# Keep the full stack treatment, but suppress the bevel more
 				# aggressively while a cover is close to the selected face.
 
@@ -2078,7 +2068,6 @@ class AlbumflowWidget(_AlbumflowBase):
 						self._render_quad(renderer, seam, colours=[seam_colour] * 4)
 
 		selected_position = tauon.album_dex[self.selection]
-
 		if selected_position < len(playlist):
 			track = tauon.pctl.get_track(playlist[selected_position])
 			album = track.album or track.parent_folder_name or _t("Unknown Album")

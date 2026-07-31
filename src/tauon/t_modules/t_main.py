@@ -18692,7 +18692,6 @@ class Tauon:
 		intern_track_strings(nt)
 		if self.pctl.track_queue and nt.index == self.pctl.track_queue[self.pctl.queue_step]:
 			self.lyrics_ren_mini.to_reload = True
-		logging.info(nt.title)
 		return nt
 
 	def notify_song(self, notify_of_end: bool = False, delay: float = 0.0) -> None:
