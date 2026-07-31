@@ -16,14 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import ctypes
-import ctypes.util
 import logging
 import os
-import pickle
 import subprocess
 import sys
-from ctypes import c_int, pointer
 from pathlib import Path
 
 from gi.repository import GLib
@@ -33,10 +29,21 @@ sys.path.insert(0, str(install_directory.parent))
 
 from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
 from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
+from tauon.t_modules.t_window_state import WINDOW_STATE_FILENAME, WindowState, load_window_state  # noqa: E402
 
-pyinstaller_mode = bool(
-	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
+try:
+	import tauon_native as _tauon_native
+except ImportError:
+	_tauon_native = None
+
+native_bootstrap = bool(
+	_tauon_native is not None
+	and callable(getattr(_tauon_native, "is_active", None))
+	and _tauon_native.is_active()
 )
+if not native_bootstrap:
+	raise RuntimeError("Tauon must be launched through the tauon-native executable")
+portable_mode = bool(_tauon_native.portable_mode())
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -81,29 +88,6 @@ logging.info(f"{t_title} {t_version}")
 logging.info(f"{t_copyright} captain.gxj@gmail.com\n")
 
 logging.info(f"Started with arguments: {sys.argv}")
-
-
-def set_sdl_app_metadata() -> None:
-	"""Populate SDL app metadata before SDL_Init()."""
-	if not sdl3.SDL_SetAppMetadata(
-		t_title.encode("utf-8"),
-		n_version.encode("utf-8"),
-		t_id.encode("utf-8"),
-	):
-		logging.warning("Failed to set SDL app metadata")
-
-	metadata_properties = (
-		(sdl3.SDL_PROP_APP_METADATA_NAME_STRING, t_title.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_VERSION_STRING, n_version.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_IDENTIFIER_STRING, t_id.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_CREATOR_STRING, t_creator.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_COPYRIGHT_STRING, t_copyright.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_URL_STRING, t_url.encode("utf-8")),
-		(sdl3.SDL_PROP_APP_METADATA_TYPE_STRING, t_type.encode("utf-8")),
-	)
-	for key, value in metadata_properties:
-		if not sdl3.SDL_SetAppMetadataProperty(key, value):
-			logging.warning(f"Failed to set SDL app metadata property: {key!r}")
 
 
 def open_discord() -> None:
@@ -185,7 +169,7 @@ def transfer_args_and_exit() -> None:
 	sys.exit()
 
 
-if "--no-start" in sys.argv:
+if "--no-start" in sys.argv or os.environ.get("TAUON_FORWARD_ARGS_ONLY") == "1":
 	transfer_args_and_exit()
 
 ## TODO(Martin): This code is partially duped in t_main.py
@@ -199,7 +183,7 @@ install_mode = bool(
 if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox").is_dir():
 	install_directory = Path("/usr/share/TauonMusicBox")
 
-if (install_directory / "portable").is_file():
+if portable_mode:
 	install_mode = False
 
 # Handle regular install, running from a git cloned directory and finally a portable install, usually a venv
@@ -212,6 +196,9 @@ elif install_directory.parent.name == "src":
 else:
 	# logging.info("Running in portable mode")
 	user_directory = install_directory / "user-data"
+
+if native_bootstrap:
+	user_directory = Path(_tauon_native.user_data_directory())
 
 debug = bool((user_directory / "debug").is_file())
 
@@ -233,7 +220,9 @@ if debug:
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
-if dev_mode:
+if native_bootstrap and _tauon_native.owns_instance_lock():
+	logging.debug("Native launcher owns the instance lock")
+elif dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
 	pid_file = user_directory / "program.pid"
@@ -255,9 +244,6 @@ else:
 			logging.exception("Another Tauon instance is already running")
 			# TODO(Martin): Silent crash
 			transfer_args_and_exit()
-	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts")  # "C:\\msys64\\mingw64\\etc\\fonts"
-
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
 if d in ["GNOME:Phosh"]:
@@ -265,9 +251,6 @@ if d in ["GNOME:Phosh"]:
 	phone = True
 
 os.environ["SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR"] = "0"  # emergency crash workaround
-
-if pyinstaller_mode:  # and sys.platform == 'darwin':
-	os.environ["SDL_BINARY_PATH"] = str(install_directory)
 
 fs_mode = False
 if os.environ.get("GAMESCOPE_WAYLAND_DISPLAY") is not None:
@@ -283,56 +266,7 @@ if Path(user_directory / "x11").exists():
 	logging.debug("Forcing X11 due to user prefs")
 	os.environ["SDL_VIDEODRIVER"] = "x11"
 
-# Pysdl3 doesn't seem to find system sdl3. REF: https://github.com/Aermoss/PySDL3/issues/35 pysdl
-# As a workaround we try find it ourselves
-# find_library() can return both a filename "libSDL3.so.0" or a full path "/opt/homebrew/lib/libSDL3.dylib"
-sdl_dll_name = ctypes.util.find_library("SDL3")
-if sdl_dll_name:
-	sdl_dll_name = str(Path(sdl_dll_name).name)
-	candidates = [
-		"./" + sdl_dll_name,
-		os.path.join("/app/lib", sdl_dll_name),
-		os.path.join("/usr/lib64", sdl_dll_name),
-		os.path.join("/lib64", sdl_dll_name),
-		os.path.join("/usr/local/lib64", sdl_dll_name),
-		os.path.join("/usr/lib", sdl_dll_name),
-		os.path.join("/lib", sdl_dll_name),
-		os.path.join("/usr/local/lib", sdl_dll_name),
-	]
-else:
-	candidates = []
-sdl_library_path = next((p for p in candidates if p and os.path.exists(p)), None)
-if sdl_library_path:
-	os.environ["SDL_BINARY_PATH"] = os.path.dirname(sdl_library_path)
-
-os.environ["SDL_FIND_BINARIES"] = "1"
-if pyinstaller_mode:
-	os.environ["SDL_FIND_BINARIES"]            = "0" # Disable binary searching,                   "1"        by default.
-
-os.environ["SDL_DOC_GENERATOR"]            = "0" # Disable doc generation                       "1"        by default.
-os.environ["SDL_DISABLE_METADATA"]         = "1" # Disable metadata method,                     "0"        by default.
-os.environ["SDL_CHECK_VERSION"]            = "0" # Disable version checking,                    "1"        by default.
-os.environ["SDL_CHECK_BINARY_VERSION"]     = "0" # Disable binary version checking,             "1"        by default.
-os.environ["SDL_IGNORE_MISSING_FUNCTIONS"] = "1" # Disable missing function warnings,           "0"        by default.
-
-import sdl3  # noqa: E402
-
-# Test the first SetHint to catch if we loaded SDL3 correctly
-sethint_result = sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_ALLOW_SCREENSAVER, b"1")
-if sethint_result is None:
-	logging.error(
-		"Failed to run SetHint, probably due to https://github.com/Aermoss/PySDL3/issues/35, will try a workaround"
-	)
-	sys.exit(1)
-
-set_sdl_app_metadata()
-
-sdl3.SDL_SetHint(sdl3.SDL_HINT_MOUSE_FOCUS_CLICKTHROUGH, b"1")
-sdl3.SDL_SetHint(sdl3.SDL_HINT_VIDEO_X11_NET_WM_BYPASS_COMPOSITOR, b"0")
-if sys.platform == "darwin" and hasattr(sdl3, "SDL_HINT_MAC_SCROLL_MOMENTUM"):
-	sdl3.SDL_SetHint(sdl3.SDL_HINT_MAC_SCROLL_MOMENTUM, b"1")
-# sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_ID, t_id.encode("utf-8"))
-# sdl3.SDL_SetHint(sdl3.SDL_HINT_APP_NAME, t_title.encode("utf-8"))
+from tauon.t_modules import t_native as sdl3  # noqa: E402
 
 draw_border = True
 w = 1120
@@ -353,28 +287,22 @@ if phone:
 maximized = False
 old_window_position: tuple[int, int] | None = None
 
-window_p = user_directory / "window.p"
-if window_p.is_file() and not fs_mode:
+window_state_path = user_directory / WINDOW_STATE_FILENAME
+if window_state_path.is_file() and not fs_mode:
 	try:
-		state_file = window_p.open("rb")
-		save = pickle.load(state_file)
-		state_file.close()
-
-		draw_border = save[0]
-		window_size = save[1]
-		w, h = save[1]
-		if 100 < w < 10000 and 100 < h < 5000:
-			logical_size[0], logical_size[1] = w, h
-		window_opacity = save[2]
-		scale = save[3]
-		maximized = save[4]
-		old_window_position = save[5]
-		del save
-
-	except Exception:
-		logging.exception("Corrupted window state file?! Please restart app!")
-		window_p.unlink()
-		sys.exit(1)
+		window_state = load_window_state(
+			window_state_path,
+			WindowState(width=w, height=h, scale=scale),
+		)
+		draw_border = window_state.borderless
+		window_size = [window_state.width, window_state.height]
+		logical_size = [window_state.width, window_state.height]
+		window_opacity = window_state.opacity
+		scale = window_state.scale
+		maximized = window_state.maximized
+		old_window_position = window_state.position
+	except (OSError, ValueError):
+		logging.exception("Ignoring invalid window state file: %s", window_state_path)
 else:
 	logging.info("No window state file")
 
@@ -396,125 +324,19 @@ else:
 # 	except Exception:
 # 		logging.exception("Failed to set cursor")
 
-sdl3.SDL_Init(sdl3.SDL_INIT_VIDEO | sdl3.SDL_INIT_EVENTS)
+window_title = t_title.encode("utf-8")
+t_window = _tauon_native.window_address()
+sdl3.SDL_SetWindowBordered(t_window, not draw_border)
+sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
 
-err = sdl3.SDL_GetError()
-if err and "GLX" in err.decode():
-	logging.error(f"SDL init error: {err.decode()}")
-	sdl3.SDL_ShowSimpleMessageBox(
-		sdl3.SDL_MESSAGEBOX_ERROR,
-		b"Tauon Music Box failed to start :(",
-		b"Error: " + err + b".\n If you're using Flatpak, try running `$ flatpak update`",
-		None,
-	)
-	sys.exit(1)
-
-window_title = t_title
-window_title = window_title.encode("utf-8")
-
-flags = sdl3.SDL_WINDOW_RESIZABLE | sdl3.SDL_WINDOW_TRANSPARENT | sdl3.SDL_WINDOW_HIGH_PIXEL_DENSITY
-
-if draw_border and not fs_mode:
-	flags |= sdl3.SDL_WINDOW_BORDERLESS
-
-if fs_mode:
-	flags |= sdl3.SDL_WINDOW_FULLSCREEN
-
-if old_window_position is None:
-	o_x = sdl3.SDL_WINDOWPOS_UNDEFINED
-	o_y = sdl3.SDL_WINDOWPOS_UNDEFINED
-else:
-	o_x = old_window_position[0]
-	o_y = old_window_position[1]
-
-if "--tray" in sys.argv:
-	flags |= sdl3.SDL_WINDOW_HIDDEN
-
-
-window_properties = sdl3.SDL_CreateProperties()
-if window_properties:
-	sdl3.SDL_SetStringProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_TITLE_STRING, window_title)
-	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_X_NUMBER, o_x)
-	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_Y_NUMBER, o_y)
-	sdl3.SDL_SetNumberProperty(
-		window_properties,
-		sdl3.SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER,
-		logical_size[0],
-	)
-	sdl3.SDL_SetNumberProperty(
-		window_properties,
-		sdl3.SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER,
-		logical_size[1],
-	)
-	sdl3.SDL_SetNumberProperty(window_properties, sdl3.SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, flags)
-	t_window = sdl3.SDL_CreateWindowWithProperties(window_properties)
-	sdl3.SDL_DestroyProperties(window_properties)
-else:
-	t_window = None
-
-if not t_window:
-	logging.error("ERROR CREATING WINDOW!")
-	logging.error(f"Title: {window_title}")
-	logging.error(f"X: {o_x}")
-	logging.error(f"Y: {o_y}")
-	logging.error(f"Size 0: {logical_size[0]}")
-	logging.error(f"Size 1: {logical_size[1]}")
-	logging.error(f"Flags: {flags}")
-	sdl_err = sdl3.SDL_GetError()
-	logging.error(f"SDL Error: {sdl_err}")
-	if sdl_err and sdl_err.decode() == "x11 not available":
-		x11_path = user_directory / "x11"
-		if x11_path.exists():
-			logging.critical(
-				"Disabled Xwayland preference as X11 was not found - Known issue if on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034"
-			)
-			x11_path.unlink()
-			# TODO(Martin): This does not seem to work on SDL3, it attempts to relaunch under x11 again
-			# os.environ["SDL_VIDEODRIVER"] = "wayland"
-			# t_window = sdl3.SDL_CreateWindow(
-			# 	window_title,
-			# 	o_x, o_y,
-			# 	logical_size[0], logical_size[1],
-			# 	flags)
-			# if not t_window:
-			# 	logging.error(f"Failed to create Wayland fallback window - SDL Error: {sdl3.SDL_GetError()}")
-			# 	sys.exit(1)
-			sys.exit(1)
-		else:
-			logging.critical(f"Failed to find {x11_path} but got 'x11 not available' error, hm?")
-			sys.exit(1)
+if old_window_position is not None and not fs_mode:
+	sdl3.SDL_SetWindowPosition(t_window, old_window_position[0], old_window_position[1])
 
 if maximized:
 	sdl3.SDL_MaximizeWindow(t_window)
 
-drivers: list[bytes] = []
-i = 0
-while True:
-	x = sdl3.SDL_GetRenderDriver(i)
-	i += 1
-	if x is None:
-		break
-	drivers.append(x)
-
-logging.debug(f"SDL available drivers: {drivers}")
 logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
-
-driver = None
-if b"opengl" in drivers:
-	driver = b"opengl"
-
-renderer = sdl3.SDL_CreateRenderer(t_window, driver)  # sdl3.SDL_RENDERER_PRESENTVSYNC
-if not renderer and driver == b"opengl":
-	renderer_error = sdl3.SDL_GetError()
-	logging.warning(f"Failed to create OpenGL renderer: {renderer_error}")
-	logging.warning("Trying SDL default renderer")
-	sdl3.SDL_ClearError()
-	renderer = sdl3.SDL_CreateRenderer(t_window, None)
-
-if not renderer:
-	logging.error("ERROR CREATING RENDERER!")
-	logging.error(f"SDL Error: {sdl3.SDL_GetError()}")
-	sys.exit(1)
+renderer = _tauon_native.renderer_address()
 
 sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
@@ -522,23 +344,10 @@ sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
 sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 sdl3.SDL_RenderClear(renderer)
 
-logging.info(f"SDL window system: {sdl3.SDL_GetCurrentVideoDriver().decode()}")
+logging.info(f"SDL renderer: {_tauon_native.renderer_name()}")
 
-# Vsync is not trusted for frame pacing (visualisers self-pace to the display
-# refresh rate, see Tauon.frame_pace) — enabling it just aligns frames to vblank.
-sdl3.SDL_SetRenderVSync(
-	renderer, 1
-)  # 1 == enable vsync, 0 == disable, -1 == late swap tearing, 2 == second vertical refresh
-
-i_x = pointer(c_int(0))
-i_y = pointer(c_int(0))
-sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-window_size[0] = i_x.contents.value
-window_size[1] = i_y.contents.value
-
-sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
-logical_size[0] = i_x.contents.value
-logical_size[1] = i_y.contents.value
+window_size[:] = _tauon_native.get_window_size(t_window, True)
+logical_size[:] = _tauon_native.get_window_size(t_window, False)
 
 # Loading screen: a full window grid of interconnected isometric wireframe boxes
 def draw_loading_screen() -> None:
@@ -547,11 +356,8 @@ def draw_loading_screen() -> None:
 	box_d = round(35 * scale)  # vertical edge length
 
 	def polyline(points: list[tuple[float, float]]) -> None:
-		array = (sdl3.SDL_FPoint * len(points))()
-		for i, (x, y) in enumerate(points):
-			array[i].x = float(x)
-			array[i].y = float(y)
-		sdl3.SDL_RenderLines(renderer, array, len(points))
+		for start, end in zip(points, points[1:], strict=False):
+			sdl3.SDL_RenderLine(renderer, start[0], start[1], end[0], end[1])
 
 	sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
 	sdl3.SDL_RenderFillRect(renderer, None)
@@ -595,7 +401,6 @@ holder = Holder(
 	old_window_position=old_window_position,
 	install_directory=install_directory,
 	user_directory=user_directory,
-	pyinstaller_mode=pyinstaller_mode,
 	phone=phone,
 	window_title=window_title,
 	fs_mode=fs_mode,
@@ -607,9 +412,9 @@ holder = Holder(
 	dev_mode=dev_mode,
 	instance_lock=fp,
 	log=log,
+	native_bootstrap=native_bootstrap,
+	portable_mode=portable_mode,
 )
-
-del flags
 
 if __name__ == "__main__":
 	try:
@@ -623,43 +428,4 @@ if __name__ == "__main__":
 		crash_logger.handlers[0].setFormatter(CustomLoggingFormatter(color=False))
 		error_message = f"Oops, looks like Tauon crashed.\n\nPlease report a bug over at GitHub or Discord.\n\nCrash log was saved to\n{crash_log_path}"
 		crash_logger.exception(error_message)
-		import ctypes
-		import webbrowser
-
-		BUTTON_ID_GITHUB = 1
-		BUTTON_ID_DISCORD = 2
-		BUTTON_ID_OPEN_LOG = 3
-		BUTTON_ID_QUIT = 4
-
-		# Create buttons
-		button_array = (sdl3.SDL_MessageBoxButtonData * 4)(
-			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_GITHUB, b"GitHub"),
-			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_DISCORD, b"Discord"),
-			sdl3.SDL_MessageBoxButtonData(0, BUTTON_ID_OPEN_LOG, b"Open Crash Log"),
-			sdl3.SDL_MessageBoxButtonData(sdl3.SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, BUTTON_ID_QUIT, b"Quit"),
-		)
-		messageboxdata = sdl3.SDL_MessageBoxData(
-			flags=sdl3.SDL_MESSAGEBOX_ERROR,
-			window=None,
-			title=b"Tauon Music Box crashed :(",
-			message=str.encode(f"{error_message}\n\nShortlog:\n{e}"),
-			numbuttons=4,
-			buttons=button_array,
-			color_scheme=None,
-		)
-		buttonid = ctypes.c_int(-1)
-
-		# Show the message box
-		success = sdl3.SDL_ShowMessageBox(ctypes.byref(messageboxdata), ctypes.byref(buttonid))
-
-		if not success:
-			logging.error(f"SDL_ShowMessageBox failed: {sdl3.SDL_GetError().decode()}")
-		elif buttonid.value == BUTTON_ID_DISCORD:
-			open_discord()
-		elif buttonid.value == BUTTON_ID_GITHUB:
-			open_github()
-		elif buttonid.value == BUTTON_ID_OPEN_LOG:
-			open_crash_log(crash_log_path)
-		elif buttonid.value == BUTTON_ID_QUIT:
-			pass
-		sdl3.SDL_Quit()
+		_tauon_native.show_error_message("Tauon Music Box crashed :(", f"{error_message}\n\nShortlog:\n{e}")

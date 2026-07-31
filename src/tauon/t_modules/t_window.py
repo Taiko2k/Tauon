@@ -31,8 +31,7 @@ import ctypes
 import logging
 from typing import TYPE_CHECKING
 
-import sdl3
-
+from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_draw import TDraw
 from tauon.t_modules.t_extra import ColourRGBA
 
@@ -187,7 +186,7 @@ class SecondaryWindow:
 		return True
 
 	def _release_input_grab(self) -> None:
-		"""Release any window mouse grab and the global mouse capture.
+		"""Release the global mouse capture.
 
 		SDL_CaptureMouse is a *global* capture (not tied to this window), which
 		SDL acquires during window operations such as resizing. Destroying the
@@ -195,8 +194,8 @@ class SecondaryWindow:
 		keeps routing all mouse events to this window and the main window goes
 		unresponsive.
 		"""
-		if self.window is not None:
-			sdl3.SDL_SetWindowMouseGrab(self.window, False)
+		# SDL popup windows cannot own a per-window mouse grab. Attempting to
+		# release one raises "Operation invalid on popup windows" on macOS.
 		sdl3.SDL_CaptureMouse(False)
 
 	def hide(self) -> None:

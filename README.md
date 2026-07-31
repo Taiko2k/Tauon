@@ -39,6 +39,8 @@ For Windows installer see the [releases](https://github.com/Taiko2k/TauonMusicBo
 
 Installation is available on [Arch Linux](https://archlinux.org/packages/extra/x86_64/tauon-music-box/). Tauon is also available on Flathub, and portable binaries are published on the [releases](https://github.com/Taiko2k/Tauon/releases) page.
 
+See [BUILDING.md](BUILDING.md) for local development and native packaging instructions.
+
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.

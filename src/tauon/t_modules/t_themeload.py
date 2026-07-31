@@ -25,9 +25,9 @@ import logging
 import os
 from typing import TYPE_CHECKING, Protocol
 
-import sdl3
 from PIL import Image
 
+from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_extra import ColourRGBA, rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
@@ -560,14 +560,10 @@ class Deco:
 			im = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
 			w, h = new_w, new_h
 
-		g = io.BytesIO()
-		g.seek(0)
-		im.save(g, "PNG")
-		g.seek(0)
-		s_image = self.tauon.ddt.load_image(g)
-		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
+		if im.mode != "RGBA":
+			im = im.convert("RGBA")
+		texture = sdl3.create_texture_from_rgba(self.renderer, w, h, im.tobytes())
 		sdl3.SDL_SetTextureAlphaMod(texture, opacity)
-		sdl3.SDL_DestroySurface(s_image)
 		sdl_rect = sdl3.SDL_FRect(0, 0, w, h)
 
 		drawable = Drawable()

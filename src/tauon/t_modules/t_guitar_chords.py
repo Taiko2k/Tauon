@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import requests
-import sdl3
+import tauon_native
 
 from tauon.t_modules.t_extra import ColourRGBA, TestTimer, filename_safe
 
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def copy_from_clipboard() -> str:
-	return sdl3.SDL_GetClipboardText().decode()
+	return tauon_native.get_clipboard_text()
 
 
 # ENDTODO

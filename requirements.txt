@@ -6,7 +6,6 @@ PlexAPI
 PyGObject
 pylast>=3.1.0
 pyobjc-framework-Cocoa;     sys_platform == 'darwin'
-PySDL3
 #python-magic # optional
 rapidfuzz
 requests
@@ -27,5 +26,4 @@ tidalapi>=0.8.7 # optional
 zeroconf # optional
 colored_traceback;           sys_platform != 'win32' # optional - Disabled for Windows due to https://github.com/staticshock/colored-traceback.py/issues/25
 PyOpenGL
-#pyinstaller
 #  https://github.com/metabrainz/picard/releases

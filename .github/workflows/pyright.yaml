@@ -69,10 +69,7 @@ jobs:
           source .venv/bin/activate
           pip install \
             -r requirements.txt \
-            build \
-            pyinstaller
-          python -c "import sdl3"
-#            https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+            build
 
       - name: Build the project using python-build
         run: |
@@ -80,10 +77,10 @@ jobs:
           python -m tools.i18n.compile_translations
           python -m build --wheel
 
-      - name: Install the project into a venv
+      - name: Install the wheel into the build environment
         run: |
           source .venv/bin/activate
-          pip install --prefix ".venv" dist/*.whl
+          pip install --no-deps --force-reinstall dist/*.whl
 
       - name: Let Pyright use our venv
         run: echo "$PWD/.venv/bin" >> $GITHUB_PATH
