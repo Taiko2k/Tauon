@@ -1540,7 +1540,6 @@ class _AlbumflowBase(GalleryWidget):
 			return
 		tauon.pctl.playlist_view_position = playlist_position
 		tauon.pctl.selected_in_playlist = playlist_position
-		logging.info("select")
 		tauon.gui.request_tracklist_redraw()
 		if play:
 			tauon.pctl.jump(playlist[playlist_position], playlist_position)
@@ -1555,7 +1554,6 @@ class _AlbumflowBase(GalleryWidget):
 				break
 			target = album_index
 		self.selection = target
-		logging.info("locate")
 		tauon.gui.request_frame()
 
 	def _advance_animation(self, tauon: Tauon) -> None:
@@ -1652,7 +1650,6 @@ class _AlbumflowBase(GalleryWidget):
 				last = max(0, len(tauon.album_dex) - 1)
 				self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
 				self.selection = round(self.position)
-				logging.info("mouse down drag")
 				tauon.gui.request_frame()
 		if inp.mouse_up and self._drag_origin is not None:
 			if self._dragged:
@@ -1748,7 +1745,6 @@ class AlbumflowWidget(_AlbumflowBase):
 	def _menu_changed(cls) -> None:
 		tauon = cls.menu_tauon
 		if tauon is not None:
-			logging.info("menu change")
 			tauon.gui.request_frame()
 			tauon.custom.save_slots()
 
@@ -1854,15 +1850,15 @@ class AlbumflowWidget(_AlbumflowBase):
 
 		left_height = front[3][1] - front[0][1]
 		right_height = front[2][1] - front[1][1]
-		width = abs(front[0][0]-front[1][0])
 		box_height = max(left_height, right_height)
+		width = abs(front[0][0]-front[1][0])
 		depth_scale = box_height / max(1.0, art_height)
 		classic_front[0][0] - classic_front[1][0]
 		if distance >= 9.0:
 			spine_width = box_height * 0.083
 		else:
 			# spine_factor = AlbumflowWidget._face_turn_factor(distance)
-			spine_factor = math.acos( max(1,width/box_height) )
+			spine_factor = math.sin( math.acos( min(1,width/box_height) ) )
 			spine_width = box_height* 0.083 * spine_factor
 			# max(
 			# 	0.0,
@@ -2016,20 +2012,26 @@ class AlbumflowWidget(_AlbumflowBase):
 				# Side covers retain a restrained vertical bevel; the selected
 				# face is rendered as completely flat, unmodified cover art.
 				front_width = front[1][0] - front[0][0]
+				left_height = front[3][1] - front[0][1]
+				right_height = front[2][1] - front[1][1]
+				# box_height = max(left_height, right_height)
 				# Keep the full stack treatment, but suppress the bevel more
 				# aggressively while a cover is close to the selected face.
-				bevel_factor = self._face_turn_factor(distance)# ** 2
-				full_bevel_width = max(
-					0.8 * gui.scale,
-					min(front_width * 0.08, 2.4 * gui.scale),
-				)
-				bevel_width = full_bevel_width * bevel_factor
-				light_strip = self._edge_strip(front, outer_right, bevel_width)
-				dark_strip = self._edge_strip(front, not outer_right, bevel_width)
+
+				bevel_factor = math.sin(math.acos(min(1,front_width/art_height)))#self._face_turn_factor(distance)# ** 2
+				logging.info(f"{_track.album} with factor {bevel_factor}")
+				full_bevel_width = art_height * 0.083 * bevel_factor
+				# max(
+				# 	0.8 * gui.scale,
+				# 	min(front_width * 0.08, 2.4 * gui.scale),
+				# )
+				# bevel_width = full_bevel_width * bevel_factor
+				light_strip = self._edge_strip(front, outer_right, full_bevel_width)
+				dark_strip = self._edge_strip(front, not outer_right, full_bevel_width)
 				light = self._face_colour(edge_colour, shade, 1.12, 0.028)
 				light = (
 					light[0], light[1], light[2], 0.42 * bevel_factor)
-				self._render_quad(renderer, light_strip, colours=[light] * 4)
+				# self._render_quad(renderer, light_strip, colours=[light] * 4)
 				self._render_quad(
 					renderer,
 					dark_strip,
@@ -2042,12 +2044,14 @@ class AlbumflowWidget(_AlbumflowBase):
 					seam = self._edge_strip(
 						front,
 						outer_right,
-						max(gui.scale, bevel_width * 0.55),
+						max(gui.scale, full_bevel_width * 0.55),
 					)
 					seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
 					self._render_quad(renderer, seam, colours=[seam_colour] * 4)
 
 		selected_position = tauon.album_dex[self.selection]
+
+		logging.info(tauon.pctl.get_track(playlist[0]).fullpath)
 		if selected_position < len(playlist):
 			track = tauon.pctl.get_track(playlist[selected_position])
 			album = track.album or track.parent_folder_name or _t("Unknown Album")
