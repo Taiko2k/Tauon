@@ -101,6 +101,7 @@ class MPRIS(dbus.service.Object):
 			if self.player_properties["PlaybackStatus"] != "Stopped":
 				self.player_properties["PlaybackStatus"] = "Stopped"
 				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
+			self.player_properties["Position"] = dbus.Int64(0)
 		elif self.pctl.playing_state == PlayingState.PAUSED:
 			if self.player_properties["PlaybackStatus"] != "Paused":
 				self.player_properties["PlaybackStatus"] = "Paused"
