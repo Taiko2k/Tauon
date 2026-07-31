@@ -300,7 +300,6 @@ class MPRIS(dbus.service.Object):
 		self.pctl.seek_time(position / 1000000)
 
 		self.player_properties["Position"] = dbus.Int64(int(position))
-		self.Seeked(self.pctl.playing_time)
 
 	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
 	def OpenUri(self, uri: str) -> None:
