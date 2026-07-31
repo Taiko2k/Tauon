@@ -67,7 +67,7 @@ import urllib.request
 import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from ctypes import (
 	POINTER,
 	Structure,
@@ -521,12 +521,34 @@ class DConsole:
 
 	def __init__(self) -> None:
 		self.show: bool = False
+		self.fps_only: bool = False
 		self.fps = FPSCounter(window_size=20, min_update_interval=0.12, max_frame_time=0.5)
+		# The full console keeps its traditional inter-frame average above. The
+		# non-driving diagnostic instead counts frames in a wall-clock window, so
+		# a short 60 Hz input burst after a long idle reads as a few FPS, not 60.
+		self.diagnostic_frames: deque[float] = deque()
+
+	def diagnostic_tick(self) -> None:
+		now = time.perf_counter()
+		self.diagnostic_frames.append(now)
+		cutoff = now - 1.0
+		while self.diagnostic_frames and self.diagnostic_frames[0] <= cutoff:
+			self.diagnostic_frames.popleft()
+
+	def diagnostic_fps(self) -> int:
+		return len(self.diagnostic_frames)
 
 	def toggle(self) -> None:
-		"""Toggle the GUI console with logs on and off"""
-		self.show ^= True
+		"""Cycle the diagnostics overlay through console, FPS-only and hidden."""
 		if self.show:
+			self.show = False
+			self.fps_only = True
+			# Discard samples gathered while the console was driving frames.
+			self.diagnostic_frames.clear()
+		elif self.fps_only:
+			self.fps_only = False
+		else:
+			self.show = True
 			self.fps.reset()
 
 class GuiVar:
@@ -29305,12 +29327,17 @@ class Over:
 				os.remove(debug_path)
 			y += small_row_h + row_gap
 
-			tauon.console.show = self.settings_switch_row(
+			console_show = self.settings_switch_row(
 				(x, y, w, small_row_h),
 				tauon.console.show,
 				_("Toggle Console"),
 				accent=accent,
 			)
+			if console_show != tauon.console.show:
+				tauon.console.show = console_show
+				tauon.console.fps_only = False
+				if console_show:
+					tauon.console.fps.reset()
 
 	def button(self, x: int, y: int, text: str, plug: Callable[[], None] | None = None, width: int = 0, bg: ColourRGBA | None = None) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
@@ -59316,6 +59343,23 @@ def main(holder: Holder) -> None:
 
 			tauon.tool_tip.render()
 			tauon.tool_tip2.render()
+
+			if tauon.console.fps_only:
+				tauon.console.diagnostic_tick()
+				fps_rect = (
+					window_size[0] - 90 * gui.scale,
+					40 * gui.scale,
+					70 * gui.scale,
+					22 * gui.scale,
+				)
+				ddt.rect(fps_rect, ColourRGBA(0, 0, 0, 245))
+				ddt.text(
+					(fps_rect[0] + 8 * gui.scale, fps_rect[1] + 4 * gui.scale),
+					f"{tauon.console.diagnostic_fps()} FPS",
+					ColourRGBA(120, 120, 120, 255),
+					311,
+					bg=ColourRGBA(5, 5, 5, 255),
+				)
 
 			if tauon.console.show:
 				rect = (20 * gui.scale, 40 * gui.scale, 580 * gui.scale, 200 * gui.scale)

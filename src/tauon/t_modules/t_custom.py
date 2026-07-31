@@ -4062,6 +4062,12 @@ class CustomLayout:
 				tab_border = isinstance(parent, TabStack) and parent.border
 				self._draw_leaf(leaf, interactive, tab_border)
 
+		# A visible TracklistWidget clears pl_update when it consumes the redraw.
+		# Without one (an empty layout, or a tracklist on a hidden tab), leaving
+		# the flag set makes the main loop request another full frame forever.
+		if count_visible_kind(root, "tracklist") == 0:
+			gui.pl_update = False
+
 		# Tab chrome is last among the layout content so the switcher's single,
 		# non-overlapping frame remains the final border at its outer edges.
 		self._draw_tab_bars(root)
