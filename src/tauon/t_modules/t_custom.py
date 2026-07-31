@@ -1889,29 +1889,25 @@ class AlbumflowWidget(_AlbumflowBase):
 		box_height = max(left_height, right_height)
 		width = abs(front[0][0]-front[1][0])
 		depth_scale = box_height / max(1.0, art_height)
-		classic_front[0][0] - classic_front[1][0]
 		if distance >= self.stack_distance:
 			spine_width = box_height * self.spine_aspect
+			spine_vert_factor = 1
 		else:
-			# spine_factor = AlbumflowWidget._face_turn_factor(distance)
 			spine_factor = math.sin( math.acos( min(1,width/box_height) ) )
 			spine_width = box_height* self.spine_aspect * spine_factor
-			# max(
-			# 	0.0,
-			# 	box_height * self.spine_aspect * spine_factor,
-			# )
+			spine_vert_factor = 1.0 - 0.7**(abs(offset)+2) * self.spine_aspect # faux perspective
 		if offset < 0:
 			spine = [
-				(front[0][0] - spine_width, front[0][1]),
+				(front[0][0] - spine_width, centre_y - (centre_y-front[0][1])*spine_vert_factor),
 				front[0],
 				front[3],
-				(front[3][0] - spine_width, front[3][1]),
+				(front[3][0] - spine_width, centre_y + (front[3][1]-centre_y)*spine_vert_factor),
 			]
 		else:
 			spine = [
 				front[1],
-				(front[1][0] + spine_width, front[1][1]),
-				(front[2][0] + spine_width, front[2][1]),
+				(front[1][0] + spine_width, centre_y - (centre_y-front[1][1])*spine_vert_factor),
+				(front[2][0] + spine_width, centre_y + (front[2][1]-centre_y)*spine_vert_factor),
 				front[2],
 			]
 		if offset < 0:
@@ -2056,7 +2052,7 @@ class AlbumflowWidget(_AlbumflowBase):
 
 				bevel_factor = math.sin(math.acos(min(1,front_width/art_height)))
 				full_bevel_width = art_height * self.spine_aspect * bevel_factor
-				if False:
+				if self.vinyl:
 					light_strip = self._edge_strip(front, outer_right, full_bevel_width)
 					dark_strip = self._edge_strip(front, not outer_right, full_bevel_width)
 					light = self._face_colour(edge_colour, shade, 1.12, 0.028)
@@ -2071,15 +2067,15 @@ class AlbumflowWidget(_AlbumflowBase):
 
 				# When almost in profile, reinforce the bright seam so the
 				# artwork remains legible as a distinct box.
-				# if self.vinyl:
-				if math.degrees(angle) > 72:
-					seam = self._edge_strip(
-						front,
-						outer_right,
-						max(gui.scale, full_bevel_width * 0.55),
-					)
-					seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
-					self._render_quad(renderer, seam, colours=[seam_colour] * 4)
+				if self.vinyl:
+					if math.degrees(angle) > 72:
+						seam = self._edge_strip(
+							front,
+							outer_right,
+							max(gui.scale, full_bevel_width * 0.55),
+						)
+						seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
+						self._render_quad(renderer, seam, colours=[seam_colour] * 4)
 
 		selected_position = tauon.album_dex[self.selection]
 
