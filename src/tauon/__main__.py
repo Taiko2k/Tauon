@@ -662,4 +662,3 @@ if __name__ == "__main__":
 			open_crash_log(crash_log_path)
 		elif buttonid.value == BUTTON_ID_QUIT:
 			pass
-		sdl3.SDL_Quit()
