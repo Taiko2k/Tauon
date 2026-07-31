@@ -56109,6 +56109,7 @@ def main(holder: Holder) -> None:
 					gui.request_frame()
 
 		if mouse_moved and tauon.fields.test():
+			logging.info("moved and fields")
 			gui.request_frame()
 
 		# if tauon.thread_manager.sleeping:
@@ -56184,6 +56185,7 @@ def main(holder: Holder) -> None:
 
 		if tauon.smooth_scroll.any_active():
 			run_frame = True
+			logging.info("smooth scroll active")
 			gui.request_tracklist_redraw()
 			gui.request_frame()
 			now = time.monotonic()
@@ -56214,6 +56216,7 @@ def main(holder: Holder) -> None:
 		if pctl.wake_past_time and tauon.get_real_time() > pctl.wake_past_time:
 			pctl.wake_past_time = 0
 			run_frame = True
+			logging.info("wake past")
 			gui.request_frame()
 
 		# The level_update partial-present path (top-panel spectrum/level meter)
@@ -57454,6 +57457,7 @@ def main(holder: Holder) -> None:
 
 							pctl.update_shuffle_pool(pctl.multi_playlist[target_pl].uuid_int)
 
+							logging.info("load orders")
 							gui.request_frame()
 							gui.request_tracklist_redraw()
 							if order.notify and gui.message_box and len(tauon.load_orders) == 1:

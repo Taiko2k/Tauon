@@ -1540,6 +1540,7 @@ class _AlbumflowBase(GalleryWidget):
 			return
 		tauon.pctl.playlist_view_position = playlist_position
 		tauon.pctl.selected_in_playlist = playlist_position
+		logging.info("select")
 		tauon.gui.request_tracklist_redraw()
 		if play:
 			tauon.pctl.jump(playlist[playlist_position], playlist_position)
@@ -1554,6 +1555,7 @@ class _AlbumflowBase(GalleryWidget):
 				break
 			target = album_index
 		self.selection = target
+		logging.info("locate")
 		tauon.gui.request_frame()
 
 	def _advance_animation(self, tauon: Tauon) -> None:
@@ -1561,6 +1563,7 @@ class _AlbumflowBase(GalleryWidget):
 		if self._last_frame == 0.0:
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
+		logging.info(now - self._last_frame)
 		self._last_frame = now
 		if self._drag_origin is not None and self._dragged:
 			return
@@ -1649,6 +1652,7 @@ class _AlbumflowBase(GalleryWidget):
 				last = max(0, len(tauon.album_dex) - 1)
 				self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
 				self.selection = round(self.position)
+				logging.info("mouse down drag")
 				tauon.gui.request_frame()
 		if inp.mouse_up and self._drag_origin is not None:
 			if self._dragged:
@@ -1744,6 +1748,7 @@ class AlbumflowWidget(_AlbumflowBase):
 	def _menu_changed(cls) -> None:
 		tauon = cls.menu_tauon
 		if tauon is not None:
+			logging.info("menu change")
 			tauon.gui.request_frame()
 			tauon.custom.save_slots()
 
@@ -1770,7 +1775,8 @@ class AlbumflowWidget(_AlbumflowBase):
 	@staticmethod
 	def _face_turn_factor(distance: float) -> float:
 		"""Smoothly project box depth from face-on to a full side turn."""
-		turn = min(1.0, max(0.0, distance))
+		turn = min(1.0, max(0.0, distance/20.0))
+		# logging.info(f"{distance} produces turn {0.5 - 0.5 * math.cos(math.pi * turn)}")
 		return 0.5 - 0.5 * math.cos(math.pi * turn)
 
 	@staticmethod
@@ -1848,15 +1854,20 @@ class AlbumflowWidget(_AlbumflowBase):
 
 		left_height = front[3][1] - front[0][1]
 		right_height = front[2][1] - front[1][1]
+		width = abs(front[0][0]-front[1][0])
 		box_height = max(left_height, right_height)
 		depth_scale = box_height / max(1.0, art_height)
-		spine_factor = AlbumflowWidget._face_turn_factor(distance)
-		spine_width = max(
-			0.0,
-			box_height * 0.022 * spine_factor,
-		)
+		classic_front[0][0] - classic_front[1][0]
 		if distance >= 9.0:
-			spine_width = max(spine_width, 2.0 * scale)
+			spine_width = box_height * 0.083
+		else:
+			# spine_factor = AlbumflowWidget._face_turn_factor(distance)
+			spine_factor = math.acos( max(1,width/box_height) )
+			spine_width = box_height* 0.083 * spine_factor
+			# max(
+			# 	0.0,
+			# 	box_height * 0.083 * spine_factor,
+			# )
 		if offset < 0:
 			spine = [
 				(front[0][0] - spine_width, front[0][1]),
@@ -2007,7 +2018,7 @@ class AlbumflowWidget(_AlbumflowBase):
 				front_width = front[1][0] - front[0][0]
 				# Keep the full stack treatment, but suppress the bevel more
 				# aggressively while a cover is close to the selected face.
-				bevel_factor = self._face_turn_factor(distance) ** 2
+				bevel_factor = self._face_turn_factor(distance)# ** 2
 				full_bevel_width = max(
 					0.8 * gui.scale,
 					min(front_width * 0.08, 2.4 * gui.scale),
@@ -2900,6 +2911,7 @@ class CustomLayout:
 		gui.pl_st_left = cfg.get("pl_st_left", 16)
 		gui.request_tracklist_redraw()
 		gui.update_layout = True
+		logging.info("columns")
 		gui.request_frame()
 
 	def _activate_columns(self, owner: int | None) -> None:
@@ -2963,6 +2975,7 @@ class CustomLayout:
 		# update_layout_do() runs at the top of the next frame from this flag.
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
+		logging.info("enter")
 		self.gui.request_frame()
 
 	def exit_mode(self) -> None:
@@ -2982,11 +2995,13 @@ class CustomLayout:
 		# copying only the old segment).
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
+		logging.info("exit")
 		self.gui.request_frame()
 
 	def toggle_edit(self) -> None:
 		self.gui.custom_edit = not self.gui.custom_edit
 		self._close_menu()
+		logging.info("toggle edit")
 		self.gui.request_frame()
 
 	# -- tree actions (pure; unit-tested) -----------------------------------
@@ -3223,6 +3238,7 @@ class CustomLayout:
 		self._refresh_layout_menu()
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
+		logging.info("act new slot")
 		self.gui.request_frame()
 
 	def act_delete_slot(self) -> None:
@@ -3380,6 +3396,7 @@ class CustomLayout:
 					self.save_slots()
 					gui.request_tracklist_redraw()
 					gui.update_layout = True
+					logging.info("handle input")
 					gui.request_frame()
 				self._consume(inp)
 				return
