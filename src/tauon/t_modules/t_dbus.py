@@ -101,6 +101,7 @@ class MPRIS(dbus.service.Object):
 			if self.player_properties["PlaybackStatus"] != "Stopped":
 				self.player_properties["PlaybackStatus"] = "Stopped"
 				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
+			self.player_properties["Position"] = dbus.Int64(0)
 		elif self.pctl.playing_state == PlayingState.PAUSED:
 			if self.player_properties["PlaybackStatus"] != "Paused":
 				self.player_properties["PlaybackStatus"] = "Paused"
@@ -300,7 +301,6 @@ class MPRIS(dbus.service.Object):
 		self.pctl.seek_time(position / 1000000)
 
 		self.player_properties["Position"] = dbus.Int64(int(position))
-		self.Seeked(self.pctl.playing_time)
 
 	@dbus.service.method(dbus_interface="org.mpris.MediaPlayer2.Player")
 	def OpenUri(self, uri: str) -> None:
