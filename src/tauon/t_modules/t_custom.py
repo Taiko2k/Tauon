@@ -1574,15 +1574,17 @@ class _AlbumflowBase(GalleryWidget):
 		tauon.gui.request_frame()
 
 	def _handle_input(self, tauon: Tauon, over: bool,
-			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float) -> None:
+			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float, rect: tuple[int, int, int, int]) -> None:
 		inp = tauon.inp
 		if not over or not tauon.is_level_zero(False):
 			if inp.mouse_up:
 				self._drag_origin = None
 			return
 
-		if inp.mouse_wheel:
-			self._wheel_accum -= inp.mouse_wheel
+		scroll = tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+
+		if scroll:
+			self._wheel_accum -= scroll
 			threshold = 0.55 if inp.mouse_wheel_precise else 0.1
 			if abs(self._wheel_accum) >= threshold:
 				steps = max(1, min(3, round(abs(self._wheel_accum))))
@@ -1991,11 +1993,12 @@ class AlbumflowWidget(_AlbumflowBase):
 			key=lambda box: self._painter_key(box[0], self.position),
 		)
 		hit_quads = [(box[0], box[6]) for box in hit_order]
-		mx, my = tauon.inp.mouse_position
+		mx, my = tauon.touch_input_tracker.start_position_px or tauon.inp.mouse_position
 		over = 0 <= mx < w and 0 <= my < h
 		self._open_context_menu(tauon, over)
 		old_position = self.position
-		self._handle_input(tauon, over, hit_quads, art_height)
+
+		self._handle_input(tauon, over, hit_quads, art_height, (x,y,w,h))
 		self._advance_animation(tauon)
 		if self.position != old_position:
 			boxes = build_boxes()

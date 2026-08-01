@@ -1352,6 +1352,7 @@ class Input:
 		self.mouse_up_position:   list[int] = [0, 0]
 		self.touch_position:      list[int] = [0, 0]
 		self.touch_scroll_y:     float = 0
+		self.touch_scroll_x:     float = 0
 		self.touch_active:        bool = False
 		self.touch_released:      bool = False
 		self.active_touch_id = None
@@ -45499,14 +45500,14 @@ class TouchInputTracker:
 		self.is_rightclick: bool = False
 		self.is_dragndrop: bool = False
 		self.is_sideswipe: Literal["", "left", "right"] = ""
-		self.has_moved_vert: bool = False
-		self.has_moved_horz: bool = False
+		self.has_moved_scroll: bool = False
+		self.has_moved_sideswipe: bool = False
 		self.is_gesture: bool = False
 		self.was_gesture: bool = False
 		self.x: int = 0
 		self.y: int = 0
-		self.x_least: int = 100000
-		self.x_most: int = 0
+		self.sideaxis_least: int = 100000
+		self.sideaxis_most: int = 0
 		self.font: int = 20
 		self.Q_halfwidth: int
 		self.Q_halfheight: int # both set when fonts load in
@@ -45524,31 +45525,40 @@ class TouchInputTracker:
 		self.is_rightclick: bool = False
 		self.is_dragndrop: bool = False
 		self.is_sideswipe: Literal["", "left", "right"] = ""
-		self.has_moved_vert: bool = False
-		self.has_moved_horz: bool = False
+		self.has_moved_scroll: bool = False
+		self.has_moved_sideswipe: bool = False
 		self.is_gesture: bool = False
 		self.was_gesture: bool = False
-		self.x_least: int = 100000
-		self.x_most: int = 0
+		self.sideaxis_least: int = 100000
+		self.sideaxis_most: int = 0
 
 		qhw, qhh = self.ddt.get_text_wh("Q", self.font, 3000)
 		self.Q_halfwidth = round(qhw/2)
 		self.Q_halfheight = round(qhh/2)
 
-	def side_swipe(self, x_pos: int) -> None:
-		if x_pos > self.x_most:
-			self.x_most = x_pos
-		if x_pos < self.x_least:
-			self.x_least = x_pos
-		self.x = x_pos
+	def side_swipe(self, new_pos: int, direction_is_normal: bool) -> None:
+		if new_pos > self.sideaxis_most:
+			self.sideaxis_most = new_pos
+		if new_pos < self.sideaxis_least:
+			self.sideaxis_least = new_pos
+		if direction_is_normal:
+			self.x = new_pos
+		else:
+			self.y = new_pos
 
 	def draw_update(self) -> None:
 		if not self.is_down or self.is_scroll or self.is_rightclick or self.is_dragndrop or self.is_gesture or self.was_gesture:
 			return
 		if self.is_sideswipe:
 			err = SCROLL_PHYSICS_MIN_PIXELS*self.gui.scale
-			if self.x <= self.x_least+err <= self.start_position_px[0] and self.is_sideswipe == "left" \
-			or self.x >= self.x_most-err >= self.start_position_px[0] and self.is_sideswipe == "right":
+			if self.is_sideways:
+				axis_pos = self.y
+				axis = 1
+			else:
+				axis_pos = self.x
+				axis = 0
+			if axis_pos <= self.sideaxis_least+err <= self.start_position_px[axis] and self.is_sideswipe == "left" \
+			or axis_pos >= self.sideaxis_most-err >= self.start_position_px[axis] and self.is_sideswipe == "right":
 				# origin marker
 				self.ddt.rect(
 					(
@@ -45621,6 +45631,7 @@ class SmoothScroll:
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
 		self.sideways_scroll_areas: dict[str:tuple[int, int, int, int]] = {}
+		self.sideways_head_counter: dict[str:str] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.scroll_debug_modes: dict[str, str] = {}
 		self.scroll_debug_last_logs: dict[str, float] = {}
@@ -45710,7 +45721,8 @@ class SmoothScroll:
 		if sideways:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
 				self.sideways_scroll_areas[scroll_source] = scroll_area
-			touch_value = self.inp.touch_scroll_x
+			touch_value = -self.inp.touch_scroll_x
+			self.sideways_head_counter[scroll_source] = scroll_source
 		else:
 			touch_value = self.inp.touch_scroll_y
 		touch_scroll = touch_value != 0 and coll_point(self.start_location, scroll_area)
@@ -45731,6 +45743,19 @@ class SmoothScroll:
 			return -self.scroll(scroll_source, coeff)
 		else:
 			return 0.0
+		
+	def ping_sideways_fields(self) -> None:
+		"""We can set certain rects to be side-scrolling: if using touch input, the scroll and swipe-to-queue input axes will be swapped.
+		This is for the Albumflow widget but can be used in the future also. At the end of each frame we check whether or not the scroll check even ran,
+		deleting the entry if not."""
+		temp = []
+		for key in self.sideways_scroll_areas:
+			if self.sideways_head_counter.get(key) is None:
+				temp.append(key)
+		for key in temp:
+			self.sideways_scroll_areas.pop(key, None)
+		self.sideways_head_counter = {}
+		
 
 	def _state(self, source: str) -> ScrollMotionState:
 		if source not in self.physics_states:
@@ -55499,6 +55524,7 @@ def main(holder: Holder) -> None:
 			inp.mouse_wheel = 0
 			inp.mouse_wheel_precise = False
 			inp.touch_scroll_y = 0
+			inp.touch_scroll_x = 0
 			inp.touch_released = False
 			pref_box.scroll = 0
 			gui.new_playlist_cooldown = False
@@ -55971,7 +55997,6 @@ def main(holder: Holder) -> None:
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 					tauon.smooth_scroll.start_location = active_touch.start_position_px
 					if any(coll_point(active_touch.start_position_px, tauon.smooth_scroll.sideways_scroll_areas[area]) for area in tauon.smooth_scroll.sideways_scroll_areas):
-						logging.info("touched a sideways")
 						active_touch.is_sideways = True
 					gui.request_frame()
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
@@ -56003,15 +56028,15 @@ def main(holder: Holder) -> None:
 							mouse_moved = True
 							gui.request_tracklist_redraw()
 
-						elif not (active_touch.has_moved_vert or active_touch.has_moved_horz or active_touch.is_rightclick) \
+						elif not (active_touch.has_moved_scroll or active_touch.has_moved_sideswipe or active_touch.is_rightclick) \
 							and abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
 							or abs(inp.touch_position[0] - active_touch.start_position_px[0]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
-							movement = abs(inp.touch_position[1] - active_touch.start_position_px[1]) > abs(inp.touch_position[0] - active_touch.start_position_px[0])
+							movement = int(abs(inp.touch_position[1] - active_touch.start_position_px[1]) > abs(inp.touch_position[0] - active_touch.start_position_px[0])) + int(not axis) == 1
 							# pick between vertical & horizontal movement when either exceeds threshold
-							active_touch.has_moved_vert = movement
-							active_touch.has_moved_horz = not movement
+							active_touch.has_moved_scroll = movement
+							active_touch.has_moved_sideswipe = not movement
 
-						if active_touch.has_moved_vert:
+						if active_touch.has_moved_scroll:
 							# if touch position has MOVED vertically (scroll),
 							if active_touch.duration_so_far_ns < TOUCH_LOGIC_TAP_VS_LONG_NS and not active_touch.is_scroll:
 								# it could be a scroll input
@@ -56031,7 +56056,7 @@ def main(holder: Holder) -> None:
 								inp.mouse_click = True
 								mouse_moved = True
 
-						elif active_touch.has_moved_horz:
+						elif active_touch.has_moved_sideswipe:
 							# if touch position has moved HORIZONTALLY (side-swipe),
 							if active_touch.is_rightclick:
 								# it could be switching from right click to dragndrop
@@ -56045,8 +56070,8 @@ def main(holder: Holder) -> None:
 							else:
 								# or it could be a proper side swipe
 								if not active_touch.is_sideswipe:
-									active_touch.is_sideswipe = "left" if inp.touch_position[0] - active_touch.start_position_px[0] <= 0 else "right"
-								active_touch.side_swipe(inp.touch_position[0])
+									active_touch.is_sideswipe = "left" if inp.touch_position[int(not axis)] - active_touch.start_position_px[int(not axis)] <= 0 else "right"
+								active_touch.side_swipe(inp.touch_position[int(not axis)], bool(axis))
 								mouse_moved = True
 
 						elif active_touch.duration_so_far_ns > TOUCH_LOGIC_TAP_VS_LONG_NS and not (active_touch.is_rightclick or active_touch.is_dragndrop or active_touch.is_sideswipe):
@@ -56071,9 +56096,11 @@ def main(holder: Holder) -> None:
 								inp.mouse_down = False
 							elif active_touch.is_sideswipe:
 								at = active_touch
+								ax = int(at.is_sideways)
+								compare = at.y if at.is_sideways else at.x
 								err = SCROLL_PHYSICS_MIN_PIXELS*gui.scale
-								if at.x <= at.x_least+err <= at.start_position_px[0] and at.is_sideswipe == "left" \
-								or at.x >= at.x_most-err >= at.start_position_px[0] and at.is_sideswipe == "right":
+								if compare <= at.sideaxis_least+err <= at.start_position_px[ax] and at.is_sideswipe == "left" \
+								or compare >= at.sideaxis_most-err >= at.start_position_px[ax] and at.is_sideswipe == "right":
 									# if user didn't move back towards the center & cancel the input:
 									inp.mouse_position = list(at.start_position_px)
 									inp.middle_click = True
@@ -56456,6 +56483,7 @@ def main(holder: Holder) -> None:
 				inp.mouse_wheel = 0
 				inp.mouse_wheel_precise = False
 				inp.touch_scroll_y = 0
+				inp.touch_scroll_x = 0
 				inp.touch_released = False
 				pref_box.scroll = 0
 				inp.input_text = ""
@@ -59310,6 +59338,7 @@ def main(holder: Holder) -> None:
 							if prefs.album_mode:
 								tauon.goto_album(pctl.playlist_playing_position)
 				tauon.touch_input_tracker.draw_update()
+				tauon.smooth_scroll.ping_sideways_fields()
 			elif gui.mode == GuiMode.MINI:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == MiniModeMode.TAB:
