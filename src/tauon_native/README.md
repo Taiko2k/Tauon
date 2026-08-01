@@ -62,6 +62,7 @@ migrated.
 
 ## Migration boundary
 
-The integer handles in `tauon_native` are deliberately private to the bridge.
-The C++ process remains the sole SDL runtime owner, while Python-owned
-secondary resources are created and destroyed through explicit native calls.
+SDL resources cross the Python boundary as opaque, type-checked capsules; raw
+pointer integers are not part of the Python API. The C++ process remains the
+sole SDL runtime owner, while Python-owned secondary resources are created and
+destroyed through explicit native calls.

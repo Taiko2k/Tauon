@@ -748,23 +748,6 @@ void set_environment(const char* name, const std::string& value) {
 #endif
 }
 
-void configure_python_sdl_loader(const NativeState& state) {
-	if (!state.sdl_library_path.empty()) {
-		set_environment("SDL_BINARY_PATH", state.sdl_library_path.parent_path().string());
-	}
-	// PySDL3 normally installs an atexit handler that enters SDL's Python main
-	// wrapper.  tauon-native already owns the process main function and tears
-	// down the SDL objects after CPython has finalized, so letting that handler
-	// run re-enters SDL during interpreter shutdown and can dereference state
-	// that is already being finalized.
-	set_environment("SDL_MAIN_NOIMPL", "1");
-	set_environment("SDL_FIND_BINARIES", "0");
-	set_environment("SDL_DISABLE_METADATA", "1");
-	set_environment("SDL_CHECK_VERSION", "0");
-	set_environment("SDL_CHECK_BINARY_VERSION", "0");
-	set_environment("SDL_IGNORE_MISSING_FUNCTIONS", "1");
-}
-
 void configure_sdl_metadata() {
 #if defined(__APPLE__)
 	constexpr const char* app_identifier = "com.github.taiko2k.tauonmb";
@@ -849,7 +832,6 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 	}
 	state.sdl_initialised = true;
 	state.sdl_library_path = linked_sdl_library_path();
-	configure_python_sdl_loader(state);
 	state.hidden = has_argument(argc, argv, "--tray");
 
 	// Create hidden even for a normal launch so the compositor never exposes an
@@ -991,7 +973,7 @@ PyObject* bridge_window_address(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's native window is unavailable");
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(g_state->window.get());
+	return PyCapsule_New(g_state->window.get(), "tauon_native.Window", nullptr);
 }
 
 PyObject* bridge_renderer_address(PyObject*, PyObject*) {
@@ -999,7 +981,7 @@ PyObject* bridge_renderer_address(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's native renderer is unavailable");
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(g_state->renderer.get());
+	return PyCapsule_New(g_state->renderer.get(), "tauon_native.Renderer", nullptr);
 }
 
 PyObject* bridge_window_size(PyObject*, PyObject*) {
@@ -1344,83 +1326,6 @@ PyMethodDef bridge_methods[] = {
 	{"open_gamepad", bridge_open_gamepad, METH_O, "Open a gamepad."},
 	{"gamepad_name", bridge_gamepad_name, METH_O, "Return a gamepad name."},
 	{"sdl_version", bridge_sdl_version, METH_NOARGS, "Return the linked SDL version."},
-	{"create_texture", native_create_texture, METH_VARARGS, "Create an SDL texture and return its native handle."},
-	{"create_texture_from_rgba", native_create_texture_from_rgba, METH_VARARGS, "Create a texture from packed RGBA pixels."},
-	{"destroy_texture", native_destroy_texture, METH_O, "Destroy an SDL texture handle."},
-	{"get_render_target", native_get_render_target, METH_O, "Return the current render-target handle."},
-	{"set_render_target", native_set_render_target, METH_VARARGS, "Set the renderer target."},
-	{"set_render_draw_blend_mode", native_set_render_draw_blend_mode, METH_VARARGS, "Set renderer blend mode."},
-	{"set_render_draw_color", native_set_render_draw_color, METH_VARARGS, "Set renderer draw colour."},
-	{"render_clear", native_render_clear, METH_O, "Clear the renderer target."},
-	{"render_fill_rect", native_render_fill_rect, METH_VARARGS, "Fill a rectangle."},
-	{"render_texture", native_render_texture, METH_VARARGS, "Render a texture."},
-	{"set_texture_blend_mode", native_set_texture_blend_mode, METH_VARARGS, "Set texture blend mode."},
-	{"set_texture_scale_mode", native_set_texture_scale_mode, METH_VARARGS, "Set texture scale mode."},
-	{"set_texture_alpha_mod", native_set_texture_alpha_mod, METH_VARARGS, "Set texture alpha modulation."},
-	{"update_texture", native_update_texture, METH_VARARGS, "Upload texture pixels."},
-	{"set_render_clip_rect", native_set_render_clip_rect, METH_VARARGS, "Set renderer clipping."},
-	{"get_window_flags", native_get_window_flags, METH_O, "Return window flags."},
-	{"maximize_window", native_maximize_window, METH_O, "Maximize a window."},
-	{"minimize_window", native_minimize_window, METH_O, "Minimize a window."},
-	{"restore_window", native_restore_window, METH_O, "Restore a window."},
-	{"render_geometry", native_render_geometry, METH_VARARGS, "Render indexed geometry."},
-	{"create_popup_window", native_create_popup_window, METH_VARARGS, "Create a popup window."},
-	{"create_window", native_create_window, METH_VARARGS, "Create an SDL window."},
-	{"create_renderer", native_create_renderer, METH_VARARGS, "Create a renderer for a window."},
-	{"destroy_renderer", native_destroy_renderer, METH_O, "Destroy a renderer."},
-	{"destroy_window", native_destroy_window, METH_O, "Destroy a window."},
-	{"get_window_id", native_get_window_id, METH_O, "Return a window ID."},
-	{"get_window_size", native_get_window_size, METH_VARARGS, "Return logical or pixel window size."},
-	{"set_window_size", native_set_window_size, METH_VARARGS, "Set window size."},
-	{"set_window_position", native_set_window_position, METH_VARARGS, "Set window position."},
-	{"set_window_mouse_grab", native_set_window_mouse_grab, METH_VARARGS, "Set window mouse grab."},
-	{"capture_mouse", native_capture_mouse, METH_O, "Set global mouse capture."},
-	{"show_window", native_show_window, METH_O, "Show a window."},
-	{"hide_window", native_hide_window, METH_O, "Hide a window."},
-	{"raise_window", native_raise_window, METH_O, "Raise a window."},
-	{"render_present", native_render_present, METH_O, "Present a renderer."},
-	{"render_line", native_render_line, METH_VARARGS, "Render a line."},
-	{"get_texture_size", native_get_texture_size, METH_O, "Return texture dimensions."},
-	{"create_texture_from_cairo", native_create_texture_from_cairo, METH_VARARGS, "Upload a Cairo ARGB32/RGB24 buffer."},
-	{"read_render_pixels", native_read_render_pixels, METH_VARARGS, "Read renderer pixels into a Python-owned buffer."},
-	{"compose_blend_mode", native_compose_blend_mode, METH_VARARGS, "Compose an SDL custom blend mode."},
-	{"set_window_minimum_size", native_set_window_minimum_size, METH_VARARGS, "Set minimum window size."},
-	{"set_window_resizable", native_set_window_resizable, METH_VARARGS, "Set resizable state."},
-	{"set_window_bordered", native_set_window_bordered, METH_VARARGS, "Set window borders."},
-	{"set_window_opacity", native_set_window_opacity, METH_VARARGS, "Set window opacity."},
-	{"set_window_always_on_top", native_set_window_always_on_top, METH_VARARGS, "Set always-on-top state."},
-	{"set_window_title", native_set_window_title, METH_VARARGS, "Set window title."},
-	{"set_window_fullscreen", native_set_window_fullscreen, METH_VARARGS, "Set fullscreen state."},
-	{"sync_window", native_sync_window, METH_O, "Synchronize pending window operations."},
-	{"get_window_position", native_get_window_position, METH_O, "Return window position."},
-	{"get_mouse_state", native_get_mouse_state, METH_O, "Return mouse buttons and coordinates."},
-	{"set_texture_color_mod", native_set_texture_color_mod, METH_VARARGS, "Set texture colour modulation."},
-	{"create_system_cursor", native_create_system_cursor, METH_O, "Create a system cursor."},
-	{"set_cursor", native_set_cursor, METH_O, "Set the active cursor."},
-	{"create_color_cursor", native_create_color_cursor, METH_VARARGS, "Create a colour cursor from ARGB pixels."},
-	{"set_window_hit_test", native_set_window_hit_test, METH_VARARGS, "Set a Python window hit-test callback."},
-	{"start_text_input", native_start_text_input, METH_O, "Start text input for a window."},
-	{"stop_text_input", native_stop_text_input, METH_O, "Stop text input for a window."},
-	{"set_text_input_area", native_set_text_input_area, METH_VARARGS, "Set the active text input area."},
-	{"get_display_refresh_rate", native_get_display_refresh_rate, METH_O, "Get the window display refresh rate."},
-	{"create_tray", native_create_tray, METH_VARARGS, "Create a system tray icon."},
-	{"set_tray_icon", native_set_tray_icon, METH_VARARGS, "Update a system tray icon."},
-	{"set_tray_tooltip", native_set_tray_tooltip, METH_VARARGS, "Update a system tray tooltip."},
-	{"create_tray_menu", native_create_tray_menu, METH_O, "Create a tray menu."},
-	{"insert_tray_entry", native_insert_tray_entry, METH_VARARGS, "Insert a tray menu entry."},
-	{"set_tray_entry_callback", native_set_tray_entry_callback, METH_VARARGS, "Set a tray entry callback."},
-	{"destroy_tray", native_destroy_tray, METH_O, "Destroy a tray icon."},
-	{"set_window_icon", native_set_window_icon, METH_VARARGS, "Set a window icon from RGBA pixels."},
-	{"set_window_progress_state", native_set_window_progress_state, METH_VARARGS, "Set taskbar progress state."},
-	{"set_window_progress_value", native_set_window_progress_value, METH_VARARGS, "Set taskbar progress value."},
-	{"video_driver", native_video_driver, METH_NOARGS, "Get the active SDL video driver."},
-	{"flush_renderer", native_flush_renderer, METH_O, "Flush queued renderer commands."},
-	{"render_texture_rotated", native_render_texture_rotated, METH_VARARGS, "Render a rotated texture."},
-	{"gl_get_current_context", native_gl_get_current_context, METH_NOARGS, "Get the current OpenGL context."},
-	{"gl_set_attribute", native_gl_set_attribute, METH_VARARGS, "Set an OpenGL context attribute."},
-	{"gl_create_context", native_gl_create_context, METH_O, "Create an OpenGL context."},
-	{"gl_make_current", native_gl_make_current, METH_VARARGS, "Make an OpenGL context current."},
-	{"create_texture_from_opengl", native_create_texture_from_opengl, METH_VARARGS, "Wrap an OpenGL texture for SDL rendering."},
 	{"set_clipboard_text", bridge_set_clipboard_text, METH_O, "Set UTF-8 text on the system clipboard."},
 	{"get_clipboard_text", bridge_get_clipboard_text, METH_NOARGS, "Get UTF-8 text from the system clipboard."},
 	{"has_clipboard_text", bridge_has_clipboard_text, METH_NOARGS, "Return whether the clipboard contains text."},
@@ -1441,7 +1346,12 @@ PyModuleDef bridge_module = {
 };
 
 PyMODINIT_FUNC PyInit_tauon_native() {
-	return PyModule_Create(&bridge_module);
+	PyObject* module = PyModule_Create(&bridge_module);
+	if (module == nullptr || add_native_render_methods(module) != 0) {
+		Py_XDECREF(module);
+		return nullptr;
+	}
+	return module;
 }
 
 std::filesystem::path source_directory() {
@@ -1579,6 +1489,7 @@ int run_python(NativeState& state, int argc, char** argv) {
 			"from PIL import Image\n"
 			"import tauon\n"
 			"import tauon_native\n"
+			"from tauon.t_modules import t_native\n"
 			"print('Tauon smoke: imports passed', flush=True)\n"
 			"Gtk.Settings.get_default()\n"
 			"print('Tauon smoke: GTK settings passed', flush=True)\n"
@@ -1590,15 +1501,30 @@ int run_python(NativeState& state, int argc, char** argv) {
 			"surface.flush()\n"
 			"surface.finish()\n"
 			"print('Tauon smoke: Cairo and Pango passed', flush=True)\n"
-			"assert os.environ.get('SDL_MAIN_NOIMPL') == '1'\n"
 			"assert tauon_native.owns_instance_lock()\n"
 			"window = tauon_native.window_address()\n"
 			"renderer = tauon_native.renderer_address()\n"
-			"assert window > 0 and renderer > 0\n"
+			"assert type(window).__name__ == 'PyCapsule'\n"
+			"assert type(renderer).__name__ == 'PyCapsule'\n"
+			"try:\n"
+			"    tauon_native.render_clear(window)\n"
+			"except ValueError:\n"
+			"    pass\n"
+			"else:\n"
+			"    raise AssertionError('native handles are not type checked')\n"
 			"assert tauon_native.renderer_name()\n"
+			"t_native.render_fill_rect(renderer, t_native.FRect(0, 0, 1, 1))\n"
+			"event = t_native.Event({'type': 768, 'key': 97, 'window_id': 3})\n"
+			"assert event.key.key == 97 and event.window.windowID == 3\n"
 			"texture = tauon_native.create_texture(renderer, 372645892, 1, 2, 2)\n"
 			"tauon_native.update_texture(texture, None, bytes(16), 8)\n"
 			"tauon_native.destroy_texture(texture)\n"
+			"try:\n"
+			"    tauon_native.destroy_texture(texture)\n"
+			"except ValueError:\n"
+			"    pass\n"
+			"else:\n"
+			"    raise AssertionError('destroyed handles remain usable')\n"
 			"print('Tauon smoke: primary renderer passed', flush=True)\n"
 			"test_window = tauon_native.create_window('Tauon native smoke test', 8, 8, 0x8)\n"
 			"test_renderer = tauon_native.create_renderer(test_window, None)\n"
@@ -1630,10 +1556,7 @@ int run_python(NativeState& state, int argc, char** argv) {
 			exit_code = 1;
 		}
 	}
-	// SDL's Wayland backend can dispatch callbacks registered by PySDL3 while
-	// destroying the renderer and window.  Those callbacks use ctypes, so SDL
-	// must be torn down before Py_FinalizeEx() releases Python's callback
-	// machinery.  Doing this afterwards causes a use-after-finalize segfault.
+	// Destroy SDL resources while Python callbacks are still valid.
 	shutdown_native_sdl(state);
 	g_state = nullptr;
 #if defined(_WIN32)

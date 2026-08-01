@@ -510,7 +510,7 @@ class Deco:
 
 	def unload(self) -> None:
 		for item in self.drawables:
-			sdl3.SDL_DestroyTexture(item.texture)
+			sdl3.destroy_texture(item.texture)
 		self.drawables.clear()
 
 	def load(self, name: str) -> None:
@@ -563,8 +563,8 @@ class Deco:
 		if im.mode != "RGBA":
 			im = im.convert("RGBA")
 		texture = sdl3.create_texture_from_rgba(self.renderer, w, h, im.tobytes())
-		sdl3.SDL_SetTextureAlphaMod(texture, opacity)
-		sdl_rect = sdl3.SDL_FRect(0, 0, w, h)
+		sdl3.set_texture_alpha_mod(texture, opacity)
+		sdl_rect = sdl3.FRect(0, 0, w, h)
 
 		drawable = Drawable()
 		drawable.x = x
@@ -580,7 +580,7 @@ class Deco:
 			d = self.drawables[0]
 			d.rect.x = round(x - int(d.w + round(d.x * self.tauon.gui.scale)))
 			d.rect.y = round(y - int(d.h + round(d.y * self.tauon.gui.scale)))
-			sdl3.SDL_RenderTexture(self.renderer, d.texture, None, d.rect)
+			sdl3.render_texture(self.renderer, d.texture, None, d.rect)
 
 			if pretty_text:
 				ddt.pretty_rect = (d.rect.x, d.rect.y, d.rect.w, d.rect.h)

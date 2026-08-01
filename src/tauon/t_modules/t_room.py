@@ -4,7 +4,7 @@
 
 Implementation notes:
 
-* Everything is drawn with ``SDL_RenderGeometry`` (perspective projection,
+* Everything is drawn with ``render_geometry`` (perspective projection,
   near-plane clipping and painter's-order compositing are done here in
   Python), so it works on the app's existing SDL renderer / OpenGL context
   without touching raw GL state.
@@ -78,7 +78,7 @@ def _lerp(a: float, b: float, f: float) -> float:
 
 
 class _Batch:
-	"""Accumulates screen-space triangles and issues SDL_RenderGeometry calls,
+	"""Accumulates screen-space triangles and issues render_geometry calls,
 	flushing whenever the texture / blend state changes."""
 
 	def __init__(self, renderer) -> None:
@@ -107,12 +107,10 @@ class _Batch:
 			return
 		mode = sdl3.SDL_BLENDMODE_ADD if self.additive else sdl3.SDL_BLENDMODE_BLEND
 		if self.texture is not None:
-			sdl3.SDL_SetTextureBlendMode(self.texture, mode)
+			sdl3.set_texture_blend_mode(self.texture, mode)
 		else:
-			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, mode)
-		sdl3.SDL_RenderGeometry(
-			self.renderer, self.texture, self.verts, len(self.verts), self.idx, len(self.idx)
-		)
+			sdl3.set_render_draw_blend_mode(self.renderer, mode)
+		sdl3.render_geometry(self.renderer, self.texture, self.verts, self.idx)
 		self.verts.clear()
 		self.idx.clear()
 
@@ -283,7 +281,7 @@ class DreamRoom:
 	def _textured_grid(self, corners, uvs, col, texture, nx, ny) -> None:
 		"""Draw a textured quad subdivided into an ``nx`` x ``ny`` grid of cells.
 
-		SDL_RenderGeometry maps textures affinely (no perspective correction), so a
+		render_geometry maps textures affinely (no perspective correction), so a
 		single large quad viewed at an angle warps the texture and bends straight
 		lines. Splitting it into many small cells keeps each cell's affine error
 		below a pixel, so the towers stay straight. ``corners``/``uvs`` are the four
@@ -332,9 +330,9 @@ class DreamRoom:
 
 	def _fill(self, x, y, w, h, col) -> None:
 		r, g, b, a = col
-		sdl3.SDL_SetRenderDrawColor(self.renderer, r, g, b, a)
-		rect = sdl3.SDL_FRect(float(x), float(y), float(w), float(h))
-		sdl3.SDL_RenderFillRect(self.renderer, ctypes.byref(rect))
+		sdl3.set_render_draw_color(self.renderer, r, g, b, a)
+		rect = sdl3.FRect(float(x), float(y), float(w), float(h))
+		sdl3.render_fill_rect(self.renderer, rect)
 
 	def _neon(self, x, y, w, h, col) -> None:
 		r, g, b = col
@@ -346,18 +344,18 @@ class DreamRoom:
 		if self.city_far is not None:
 			return
 		renderer = self.renderer
-		prev_target = sdl3.SDL_GetRenderTarget(renderer)
+		prev_target = sdl3.get_render_target(renderer)
 
 		# --- Far layer: sky gradient, stars, distant towers ---
 		# Width tracks the far quad (94 units, up from the original 34) at the same
 		# texels-per-unit as when fw was 1024, so the wider quad is filled with more
 		# buildings at their original pixel scale rather than stretched (1024*94/34).
 		fw, fh = 2831, 256
-		tex = sdl3.SDL_CreateTexture(
+		tex = sdl3.create_texture(
 			renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, fw, fh)
-		sdl3.SDL_SetTextureScaleMode(tex, sdl3.SDL_SCALEMODE_LINEAR)
-		sdl3.SDL_SetRenderTarget(renderer, tex)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_texture_scale_mode(tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_render_target(renderer, tex)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		rnd = random.Random(1808)
 		horizon = 195
 		stops = [
@@ -377,7 +375,7 @@ class DreamRoom:
 			y = f * horizon
 			self._fill(0, y, fw, horizon / strips + 1, (*col, 255))
 		self._fill(0, horizon, fw, fh - horizon, (7, 6, 16, 255))
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 		for _ in range(round(90 * fw / 1024)):	# stars (count scales with width to keep density)
 			self._fill(rnd.uniform(0, fw), rnd.uniform(0, 140), 1, 1,
 				(200, 210, 255, rnd.randint(30, 110)))
@@ -415,19 +413,19 @@ class DreamRoom:
 		# same texels-per-unit as when nw was 1024, so the silhouette extends with
 		# more buildings at their original pixel scale rather than stretched.
 		nw, nh = 2825, 320
-		tex = sdl3.SDL_CreateTexture(
+		tex = sdl3.create_texture(
 			renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, nw, nh)
-		sdl3.SDL_SetTextureScaleMode(tex, sdl3.SDL_SCALEMODE_LINEAR)
-		sdl3.SDL_SetRenderTarget(renderer, tex)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(renderer)
+		sdl3.set_texture_scale_mode(tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_render_target(renderer, tex)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+		sdl3.render_clear(renderer)
 		x = 0.0
 		while x < nw:
 			bw = rnd.uniform(34, 95)
 			top = rnd.uniform(40, 230) if rnd.random() < 0.75 else rnd.uniform(20, 60)
 			self._fill(x, top, bw, nh - top, (6, 5, 14, 255))
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 			if rnd.random() < 0.6:	# city-glow rim light on the roofline
 				self._fill(x, top, bw, 1, (60, 140, 190, 110))
 			wy = top + 6
@@ -439,9 +437,9 @@ class DreamRoom:
 						self._fill(wx, wy, 3, 2, (*c, rnd.randint(150, 240)))
 					wx += 8
 				wy += 9
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 			x += bw + rnd.uniform(0, 26)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 		for _ in range(round(3 * nw / 1024)):	# large neon signs (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255), (255, 120, 60)])
 			self._neon(rnd.uniform(40, nw - 110), rnd.uniform(70, 220),
@@ -451,8 +449,8 @@ class DreamRoom:
 			self._neon(rnd.uniform(100, nw - 100), rnd.uniform(60, 140), 8, 60, c)
 		self.city_near = tex
 
-		sdl3.SDL_SetRenderTarget(renderer, prev_target)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_target(renderer, prev_target)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 	# --------------------------------------------------------------- animate
 
@@ -524,10 +522,10 @@ class DreamRoom:
 		)
 		self._camera(eye, tgt)
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, *CITY_BACKDROP, 255)
-		sdl3.SDL_RenderClear(renderer)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(renderer, *CITY_BACKDROP, 255)
+		sdl3.render_clear(renderer)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		q = self._quad
 		batch = self.batch
@@ -803,7 +801,7 @@ class DreamRoom:
 		cols_x, cols_y = 10, 6
 		white = (255, 255, 255, 255)
 		main_tex = gui.main_texture
-		sdl3.SDL_SetTextureScaleMode(main_tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_texture_scale_mode(main_tex, sdl3.SDL_SCALEMODE_LINEAR)
 		for j in range(cols_y):
 			fy0, fy1 = j / cols_y, (j + 1) / cols_y
 			py0 = _lerp(sy1, sy0, fy0)
@@ -906,7 +904,7 @@ class DreamRoom:
 			edge((w, h), (w, 0), (w - ew, 0), (w - ew, h), a1)
 			batch.flush()
 
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		# Suppress the visualiser overlay path this frame (it blits fixed-rect
 		# textures straight onto the backbuffer, over the scene)

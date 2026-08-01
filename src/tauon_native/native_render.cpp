@@ -17,7 +17,11 @@ void python_tray_callback(void* userdata, SDL_TrayEntry* entry) {
 	PyObject* callback = static_cast<PyObject*>(userdata);
 	if (callback == nullptr) return;
 	const PyGILState_STATE gil_state = PyGILState_Ensure();
-	PyObject* result = PyObject_CallFunction(callback, "ON", Py_None, PyLong_FromVoidPtr(entry));
+	PyObject* entry_handle = PyCapsule_New(entry, "tauon_native.TrayEntry", nullptr);
+	PyObject* result = entry_handle != nullptr
+		? PyObject_CallFunctionObjArgs(callback, Py_None, entry_handle, nullptr)
+		: nullptr;
+	Py_XDECREF(entry_handle);
 	if (result == nullptr) {
 		PyErr_WriteUnraisable(callback);
 	} else {
@@ -51,46 +55,88 @@ SDL_HitTestResult python_hit_test(SDL_Window*, const SDL_Point* point, void*) {
 }
 
 template<typename T>
+const char* capsule_name();
+
+template<> const char* capsule_name<SDL_Window>() { return "tauon_native.Window"; }
+template<> const char* capsule_name<SDL_Renderer>() { return "tauon_native.Renderer"; }
+template<> const char* capsule_name<SDL_Texture>() { return "tauon_native.Texture"; }
+template<> const char* capsule_name<SDL_Cursor>() { return "tauon_native.Cursor"; }
+template<> const char* capsule_name<SDL_Tray>() { return "tauon_native.Tray"; }
+template<> const char* capsule_name<SDL_TrayMenu>() { return "tauon_native.TrayMenu"; }
+template<> const char* capsule_name<SDL_TrayEntry>() { return "tauon_native.TrayEntry"; }
+template<> const char* capsule_name<SDL_GLContextState>() { return "tauon_native.GLContext"; }
+
+template<typename T>
 T* pointer_from_python(PyObject* value, const char* name, bool allow_none = false) {
 	if (value == Py_None && allow_none) {
 		return nullptr;
 	}
-	void* pointer = PyLong_AsVoidPtr(value);
+	if (!PyCapsule_CheckExact(value)) {
+		PyErr_Format(PyExc_TypeError, "%s must be an opaque native handle", name);
+		return nullptr;
+	}
+	void* pointer = PyCapsule_GetPointer(value, capsule_name<T>());
 	if (pointer == nullptr && !PyErr_Occurred() && !allow_none) {
 		PyErr_Format(PyExc_ValueError, "%s handle is null", name);
 	}
 	return static_cast<T*>(pointer);
 }
 
-PyObject* pointer_to_python(void* pointer) {
+template<typename T>
+PyObject* pointer_to_python(T* pointer) {
 	if (pointer == nullptr) {
 		Py_RETURN_NONE;
 	}
-	return PyLong_FromVoidPtr(pointer);
+	return PyCapsule_New(pointer, capsule_name<T>(), nullptr);
+}
+
+PyObject* invalidate_handle(PyObject* value) {
+	if (value != Py_None && PyCapsule_SetName(value, "tauon_native.Destroyed") != 0) return nullptr;
+	Py_RETURN_NONE;
+}
+
+template<typename Rectangle, typename Convert>
+bool parse_rectangle(PyObject* value, Rectangle& rectangle, Convert convert) {
+	PyObject* sequence = PySequence_Fast(value, "rectangle must be a four-item sequence");
+	PyObject* components[4]{};
+	bool owns_components = false;
+	if (sequence != nullptr && PySequence_Fast_GET_SIZE(sequence) == 4) {
+		for (int index = 0; index < 4; ++index) {
+			components[index] = PySequence_Fast_GET_ITEM(sequence, index);
+		}
+	} else {
+		Py_XDECREF(sequence);
+		sequence = nullptr;
+		PyErr_Clear();
+		constexpr const char* names[] = {"x", "y", "w", "h"};
+		owns_components = true;
+		for (int index = 0; index < 4; ++index) {
+			components[index] = PyObject_GetAttrString(value, names[index]);
+			if (components[index] == nullptr) {
+				for (int cleanup = 0; cleanup < index; ++cleanup) Py_DECREF(components[cleanup]);
+				PyErr_SetString(PyExc_TypeError, "rectangle must provide x, y, w and h");
+				return false;
+			}
+		}
+	}
+
+	rectangle.x = static_cast<decltype(rectangle.x)>(convert(components[0]));
+	rectangle.y = static_cast<decltype(rectangle.y)>(convert(components[1]));
+	rectangle.w = static_cast<decltype(rectangle.w)>(convert(components[2]));
+	rectangle.h = static_cast<decltype(rectangle.h)>(convert(components[3]));
+	if (owns_components) {
+		for (PyObject* component : components) Py_DECREF(component);
+	}
+	Py_XDECREF(sequence);
+	return !PyErr_Occurred();
 }
 
 bool parse_frect(PyObject* value, SDL_FRect& rectangle) {
-	if (!PyTuple_Check(value) || PyTuple_GET_SIZE(value) != 4) {
-		PyErr_SetString(PyExc_TypeError, "rectangle must be a four-item tuple");
-		return false;
-	}
-	rectangle.x = static_cast<float>(PyFloat_AsDouble(PyTuple_GET_ITEM(value, 0)));
-	rectangle.y = static_cast<float>(PyFloat_AsDouble(PyTuple_GET_ITEM(value, 1)));
-	rectangle.w = static_cast<float>(PyFloat_AsDouble(PyTuple_GET_ITEM(value, 2)));
-	rectangle.h = static_cast<float>(PyFloat_AsDouble(PyTuple_GET_ITEM(value, 3)));
-	return !PyErr_Occurred();
+	return parse_rectangle(value, rectangle, PyFloat_AsDouble);
 }
 
 bool parse_rect(PyObject* value, SDL_Rect& rectangle) {
-	if (!PyTuple_Check(value) || PyTuple_GET_SIZE(value) != 4) {
-		PyErr_SetString(PyExc_TypeError, "rectangle must be a four-item tuple");
-		return false;
-	}
-	rectangle.x = static_cast<int>(PyLong_AsLong(PyTuple_GET_ITEM(value, 0)));
-	rectangle.y = static_cast<int>(PyLong_AsLong(PyTuple_GET_ITEM(value, 1)));
-	rectangle.w = static_cast<int>(PyLong_AsLong(PyTuple_GET_ITEM(value, 2)));
-	rectangle.h = static_cast<int>(PyLong_AsLong(PyTuple_GET_ITEM(value, 3)));
-	return !PyErr_Occurred();
+	return parse_rectangle(value, rectangle, PyLong_AsLong);
 }
 
 PyObject* sdl_result(bool success) {
@@ -122,7 +168,7 @@ PyObject* native_create_texture(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(texture);
+	return pointer_to_python(texture);
 }
 
 PyObject* native_create_texture_from_rgba(PyObject*, PyObject* args) {
@@ -152,7 +198,7 @@ PyObject* native_create_texture_from_rgba(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(texture);
+	return pointer_to_python(texture);
 }
 
 PyObject* native_destroy_texture(PyObject*, PyObject* value) {
@@ -161,7 +207,7 @@ PyObject* native_destroy_texture(PyObject*, PyObject* value) {
 		return nullptr;
 	}
 	SDL_DestroyTexture(texture);
-	Py_RETURN_NONE;
+	return invalidate_handle(value);
 }
 
 PyObject* native_get_render_target(PyObject*, PyObject* value) {
@@ -457,7 +503,7 @@ PyObject* native_create_popup_window(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(window);
+	return pointer_to_python(window);
 }
 
 PyObject* native_create_window(PyObject*, PyObject* args) {
@@ -471,7 +517,7 @@ PyObject* native_create_window(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(window);
+	return pointer_to_python(window);
 }
 
 PyObject* native_create_renderer(PyObject*, PyObject* args) {
@@ -485,21 +531,21 @@ PyObject* native_create_renderer(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(renderer);
+	return pointer_to_python(renderer);
 }
 
 PyObject* native_destroy_renderer(PyObject*, PyObject* value) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer", true);
 	if (PyErr_Occurred()) return nullptr;
 	SDL_DestroyRenderer(renderer);
-	Py_RETURN_NONE;
+	return invalidate_handle(value);
 }
 
 PyObject* native_destroy_window(PyObject*, PyObject* value) {
 	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window", true);
 	if (PyErr_Occurred()) return nullptr;
 	SDL_DestroyWindow(window);
-	Py_RETURN_NONE;
+	return invalidate_handle(value);
 }
 
 PyObject* native_get_window_id(PyObject*, PyObject* value) {
@@ -570,6 +616,34 @@ PyObject* native_render_present(PyObject*, PyObject* value) {
 	Py_RETURN_NONE;
 }
 
+PyObject* native_get_render_scale(PyObject*, PyObject* value) {
+	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer");
+	if (renderer == nullptr) return nullptr;
+	float scale_x = 0.0F;
+	float scale_y = 0.0F;
+	if (!SDL_GetRenderScale(renderer, &scale_x, &scale_y)) return sdl_result(false);
+	return Py_BuildValue("(ff)", scale_x, scale_y);
+}
+
+PyObject* native_set_render_scale(PyObject*, PyObject* args) {
+	PyObject* renderer_value = nullptr;
+	float scale_x = 0.0F;
+	float scale_y = 0.0F;
+	if (!PyArg_ParseTuple(args, "Off", &renderer_value, &scale_x, &scale_y)) return nullptr;
+	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(renderer_value, "renderer");
+	if (renderer == nullptr) return nullptr;
+	return sdl_result(SDL_SetRenderScale(renderer, scale_x, scale_y));
+}
+
+PyObject* native_get_error(PyObject*, PyObject*) {
+	return PyUnicode_FromString(SDL_GetError());
+}
+
+PyObject* native_clear_error(PyObject*, PyObject*) {
+	SDL_ClearError();
+	Py_RETURN_NONE;
+}
+
 PyObject* native_render_line(PyObject*, PyObject* args) {
 	PyObject* renderer_value = nullptr;
 	float x1 = 0;
@@ -637,7 +711,7 @@ PyObject* native_create_texture_from_cairo(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(texture);
+	return pointer_to_python(texture);
 }
 
 PyObject* native_read_render_pixels(PyObject*, PyObject* args) {
@@ -767,7 +841,7 @@ PyObject* native_create_system_cursor(PyObject*, PyObject* value) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(cursor);
+	return pointer_to_python(cursor);
 }
 
 PyObject* native_set_cursor(PyObject*, PyObject* value) {
@@ -791,7 +865,7 @@ PyObject* native_create_color_cursor(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(cursor);
+	return pointer_to_python(cursor);
 }
 
 PyObject* native_set_window_hit_test(PyObject*, PyObject* args) {
@@ -860,7 +934,7 @@ PyObject* native_create_tray(PyObject*, PyObject* args) {
 		if (!PyErr_Occurred()) PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(tray);
+	return pointer_to_python(tray);
 }
 
 PyObject* native_set_tray_icon(PyObject*, PyObject* args) {
@@ -896,7 +970,7 @@ PyObject* native_create_tray_menu(PyObject*, PyObject* value) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(menu);
+	return pointer_to_python(menu);
 }
 
 PyObject* native_insert_tray_entry(PyObject*, PyObject* args) {
@@ -913,7 +987,7 @@ PyObject* native_insert_tray_entry(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(entry);
+	return pointer_to_python(entry);
 }
 
 PyObject* native_set_tray_entry_callback(PyObject*, PyObject* args) {
@@ -940,7 +1014,7 @@ PyObject* native_destroy_tray(PyObject*, PyObject* value) {
 	SDL_DestroyTray(tray);
 	for (auto& item : tray_callbacks) Py_DECREF(item.second);
 	tray_callbacks.clear();
-	Py_RETURN_NONE;
+	return invalidate_handle(value);
 }
 
 PyObject* native_set_window_icon(PyObject*, PyObject* args) {
@@ -1051,7 +1125,7 @@ PyObject* native_gl_create_context(PyObject*, PyObject* value) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(context);
+	return pointer_to_python(context);
 }
 
 PyObject* native_gl_make_current(PyObject*, PyObject* args) {
@@ -1084,5 +1158,102 @@ PyObject* native_create_texture_from_opengl(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
-	return PyLong_FromVoidPtr(texture);
+	return pointer_to_python(texture);
 }
+
+#define NATIVE_METHOD(name, function, flags) {name, function, flags, nullptr}
+
+namespace {
+
+PyMethodDef native_render_methods[] = {
+	NATIVE_METHOD("create_texture", native_create_texture, METH_VARARGS),
+	NATIVE_METHOD("create_texture_from_rgba", native_create_texture_from_rgba, METH_VARARGS),
+	NATIVE_METHOD("destroy_texture", native_destroy_texture, METH_O),
+	NATIVE_METHOD("get_render_target", native_get_render_target, METH_O),
+	NATIVE_METHOD("set_render_target", native_set_render_target, METH_VARARGS),
+	NATIVE_METHOD("set_render_draw_blend_mode", native_set_render_draw_blend_mode, METH_VARARGS),
+	NATIVE_METHOD("set_render_draw_color", native_set_render_draw_color, METH_VARARGS),
+	NATIVE_METHOD("render_clear", native_render_clear, METH_O),
+	NATIVE_METHOD("render_fill_rect", native_render_fill_rect, METH_VARARGS),
+	NATIVE_METHOD("render_texture", native_render_texture, METH_VARARGS),
+	NATIVE_METHOD("set_texture_blend_mode", native_set_texture_blend_mode, METH_VARARGS),
+	NATIVE_METHOD("set_texture_scale_mode", native_set_texture_scale_mode, METH_VARARGS),
+	NATIVE_METHOD("set_texture_alpha_mod", native_set_texture_alpha_mod, METH_VARARGS),
+	NATIVE_METHOD("update_texture", native_update_texture, METH_VARARGS),
+	NATIVE_METHOD("set_render_clip_rect", native_set_render_clip_rect, METH_VARARGS),
+	NATIVE_METHOD("get_window_flags", native_get_window_flags, METH_O),
+	NATIVE_METHOD("maximize_window", native_maximize_window, METH_O),
+	NATIVE_METHOD("minimize_window", native_minimize_window, METH_O),
+	NATIVE_METHOD("restore_window", native_restore_window, METH_O),
+	NATIVE_METHOD("render_geometry", native_render_geometry, METH_VARARGS),
+	NATIVE_METHOD("create_popup_window", native_create_popup_window, METH_VARARGS),
+	NATIVE_METHOD("create_window", native_create_window, METH_VARARGS),
+	NATIVE_METHOD("create_renderer", native_create_renderer, METH_VARARGS),
+	NATIVE_METHOD("destroy_renderer", native_destroy_renderer, METH_O),
+	NATIVE_METHOD("destroy_window", native_destroy_window, METH_O),
+	NATIVE_METHOD("get_window_id", native_get_window_id, METH_O),
+	NATIVE_METHOD("get_window_size", native_get_window_size, METH_VARARGS),
+	NATIVE_METHOD("set_window_size", native_set_window_size, METH_VARARGS),
+	NATIVE_METHOD("set_window_position", native_set_window_position, METH_VARARGS),
+	NATIVE_METHOD("set_window_mouse_grab", native_set_window_mouse_grab, METH_VARARGS),
+	NATIVE_METHOD("capture_mouse", native_capture_mouse, METH_O),
+	NATIVE_METHOD("show_window", native_show_window, METH_O),
+	NATIVE_METHOD("hide_window", native_hide_window, METH_O),
+	NATIVE_METHOD("raise_window", native_raise_window, METH_O),
+	NATIVE_METHOD("render_present", native_render_present, METH_O),
+	NATIVE_METHOD("get_render_scale", native_get_render_scale, METH_O),
+	NATIVE_METHOD("set_render_scale", native_set_render_scale, METH_VARARGS),
+	NATIVE_METHOD("get_error", native_get_error, METH_NOARGS),
+	NATIVE_METHOD("clear_error", native_clear_error, METH_NOARGS),
+	NATIVE_METHOD("render_line", native_render_line, METH_VARARGS),
+	NATIVE_METHOD("get_texture_size", native_get_texture_size, METH_O),
+	NATIVE_METHOD("create_texture_from_cairo", native_create_texture_from_cairo, METH_VARARGS),
+	NATIVE_METHOD("read_render_pixels", native_read_render_pixels, METH_VARARGS),
+	NATIVE_METHOD("compose_blend_mode", native_compose_blend_mode, METH_VARARGS),
+	NATIVE_METHOD("set_window_minimum_size", native_set_window_minimum_size, METH_VARARGS),
+	NATIVE_METHOD("set_window_resizable", native_set_window_resizable, METH_VARARGS),
+	NATIVE_METHOD("set_window_bordered", native_set_window_bordered, METH_VARARGS),
+	NATIVE_METHOD("set_window_opacity", native_set_window_opacity, METH_VARARGS),
+	NATIVE_METHOD("set_window_always_on_top", native_set_window_always_on_top, METH_VARARGS),
+	NATIVE_METHOD("set_window_title", native_set_window_title, METH_VARARGS),
+	NATIVE_METHOD("set_window_fullscreen", native_set_window_fullscreen, METH_VARARGS),
+	NATIVE_METHOD("sync_window", native_sync_window, METH_O),
+	NATIVE_METHOD("get_window_position", native_get_window_position, METH_O),
+	NATIVE_METHOD("get_mouse_state", native_get_mouse_state, METH_O),
+	NATIVE_METHOD("set_texture_color_mod", native_set_texture_color_mod, METH_VARARGS),
+	NATIVE_METHOD("create_system_cursor", native_create_system_cursor, METH_O),
+	NATIVE_METHOD("set_cursor", native_set_cursor, METH_O),
+	NATIVE_METHOD("create_color_cursor", native_create_color_cursor, METH_VARARGS),
+	NATIVE_METHOD("set_window_hit_test", native_set_window_hit_test, METH_VARARGS),
+	NATIVE_METHOD("start_text_input", native_start_text_input, METH_O),
+	NATIVE_METHOD("stop_text_input", native_stop_text_input, METH_O),
+	NATIVE_METHOD("set_text_input_area", native_set_text_input_area, METH_VARARGS),
+	NATIVE_METHOD("get_display_refresh_rate", native_get_display_refresh_rate, METH_O),
+	NATIVE_METHOD("create_tray", native_create_tray, METH_VARARGS),
+	NATIVE_METHOD("set_tray_icon", native_set_tray_icon, METH_VARARGS),
+	NATIVE_METHOD("set_tray_tooltip", native_set_tray_tooltip, METH_VARARGS),
+	NATIVE_METHOD("create_tray_menu", native_create_tray_menu, METH_O),
+	NATIVE_METHOD("insert_tray_entry", native_insert_tray_entry, METH_VARARGS),
+	NATIVE_METHOD("set_tray_entry_callback", native_set_tray_entry_callback, METH_VARARGS),
+	NATIVE_METHOD("destroy_tray", native_destroy_tray, METH_O),
+	NATIVE_METHOD("set_window_icon", native_set_window_icon, METH_VARARGS),
+	NATIVE_METHOD("set_window_progress_state", native_set_window_progress_state, METH_VARARGS),
+	NATIVE_METHOD("set_window_progress_value", native_set_window_progress_value, METH_VARARGS),
+	NATIVE_METHOD("video_driver", native_video_driver, METH_NOARGS),
+	NATIVE_METHOD("flush_renderer", native_flush_renderer, METH_O),
+	NATIVE_METHOD("render_texture_rotated", native_render_texture_rotated, METH_VARARGS),
+	NATIVE_METHOD("gl_get_current_context", native_gl_get_current_context, METH_NOARGS),
+	NATIVE_METHOD("gl_set_attribute", native_gl_set_attribute, METH_VARARGS),
+	NATIVE_METHOD("gl_create_context", native_gl_create_context, METH_O),
+	NATIVE_METHOD("gl_make_current", native_gl_make_current, METH_VARARGS),
+	NATIVE_METHOD("create_texture_from_opengl", native_create_texture_from_opengl, METH_VARARGS),
+	{nullptr, nullptr, 0, nullptr},
+};
+
+}  // namespace
+
+int add_native_render_methods(PyObject* module) {
+	return PyModule_AddFunctions(module, native_render_methods);
+}
+
+#undef NATIVE_METHOD

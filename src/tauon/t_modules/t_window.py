@@ -27,7 +27,6 @@
 
 from __future__ import annotations
 
-import ctypes
 import logging
 from typing import TYPE_CHECKING
 
@@ -40,13 +39,8 @@ if TYPE_CHECKING:
 
 
 def renderer_key(renderer: sdl3.LP_SDL_Renderer) -> int:
-	"""Stable integer identity for an SDL renderer pointer.
-
-	Used as a dict key so shared resources (image-asset textures) can be cached
-	per renderer. ctypes pointer objects are not reliably hashable/comparable by
-	address, so we cast to the raw pointer value.
-	"""
-	return ctypes.cast(renderer, ctypes.c_void_p).value or 0
+	"""Return the opaque native renderer identity used by texture caches."""
+	return hash(renderer)
 
 
 class SecondaryWindow:
@@ -88,12 +82,10 @@ class SecondaryWindow:
 	# --- lifecycle -------------------------------------------------------
 
 	def _refresh_scale(self) -> None:
-		pt_w, pt_h = ctypes.c_int(0), ctypes.c_int(0)
-		px_w, px_h = ctypes.c_int(0), ctypes.c_int(0)
-		sdl3.SDL_GetWindowSize(self.parent, ctypes.byref(pt_w), ctypes.byref(pt_h))
-		sdl3.SDL_GetWindowSizeInPixels(self.parent, ctypes.byref(px_w), ctypes.byref(px_h))
-		if self.high_dpi and pt_w.value > 0:
-			self.scale = px_w.value / pt_w.value
+		pt_w, _pt_h = sdl3.get_window_size(self.parent)
+		px_w, _px_h = sdl3.get_window_size_in_pixels(self.parent)
+		if self.high_dpi and pt_w > 0:
+			self.scale = px_w / pt_w
 		else:
 			self.scale = 1.0
 
@@ -116,26 +108,26 @@ class SecondaryWindow:
 			# edge handling we want, against the real screen rather than the
 			# main window bounds.
 			flags |= sdl3.SDL_WINDOW_POPUP_MENU
-			self.window = sdl3.SDL_CreatePopupWindow(
+			self.window = sdl3.create_popup_window(
 				self.parent, self._to_points(offset_x), self._to_points(offset_y),
 				self._to_points(w), self._to_points(h), flags,
 			)
 		else:
 			flags |= sdl3.SDL_WINDOW_BORDERLESS | sdl3.SDL_WINDOW_RESIZABLE
-			self.window = sdl3.SDL_CreateWindow(b"Tauon", self._to_points(w), self._to_points(h), flags)
+			self.window = sdl3.create_window("Tauon", self._to_points(w), self._to_points(h), flags)
 
 		if not self.window:
-			logging.error(f"SecondaryWindow: failed to create window - {sdl3.SDL_GetError()}")
+			logging.error(f"SecondaryWindow: failed to create window - {sdl3.get_error()}")
 			return False
 
-		self.renderer = sdl3.SDL_CreateRenderer(self.window, None)
+		self.renderer = sdl3.create_renderer(self.window, None)
 		if not self.renderer:
-			logging.error(f"SecondaryWindow: failed to create renderer - {sdl3.SDL_GetError()}")
-			sdl3.SDL_DestroyWindow(self.window)
+			logging.error(f"SecondaryWindow: failed to create renderer - {sdl3.get_error()}")
+			sdl3.destroy_window(self.window)
 			self.window = None
 			return False
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		self.ddt = TDraw(self.renderer)
 		self.ddt.scale = self.tauon.ddt.scale
@@ -166,11 +158,11 @@ class SecondaryWindow:
 			# Only touch geometry when it actually changes: Wayland restricts
 			# moving/resizing popup surfaces after they are mapped.
 			if (int(w), int(h)) != (self.w, self.h):
-				sdl3.SDL_SetWindowSize(self.window, self._to_points(w), self._to_points(h))
+				sdl3.set_window_size(self.window, self._to_points(w), self._to_points(h))
 				self.w = int(w)
 				self.h = int(h)
 			if (int(offset_x), int(offset_y)) != self.pos:
-				sdl3.SDL_SetWindowPosition(self.window, self._to_points(offset_x), self._to_points(offset_y))
+				sdl3.set_window_position(self.window, self._to_points(offset_x), self._to_points(offset_y))
 				self.pos = (int(offset_x), int(offset_y))
 
 		if self.ddt is not None:
@@ -181,14 +173,14 @@ class SecondaryWindow:
 		if not self.visible:
 			# Seed the pointer to the popup's top-left until real motion arrives.
 			self.last_local = (0, 0)
-			sdl3.SDL_ShowWindow(self.window)
+			sdl3.show_window(self.window)
 			self.visible = True
 		return True
 
 	def _release_input_grab(self) -> None:
 		"""Release the global mouse capture.
 
-		SDL_CaptureMouse is a *global* capture (not tied to this window), which
+		capture_mouse is a *global* capture (not tied to this window), which
 		SDL acquires during window operations such as resizing. Destroying the
 		window does NOT release it, so it must be released explicitly or the OS
 		keeps routing all mouse events to this window and the main window goes
@@ -196,24 +188,24 @@ class SecondaryWindow:
 		"""
 		# SDL popup windows cannot own a per-window mouse grab. Attempting to
 		# release one raises "Operation invalid on popup windows" on macOS.
-		sdl3.SDL_CaptureMouse(False)
+		sdl3.capture_mouse(False)
 
 	def hide(self) -> None:
 		if self.window is not None and self.visible:
 			self._release_input_grab()
-			sdl3.SDL_HideWindow(self.window)
+			sdl3.hide_window(self.window)
 			# Hiding does not reliably hand input focus back to the parent, so
 			# raise it explicitly.
-			sdl3.SDL_RaiseWindow(self.parent)
+			sdl3.raise_window(self.parent)
 		self.visible = False
 
 	def destroy(self) -> None:
 		self._release_input_grab()
 		if self.renderer is not None:
-			sdl3.SDL_DestroyRenderer(self.renderer)
+			sdl3.destroy_renderer(self.renderer)
 			self.renderer = None
 		if self.window is not None:
-			sdl3.SDL_DestroyWindow(self.window)
+			sdl3.destroy_window(self.window)
 			self.window = None
 		self.ddt = None
 		self.visible = False
@@ -222,16 +214,16 @@ class SecondaryWindow:
 
 	def begin_frame(self, clear: ColourRGBA = ColourRGBA(0, 0, 0, 0)) -> None:
 		"""Make this window's renderer current and clear it."""
-		sdl3.SDL_SetRenderTarget(self.renderer, None)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, clear.r, clear.g, clear.b, clear.a)
-		sdl3.SDL_RenderClear(self.renderer)
+		sdl3.set_render_target(self.renderer, None)
+		sdl3.set_render_draw_color(self.renderer, clear.r, clear.g, clear.b, clear.a)
+		sdl3.render_clear(self.renderer)
 		if self.ddt is not None:
 			self.ddt.new_frame()
 
 	def end_frame(self) -> None:
-		sdl3.SDL_RenderPresent(self.renderer)
+		sdl3.render_present(self.renderer)
 
 	def window_id(self) -> int:
 		if self.window is None:
 			return 0
-		return sdl3.SDL_GetWindowID(self.window)
+		return sdl3.get_window_id(self.window)

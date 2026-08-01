@@ -326,23 +326,23 @@ else:
 
 window_title = t_title.encode("utf-8")
 t_window = _tauon_native.window_address()
-sdl3.SDL_SetWindowBordered(t_window, not draw_border)
-sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+sdl3.set_window_bordered(t_window, not draw_border)
+sdl3.set_window_size(t_window, logical_size[0], logical_size[1])
 
 if old_window_position is not None and not fs_mode:
-	sdl3.SDL_SetWindowPosition(t_window, old_window_position[0], old_window_position[1])
+	sdl3.set_window_position(t_window, old_window_position[0], old_window_position[1])
 
 if maximized:
-	sdl3.SDL_MaximizeWindow(t_window)
+	sdl3.maximize_window(t_window)
 
 logging.debug(f"PATH that will be used for ffmpeg/ffprobe and similar: {os.environ.get('PATH')}")
 renderer = _tauon_native.renderer_address()
 
-sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
+sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+sdl3.set_window_opacity(t_window, window_opacity)
 
-sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-sdl3.SDL_RenderClear(renderer)
+sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+sdl3.render_clear(renderer)
 
 logging.info(f"SDL renderer: {_tauon_native.renderer_name()}")
 
@@ -357,12 +357,12 @@ def draw_loading_screen() -> None:
 
 	def polyline(points: list[tuple[float, float]]) -> None:
 		for start, end in zip(points, points[1:], strict=False):
-			sdl3.SDL_RenderLine(renderer, start[0], start[1], end[0], end[1])
+			sdl3.render_line(renderer, start[0], start[1], end[0], end[1])
 
-	sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-	sdl3.SDL_RenderFillRect(renderer, None)
+	sdl3.set_render_draw_color(renderer, 7, 7, 7, 255)
+	sdl3.render_fill_rect(renderer, None)
 
-	sdl3.SDL_SetRenderDrawColor(renderer, 120, 134, 150, 35)
+	sdl3.set_render_draw_color(renderer, 120, 134, 150, 35)
 	# Boxes tile seamlessly: each box's bottom front edges and right vertical
 	# coincide with its neighbours' top faces and left vertical, so per box only
 	# the top face and the west + south verticals are drawn to avoid doubling up
@@ -382,7 +382,7 @@ def draw_loading_screen() -> None:
 		cy += box_r + box_d
 		row += 1
 
-	sdl3.SDL_RenderPresent(renderer)
+	sdl3.render_present(renderer)
 
 
 draw_loading_screen()

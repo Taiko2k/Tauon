@@ -2,15 +2,11 @@
 
 from __future__ import annotations
 
-import ctypes
-import io
-import logging
-from pathlib import Path
-from ctypes import c_float, c_int, c_void_p
 from dataclasses import dataclass
 
 import tauon_native
-from PIL import Image
+
+from tauon.t_modules.t_image import ImageData
 
 SDL_BLENDMODE_NONE = 0
 SDL_BLENDMODE_BLEND = 1
@@ -89,186 +85,154 @@ SDL_version = 300
 
 
 
-class SDL_FRect(ctypes.Structure):
-	_fields_ = (("x", c_float), ("y", c_float), ("w", c_float), ("h", c_float))
-
-
-class SDL_Rect(ctypes.Structure):
-	_fields_ = (("x", c_int), ("y", c_int), ("w", c_int), ("h", c_int))
+@dataclass(slots=True)
+class FRect:
+	x: float = 0.0
+	y: float = 0.0
+	w: float = 0.0
+	h: float = 0.0
 
 
 @dataclass(slots=True)
-class ImageData:
-	width: int
-	height: int
-	pixels: bytes
+class Rect:
+	x: int = 0
+	y: int = 0
+	w: int = 0
+	h: int = 0
 
 
-LP_SDL_Cursor = int
-LP_SDL_Renderer = int
+class _EventData:
+	__slots__ = ("_fields",)
+
+	_DEFAULTS = {
+		"axis": 0, "button": 0, "data": b"", "data1": 0, "data2": 0,
+		"dy": 0.0, "finger_id": 0, "integer_y": 0, "key": 0,
+		"scancode": 0, "text": b"", "value": 0, "which": 0,
+		"window_id": 0, "x": 0.0, "y": 0.0,
+	}
+
+	def __init__(self, fields: dict[str, object]) -> None:
+		self._fields = fields
+
+	@property
+	def windowID(self) -> int:
+		return int(self._fields.get("window_id", 0))
+
+	@property
+	def fingerID(self) -> int:
+		return int(self._fields.get("finger_id", 0))
+
+	def __getattr__(self, name: str):
+		if name in self._DEFAULTS:
+			return self._fields.get(name, self._DEFAULTS[name])
+		raise AttributeError(name)
+
+
+class Event:
+	"""Lazy view of one native SDL event.
+
+	The legacy UI still uses SDL union-style access such as ``event.key.key``.
+	Returning this same view for each union member preserves that spelling
+	without constructing a tree of temporary namespace objects for every event.
+	"""
+
+	__slots__ = ("_fields", "_data")
+
+	def __init__(self, fields: dict[str, object]) -> None:
+		self._fields = fields
+		self._data = _EventData(fields)
+
+	@property
+	def type(self) -> int:
+		return int(self._fields["type"])
+
+	def __getattr__(self, name: str):
+		if name in {"gdevice", "gaxis", "gbutton", "drop", "edit", "text", "motion",
+				"button", "key", "wheel", "tfinger", "window"}:
+			return self._data
+		raise AttributeError(name)
+
+
+def poll_events():
+	for fields in tauon_native.poll_events():
+		yield Event(fields)
+
+
+LP_SDL_Cursor = object
+LP_SDL_Renderer = object
 LP_SDL_Surface = ImageData
-LP_SDL_Texture = int
-LP_SDL_Tray = int
-LP_SDL_Window = int
+LP_SDL_Texture = object
+LP_SDL_Tray = object
+LP_SDL_Window = object
 SDL_Scancode = int
 
 
-def _handle(value) -> int | None:
-	if value is None:
-		return None
-	if isinstance(value, int):
-		return value
-	return ctypes.cast(value, c_void_p).value
-
-
-def _rectangle(value) -> tuple[float, float, float, float] | None:
-	if value is None:
-		return None
-	if not hasattr(value, "x") and hasattr(value, "_obj"):
-		value = value._obj
-	return value.x, value.y, value.w, value.h
-
-
-def _integer_rectangle(value) -> tuple[int, int, int, int] | None:
-	rectangle = _rectangle(value)
-	if rectangle is None:
-		return None
-	return tuple(int(component) for component in rectangle)
-
-
-def SDL_CreateTexture(renderer, pixel_format: int, access: int, width: int, height: int) -> int:
-	return tauon_native.create_texture(_handle(renderer), pixel_format, access, width, height)
+def create_texture(renderer, pixel_format: int, access: int, width: int, height: int) -> int:
+	return tauon_native.create_texture(renderer, pixel_format, access, width, height)
 
 
 def create_texture_from_rgba(renderer, width: int, height: int, pixels) -> int:
-	return tauon_native.create_texture_from_rgba(_handle(renderer), width, height, pixels)
+	return tauon_native.create_texture_from_rgba(renderer, width, height, pixels)
 
 
-def SDL_CreateTextureFromSurface(renderer, surface: ImageData) -> int:
+def create_texture_from_surface(renderer, surface: ImageData) -> int:
 	return create_texture_from_rgba(renderer, surface.width, surface.height, surface.pixels)
 
 
-def SDL_DestroySurface(surface: ImageData | None) -> None:
-	del surface
-
-
-def SDL_CreateSurfaceFrom(width: int, height: int, _format: int, pixels, pitch: int) -> ImageData:
-	del _format
-	if isinstance(pixels, (bytes, bytearray, memoryview)):
-		data = bytes(pixels)
-	else:
-		data = ctypes.string_at(pixels, pitch * height)
-	if pitch != width * 4:
-		data = b"".join(data[row * pitch:row * pitch + width * 4] for row in range(height))
-	return ImageData(width, height, data)
-
-
-def SDL_CreateColorCursor(surface: ImageData, hot_x: int, hot_y: int) -> int:
+def create_color_cursor_from_surface(surface: ImageData, hot_x: int, hot_y: int) -> int:
 	return create_color_cursor(surface.width, surface.height, surface.pixels, hot_x, hot_y)
 
 
-def SDL_DestroyTexture(texture) -> None:
-	tauon_native.destroy_texture(_handle(texture))
+destroy_texture = tauon_native.destroy_texture
+get_render_target = tauon_native.get_render_target
 
 
-def SDL_GetRenderTarget(renderer) -> int | None:
-	return tauon_native.get_render_target(_handle(renderer))
-
-
-def SDL_GetRendererName(renderer) -> str:
+def get_renderer_name(renderer) -> str:
 	del renderer
 	return tauon_native.renderer_name()
 
 
-def SDL_GetError() -> str:
-	return "native SDL operation failed"
+get_error = tauon_native.get_error
+set_render_target = tauon_native.set_render_target
+set_render_draw_blend_mode = tauon_native.set_render_draw_blend_mode
+set_render_draw_color = tauon_native.set_render_draw_color
+render_clear = tauon_native.render_clear
+render_fill_rect = tauon_native.render_fill_rect
+render_texture = tauon_native.render_texture
+set_texture_blend_mode = tauon_native.set_texture_blend_mode
+set_texture_scale_mode = tauon_native.set_texture_scale_mode
 
 
-def SDL_SetRenderTarget(renderer, texture) -> None:
-	tauon_native.set_render_target(_handle(renderer), _handle(texture))
+set_texture_alpha_mod = tauon_native.set_texture_alpha_mod
+set_texture_color_mod = tauon_native.set_texture_color_mod
+flush_renderer = tauon_native.flush_renderer
 
 
-def SDL_SetRenderDrawBlendMode(renderer, mode: int) -> None:
-	tauon_native.set_render_draw_blend_mode(_handle(renderer), mode)
-
-
-def SDL_SetRenderDrawColor(renderer, red: int, green: int, blue: int, alpha: int) -> None:
-	tauon_native.set_render_draw_color(_handle(renderer), red, green, blue, alpha)
-
-
-def SDL_RenderClear(renderer) -> None:
-	tauon_native.render_clear(_handle(renderer))
-
-
-def SDL_RenderFillRect(renderer, rectangle) -> None:
-	tauon_native.render_fill_rect(_handle(renderer), _rectangle(rectangle))
-
-
-def SDL_RenderTexture(renderer, texture, source, destination) -> None:
-	tauon_native.render_texture(_handle(renderer), _handle(texture), _rectangle(source), _rectangle(destination))
-
-
-def SDL_SetTextureBlendMode(texture, mode: int) -> bool:
-	tauon_native.set_texture_blend_mode(_handle(texture), mode)
-	return True
-
-
-def SDL_SetTextureScaleMode(texture, mode: int) -> None:
-	tauon_native.set_texture_scale_mode(_handle(texture), mode)
-
-
-def SDL_SetTextureAlphaMod(texture, alpha: int) -> None:
-	if hasattr(alpha, "value"):
-		alpha = alpha.value
-	tauon_native.set_texture_alpha_mod(_handle(texture), alpha)
-
-
-def SDL_SetTextureColorMod(texture, red: int, green: int, blue: int) -> None:
-	tauon_native.set_texture_color_mod(_handle(texture), red, green, blue)
-
-
-def SDL_FlushRenderer(renderer) -> None:
-	tauon_native.flush_renderer(_handle(renderer))
-
-
-def SDL_RenderTextureRotated(renderer, texture, source, destination, angle: float, center, flip: int) -> None:
+def render_texture_rotated(renderer, texture, source, destination, angle: float, center, flip: int) -> None:
 	center_tuple = None if center is None else (center.x, center.y)
 	tauon_native.render_texture_rotated(
-		_handle(renderer), _handle(texture), _rectangle(source), _rectangle(destination), angle, center_tuple, flip
+		renderer, texture, source, destination, angle, center_tuple, flip
 	)
 
 
-def SDL_ClearError() -> None:
-	return None
+clear_error = tauon_native.clear_error
+gl_get_current_context = tauon_native.gl_get_current_context
+gl_set_attribute = tauon_native.gl_set_attribute
+gl_create_context = tauon_native.gl_create_context
+gl_make_current = tauon_native.gl_make_current
 
 
-def SDL_GL_GetCurrentContext():
-	return tauon_native.gl_get_current_context()
-
-
-def SDL_GL_SetAttribute(attribute: int, value: int) -> None:
-	tauon_native.gl_set_attribute(attribute, value)
-
-
-def SDL_GL_CreateContext(window):
-	return tauon_native.gl_create_context(_handle(window))
-
-
-def SDL_GL_MakeCurrent(window, context) -> None:
-	tauon_native.gl_make_current(_handle(window), _handle(context))
-
-
-def SDL_CreateProperties() -> dict[str, int]:
+def create_properties() -> dict[str, int]:
 	return {}
 
 
-def SDL_SetNumberProperty(properties: dict[str, int], name: str, value: int) -> None:
+def set_number_property(properties: dict[str, int], name: str, value: int) -> None:
 	properties[name] = value
 
 
-def SDL_CreateTextureWithProperties(renderer, properties: dict[str, int]) -> int:
+def create_texture_with_properties(renderer, properties: dict[str, int]) -> int:
 	return tauon_native.create_texture_from_opengl(
-		_handle(renderer),
+		renderer,
 		properties[SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER],
 		properties[SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER],
 		properties[SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER],
@@ -276,386 +240,158 @@ def SDL_CreateTextureWithProperties(renderer, properties: dict[str, int]) -> int
 	)
 
 
-def IMG_Load(path) -> ImageData:
-	if hasattr(path, "value"):
-		path = path.value
-	if isinstance(path, bytes):
-		path = path.decode("utf-8")
-	path = Path(path)
-	if not path.is_file() and path.parent.name == "scaled-icons":
-		unscaled = Path(__file__).resolve().parent.parent / "assets" / path.name
-		if unscaled.is_file():
-			path = unscaled
-	if not path.is_file():
-		logging.warning("Native image loader could not find %s; using a transparent placeholder", path)
-		return ImageData(1, 1, bytes(4))
-	if path.suffix.lower() == ".svg":
-		import cairo
-		from gi import require_version
+update_texture = tauon_native.update_texture
+set_render_clip_rect = tauon_native.set_render_clip_rect
+get_window_flags = tauon_native.get_window_flags
+maximize_window = tauon_native.maximize_window
+minimize_window = tauon_native.minimize_window
+restore_window = tauon_native.restore_window
+render_geometry = tauon_native.render_geometry
+create_popup_window = tauon_native.create_popup_window
 
-		require_version("Rsvg", "2.0")
-		from gi.repository import Rsvg
 
-		svg = Rsvg.Handle.new_from_file(str(path))
-		width = max(1, round(svg.props.width))
-		height = max(1, round(svg.props.height))
-		surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height)
-		context = cairo.Context(surface)
-		viewport = Rsvg.Rectangle()
-		viewport.x, viewport.y, viewport.width, viewport.height = 0, 0, width, height
-		svg.render_document(context, viewport)
-		encoded = io.BytesIO()
-		surface.write_to_png(encoded)
-		encoded.seek(0)
-		with Image.open(encoded) as image:
-			rgba = image.convert("RGBA")
-			return ImageData(rgba.width, rgba.height, rgba.tobytes())
-	with Image.open(path) as image:
-		if image.mode != "RGBA":
-			image = image.convert("RGBA")
-		return ImageData(image.width, image.height, image.tobytes())
+create_window = tauon_native.create_window
+create_renderer = tauon_native.create_renderer
+destroy_renderer = tauon_native.destroy_renderer
+destroy_window = tauon_native.destroy_window
+get_window_id = tauon_native.get_window_id
 
 
-def IMG_Quit() -> None:
-	pass
+def get_window_size(window) -> tuple[int, int]:
+	return tauon_native.get_window_size(window, False)
 
 
-def SDL_UpdateTexture(texture, rectangle, pixels, pitch: int) -> None:
-	tauon_native.update_texture(_handle(texture), _integer_rectangle(rectangle), pixels, pitch)
+def get_window_size_in_pixels(window) -> tuple[int, int]:
+	return tauon_native.get_window_size(window, True)
 
 
-def SDL_SetRenderClipRect(renderer, rectangle) -> None:
-	tauon_native.set_render_clip_rect(_handle(renderer), _integer_rectangle(rectangle))
+set_window_size = tauon_native.set_window_size
+set_window_position = tauon_native.set_window_position
+set_window_mouse_grab = tauon_native.set_window_mouse_grab
+capture_mouse = tauon_native.capture_mouse
+show_window = tauon_native.show_window
+hide_window = tauon_native.hide_window
+raise_window = tauon_native.raise_window
+render_present = tauon_native.render_present
+get_render_scale = tauon_native.get_render_scale
+set_render_scale = tauon_native.set_render_scale
+set_window_minimum_size = tauon_native.set_window_minimum_size
+set_window_resizable = tauon_native.set_window_resizable
+set_window_bordered = tauon_native.set_window_bordered
+set_window_opacity = tauon_native.set_window_opacity
+set_window_always_on_top = tauon_native.set_window_always_on_top
 
 
-def SDL_GetWindowFlags(window) -> int:
-	return tauon_native.get_window_flags(_handle(window))
+set_window_title = tauon_native.set_window_title
+set_window_fullscreen = tauon_native.set_window_fullscreen
+sync_window = tauon_native.sync_window
+get_window_position = tauon_native.get_window_position
 
 
-def SDL_MaximizeWindow(window) -> None:
-	tauon_native.maximize_window(_handle(window))
+def get_mouse_state() -> tuple[int, float, float]:
+	return tauon_native.get_mouse_state(False)
 
 
-def SDL_MinimizeWindow(window) -> None:
-	tauon_native.minimize_window(_handle(window))
+def get_global_mouse_state() -> tuple[int, float, float]:
+	return tauon_native.get_mouse_state(True)
 
 
-def SDL_RestoreWindow(window) -> None:
-	tauon_native.restore_window(_handle(window))
+create_system_cursor = tauon_native.create_system_cursor
+set_cursor = tauon_native.set_cursor
+create_color_cursor = tauon_native.create_color_cursor
+set_window_hit_test = tauon_native.set_window_hit_test
 
 
-def SDL_RenderGeometry(renderer, texture, vertices, vertex_count: int, indices, index_count: int) -> None:
-	del vertex_count, index_count
-	tauon_native.render_geometry(_handle(renderer), _handle(texture), vertices, indices)
+def set_window_icon(window, icon: ImageData) -> None:
+	tauon_native.set_window_icon(window, icon.width, icon.height, icon.pixels)
 
 
-def SDL_CreatePopupWindow(parent, x: int, y: int, width: int, height: int, flags: int) -> int:
-	return tauon_native.create_popup_window(_handle(parent), x, y, width, height, flags)
+set_window_progress_state = tauon_native.set_window_progress_state
+set_window_progress_value = tauon_native.set_window_progress_value
+start_text_input = tauon_native.start_text_input
+stop_text_input = tauon_native.stop_text_input
+set_text_input_area = tauon_native.set_text_input_area
+get_display_refresh_rate = tauon_native.get_display_refresh_rate
 
 
-def SDL_CreateWindow(title, width: int, height: int, flags: int) -> int:
-	if isinstance(title, bytes):
-		title = title.decode("utf-8")
-	return tauon_native.create_window(title, width, height, flags)
-
-
-def SDL_CreateRenderer(window, name=None) -> int:
-	if isinstance(name, bytes):
-		name = name.decode("utf-8")
-	return tauon_native.create_renderer(_handle(window), name)
-
-
-def SDL_DestroyRenderer(renderer) -> None:
-	tauon_native.destroy_renderer(_handle(renderer))
-
-
-def SDL_DestroyWindow(window) -> None:
-	tauon_native.destroy_window(_handle(window))
-
-
-def SDL_GetWindowID(window) -> int:
-	return tauon_native.get_window_id(_handle(window))
-
-
-def _set_output(pointer, value: int) -> None:
-	if pointer is not None:
-		if hasattr(pointer, "_obj"):
-			pointer._obj.value = value
-		else:
-			pointer.contents.value = value
-
-
-def SDL_GetWindowSize(window, width, height) -> None:
-	w, h = tauon_native.get_window_size(_handle(window), False)
-	_set_output(width, w)
-	_set_output(height, h)
-
-
-def SDL_GetWindowSizeInPixels(window, width, height) -> None:
-	w, h = tauon_native.get_window_size(_handle(window), True)
-	_set_output(width, w)
-	_set_output(height, h)
-
-
-def SDL_SetWindowSize(window, width: int, height: int) -> None:
-	tauon_native.set_window_size(_handle(window), width, height)
-
-
-def SDL_SetWindowPosition(window, x: int, y: int) -> None:
-	tauon_native.set_window_position(_handle(window), x, y)
-
-
-def SDL_SetWindowMouseGrab(window, enabled: bool) -> None:
-	tauon_native.set_window_mouse_grab(_handle(window), enabled)
-
-
-def SDL_CaptureMouse(enabled: bool) -> None:
-	tauon_native.capture_mouse(enabled)
-
-
-def SDL_ShowWindow(window) -> None:
-	tauon_native.show_window(_handle(window))
-
-
-def SDL_HideWindow(window) -> None:
-	tauon_native.hide_window(_handle(window))
-
-
-def SDL_RaiseWindow(window) -> None:
-	tauon_native.raise_window(_handle(window))
-
-
-def SDL_RenderPresent(renderer) -> None:
-	tauon_native.render_present(_handle(renderer))
-
-
-def SDL_SetWindowMinimumSize(window, width: int, height: int) -> None:
-	tauon_native.set_window_minimum_size(_handle(window), width, height)
-
-
-SDLSetWindowMinimumSize = SDL_SetWindowMinimumSize
-
-
-def SDL_SetWindowResizable(window, enabled: bool) -> None:
-	tauon_native.set_window_resizable(_handle(window), enabled)
-
-
-def SDL_SetWindowBordered(window, enabled: bool) -> None:
-	tauon_native.set_window_bordered(_handle(window), enabled)
-
-
-def SDL_SetWindowOpacity(window, opacity: float) -> None:
-	tauon_native.set_window_opacity(_handle(window), opacity)
-
-
-def SDL_SetWindowAlwaysOnTop(window, enabled: bool) -> None:
-	tauon_native.set_window_always_on_top(_handle(window), enabled)
-
-
-def SDL_SetWindowTitle(window, title) -> None:
-	if isinstance(title, bytes):
-		title = title.decode("utf-8", errors="replace")
-	tauon_native.set_window_title(_handle(window), title)
-
-
-def SDL_SetWindowFullscreen(window, enabled: bool) -> None:
-	tauon_native.set_window_fullscreen(_handle(window), enabled)
-
-
-def SDL_SetWindowFullscreenMode(window, mode) -> None:
-	del window, mode
-
-
-def SDL_SyncWindow(window) -> None:
-	tauon_native.sync_window(_handle(window))
-
-
-def SDL_GetWindowPosition(window, x, y) -> None:
-	position_x, position_y = tauon_native.get_window_position(_handle(window))
-	_set_output(x, position_x)
-	_set_output(y, position_y)
-
-
-def _mouse_state(global_state: bool, x, y) -> int:
-	buttons, position_x, position_y = tauon_native.get_mouse_state(global_state)
-	_set_output(x, position_x)
-	_set_output(y, position_y)
-	return buttons
-
-
-def SDL_GetMouseState(x, y) -> int:
-	return _mouse_state(False, x, y)
-
-
-def SDL_GetGlobalMouseState(x, y) -> int:
-	return _mouse_state(True, x, y)
-
-
-def SDL_CreateSystemCursor(cursor_id: int) -> int:
-	return tauon_native.create_system_cursor(cursor_id)
-
-
-def SDL_SetCursor(cursor) -> None:
-	tauon_native.set_cursor(_handle(cursor))
-
-
-def create_color_cursor(width: int, height: int, pixels, hot_x: int, hot_y: int) -> int:
-	return tauon_native.create_color_cursor(width, height, pixels, hot_x, hot_y)
-
-
-def SDL_SetWindowHitTest(window, callback, _data=None) -> None:
-	tauon_native.set_window_hit_test(_handle(window), callback)
-
-
-def SDL_SetWindowIcon(window, icon: ImageData) -> None:
-	tauon_native.set_window_icon(_handle(window), icon.width, icon.height, icon.pixels)
-
-
-def SDL_SetWindowProgressState(window, state: int) -> None:
-	tauon_native.set_window_progress_state(_handle(window), state)
-
-
-def SDL_SetWindowProgressValue(window, value: float) -> None:
-	tauon_native.set_window_progress_value(_handle(window), value)
-
-
-def SDL_StartTextInput(window) -> None:
-	tauon_native.start_text_input(_handle(window))
-
-
-def SDL_StopTextInput(window) -> None:
-	tauon_native.stop_text_input(_handle(window))
-
-
-def SDL_SetTextInputArea(window, rectangle, cursor: int) -> None:
-	tauon_native.set_text_input_area(_handle(window), _integer_rectangle(rectangle), cursor)
-
-
-def get_display_refresh_rate(window) -> float:
-	return tauon_native.get_display_refresh_rate(_handle(window))
-
-
-def SDL_CreateTray(icon: ImageData, tooltip) -> int:
+def create_tray(icon: ImageData, tooltip) -> int:
 	return tauon_native.create_tray(icon.width, icon.height, icon.pixels, _text(tooltip))
 
 
-def SDL_SetTrayIcon(tray, icon: ImageData) -> None:
-	tauon_native.set_tray_icon(_handle(tray), icon.width, icon.height, icon.pixels)
+def set_tray_icon(tray, icon: ImageData) -> None:
+	tauon_native.set_tray_icon(tray, icon.width, icon.height, icon.pixels)
 
 
-def SDL_SetTrayTooltip(tray, tooltip) -> None:
-	tauon_native.set_tray_tooltip(_handle(tray), _text(tooltip))
+def set_tray_tooltip(tray, tooltip) -> None:
+	tauon_native.set_tray_tooltip(tray, _text(tooltip))
 
 
-def SDL_CreateTrayMenu(tray) -> int:
-	return tauon_native.create_tray_menu(_handle(tray))
+create_tray_menu = tauon_native.create_tray_menu
 
 
-def SDL_InsertTrayEntryAt(menu, position: int, label, flags: int) -> int:
-	return tauon_native.insert_tray_entry(_handle(menu), position, None if label is None else _text(label), flags)
+def insert_tray_entry(menu, position: int, label, flags: int) -> int:
+	return tauon_native.insert_tray_entry(menu, position, None if label is None else _text(label), flags)
 
 
-def SDL_TrayCallback(callback):
-	return callback
-
-
-def SDL_SetTrayEntryCallback(entry, callback, _userdata=None) -> None:
-	tauon_native.set_tray_entry_callback(_handle(entry), callback)
-
-
-def SDL_DestroyTray(tray) -> None:
-	tauon_native.destroy_tray(_handle(tray))
+set_tray_entry_callback = tauon_native.set_tray_entry_callback
+destroy_tray = tauon_native.destroy_tray
 
 
 def _text(value) -> str:
 	return value.decode("utf-8", errors="surrogateescape") if isinstance(value, bytes) else value
 
 
-def SDL_GetKeyFromName(name) -> int:
+def get_key_from_name(name) -> int:
 	return tauon_native.key_from_name(_text(name))
 
 
-def SDL_GetScancodeFromName(name) -> int:
+def get_scancode_from_name(name) -> int:
 	return tauon_native.scancode_from_name(_text(name))
 
 
-def SDL_InitSubSystem(flags: int) -> None:
-	tauon_native.init_subsystem(flags)
+init_subsystem = tauon_native.init_subsystem
+pump_events = tauon_native.pump_events
+is_gamepad = tauon_native.is_gamepad
+open_gamepad = tauon_native.open_gamepad
 
 
-def SDL_PumpEvents() -> None:
-	tauon_native.pump_events()
-
-
-def SDL_IsGamepad(identifier: int) -> bool:
-	return tauon_native.is_gamepad(identifier)
-
-
-def SDL_OpenGamepad(identifier: int) -> int:
-	return tauon_native.open_gamepad(identifier)
-
-
-def SDL_GetGamepadNameForID(identifier: int) -> bytes | None:
+def get_gamepad_name(identifier: int) -> bytes | None:
 	name = tauon_native.gamepad_name(identifier)
 	return name.encode("utf-8") if name is not None else None
 
 
-def SDL_GetVersion() -> int:
-	return tauon_native.sdl_version()
+get_version = tauon_native.sdl_version
 
 
-def SDL_GetCurrentVideoDriver() -> bytes | None:
+def get_current_video_driver() -> bytes | None:
 	driver = tauon_native.video_driver()
 	return driver.encode("utf-8") if driver is not None else None
 
 
-def SDL_SetClipboardText(text) -> None:
+def set_clipboard_text(text) -> None:
 	tauon_native.set_clipboard_text(_text(text))
 
 
-def SDL_GetClipboardText() -> bytes:
+def get_clipboard_text() -> bytes:
 	return tauon_native.get_clipboard_text().encode("utf-8", errors="surrogateescape")
 
 
-def SDL_HasClipboardText() -> bool:
-	return tauon_native.has_clipboard_text()
-
-
-def SDL_GetWindowProperties(window):
-	del window
-	return None
-
-
-def SDL_GetPointerProperty(properties, name, default=None):
-	del properties, name
-	return default
-
-
-def SDL_RenderLine(renderer, x1: float, y1: float, x2: float, y2: float) -> None:
-	tauon_native.render_line(_handle(renderer), x1, y1, x2, y2)
-
-
-def SDL_GetTextureSize(texture, width, height) -> None:
-	w, h = get_texture_size(texture)
-	_set_output(width, w)
-	_set_output(height, h)
-
-
-def get_texture_size(texture) -> tuple[float, float]:
-	return tauon_native.get_texture_size(_handle(texture))
+has_clipboard_text = tauon_native.has_clipboard_text
+render_line = tauon_native.render_line
+get_texture_size = tauon_native.get_texture_size
 
 
 def create_texture_from_cairo(renderer, width: int, height: int, pitch: int, pixels, alpha: bool, colour_key=None):
 	return tauon_native.create_texture_from_cairo(
-		_handle(renderer), width, height, pitch, pixels, alpha, colour_key
+		renderer, width, height, pitch, pixels, alpha, colour_key
 	)
 
 
 def read_render_pixels(renderer, rectangle, alpha: bool) -> tuple[bytes, int]:
-	return tauon_native.read_render_pixels(_handle(renderer), _integer_rectangle(rectangle), alpha)
+	return tauon_native.read_render_pixels(renderer, rectangle, alpha)
 
 
-def SDL_ComposeCustomBlendMode(
+def compose_custom_blend_mode(
 	source_colour: int,
 	destination_colour: int,
 	colour_operation: int,

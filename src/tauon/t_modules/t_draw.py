@@ -28,6 +28,7 @@ from PIL import Image
 
 from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_extra import ColourRGBA, Timer, alpha_blend, coll_rect
+from tauon.t_modules.t_image import ImageData
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -65,7 +66,7 @@ class QuickThumbnail:
 		self.renderer = tauon.renderer
 		self.items: list[QuickThumbnail] = []
 		self.queue: list[QuickThumbnail] = []
-		self.rect = sdl3.SDL_FRect(0.0, 0.0)
+		self.rect = sdl3.FRect(0.0, 0.0)
 		self.texture = None
 		self.surface = None
 		self.size = 50
@@ -74,10 +75,9 @@ class QuickThumbnail:
 
 	def destruct(self) -> None:
 		if self.surface:
-			sdl3.SDL_DestroySurface(self.surface)
 			self.surface = None
 		if self.texture:
-			sdl3.SDL_DestroyTexture(self.texture)
+			sdl3.destroy_texture(self.texture)
 			self.texture = None
 		self.alive = False
 
@@ -93,8 +93,7 @@ class QuickThumbnail:
 		self.alive = True
 
 	def prime(self) -> None:
-		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
-		sdl3.SDL_DestroySurface(self.surface)
+		texture = sdl3.create_texture_from_surface(self.renderer, self.surface)
 		self.surface = None
 		self.rect.w, self.rect.h = sdl3.get_texture_size(texture)
 		self.texture = texture
@@ -112,7 +111,7 @@ class QuickThumbnail:
 			self.prime()
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.rect)
+		sdl3.render_texture(self.renderer, self.texture, None, self.rect)
 
 		return True
 
@@ -128,11 +127,11 @@ class TDraw:
 		self.force_subpixel_text = False
 
 		# Drawing
-		self.sdlrect = sdl3.SDL_FRect(10.0, 10.0, 10.0, 10.0)
+		self.sdlrect = sdl3.FRect(10.0, 10.0, 10.0, 10.0)
 
 		# Text and Fonts
-		self.source_rect = sdl3.SDL_FRect(0.0, 0.0, 0.0, 0.0)
-		self.dest_rect = sdl3.SDL_FRect(0.0, 0.0, 0.0, 0.0)
+		self.source_rect = sdl3.FRect(0.0, 0.0, 0.0, 0.0)
+		self.dest_rect = sdl3.FRect(0.0, 0.0, 0.0, 0.0)
 
 		self.surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, 0, 0)
 		self.context = cairo.Context(self.surf)
@@ -153,7 +152,7 @@ class TDraw:
 		# Rendered-text textures, in LRU order (oldest first).
 		self.ttc: OrderedDict[
 			tuple[int, str, int, int, int, int, int, int, int, int],
-			list[sdl3.SDL_FRect | sdl3.LP_SDL_Texture | int | bool],
+			list[sdl3.FRect | sdl3.LP_SDL_Texture | int | bool],
 		] = OrderedDict()
 		# The item cap is recomputed every frame (see new_frame) to fit the text
 		# actually on screen rather than a fixed guess. The main UI and the track
@@ -171,79 +170,79 @@ class TDraw:
 
 		self._locate_cache: dict[tuple[str, int], Pango.Layout] = {}
 
-	def load_image(self, g: BytesIO) -> sdl3.ImageData:
+	def load_image(self, g: BytesIO) -> ImageData:
 		with Image.open(g) as image:
 			if image.mode != "RGBA":
 				image = image.convert("RGBA")
-			return sdl3.ImageData(image.width, image.height, image.tobytes())
+			return ImageData(image.width, image.height, image.tobytes())
 
 	def rect_s(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA, thickness: int) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
 		self.sdlrect.x = x - th
 		self.sdlrect.y = y - th
 		self.sdlrect.w = th
 		self.sdlrect.h = h + th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # left
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # left
 		self.sdlrect.x = x - th
 		self.sdlrect.y = y + h
 		self.sdlrect.w = w + th
 		self.sdlrect.h = th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # bottom
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # bottom
 		self.sdlrect.x = x
 		self.sdlrect.y = y - th
 		self.sdlrect.w = w + th
 		self.sdlrect.h = th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # top
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # top
 		self.sdlrect.x = x + w
 		self.sdlrect.y = y
 		self.sdlrect.w = th
 		self.sdlrect.h = h + th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # right
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # right
 
 	def rect_si(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA, thickness: int) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
 		x, y, w, h = (round(x) for x in rectangle)
 		th = math.floor(thickness)
 		self.sdlrect.x = x
 		self.sdlrect.y = y
 		self.sdlrect.w = th
 		self.sdlrect.h = h
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # left
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # left
 		self.sdlrect.x = x
 		self.sdlrect.y = y + (h - th)
 		self.sdlrect.w = w
 		self.sdlrect.h = th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # bottom
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # bottom
 		self.sdlrect.x = x
 		self.sdlrect.y = y
 		self.sdlrect.w = w
 		self.sdlrect.h = th
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # top
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # top
 		self.sdlrect.x = x + (w - th)
 		self.sdlrect.y = y
 		self.sdlrect.w = th
 		self.sdlrect.h = h
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)  # right
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)  # right
 
 	def rect_a(self, location_xy: list[int], size_wh: list[int], colour: ColourRGBA) -> None:
 		self.rect((location_xy[0], location_xy[1], size_wh[0], size_wh[1]), colour)
 
 	def clear_rect(self, rectangle: tuple[int, int, int, int]) -> None:
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
 
 		self.sdlrect.x = float(rectangle[0])
 		self.sdlrect.y = float(rectangle[1])
 		self.sdlrect.w = float(rectangle[2])
 		self.sdlrect.h = float(rectangle[3])
 
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 	def rect(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 		self.sdlrect.x = float(rectangle[0])
 		self.sdlrect.y = float(rectangle[1])
@@ -251,13 +250,13 @@ class TDraw:
 		self.sdlrect.h = float(rectangle[3])
 
 		# if fill:
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)
 		# else:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
 	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
 		"""x1, y1, x2, y2"""
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 		x1 = min(rectangle[0], rectangle[2])
 		y1 = min(rectangle[1], rectangle[3])
@@ -269,7 +268,7 @@ class TDraw:
 		self.sdlrect.h = float(y2-y1)
 
 		# if fill:
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)
 		# else:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
@@ -280,18 +279,18 @@ class TDraw:
 		self.sdlrect.y = round(rectangle[1]) - border_size
 		self.sdlrect.w = round(rectangle[2]) + border_size + border_size
 		self.sdlrect.h = round(rectangle[3]) + border_size + border_size
-		sdl3.SDL_SetRenderDrawColor(self.renderer, outer_colour.r, outer_colour.g, outer_colour.b, outer_colour.a)
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		sdl3.set_render_draw_color(self.renderer, outer_colour.r, outer_colour.g, outer_colour.b, outer_colour.a)
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)
 		self.sdlrect.x = round(rectangle[0])
 		self.sdlrect.y = round(rectangle[1])
 		self.sdlrect.w = round(rectangle[2])
 		self.sdlrect.h = round(rectangle[3])
-		sdl3.SDL_SetRenderDrawColor(self.renderer, fill_colour.r, fill_colour.g, fill_colour.b, fill_colour.a)
-		sdl3.SDL_RenderFillRect(self.renderer, self.sdlrect)
+		sdl3.set_render_draw_color(self.renderer, fill_colour.r, fill_colour.g, fill_colour.b, fill_colour.a)
+		sdl3.render_fill_rect(self.renderer, self.sdlrect)
 
 	def line(self, x1: int, y1: int, x2: int, y2: int, colour: ColourRGBA) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
-		sdl3.SDL_RenderLine(self.renderer, round(x1), round(y1), round(x2), round(y2))
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.render_line(self.renderer, round(x1), round(y1), round(x2), round(y2))
 
 	def get_text_w(self, text: str, font: int, height: bool = False) -> int:
 		x, y = self.get_text_wh(text, font, 3000)
@@ -301,7 +300,7 @@ class TDraw:
 
 	def clear_text_cache(self) -> None:
 		for so in self.ttc.values():
-			sdl3.SDL_DestroyTexture(so[1])
+			sdl3.destroy_texture(so[1])
 
 		self.ttc.clear()
 		self.text_wh_cache.clear()
@@ -417,10 +416,10 @@ class TDraw:
 			self.dest_rect.h = round(range_height)
 
 			# sdl3.SDL_RenderCopyEx(self.renderer, sd[1], self.source_rect, self.dest_rect, 0, None, 0)
-			sdl3.SDL_RenderTexture(self.renderer, sd[1], self.source_rect, self.dest_rect)
+			sdl3.render_texture(self.renderer, sd[1], self.source_rect, self.dest_rect)
 			return
 
-		sdl3.SDL_RenderTexture(self.renderer, sd[1], None, sd[0])
+		sdl3.render_texture(self.renderer, sd[1], None, sd[0])
 
 	def __draw_text_cairo(
 		self,
@@ -529,7 +528,7 @@ class TDraw:
 
 		try:
 			if real_bg:
-				box = sdl3.SDL_Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
+				box = sdl3.Rect(x, y - self.get_y_offset(text, font, max_x, wrap), w, h)
 
 				if align == 1:
 					box.x = x - box.w
@@ -631,7 +630,7 @@ class TDraw:
 			c = sdl3.create_texture_from_cairo(self.renderer, w, h, pitch, data, alpha_bg, colour_key)
 
 			if alpha_bg:
-				blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+				blend_mode = sdl3.compose_custom_blend_mode(
 					sdl3.SDL_BLENDFACTOR_ONE,
 					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 					sdl3.SDL_BLENDOPERATION_ADD,
@@ -639,7 +638,7 @@ class TDraw:
 					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 					sdl3.SDL_BLENDOPERATION_ADD,
 				)
-				sdl3.SDL_SetTextureBlendMode(c, blend_mode)
+				sdl3.set_texture_blend_mode(c, blend_mode)
 		finally:
 			layout = None
 			context = None
@@ -647,7 +646,7 @@ class TDraw:
 				surf.finish()
 			data = None
 
-		dst = sdl3.SDL_FRect(round(x), round(y))
+		dst = sdl3.FRect(round(x), round(y))
 		dst.w = round(w)
 		dst.h = round(h)
 		dst.y = round(y) - y_off
@@ -664,10 +663,10 @@ class TDraw:
 				texture_cached = True
 				while self.ttc and len(self.ttc) > self.max_text_texture_cache_items:
 					old_key, so = self.ttc.popitem(last=False)
-					sdl3.SDL_DestroyTexture(so[1])
+					sdl3.destroy_texture(so[1])
 		finally:
 			if c is not None and not texture_cached:
-				sdl3.SDL_DestroyTexture(c)
+				sdl3.destroy_texture(c)
 
 		if wrap:
 			return dst.h
