@@ -45723,6 +45723,8 @@ class SmoothScroll:
 	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0, sideways: bool = False) -> float:
 		if sideways:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
+				logging.info(self.sideways_scroll_areas.get(scroll_source))
+				logging.info(scroll_area)
 				self.sideways_scroll_areas[scroll_source] = scroll_area
 			touch_value = -self.inp.touch_scroll_x
 			self.sideways_head_counter[scroll_source] = scroll_source
@@ -45753,12 +45755,13 @@ class SmoothScroll:
 			return -self.scroll(scroll_source, coeff)
 		else:
 			return 0.0
-		
+
 	def ping_sideways_fields(self) -> None:
 		"""We can set certain rects to be side-scrolling: if using touch input, the scroll and swipe-to-queue input axes will be swapped.
 		This is for the Albumflow widget but can be used in the future also. At the end of each frame we check whether or not the scroll check even ran,
 		deleting the entry if not."""
 		temp = []
+		logging.info("blah")
 		for key in self.sideways_scroll_areas:
 			self.tauon.ddt.rect(self.sideways_scroll_areas[key], self.tauon.colours.level_red)
 		# 	if self.sideways_head_counter.get(key) is None:
@@ -45767,7 +45770,7 @@ class SmoothScroll:
 		# for key in temp:
 		# 	self.sideways_scroll_areas.pop(key, None)
 		# self.sideways_head_counter = {}
-		
+
 
 	def _state(self, source: str) -> ScrollMotionState:
 		if source not in self.physics_states:
