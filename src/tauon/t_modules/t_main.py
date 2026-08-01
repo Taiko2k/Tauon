@@ -6114,7 +6114,7 @@ class GallClass:
 		self.save_out: bool = save_out
 		self.i: int = 0
 		self.lock: threading.LockType = threading.Lock()
-		self.limit: int = 60
+		self.limit: int = 150
 		self.frame: int = 0
 		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
 
@@ -45720,6 +45720,8 @@ class SmoothScroll:
 	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0, sideways: bool = False) -> float:
 		if sideways:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
+				logging.info(self.sideways_scroll_areas.get(scroll_source))
+				logging.info(scroll_area)
 				self.sideways_scroll_areas[scroll_source] = scroll_area
 			touch_value = -self.inp.touch_scroll_x
 			self.sideways_head_counter[scroll_source] = scroll_source
@@ -45749,8 +45751,10 @@ class SmoothScroll:
 		This is for the Albumflow widget but can be used in the future also. At the end of each frame we check whether or not the scroll check even ran,
 		deleting the entry if not."""
 		temp = []
+		logging.info("blah")
 		for key in self.sideways_scroll_areas:
 			if self.sideways_head_counter.get(key) is None:
+				logging.info(f"{key} produces {self.sideways_head_counter.get(key)}")
 				temp.append(key)
 		for key in temp:
 			self.sideways_scroll_areas.pop(key, None)

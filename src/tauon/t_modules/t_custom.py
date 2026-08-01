@@ -1323,6 +1323,8 @@ class _AlbumflowBase(GalleryWidget):
 		self._drag_origin: tuple[float, float] | None = None
 		self._drag_position: float = 0.0
 		self._dragged: bool = False
+		self._touch_swipe: bool = False
+		self._dx: float = 0.0
 
 	@staticmethod
 	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
@@ -1562,7 +1564,7 @@ class _AlbumflowBase(GalleryWidget):
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
 		self._last_frame = now
-		if self._drag_origin is not None and self._dragged:
+		if self._touch_swipe or self._drag_origin is not None and self._dragged:
 			return
 		distance = self.selection - self.position
 		if abs(distance) < 0.001:
@@ -1581,17 +1583,31 @@ class _AlbumflowBase(GalleryWidget):
 				self._drag_origin = None
 			return
 
-		scroll = tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		logging.info("handling")
 
-		if scroll:
-			self._wheel_accum -= scroll
-			threshold = 0.55 if inp.mouse_wheel_precise else 0.1
-			if abs(self._wheel_accum) >= threshold:
-				steps = max(1, min(3, round(abs(self._wheel_accum))))
-				direction = 1 if self._wheel_accum > 0 else -1
-				self._select(tauon, self.selection + direction * steps)
-				self._wheel_accum = 0.0
-			inp.mouse_wheel = 0
+		scroll = tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		logging.info(scroll)
+		if scroll or tauon.touch_input_tracker.is_scroll:
+			if inp.mouse_wheel:
+				self._wheel_accum -= scroll
+				threshold = 0.55 if inp.mouse_wheel_precise else 0.1
+				if abs(self._wheel_accum) >= threshold:
+					steps = max(1, min(3, round(abs(self._wheel_accum))))
+					direction = 1 if self._wheel_accum > 0 else -1
+					self._select(tauon, self.selection + direction * steps)
+					self._wheel_accum = 0.0
+				inp.mouse_wheel = 0
+			else:
+				self._touch_swipe = abs(scroll*300*tauon.gui.scale) > 1.5 or tauon.touch_input_tracker.is_down
+				if self._touch_swipe:
+					logging.info("touch")
+					last = max(0, len(tauon.album_dex) - 1)
+					self.position -= scroll*5*tauon.gui.scale
+					self.position = max(0.0, min(last, self.position))
+					self.selection = round(self.position)
+					tauon.gui.request_frame()
+				else:
+					self._select(tauon, round(self.position))
 
 		if inp.key_focused == 0:
 			if inp.key_left_press:
@@ -1645,7 +1661,8 @@ class _AlbumflowBase(GalleryWidget):
 
 		if inp.mouse_down and self._drag_origin is not None:
 			dx = mx - self._drag_origin[0]
-			if abs(dx) > 7 * tauon.gui.scale:
+			self._dx = max(self._dx, abs(dx))
+			if self._dx > 7 * tauon.gui.scale:
 				self._dragged = True
 				pitch = max(24.0, art_size * 0.25)
 				last = max(0, len(tauon.album_dex) - 1)
@@ -1656,6 +1673,7 @@ class _AlbumflowBase(GalleryWidget):
 			if self._dragged:
 				self._select(tauon, round(self.position))
 			self._drag_origin = None
+			self._dx = 0.0
 
 	@staticmethod
 	def _begin_antialias(renderer, w: float, h: float):
