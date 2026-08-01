@@ -45492,6 +45492,7 @@ class TouchInputTracker:
 
 		self.is_down: bool = False
 		self.start_position_px: tuple[int, int] = (0, 0)
+		self.is_sideways: bool = False
 		self.time_started_ns: int = 0
 		self.duration_so_far_ns: int = 0
 		self.is_scroll: bool = False
@@ -45516,6 +45517,7 @@ class TouchInputTracker:
 	def reset(self) -> None:
 		self.is_down: bool = False
 		self.start_position_px: tuple[int, int] = (0, 0)
+		self.is_sideways: bool = False
 		self.time_started_ns: int = 0
 		self.duration_so_far_ns: int = 0
 		self.is_scroll: bool = False
@@ -45618,6 +45620,7 @@ class SmoothScroll:
 		self.coll = tauon.coll
 		self.scroll_bins:    dict[str:list[float]] = {}
 		self.scroll_timeouts:      dict[str:Timer] = {}
+		self.sideways_scroll_areas: dict[str:tuple[int, int, int, int]] = {}
 		self.physics_states: dict[str, ScrollMotionState] = {}
 		self.scroll_debug_modes: dict[str, str] = {}
 		self.scroll_debug_last_logs: dict[str, float] = {}
@@ -45703,8 +45706,14 @@ class SmoothScroll:
 
 		return scroll_distance
 
-	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0) -> float:
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.start_location, scroll_area)
+	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0, sideways: bool = False) -> float:
+		if sideways:
+			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
+				self.sideways_scroll_areas[scroll_source] = scroll_area
+			touch_value = self.inp.touch_scroll_x
+		else:
+			touch_value = self.inp.touch_scroll_y
+		touch_scroll = touch_value != 0 and coll_point(self.start_location, scroll_area)
 		use_smooth_scroll = (
 			self.enabled()
 			or touch_scroll
@@ -45716,7 +45725,7 @@ class SmoothScroll:
 			if self.inp.touch_released and coll_point(self.start_location, scroll_area):
 				self.release_touch(scroll_source)
 			elif touch_scroll:
-				self.apply_touch_drag(scroll_source, -self.inp.touch_scroll_y)
+				self.apply_touch_drag(scroll_source, -touch_value)
 			return self.step_motion(scroll_source)
 		elif self.coll(scroll_area):
 			return -self.scroll(scroll_source, coeff)
@@ -55961,6 +55970,9 @@ def main(holder: Holder) -> None:
 					active_touch.y = int(event.tfinger.y * window_size[1])
 					active_touch.start_position_px = (inp.touch_position[0], inp.touch_position[1])
 					tauon.smooth_scroll.start_location = active_touch.start_position_px
+					if any(coll_point(active_touch.start_position_px, tauon.smooth_scroll.sideways_scroll_areas[area]) for area in tauon.smooth_scroll.sideways_scroll_areas):
+						logging.info("touched a sideways")
+						active_touch.is_sideways = True
 					gui.request_frame()
 				elif active_touch.is_down and active_touch.duration_so_far_ns < 100 * 1000000:
 					active_touch.is_gesture = True
@@ -55973,6 +55985,7 @@ def main(holder: Holder) -> None:
 					if active_touch.is_gesture:
 						pass
 					else:
+						axis = int(not active_touch.is_sideways)
 						inp.k_input = True
 						inp.touch_active = True
 						inp.touch_position[0] = int(event.tfinger.x * window_size[0])
@@ -55983,10 +55996,13 @@ def main(holder: Holder) -> None:
 
 						if active_touch.is_scroll:
 							# regular scrolling
-							inp.touch_scroll_y += event.tfinger.dy * window_size[1]
+							if axis:
+								inp.touch_scroll_y += event.tfinger.dy * window_size[1]
+							else:
+								inp.touch_scroll_x += event.tfinger.dx * window_size[0]
 							mouse_moved = True
 							gui.request_tracklist_redraw()
-						
+
 						elif not (active_touch.has_moved_vert or active_touch.has_moved_horz or active_touch.is_rightclick) \
 							and abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
 							or abs(inp.touch_position[0] - active_touch.start_position_px[0]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
@@ -56000,7 +56016,10 @@ def main(holder: Holder) -> None:
 							if active_touch.duration_so_far_ns < TOUCH_LOGIC_TAP_VS_LONG_NS and not active_touch.is_scroll:
 								# it could be a scroll input
 								active_touch.is_scroll = True
-								inp.touch_scroll_y += inp.touch_position[1] - active_touch.start_position_px[1]
+								if axis:
+									inp.touch_scroll_y += inp.touch_position[1] - active_touch.start_position_px[1]
+								else:
+									inp.touch_scroll_x += inp.touch_position[0] - active_touch.start_position_px[0]
 								mouse_moved = True
 							elif active_touch.is_rightclick:
 								# or it could be switching from right click to dragndrop
