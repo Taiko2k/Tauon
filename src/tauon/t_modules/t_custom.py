@@ -1733,12 +1733,20 @@ class AlbumflowWidget(_AlbumflowBase):
 	def __init__(self) -> None:
 		super().__init__()
 		self.stacks: bool = True
+		self.cd: bool = False
+		self.vinyl: bool = not self.cd
+		self.spine_aspect: float = 0.083 if self.cd else 0.022
+		self.stack_distance: float = 6.0 if self.cd else 9.0
 
 	def get_config(self) -> dict | None:
-		return {"stacks": self.stacks}
+		return {"stacks": self.stacks, "cd": self.cd, "vinyl": self.vinyl}
 
 	def set_config(self, d: dict) -> None:
 		self.stacks = bool(d.get("stacks", True))
+		self.cd = bool(d.get("cd", True))
+		self.vinyl = not self.cd
+		self.spine_aspect: float = 0.083 if self.cd else 0.022
+		self.stack_distance: float = 6.0 if self.cd else 9.0
 
 	@classmethod
 	def _menu_changed(cls) -> None:
@@ -1759,6 +1767,36 @@ class AlbumflowWidget(_AlbumflowBase):
 			widget.stacks = not widget.stacks
 			cls._menu_changed()
 
+	@classmethod
+	def menu_set_cd(cls, ref=None) -> None:
+		widget = cls.menu_target
+		if widget is not None:
+			widget.cd = True
+			widget.vinyl = False
+			widget.spine_aspect = 0.083
+			widget.stack_distance = 6.0
+			cls._menu_changed()
+
+	@classmethod
+	def menu_set_vinyl(cls, ref=None) -> None:
+		widget = cls.menu_target
+		if widget is not None:
+			widget.vinyl = True
+			widget.cd = False
+			widget.spine_aspect = 0.022
+			widget.stack_distance = 9.0
+			cls._menu_changed()
+
+	@classmethod
+	def menu_cd_value(cls) -> bool:
+		widget = cls.menu_target
+		return widget.cd if widget else False
+
+	@classmethod
+	def menu_vinyl_value(cls) -> bool:
+		widget = cls.menu_target
+		return widget.vinyl if widget else False
+
 	def _open_context_menu(self, tauon: Tauon, over: bool) -> None:
 		inp = tauon.inp
 		if over and inp.right_click and tauon.is_level_zero():
@@ -1767,14 +1805,7 @@ class AlbumflowWidget(_AlbumflowBase):
 			AlbumflowWidget.menu_tauon = tauon
 			tauon.albumflow_menu.activate()
 
-	@staticmethod
-	def _face_turn_factor(distance: float) -> float:
-		"""Smoothly project box depth from face-on to a full side turn."""
-		turn = min(1.0, max(0.0, distance))
-		return 0.5 - 0.5 * math.cos(math.pi * turn)
-
-	@staticmethod
-	def _box_geometry(offset: float, width: float, centre_y: float,
+	def _box_geometry(self, offset: float, width: float, centre_y: float,
 			art_height: float, aspect: float, scale: float, stacks: bool = True):
 		distance = abs(offset)
 		aspect = max(0.35, min(2.4, aspect))
@@ -1790,8 +1821,8 @@ class AlbumflowWidget(_AlbumflowBase):
 			# in narrow widgets the minimum transition lies beyond the edge.
 			half_width_in_covers = width / max(2.0 * art_height, 1.0)
 			transition_end = max(
-				9.0,
-				(half_width_in_covers - 0.89) / 0.25,
+				self.stack_distance,
+				(half_width_in_covers - 0.89) / (2.25/self.stack_distance),
 			)
 			transition_start = transition_end - 4.0
 			transition = min(
@@ -1817,7 +1848,7 @@ class AlbumflowWidget(_AlbumflowBase):
 				stack_capacity = max(1.0, 29.0 - transition_end)
 				minimum_pitch = max(
 					3.0 * scale,
-					art_height * 0.75 * 0.022 + scale,
+					art_height * 0.75 * self.spine_aspect + scale,
 				)
 				curve_span = max(
 					0.0,
@@ -1849,26 +1880,27 @@ class AlbumflowWidget(_AlbumflowBase):
 		left_height = front[3][1] - front[0][1]
 		right_height = front[2][1] - front[1][1]
 		box_height = max(left_height, right_height)
+		width = abs(front[0][0]-front[1][0])
 		depth_scale = box_height / max(1.0, art_height)
-		spine_factor = AlbumflowWidget._face_turn_factor(distance)
-		spine_width = max(
-			0.0,
-			box_height * 0.022 * spine_factor,
-		)
-		if distance >= 9.0:
-			spine_width = max(spine_width, 2.0 * scale)
+		if distance >= self.stack_distance:
+			spine_width = box_height * self.spine_aspect
+			spine_vert_factor = 1
+		else:
+			spine_factor = math.sin( math.acos( min(1,width/box_height) ) )
+			spine_width = box_height* self.spine_aspect * spine_factor
+			spine_vert_factor = 1.0 - 0.7**(abs(offset)+2) * self.spine_aspect # faux perspective
 		if offset < 0:
 			spine = [
-				(front[0][0] - spine_width, front[0][1]),
+				(front[0][0] - spine_width, centre_y - (centre_y-front[0][1])*spine_vert_factor),
 				front[0],
 				front[3],
-				(front[3][0] - spine_width, front[3][1]),
+				(front[3][0] - spine_width, centre_y + (front[3][1]-centre_y)*spine_vert_factor),
 			]
 		else:
 			spine = [
 				front[1],
-				(front[1][0] + spine_width, front[1][1]),
-				(front[2][0] + spine_width, front[2][1]),
+				(front[1][0] + spine_width, centre_y - (centre_y-front[1][1])*spine_vert_factor),
+				(front[2][0] + spine_width, centre_y + (front[2][1]-centre_y)*spine_vert_factor),
 				front[2],
 			]
 		if offset < 0:
@@ -2007,34 +2039,33 @@ class AlbumflowWidget(_AlbumflowBase):
 				front_width = front[1][0] - front[0][0]
 				# Keep the full stack treatment, but suppress the bevel more
 				# aggressively while a cover is close to the selected face.
-				bevel_factor = self._face_turn_factor(distance) ** 2
-				full_bevel_width = max(
-					0.8 * gui.scale,
-					min(front_width * 0.08, 2.4 * gui.scale),
-				)
-				bevel_width = full_bevel_width * bevel_factor
-				light_strip = self._edge_strip(front, outer_right, bevel_width)
-				dark_strip = self._edge_strip(front, not outer_right, bevel_width)
-				light = self._face_colour(edge_colour, shade, 1.12, 0.028)
-				light = (
-					light[0], light[1], light[2], 0.42 * bevel_factor)
-				self._render_quad(renderer, light_strip, colours=[light] * 4)
-				self._render_quad(
-					renderer,
-					dark_strip,
-					colours=[(0.0, 0.0, 0.0, 0.24 * bevel_factor)] * 4,
-				)
+
+				bevel_factor = math.sin(math.acos(min(1,front_width/art_height)))
+				full_bevel_width = art_height * self.spine_aspect * bevel_factor
+				if self.vinyl:
+					light_strip = self._edge_strip(front, outer_right, full_bevel_width)
+					dark_strip = self._edge_strip(front, not outer_right, full_bevel_width)
+					light = self._face_colour(edge_colour, shade, 1.12, 0.028)
+					light = (
+						light[0], light[1], light[2], 0.42 * bevel_factor)
+					self._render_quad(renderer, light_strip, colours=[light] * 4)
+					self._render_quad(
+						renderer,
+						dark_strip,
+						colours=[(0.0, 0.0, 0.0, 0.24 * bevel_factor)] * 4,
+					)
 
 				# When almost in profile, reinforce the bright seam so the
 				# artwork remains legible as a distinct box.
-				if math.degrees(angle) > 72:
-					seam = self._edge_strip(
-						front,
-						outer_right,
-						max(gui.scale, bevel_width * 0.55),
-					)
-					seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
-					self._render_quad(renderer, seam, colours=[seam_colour] * 4)
+				if self.vinyl:
+					if math.degrees(angle) > 72:
+						seam = self._edge_strip(
+							front,
+							outer_right,
+							max(gui.scale, full_bevel_width * 0.55),
+						)
+						seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
+						self._render_quad(renderer, seam, colours=[seam_colour] * 4)
 
 		selected_position = tauon.album_dex[self.selection]
 		if selected_position < len(playlist):
