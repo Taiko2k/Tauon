@@ -45720,13 +45720,18 @@ class SmoothScroll:
 	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0, sideways: bool = False) -> float:
 		if sideways:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
-				logging.info(self.sideways_scroll_areas.get(scroll_source))
-				logging.info(scroll_area)
 				self.sideways_scroll_areas[scroll_source] = scroll_area
 			touch_value = -self.inp.touch_scroll_x
 			self.sideways_head_counter[scroll_source] = scroll_source
 		else:
 			touch_value = self.inp.touch_scroll_y
+			if self.sideways_scroll_areas:
+				deletions = []
+				for key in self.sideways_scroll_areas:
+					if coll_overlap(self.sideways_scroll_areas[key], scroll_area):
+						deletions.append(key)
+				for key in deletions:
+					self.sideways_scroll_areas.pop(key, None)
 		touch_scroll = touch_value != 0 and coll_point(self.start_location, scroll_area)
 		use_smooth_scroll = (
 			self.enabled()
@@ -45751,14 +45756,14 @@ class SmoothScroll:
 		This is for the Albumflow widget but can be used in the future also. At the end of each frame we check whether or not the scroll check even ran,
 		deleting the entry if not."""
 		temp = []
-		logging.info("blah")
 		for key in self.sideways_scroll_areas:
-			if self.sideways_head_counter.get(key) is None:
-				logging.info(f"{key} produces {self.sideways_head_counter.get(key)}")
-				temp.append(key)
-		for key in temp:
-			self.sideways_scroll_areas.pop(key, None)
-		self.sideways_head_counter = {}
+			self.tauon.ddt.rect(self.sideways_scroll_areas[key], self.tauon.colours.level_red)
+		# 	if self.sideways_head_counter.get(key) is None:
+		# 		logging.info(f"{key} produces {self.sideways_head_counter.get(key)}")
+		# 		temp.append(key)
+		# for key in temp:
+		# 	self.sideways_scroll_areas.pop(key, None)
+		# self.sideways_head_counter = {}
 		
 
 	def _state(self, source: str) -> ScrollMotionState:
@@ -49199,6 +49204,25 @@ def encode_folder_name(track_object: TrackClass) -> str:
 def coll_point(l: list[int], r: list[int]) -> bool:
 	# rect point collision detection
 	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
+
+# def coll_overlap(l: list[int], r: list[int]) -> bool:
+# 	# rect area collision detection
+# 	# used for sideways scroll area tracking - if any non-sideways scroll area overlaps with a sideways one,
+# 	# we delete the sideways one
+# 	return (r[0] < l[0] <= r[0] + r[2] or l[0] < r[0] <= l[0] + l[2]) and \
+# 		(r[1] <= l[1] <= r[1] + r[3] or l[1] <= r[1] <= l[1] + l[3])
+
+def coll_overlap(l: list[int], r: list[int]) -> bool:
+    """Rect overlap detection (AABB test).
+    Rects in form [x, y, width, height].
+	Used for sideways scroll area tracking - if any non-sideways areas overlap with registered sideways ones,
+	we delete the sideways ones."""
+    return (
+        l[0] < r[0] + r[2] and
+        r[0] < l[0] + l[2] and
+        l[1] < r[1] + r[3] and
+        r[1] < l[1] + l[3]
+    )
 
 def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: bool = False) -> list[str] | bool | None:
 	"""Return list of strings if lyrics match LRC format, otherwise return None.
@@ -56031,6 +56055,7 @@ def main(holder: Holder) -> None:
 								inp.touch_scroll_x += event.tfinger.dx * window_size[0]
 							mouse_moved = True
 							gui.request_tracklist_redraw()
+							gui.request_frame()
 
 						elif not (active_touch.has_moved_scroll or active_touch.has_moved_sideswipe or active_touch.is_rightclick) \
 							and abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
@@ -59342,7 +59367,7 @@ def main(holder: Holder) -> None:
 							if prefs.album_mode:
 								tauon.goto_album(pctl.playlist_playing_position)
 				tauon.touch_input_tracker.draw_update()
-				tauon.smooth_scroll.ping_sideways_fields()
+				# tauon.smooth_scroll.ping_sideways_fields()
 			elif gui.mode == GuiMode.MINI:
 				if (inp.key_shift_down and inp.mouse_click) or inp.middle_click:
 					if prefs.mini_mode_mode == MiniModeMode.TAB:
