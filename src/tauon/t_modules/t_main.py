@@ -6113,7 +6113,7 @@ class GallClass:
 		self.save_out: bool = save_out
 		self.i: int = 0
 		self.lock: threading.LockType = threading.Lock()
-		self.limit: int = 60
+		self.limit: int = 150
 		self.frame: int = 0
 		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
 

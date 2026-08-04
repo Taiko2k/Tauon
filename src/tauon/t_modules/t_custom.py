@@ -1323,6 +1323,7 @@ class _AlbumflowBase(GalleryWidget):
 		self._drag_origin: tuple[float, float] | None = None
 		self._drag_position: float = 0.0
 		self._dragged: bool = False
+		self._dx: float = 0.0
 
 	@staticmethod
 	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
@@ -1643,7 +1644,8 @@ class _AlbumflowBase(GalleryWidget):
 
 		if inp.mouse_down and self._drag_origin is not None:
 			dx = mx - self._drag_origin[0]
-			if abs(dx) > 7 * tauon.gui.scale:
+			self._dx = max(self._dx, abs(dx))
+			if self._dx > 7 * tauon.gui.scale:
 				self._dragged = True
 				pitch = max(24.0, art_size * 0.25)
 				last = max(0, len(tauon.album_dex) - 1)
@@ -1654,6 +1656,7 @@ class _AlbumflowBase(GalleryWidget):
 			if self._dragged:
 				self._select(tauon, round(self.position))
 			self._drag_origin = None
+			self._dx = 0.0
 
 	@staticmethod
 	def _begin_antialias(renderer, w: float, h: float):
