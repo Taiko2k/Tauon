@@ -70,7 +70,7 @@ jobs:
           python -m venv .venv
           source .venv/bin/activate
           pip install \
-            -r requirements.txt \
+            ".[all]" \
             build \
             pyinstaller
           python -c "import sdl3"
@@ -135,7 +135,7 @@ jobs:
         if: startsWith(runner.os, 'macOS')
         with:
           path: ~/Library/Caches/pip
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -183,7 +183,7 @@ jobs:
           export LDFLAGS="-L/opt/homebrew/lib"
 
           $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
-            -r requirements.txt \
+            ".[all]" \
             build \
             pyinstaller \
             pytest
@@ -304,7 +304,7 @@ jobs:
         if: startsWith(runner.os, 'Windows')
         with:
           path: ~\AppData\Local\pip\Cache
-          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/pyproject.toml') }}
           restore-keys: |
             ${{ runner.os }}-pip-
 
@@ -338,7 +338,7 @@ jobs:
           export CFLAGS="-I/mingw64/include"
           export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
           .venv/bin/python -m pip install \
-            -r requirements.txt \
+            ".[all]" \
             build \
             pyinstaller
         #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
