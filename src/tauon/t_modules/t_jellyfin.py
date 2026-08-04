@@ -41,8 +41,8 @@ if TYPE_CHECKING:
 
 # Library import is fetched in pages so each response stays small enough that
 # a reverse proxy in front of the server won't time out generating it
-ITEM_PAGE_SIZE = 2000
-ITEM_FETCH_TIMEOUT = (10, 1000)  # (connect, read) seconds per page
+ITEM_PAGE_SIZE = 200
+ITEM_FETCH_TIMEOUT = (10, 600)  # (connect, read) seconds per page
 
 
 class Jellyfin:
