@@ -37708,17 +37708,20 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True, draw_background: bool = True) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
 		gui     = self.gui
 		inp     = self.inp
 
-		# Draw a background for whole area
-		if not gui.have_art_bg:
-			ddt.clear_rect((x, y, w, h))
-		ddt.rect((x, y, w, h), colours.side_panel_background)
+		# Draw a background for whole area. The centered side-panel layout has
+		# already painted its full panel, so it disables this second fill to avoid
+		# stacking the translucent panel colour into an opaque block behind art.
+		if draw_background:
+			if not gui.have_art_bg:
+				ddt.clear_rect((x, y, w, h))
+			ddt.rect((x, y, w, h), colours.side_panel_background)
 		# ddt.rect_r((x, y, w ,h), [255, 0, 0, 200], True)
 
 		# We need to find the size of the inner square for the artwork
@@ -57936,18 +57939,17 @@ def main(holder: Holder) -> None:
 
 						elif prefs.side_panel_layout == 0:
 							boxw = gui.rspw
-							boxh = gui.rspw
+							available_h = max(0, window_size[1] - gui.panelY - gui.panelBY)
+							boxh = min(gui.rspw, available_h)
 
 							if prefs.show_side_art:
 								meta_box.draw(
 									rsp_x,
 									gui.panelY + boxh,
 									gui.rspw,
-									window_size[1] - gui.panelY - gui.panelBY - boxh,
+									available_h - boxh,
 									track=target_track,
 								)
-
-								boxh = min(boxh, window_size[1] - gui.panelY - gui.panelBY)
 
 								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track)
 
@@ -58018,6 +58020,7 @@ def main(holder: Holder) -> None:
 										target_track=target_track,
 										tight_border=True,
 										default_border=default_border,
+										draw_background=False,
 									)
 
 									if gui.art_drawn_rect:
