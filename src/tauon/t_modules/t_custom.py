@@ -1325,6 +1325,7 @@ class _AlbumflowBase(GalleryWidget):
 		self._dragged: bool = False
 		self._touch_swipe: bool = False
 		self._dx: float = 0.0
+		self._known_smooth: bool = False
 
 	@staticmethod
 	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
@@ -1589,10 +1590,12 @@ class _AlbumflowBase(GalleryWidget):
 		inp.mouse_position[0] -= rect[0]
 		inp.mouse_position[1] -= rect[1]
 		self._touch_swipe = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
+		self._known_smooth = not (inp.mouse_wheel and not inp.mouse_wheel_precise) \
+			and (self._known_smooth or tauon.touch_input_tracker.is_scroll or int(scroll)!=scroll)
 		if scroll or tauon.touch_input_tracker.is_scroll:
 			if inp.mouse_wheel and not inp.mouse_wheel_precise:
 				self._wheel_accum -= scroll
-				threshold = 0.55#  else 0.1
+				threshold = 0.1
 				if abs(self._wheel_accum) >= threshold:
 					steps = max(1, min(3, round(abs(self._wheel_accum))))
 					direction = 1 if self._wheel_accum > 0 else -1
@@ -1616,7 +1619,7 @@ class _AlbumflowBase(GalleryWidget):
 			# else:
 			# 	logging.info("this type of selec")
 			# 	self._select(tauon, round(self.position))
-		elif self.position != round(self.position):
+		elif self.position != round(self.position) and self._known_smooth:
 			self._select(tauon, round(self.position))
 
 		if inp.key_focused == 0:
