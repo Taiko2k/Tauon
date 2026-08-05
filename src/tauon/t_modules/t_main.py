@@ -45723,8 +45723,7 @@ class SmoothScroll:
 	def get_scroll(self, scroll_source: str, scroll_area: tuple[int, int, int, int], coeff: float=1.0, sideways: bool = False) -> float:
 		if sideways:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
-				logging.info(self.sideways_scroll_areas.get(scroll_source))
-				logging.info(scroll_area)
+				self.tauon.touch_input_tracker.is_sideways = True
 				self.sideways_scroll_areas[scroll_source] = scroll_area
 			touch_value = -self.inp.touch_scroll_x
 			self.sideways_head_counter[scroll_source] = scroll_source

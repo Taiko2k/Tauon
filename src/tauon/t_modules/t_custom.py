@@ -1583,19 +1583,28 @@ class _AlbumflowBase(GalleryWidget):
 				self._drag_origin = None
 			return
 
+		inp.mouse_position[0] += rect[0]
+		inp.mouse_position[1] += rect[1]
 		scroll = tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		inp.mouse_position[0] -= rect[0]
+		inp.mouse_position[1] -= rect[1]
 		if scroll or tauon.touch_input_tracker.is_scroll:
 			if inp.mouse_wheel:
-				self._wheel_accum -= scroll
-				threshold = 0.55 if inp.mouse_wheel_precise else 0.1
-				if abs(self._wheel_accum) >= threshold:
-					steps = max(1, min(3, round(abs(self._wheel_accum))))
-					direction = 1 if self._wheel_accum > 0 else -1
-					self._select(tauon, self.selection + direction * steps)
-					self._wheel_accum = 0.0
-				inp.mouse_wheel = 0
+				if inp.mouse_wheel_precise:
+					pass
+				else:
+					self._wheel_accum -= scroll
+					threshold = 0.55  else 0.1
+					if abs(self._wheel_accum) >= threshold:
+						steps = max(1, min(3, round(abs(self._wheel_accum))))
+						direction = 1 if self._wheel_accum > 0 else -1
+						self._select(tauon, self.selection + direction * steps)
+						# self.position -= self._wheel_accum#direction * steps
+						self._wheel_accum = 0.0
+						tauon.gui.request_frame()
+					inp.mouse_wheel = 0
 			else:
-				self._touch_swipe = abs(scroll*300*tauon.gui.scale) > 1.5 or tauon.touch_input_tracker.is_down
+				self._touch_swipe = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
 				if self._touch_swipe:
 					last = max(0, len(tauon.album_dex) - 1)
 					self.position -= scroll*5*tauon.gui.scale
@@ -1604,6 +1613,9 @@ class _AlbumflowBase(GalleryWidget):
 					tauon.gui.request_frame()
 				else:
 					self._select(tauon, round(self.position))
+		else:
+			logging.info(self.position)
+			self._select(tauon, round(self.position))
 
 		if inp.key_focused == 0:
 			if inp.key_left_press:
@@ -2007,10 +2019,11 @@ class AlbumflowWidget(_AlbumflowBase):
 			key=lambda box: self._painter_key(box[0], self.position),
 		)
 		hit_quads = [(box[0], box[6]) for box in hit_order]
-		mx, my = tauon.touch_input_tracker.start_position_px if tauon.touch_input_tracker.start_position_px != (0,0) else tauon.inp.mouse_position
-		tx = content_rect[0]
-		ty = content_rect[1]
-		over = tx <= mx < tx+w and ty <= my < ty+h
+		if tauon.touch_input_tracker.start_position_px != (0,0):
+			mx, my = tauon.touch_input_tracker.start_position_px[0] - content_rect[0], tauon.touch_input_tracker.start_position_px[1] - content_rect[1]
+		else:
+			mx, my = tauon.inp.mouse_position
+		over = x <= mx < x+w and y <= my < y+h
 		self._open_context_menu(tauon, over)
 		old_position = self.position
 
