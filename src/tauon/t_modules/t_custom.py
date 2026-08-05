@@ -1602,10 +1602,14 @@ class _AlbumflowBase(GalleryWidget):
 			# 		tauon.gui.request_frame()
 			# 	inp.mouse_wheel = 0
 			# else:
-			
+
 			if self._touch_swipe:
+				if inp.mouse_wheel and not inp.mouse_wheel_precise:
+					mult = 1
+				else:
+					mult = 5*tauon.gui.scale
 				last = max(0, len(tauon.album_dex) - 1)
-				self.position -= scroll*5*tauon.gui.scale
+				self.position -= scroll*mult
 				self.position = max(0.0, min(last, self.position))
 				self.selection = round(self.position)
 				tauon.gui.request_frame()
