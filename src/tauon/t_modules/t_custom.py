@@ -1323,9 +1323,10 @@ class _AlbumflowBase(GalleryWidget):
 		self._drag_origin: tuple[float, float] | None = None
 		self._drag_position: float = 0.0
 		self._dragged: bool = False
-		self._touch_swipe: bool = False
+		self._has_momentum: bool = False
 		self._dx: float = 0.0
 		self._known_smooth: bool = False
+		self._clicked: bool = False
 
 	@staticmethod
 	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
@@ -1565,11 +1566,12 @@ class _AlbumflowBase(GalleryWidget):
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
 		self._last_frame = now
-		if self._touch_swipe or self._drag_origin is not None and self._dragged:
+		if self._has_momentum or self._drag_origin is not None and self._dragged:
 			return
 		distance = self.selection - self.position
 		if abs(distance) < 0.001:
 			self.position = float(self.selection)
+			self._clicked = False
 			return
 		# Exponential ease-out is stable across varying frame rates and never
 		# overshoots when the user reverses direction mid-animation.
@@ -1579,17 +1581,17 @@ class _AlbumflowBase(GalleryWidget):
 	def _handle_input(self, tauon: Tauon, over: bool,
 			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float, rect: tuple[int, int, int, int]) -> None:
 		inp = tauon.inp
-		if not self._touch_swipe and (not over or not tauon.is_level_zero(False)):
+		if not self._has_momentum and (not over or not tauon.is_level_zero(False)):
 			if inp.mouse_up:
 				self._drag_origin = None
 			return
 
 		inp.mouse_position[0] += rect[0]
 		inp.mouse_position[1] += rect[1]
-		scroll = tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		scroll = - tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
 		inp.mouse_position[0] -= rect[0]
 		inp.mouse_position[1] -= rect[1]
-		self._touch_swipe = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
+		self._has_momentum = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
 		self._known_smooth = not (inp.mouse_wheel and not inp.mouse_wheel_precise) \
 			and (self._known_smooth or tauon.touch_input_tracker.is_scroll or int(scroll)!=scroll)
 		if scroll or tauon.touch_input_tracker.is_scroll:
@@ -1604,22 +1606,19 @@ class _AlbumflowBase(GalleryWidget):
 					self._wheel_accum = 0.0
 					tauon.gui.request_frame()
 				inp.mouse_wheel = 0
-			# else:
 
-			elif self._touch_swipe:
-				if inp.mouse_wheel and not inp.mouse_wheel_precise:
+			elif self._has_momentum:
+				last = max(0, len(tauon.album_dex) - 1)
+				if inp.mouse_wheel:
 					mult = 1
 				else:
 					mult = 5*tauon.gui.scale
-				last = max(0, len(tauon.album_dex) - 1)
 				self.position -= scroll*mult
 				self.position = max(0.0, min(last, self.position))
 				self.selection = round(self.position)
 				tauon.gui.request_frame()
-			# else:
-			# 	logging.info("this type of selec")
-			# 	self._select(tauon, round(self.position))
-		elif self.position != round(self.position) and self._known_smooth:
+
+		elif self.position != round(self.position) and self._known_smooth and not self._clicked:
 			self._select(tauon, round(self.position))
 
 		if inp.key_focused == 0:
@@ -1667,6 +1666,9 @@ class _AlbumflowBase(GalleryWidget):
 				if self._contains(points, mx, my):
 					play = inp.d_mouse_click and album_index == self.selection
 					self._select(tauon, album_index, play=play)
+					self._has_momentum = False
+					self._dx = 0.0
+					self._clicked = True
 					inp.mouse_click = False
 					if play:
 						inp.d_mouse_click = False

@@ -45725,7 +45725,7 @@ class SmoothScroll:
 			if hash(self.sideways_scroll_areas.get(scroll_source)) != hash(scroll_area):
 				self.tauon.touch_input_tracker.is_sideways = True
 				self.sideways_scroll_areas[scroll_source] = scroll_area
-			touch_value = -self.inp.touch_scroll_x
+			touch_value = self.inp.touch_scroll_x
 			self.sideways_head_counter[scroll_source] = scroll_source
 		else:
 			touch_value = self.inp.touch_scroll_y
