@@ -1590,20 +1590,20 @@ class _AlbumflowBase(GalleryWidget):
 		inp.mouse_position[1] -= rect[1]
 		self._touch_swipe = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
 		if scroll or tauon.touch_input_tracker.is_scroll:
-			# if inp.mouse_wheel and not inp.mouse_wheel_precise:
-			# 	self._wheel_accum -= scroll
-			# 	threshold = 0.55#  else 0.1
-			# 	if abs(self._wheel_accum) >= threshold:
-			# 		steps = max(1, min(3, round(abs(self._wheel_accum))))
-			# 		direction = 1 if self._wheel_accum > 0 else -1
-			# 		self._select(tauon, self.selection + direction * steps)
-			# 		# self.position -= self._wheel_accum#direction * steps
-			# 		self._wheel_accum = 0.0
-			# 		tauon.gui.request_frame()
-			# 	inp.mouse_wheel = 0
+			if inp.mouse_wheel and not inp.mouse_wheel_precise:
+				self._wheel_accum -= scroll
+				threshold = 0.55#  else 0.1
+				if abs(self._wheel_accum) >= threshold:
+					steps = max(1, min(3, round(abs(self._wheel_accum))))
+					direction = 1 if self._wheel_accum > 0 else -1
+					self._select(tauon, self.selection + direction * steps)
+					# self.position -= self._wheel_accum#direction * steps
+					self._wheel_accum = 0.0
+					tauon.gui.request_frame()
+				inp.mouse_wheel = 0
 			# else:
 
-			if self._touch_swipe:
+			elif self._touch_swipe:
 				if inp.mouse_wheel and not inp.mouse_wheel_precise:
 					mult = 1
 				else:
