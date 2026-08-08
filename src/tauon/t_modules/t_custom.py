@@ -1566,7 +1566,7 @@ class _AlbumflowBase(GalleryWidget):
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
 		self._last_frame = now
-		if self._has_momentum or self._drag_origin is not None and self._dragged:
+		if (self._has_momentum and self._known_smooth) or self._drag_origin is not None and self._dragged:
 			return
 		distance = self.selection - self.position
 		if abs(distance) < 0.001:
@@ -1591,13 +1591,13 @@ class _AlbumflowBase(GalleryWidget):
 		scroll = - tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
 		inp.mouse_position[0] -= rect[0]
 		inp.mouse_position[1] -= rect[1]
-		self._has_momentum = abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down
-		self._known_smooth = not (inp.mouse_wheel and not inp.mouse_wheel_precise) \
-			and (self._known_smooth or tauon.touch_input_tracker.is_scroll or int(scroll)!=scroll)
+		self._has_momentum = (abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down) and not inp.mouse_wheel
+		self._known_smooth = (not inp.mouse_wheel) \
+			and (self._known_smooth or tauon.touch_input_tracker.is_scroll)
 		if scroll or tauon.touch_input_tracker.is_scroll:
-			if inp.mouse_wheel and not inp.mouse_wheel_precise:
+			if inp.mouse_wheel:
 				self._wheel_accum -= scroll
-				threshold = 0.1
+				threshold = 0.55 if inp.mouse_wheel_precise else 0.1
 				if abs(self._wheel_accum) >= threshold:
 					steps = max(1, min(3, round(abs(self._wheel_accum))))
 					direction = 1 if self._wheel_accum > 0 else -1
@@ -1607,7 +1607,7 @@ class _AlbumflowBase(GalleryWidget):
 					tauon.gui.request_frame()
 				inp.mouse_wheel = 0
 
-			elif self._has_momentum:
+			elif self._has_momentum and self._known_smooth:
 				last = max(0, len(tauon.album_dex) - 1)
 				if inp.mouse_wheel:
 					mult = 1
@@ -1619,7 +1619,7 @@ class _AlbumflowBase(GalleryWidget):
 				tauon.gui.request_frame()
 
 		elif self.position != round(self.position) and self._known_smooth and not self._clicked:
-			self._select(tauon, round(self.position))
+			self._select(tauon, round(self.position)) or not self._known_smooth
 
 		if inp.key_focused == 0:
 			if inp.key_left_press:
