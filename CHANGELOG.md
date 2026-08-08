@@ -2,8 +2,10 @@
 Changelog
 ---------
 
-### v11.1.2
+### v11.2.0
 
+ - Added new widget AlbumFlow
+ - Added new widget Tab Switcher
  - Revamps & refinements to both synced and static lyrics editors
  - Fixed bug that caused GNOME to occasionally crash when Tauon did
 
