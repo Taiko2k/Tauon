@@ -59229,11 +59229,16 @@ def main(holder: Holder) -> None:
 				else:
 					tauon.mini_mode.render()
 
+			# Custom, showcase, and radio layouts do not render the preset left
+			# side panel, even though its saved geometry remains in playlist_left.
+			preset_canvas = gui.mode == GuiMode.MAIN and not gui.custom_mode and not gui.combo_mode
+			toast_left = (gui.playlist_left or 0) if preset_canvas else 0
+
 			t = tauon.toast_love_timer.get()
 			if t < 1.8 and gui.toast_love_object is not None:
 				track = gui.toast_love_object
 
-				ww = gui.playlist_left or 0
+				ww = toast_left
 
 				rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
 				tauon.fields.add(rect)
@@ -59273,7 +59278,7 @@ def main(holder: Holder) -> None:
 			if t < 2.5 and gui.toast_queue_object:
 				track = pctl.get_track(gui.toast_queue_object.track_id)
 
-				ww = gui.playlist_left or 0
+				ww = toast_left
 				if tauon.search_over.active:
 					ww = window_size[0] // 2 - (215 * gui.scale // 2)
 
@@ -59327,9 +59332,7 @@ def main(holder: Holder) -> None:
 				wid = ddt.get_text_w(gui.mode_toast_text, 313)
 				wid = max(round(68 * gui.scale), wid)
 
-				ww = round(7 * gui.scale)
-				if gui.playlist_left and not gui.combo_mode:
-					ww += gui.playlist_left
+				ww = round(7 * gui.scale) + toast_left
 
 				rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
 				tauon.fields.add(rect)
