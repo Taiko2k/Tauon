@@ -1707,16 +1707,20 @@ class _AlbumflowBase(GalleryWidget):
 		sdl3.SDL_RenderTexture(renderer, _AlbumflowBase._aa_texture, source, destination)
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
-		"""Render through a 2x target so diagonal box and cover edges are AA."""
+		"""Supersample album art, then draw UI overlays at native resolution."""
 		tauon.fields.add((x, y, w, h))
+		background = tauon.colours.gallery_background
+		tauon.ddt.rect((x, y, w, h), background)
+		tauon.ddt.text_background_colour = background
 		state = self._begin_antialias(tauon.renderer, w, h)
 		if state is None:
 			self._draw_scene(tauon, x, y, w, h)
-			return
-		try:
-			self._draw_scene(tauon, x, y, w, h)
-		finally:
-			self._finish_antialias(tauon.renderer, state, w, h)
+		else:
+			try:
+				self._draw_scene(tauon, x, y, w, h)
+			finally:
+				self._finish_antialias(tauon.renderer, state, w, h)
+		self._draw_overlay(tauon, w, h)
 
 
 class AlbumflowWidget(_AlbumflowBase):
@@ -1935,17 +1939,10 @@ class AlbumflowWidget(_AlbumflowBase):
 	def _draw_scene(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
 		self._sync_playlist(tauon)
 		gui = tauon.gui
-		ddt = tauon.ddt
 		renderer = tauon.renderer
-		colours = tauon.colours
-		background = colours.gallery_background
-		ddt.rect((x, y, w, h), background)
-		ddt.text_background_colour = background
 		tauon.fields.add((x, y, w, h))
 
 		if not tauon.album_dex:
-			ddt.text((w / 2, h / 2 - 8 * gui.scale, 2), _t("No albums"),
-				colours.side_bar_line2, 211)
 			return
 
 		art_height = max(72 * gui.scale, min(w * 0.34, h * 0.58))
@@ -2070,6 +2067,23 @@ class AlbumflowWidget(_AlbumflowBase):
 						seam_colour = self._face_colour(edge_colour, shade, 1.22, 0.075)
 						self._render_quad(renderer, seam, colours=[seam_colour] * 4)
 
+	def _draw_overlay(self, tauon: Tauon, w: float, h: float) -> None:
+		"""Draw labels after compositing the supersampled album artwork."""
+		gui = tauon.gui
+		ddt = tauon.ddt
+		colours = tauon.colours
+		if not tauon.album_dex:
+			ddt.text((w / 2, h / 2 - 8 * gui.scale, 2), _t("No albums"),
+				colours.side_bar_line2, 211)
+			return
+
+		# Keep label placement aligned with the artwork layout, which is rendered
+		# separately in the supersampled scene above.
+		art_height = max(72 * gui.scale, min(w * 0.34, h * 0.58))
+		art_height = min(art_height, w * 0.64)
+		centre_y = max(art_height * 0.58, h * 0.39)
+		centre_y = min(centre_y, h - art_height * 0.90)
+		playlist = tauon.pctl.multi_playlist[tauon.pctl.active_playlist_viewing].playlist_ids
 		selected_position = tauon.album_dex[self.selection]
 		if selected_position < len(playlist):
 			track = tauon.pctl.get_track(playlist[selected_position])
@@ -2077,9 +2091,9 @@ class AlbumflowWidget(_AlbumflowBase):
 			artist = track.album_artist or track.artist or _t("Unknown Artist")
 			title_y = min(h - 38 * gui.scale, centre_y + art_height * 0.65)
 			max_text_w = max(40, min(w - 30 * gui.scale, art_height * 1.8))
-			ddt.text((w / 2, title_y, 2), album, colours.side_bar_line1, 211, max_w=max_text_w)
+			ddt.text((w / 2, title_y, 2), album, colours.side_bar_line1, 212, max_w=max_text_w)
 			ddt.text((w / 2, title_y + 18 * gui.scale, 2), artist,
-				colours.gallery_artist_line, 311, max_w=max_text_w)
+				colours.gallery_artist_line, 312, max_w=max_text_w)
 			ddt.text((w - 10 * gui.scale, h - 20 * gui.scale, 1),
 				f"{self.selection + 1} / {len(tauon.album_dex)}",
 				colours.side_bar_line2, 310)
