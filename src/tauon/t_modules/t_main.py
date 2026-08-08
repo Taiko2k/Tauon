@@ -40290,7 +40290,7 @@ class ArtistList:
 					self.pctl.selected_in_playlist = select
 					self.d_click_ref = artist
 					self.d_click_timer.set()
-					if self.prefs.album_mode:
+					if not self.tauon.custom.gallery_locate(select) and self.prefs.album_mode:
 						self.tauon.goto_album(select)
 				else:
 					self.d_click_ref = artist
