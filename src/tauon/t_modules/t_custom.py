@@ -36,6 +36,7 @@ import json
 import logging
 import math
 import time
+from collections.abc import Iterator
 from typing import TYPE_CHECKING, Callable
 
 import sdl3
@@ -3625,6 +3626,30 @@ class CustomLayout:
 			left += tab_w + gap
 		return rects
 
+	def _iter_visible_tab_stacks(self, node: Node) -> Iterator[TabStack]:
+		"""Yield tab containers reached through the currently selected pages."""
+		if isinstance(node, Stack):
+			for child in node.children:
+				yield from self._iter_visible_tab_stacks(child)
+		elif isinstance(node, TabStack):
+			yield node
+			child = node.active_child()
+			if child is not None:
+				yield from self._iter_visible_tab_stacks(child)
+
+	def _active_tab_bridge_rect(
+			self, node: TabStack, tab_rects: list[tuple[int, int, int, int]],
+		) -> tuple[int, int, int, int] | None:
+		"""Return the fill joining the active selector to its bordered page."""
+		if not node.border or not 0 <= node.active < len(tab_rects):
+			return None
+		left, top, tab_w, tab_height = tab_rects[node.active]
+		bottom = top + tab_height
+		if bottom >= round(node.rect[1] + node.rect[3]):
+			return None
+		line = max(1, round(self.gui.scale))
+		return (left + line, bottom, max(0, tab_w - line * 2), line)
+
 	def _tab_at(self, node: Node, mx: float, my: float) -> tuple[TabStack, int] | None:
 		"""Return the visible tab selector under the pointer, outermost first."""
 		if isinstance(node, TabStack):
@@ -4157,13 +4182,39 @@ class CustomLayout:
 		return _t("Empty Tab")
 
 	def _draw_tab_bars(self, node: Node) -> None:
-		"""Draw every visible tab strip and register its selectors for hover."""
-		if isinstance(node, Stack):
-			for child in node.children:
-				self._draw_tab_bars(child)
+		"""Draw visible tab strips through the same offscreen path as widgets.
+
+		This matters when panel colours are translucent: drawing a selector
+		directly onto the main target produces a different result from widgets
+		such as Track: Titles, which are first drawn onto a transparent texture.
+		"""
+		tab_stacks = list(self._iter_visible_tab_stacks(node))
+		if not tab_stacks:
 			return
-		if not isinstance(node, TabStack):
-			return
+		left = min(round(tabs.rect[0]) for tabs in tab_stacks)
+		top = min(round(tabs.rect[1]) for tabs in tab_stacks)
+		right = max(round(tabs.rect[0] + tabs.rect[2]) for tabs in tab_stacks)
+		bottom = max(round(tabs.rect[1] + tabs.rect[3]) for tabs in tab_stacks)
+		area = sdl3.SDL_FRect(left, top, right - left, bottom - top)
+
+		renderer = self.renderer
+		scratch = self._get_scratch()
+		prev = sdl3.SDL_GetRenderTarget(renderer)
+		sdl3.SDL_SetRenderTarget(renderer, scratch)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		sdl3.SDL_RenderFillRect(renderer, area)
+		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		try:
+			for tabs in tab_stacks:
+				self._draw_tab_bar_to_target(tabs)
+		finally:
+			sdl3.SDL_SetRenderTarget(renderer, prev)
+
+		sdl3.SDL_RenderTexture(renderer, scratch, area, area)
+
+	def _draw_tab_bar_to_target(self, node: TabStack) -> None:
+		"""Draw one tab strip onto the current render target."""
 		x, y, w, h = node.rect
 		n = len(node.children)
 		if n == 0:
@@ -4177,6 +4228,7 @@ class CustomLayout:
 		bg = colours.side_panel_background
 		line = max(1, round(gui.scale))
 		tab_rects = self._tab_rects(node)
+		active_bridge = self._active_tab_bridge_rect(node, tab_rects)
 		outer_left = round(x)
 		outer_top = round(y)
 		outer_right = round(x + w)
@@ -4195,12 +4247,6 @@ class CustomLayout:
 			# completely untouched (important over art/translucent panels).
 			ddt.rect(rect, bg)
 			bottom = top + tab_height
-			if node.border and index == node.active and bottom < outer_bottom:
-				# Keep the page's border inset, but visually open the selected
-				# tab through it by extending only its background one border
-				# thickness. Stay inside the vertical strokes so neither the
-				# background nor any translucent border is painted twice.
-				ddt.rect((left + line, bottom, max(0, tab_w - line * 2), line), bg)
 			if node.border:
 				# Each horizontal segment excludes the vertical strokes at its
 				# ends. First/last tab sides are already the outer frame.
@@ -4226,6 +4272,10 @@ class CustomLayout:
 				bg=bg,
 				max_w=max(0, tab_w - round(20 * gui.scale)),
 			)
+		if active_bridge is not None:
+			# Visually open the selected tab through the page border. The shared
+			# geometry is also removed from the art veil below.
+			ddt.rect(active_bridge, bg)
 		if node.border:
 			# Draw the outer frame after the per-tab backgrounds, otherwise the
 			# first and last selector fills cover its left/right strokes. The
@@ -4248,10 +4298,6 @@ class CustomLayout:
 				gap_bottom = current[1] + current[3]
 				if gap_bottom < outer_bottom:
 					draw_line((gap_left, gap_bottom, max(0, gap_right - gap_left), line))
-		child = node.active_child()
-		if child is not None:
-			self._draw_tab_bars(child)
-
 	def _view_resize_hints(self, root: Node) -> None:
 		"""View-mode counterpart of the edit overlay's boundary handling, for
 		stacks marked resizable: register their boundary hot spots as hover
@@ -4524,6 +4570,17 @@ class CustomLayout:
 			if paint is None:
 				continue
 			sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(paint[0], paint[1], paint[2], paint[3]))
+
+		# Tab backgrounds use the same offscreen panel fill as widgets, so they
+		# also need the same un-veiled art underneath that fill.
+		for tabs in self._iter_visible_tab_stacks(root):
+			tab_rects = self._tab_rects(tabs)
+			bridge = self._active_tab_bridge_rect(tabs, tab_rects)
+			for rect in (*tab_rects, bridge):
+				if rect is None:
+					continue
+				sdl3.SDL_RenderFillRect(
+					renderer, sdl3.SDL_FRect(rect[0], rect[1], rect[2], rect[3]))
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.SDL_SetRenderTarget(renderer, self.gui.main_texture)
 		sdl3.SDL_RenderTexture(renderer, veil, area, area)
