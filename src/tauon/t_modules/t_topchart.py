@@ -31,7 +31,8 @@ import cairo  # noqa: E402
 from gi.repository import Pango, PangoCairo  # noqa: E402
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 class TopChart:

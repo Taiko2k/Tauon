@@ -25,7 +25,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import threading
 import time
 import urllib.request
@@ -42,7 +41,7 @@ if TYPE_CHECKING:
 	from subprocess import Popen
 	from urllib.request import _UrlopenRet
 
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 class StreamEnc:

@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 	from pychromecast import Chromecast
 	from pychromecast.discovery import CastBrowser
 
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 DISCOVERY_TIMEOUT = 5.0
@@ -121,7 +121,7 @@ class Chrome:
 				logging.exception("Failed to get chromecasts")
 				raise
 
-	def three(self, _, item: tuple[str, str]) -> None:
+	def three(self, _unused, item: tuple[str, str]) -> None:
 		shooter(self.four, [item])
 
 	def _release_connection(self) -> None:

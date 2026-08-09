@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 import sdl3
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 NEAR = 0.06
 FOV = math.radians(58.0)
@@ -162,20 +162,20 @@ class DreamRoom:
 		self.rain = [[
 			rnd.uniform(-4.0, 8.0), rnd.uniform(-3.0, 7.0), rnd.uniform(-8.0, -0.3),
 			rnd.uniform(6.0, 9.5), rnd.uniform(0.22, 0.5), rnd.uniform(-0.9, -0.4),
-		] for _ in range(RAIN_N)]
+		] for _unused in range(RAIN_N)]
 		# Droplets running down the glass, in window UV space: [u, v, size, speed, phase]
 		self.runners = [[
 			rnd.random(), rnd.random(), rnd.uniform(0.0025, 0.006),
 			rnd.uniform(0.015, 0.075), rnd.uniform(0, 9),
-		] for _ in range(RUNNER_N)]
+		] for _unused in range(RUNNER_N)]
 		# Static micro-droplets on the glass: [u, v, size, phase]
 		self.micro = [[
 			rnd.random(), rnd.random(), rnd.uniform(0.0025, 0.006), rnd.uniform(0, 9),
-		] for _ in range(MICRO_N)]
+		] for _unused in range(MICRO_N)]
 		# Dust motes drifting in the window light: [x, y, z, phase]
 		self.motes = [[
 			rnd.uniform(0.2, 2.1), rnd.uniform(0.3, 2.2), rnd.uniform(0.15, 2.6), rnd.uniform(0, 9),
-		] for _ in range(MOTE_N)]
+		] for _unused in range(MOTE_N)]
 		# Aircraft drifting across the skyline: [y, z, speed, phase, direction]
 		self.craft = [
 			[4.8, -30.0, 1.6, 3.0, 1],
@@ -391,7 +391,7 @@ class DreamRoom:
 			self._fill(0, y, fw, horizon / strips + 1, (*col, 255))
 		self._fill(0, horizon, fw, fh - horizon, (7, 6, 16, 255))
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		for _ in range(round(90 * fw / 1024)):	# stars (count scales with width to keep density)
+		for _unused in range(round(90 * fw / 1024)):	# stars (count scales with width to keep density)
 			self._fill(rnd.uniform(0, fw), rnd.uniform(0, 140), 1, 1,
 				(200, 210, 255, rnd.randint(30, 110)))
 		window_palette = [(95, 210, 255), (255, 170, 105), (250, 120, 190), (180, 200, 255)]
@@ -417,7 +417,7 @@ class DreamRoom:
 						wx += 5
 					wy += 6
 			x += bw + rnd.uniform(0, 14)
-		for _ in range(round(8 * fw / 1024)):	# distant neon signage (count scales with width)
+		for _unused in range(round(8 * fw / 1024)):	# distant neon signage (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255), (150, 80, 255)])
 			self._neon(rnd.uniform(20, fw - 50), rnd.uniform(120, horizon - 12),
 				rnd.uniform(8, 26), rnd.uniform(3, 6), c)
@@ -455,11 +455,11 @@ class DreamRoom:
 			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
 			x += bw + rnd.uniform(0, 26)
 		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		for _ in range(round(3 * nw / 1024)):	# large neon signs (count scales with width)
+		for _unused in range(round(3 * nw / 1024)):	# large neon signs (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255), (255, 120, 60)])
 			self._neon(rnd.uniform(40, nw - 110), rnd.uniform(70, 220),
 				rnd.uniform(30, 70), rnd.uniform(8, 14), c)
-		for _ in range(round(nw / 1024)):	# vertical signs (count scales with width)
+		for _unused in range(round(nw / 1024)):	# vertical signs (count scales with width)
 			c = rnd.choice([(255, 40, 180), (40, 230, 255)])
 			self._neon(rnd.uniform(100, nw - 100), rnd.uniform(60, 140), 8, 60, c)
 		self.city_near = tex

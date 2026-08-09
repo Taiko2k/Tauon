@@ -48,7 +48,13 @@ except Exception:
 if TYPE_CHECKING:
 	from typing import Any
 
-	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
+	from tauon.t_modules.t_art import AlbumArt
+	from tauon.t_modules.t_player import PlayerCtl
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_protocols import AppLike as Tauon
+	from tauon.t_modules.t_protocols import StringsLike as Strings
+	from tauon.t_modules.t_state import GuiVar
 
 
 REMOTE_API_PORT = 7814
@@ -772,7 +778,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.wfile.write(b"Invalid parameter")
 
 			elif path.startswith("/api1/start/"):
-				levels, _ = self.parse_trail(path)
+				levels, unused_trail = self.parse_trail(path)
 				if len(levels) == 5:
 					playlist = levels[3]
 					position = levels[4]
@@ -838,12 +844,12 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/albumtracks/"):
 				# Get tracks that appear in an album /albumtracks/plid/albumid
-				levels, _ = self.parse_trail(path)
+				levels, unused_trail = self.parse_trail(path)
 				l = []
 				if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
 					pl = tauon.id_to_pl(int(levels[3]))
 					if pl is not None:
-						_, album, _ = tauon.get_album_info(int(levels[4]), pl)
+						unused_before, album, unused_after = tauon.get_album_info(int(levels[4]), pl)
 						# logging.info(album)
 						for p in album:
 							l.append(self.get_track(p, pl, album_id=int(levels[4])))
@@ -857,7 +863,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/trackposition/"):
 				# get track /trackposition/plid/playlistposition
-				levels, _ = self.parse_trail(path)
+				levels, unused_trail = self.parse_trail(path)
 				if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
 					pl = tauon.id_to_pl(int(levels[3]))
 					if pl is not None:

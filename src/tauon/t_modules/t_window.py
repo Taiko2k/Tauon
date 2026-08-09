@@ -34,10 +34,10 @@ from typing import TYPE_CHECKING
 import sdl3
 
 from tauon.t_modules.t_draw import TDraw
-from tauon.t_modules.t_extra import ColourRGBA
+from tauon.t_modules.t_models import ColourRGBA
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 def renderer_key(renderer: sdl3.LP_SDL_Renderer) -> int:

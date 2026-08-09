@@ -22,7 +22,8 @@ except Exception:
 	logging.exception("Tidalapi not found")
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 class Tidal:

@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import logging
-import threading
 import time
 import urllib.parse
 from typing import TYPE_CHECKING
@@ -35,7 +34,9 @@ from tauon.t_modules.t_enums import PlayingState  # noqa: E402
 from tauon.t_modules.t_extra import filename_to_metadata, star_count2  # noqa: E402
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon
+	from tauon.t_modules.t_player import PlayerCtl
+	from tauon.t_modules.t_protocols import AppLike as Tauon
+	from tauon.t_modules.t_state import GuiVar
 
 
 class MPRIS(dbus.service.Object):

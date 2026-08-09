@@ -9,7 +9,7 @@ import objc
 from tauon.t_modules.t_enums import PlayingState
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 def _menu_state(active: bool) -> int:
@@ -26,117 +26,117 @@ class _MenuTarget(AppKit.NSObject):
 		return self
 
 	@objc.IBAction
-	def openSettings_(self, _: object) -> None:
+	def openSettings_(self, unused_event: object) -> None:
 		self.controller.open_settings()
 
 	@objc.IBAction
-	def openTracksArt_(self, _: object) -> None:
+	def openTracksArt_(self, unused_event: object) -> None:
 		self.controller.open_tracks_art()
 
 	@objc.IBAction
-	def importFolderToCurrentPlaylist_(self, _: object) -> None:
+	def importFolderToCurrentPlaylist_(self, unused_event: object) -> None:
 		self.controller.import_folder_to_current_playlist()
 
 	@objc.IBAction
-	def clearCurrentPlaylist_(self, _: object) -> None:
+	def clearCurrentPlaylist_(self, unused_event: object) -> None:
 		self.controller.clear_current_playlist()
 
 	@objc.IBAction
-	def openGallery_(self, _: object) -> None:
+	def openGallery_(self, unused_event: object) -> None:
 		self.controller.open_gallery()
 
 	@objc.IBAction
-	def openTracksOnly_(self, _: object) -> None:
+	def openTracksOnly_(self, unused_event: object) -> None:
 		self.controller.open_tracks_only()
 
 	@objc.IBAction
-	def openShowcase_(self, _: object) -> None:
+	def openShowcase_(self, unused_event: object) -> None:
 		self.controller.open_showcase()
 
 	@objc.IBAction
-	def openRadio_(self, _: object) -> None:
+	def openRadio_(self, unused_event: object) -> None:
 		self.controller.open_radio()
 
 	@objc.IBAction
-	def toggleColumns_(self, _: object) -> None:
+	def toggleColumns_(self, unused_event: object) -> None:
 		self.controller.toggle_columns()
 
 	@objc.IBAction
-	def setTrackShuffle_(self, _: object) -> None:
+	def setTrackShuffle_(self, unused_event: object) -> None:
 		self.controller.set_track_shuffle()
 
 	@objc.IBAction
-	def setAlbumShuffle_(self, _: object) -> None:
+	def setAlbumShuffle_(self, unused_event: object) -> None:
 		self.controller.set_album_shuffle()
 
 	@objc.IBAction
-	def setShuffleOff_(self, _: object) -> None:
+	def setShuffleOff_(self, unused_event: object) -> None:
 		self.controller.set_shuffle_off()
 
 	@objc.IBAction
-	def setRepeatTrack_(self, _: object) -> None:
+	def setRepeatTrack_(self, unused_event: object) -> None:
 		self.controller.set_repeat_track()
 
 	@objc.IBAction
-	def setRepeatAlbum_(self, _: object) -> None:
+	def setRepeatAlbum_(self, unused_event: object) -> None:
 		self.controller.set_repeat_album()
 
 	@objc.IBAction
-	def setRepeatOff_(self, _: object) -> None:
+	def setRepeatOff_(self, unused_event: object) -> None:
 		self.controller.set_repeat_off()
 
 	@objc.IBAction
-	def setShuffleLockdown_(self, _: object) -> None:
+	def setShuffleLockdown_(self, unused_event: object) -> None:
 		self.controller.set_shuffle_lockdown()
 
 	@objc.IBAction
-	def setShuffleLockdownAlbums_(self, _: object) -> None:
+	def setShuffleLockdownAlbums_(self, unused_event: object) -> None:
 		self.controller.set_shuffle_lockdown_albums()
 
 	@objc.IBAction
-	def exitShuffleLockdown_(self, _: object) -> None:
+	def exitShuffleLockdown_(self, unused_event: object) -> None:
 		self.controller.exit_shuffle_lockdown()
 
 	@objc.IBAction
-	def play_(self, _: object) -> None:
+	def play_(self, unused_event: object) -> None:
 		self.controller.play()
 
 	@objc.IBAction
-	def pause_(self, _: object) -> None:
+	def pause_(self, unused_event: object) -> None:
 		self.controller.pause()
 
 	@objc.IBAction
-	def stop_(self, _: object) -> None:
+	def stop_(self, unused_event: object) -> None:
 		self.controller.stop()
 
 	@objc.IBAction
-	def loveTrack_(self, _: object) -> None:
+	def loveTrack_(self, unused_event: object) -> None:
 		self.controller.love_track()
 
 	@objc.IBAction
-	def randomTrack_(self, _: object) -> None:
+	def randomTrack_(self, unused_event: object) -> None:
 		self.controller.random_track()
 
 	@objc.IBAction
-	def radioRandom_(self, _: object) -> None:
+	def radioRandom_(self, unused_event: object) -> None:
 		self.controller.radio_random()
 
 	@objc.IBAction
-	def goToPlaying_(self, _: object) -> None:
+	def goToPlaying_(self, unused_event: object) -> None:
 		self.controller.go_to_playing()
 
 	@objc.IBAction
-	def openAbout_(self, _: object) -> None:
+	def openAbout_(self, unused_event: object) -> None:
 		self.controller.open_about()
 
 	@objc.IBAction
-	def openOnlineManual_(self, _: object) -> None:
+	def openOnlineManual_(self, unused_event: object) -> None:
 		self.controller.open_online_manual()
 
-	def menuNeedsUpdate_(self, _: AppKit.NSMenu) -> None:
+	def menuNeedsUpdate_(self, unused_menu: AppKit.NSMenu) -> None:
 		self.controller.refresh_states()
 
-	def menuWillOpen_(self, _: AppKit.NSMenu) -> None:
+	def menuWillOpen_(self, unused_menu: AppKit.NSMenu) -> None:
 		self.controller.refresh_states()
 
 

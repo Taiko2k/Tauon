@@ -127,10 +127,10 @@ def open_crash_log(path: Path) -> None:
 
 
 def main() -> None:
-	"""Launch Tauon by means of importing t_main.py"""
-	from tauon.t_modules.t_main import main as t_main
+	"""Launch Tauon by means of importing the runtime coordinator."""
+	from tauon.t_modules.t_run import main as t_run
 
-	t_main(holder)
+	t_run(holder)
 
 
 def transfer_args_and_exit() -> None:

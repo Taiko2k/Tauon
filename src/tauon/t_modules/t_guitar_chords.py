@@ -16,14 +16,18 @@ from typing import TYPE_CHECKING
 import requests
 import sdl3
 
-from tauon.t_modules.t_extra import ColourRGBA, TestTimer, filename_safe
+from tauon.t_modules.t_extra import TestTimer, filename_safe
+from tauon.t_modules.t_models import ColourRGBA
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_draw import TDraw
-	from tauon.t_modules.t_main import ColoursClass, GuiVar, Input, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_player import PlayerCtl
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_protocols import AppLike as Tauon
+	from tauon.t_modules.t_state import ColoursClass, GuiVar, Input
 
-# TODO(Martin): Dupe code here to make things work in a dirty fashion until t_main gets a bigger rework
-# from tauon.t_modules.t_main import copy_from_clipboard
+# TODO(Martin): Dupe code here to make things work in a dirty fashion until
+# the clipboard helper can be shared without pulling in the application module.
 
 
 def copy_from_clipboard() -> str:

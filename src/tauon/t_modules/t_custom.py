@@ -41,10 +41,11 @@ from typing import TYPE_CHECKING, Callable
 import sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
-from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time
+from tauon.t_modules.t_extra import atomic_save, get_display_time
+from tauon.t_modules.t_models import ColourRGBA
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 def _t(s: str) -> str:
@@ -913,7 +914,7 @@ class DetailsWidget(Widget):
 		# row background, both fading out further down the list.
 		empty = track is None
 		if empty:
-			rows = [(_t(label), "") for label, _ in self._FIELDS]
+			rows = [(_t(label), "") for label, field_name in self._FIELDS]
 		else:
 			rows = self._rows(track)
 
@@ -2504,7 +2505,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	# nest inside naturally), overridden at shared boundaries and consumed edges.
 	lead = list(gutters)
 	trail = list(gutters)
-	child_consumed: list[set[str]] = [set() for _ in range(n)]
+	child_consumed: list[set[str]] = [set() for unused_child in range(n)]
 
 	# This node's consumed edges pass through to the children touching them.
 	if lead_side in consumed:
@@ -3357,7 +3358,7 @@ class CustomLayout:
 		# systems own input. The main loop already routes clicks to active menus
 		# before this runs (and menus need the real mouse position for hover), so
 		# stand down entirely — no neutralising.
-		from tauon.t_modules.t_main import Menu  # local import avoids cycle
+		from tauon.t_modules.t_menu import Menu
 		if Menu.active or gui.message_box or gui.rename_playlist_box:
 			# Edit mode: right-clicking another widget while a menu is already
 			# open re-targets the layout menu there. Without this we'd stand
@@ -3705,7 +3706,7 @@ class CustomLayout:
 		"""Close the native context menu if it is the active one."""
 		if self.menu is not None and self.menu.active:
 			self.menu.active = False
-			from tauon.t_modules.t_main import Menu  # local import avoids cycle
+			from tauon.t_modules.t_menu import Menu
 			for m in Menu.instances:
 				if m.active:
 					break
@@ -4249,7 +4250,7 @@ class CustomLayout:
 				found = True
 		if not found:
 			return
-		from tauon.t_modules.t_main import Menu  # local import avoids cycle
+		from tauon.t_modules.t_menu import Menu
 		if Menu.active or gui.message_box or gui.rename_playlist_box:
 			return
 		if self.drag is not None:

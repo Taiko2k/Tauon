@@ -45,7 +45,7 @@ if TYPE_CHECKING:
 
 	from typing_extensions import Self
 
-	from tauon.t_modules.t_main import TrackClass
+	from tauon.t_modules.t_models import TrackClass
 
 
 LRC_TIMESTAMP_RE = re.compile(r"\[\d+:\d{1,2}\.\d{2,3}\]")

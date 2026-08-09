@@ -29,15 +29,16 @@ from typing import TYPE_CHECKING
 import sdl3
 from PIL import Image
 
-from tauon.t_modules.t_extra import ColourRGBA, Timer, alpha_blend, coll_rect
+from tauon.t_modules.t_extra import Timer, alpha_blend, coll_rect
+from tauon.t_modules.t_models import ColourRGBA
 
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 try:
-	from jxlpy import JXLImagePlugin
+	from jxlpy import JXLImagePlugin  # noqa: F401
 
 	logging.info("Found jxlpy for JPEG XL support")
 except ModuleNotFoundError:
@@ -844,7 +845,7 @@ class TDraw:
 			if len(self._locate_cache) > 64:
 				self._locate_cache.pop(next(iter(self._locate_cache)))
 
-		full_w_pango, _ = layout.get_size()
+		full_w_pango, unused_height = layout.get_size()
 		full_w_px = full_w_pango / Pango.SCALE
 
 		inside, index, trailing = layout.xy_to_index(

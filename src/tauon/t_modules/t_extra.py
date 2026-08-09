@@ -37,133 +37,28 @@ import urllib.parse
 import zipfile
 from collections import deque
 from contextlib import contextmanager, suppress
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from gi.repository import GLib
 from rapidfuzz import fuzz
 
+# Compatibility exports for callers and persisted imports using t_extra paths.
+from tauon.t_modules.t_models import (  # noqa: F401
+	ColourRGBA,
+	RadioPlaylist,
+	RadioStation,
+	StarRecord,
+	TauonPlaylist,
+	TauonQueueItem,
+)
+
 if TYPE_CHECKING:
 	from collections.abc import Callable, Iterator
 	from typing import IO
 
-	from tauon.t_modules.t_enums import QueueType
-	from tauon.t_modules.t_main import TrackClass
+	from tauon.t_modules.t_models import TrackClass
 	from tauon.t_modules.t_tagscan import TrackFile
-
-
-@dataclass
-class ColourRGBA:
-	"""Red, Green, Blue and Alpha
-
-	SDR, ranging from 0 to 255
-	"""
-
-	r: int
-	g: int
-	b: int
-	a: int
-
-
-@dataclass
-class RadioStation:
-	title: str
-	stream_url: str
-	country: str = ""
-	website_url: str = ""
-	icon: str = ""
-	stream_url_fallback: str = ""
-
-
-@dataclass
-class RadioPlaylist:
-	name: str
-	uid: int
-	scroll: int = 0
-	stations: list[RadioStation] = field(default_factory=list[RadioStation])
-
-
-@dataclass
-class StarRecord:
-	"""Playtime in seconds, 0 to 10 rating, loved/hated status & timestamp
-
-	Hate status is currently not implemented. Integrations such as ListenBrainz use it.
-	"""
-
-	playtime: float = 0
-	rating: int = 0
-	loved: bool = False
-	loved_timestamp: float = 0
-	hated: bool = False
-	hated_timestamp: float = 0
-
-
-@dataclass
-class TauonQueueItem:
-	"""TauonQueueItem is [trackid, position, playlist_id, type, album_stage, uid_gen(), auto_stop]
-
-	type:
-		0 is a track
-		1 is an album
-
-	Old pre-migration queue[6]-style numbering help table:
-		0 track_id    (int)
-		1 position    (int)
-		2 playlist_id (int)
-		3 type        (int)
-		4 album_stage (int)
-		5 uuid_int    (int)
-		6 auto_stop   (bool)
-	"""
-
-	track_id: int
-	position: int
-	playlist_id: int
-	type: QueueType
-	album_stage: int
-	uuid_int: int
-	auto_stop: bool
-
-
-@dataclass
-class TauonPlaylist:
-	"""Playlist is [Name, playing, playlist_ids, position, hide folder title, selected, uid (1 to 100000000), last_folder, hidden(bool)]
-
-	Old pre-migration pl[6]-style numbering help table:
-		0 title (string)
-		1 playing (int)
-		2 playlist_ids (list of int)
-		3 position (int)
-		4 hide_title on playlist folders (bool)
-		5 selected (int)
-		6 uuid_int (int)
-		7 last_folder import paths (list[str])
-		8 hidden (bool)
-		9 locked (bool)
-		10 parent_playlist_id <- Filter (int)
-		11 persist_time_positioning
-	"""
-
-	title: str
-	playing: int
-	playlist_ids: list[int]
-	position: int  # View Position
-	hide_title: bool  # hide playlist folder titles (bool)
-	selected: int
-	uuid_int: int
-	last_folder: list[str]  # last folder import paths
-	hidden: bool
-	locked: bool
-	parent_playlist_id: int  # Filter parent playlist id
-	persist_time_positioning: bool  # Persist time positioning
-	playlist_file: str = ""  # Playlist may be automatically loaded to and from this filepath
-	auto_export: bool = False
-	auto_import: bool = False
-	relative_export: bool = False
-	export_type: str = "xspf"
-	file_size: int = 0  # if this is different from last time we'll rescan it
-
 
 def _(m: str) -> str:
 	return m
@@ -1107,6 +1002,17 @@ def coll_rect(rect1: list[int], rect2: list[int]) -> bool:
 		or rect1[0] > rect2[0] + rect2[2]
 		or rect1[1] > rect2[1] + rect2[3]
 	)
+
+
+def coll_point(l: list[int], r: list[int]) -> bool:
+	# rect point collision detection
+	return r[0] < l[0] <= r[0] + r[2] and r[1] <= l[1] <= r[1] + r[3]
+
+
+def window_is_focused(t_window) -> bool:
+	"""Thread safe?"""
+	import sdl3
+	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
 
 
 def commonprefix(parents: str) -> str:

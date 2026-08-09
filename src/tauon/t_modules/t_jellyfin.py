@@ -30,14 +30,17 @@ from typing import TYPE_CHECKING
 
 import requests
 
-from tauon.t_modules.t_extra import StarRecord, Timer
+from tauon.t_modules.t_extra import Timer
+from tauon.t_modules.t_models import StarRecord
 
 if TYPE_CHECKING:
 	from io import BytesIO
 
-	from tauon.t_modules.t_extra import TauonPlaylist
-	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
+	from tauon.t_modules.t_player import PlayerCtl
+	from tauon.t_modules.t_models import TrackClass
 	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_protocols import AppLike as Tauon
+	from tauon.t_modules.t_state import GuiVar
 
 # Library import is fetched in pages so each response stays small enough that
 # a reverse proxy in front of the server won't time out generating it

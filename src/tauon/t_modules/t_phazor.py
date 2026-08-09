@@ -44,14 +44,15 @@ import requests
 from requests.models import PreparedRequest
 
 from tauon.t_modules.t_enums import PlayerState, PlayingState
-from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
+from tauon.t_modules.t_extra import Timer, tmp_cache_dir
 from tauon.t_modules.t_replaygain import replaygain_multiplier
 
 if TYPE_CHECKING:
 	from ctypes import CDLL
 
-	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
-	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_player import PlayerCtl
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_protocols import AppLike as Tauon
 
 
 class FFRun:

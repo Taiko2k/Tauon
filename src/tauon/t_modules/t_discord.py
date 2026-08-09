@@ -12,6 +12,8 @@ from typing import Optional
 
 import requests
 
+from tauon.t_modules.t_enums import PlayingState
+
 try:
     from pypresence import ActivityType, Presence, StatusDisplayType
 except Exception:
@@ -88,11 +90,6 @@ def resolve_lastfm_button_url_async(main, artist: Optional[str], title: Optional
 
 
 def discord_loop_entrypoint(main) -> None:
-    try:
-        from tauon.t_modules.t_main import PlayingState
-    except Exception:
-        PlayingState = None  # type: ignore
-
     prefs = main.prefs
     gui   = main.gui
     pctl  = main.pctl
@@ -267,10 +264,7 @@ def discord_loop_entrypoint(main) -> None:
                     continue
 
             state_now = pctl.playing_state
-            radio_live = (
-                PlayingState is not None
-                and state_now == PlayingState.URL_STREAM
-            )
+            radio_live = state_now == PlayingState.URL_STREAM
             # Radio plays without a track queue, so playing_ready() alone can't gate it
             if radio_live or pctl.playing_ready():
                 tr = pctl.playing_object()
@@ -278,22 +272,12 @@ def discord_loop_entrypoint(main) -> None:
                 tr        = None
                 state_now = None
 
-            is_playing = (
-                state_now in (PlayingState.PLAYING, PlayingState.URL_STREAM)
-                if PlayingState is not None and state_now is not None
-                else False
-            )
-            is_paused = (
-                PlayingState is not None
-                and state_now == PlayingState.PAUSED
-            )
-            is_idle = tr is None or (
-                PlayingState is not None
-                and state_now not in (
-                    PlayingState.PLAYING,
-                    PlayingState.PAUSED,
-                    PlayingState.URL_STREAM,
-                )
+            is_playing = state_now in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+            is_paused = state_now == PlayingState.PAUSED
+            is_idle = tr is None or state_now not in (
+                PlayingState.PLAYING,
+                PlayingState.PAUSED,
+                PlayingState.URL_STREAM,
             )
             is_inactive = is_idle or is_paused
 

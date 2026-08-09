@@ -5,12 +5,16 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem, atomic_save
+from tauon.t_modules.t_extra import atomic_save
+from tauon.t_modules.t_models import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem
 
 if TYPE_CHECKING:
 	from pathlib import Path
 
-	from tauon.t_modules.t_main import GuiVar, Prefs, Tauon, TrackClass
+	from tauon.t_modules.t_models import TrackClass
+	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_protocols import AppLike as Tauon
+	from tauon.t_modules.t_state import GuiVar
 
 
 def migrate_star_store_71(tauon: Tauon) -> None:
@@ -274,7 +278,7 @@ def database_migrate(
 		# dict; it now has dedicated __slots__ fields. Spread any misc data
 		# preserved from the old save format into those fields.
 		if legacy_track_misc:
-			from tauon.t_modules.t_main import _MISC_TO_FIELD  # noqa: PLC0415
+			from tauon.t_modules.t_models import _MISC_TO_FIELD  # noqa: PLC0415
 			for index, misc in legacy_track_misc.items():
 				track = master_library.get(index)
 				if track is None:
