@@ -1674,16 +1674,16 @@ class _AlbumflowBase(GalleryWidget):
 						inp.d_mouse_click = False
 					break
 
-		if inp.mouse_down and self._drag_origin is not None:
-			dx = mx - self._drag_origin[0]
-			self._dx = max(self._dx, abs(dx))
-			if self._dx > 7 * tauon.gui.scale:
-				self._dragged = True
-				pitch = max(24.0, art_size * 0.25)
-				last = max(0, len(tauon.album_dex) - 1)
-				self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
-				self.selection = round(self.position)
-				tauon.gui.request_frame()
+		# if inp.mouse_down and self._drag_origin is not None:
+		# 	dx = mx - self._drag_origin[0]
+		# 	self._dx = max(self._dx, abs(dx))
+		# 	if self._dx > 7 * tauon.gui.scale:
+		# 		self._dragged = True
+		# 		pitch = max(24.0, art_size * 0.25)
+		# 		last = max(0, len(tauon.album_dex) - 1)
+		# 		self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
+		# 		self.selection = round(self.position)
+		# 		tauon.gui.request_frame()
 		if inp.mouse_up and self._drag_origin is not None:
 			if self._dragged:
 				self._select(tauon, round(self.position))
