@@ -38772,10 +38772,10 @@ class RadioBox:
 		self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
 		if len(radio_list) // 2 > 9:
-			self.scroll_position = self.scroll.draw(
+			self.scroll_position = round(self.scroll.draw(
 				(x + w) - round(35 * self.gui.scale), yy, round(15 * self.gui.scale),
 				round(210 * self.gui.scale), self.scroll_position,
-				len(radio_list) // 2 - 7, True, click=self.gui.level_2_click)
+				len(radio_list) // 2 - 7, True, click=self.gui.level_2_click))
 
 		self.scroll_position = max(self.scroll_position, 0)
 
