@@ -1588,7 +1588,7 @@ class _AlbumflowBase(GalleryWidget):
 
 		inp.mouse_position[0] += rect[0]
 		inp.mouse_position[1] += rect[1]
-		scroll = - tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		scroll = -tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
 		inp.mouse_position[0] -= rect[0]
 		inp.mouse_position[1] -= rect[1]
 		self._has_momentum = (abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down) and not inp.mouse_wheel
@@ -1596,7 +1596,7 @@ class _AlbumflowBase(GalleryWidget):
 			and (self._known_smooth or tauon.touch_input_tracker.is_scroll)
 		if scroll or tauon.touch_input_tracker.is_scroll:
 			if inp.mouse_wheel:
-				self._wheel_accum -= scroll
+				self._wheel_accum -= inp.mouse_wheel
 				threshold = 0.55 if inp.mouse_wheel_precise else 0.1
 				if abs(self._wheel_accum) >= threshold:
 					steps = max(1, min(3, round(abs(self._wheel_accum))))
