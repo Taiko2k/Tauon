@@ -5593,9 +5593,9 @@ class Menu:
 
 			if icon.base_asset is None:
 				# Colourise mode
-				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
+				if icon.colour_callback is not None:
 					colour = icon.colour_callback()
-				elif selected and fx.text_colour != colours.menu_text_disabled:
+				if colour is None and selected and fx.text_colour != colours.menu_text_disabled:
 					colour = icon.colour
 
 				if colour is None and icon.base_asset_mod:
@@ -32679,7 +32679,7 @@ class TopPanel:
 
 		colour = colours.corner_button  # [230, 230, 230, 255]
 
-		if gui.lsp:
+		if gui.lsp or self.coll(rect):
 			colour = colours.corner_button_active
 		if gui.combo_mode:
 			colour = colours.corner_button
@@ -32710,7 +32710,7 @@ class TopPanel:
 			if self.coll(lrect) and inp.mouse_click and not self.tauon.layout_menu.click_dismissed:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
-			lcol = colours.corner_button_active if self.tauon.layout_menu.active else colours.corner_button
+			lcol = colours.corner_button_active if self.tauon.layout_menu.active or self.coll(lrect) else colours.corner_button
 			lcol = self.tauon.style_overlay.tint_from_background(
 				lcol, wwx + 20 * gui.scale, yy + 16 * gui.scale, 0.2,
 				colours.bottom_panel_colour)
