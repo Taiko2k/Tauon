@@ -41312,7 +41312,11 @@ class QueueBox:
 
 		yy += round(3 * self.gui.scale)
 
-		box_rect = (x, yy - 6 * self.gui.scale, w, h)
+		# The queue content starts below its top padding, but its background must
+		# cover the complete panel. In custom layouts this is rendered through a
+		# transparent scratch texture, so starting the fill at ``yy - 6*scale``
+		# exposed a thin strip of the layout background above the queue.
+		box_rect = (x, y, w, h)
 		self.ddt.rect(box_rect, self.colours.queue_background)
 		self.ddt.text_background_colour = self.colours.queue_background
 
