@@ -8,6 +8,7 @@ Changelog
  - Added new widget Tab Switcher
  - Revamps & refinements to both synced and static lyrics editors
  - Fixed bug that caused GNOME to occasionally crash when Tauon did
+ - Touch shortcut: swipe sideways to queue (middle click)
 
 
 ### v11.1.1

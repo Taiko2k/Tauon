@@ -100,7 +100,7 @@ class Widget:
 	# (e.g. the Art Box) can skip it rather than double up.
 	leaf_border: bool = False
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		raise NotImplementedError
 
 	# Per-instance settings, persisted in the Leaf's dict as "conf" when
@@ -131,7 +131,7 @@ class ArtBoxWidget(Widget):
 	single_instance = True  # ArtBox writes singleton gui.main_art_box / milk state
 	offscreen = False
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		# inset=False: no outer padding in custom mode — the segment's gutter
 		# provides the spacing instead. quick_draw while an edit-mode drag
 		# (boundary resize or widget swap) is repainting every frame: same fast
@@ -165,7 +165,7 @@ class MilkDropWidget(Widget):
 	single_instance = True
 	offscreen = False
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
 		ddt = tauon.ddt
 		inp = tauon.inp
@@ -266,7 +266,7 @@ class SticksVisWidget(Widget):
 	single_instance = True
 	offscreen = False  # positions/defers only; real drawing is at screen coords
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
 		rec = gui.spec4_rec
 		rec.x = round(x + (w - rec.w) / 2)
@@ -383,7 +383,7 @@ class SpectrogramWidget(Widget):
 	_pending_cols = 0
 	_pending_since = 0.0
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
 		cls = SpectrogramWidget
 		rect = (round(x), round(y), round(w), round(h))
@@ -584,7 +584,7 @@ class TopPanelWidget(Widget):
 	edit_label = False
 	offscreen = True
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		# Offscreen mode: the engine has already reframed the coordinate space
 		# (window width, mouse, fields offset) and set the scratch render target,
 		# so the panel just renders at its native (0, 0) origin and is blitted to
@@ -614,7 +614,7 @@ class PlaybackPanelWidget(Widget):
 	edit_label = False
 	offscreen = True
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		# The standard path sets this before rendering the bar; the bar's text
 		# blends against it, so a stale colour from another widget bleeds through.
 		tauon.ddt.text_background_colour = tauon.colours.bottom_panel_colour
@@ -637,7 +637,7 @@ class RectPanelWidget(Widget):
 	panel_attr = ""
 	panel_method = "draw"
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		panel = getattr(tauon, self.panel_attr)
 		getattr(panel, self.panel_method)(round(x), round(y), round(w), round(h))
 
@@ -680,7 +680,7 @@ class ArtistInfoWidget(RectPanelWidget):
 	min_w = 300
 	min_h = 60
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		tauon.artist_info_box.draw(round(x), round(y), round(w), round(h), panel_mode=False)
 
 
@@ -695,7 +695,7 @@ class MetaWidget(Widget):
 	min_h = 40
 	meta_method = "draw"
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		track = tauon.pctl.show_object()
 		getattr(tauon.meta_box, self.meta_method)(round(x), round(y), round(w), round(h), track)
 
@@ -706,7 +706,7 @@ class MetaCenterWidget(MetaWidget):
 	name = "Track: Titles"
 	meta_method = "draw"
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		track = tauon.pctl.show_object()
 		tauon.meta_box.draw(round(x), round(y), round(w), round(h), track, lyrics_ui=False)
 
@@ -731,7 +731,7 @@ class LyricsWidget(MetaWidget):
 	meta_method = "lyrics"
 	single_instance = True  # shared lyrics scroll state
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		track = tauon.pctl.show_object()
 		gui = tauon.gui
 		tauon.test_auto_lyrics(track)
@@ -785,7 +785,7 @@ class TracklistWidget(Widget):
 	def __init__(self) -> None:
 		self._last_rect: tuple | None = None
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		pr = tauon.playlist_render
 		gui = tauon.gui
 		inp = tauon.inp
@@ -901,7 +901,7 @@ class DetailsWidget(Widget):
 		rows = [(_t(label), str(getter(track)).strip()) for label, getter in cls._FIELDS]
 		return [(label, value) for label, value in rows if value]
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
 		ddt = tauon.ddt
 		inp = tauon.inp
@@ -1006,7 +1006,7 @@ class GalleryWidget(Widget):
 			tauon.reload_albums(quiet=True)
 			self._dex_playlist_id = playlist.uuid_int
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gallery_render = tauon.gallery_render
 		self._ensure_album_dex(tauon)
 		gui = tauon.gui
@@ -1324,7 +1324,10 @@ class _AlbumflowBase(GalleryWidget):
 		self._drag_origin: tuple[float, float] | None = None
 		self._drag_position: float = 0.0
 		self._dragged: bool = False
+		self._has_momentum: bool = False
 		self._dx: float = 0.0
+		self._known_smooth: bool = False
+		self._clicked: bool = False
 
 	@staticmethod
 	def _render_quad(renderer, points: list[tuple[float, float]], texture=None,
@@ -1564,11 +1567,12 @@ class _AlbumflowBase(GalleryWidget):
 			self._last_frame = now
 		delta = min(0.05, max(0.0, now - self._last_frame))
 		self._last_frame = now
-		if self._drag_origin is not None and self._dragged:
+		if (self._has_momentum and self._known_smooth) or self._drag_origin is not None and self._dragged:
 			return
 		distance = self.selection - self.position
 		if abs(distance) < 0.001:
 			self.position = float(self.selection)
+			self._clicked = False
 			return
 		# Exponential ease-out is stable across varying frame rates and never
 		# overshoots when the user reverses direction mid-animation.
@@ -1576,22 +1580,47 @@ class _AlbumflowBase(GalleryWidget):
 		tauon.gui.request_frame()
 
 	def _handle_input(self, tauon: Tauon, over: bool,
-			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float) -> None:
+			hit_quads: list[tuple[int, list[tuple[float, float]]]], art_size: float, rect: tuple[int, int, int, int]) -> None:
 		inp = tauon.inp
-		if not over or not tauon.is_level_zero(False):
+		if not self._has_momentum and (not over or not tauon.is_level_zero(False)):
 			if inp.mouse_up:
 				self._drag_origin = None
 			return
 
-		if inp.mouse_wheel:
-			self._wheel_accum -= inp.mouse_wheel
-			threshold = 0.55 if inp.mouse_wheel_precise else 0.1
-			if abs(self._wheel_accum) >= threshold:
-				steps = max(1, min(3, round(abs(self._wheel_accum))))
-				direction = 1 if self._wheel_accum > 0 else -1
-				self._select(tauon, self.selection + direction * steps)
-				self._wheel_accum = 0.0
-			inp.mouse_wheel = 0
+		inp.mouse_position[0] += rect[0]
+		inp.mouse_position[1] += rect[1]
+		scroll = -tauon.smooth_scroll.get_scroll("albumflow", rect, coeff=500*tauon.gui.scale, sideways=True)/(500*tauon.gui.scale)
+		inp.mouse_position[0] -= rect[0]
+		inp.mouse_position[1] -= rect[1]
+		self._has_momentum = (abs(scroll*300*tauon.gui.scale)>1.5 or tauon.touch_input_tracker.is_down) and not inp.mouse_wheel
+		self._known_smooth = (not inp.mouse_wheel) \
+			and (self._known_smooth or tauon.touch_input_tracker.is_scroll)
+		if scroll or tauon.touch_input_tracker.is_scroll:
+			if inp.mouse_wheel:
+				self._wheel_accum -= inp.mouse_wheel
+				threshold = 0.55 if inp.mouse_wheel_precise else 0.1
+				if abs(self._wheel_accum) >= threshold:
+					steps = max(1, min(3, round(abs(self._wheel_accum))))
+					direction = 1 if self._wheel_accum > 0 else -1
+					self._select(tauon, self.selection + direction * steps)
+					# self.position -= self._wheel_accum#direction * steps
+					self._wheel_accum = 0.0
+					tauon.gui.request_frame()
+				inp.mouse_wheel = 0
+
+			elif self._has_momentum and self._known_smooth:
+				last = max(0, len(tauon.album_dex) - 1)
+				if inp.mouse_wheel:
+					mult = 1
+				else:
+					mult = 5*tauon.gui.scale
+				self.position -= scroll*mult
+				self.position = max(0.0, min(last, self.position))
+				self.selection = round(self.position)
+				tauon.gui.request_frame()
+
+		elif self.position != round(self.position) and self._known_smooth and not self._clicked:
+			self._select(tauon, round(self.position)) or not self._known_smooth
 
 		if inp.key_focused == 0:
 			if inp.key_left_press:
@@ -1638,21 +1667,24 @@ class _AlbumflowBase(GalleryWidget):
 				if self._contains(points, mx, my):
 					play = inp.d_mouse_click and album_index == self.selection
 					self._select(tauon, album_index, play=play)
+					self._has_momentum = False
+					self._dx = 0.0
+					self._clicked = True
 					inp.mouse_click = False
 					if play:
 						inp.d_mouse_click = False
 					break
 
-		if inp.mouse_down and self._drag_origin is not None:
-			dx = mx - self._drag_origin[0]
-			self._dx = max(self._dx, abs(dx))
-			if self._dx > 7 * tauon.gui.scale:
-				self._dragged = True
-				pitch = max(24.0, art_size * 0.25)
-				last = max(0, len(tauon.album_dex) - 1)
-				self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
-				self.selection = round(self.position)
-				tauon.gui.request_frame()
+		# if inp.mouse_down and self._drag_origin is not None:
+		# 	dx = mx - self._drag_origin[0]
+		# 	self._dx = max(self._dx, abs(dx))
+		# 	if self._dx > 7 * tauon.gui.scale:
+		# 		self._dragged = True
+		# 		pitch = max(24.0, art_size * 0.25)
+		# 		last = max(0, len(tauon.album_dex) - 1)
+		# 		self.position = max(0.0, min(self._drag_position - dx / pitch, float(last)))
+		# 		self.selection = round(self.position)
+		# 		tauon.gui.request_frame()
 		if inp.mouse_up and self._drag_origin is not None:
 			if self._dragged:
 				self._select(tauon, round(self.position))
@@ -1707,7 +1739,7 @@ class _AlbumflowBase(GalleryWidget):
 		destination = sdl3.SDL_FRect(0, 0, w, h)
 		sdl3.SDL_RenderTexture(renderer, _AlbumflowBase._aa_texture, source, destination)
 
-	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		"""Supersample album art, then draw UI overlays at native resolution."""
 		tauon.fields.add((x, y, w, h))
 		background = tauon.colours.gallery_background
@@ -1715,10 +1747,10 @@ class _AlbumflowBase(GalleryWidget):
 		tauon.ddt.text_background_colour = background
 		state = self._begin_antialias(tauon.renderer, w, h)
 		if state is None:
-			self._draw_scene(tauon, x, y, w, h)
+			self._draw_scene(tauon, x, y, w, h, content_rect)
 		else:
 			try:
-				self._draw_scene(tauon, x, y, w, h)
+				self._draw_scene(tauon, x, y, w, h, content_rect)
 			finally:
 				self._finish_antialias(tauon.renderer, state, w, h)
 		self._draw_overlay(tauon, w, h)
@@ -1937,7 +1969,7 @@ class AlbumflowWidget(_AlbumflowBase):
 			points[3],
 		]
 
-	def _draw_scene(self, tauon: Tauon, x: float, y: float, w: float, h: float) -> None:
+	def _draw_scene(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		self._sync_playlist(tauon)
 		gui = tauon.gui
 		renderer = tauon.renderer
@@ -1992,11 +2024,15 @@ class AlbumflowWidget(_AlbumflowBase):
 			key=lambda box: self._painter_key(box[0], self.position),
 		)
 		hit_quads = [(box[0], box[6]) for box in hit_order]
-		mx, my = tauon.inp.mouse_position
-		over = 0 <= mx < w and 0 <= my < h
+		if tauon.touch_input_tracker.start_position_px != (0,0):
+			mx, my = tauon.touch_input_tracker.start_position_px[0] - content_rect[0], tauon.touch_input_tracker.start_position_px[1] - content_rect[1]
+		else:
+			mx, my = tauon.inp.mouse_position
+		over = x <= mx < x+w and y <= my < y+h
 		self._open_context_menu(tauon, over)
 		old_position = self.position
-		self._handle_input(tauon, over, hit_quads, art_height)
+
+		self._handle_input(tauon, over, hit_quads, art_height, content_rect)
 		self._advance_animation(tauon)
 		if self.position != old_position:
 			boxes = build_boxes()
@@ -4436,9 +4472,9 @@ class CustomLayout:
 		else:
 			dx, dy, dw, dh = paint
 			if not widget.offscreen:
-				widget.draw(tauon, dx, dy, dw, dh)
+				widget.draw(tauon, dx, dy, dw, dh, (cx, cy, cw, ch))
 			else:
-				self._draw_offscreen(widget, dx, dy, dw, dh, interactive)
+				self._draw_offscreen(widget, dx, dy, dw, dh, interactive, (cx,cy,cw,ch))
 
 		if leaf.border and not tab_border:
 			b = max(1, round(1 * gui.scale))
@@ -4448,7 +4484,7 @@ class CustomLayout:
 			ddt.rect((cx + cw - b, cy, b, ch), SEGMENT_BORDER_COLOUR)
 
 	def _draw_offscreen(self, widget: Widget, x: float, y: float, w: float, h: float,
-			interactive: bool) -> None:
+			interactive: bool, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		"""Render an offscreen widget into the scratch texture at a (0, 0) origin,
 		then blit to (x, y). The widget draws — and, when interactive, handles
 		input — in a reframed coordinate space: window width narrowed to the
@@ -4509,7 +4545,7 @@ class CustomLayout:
 		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(renderer)
 		try:
-			widget.draw(tauon, 0, 0, iw, ih)
+			widget.draw(tauon, 0, 0, iw, ih, content_rect)
 		finally:
 			sdl3.SDL_SetRenderTarget(renderer, prev)
 			tauon.window_size[0] = saved_w
