@@ -5594,9 +5594,9 @@ class Menu:
 
 			if icon.base_asset is None:
 				# Colourise mode
-				if icon.colour_callback is not None:  # and icon.colour_callback() is not None:
+				if icon.colour_callback is not None:
 					colour = icon.colour_callback()
-				elif selected and fx.text_colour != colours.menu_text_disabled:
+				if colour is None and selected and fx.text_colour != colours.menu_text_disabled:
 					colour = icon.colour
 
 				if colour is None and icon.base_asset_mod:
@@ -32685,7 +32685,7 @@ class TopPanel:
 
 		colour = colours.corner_button  # [230, 230, 230, 255]
 
-		if gui.lsp:
+		if gui.lsp or self.coll(rect):
 			colour = colours.corner_button_active
 		if gui.combo_mode:
 			colour = colours.corner_button
@@ -32716,7 +32716,7 @@ class TopPanel:
 			if self.coll(lrect) and inp.mouse_click and not self.tauon.layout_menu.click_dismissed:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
-			lcol = colours.corner_button_active if self.tauon.layout_menu.active else colours.corner_button
+			lcol = colours.corner_button_active if self.tauon.layout_menu.active or self.coll(lrect) else colours.corner_button
 			lcol = self.tauon.style_overlay.tint_from_background(
 				lcol, wwx + 20 * gui.scale, yy + 16 * gui.scale, 0.2,
 				colours.bottom_panel_colour)
@@ -38778,10 +38778,10 @@ class RadioBox:
 		self.scroll_position = min(self.scroll_position, len(radio_list) // 2 - 7)
 
 		if len(radio_list) // 2 > 9:
-			self.scroll_position = self.scroll.draw(
+			self.scroll_position = round(self.scroll.draw(
 				(x + w) - round(35 * self.gui.scale), yy, round(15 * self.gui.scale),
 				round(210 * self.gui.scale), self.scroll_position,
-				len(radio_list) // 2 - 7, True, click=self.gui.level_2_click)
+				len(radio_list) // 2 - 7, True, click=self.gui.level_2_click))
 
 		self.scroll_position = max(self.scroll_position, 0)
 
@@ -40296,7 +40296,7 @@ class ArtistList:
 					self.pctl.selected_in_playlist = select
 					self.d_click_ref = artist
 					self.d_click_timer.set()
-					if self.prefs.album_mode:
+					if not self.tauon.custom.gallery_locate(select) and self.prefs.album_mode:
 						self.tauon.goto_album(select)
 				else:
 					self.d_click_ref = artist
@@ -41318,7 +41318,11 @@ class QueueBox:
 
 		yy += round(3 * self.gui.scale)
 
-		box_rect = (x, yy - 6 * self.gui.scale, w, h)
+		# The queue content starts below its top padding, but its background must
+		# cover the complete panel. In custom layouts this is rendered through a
+		# transparent scratch texture, so starting the fill at ``yy - 6*scale``
+		# exposed a thin strip of the layout background above the queue.
+		box_rect = (x, y, w, h)
 		self.ddt.rect(box_rect, self.colours.queue_background)
 		self.ddt.text_background_colour = self.colours.queue_background
 
@@ -59400,11 +59404,16 @@ def main(holder: Holder) -> None:
 				else:
 					tauon.mini_mode.render()
 
+			# Custom, showcase, and radio layouts do not render the preset left
+			# side panel, even though its saved geometry remains in playlist_left.
+			preset_canvas = gui.mode == GuiMode.MAIN and not gui.custom_mode and not gui.combo_mode
+			toast_left = (gui.playlist_left or 0) if preset_canvas else 0
+
 			t = tauon.toast_love_timer.get()
 			if t < 1.8 and gui.toast_love_object is not None:
 				track = gui.toast_love_object
 
-				ww = gui.playlist_left or 0
+				ww = toast_left
 
 				rect = (ww + 5 * gui.scale, gui.panelY + 5 * gui.scale, 235 * gui.scale, 39 * gui.scale)
 				tauon.fields.add(rect)
@@ -59444,7 +59453,7 @@ def main(holder: Holder) -> None:
 			if t < 2.5 and gui.toast_queue_object:
 				track = pctl.get_track(gui.toast_queue_object.track_id)
 
-				ww = gui.playlist_left or 0
+				ww = toast_left
 				if tauon.search_over.active:
 					ww = window_size[0] // 2 - (215 * gui.scale // 2)
 
@@ -59498,9 +59507,7 @@ def main(holder: Holder) -> None:
 				wid = ddt.get_text_w(gui.mode_toast_text, 313)
 				wid = max(round(68 * gui.scale), wid)
 
-				ww = round(7 * gui.scale)
-				if gui.playlist_left and not gui.combo_mode:
-					ww += gui.playlist_left
+				ww = round(7 * gui.scale) + toast_left
 
 				rect = (ww + 8 * gui.scale, gui.panelY + 15 * gui.scale, wid + 20 * gui.scale, 25 * gui.scale)
 				tauon.fields.add(rect)

@@ -60,11 +60,10 @@
 
   <releases>
 
-    <release version="11.1.1" date="2026-07-20">
+    <release version="11.2.0" date="2026-08-08">
       <description>
         <ul>
-          <li>Fixed playback progress bar not themed correctly</li>
-          <li>Fixed crash when scrolling by touch</li>
+          <li>Various fixes</li>
         </ul>
       </description>
     </release>
