@@ -423,9 +423,11 @@ def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
 
 	Snapshot remains the default. A cover may take an expressive route when it
 	either contains a substantial dark base plus a supported identity colour, or
-	two supported hue families with clear tonal separation. These conditions
-	avoid promoting isolated pixels while permitting the high-contrast pairings
-	that the conservative Snapshot intentionally suppresses.
+	two supported hue families with clear tonal separation. Light artwork may
+	also use corrected Original when it has a broad neutral field and Original
+	finds a safe chromatic secondary surface. These conditions avoid promoting
+	isolated pixels while permitting the high-contrast pairings that the
+	conservative Snapshot intentionally suppresses.
 	"""
 	snapshot = generate_art_theme(image)
 	palette = _quantized_palette(image, 24)
@@ -477,7 +479,114 @@ def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
 		_score, first, second = max(pairs, key=lambda pair: pair[0])
 		if mean_luminance < 0.47:
 			return _colour_duet_theme(first, second)
+
+	# Snapshot tends to mute pale, largely neutral covers even when Original's
+	# second frequent colour is a clean, usable source of personality. Route
+	# only this narrow light-art case; near-black or effectively neutral second
+	# surfaces remain with Snapshot, as does fully vivid light artwork.
+	neutral_mass = (
+		sum(
+			population
+			for population, colour in palette
+			if _rgb_to_hls(colour)[2] < 0.18 or (max(colour) - min(colour)) / 255 < 0.14
+		)
+		/ total
+	)
+	if mean_luminance >= 0.50 and neutral_mass >= 0.45:
+		original = generate_original_art_theme(image)
+		if original is not None:
+			_side_hue, side_lightness, side_saturation = _rgb_to_hls(original.side)
+			if side_lightness >= 0.20 and side_saturation >= 0.25:
+				return original
 	return snapshot
+
+
+def _original_readable_text(
+	background: ColourRGBA,
+	colour: ColourRGBA,
+	minimum: float,
+	fallback_saturation: float,
+) -> ColourRGBA:
+	"""Repair Original's extracted text without discarding its hue."""
+	if contrast_ratio(colour, background) >= minimum:
+		return colour
+	background_hue, _background_lightness, _background_saturation = _rgb_to_hls(background)
+	hue, _lightness, saturation = _rgb_to_hls(colour)
+	if saturation < 0.06:
+		hue = background_hue
+	prefer_light = contrast_luminance(_rgb_tuple(background)) < 0.42
+	lightness = 0.92 if prefer_light else 0.12
+	step = -0.015 if prefer_light else 0.015
+	for _iteration in range(42):
+		candidate = _hls_to_colour(hue, lightness, _clamp(saturation, fallback_saturation, 0.28))
+		if contrast_ratio(candidate, background) >= minimum:
+			return candidate
+		lightness = _clamp(lightness + step, 0.02, 0.98)
+	fallbacks = (ColourRGBA(238, 238, 238, 255), ColourRGBA(24, 24, 24, 255))
+	return max(fallbacks, key=lambda candidate: contrast_ratio(candidate, background))
+
+
+def generate_original_art_theme(image: Image.Image) -> ArtTheme | None:
+	"""Extract Original's five roles and repair its foreground contrast."""
+	working = image.convert("RGB")
+	working.thumbnail((50, 50), Image.Resampling.LANCZOS)
+	pixels = sorted(working.getcolors(maxcolors=2500) or [], key=lambda item: item[0], reverse=True)
+	extracted = []
+	for _population, rgb_colour in pixels:
+		if not any(
+			all(abs(rgb_colour[channel] - _rgb_tuple(prior)[channel]) < 75 for channel in range(3))
+			for prior in extracted
+		):
+			extracted.append(ColourRGBA(*rgb_colour, 255))
+	if not extracted:
+		return None
+
+	background = extracted[0]
+	side = extracted[1] if len(extracted) > 1 else background
+	title = extracted[2] if len(extracted) > 2 else ColourRGBA(235, 235, 235, 255)
+	artist = extracted[3] if len(extracted) > 3 else ColourRGBA(180, 180, 180, 255)
+	accent = max(extracted, key=lambda candidate: contrast_ratio(candidate, background))
+	# Preserve the old production algorithm's first-pass repairs before applying
+	# the stronger correction adopted as the survey's new Original baseline.
+	if contrast_ratio(artist, background) < 1.9:
+		artist = max(
+			(ColourRGBA(25, 25, 25, 255), ColourRGBA(220, 220, 220, 255)),
+			key=lambda candidate: contrast_ratio(candidate, background),
+		)
+	if contrast_ratio(title, background) < 1.9:
+		title = max(
+			(ColourRGBA(60, 60, 60, 255), ColourRGBA(180, 180, 180, 255)),
+			key=lambda candidate: contrast_ratio(candidate, background),
+		)
+	title = _original_readable_text(background, title, 4.5, 0.07)
+	artist = _original_readable_text(background, artist, 4.0, 0.06)
+	accent = _original_readable_text(background, accent, 3.5, 0.34)
+	return ArtTheme(
+		background,
+		side,
+		title,
+		artist,
+		accent,
+		# Original can return an unmodified middle-valued surface. Choose the
+		# polarity with the stronger black/white contrast rather than applying
+		# Snapshot's overall-art luminance threshold to this one raw swatch.
+		contrast_luminance(_rgb_tuple(background)) >= 0.18,
+	)
+
+
+def apply_original_art_theme(colours: object, image: Image.Image) -> ArtTheme | None:
+	"""Expand Original's corrected five-role palette over the complete theme."""
+	theme = generate_original_art_theme(image)
+	if theme is None:
+		return None
+	_apply_complete_theme(colours, theme)
+	post_config = getattr(colours, "post_config", None)
+	if callable(post_config):
+		post_config()
+		# Match the liberal path: retain useful post_config bookkeeping without
+		# allowing its legacy fallbacks to replace generated role colours.
+		_apply_complete_theme(colours, theme)
+	return theme
 
 
 def contrast_luminance(colour: tuple[int, int, int]) -> float:
@@ -570,6 +679,14 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 	# deliberately the colour previously reserved for the playing artist; a
 	# stronger variant below distinguishes the playing row.
 	track_accent = theme.accent
+	if contrast_ratio(track_accent, background) < 4.5:
+		track_accent = _readable_identity(
+			(background,),
+			accent_hue,
+			_clamp(accent_saturation, 0.46, 0.82),
+			prefer_light,
+			4.5,
+		)
 	track_secondary = theme.artist
 	track_playing = _readable_identity(
 		(background,),
@@ -596,8 +713,18 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 	# controls look permanently active.
 	bottom_button_off = _mix_hls(bottom, bottom_secondary, 0.24)
 	top_button_off = _mix_hls(top, top_secondary, 0.24)
-	side_title = _readable_tint((side, queue, gallery), side_hue, 0.07, prefer_light, 5.2)
-	side_secondary = _readable_tint((side, queue, gallery), background_hue, 0.09, prefer_light, 4.2)
+	# Original can put a light side panel beside a dark center panel or vice
+	# versa. Side-panel labels therefore need their own polarity and must be
+	# corrected against the surface they are actually rendered on.
+	black = ColourRGBA(0, 0, 0, 255)
+	white = ColourRGBA(255, 255, 255, 255)
+	side_prefers_light = contrast_ratio(white, side) >= contrast_ratio(black, side)
+	side_title = _readable_tint((side,), side_hue, 0.07, side_prefers_light, 5.2)
+	side_secondary = _readable_tint((side,), background_hue, 0.09, side_prefers_light, 4.2)
+	if contrast_ratio(side_title, side) < 5.2:
+		side_title = max((black, white), key=lambda colour: contrast_ratio(colour, side))
+	if contrast_ratio(side_secondary, side) < 4.2:
+		side_secondary = max((black, white), key=lambda colour: contrast_ratio(colour, side))
 	menu_title = _readable_tint((menu_surface,), side_hue, 0.06, prefer_light, 5.2)
 	menu_secondary = _readable_tint((menu_surface,), background_hue, 0.07, prefer_light, 3.5)
 	box_title = _readable_tint((box_surface,), background_hue, 0.06, prefer_light, 5.4)

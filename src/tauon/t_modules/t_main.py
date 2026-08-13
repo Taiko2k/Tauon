@@ -105,7 +105,7 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
-from tauon.t_modules.t_art_theme import apply_art_theme  # noqa: E402
+from tauon.t_modules.t_art_theme import apply_art_theme, apply_original_art_theme  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	database_migrate,
@@ -23446,6 +23446,23 @@ class AlbumArt:
 		self.bin_cached = (None, None, None)  # track, subsource, bin
 
 		self.embed_cached = (None, None)
+		# Runtime comparison switch. It is deliberately not persisted: normal
+		# startup always uses the current liberal router.
+		self.use_original_art_theme = False
+
+	def toggle_art_theme_algorithm(self) -> None:
+		"""Switch auto-theme algorithms and regenerate the playing album now."""
+		self.use_original_art_theme = not self.use_original_art_theme
+		self.gui.temp_themes.clear()
+		self.gui.theme_temp_current = -1
+		if self.prefs.colour_from_image:
+			track = self.pctl.playing_object()
+			if track is not None:
+				self.display(track, (0, 0), (50, 50), theme_only=True)
+		name = _("Original") if self.use_original_art_theme else _("Liberal router")
+		self.show_message(_("Auto theme algorithm: ") + name)
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 
 	def async_download_image(self, track: TrackClass, subsource: list[tuple[int, str]]) -> None:
 		self.downloaded_image = self.get_source_raw(0, 0, track, subsource=subsource)
@@ -24424,7 +24441,10 @@ class AlbumArt:
 					and track.album not in self.gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
 				colours = ColoursClass()
 				colours.last_album = track.parent_folder_path
-				apply_art_theme(colours, im)
+				if self.use_original_art_theme:
+					apply_original_art_theme(colours, im)
+				else:
+					apply_art_theme(colours, im)
 				if self.prefs.transparent_mode:
 					colours.apply_transparency(full=self.prefs.transparent_mode == 2)
 				colours.base_alpha = {}
@@ -56203,7 +56223,7 @@ def main(holder: Holder) -> None:
 					del gui.frame_callback_list[i]
 				i -= 1
 
-		# Dream Room (F7): keep frames flowing while the 3D scene animates.
+		# Dream Room: keep frames flowing while the 3D scene animates.
 		# Only meaningful in the main GUI mode.
 		if tauon.dream_room.active:
 			if gui.mode != GuiMode.MAIN:
@@ -56610,8 +56630,8 @@ def main(holder: Holder) -> None:
 			if keymaps.test("quit"):
 				tauon.exit("Quit keyboard shortcut pressed")
 
-			if keymaps.test("testkey"):  # F7: unused
-				pass
+			if keymaps.test("testkey"):  # F7: compare auto-theme algorithms
+				tauon.album_art_gen.toggle_art_theme_algorithm()
 
 			if gui.mode == GuiMode.MAIN:
 				if keymaps.test("toggle-auto-theme"):
