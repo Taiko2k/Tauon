@@ -105,6 +105,7 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
+from tauon.t_modules.t_art_theme import apply_art_theme  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	database_migrate,
@@ -24079,6 +24080,8 @@ class AlbumArt:
 			if track.album in self.gui.temp_themes:
 				self.tauon.colours.__dict__.update(self.gui.temp_themes[track.album].__dict__)
 				self.gui.theme_temp_current = track.album
+				self.ddt.text_background_colour = self.colours.playlist_panel_background
+				self.gui.request_tracklist_redraw()
 
 		source = self.get_sources(track)
 
@@ -24419,153 +24422,21 @@ class AlbumArt:
 			# Processing for "Auto-theme" setting
 			if self.prefs.colour_from_image and box[0] != 115 and track.album != self.gui.theme_temp_current \
 					and track.album not in self.gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
-				self.colours.last_album = track.parent_folder_path
-
-				_im_theme = im.copy()
-				_im_theme.thumbnail((50, 50), Image.Resampling.LANCZOS)
-
-				colours = copy.deepcopy(self.colours)
-
-				pixels = _im_theme.getcolors(maxcolors=2500)
-				#logging.info(pixels)
-				pixels = sorted(pixels, key=lambda x: x[0], reverse=True)[:]
-				#logging.info(pixels)
-
-				min_colour_varience = 75
-
-				x_colours: list[ColourRGBA] = []
-				for item in pixels:
-					colour = item[1]
-					for cc in x_colours:
-						if abs(
-							colour[0] - cc.r) < min_colour_varience and abs(
-							colour[1] - cc.g) < min_colour_varience and abs(
-							colour[2] - cc.b) < min_colour_varience:
-							break
-					else:
-						x_colours.append(ColourRGBA(colour[0], colour[1], colour[2], 255))
-
-				#logging.info(x_colours)
-				colours.playlist_box_background = colours.side_panel_background
-
-				colours.playlist_panel_background = x_colours[0]
-				if len(x_colours) > 1:
-					colours.side_panel_background = x_colours[1]
-					colours.playlist_box_background = colours.side_panel_background
-					if len(x_colours) > 2:
-						colours.title_text = x_colours[2]
-						colours.title_playing = x_colours[2]
-						if len(x_colours) > 3:
-							colours.artist_text = x_colours[3]
-							colours.artist_playing = x_colours[3]
-							if len(x_colours) > 4:
-								colours.playlist_box_background = x_colours[4]
-
-				colours.queue_background = colours.side_panel_background
-				colours.lyrics_panel_background = colours.side_panel_background
-				# Check artist text colour
-				if contrast_ratio(colours.artist_text, colours.playlist_panel_background) < 1.9:
-					black = ColourRGBA(25, 25, 25, 255)
-					white = ColourRGBA(220, 220, 220, 255)
-
-					con_b = contrast_ratio(black, colours.playlist_panel_background)
-					con_w = contrast_ratio(white, colours.playlist_panel_background)
-
-					choice = black
-					if con_w > con_b:
-						choice = white
-
-					colours.artist_text = choice
-					colours.artist_playing = choice
-
-				# Check title text colour
-				if contrast_ratio(colours.title_text, colours.playlist_panel_background) < 1.9:
-					black = ColourRGBA(60, 60, 60, 255)
-					white = ColourRGBA(180, 180, 180, 255)
-
-					con_b = contrast_ratio(black, colours.playlist_panel_background)
-					con_w = contrast_ratio(white, colours.playlist_panel_background)
-
-					choice = black
-					if con_w > con_b:
-						choice = white
-
-					colours.title_text = choice
-					colours.title_playing = choice
-
-				# Check lyrics text colour
-				if contrast_ratio(colours.lyrics, colours.lyrics_panel_background) < 1.9:
-					black = ColourRGBA(60, 60, 60, 255)
-					white = ColourRGBA(180, 180, 180, 255)
-
-					con_b = contrast_ratio(black, colours.lyrics_panel_background)
-					con_w = contrast_ratio(white, colours.lyrics_panel_background)
-
-					choice = black
-					if con_w > con_b:
-						choice = white
-
-					colours.lyrics = choice
-
-				# try to pick high-contrast active lyric color
-				contrast = 0
-				for i in x_colours:
-					temp = contrast_ratio(i, colours.lyrics_panel_background)
-					if temp > contrast:
-						colours.active_lyric = i
-						contrast = temp
-				# if there isn't one, just do full black/white
-				if contrast_ratio(colours.active_lyric, colours.lyrics_panel_background) < 2.9 or contrast_ratio(colours.active_lyric, colours.lyrics) < 1.9:
-					lpb = colours.lyrics_panel_background
-					lr  = colours.lyrics
-					tc = rgb_to_hls(lpb.r, lpb.g, lpb.b)
-					lc = rgb_to_hls(lr.r,  lr.g,  lr.b)
-
-					colours.active_lyric = hls_to_rgb( tc[0]+0.3, lc[1], max(tc[2]*1.5, 0.5) )
-
-				if test_lumi(colours.side_panel_background) < 0.50 and not self.prefs.transparent_mode:
-					colours.side_bar_line1 = ColourRGBA(25, 25, 25, 255)
-					colours.side_bar_line2 = ColourRGBA(35, 35, 35, 255)
-				else:
-					colours.side_bar_line1 = ColourRGBA(250, 250, 250, 255)
-					colours.side_bar_line2 = ColourRGBA(235, 235, 235, 255)
-
-				colours.album_text = colours.title_text
-				colours.album_playing = colours.title_playing
-
-				self.gui.request_tracklist_redraw()
-
-				prcl = 100 - int(test_lumi(colours.playlist_panel_background) * 100)
-
-				if prcl > 45:
-					ce = alpha_blend(ColourRGBA(0, 0, 0, 180), colours.playlist_panel_background)  # [40, 40, 40, 255]
-					colours.index_text = ce
-					colours.index_playing = ce
-					colours.time_text = ce
-					colours.bar_time = ce
-					colours.folder_title = ce
-					colours.star_line = ColourRGBA(60, 60, 60, 255)
-					colours.row_select_highlight = ColourRGBA(0, 0, 0, 30)
-					colours.row_playing_highlight = ColourRGBA(0, 0, 0, 20)
-					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, -0.03, -0.03)
-				else:
-					ce = alpha_blend(ColourRGBA(255, 255, 255, 160), colours.playlist_panel_background)  # [165, 165, 165, 255]
-					colours.index_text = ce
-					colours.index_playing = ce
-					colours.time_text = ce
-					colours.bar_time = ce
-					colours.folder_title = ce
-					colours.star_line = ce  # ColourRGBA(150, 150, 150, 255)
-					colours.row_select_highlight = ColourRGBA(255, 255, 255, 12)
-					colours.row_playing_highlight = ColourRGBA(255, 255, 255, 8)
-					colours.gallery_background = rgb_add_hls(colours.playlist_panel_background, 0, 0.03, 0.03)
-
+				colours = ColoursClass()
+				colours.last_album = track.parent_folder_path
+				apply_art_theme(colours, im)
+				if self.prefs.transparent_mode:
+					colours.apply_transparency(full=self.prefs.transparent_mode == 2)
+				colours.base_alpha = {}
+				for name in colours.art_bg_panel_colours + colours.art_bg_element_colours:
+					colour = getattr(colours, name, None)
+					if colour is not None:
+						colours.base_alpha[name] = colour.a
 				self.gui.temp_themes[track.album] = copy.deepcopy(colours)
 				self.tauon.colours.__dict__.update(self.gui.temp_themes[track.album].__dict__)
 				self.gui.theme_temp_current = track.album
-
-				if self.prefs.transparent_mode:
-					colours.apply_transparency(full=self.prefs.transparent_mode == 2)
+				self.ddt.text_background_colour = colours.playlist_panel_background
+				self.gui.request_tracklist_redraw()
 
 		except Exception:
 			logging.exception("Error extracting theme colours from image")
@@ -32592,9 +32463,7 @@ class TopPanel:
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
 
 		if prefs.shuffle_lock and not gui.compact_bar:
-			colour = ColourRGBA(250, 250, 250, 255)
-			if colours.lm:
-				colour = ColourRGBA(10, 10, 10, 255)
+			colour = colours.status_text_over
 			text = _("Tauon SHUFFLE!")
 			if prefs.album_shuffle_lock_mode:
 				text = _("ALBUM SHUFFLE")
@@ -32617,9 +32486,7 @@ class TopPanel:
 						colours.top_panel_background)
 
 				maxx = window_size[0] - (gui.panelY + 30 * gui.scale)
-				title_colour = colours.grey(249)
-				if colours.lm:
-					title_colour = colours.grey(30)
+				title_colour = colours.status_text_over
 				title = tr.title
 				if not title:
 					title = tr.filename
@@ -32632,7 +32499,7 @@ class TopPanel:
 				ddt.text_background_colour = colours.top_panel_background
 
 				ddt.text((round(14 * gui.scale), round(15 * gui.scale)), title, title_colour, 215, max_w=maxx)
-				ddt.text((round(14 * gui.scale), round(40 * gui.scale)), artist, colours.grey(120), 315, max_w=maxx)
+				ddt.text((round(14 * gui.scale), round(40 * gui.scale)), artist, colours.status_text_normal, 315, max_w=maxx)
 
 		wwx = 0
 		if prefs.left_window_control and not gui.compact_bar:
@@ -37389,10 +37256,14 @@ class StandardPlaylist:
 							text = clean_string(n_track.fullpath)
 							colour = colours.index_text
 							norm_colour = colour
+							if this_line_playing is True:
+								colour = colours.index_playing
 						elif item[0] == "Filename":
 							text = clean_string(n_track.filename)
 							colour = colours.index_text
 							norm_colour = colour
+							if this_line_playing is True:
+								colour = colours.index_playing
 						elif item[0] == "Disc":
 							text = str(n_track.disc_number)
 							colour = colours.index_text
