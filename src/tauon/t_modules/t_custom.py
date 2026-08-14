@@ -4107,6 +4107,18 @@ class CustomLayout:
 		root = self.slots[self.active_slot]
 		return root is not None and count_kind(root, kind) > 0
 
+	def has_visible_widget(self, kind: str) -> bool:
+		"""Return whether the active custom layout is currently drawing ``kind``.
+
+		Only the selected page of a tab stack counts: widgets on hidden pages
+		cannot take responsibility for work normally performed while drawing.
+		"""
+		if not self.gui.custom_mode:
+			return False
+		self.ensure_loaded()
+		root = self.slots[self.active_slot]
+		return root is not None and count_visible_kind(root, kind) > 0
+
 	# -- rendering -----------------------------------------------------------
 
 	def render(self) -> None:

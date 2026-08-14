@@ -3381,7 +3381,22 @@ class PlayerCtl:
 
 		self.lfm_scrobbler.start_queue()
 
-		if (self.prefs.album_mode or not self.gui.rsp) and (self.gui.theme_name == "Carbon" or self.prefs.colour_from_image):
+		if self.gui.theme_name == "Carbon" or self.prefs.colour_from_image:
+			# Normally the visible right-side Art Box extracts the theme while it
+			# draws. Custom layouts suppress that preset panel, so either delegate to
+			# a visible custom Art Box or perform the small theme-only draw here.
+			custom_art_box = (
+				self.gui.custom_mode
+				and self.gui.mode == GuiMode.MAIN
+				and self.tauon.custom.has_visible_widget("art")
+			)
+			if self.gui.custom_mode:
+				needs_theme_only_draw = not custom_art_box
+			else:
+				needs_theme_only_draw = self.prefs.album_mode or not self.gui.rsp
+
+			if not needs_theme_only_draw:
+				return
 			target = self.playing_object()
 			# Skip only when the already-applied theme is for this album. The
 			# theme cache is keyed on album (theme_temp_current); last_album is a
