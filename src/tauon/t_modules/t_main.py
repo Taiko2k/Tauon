@@ -5494,6 +5494,19 @@ class Menu:
 			return [-100000, -100000]
 		return self.inp.mouse_position
 
+	@staticmethod
+	def background_is_light(background: ColourRGBA) -> bool:
+		"""Choose menu rendering polarity from the surface being drawn."""
+		dark = ColourRGBA(24, 25, 29, 255)
+		light = ColourRGBA(246, 246, 248, 255)
+		return contrast_ratio(dark, background) >= contrast_ratio(light, background)
+
+	def icon_off_colour(self, background: ColourRGBA) -> ColourRGBA:
+		"""Return a quiet neutral tint for an inactive menu icon."""
+		if self.background_is_light(background):
+			return ColourRGBA(24, 25, 29, 64)
+		return self.colours.menu_icons
+
 	def deco(self, _=_) -> Decorator:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
@@ -5584,8 +5597,7 @@ class Menu:
 		colours = self.colours
 		gui     = self.gui
 		renderer = self.render_renderer
-		if colours.lm:
-			selected = True
+		off_colour = self.icon_off_colour(fx.bg_colour)
 
 		if icon is not None:
 			x += icon.xoff * gui.scale
@@ -5601,16 +5613,12 @@ class Menu:
 					colour = icon.colour
 
 				if colour is None and icon.base_asset_mod:
-					colour = colours.menu_icons
-					# if colours.lm:
-					#	 colour = ColourRGBA(160, 160, 160, 255)
+					colour = off_colour
 					icon.base_asset_mod.render(x, y, colour, renderer=renderer)
 					return
 
 				if colour is None:
-					# colour = ColourRGBA(145, 145, 145, 70)
-					colour = colours.menu_icons  # ColourRGBA(255, 255, 255, 35)
-					# colour = ColourRGBA(50, 50, 50, 255)
+					colour = off_colour
 
 				icon.asset.render(x, y, colour, renderer=renderer)
 			else:
@@ -5650,7 +5658,7 @@ class Menu:
 		num_x   = plus_x - num_w
 		minus_x = int(num_x - bs)
 
-		dark = not (is_light(bg) or colours.lm)
+		dark = not self.background_is_light(bg)
 		glyph_c = rgb_add_hls(bg, 0, 0.55 if dark else -0.55, 0)
 
 		def button(bx: int, plus: bool) -> None:
@@ -5728,7 +5736,7 @@ class Menu:
 
 				# Draw menu break
 				if self.items[i] is None:
-					if is_light(colours.menu_background):
+					if self.background_is_light(colours.menu_background):
 						break_colour = rgb_add_hls(colours.menu_background, 0, -0.1, -0.1)
 					else:
 						break_colour = rgb_add_hls(colours.menu_background, 0, 0.06, 0)
@@ -5818,13 +5826,13 @@ class Menu:
 
 				# Draw arrow icon for sub menu
 				if self.items[i].is_sub_menu is True:
-					if is_light(bg) or colours.lm:
+					if self.background_is_light(bg):
 						colour = rgb_add_hls(bg, 0, -0.6, -0.1)
 					else:
 						colour = rgb_add_hls(bg, 0, 0.1, 0)
 
 					if self.sub_active == self.items[i].func:
-						if is_light(bg) or colours.lm:
+						if self.background_is_light(bg):
 							colour = rgb_add_hls(bg, 0, -0.8, -0.1)
 						else:
 							colour = rgb_add_hls(bg, 0, 0.40, 0)
@@ -5852,7 +5860,7 @@ class Menu:
 				# Render the items hint
 				if self.items[i].hint is not None and not self.items[i].incrementor:
 
-					if is_light(bg) or colours.lm:
+					if self.background_is_light(bg):
 						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
 					else:
 						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
@@ -11976,8 +11984,6 @@ class Tauon:
 	def heart_xmenu_colour(self) -> ColourRGBA | None:
 		if self.love(False, self.track_menu.reference.track_id):
 			return ColourRGBA(245, 60, 60, 255)
-		if self.colours.lm:
-			return ColourRGBA(255, 150, 180, 255)
 		return None
 
 	def love_decox(self, ref: MenuTrackRef) -> Decorator:
@@ -13307,13 +13313,9 @@ class Tauon:
 
 	def heart_menu_colour(self) -> ColourRGBA | None:
 		if self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.PAUSED):
-			if self.colours.lm:
-				return ColourRGBA(255, 150, 180, 255)
 			return None
 		if self.love(False):
 			return ColourRGBA(245, 60, 60, 255)
-		if self.colours.lm:
-			return ColourRGBA(255, 150, 180, 255)
 		return None
 
 	def activate_search_overlay(self) -> None:
@@ -16966,7 +16968,7 @@ class Tauon:
 
 	def lock_colour_callback(self) -> ColourRGBA | None:
 		if self.pctl.multi_playlist[self.gui.tab_menu_pl].locked:
-			if self.colours.lm:
+			if Menu.background_is_light(self.colours.menu_background):
 				return ColourRGBA(230, 180, 60, 255)
 			return ColourRGBA(240, 190, 10, 255)
 		return None
