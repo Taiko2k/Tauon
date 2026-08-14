@@ -370,6 +370,44 @@ class Decorator:
 	bg_colour: ColourRGBA | None
 	text: str | None
 
+
+def readable_text_colour(
+	colour: ColourRGBA,
+	background: ColourRGBA,
+	minimum_contrast: float = 4.5,
+) -> ColourRGBA:
+	"""Preserve a text colour when possible, correcting it toward neutral ink when needed."""
+	candidate = ColourRGBA(colour.r, colour.g, colour.b, 255)
+	if contrast_ratio(candidate, background) >= minimum_contrast:
+		return candidate
+
+	dark = ColourRGBA(24, 25, 29, 255)
+	light = ColourRGBA(246, 246, 248, 255)
+	target = max((dark, light), key=lambda ink: contrast_ratio(ink, background))
+	low = 0.0
+	high = 1.0
+	for _iteration in range(10):
+		amount = (low + high) / 2
+		adjusted = ColourRGBA(
+			round(candidate.r + (target.r - candidate.r) * amount),
+			round(candidate.g + (target.g - candidate.g) * amount),
+			round(candidate.b + (target.b - candidate.b) * amount),
+			255,
+		)
+		if contrast_ratio(adjusted, background) >= minimum_contrast:
+			high = amount
+		else:
+			low = amount
+
+	amount = high
+	return ColourRGBA(
+		round(candidate.r + (target.r - candidate.r) * amount),
+		round(candidate.g + (target.g - candidate.g) * amount),
+		round(candidate.b + (target.b - candidate.b) * amount),
+		255,
+	)
+
+
 @dataclass(frozen=True)
 class MenuTrackRef:
 	track_id: int
@@ -25361,6 +25399,10 @@ class TransEditBox:
 		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
 		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
 		self.ddt.text_background_colour = self.colours.box_background
+		title_colour = readable_text_colour(self.colours.box_title_text, self.colours.box_background, 5.4)
+		label_colour = readable_text_colour(self.colours.box_text_label, self.colours.box_background)
+		input_colour = readable_text_colour(self.colours.box_input_text, self.colours.box_background)
+		warning_colour = readable_text_colour(ColourRGBA(245, 90, 90, 255), self.colours.box_background)
 
 		if self.inp.key_esc_press or ((self.inp.mouse_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll((x, y, w, h))):
 			self.active = False
@@ -25402,7 +25444,7 @@ class TransEditBox:
 		x += round(20 * self.gui.scale)
 		y += round(18 * self.gui.scale)
 
-		self.ddt.text((x, y), _("Simple tag editor"), self.colours.box_title_text, 215)
+		self.ddt.text((x, y), _("Simple tag editor"), title_colour, 215)
 
 		if self.draw.button(_("?"), x + 440 * self.gui.scale, y):
 			self.show_message(
@@ -25411,7 +25453,7 @@ class TransEditBox:
 				mode="info")
 
 		y += round(24 * self.gui.scale)
-		self.ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), self.colours.box_title_text, 313)
+		self.ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), title_colour, 313)
 
 		y += round(24 * self.gui.scale)
 
@@ -25430,14 +25472,14 @@ class TransEditBox:
 
 		def field_edit(x: int, y: int, label: str, field_number: int, names: list[str], text_box: TextBox2) -> bool:
 			changed = False
-			self.ddt.text((x, y), label, self.colours.box_text_label, 11)
+			self.ddt.text((x, y), label, label_colour, 11)
 			y += round(16 * self.gui.scale)
 			rect1 = (x, y, round(370 * self.gui.scale), round(17 * self.gui.scale))
 			self.fields.add(rect1)
 			if (self.coll(rect1) and self.inp.mouse_click) or (self.inp.key_tab_press and self.active_field == field_number):
 				self.active_field = field_number
 			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
-			tc = self.colours.box_input_text
+			tc = input_colour
 			if names and check_equal(names) and text_box.text == names[0]:
 				h, l, s = rgb_to_hls(tc.r, tc.g, tc.b)
 				l *= 0.7
@@ -25446,10 +25488,10 @@ class TransEditBox:
 				changed = True
 			if not (names and check_equal(names)) and not text_box.text:
 				changed = False
-				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), self.colours.box_text_label, 12)
+				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), label_colour, 12)
 			text_box.draw(x + round(3 * self.gui.scale), y, tc, self.active_field == field_number, width=370 * self.gui.scale)
 			if changed:
-				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", self.colours.box_title_text, 214)
+				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", title_colour, 214)
 			return changed
 
 		changed = False
@@ -25466,7 +25508,7 @@ class TransEditBox:
 		for s in select:
 			tr = self.pctl.get_track(self.pctl.default_playlist[s])
 			if tr.is_network:
-				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), ColourRGBA(245, 90, 90, 255), 312)
+				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), warning_colour, 312)
 
 		if self.inp.key_return_press:
 			self.gui.request_tracklist_redraw()
@@ -27290,33 +27332,7 @@ class Over:
 		minimum_contrast: float,
 	) -> ColourRGBA:
 		"""Preserve a theme colour when possible, pulling it toward readable ink when needed."""
-		candidate = ColourRGBA(colour.r, colour.g, colour.b, 255)
-		if contrast_ratio(candidate, background) >= minimum_contrast:
-			return candidate
-
-		target = Over.settings_contrast_text(background)
-		low = 0.0
-		high = 1.0
-		for _iteration in range(10):
-			amount = (low + high) / 2
-			adjusted = ColourRGBA(
-				round(candidate.r + (target.r - candidate.r) * amount),
-				round(candidate.g + (target.g - candidate.g) * amount),
-				round(candidate.b + (target.b - candidate.b) * amount),
-				255,
-			)
-			if contrast_ratio(adjusted, background) >= minimum_contrast:
-				high = amount
-			else:
-				low = amount
-
-		amount = high
-		return ColourRGBA(
-			round(candidate.r + (target.r - candidate.r) * amount),
-			round(candidate.g + (target.g - candidate.g) * amount),
-			round(candidate.b + (target.b - candidate.b) * amount),
-			255,
-		)
+		return readable_text_colour(colour, background, minimum_contrast)
 
 	def settings_overlay(self, background: ColourRGBA, alpha: int) -> ColourRGBA:
 		"""Shade a control away from its surface, regardless of surface polarity."""
@@ -58895,6 +58911,10 @@ def main(holder: Holder) -> None:
 					ddt.rect_a((x, y), (w, h), colours.box_background)
 
 					ddt.text_background_colour = colours.box_background
+					title_colour = readable_text_colour(colours.box_title_text, colours.box_background, 5.4)
+					label_colour = readable_text_colour(colours.box_text_label, colours.box_background)
+					input_colour = readable_text_colour(colours.box_input_text, colours.box_background)
+					value_colour = readable_text_colour(colours.grey(220), colours.box_background)
 
 					if inp.key_esc_press or (
 						(inp.mouse_click or inp.right_click or inp.level_2_right_click) and not tauon.coll((x, y, w, h))
@@ -58902,7 +58922,7 @@ def main(holder: Holder) -> None:
 						gui.rename_folder_box = False
 
 					p = ddt.text(
-						(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), colours.box_title_text, 213
+						(x + 10 * gui.scale, y + 9 * gui.scale), _("Folder Modification"), title_colour, 213
 					)
 					input_h = 23 * gui.scale
 
@@ -58915,7 +58935,7 @@ def main(holder: Holder) -> None:
 					tauon.rename_folder.draw(
 						x + 14 * gui.scale,
 						y + 41 * gui.scale,
-						colours.box_input_text,
+						input_colour,
 						width=300 * gui.scale,
 					)
 
@@ -58986,7 +59006,7 @@ def main(holder: Holder) -> None:
 							tauon.clean_folder(gui.rename_index, True)
 							inp.mouse_click = False
 
-					ddt.text((x + 10 * gui.scale, y + 65 * gui.scale), _("PATH"), colours.box_text_label, 212)
+					ddt.text((x + 10 * gui.scale, y + 65 * gui.scale), _("PATH"), label_colour, 212)
 					line = (
 						os.path.dirname(pctl.master_library[gui.rename_index].parent_folder_path.rstrip("\\/")).replace(
 							"\\", "/"
@@ -58995,19 +59015,19 @@ def main(holder: Holder) -> None:
 					)
 					line = tauon.right_trunc(line, 12, 420 * gui.scale)
 					line = clean_string(line)
-					ddt.text((x + 60 * gui.scale, y + 65 * gui.scale), line, colours.grey(220), 211)
+					ddt.text((x + 60 * gui.scale, y + 65 * gui.scale), line, value_colour, 211)
 
-					ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("OLD"), colours.box_text_label, 212)
+					ddt.text((x + 10 * gui.scale, y + 83 * gui.scale), _("OLD"), label_colour, 212)
 					line = pctl.master_library[gui.rename_index].parent_folder_name
 					line = clean_string(line)
 					ddt.text(
-						(x + 60 * gui.scale, y + 83 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale
+						(x + 60 * gui.scale, y + 83 * gui.scale), line, value_colour, 211, max_w=420 * gui.scale
 					)
 
-					ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), _("NEW"), colours.box_text_label, 212)
+					ddt.text((x + 10 * gui.scale, y + 101 * gui.scale), _("NEW"), label_colour, 212)
 					line = parse_template2(tauon.rename_folder.text, pctl.master_library[gui.rename_index])
 					ddt.text(
-						(x + 60 * gui.scale, y + 101 * gui.scale), line, colours.grey(220), 211, max_w=420 * gui.scale
+						(x + 60 * gui.scale, y + 101 * gui.scale), line, value_colour, 211, max_w=420 * gui.scale
 					)
 
 				if tauon.rename_track_box.active:
