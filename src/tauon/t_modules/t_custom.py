@@ -1665,7 +1665,7 @@ class _AlbumflowBase(GalleryWidget):
 			# Reverse painter order: the nearest cover wins in overlap regions.
 			for album_index, points in reversed(hit_quads):
 				if self._contains(points, mx, my):
-					play = inp.d_mouse_click and album_index == self.selection
+					play = album_index == self.selection
 					self._select(tauon, album_index, play=play)
 					self._has_momentum = False
 					self._dx = 0.0
