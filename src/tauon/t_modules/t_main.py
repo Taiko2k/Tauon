@@ -27267,6 +27267,94 @@ class Over:
 		self.settings_doc_texture_size = size
 		return self.settings_doc_texture
 
+	@staticmethod
+	def settings_contrast_text(background: ColourRGBA) -> ColourRGBA:
+		"""Return the most legible neutral ink for a settings surface."""
+		dark = ColourRGBA(24, 25, 29, 255)
+		light = ColourRGBA(246, 246, 248, 255)
+		return max((dark, light), key=lambda candidate: contrast_ratio(candidate, background))
+
+	@staticmethod
+	def settings_background_is_light(background: ColourRGBA) -> bool:
+		return Over.settings_contrast_text(background).r < 128
+
+	@staticmethod
+	def settings_readable_colour(
+		colour: ColourRGBA,
+		background: ColourRGBA,
+		minimum_contrast: float,
+	) -> ColourRGBA:
+		"""Preserve a theme colour when possible, pulling it toward readable ink when needed."""
+		candidate = ColourRGBA(colour.r, colour.g, colour.b, 255)
+		if contrast_ratio(candidate, background) >= minimum_contrast:
+			return candidate
+
+		target = Over.settings_contrast_text(background)
+		low = 0.0
+		high = 1.0
+		for _iteration in range(10):
+			amount = (low + high) / 2
+			adjusted = ColourRGBA(
+				round(candidate.r + (target.r - candidate.r) * amount),
+				round(candidate.g + (target.g - candidate.g) * amount),
+				round(candidate.b + (target.b - candidate.b) * amount),
+				255,
+			)
+			if contrast_ratio(adjusted, background) >= minimum_contrast:
+				high = amount
+			else:
+				low = amount
+
+		amount = high
+		return ColourRGBA(
+			round(candidate.r + (target.r - candidate.r) * amount),
+			round(candidate.g + (target.g - candidate.g) * amount),
+			round(candidate.b + (target.b - candidate.b) * amount),
+			255,
+		)
+
+	def settings_overlay(self, background: ColourRGBA, alpha: int) -> ColourRGBA:
+		"""Shade a control away from its surface, regardless of surface polarity."""
+		ink = self.settings_contrast_text(background)
+		return alpha_blend(alpha_mod(ink, alpha), background)
+
+	def settings_render_colours(self) -> ColoursClass:
+		"""Build non-destructive settings colours with guaranteed text contrast.
+
+		Light album-art themes can legitimately supply a pale box surface.  The
+		legacy widget colours and light-mode flag are not reliable indicators of
+		that surface's polarity, so the settings view derives its own presentation
+		roles directly from the background it will draw on.
+		"""
+		source = self.tauon.colours
+		background = source.box_background
+		dark_ink = ColourRGBA(24, 25, 29, 255)
+		use_dark_ink = self.settings_background_is_light(background)
+		if not use_dark_ink:
+			return source
+
+		colours = copy.copy(source)
+		for name, minimum in (
+			("box_title_text", 7.0),
+			("box_text", 5.5),
+			("box_input_text", 5.5),
+			("box_button_text_highlight", 5.5),
+			("box_sub_text", 4.5),
+			("box_text_label", 4.5),
+			("box_button_text", 4.5),
+		):
+			setattr(colours, name, self.settings_readable_colour(getattr(source, name), background, minimum))
+
+		colours.box_border = self.settings_overlay(background, 76)
+		colours.box_text_border = self.settings_overlay(background, 48)
+		colours.box_check_border = alpha_mod(dark_ink, 86)
+		colours.box_button_background = self.settings_overlay(background, 18)
+		colours.box_button_background_highlight = self.settings_overlay(background, 34)
+		colours.box_thumb_background = alpha_mod(self.settings_overlay(background, 46), 210)
+		colours.sys_tab_bg = self.settings_overlay(background, 12)
+		colours.sys_tab_hl = self.settings_overlay(background, 32)
+		return colours
+
 	def settings_tab_accent(self, index: int) -> ColourRGBA:
 		accents = (
 			ColourRGBA(174, 118, 255, 255),
@@ -27281,7 +27369,8 @@ class Over:
 			ColourRGBA(229, 125, 214, 255),
 			ColourRGBA(184, 184, 196, 255),
 		)
-		return accents[index % len(accents)]
+		accent = accents[index % len(accents)]
+		return self.settings_readable_colour(accent, self.colours.box_background, 3.0)
 
 	def sync_settings_nav_scroll(self, scroll_area: tuple[int, int, int, int], row_height: int, visible_rows: int) -> float:
 		scroll_source = "settings nav"
@@ -27329,10 +27418,10 @@ class Over:
 		)
 
 		section_bottom = y + h - round(14 * gui.scale)
-		panel_fill = alpha_blend(ColourRGBA(255, 255, 255, 5), colours.box_background)
-		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 16), colours.box_text_border)
+		panel_fill = self.settings_overlay(colours.box_background, 5)
+		panel_border = self.settings_overlay(colours.box_text_border, 16)
 		selected_fill = alpha_blend(alpha_mod(accent, 34), panel_fill)
-		hover_fill = alpha_blend(ColourRGBA(255, 255, 255, 12), panel_fill)
+		hover_fill = self.settings_overlay(panel_fill, 12)
 		badge_fill = alpha_blend(alpha_mod(accent, 22), panel_fill)
 		badge_border = alpha_blend(alpha_mod(accent, 90), panel_border)
 		panel_gap = round(8 * gui.scale)
@@ -27387,6 +27476,7 @@ class Over:
 				self.device_scroll_bar_position,
 				max_device_scroll,
 				click=self.click,
+				light_background=self.settings_background_is_light(colours.box_background),
 			)
 			self.device_scroll_bar_position = min(max(self.device_scroll_bar_position, 0), max_device_scroll)
 			scroll_index = int(self.device_scroll_bar_position)
@@ -27440,7 +27530,7 @@ class Over:
 				)
 				ddt.bordered_rect(
 					indicator_rect,
-					alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill),
+					self.settings_overlay(row_fill, 8),
 					row_border,
 					round(1 * gui.scale),
 				)
@@ -27516,7 +27606,8 @@ class Over:
 		)
 		if page is None:
 			page = self.func_page
-		return accents[page % len(accents)]
+		accent = accents[page % len(accents)]
+		return self.settings_readable_colour(accent, self.colours.box_background, 3.0)
 
 	def refresh_theme_presets(self) -> None:
 		self.themes = [(ColoursClass(), "Mindaro", 0)]
@@ -27592,7 +27683,7 @@ class Over:
 		)
 
 	def theme_editor_current_colour(self) -> ColourRGBA:
-		source = self.theme_editor_draft_colours or self.colours
+		source = self.theme_editor_draft_colours or self.tauon.colours
 		colour = getattr(source, self.theme_editor_selected_attr, None)
 		if colour is None:
 			return ColourRGBA(255, 255, 255, 255)
@@ -27602,13 +27693,14 @@ class Over:
 		preview = clone_theme_colours(source)
 		if self.prefs.transparent_mode:
 			preview.apply_transparency(full=self.prefs.transparent_mode == 2)
-		self.colours.__dict__.clear()
-		self.colours.__dict__.update(copy.deepcopy(preview.__dict__))
-		if self.colours.deco:
-			self.tauon.deco.load(self.colours.deco)
+		theme_colours = self.tauon.colours
+		theme_colours.__dict__.clear()
+		theme_colours.__dict__.update(copy.deepcopy(preview.__dict__))
+		if theme_colours.deco:
+			self.tauon.deco.load(theme_colours.deco)
 		else:
 			self.tauon.deco.unload()
-		if self.colours.lm:
+		if theme_colours.lm:
 			self.gui.info_icon.colour = ColourRGBA(60, 60, 60, 255)
 			self.gui.folder_icon.colour = ColourRGBA(255, 190, 80, 255)
 			self.gui.settings_icon.colour = ColourRGBA(85, 187, 250, 255)
@@ -27618,7 +27710,7 @@ class Over:
 			self.gui.folder_icon.colour = ColourRGBA(244, 220, 66, 255)
 			self.gui.settings_icon.colour = ColourRGBA(232, 200, 96, 255)
 			self.gui.radiorandom_icon.colour = ColourRGBA(153, 229, 133, 255)
-		self.ddt.text_background_colour = self.colours.playlist_panel_background
+		self.ddt.text_background_colour = theme_colours.playlist_panel_background
 		self.gui.update_layout = True
 
 	def sync_theme_editor_controls_from_current_colour(self) -> None:
@@ -27642,8 +27734,8 @@ class Over:
 		self.theme_editor_is_new = is_new
 		self.theme_editor_target_path = target_path
 		self.theme_editor_window_position = None
-		self.theme_editor_original_colours = clone_theme_colours(self.colours)
-		self.theme_editor_draft_colours = clone_theme_colours(self.colours)
+		self.theme_editor_original_colours = clone_theme_colours(self.tauon.colours)
+		self.theme_editor_draft_colours = clone_theme_colours(self.tauon.colours)
 		self.theme_editor_original_theme_name = self.gui.theme_name
 		self.theme_editor_original_theme_number = self.prefs.theme
 		self.theme_editor_title_box.set_text(title)
@@ -27689,7 +27781,7 @@ class Over:
 		target_name = self.unique_theme_name(base_name)
 		target_path = self.dirs.user_directory / "theme" / f"{target_name}.ttheme"
 		try:
-			save_theme(clone_theme_colours(self.colours), target_path)
+			save_theme(clone_theme_colours(self.tauon.colours), target_path)
 		except OSError:
 			logging.exception("Failed saving duplicated theme file")
 			self.show_message(_("Could not save theme file"), mode="error")
@@ -27950,13 +28042,13 @@ class Over:
 			accent = alpha_blend(ColourRGBA(128, 128, 128, 90), self.colours.box_background)
 
 		x, y, w, h = tuple(round(v) for v in rect)
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		fill = self.settings_overlay(self.colours.box_background, 6)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if disabled:
 			fill = alpha_blend(ColourRGBA(128, 128, 128, 8), self.colours.box_background)
 			border = alpha_blend(ColourRGBA(128, 128, 128, 36), self.colours.box_text_border)
 		elif self.coll((x, y, w, h)):
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+			fill = self.settings_overlay(fill, 8)
 		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
 
 		self.ddt.text(
@@ -27999,7 +28091,7 @@ class Over:
 		grip_x = slider_x + round(slider_w * ratio) - grip_w // 2
 		grip_rect = (grip_x, slider_y - (grip_h // 2) + slider_h // 2, grip_w, grip_h)
 
-		self.ddt.rect(slider_rect, alpha_blend(ColourRGBA(255, 255, 255, 20), border))
+		self.ddt.rect(slider_rect, self.settings_overlay(border, 20))
 		self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
 		self.ddt.rect(grip_rect, accent)
 
@@ -28035,8 +28127,8 @@ class Over:
 			accent = self.settings_page_accent()
 
 		x, y, w, h = rect
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		fill = self.settings_overlay(self.colours.box_background, 6)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		# Border drawn INSIDE the rect: the settings document texture is
 		# blitted at exactly the view rect, so bordered_rect's outside border
 		# would be cropped on cards at the document's left edge
@@ -28094,15 +28186,15 @@ class Over:
 		active = function if type(function) is bool else function(1)
 		hover = self.coll((x, y, w, h))
 
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		fill = self.settings_overlay(self.colours.box_background, 6)
 		if disabled:
 			fill = alpha_blend(ColourRGBA(128, 128, 128, 8), self.colours.box_background)
 		elif active:
 			fill = alpha_blend(alpha_mod(accent, 26), fill)
 		if hover and not disabled:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+			fill = self.settings_overlay(fill, 10)
 
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if disabled:
 			border = alpha_blend(ColourRGBA(128, 128, 128, 36), self.colours.box_text_border)
 		elif active:
@@ -28149,7 +28241,7 @@ class Over:
 			if disabled else
 			alpha_blend(alpha_mod(accent, 54), fill)
 			if active else
-			alpha_blend(ColourRGBA(255, 255, 255, 16), fill)
+			self.settings_overlay(fill, 16)
 		)
 		switch_border = (
 			border
@@ -28185,13 +28277,13 @@ class Over:
 		active = function if type(function) is bool else function(1)
 		hover = self.coll((x, y, w, h))
 
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		fill = self.settings_overlay(self.colours.box_background, 6)
 		if active:
 			fill = alpha_blend(alpha_mod(accent, 22), fill)
 		if hover:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+			fill = self.settings_overlay(fill, 10)
 
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if active:
 			border = alpha_blend(alpha_mod(accent, 90), border)
 
@@ -28219,8 +28311,8 @@ class Over:
 		)
 		self.ddt.bordered_rect(
 			indicator_rect,
-			alpha_blend(ColourRGBA(255, 255, 255, 8), fill),
-			alpha_blend(ColourRGBA(255, 255, 255, 18), border),
+			self.settings_overlay(fill, 8),
+			self.settings_overlay(border, 18),
 			round(1 * self.gui.scale),
 		)
 		if active:
@@ -28275,14 +28367,14 @@ class Over:
 		button_y = y + max(0, (h - button_h) // 2)
 		button_rect = (x, button_y, w, button_h)
 		hover = self.coll(button_rect)
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
+		fill = self.settings_overlay(self.colours.box_button_background, 8)
 		if emphasis:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 4), fill)
+			fill = self.settings_overlay(fill, 4)
 		if hover:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			fill = self.settings_overlay(fill, 10)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if emphasis:
-			border = alpha_blend(ColourRGBA(255, 255, 255, 10), border)
+			border = self.settings_overlay(border, 10)
 
 		self.ddt.bordered_rect(button_rect, fill, border, round(1 * self.gui.scale))
 
@@ -28378,10 +28470,10 @@ class Over:
 			accent = self.settings_page_accent()
 
 		x, y, w, h = tuple(round(v) for v in rect)
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		fill = self.settings_overlay(self.colours.box_background, 6)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if self.coll((x, y, w, h)):
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+			fill = self.settings_overlay(fill, 8)
 		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
 
 		self.ddt.text(
@@ -28405,7 +28497,7 @@ class Over:
 
 		def draw_button(button_rect: tuple[int, int, int, int], label: str) -> bool:
 			hovered = self.coll(button_rect)
-			button_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
+			button_fill = self.settings_overlay(fill, 8)
 			if hovered:
 				button_fill = alpha_blend(alpha_mod(accent, 18), button_fill)
 			self.ddt.bordered_rect(button_rect, button_fill, border, round(1 * self.gui.scale))
@@ -28424,7 +28516,7 @@ class Over:
 			value -= step
 			changed = True
 
-		value_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), fill)
+		value_fill = self.settings_overlay(fill, 4)
 		self.ddt.bordered_rect(value_rect, value_fill, border, round(1 * self.gui.scale))
 		if formatter is not None:
 			display_text = formatter(value)
@@ -28464,12 +28556,12 @@ class Over:
 
 		x, y, w, h = tuple(round(v) for v in rect)
 		hover = self.coll((x, y, w, h))
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		fill = self.settings_overlay(self.colours.box_background, 6)
 		if active:
 			fill = alpha_blend(alpha_mod(accent, 24), fill)
 		if hover:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			fill = self.settings_overlay(fill, 10)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if active:
 			border = alpha_blend(alpha_mod(accent, 90), border)
 
@@ -28490,8 +28582,8 @@ class Over:
 		indicator_rect = (x + round(14 * self.gui.scale), indicator_y, round(12 * self.gui.scale), indicator_h)
 		self.ddt.bordered_rect(
 			indicator_rect,
-			alpha_blend(ColourRGBA(255, 255, 255, 8), fill),
-			alpha_blend(ColourRGBA(255, 255, 255, 18), border),
+			self.settings_overlay(fill, 8),
+			self.settings_overlay(border, 18),
 			round(1 * self.gui.scale),
 		)
 		if active:
@@ -28549,8 +28641,8 @@ class Over:
 				share = extra // len(widths)
 				widths = [seg_w + share for seg_w in widths]
 				widths[-1] += extra - share * len(widths)
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		fill = self.settings_overlay(self.colours.box_background, 6)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		self.ddt.bordered_rect((x, y, sum(widths), h), fill, border, round(1 * gui.scale))
 
 		seg_x = x
@@ -28564,13 +28656,13 @@ class Over:
 				bg = accent
 				self.ddt.rect(rect, bg)
 			elif hover:
-				bg = alpha_blend(ColourRGBA(255, 255, 255, 10), fill)
+				bg = self.settings_overlay(fill, 10)
 				self.ddt.rect(rect, bg)
 			# Separators between plain segments only; the accent block provides
 			# its own edges
 			if seg_x != x and not active and not prev_active:
 				self.ddt.rect((seg_x, y, round(1 * gui.scale), h), border)
-			text_colour = ColourRGBA(20, 20, 25, 255) if active else self.colours.box_text
+			text_colour = self.settings_contrast_text(bg) if active else self.colours.box_text
 			self.ddt.text((seg_x + seg_w // 2, y + round(7 * gui.scale), 2), label, text_colour, font, bg=bg)
 			if hover and click and not active:
 				self.inp.global_clicked = True
@@ -28593,13 +28685,13 @@ class Over:
 
 		x, y, w, h = tuple(round(v) for v in rect)
 		hover = self.coll((x, y, w, h))
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 5), self.colours.box_background)
+		fill = self.settings_overlay(self.colours.box_background, 5)
 		if active:
 			fill = alpha_blend(alpha_mod(accent, 24), fill)
 		if hover:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 9), fill)
+			fill = self.settings_overlay(fill, 9)
 
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		if active:
 			border = alpha_blend(alpha_mod(accent, 90), border)
 
@@ -28645,8 +28737,8 @@ class Over:
 		title: str = "",
 	) -> None:
 		x, y, w, h = rect
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+		fill = self.settings_overlay(self.colours.box_background, 6)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
 
 		text_x = x + round(14 * self.gui.scale)
@@ -28698,10 +28790,10 @@ class Over:
 
 		hover = self.coll(field_rect)
 		active = editable and self.settings_text_focus is text_box
-		fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+		fill = self.settings_overlay(self.colours.box_background, 6)
 		if hover or active:
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 8), fill)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			fill = self.settings_overlay(fill, 8)
+		border = self.settings_overlay(self.colours.box_text_border, 18)
 		active_border = alpha_blend(alpha_mod(accent, 90), border)
 		if active:
 			border = active_border
@@ -29157,7 +29249,7 @@ class Over:
 				tauon.playlist_folder_box.text = self.prefs.playlist_folder_path
 				field_path = tauon.playlist_folder_box.text
 			path_invalid = bool(field_path) and not Path(field_path).is_dir()
-			field_border = colours.status_text_over if path_invalid else alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+			field_border = colours.status_text_over if path_invalid else self.settings_overlay(colours.box_text_border, 18)
 			field_colour = colours.status_text_over if path_invalid else colours.box_input_text
 			self.prefs.playlist_folder_path = self.draw_settings_text_field(
 				rect1,
@@ -29261,8 +29353,9 @@ class Over:
 
 		self.fields.add(rect)
 		if self.coll(rect):
-			self.ddt.rect(rect, ColourRGBA(255, 255, 255, 15))
-			real_bg = alpha_blend(ColourRGBA(255, 255, 255, 15), bg)
+			button_shade = alpha_mod(self.settings_contrast_text(bg), 15)
+			self.ddt.rect(rect, button_shade)
+			real_bg = alpha_blend(button_shade, bg)
 			self.ddt.text((x + int(w / 2), rect[1] + 1 * self.gui.scale, 2), text, self.colours.box_title_text, 211, bg=real_bg)
 			if self.click:
 				hit = True
@@ -29282,8 +29375,8 @@ class Over:
 			w = self.ddt.get_text_w(text, 211) + 10 * self.gui.scale
 		rect = (x, y, w, 20 * self.gui.scale)
 
-		border_colour = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
-		bg_colour = alpha_blend(ColourRGBA(255, 255, 255, 8), self.colours.box_button_background)
+		border_colour = self.settings_overlay(self.colours.box_text_border, 18)
+		bg_colour = self.settings_overlay(self.colours.box_button_background, 8)
 		real_bg = bg_colour
 
 		self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
@@ -29331,7 +29424,7 @@ class Over:
 		# Inner background
 		self.ddt.rect_a(
 			(x + border, y + border), (gap * 2 + inner_square, gap * 2 + inner_square),
-			alpha_blend(ColourRGBA(255, 255, 255, 14), colours.box_background))
+			self.settings_overlay(colours.box_background, 14))
 
 		# Check if box clicked
 		self.inp.global_clicked = False
@@ -29493,8 +29586,8 @@ class Over:
 		if prefs.chart_cascade:
 			count = prefs.chart_c1 * prefs.chart_d1 + prefs.chart_c2 * prefs.chart_d2 + prefs.chart_c3 * prefs.chart_d3
 
-		info_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
-		info_border = alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+		info_fill = self.settings_overlay(colours.box_background, 6)
+		info_border = self.settings_overlay(colours.box_text_border, 18)
 		info_rect = (inner_x, inner_y, inner_w, info_h)
 		self.ddt.bordered_rect(info_rect, info_fill, info_border, round(1 * gui.scale))
 		text_x = info_rect[0] + round(14 * gui.scale)
@@ -29573,7 +29666,7 @@ class Over:
 		display_colour = ColourRGBA(prefs.chart_bg[0], prefs.chart_bg[1], prefs.chart_bg[2], 255)
 		preview_rect = (swatch_rect[0] + round(12 * gui.scale), swatch_rect[1] + round(25 * gui.scale), round(34 * gui.scale), round(12 * gui.scale))
 		self.ddt.rect(preview_rect, display_colour)
-		self.ddt.rect_s(preview_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), colours.box_text_border), round(1 * gui.scale))
+		self.ddt.rect_s(preview_rect, self.settings_overlay(colours.box_text_border, 40), round(1 * gui.scale))
 		self.ddt.text(
 			(preview_rect[0] + preview_rect[2] + round(10 * gui.scale), swatch_rect[1] + round(22 * gui.scale)),
 			f"{prefs.chart_bg[0]}, {prefs.chart_bg[1]}, {prefs.chart_bg[2]}",
@@ -29969,10 +30062,10 @@ class Over:
 		buttons_x = inner_x + inner_w - (button_w * 3 + button_gap * 2) - round(6 * gui.scale)
 		for i in range(slot_count):
 			active = gui.custom_mode and i == custom.active_slot
-			fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+			fill = self.settings_overlay(self.colours.box_background, 6)
 			if active:
 				fill = alpha_blend(alpha_mod(accent, 26), fill)
-			border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+			border = self.settings_overlay(self.colours.box_text_border, 18)
 			if active:
 				border = alpha_blend(alpha_mod(accent, 90), border)
 			self.ddt.bordered_rect((inner_x, inner_y, inner_w, row_h), fill, border, round(1 * gui.scale))
@@ -30072,10 +30165,10 @@ class Over:
 					round(1 * gui.scale),
 				)
 
-			base_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), self.colours.box_background)
+			base_fill = self.settings_overlay(self.colours.box_background, 6)
 			if hover:
-				base_fill = alpha_blend(ColourRGBA(255, 255, 255, 10), base_fill)
-			border = alpha_blend(ColourRGBA(255, 255, 255, 18), self.colours.box_text_border)
+				base_fill = self.settings_overlay(base_fill, 10)
+			border = self.settings_overlay(self.colours.box_text_border, 18)
 			if active:
 				border = alpha_blend(alpha_mod(accent, 90), border)
 			self.ddt.bordered_rect(rect, base_fill, border, round(1 * gui.scale))
@@ -30478,12 +30571,16 @@ class Over:
 		bar_gap = max(round(3 * gui.scale), (inner_w - bar_w * 10) // 9)
 		db_range = 12
 		labels = ("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
-		self.ddt.rect((inner_x, bar_y + center, inner_w, round(1 * gui.scale)), alpha_blend(ColourRGBA(255, 255, 255, 20), self.colours.box_text_border))
-		bar_fill_colour = accent if eq_enabled else alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.box_text_border)
+		self.ddt.rect(
+			(inner_x, bar_y + center, inner_w, round(1 * gui.scale)),
+			self.settings_overlay(self.colours.box_text_border, 20),
+		)
+		bar_fill_colour = accent if eq_enabled else self.settings_overlay(self.colours.box_text_border, 80)
 		bar_x = inner_x
 		for i, q in enumerate(prefs.eq):
 			track_rect = (bar_x, bar_y, bar_w, bar_h)
-			self.ddt.rect(track_rect, ColourRGBA(255, 255, 255, 18))
+			track_colour = alpha_mod(self.settings_contrast_text(self.colours.box_background), 18)
+			self.ddt.rect(track_rect, track_colour)
 			hit_rect = grow_rect(track_rect, round(3 * gui.scale))
 			self.fields.add(hit_rect)
 			if self.coll(hit_rect):
@@ -31617,8 +31714,8 @@ class Over:
 				bar_rect = (inner_x, inner_y + round(8 * gui.scale), inner_w, round(14 * gui.scale))
 				self.ddt.bordered_rect(
 					bar_rect,
-					alpha_blend(ColourRGBA(255, 255, 255, 10), colours.box_background),
-					alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border),
+					self.settings_overlay(colours.box_background, 10),
+					self.settings_overlay(colours.box_text_border, 18),
 					round(1 * gui.scale),
 				)
 				d = 0
@@ -31888,8 +31985,8 @@ class Over:
 		panel_h = full_height - header_h - pad
 		left_rect = (left_x, panel_y, left_w, panel_h)
 		right_rect = (right_x, panel_y, right_w, panel_h)
-		panel_fill = alpha_blend(ColourRGBA(255, 255, 255, 6), colours.box_background)
-		panel_border = alpha_blend(ColourRGBA(255, 255, 255, 18), colours.box_text_border)
+		panel_fill = self.settings_overlay(colours.box_background, 6)
+		panel_border = self.settings_overlay(colours.box_text_border, 18)
 		ddt.bordered_rect(left_rect, panel_fill, panel_border, round(1 * gui.scale))
 		ddt.bordered_rect(right_rect, panel_fill, panel_border, round(1 * gui.scale))
 
@@ -31922,6 +32019,7 @@ class Over:
 				max_scroll,
 				click=self.click,
 				extend_field=round(4 * gui.scale),
+				light_background=self.settings_background_is_light(colours.box_background),
 			)
 			scroll_index = int(self.theme_editor_list_scroll)
 
@@ -31934,12 +32032,12 @@ class Over:
 			row_rect = (list_rect[0], row_y, row_w, row_h)
 			hover = self.coll(row_rect)
 			active = self.theme_editor_selected_attrs == attr
-			row_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+			row_fill = self.settings_overlay(panel_fill, 4)
 			if active:
 				row_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
 			elif hover:
-				row_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
-			row_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+				row_fill = self.settings_overlay(row_fill, 8)
+			row_border = self.settings_overlay(panel_border, 18)
 			if active:
 				row_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
 			ddt.bordered_rect(row_rect, row_fill, row_border, round(1 * gui.scale))
@@ -31974,12 +32072,12 @@ class Over:
 						sub_rect = (list_rect[0] + round(10*gui.scale), row_y, row_w - round(10*gui.scale), row_h)
 						subhover = self.coll(sub_rect)
 						subactive = self.theme_editor_selected_attrs == color
-						subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 4), panel_fill)
+						subrow_fill = self.settings_overlay(panel_fill, 4)
 						if subactive:
 							subrow_fill = alpha_blend(alpha_mod(self.settings_page_accent(4), 24), row_fill)
 						elif subhover:
-							subrow_fill = alpha_blend(ColourRGBA(255, 255, 255, 8), row_fill)
-						subrow_border = alpha_blend(ColourRGBA(255, 255, 255, 18), panel_border)
+							subrow_fill = self.settings_overlay(row_fill, 8)
+						subrow_border = self.settings_overlay(panel_border, 18)
 						if subactive:
 							subrow_border = alpha_blend(alpha_mod(self.settings_page_accent(4), 90), row_border)
 						ddt.bordered_rect(sub_rect, subrow_fill, subrow_border, round(1 * gui.scale))
@@ -31995,7 +32093,7 @@ class Over:
 						component_colour = self.theme_editor_component_colour(color, current_colour)
 						swatch_rect = (sub_rect[0] + round(8 * gui.scale), sub_rect[1] + round(5 * gui.scale), round(14 * gui.scale), round(14 * gui.scale))
 						ddt.rect(swatch_rect, component_colour)
-						ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), subrow_border), round(1 * gui.scale))
+						ddt.rect_s(swatch_rect, self.settings_overlay(subrow_border, 40), round(1 * gui.scale))
 						ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), sub_rect[1] + round(4 * gui.scale)), color, colours.box_text if subactive else colours.box_button_text_highlight if subhover else colours.box_button_text, 12, bg=subrow_fill, max_w=sub_rect[2] - round(44 * gui.scale))
 
 
@@ -32010,7 +32108,7 @@ class Over:
 			if subcolors_are_identical:
 				component_colour = self.theme_editor_component_colour(attr[0], current_colour)
 				ddt.rect(swatch_rect, component_colour)
-				ddt.rect_s(swatch_rect, alpha_blend(ColourRGBA(255, 255, 255, 40), row_border), round(1 * gui.scale))
+				ddt.rect_s(swatch_rect, self.settings_overlay(row_border, 40), round(1 * gui.scale))
 			else:
 				ddt.text((swatch_rect[0] + round(1*gui.scale), row_rect[1] + round(7 * gui.scale)), "~", colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 20, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
 			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
@@ -32031,7 +32129,7 @@ class Over:
 			action_button_h,
 		)
 		ddt.bordered_rect(preview_rect, current_colour, panel_border, round(1 * gui.scale))
-		preview_text = ColourRGBA(25, 25, 25, 255) if is_light(current_colour) else ColourRGBA(245, 245, 245, 255)
+		preview_text = self.settings_contrast_text(current_colour)
 		ddt.text((preview_rect[0] + preview_rect[2] // 2, preview_rect[1] + round(8 * gui.scale), 2), self.theme_colour_to_hex(current_colour), preview_text, 212, bg=current_colour)
 
 		button_y = preview_rect[1]
@@ -32121,6 +32219,16 @@ class Over:
 		self.right_click = False
 
 	def render(self) -> None:
+		"""Render settings through a view-local contrast palette."""
+		theme_colours = self.colours
+		self.colours = self.settings_render_colours()
+		try:
+			self.render_settings_window()
+		finally:
+			self.colours = theme_colours
+			self.ddt.text_background_colour = theme_colours.box_background
+
+	def render_settings_window(self) -> None:
 		tauon   = self.tauon
 		inp     = self.inp
 		gui     = self.gui
@@ -32159,7 +32267,7 @@ class Over:
 		tab_bg = colours.sys_tab_bg
 		tab_hl = colours.sys_tab_hl
 		tab_text = rgb_add_hls(tab_bg, 0, 0.3, -0.15)
-		if is_light(tab_bg):
+		if self.settings_background_is_light(tab_bg):
 			h, l, s = rgb_to_hls(tab_bg.r, tab_bg.g, tab_bg.b)
 			l = 0.1
 			tab_text = hls_to_rgb(h, l, s)
@@ -32200,7 +32308,9 @@ class Over:
 				self.settings_nav_scroll,
 				max_nav_scroll,
 				click=self.click,
-				extend_field=round(4 * gui.scale))
+				extend_field=round(4 * gui.scale),
+				light_background=self.settings_background_is_light(colours.box_background),
+			)
 
 		content_x = x + side_width
 		content_y = y
@@ -32246,7 +32356,7 @@ class Over:
 
 			scroll_start = int(self.settings_nav_scroll)
 			scroll_offset = (self.settings_nav_scroll - scroll_start) * max(row_step, 1)
-			if is_light(tab_bg):
+			if self.settings_background_is_light(tab_bg):
 				active_bg = rgb_add_hls(tab_bg, l=-0.09, s=0.03)
 				hover_bg = rgb_add_hls(tab_bg, l=-0.05, s=0.02)
 			else:
@@ -32314,6 +32424,7 @@ class Over:
 				max_content_scroll,
 				click=content_scrollbar_click,
 				extend_field=content_scrollbar_extend,
+				light_background=self.settings_background_is_light(colours.box_background),
 			)
 
 		texture = self.ensure_settings_texture((max(1, int(self.window_size[0])), max(1, int(self.window_size[1]))))
@@ -37790,7 +37901,20 @@ class ScrollBox:
 		self.d_position = 0
 
 	def draw(
-		self, x: int, y: int, w: int, h: int, value: float, max_value: float, force_dark_theme: bool = False, click: bool | None = None, r_click: bool = False, jump_distance: int = 4, extend_field: int = 0) -> float:
+		self,
+		x: int,
+		y: int,
+		w: int,
+		h: int,
+		value: float,
+		max_value: float,
+		force_dark_theme: bool = False,
+		click: bool | None = None,
+		r_click: bool = False,
+		jump_distance: int = 4,
+		extend_field: int = 0,
+		light_background: bool | None = None,
+	) -> float:
 		if max_value <= 0:
 			return 0
 
@@ -37807,7 +37931,9 @@ class ScrollBox:
 		fg_h   = ColourRGBA(255, 255, 255, 40)
 		fg_off = ColourRGBA(255, 255, 255, 15)
 
-		if self.colours.lm and not force_dark_theme:
+		if light_background is None:
+			light_background = self.colours.lm
+		if light_background and not force_dark_theme:
 			bg     = ColourRGBA(0, 0, 0, 15)
 			fg_off = ColourRGBA(0, 0, 0, 30)
 			fg     = ColourRGBA(0, 0, 0, 60)
