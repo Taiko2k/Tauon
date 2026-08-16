@@ -68,6 +68,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict, deque
+from concurrent.futures import ThreadPoolExecutor
 from ctypes import (
 	POINTER,
 	Structure,
@@ -2724,7 +2725,8 @@ class PlayerCtl:
 				self.radio_scrobble_trip = False
 				self.radio_meta_on = self.tag_meta
 
-				self.radiobox.dummy_track.art_url_key = ""
+				if self.radiobox.loaded_url not in self.radiobox.websocket_source_urls:
+					self.radiobox.clear_artwork()
 				self.radiobox.dummy_track.title = ""
 				self.radiobox.dummy_track.date = ""
 				self.radiobox.dummy_track.artist = ""
@@ -2754,8 +2756,6 @@ class PlayerCtl:
 					self.radiobox.song_key = self.radiobox.dummy_track.artist + " - " + self.radiobox.dummy_track.title
 
 				self.update_tag_history()
-				if self.radiobox.loaded_url not in self.radiobox.websocket_source_urls:
-					self.radio_image_bin = None
 				logging.info("NEXT RADIO TRACK")
 
 				try:
@@ -2793,10 +2793,17 @@ class PlayerCtl:
 		#	 self.tray_update()
 		self.notify_in_progress = False
 
-	def update_macos_nowplaying_art_async(self, helper, track_index: int, generation: int) -> None:
+	def update_macos_nowplaying_art_async(
+		self,
+		helper: MacNowPlayingHelper,
+		track_index: int,
+		generation: int,
+	) -> None:
 		art_path = ""
 		try:
-			track = self.get_track(track_index)
+			track = self.playing_object()
+			if track is None or track.index != track_index:
+				return
 			art_path = self.tauon.thumb_tracks.path(track) or ""
 		except Exception:
 			logging.exception("Failed to get thumb path for macOS Now Playing")
@@ -14159,8 +14166,12 @@ class Tauon:
 		return self.radiobox.tab == 0
 
 	def save_to_radios(self, station: RadioStation) -> None:
-		self.pctl.radio_playlists[self.pctl.radio_playlist_viewing].stations.append(station)
-		self.toast(_("Added station to: ") + self.pctl.radio_playlists[self.pctl.radio_playlist_viewing].name)
+		playlist = self.pctl.radio_playlists[self.pctl.radio_playlist_viewing]
+		if any(saved.stream_url == station.stream_url for saved in playlist.stations):
+			self.toast(_("Station is already in: ") + playlist.name)
+			return
+		playlist.stations.append(copy.deepcopy(station))
+		self.toast(_("Added station to: ") + playlist.name)
 
 	def create_artist_pl(self, artist: str, replace: bool = False) -> None:
 		source_pl = self.pctl.active_playlist_viewing
@@ -14407,11 +14418,12 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def station_browse(self) -> None:
-		self.radiobox.active = True
+		self.radiobox.active = False
 		self.radiobox.edit_mode = False
 		self.radiobox.add_mode = False
-		self.radiobox.center = True
 		self.radiobox.tab = 1
+		self.radiobox.search_error = ""
+		self.gui.request_frame()
 
 	def add_station(self) -> None:
 		self.radiobox.active = True
@@ -15280,12 +15292,7 @@ class Tauon:
 					art_url = "https://yggdrasilradio.net/images/albumart/" + art_id
 					art_response = requests.get(art_url, timeout=10)
 					if art_response.status_code == 200:
-						if self.pctl.radio_image_bin:
-							self.pctl.radio_image_bin.close()
-							self.pctl.radio_image_bin = None
-						self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-						self.pctl.radio_image_bin.seek(0)
-						self.radiobox.dummy_track.art_url_key = "ok"
+						self.radiobox.set_artwork(art_response.content, art_url)
 				self.pctl.update_tag_history()
 		elif "gensokyoradio.net" in self.radiobox.loaded_url:
 			response = requests.get("https://gensokyoradio.net/api/station/playing/", timeout=10)
@@ -15305,12 +15312,7 @@ class Tauon:
 						art_url = "https://gensokyoradio.net/images/albums/500/" + art
 						art_response = requests.get(art_url, timeout=10)
 						if art_response.status_code == 200:
-							if self.pctl.radio_image_bin:
-								self.pctl.radio_image_bin.close()
-								self.pctl.radio_image_bin = None
-							self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-							self.pctl.radio_image_bin.seek(0)
-							self.radiobox.dummy_track.art_url_key = "ok"
+							self.radiobox.set_artwork(art_response.content, art_url)
 				self.pctl.update_tag_history()
 
 		elif "radio.plaza.one" in self.radiobox.loaded_url:
@@ -15335,18 +15337,12 @@ class Tauon:
 						art_url = d["song"]["artwork_src"]
 						art_response = requests.get(art_url, timeout=10)
 						if art_response.status_code == 200:
-							if self.pctl.radio_image_bin:
-								self.pctl.radio_image_bin.close()
-								self.pctl.radio_image_bin = None
-							self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-							self.pctl.radio_image_bin.seek(0)
-							self.radiobox.dummy_track.art_url_key = "ok"
+							self.radiobox.set_artwork(art_response.content, art_url)
 					self.pctl.update_tag_history()
 
 		# Failure
 		elif self.pctl.radio_image_bin:
-			self.pctl.radio_image_bin.close()
-			self.pctl.radio_image_bin = None
+			self.radiobox.clear_artwork()
 
 		self.gui.clear_image_cache_next += 1
 
@@ -18370,6 +18366,9 @@ class Tauon:
 		return True
 
 	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
+		if track_object.file_ext == "RADIO":
+			station = self.radiobox.loaded_station
+			return station.icon if station and station.icon else None
 		if track_object.file_ext == "TIDAL":
 			return track_object.art_url_key
 		if track_object.file_ext == "PLEX":
@@ -23830,7 +23829,9 @@ class AlbumArt:
 			fetching = False
 			try:
 				if track.file_ext == "RADIO" and self.pctl.radio_image_bin:
-					return self.pctl.radio_image_bin
+					# Every consumer owns its stream. Gallery/export callers close
+					# sources, so returning the shared buffer made radio art vanish.
+					return io.BytesIO(self.pctl.radio_image_bin.getvalue())
 
 				cached_path = os.path.join(self.tauon.n_cache_directory, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
 				if os.path.isfile(cached_path):
@@ -24399,15 +24400,19 @@ class AlbumArt:
 			except Exception:
 				logging.exception("Failed to convert image")
 				if theme_only:
-					if not track.is_network:
-						source_image.close()
+					source_image.close()
+					if source_image is self.downloaded_image:
+						self.downloaded_image = None
+						self.downloaded_track = None
 					return None
 				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
-			im.load()  # Force the full decode now so the source stream can be closed
-			if not track.is_network:
-				source_image.close()
+			im.load()  # Force the full decode now so every source stream can be closed
+			source_image.close()
+			if source_image is self.downloaded_image:
+				self.downloaded_image = None
+				self.downloaded_track = None
 
 		except Exception:
 			logging.exception("Image load error")
@@ -26273,7 +26278,8 @@ class SearchOverlay:
 					not control_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
-					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now:
+					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now \
+					and not (gui.radio_view and self.tauon.radiobox.tab == 1):
 
 				# Divert to artist list if mouse over
 				if gui.lsp and prefs.left_panel_mode == "artist list" and gui.lsp_x + 2 < inp.mouse_position[0] < gui.lsp_x + gui.lspw \
@@ -38125,6 +38131,11 @@ class RadioBox:
 		self.radio_field: TextBox2        = TextBox2(tauon)
 		self.radio_field_title: TextBox2  = TextBox2(tauon)
 		self.radio_field_search: TextBox2 = TextBox2(tauon)
+		self.country_filter_code: str = ""
+		self.country_filter_name: str = ""
+		self.countries: list[tuple[str, str, int]] = []
+		self.countries_loading: bool = False
+		self.countries_error: str = ""
 
 		self.x = 1
 		self.y = 1
@@ -38149,6 +38160,8 @@ class RadioBox:
 		self.load_failed: bool = False
 		self.load_request_id: int = 0
 		self.searching: bool = False
+		self.search_error: str = ""
+		self.search_request_id: int = 0
 		self.load_failed_timer: Timer = Timer()
 		self.right_clicked_station: RadioStation | None = None
 		self.right_clicked_station_p: int | None = None
@@ -38163,6 +38176,7 @@ class RadioBox:
 
 		self.hosts = None
 		self.host = None
+		self.host_lock = threading.Lock()
 
 		self.search_menu = Menu(tauon, 170)
 		self.search_menu.add(MenuItem(_("Search Tag"), self.search_tag, pass_ref=True))
@@ -38173,6 +38187,169 @@ class RadioBox:
 		self.ws_interval = 4.5
 		self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 		self.run_proxy: bool = True
+
+	def station_art_key(self, station: RadioStation | None = None) -> str:
+		station = station or self.loaded_station
+		if station is None or not station.icon:
+			return ""
+		key = f"{station.icon}\n{station.stream_url}"
+		return f"radio-station:{hashlib.sha256(key.encode()).hexdigest()[:20]}"
+
+	def clear_artwork(self, station_fallback: bool = True) -> None:
+		"""Drop current song art and optionally expose the station icon as fallback."""
+		if self.pctl.radio_image_bin:
+			self.pctl.radio_image_bin.close()
+			self.pctl.radio_image_bin = None
+		self.dummy_track.art_url_key = self.station_art_key() if station_fallback else ""
+		self.tauon.album_art_gen.source_cache.pop(self.dummy_track.index, None)
+		self.pctl.mac_nowplaying_art_track_index = -1
+		self.pctl.mac_nowplaying_art_ready = False
+
+	def set_artwork(self, content: bytes, source: str = "") -> None:
+		"""Publish immutable radio art to all of Tauon's normal art consumers."""
+		if not content:
+			return
+		self.clear_artwork(station_fallback=False)
+		self.pctl.radio_image_bin = io.BytesIO(content)
+		content_key = hashlib.sha256(content).hexdigest()[:20]
+		self.dummy_track.art_url_key = f"radio-art:{content_key}"
+		self.tauon.album_art_gen.source_cache.pop(self.dummy_track.index, None)
+		self.pctl.mac_nowplaying_art_track_index = -1
+		self.pctl.mac_nowplaying_art_ready = False
+		logging.info(f"Got radio artwork from {source or 'stream metadata'}")
+		self.gui.clear_image_cache_next += 1
+		self.gui.request_frame()
+
+	def run_search(self) -> None:
+		text = self.radio_field_search.text.strip()
+		if len(text) < 2 and not self.country_filter_code:
+			return
+		self.search_request_id += 1
+		request_id = self.search_request_id
+		self.searching = True
+		self.search_error = ""
+		self.temp_list.clear()
+		self.scroll_position = 0
+		self.gui.request_frame()
+		shoot = threading.Thread(
+			target=self.search_directory2,
+			args=(text, self.country_filter_code, request_id),
+			daemon=True,
+		)
+		shoot.start()
+
+	def cancel_search(self) -> None:
+		"""Invalidate any in-flight directory request without blocking its worker."""
+		self.search_request_id += 1
+		self.searching = False
+
+	@staticmethod
+	def display_country_name(name: str) -> str:
+		return {
+			"The Russian Federation": "Russia",
+			"The United States Of America": "USA",
+			"The United Kingdom Of Great Britain And Northern Ireland": "United Kingdom",
+			"Islamic Republic Of Iran": "Iran",
+		}.get(name, name)
+
+	def load_countries(self) -> None:
+		if self.countries or self.countries_loading:
+			return
+		self.countries_loading = True
+		self.countries_error = ""
+		threading.Thread(target=self.load_countries2, daemon=True).start()
+
+	def load_countries2(self) -> None:
+		try:
+			data = self.radio_browser_request(
+				"/json/countries?hidebroken=true&order=stationcount&reverse=true")
+			countries: list[tuple[str, str, int]] = []
+			for item in data:
+				code = str(item.get("iso_3166_1") or "").upper()
+				name = str(item.get("name") or "").strip()
+				if len(code) != 2 or not name:
+					continue
+				try:
+					station_count = int(item.get("stationcount") or 0)
+				except (TypeError, ValueError):
+					station_count = 0
+				countries.append((self.display_country_name(name), code, station_count))
+			countries.sort(key=lambda country: country[0].casefold())
+			self.countries[:] = countries
+		except Exception:
+			logging.exception("Radio Browser country list failed")
+			self.countries_error = _("Couldn't load countries. Try again in a moment.")
+		finally:
+			self.countries_loading = False
+			self.gui.request_frame()
+
+	def search_directory2(self, text: str, country_code: str, request_id: int) -> None:
+		try:
+			common = {
+				"hidebroken": "true",
+				"order": "votes",
+				"limit": "150",
+				"reverse": "true",
+			}
+			if country_code:
+				common["countrycode"] = country_code
+
+			if text:
+				queries = []
+				for field in ("name", "tag"):
+					params = dict(common)
+					params[field] = text
+					queries.append("/json/stations/search?" + urllib.parse.urlencode(params))
+				with ThreadPoolExecutor(max_workers=2) as executor:
+					data_sets = list(executor.map(self.radio_browser_request, queries))
+			else:
+				query = "/json/stations/search?" + urllib.parse.urlencode(common)
+				data_sets = [self.radio_browser_request(query)]
+
+			seen: set[str] = set()
+			merged: list[dict] = []
+			for data in data_sets:
+				for station in data:
+					key = station.get("stationuuid") or station.get("url_resolved") or station.get("url")
+					if not key or key in seen:
+						continue
+					seen.add(key)
+					merged.append(station)
+
+			if text:
+				term = text.casefold()
+
+				def result_rank(station: dict) -> tuple[int, int]:
+					name = str(station.get("name") or "").casefold()
+					tags = [tag.strip().casefold() for tag in str(station.get("tags") or "").split(",")]
+					if name == term:
+						match_rank = 0
+					elif name.startswith(term):
+						match_rank = 1
+					elif term in name:
+						match_rank = 2
+					elif term in tags:
+						match_rank = 3
+					else:
+						match_rank = 4
+					try:
+						votes = int(station.get("votes") or 0)
+					except (TypeError, ValueError):
+						votes = 0
+					return match_rank, -votes
+
+				merged.sort(key=result_rank)
+
+			if request_id == self.search_request_id:
+				self.parse_data(merged[:250])
+		except Exception:
+			logging.exception("Radio Browser unified search failed")
+			if request_id == self.search_request_id:
+				self.search_error = _("Couldn't reach the station directory. Try again in a moment.")
+		finally:
+			if request_id == self.search_request_id:
+				self.searching = False
+				self.gui.request_frame()
 
 	def parse_vorbis_okay(self) -> bool:
 		return (
@@ -38271,12 +38448,14 @@ class RadioBox:
 
 		self.playing_title = ""
 		self.playing_title = station.title
-		self.dummy_track.art_url_key = ""
+		self.clear_artwork(station_fallback=False)
 		self.dummy_track.title = ""
 		self.dummy_track.artist = ""
 		self.dummy_track.album = ""
 		self.dummy_track.date = ""
 		self.pctl.radio_meta_on = ""
+		self.loaded_station = station
+		self.dummy_track.art_url_key = self.station_art_key(station)
 
 		self.tauon.album_art_gen.clear_cache()
 
@@ -38305,8 +38484,6 @@ class RadioBox:
 		self.song_key = ""
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
-		self.loaded_station = station
-
 		if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running or self.tauon.stream_proxy.pump_running:
 			logging.info(
 				f"Stopping existing radio stream before new request: "
@@ -38441,20 +38618,11 @@ class RadioBox:
 							#logging.info(art_response.status_code)
 
 							if art_response.status_code == 200:
-								if self.pctl.radio_image_bin:
-									self.pctl.radio_image_bin.close()
-									self.pctl.radio_image_bin = None
-								self.pctl.radio_image_bin = io.BytesIO(art_response.content)
-								self.pctl.radio_image_bin.seek(0)
-								self.dummy_track.art_url_key = "ok"
-								logging.info("Got new art")
+								self.set_artwork(art_response.content, fulllink)
 
 					except Exception:
 						logging.exception("No image")
-						if self.pctl.radio_image_bin:
-							self.pctl.radio_image_bin.close()
-							self.pctl.radio_image_bin = None
-					self.gui.clear_image_cache_next += 1
+						self.clear_artwork()
 					self.gui.request_frame()
 
 			def on_error(ws: WebSocketApp, error) -> None:
@@ -38620,56 +38788,81 @@ class RadioBox:
 				self.temp_list.append(station)
 
 	def search_radio_browser(self, param: str) -> None:
-		if self.searching:
-			return
+		self.search_request_id += 1
+		request_id = self.search_request_id
 		self.searching = True
-		shoot = threading.Thread(target=self.search_radio_browser2, args=[param])
+		self.search_error = ""
+		self.temp_list.clear()
+		self.scroll_position = 0
+		self.gui.request_frame()
+		shoot = threading.Thread(target=self.search_radio_browser2, args=(param, request_id))
 		shoot.daemon = True
 		shoot.start()
 
-	def search_radio_browser2(self, param: str) -> None:
-		if not self.hosts:
-			self.hosts = self.browser_get_hosts()
-			# In case we get an empty list for some reason
+	def radio_browser_request(self, param: str) -> list[dict]:
+		with self.host_lock:
 			if not self.hosts:
-				logging.warning("Got an empty radio list back, returning early!")
+				self.hosts = self.browser_get_hosts()
+		if not self.hosts:
+			raise RuntimeError("No Radio Browser servers were found")
+
+		hosts = self.hosts[:]
+		random.shuffle(hosts)
+		if self.host in hosts:
+			hosts.remove(self.host)
+			hosts.insert(0, self.host)
+
+		last_error = None
+		for host in hosts:
+			try:
+				uri = host + param
+				req = urllib.request.Request(uri)
+				req.add_header("User-Agent", self.tauon.t_agent)
+				req.add_header("Content-Type", "application/json")
+				with urllib.request.urlopen(req, timeout=12, context=self.tauon.tls_context) as response:
+					data = json.loads(response.read().decode())
+				if not isinstance(data, list):
+					raise TypeError("Radio Browser returned a non-list response")
+				self.host = host
+				return data
+			except Exception as exc:
+				last_error = exc
+				logging.warning(f"Radio Browser request failed via {host}: {exc}")
+		raise RuntimeError("All Radio Browser servers failed") from last_error
+
+	def search_radio_browser2(self, param: str, request_id: int) -> None:
+		try:
+			data = self.radio_browser_request(param)
+			if request_id == self.search_request_id:
+				self.parse_data(data)
+		except Exception:
+			logging.exception("Radio Browser search failed")
+			if request_id == self.search_request_id:
+				self.search_error = _("Couldn't reach the station directory. Try again in a moment.")
+		finally:
+			if request_id == self.search_request_id:
 				self.searching = False
-				return
-		if not self.host:
-			self.host = random.choice(self.hosts)
+				self.gui.request_frame()
 
-		uri = self.host + param
-		req = urllib.request.Request(uri)
-		req.add_header("User-Agent", self.tauon.t_agent)
-		req.add_header("Content-Type", "application/json")
-		response = urllib.request.urlopen(req, context=self.tauon.tls_context)
-		data = response.read()
-		data = json.loads(data.decode())
-		self.parse_data(data)
-		self.searching = False
-
-	def parse_data(self, data: dict) -> None:
-		self.temp_list.clear()
+	def parse_data(self, data: list[dict]) -> None:
+		results: list[RadioStation] = []
+		seen_urls: set[str] = set()
 		for station in data:
-			#logging.info(station)
+			stream_url = station.get("url_resolved") or station.get("url") or ""
+			if not stream_url or stream_url in seen_urls:
+				continue
+			seen_urls.add(stream_url)
 			radio: RadioStation = RadioStation(
-				title=station["name"],
-				stream_url_fallback=station["url"],
-				stream_url=station["url_resolved"],
-				icon=station["favicon"],
-				country=station["country"])
-			if radio.country == "The Russian Federation":
-				radio.country = "Russia"
-			elif radio.country == "The United States Of America":
-				radio.country = "USA"
-			elif radio.country == "The United Kingdom Of Great Britain And Northern Ireland":
-				radio.country = "United Kingdom"
-			elif radio.country == "Islamic Republic Of Iran":
-				radio.country = "Iran"
-			elif len(station["country"]) > 20:
-				radio.country = station["countrycode"]
-			radio.website_url = station["homepage"]
-			self.temp_list.append(radio)
+				title=station.get("name") or stream_url,
+				stream_url_fallback=station.get("url") or stream_url,
+				stream_url=stream_url,
+				icon=station.get("favicon") or "",
+				country=self.display_country_name(station.get("country") or ""))
+			if len(radio.country) > 20:
+				radio.country = station.get("countrycode") or radio.country
+			radio.website_url = station.get("homepage") or ""
+			results.append(radio)
+		self.temp_list[:] = results
 		self.gui.request_frame()
 
 	def render(self) -> None:
@@ -42594,9 +42787,10 @@ class RadioThumbGen:
 			del self.requests[0]
 			station = item[0]
 			size = item[1]
-			key = (station.title, size)
+			key = (station.title, station.icon, station.stream_url, size)
 			src = None
-			filename = filename_safe(station.title)
+			identity = f"{station.icon}\n{station.stream_url}"
+			filename = f"{filename_safe(station.title)}-{hashlib.sha256(identity.encode()).hexdigest()[:10]}"
 
 			cache_path = os.path.join(self.r_cache_directory, filename + ".jpg")
 			if os.path.isfile(cache_path):
@@ -42671,7 +42865,7 @@ class RadioThumbGen:
 	def draw(self, station: RadioStation, x: int, y: int, w: int) -> int:
 		if not station.title:
 			return 0
-		key = (station.title, w)
+		key = (station.title, station.icon, station.stream_url, w)
 
 		r = self.cache.get(key)
 		if r is None:
@@ -42717,251 +42911,977 @@ class RadioView:
 		self.search_icon = asset_loader(bag, bag.loaded_asset_dc, "station-search.png", True)
 		self.save_icon   = asset_loader(bag, bag.loaded_asset_dc, "save-station.png", True)
 		self.menu_icon   = asset_loader(bag, bag.loaded_asset_dc, "radio-menu.png", True)
+		self.broadcast_icon = asset_loader(bag, bag.loaded_asset_dc, "broadcast.png", True)
+		self.now_playing_broadcast_icon = asset_loader(
+			bag,
+			bag.loaded_asset_dc,
+			"broadcast-now-playing.png",
+			True,
+		)
+		self.country_search = TextBox2(tauon)
+		self.filter_open = False
+		self.filter_scroll = 0.0
+		self.filter_query = ""
+		self.filter_button_rect = (0, 0, 0, 0)
+		self.filter_chip_rect = (0, 0, 0, 0)
+		self.filter_panel_rect = (0, 0, 0, 0)
 		self.drag = None
 		self.click_point = (0, 0)
+		self.discovery_loaded = False
 
-	def render(self) -> None:
-		pctl        = self.pctl
-		gui         = self.gui
-		window_size = self.window_size
-		radiobox    = self.radiobox
-		# box = int(window_size[1] * 0.4 + 120 * gui.scale)
-		# box = min(window_size[0] // 2, box)
+	def palette(self) -> tuple[
+		ColourRGBA,
+		ColourRGBA,
+		ColourRGBA,
+		ColourRGBA,
+		ColourRGBA,
+		ColourRGBA,
+		ColourRGBA,
+	]:
 		bg = self.colours.playlist_panel_background
-		self.ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), bg)
-		#logging.info(prefs.radio_urls)
+		# test_lumi() returns darkness (1 for black, 0 for white).
+		dark = test_lumi(bg) > 0.5
+		surface = rgb_add_hls(bg, l=0.035 if dark else -0.035, s=-0.025)
+		surface_over = rgb_add_hls(surface, l=0.055 if dark else -0.055, s=-0.02)
+		border = rgb_add_hls(bg, l=0.12 if dark else -0.12, s=-0.04)
+		primary = ColourRGBA(242, 242, 244, 255) if dark else ColourRGBA(24, 24, 28, 255)
+		secondary = ColourRGBA(166, 168, 174, 255) if dark else ColourRGBA(82, 84, 90, 255)
+		accent = self.colours.artist_playing
+		return bg, surface, surface_over, border, primary, secondary, accent
 
-		# Add station button
-		x = window_size[0] - round(60 * gui.scale)
-		y = gui.panelY + round(30 * gui.scale)
-		rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
-		self.fields.add(rect)
-
-		# right buttions colours
-		a_colour = rgb_add_hls(bg, l=0.2, s=-0.3) #colours.box_button_text_highlight
-		b_colour = rgb_add_hls(bg, l=0.4, s=-0.3) #colours.box_button_text_highlight
-		if test_lumi(bg) < 0.38:
-			a_colour = ColourRGBA(20, 20, 20, 200)
-			b_colour = ColourRGBA(60, 60, 60, 200)
-
-		if self.coll(rect):
-			colour = b_colour
-			if self.inp.mouse_click:
-				self.tauon.add_station()
-		else:
-			colour = a_colour
-
-		self.add_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
-
-		y += round(33 * gui.scale)
-		rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
-		self.fields.add(rect)
-
-		if not self.coll(rect):
-			colour = a_colour
-		else:
-			colour = b_colour
-			if self.inp.mouse_click:
-				self.tauon.station_browse()
-		self.search_icon.render(rect[0] + round(4 * gui.scale), rect[1] + round(4 * gui.scale), colour)
-
-		if pctl.radio_playlist_viewing > len(pctl.radio_playlists) - 1:
-			pctl.radio_playlist_viewing = 0
-		if not pctl.radio_playlists:
-			return
-		radios = pctl.radio_playlists[pctl.radio_playlist_viewing].stations
-
-		y += round(32 * gui.scale)
-		if pctl.playing_state == PlayingState.URL_STREAM and radiobox.loaded_station not in radios:
-			rect = (x, y, round(25 * gui.scale), round(25 * gui.scale))
-			self.fields.add(rect)
-
-			if not self.coll(rect):
-				colour = a_colour
-			else:
-				colour = b_colour
-				if self.inp.mouse_click:
-					radios.append(radiobox.loaded_station)
-					self.tauon.toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
-
-			self.save_icon.render(rect[0] + round(3 * gui.scale), rect[1] + round(4 * gui.scale), colour)
-
-		x = round(30 * gui.scale)
-		y = gui.panelY + round(30 * gui.scale)
-		yy = y
-
-		rbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.03, -0.03)
-		tbg = rgb_add_hls(self.colours.playlist_panel_background, 0, 0.07, -0.05)
-		if contrast_ratio(bg, rbg) < 1.05:
-			rbg = ColourRGBA(30, 30, 30, 255)
-			tbg = ColourRGBA(60, 60, 60, 255)
-
-		w = round(400 * gui.scale)
-		h = round(55 * gui.scale)
-		gap = round(7 * gui.scale)
-
-		mm = (window_size[1] - (gui.panelBY + yy + h + round(15 * gui.scale))) // (h + gap) + 1
-
-		count = 0
-		scroll = pctl.radio_playlists[pctl.radio_playlist_viewing].scroll
-		scroll_area = (0, gui.panelY, w + round(70 * gui.scale), window_size[1] - gui.panelBY - gui.panelY)
-		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, scroll_area)
-		use_smooth_scroll = (
-			self.smooth_scroll.enabled()
-			or touch_scroll
-			or self.smooth_scroll.active("radios")
+	def button(
+		self,
+		rect: tuple[int, int, int, int],
+		text: str,
+		*,
+		active: bool = False,
+		primary_action: bool = False,
+		font: int = 212,
+		clip_to: tuple[int, int, int, int] | None = None,
+		enabled: bool = True,
+	) -> bool:
+		palette = self.palette()
+		surface = palette[1]
+		surface_over = palette[2]
+		border = palette[3]
+		primary = palette[4]
+		secondary = palette[5]
+		accent = palette[6]
+		hit_rect = (self.intersect_rect(rect, clip_to) if clip_to else rect) if enabled else None
+		hover = hit_rect is not None and self.coll(hit_rect)
+		button_bg = surface_over if hover or active else surface
+		button_border = accent if active or primary_action else border
+		text_colour = primary if hover or active or primary_action else secondary
+		if primary_action:
+			button_bg = alpha_blend(alpha_mod(accent, 42 if hover else 28), surface)
+		self.ddt.bordered_rect(rect, button_bg, button_border, max(1, round(self.gui.scale)))
+		if hit_rect is not None:
+			self.fields.add(hit_rect)
+		self.ddt.text(
+			(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(9 * self.gui.scale), 2),
+			text,
+			text_colour,
+			font,
+			bg=button_bg,
 		)
-		if not radiobox.active or (radiobox.active and not self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
-			if use_smooth_scroll:
-				if gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
-				and self.inp.mouse_position[0] < w + round(70 * gui.scale) and self.inp.mouse_wheel:
-					self.smooth_scroll.add_wheel_motion("radios", -self.inp.mouse_wheel, h + gap)
-				if self.inp.touch_released:
-					self.smooth_scroll.release_touch("radios")
-				elif touch_scroll:
-					self.smooth_scroll.apply_touch_drag("radios", -self.inp.touch_scroll_y)
-				scroll += self.smooth_scroll.step_motion("radios") / max(h + gap, 1)
-			elif gui.panelY < self.inp.mouse_position[1] < window_size[1] - gui.panelBY \
-			and self.inp.mouse_position[0] < w + round(70 * gui.scale):
-				scroll_distance = self.smooth_scroll.scroll("radios")
-				scroll -= scroll_distance
+		return hover and self.inp.mouse_click
 
-		scroll = min(scroll, len(radios) - mm + 1)
-		scroll = max(scroll, 0)
-		if len(radios) > mm:
-			scroll = self.tauon.radio_view_scroll.draw(
-				round(7 * gui.scale), yy, round(15 * gui.scale), (mm * (h + gap)) - gap, scroll, len(radios) - mm + 1)
+	@staticmethod
+	def intersect_rect(
+		rect: tuple[int, int, int, int],
+		bounds: tuple[int, int, int, int],
+	) -> tuple[int, int, int, int] | None:
+		left = max(rect[0], bounds[0])
+		top = max(rect[1], bounds[1])
+		right = min(rect[0] + rect[2], bounds[0] + bounds[2])
+		bottom = min(rect[1] + rect[3], bounds[1] + bounds[3])
+		if right <= left or bottom <= top:
+			return None
+		return left, top, right - left, bottom - top
+
+	@staticmethod
+	def row_control_colours(background: ColourRGBA) -> tuple[ColourRGBA, ColourRGBA]:
+		"""Derive normal and hover icon colours from the row they sit on."""
+		bright_normal = rgb_add_hls(background, l=0.32, s=-0.06)
+		bright_hover = rgb_add_hls(background, l=0.46, s=-0.08)
+		bright_normal = ColourRGBA(bright_normal.r, bright_normal.g, bright_normal.b, 255)
+		bright_hover = ColourRGBA(bright_hover.r, bright_hover.g, bright_hover.b, 255)
+		if contrast_ratio(bright_hover, background) >= 2.5:
+			return bright_normal, bright_hover
+
+		# Near-white rows cannot be boosted upward without losing the icon, so
+		# move toward dark ink while preserving a clear normal/hover separation.
+		dark_ink = ColourRGBA(24, 25, 29, 255)
+		normal = alpha_blend(alpha_mod(dark_ink, 150), background)
+		hover = alpha_blend(alpha_mod(dark_ink, 230), background)
+		return (
+			readable_text_colour(normal, background, minimum_contrast=3.0),
+			readable_text_colour(hover, background, minimum_contrast=4.5),
+		)
+
+	def row_button(
+		self,
+		rect: tuple[int, int, int, int],
+		text: str,
+		background: ColourRGBA,
+		*,
+		clip_to: tuple[int, int, int, int],
+		enabled: bool,
+	) -> bool:
+		"""Draw a row action whose contrast is derived from its actual row."""
+		hit_rect = self.intersect_rect(rect, clip_to) if enabled else None
+		hover = hit_rect is not None and self.coll(hit_rect)
+		control, control_over = self.row_control_colours(background)
+		control_colour = control_over if hover else control
+		button_bg = background
+		if hover:
+			button_bg = alpha_blend(alpha_mod(control_over, 26), background)
+		button_border = alpha_blend(alpha_mod(control_colour, 150 if hover else 105), background)
+		text_colour = readable_text_colour(control_colour, button_bg, minimum_contrast=3.0)
+		self.ddt.bordered_rect(rect, button_bg, button_border, max(1, round(self.gui.scale)))
+		if hit_rect is not None:
+			self.fields.add(hit_rect)
+		self.ddt.text(
+			(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(9 * self.gui.scale), 2),
+			text,
+			text_colour,
+			11,
+			bg=button_bg,
+		)
+		return hover and self.inp.mouse_click
+
+	def load_featured(self) -> None:
+		self.radiobox.cancel_search()
+		self.radiobox.radio_field_search.clear()
+		self.radiobox.temp_list[:] = [
+			RadioStation(
+				title="Nightwave Plaza",
+				stream_url_fallback="https://radio.plaza.one/ogg",
+				stream_url="https://radio.plaza.one/ogg",
+				website_url="https://plaza.one/",
+				icon="https://plaza.one/icons/apple-touch-icon.png",
+				country="Japan",
+			),
+			RadioStation(
+				title="Gensokyo Radio",
+				stream_url_fallback="https://stream.gensokyoradio.net/GensokyoRadio-enhanced.m3u",
+				stream_url="https://stream.gensokyoradio.net/1",
+				website_url="https://gensokyoradio.net/",
+				icon="https://gensokyoradio.net/favicon.ico",
+				country="Japan",
+			),
+			RadioStation(
+				title="Listen.moe | Jpop",
+				stream_url_fallback="https://listen.moe/stream",
+				stream_url="https://listen.moe/stream",
+				website_url="https://listen.moe/",
+				icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
+				country="Japan",
+			),
+			RadioStation(
+				title="Listen.moe | Kpop",
+				stream_url_fallback="https://listen.moe/kpop/stream",
+				stream_url="https://listen.moe/kpop/stream",
+				website_url="https://listen.moe/",
+				icon="https://avatars.githubusercontent.com/u/26034028?s=200&v=4",
+				country="Korea",
+			),
+			RadioStation(
+				title="HBR1 Dream Factory | Ambient",
+				stream_url_fallback="http://radio.hbr1.com:19800/ambient.ogg",
+				stream_url="http://radio.hbr1.com:19800/ambient.ogg",
+				website_url="http://www.hbr1.com/",
+			),
+			RadioStation(
+				title="Yggdrasil Radio | Anime & Jpop",
+				stream_url_fallback="http://shirayuki.org:9200/",
+				stream_url="http://shirayuki.org:9200/",
+				website_url="https://yggdrasilradio.net/",
+			),
+		]
+		self.radiobox.temp_list.extend(copy.deepcopy(self.tauon.primary_stations))
+		self.radiobox.scroll_position = 0
+		self.radiobox.search_error = ""
+		self.discovery_loaded = True
+		self.gui.request_frame()
+
+	def refresh_country_filter(self) -> None:
+		self.discovery_loaded = True
+		if self.radiobox.country_filter_code or len(self.radiobox.radio_field_search.text.strip()) >= 2:
+			self.radiobox.run_search()
 		else:
-			scroll = 0
+			self.load_featured()
 
-		pctl.radio_playlists[pctl.radio_playlist_viewing].scroll = scroll
-		insert = None
-		scroll_start = int(scroll)
-		scroll_offset = (scroll - scroll_start) * max(h + gap, 1)
-		yy = y - scroll_offset
+	def clear_country_filter(self) -> None:
+		self.radiobox.country_filter_code = ""
+		self.radiobox.country_filter_name = ""
+		self.filter_open = False
+		self.country_search.clear()
+		self.filter_scroll = 0
+		self.refresh_country_filter()
 
-		for i, radio in enumerate(radios):
-			if count == mm:
-				break
-			if i < scroll_start:
-				continue
-			count += 1
-			rect = (x, yy, w, h)
-			self.ddt.rect(rect, rbg)
-			yyy = yy
-			pic_rect = (
-			x + round(5 * gui.scale), yy + round(5 * gui.scale), h - round(10 * gui.scale), h - round(10 * gui.scale))
-			self.ddt.rect(pic_rect, tbg)
-			self.tauon.radio_thumb_gen.draw(radio, pic_rect[0], pic_rect[1], pic_rect[2])
+	def apply_country_filter(self, name: str, code: str) -> None:
+		self.radiobox.country_filter_name = name
+		self.radiobox.country_filter_code = code
+		self.filter_open = False
+		self.country_search.clear()
+		self.filter_scroll = 0
+		self.refresh_country_filter()
 
-			l1_colour = ColourRGBA(10, 10, 10, 210)
-			if test_lumi(rbg) > 0.45:
-				l1_colour = ColourRGBA(255, 255, 255, 220)
-			l2_colour = ColourRGBA(30, 30, 30, 200)
-			if test_lumi(rbg) > 0.45:
-				l2_colour = ColourRGBA(245, 245, 245, 200)
+	def draw_header(self, x: int, y: int, w: int) -> int:
+		palette = self.palette()
+		surface = palette[1]
+		surface_over = palette[2]
+		border = palette[3]
+		primary = palette[4]
+		secondary = palette[5]
+		accent = palette[6]
+		s = self.gui.scale
+		discover = self.radiobox.tab == 1
 
-			toff = h + round(2 * gui.scale)
-			yyy += round(9 * gui.scale)
+		self.ddt.text((x, y), _("Radio"), primary, 215, max_w=w - round(190 * s))
+		segment_gap = round(6 * s)
+		discover_w = round(88 * s)
+		saved_w = round(72 * s)
+		segment_x = x + w - discover_w - saved_w - segment_gap
+		segment_y = y - round(2 * s)
+		segment_h = round(28 * s)
+		if self.button((segment_x, segment_y, saved_w, segment_h), _("Saved"), active=not discover):
+			self.radiobox.tab = 0
+			self.radiobox.search_error = ""
+			self.filter_open = False
+			discover = False
+		if self.button(
+			(segment_x + saved_w + segment_gap, segment_y, discover_w, segment_h),
+			_("Discover"),
+			active=discover,
+		):
+			self.radiobox.tab = 1
+			discover = True
+			if not self.discovery_loaded:
+				self.load_featured()
+
+		if not discover:
+			playlist = self.pctl.radio_playlists[self.pctl.radio_playlist_viewing]
+			count = len(playlist.stations)
+			description = _("{name}  ·  {count} stations").format(name=playlist.name, count=count)
+			self.ddt.text((x, y + round(34 * s)), description, secondary, 313, max_w=w - round(130 * s))
+			button_w = round(112 * s)
+			if self.button(
+				(x + w - button_w, y + round(32 * s), button_w, round(28 * s)),
+				_("+ Add station"),
+			):
+				self.tauon.add_station()
+			return y + round(68 * s)
+
+		search_y = y + round(40 * s)
+		search_button_w = round(72 * s)
+		search_gap = round(8 * s)
+		field_w = w - search_button_w - search_gap
+		field_rect = (x, search_y, field_w, round(30 * s))
+		search_text_y = search_y + round(6 * s)
+		search_active = not self.radiobox.active and not self.filter_open
+		self.ddt.bordered_rect(field_rect, surface, border, max(1, round(s)))
+		self.fields.add(field_rect)
+		if not self.radiobox.radio_field_search.text and not self.gui.editline:
 			self.ddt.text(
-				(x + toff, yyy), radio.title, l1_colour, 212,
-				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
-			yyy += round(19 * gui.scale)
-			self.ddt.text(
-				(x + toff, yyy), radio.country, l2_colour, 312,
-				max_w=w - (toff + round(90 * gui.scale)), bg=rbg)
+				(x + round(10 * s), search_text_y),
+				_("Search stations or genres…"),
+				secondary,
+				312,
+				max_w=field_w - round(18 * s),
+				bg=surface,
+			)
+		self.radiobox.radio_field_search.draw(
+			x + round(10 * s),
+			search_text_y,
+			primary,
+			active=search_active,
+			width=field_w - round(16 * s),
+			click=self.inp.mouse_click and search_active,
+		)
+		if search_active:
+			self.inp.input_text = ""
+		search_rect = (x + field_w + search_gap, search_y, search_button_w, round(30 * s))
+		search_pressed = self.button(search_rect, _("Search"), primary_action=True)
 
-			hit = False
-			start_rect = (
-				x + (w - round(40 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
-				round(42 * gui.scale))
-			# self.ddt.rect(hit_rect, [255, 255, 255, 3])
-			self.fields.add(start_rect)
-			colour = rgb_add_hls(tbg, l=0.05)
-			if self.coll(start_rect):
-				if self.inp.mouse_click:
-					radiobox.start(radio)
-					hit = True
-				colour = rgb_add_hls(colour, l=0.3)
+		chip_y = search_y + round(38 * s)
+		chip_h = round(24 * s)
+		chip_gap = round(5 * s)
+		filter_w = round(112 * s)
+		filter_label = _("Country Filter")
+		self.filter_button_rect = (x, chip_y, filter_w, chip_h)
+		filter_pressed = self.button(
+			self.filter_button_rect,
+			filter_label,
+			active=self.filter_open or bool(self.radiobox.country_filter_code),
+			font=11,
+		)
 
-			self.tauon.bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
+		picks_w = round(52 * s)
+		top_w = round(46 * s)
+		picks_rect = (x + w - picks_w, chip_y, picks_w, chip_h)
+		top_rect = (x + w - picks_w - chip_gap - top_w, chip_y, top_w, chip_h)
+		picks_pressed = self.button(picks_rect, _("Picks"), font=11)
+		top_pressed = self.button(top_rect, _("Top"), font=11)
 
-			extra_rect = (
-				x + (w - round(82 * gui.scale)), yy + round(8 * gui.scale), h - round(15 * gui.scale),
-				round(35 * gui.scale))
-			# self.ddt.rect(extra_rect, [255, 255, 255, 2])
-			self.fields.add(extra_rect)
-			colour = rgb_add_hls(tbg, l=0.05)
-			if self.coll(extra_rect):
-				colour = rgb_add_hls(colour, l=0.3) #alpha_mod(colours.side_bar_line1, 47)
-				if self.inp.mouse_click:
-					hit = True
-					radiobox.x = extra_rect[0] + extra_rect[2]
-					radiobox.y = extra_rect[1]
-					self.tauon.radio_context_menu.activate((i, radio), position=(radiobox.x, yy + round(20 * gui.scale)))
+		self.filter_chip_rect = (0, 0, 0, 0)
+		chip_pressed = False
+		remove_filter_pressed = False
+		if self.radiobox.country_filter_code:
+			country_x = x + filter_w + chip_gap
+			country_max_w = max(0, top_rect[0] - chip_gap - country_x)
+			country_w = min(
+				country_max_w,
+				self.ddt.get_text_w(self.radiobox.country_filter_name, 11) + round(38 * s),
+			)
+			country_w = round(country_w)
+			if country_w >= round(64 * s):
+				self.filter_chip_rect = (country_x, chip_y, country_w, chip_h)
+				chip_hover = self.coll(self.filter_chip_rect)
+				chip_bg = surface_over if chip_hover else surface
+				self.ddt.bordered_rect(self.filter_chip_rect, chip_bg, accent, max(1, round(s)))
+				self.fields.add(self.filter_chip_rect)
+				remove_w = round(24 * s)
+				remove_rect = (
+					country_x + country_w - remove_w,
+					chip_y,
+					remove_w,
+					chip_h,
+				)
+				self.ddt.text(
+					(country_x + round(9 * s), chip_y + round(3 * s)),
+					self.radiobox.country_filter_name,
+					primary,
+					11,
+					max_w=country_w - remove_w - round(10 * s),
+					bg=chip_bg,
+				)
+				self.ddt.text(
+					(remove_rect[0] + remove_rect[2] // 2, chip_y + round(3 * s), 2),
+					"×",  # noqa: RUF001 - multiplication sign is the intended close glyph
+					primary if self.coll(remove_rect) else secondary,
+					11,
+					bg=chip_bg,
+				)
+				self.fields.add(remove_rect)
+				remove_filter_pressed = self.coll(remove_rect) and self.inp.mouse_click
+				chip_pressed = chip_hover and self.inp.mouse_click and not remove_filter_pressed
 
-			self.menu_icon.render(x + (w - round(75 * gui.scale)), yy + round(26 * gui.scale), colour)
+		panel_y = chip_y + chip_h + round(6 * s)
+		panel_w = min(w, round(310 * s))
+		available_h = max(round(130 * s), self.window_size[1] - self.gui.panelBY - panel_y - round(12 * s))
+		panel_h = min(round(330 * s), available_h)
+		self.filter_panel_rect = (x, panel_y, panel_w, panel_h)
 
-			# self.tauon.bottom_bar1.play_button.render(x + (w - round(30 * gui.scale)), yy + round(23 * gui.scale), colour)
-			if self.inp.mouse_up and self.drag and self.coll(rect):
-				if radiobox.active and self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h)):
-					pass
+		if filter_pressed:
+			self.filter_open = not self.filter_open
+			self.inp.mouse_click = False
+			if self.filter_open:
+				self.radiobox.load_countries()
+		elif remove_filter_pressed:
+			self.inp.mouse_click = False
+			self.clear_country_filter()
+		elif chip_pressed:
+			self.filter_open = True
+			self.inp.mouse_click = False
+			self.radiobox.load_countries()
+		elif (
+			self.filter_open
+			and self.inp.mouse_click
+			and not self.coll(self.filter_panel_rect)
+			and not self.coll(self.filter_button_rect)
+			and not self.coll(self.filter_chip_rect)
+		):
+			self.filter_open = False
+			self.inp.mouse_click = False
+		elif not self.filter_open:
+			if search_pressed or self.inp.key_return_press:
+				self.inp.key_return_press = False
+				self.discovery_loaded = True
+				self.radiobox.run_search()
+			elif picks_pressed:
+				self.radiobox.country_filter_code = ""
+				self.radiobox.country_filter_name = ""
+				self.load_featured()
+			elif top_pressed:
+				self.discovery_loaded = True
+				self.radiobox.radio_field_search.clear()
+				if self.radiobox.country_filter_code:
+					self.radiobox.run_search()
 				else:
-					insert = i
-				if not radiobox.active and self.drag in radios and radios.index(self.drag) < i:
-					insert += 1
-			elif self.coll(rect) and not hit and self.inp.mouse_click:
+					self.radiobox.search_radio_browser(
+						"/json/stations?hidebroken=true&order=votes&limit=250&reverse=true")
+
+		return y + round(118 * s)
+
+	def draw_filter_popover(self) -> None:
+		if not self.filter_open:
+			return
+		surface, surface_over, border, primary, secondary, accent = self.palette()[1:]
+		s = self.gui.scale
+		rect = self.filter_panel_rect
+		pad = round(12 * s)
+		line = max(1, round(s))
+		self.ddt.bordered_rect(rect, surface_over, border, line)
+
+		title_y = rect[1] + round(10 * s)
+		self.ddt.text((rect[0] + pad, title_y), _("Filters"), primary, 213, bg=surface_over)
+		close_size = round(26 * s)
+		close_rect = (rect[0] + rect[2] - pad - close_size, rect[1] + round(5 * s), close_size, close_size)
+		close_hover = self.coll(close_rect)
+		self.fields.add(close_rect)
+		self.ddt.text(
+			(close_rect[0] + close_rect[2] // 2, close_rect[1] + round(4 * s), 2),
+			"×",  # noqa: RUF001 - multiplication sign is the intended close glyph
+			primary if close_hover else secondary,
+			212,
+			bg=surface_over,
+		)
+		if self.inp.key_esc_press or (close_hover and self.inp.mouse_click):
+			self.filter_open = False
+			self.inp.key_esc_press = False
+			self.inp.mouse_click = False
+			return
+
+		label_y = rect[1] + round(42 * s)
+		self.ddt.text((rect[0] + pad, label_y), _("Country"), secondary, 11, bg=surface_over)
+		search_y = rect[1] + round(60 * s)
+		search_rect = (rect[0] + pad, search_y, rect[2] - pad * 2, round(30 * s))
+		self.ddt.bordered_rect(search_rect, surface, border, line)
+		self.fields.add(search_rect)
+		search_text_y = search_y + round(6 * s)
+		if not self.country_search.text and not self.gui.editline:
+			self.ddt.text(
+				(search_rect[0] + round(10 * s), search_text_y),
+				_("Search countries…"),
+				secondary,
+				312,
+				max_w=search_rect[2] - round(18 * s),
+				bg=surface,
+			)
+		self.country_search.draw(
+			search_rect[0] + round(10 * s),
+			search_text_y,
+			primary,
+			active=True,
+			width=search_rect[2] - round(16 * s),
+			click=self.inp.mouse_click,
+		)
+		self.inp.input_text = ""
+		return_pressed = self.inp.key_return_press
+		self.inp.key_return_press = False
+
+		list_y = search_y + round(38 * s)
+		list_rect = (
+			rect[0] + pad,
+			list_y,
+			rect[2] - pad * 2,
+			max(round(30 * s), rect[1] + rect[3] - pad - list_y),
+		)
+		if self.radiobox.countries_loading:
+			self.ddt.text(
+				(list_rect[0] + list_rect[2] // 2, list_rect[1] + round(18 * s), 2),
+				_("Loading countries…"),
+				secondary,
+				312,
+				bg=surface_over,
+			)
+			return
+		if self.radiobox.countries_error:
+			self.ddt.text(
+				(list_rect[0], list_rect[1] + round(8 * s)),
+				self.radiobox.countries_error,
+				secondary,
+				312,
+				max_w=list_rect[2],
+				bg=surface_over,
+			)
+			retry_rect = (list_rect[0], list_rect[1] + round(38 * s), round(72 * s), round(26 * s))
+			if self.button(retry_rect, _("Retry"), font=11):
+				self.radiobox.countries_error = ""
+				self.radiobox.load_countries()
+			return
+
+		query = self.country_search.text.strip().casefold()
+		if query != self.filter_query:
+			self.filter_query = query
+			self.filter_scroll = 0
+		countries = [
+			country for country in self.radiobox.countries
+			if not query or query in country[0].casefold() or query in country[1].casefold()
+		]
+		if self.radiobox.country_filter_code and not query:
+			countries.sort(key=lambda country: (country[1] != self.radiobox.country_filter_code, country[0].casefold()))
+
+		row_h = round(30 * s)
+		visible = max(1, list_rect[3] // row_h)
+		entries: list[tuple[str, str, int]] = [(_("Any country"), "", 0), *countries]
+		max_scroll = max(0, len(entries) - visible)
+		if self.coll(list_rect) and self.inp.mouse_wheel:
+			self.filter_scroll -= self.inp.mouse_wheel
+			self.inp.mouse_wheel = 0
+		self.filter_scroll = min(max(self.filter_scroll, 0), max_scroll)
+		start = int(self.filter_scroll)
+
+		selected_entry: tuple[str, str, int] | None = None
+		if return_pressed and query and countries:
+			selected_entry = countries[0]
+
+		clip = sdl3.SDL_Rect(*list_rect)
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		row_y = list_rect[1]
+		for name, code, station_count in entries[start:start + visible + 1]:
+			row = (list_rect[0], row_y, list_rect[2] - round(7 * s), row_h)
+			row_hit = self.intersect_rect(row, list_rect)
+			hover = row_hit is not None and self.coll(row_hit)
+			selected = code == self.radiobox.country_filter_code
+			row_bg = surface if selected else surface_over if hover else surface
+			self.ddt.rect(row, row_bg)
+			if selected:
+				self.ddt.rect((row[0], row[1], max(2, round(3 * s)), row[3]), accent)
+			self.ddt.text(
+				(row[0] + round(10 * s), row[1] + round(6 * s)),
+				name,
+				primary if hover or selected else secondary,
+				312,
+				max_w=row[2] - round(72 * s),
+				bg=row_bg,
+			)
+			if station_count:
+				self.ddt.text(
+					(row[0] + row[2] - round(8 * s), row[1] + round(6 * s), 1),
+					f"{station_count:,}",
+					secondary,
+					11,
+					bg=row_bg,
+				)
+			if row_hit is not None:
+				self.fields.add(row_hit)
+			if hover and self.inp.mouse_click:
+				selected_entry = (name, code, station_count)
+				self.inp.mouse_click = False
+			row_y += row_h
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+
+		if len(entries) > visible:
+			track_x = list_rect[0] + list_rect[2] - round(3 * s)
+			thumb_h = max(round(24 * s), round(list_rect[3] * visible / len(entries)))
+			thumb_y = list_rect[1] + round((list_rect[3] - thumb_h) * self.filter_scroll / max(max_scroll, 1))
+			self.ddt.rect((track_x, list_rect[1], max(1, round(s)), list_rect[3]), border)
+			self.ddt.rect((track_x, thumb_y, max(1, round(s)), thumb_h), secondary)
+
+		if selected_entry is not None:
+			name, code, _station_count = selected_entry
+			if code:
+				self.apply_country_filter(name, code)
+			elif self.radiobox.country_filter_code:
+				self.clear_country_filter()
+			else:
+				self.filter_open = False
+
+	def draw_empty_state(self, rect: tuple[int, int, int, int], discover: bool) -> None:
+		palette = self.palette()
+		primary = palette[4]
+		secondary = palette[5]
+		accent = palette[6]
+		s = self.gui.scale
+		center_x = rect[0] + rect[2] // 2
+		center_y = rect[1] + min(rect[3] // 2, round(150 * s))
+		icon = self.broadcast_icon
+		icon_y = center_y - icon.h - round(16 * s)
+		icon.render(center_x - icon.w / 2, icon_y, accent)
+		if self.radiobox.searching:
+			title = _("Searching stations…")
+			subtitle = _("Looking across the Radio Browser directory")
+		elif self.radiobox.search_error:
+			title = _("Search unavailable")
+			subtitle = self.radiobox.search_error
+		elif discover and (
+			self.radiobox.radio_field_search.text or self.radiobox.country_filter_code
+		):
+			title = _("No matching stations")
+			subtitle = _("Try a broader search or remove the country filter")
+		elif discover:
+			title = _("Find something new")
+			subtitle = _("Search stations or genres, filter by country, or start with our picks")
+		else:
+			title = _("No saved stations yet")
+			subtitle = _("Discover a station or add a stream URL to get started")
+		self.ddt.text((center_x, center_y, 2), title, primary, 213, max_w=rect[2] - round(40 * s))
+		self.ddt.text(
+			(center_x, center_y + round(28 * s), 2),
+			subtitle,
+			secondary,
+			313,
+			max_w=rect[2] - round(40 * s),
+		)
+
+	def draw_station_list(self, rect: tuple[int, int, int, int]) -> None:
+		bg, surface, surface_over, border, primary, secondary, accent = self.palette()
+		s = self.gui.scale
+		discover = self.radiobox.tab == 1
+		playlist = self.pctl.radio_playlists[self.pctl.radio_playlist_viewing]
+		radios = self.radiobox.temp_list if discover else playlist.stations
+		if not radios:
+			self.draw_empty_state(rect, discover)
+			return
+
+		row_h = round(68 * s)
+		gap = round(7 * s)
+		stride = row_h + gap
+		visible = max(1, rect[3] // stride)
+		if discover:
+			scroll = float(self.radiobox.scroll_position)
+			scroll_key = "radio-discover"
+		else:
+			scroll = float(playlist.scroll)
+			scroll_key = "radios"
+		max_scroll = max(0, len(radios) - visible)
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, rect)
+		use_smooth = self.smooth_scroll.enabled() or touch_scroll or self.smooth_scroll.active(scroll_key)
+		list_interactive = not self.filter_open and not self.radiobox.active
+		if self.coll(rect) and list_interactive:
+			if use_smooth:
+				if self.inp.mouse_wheel:
+					self.smooth_scroll.add_wheel_motion(scroll_key, -self.inp.mouse_wheel, stride)
+				if self.inp.touch_released:
+					self.smooth_scroll.release_touch(scroll_key)
+				elif touch_scroll:
+					self.smooth_scroll.apply_touch_drag(scroll_key, -self.inp.touch_scroll_y)
+				scroll += self.smooth_scroll.step_motion(scroll_key) / max(stride, 1)
+			else:
+				scroll -= self.smooth_scroll.scroll(scroll_key)
+		scroll = min(max(scroll, 0), max_scroll)
+		if len(radios) > visible:
+			scroll = self.tauon.radio_view_scroll.draw(
+				rect[0] - round(14 * s),
+				rect[1],
+				round(8 * s),
+				rect[3],
+				scroll,
+				max_scroll + 1,
+			)
+		if discover:
+			self.radiobox.scroll_position = scroll
+		else:
+			playlist.scroll = scroll
+
+		start = int(scroll)
+		y = rect[1] - (scroll - start) * stride
+		insert = None
+		list_clip = sdl3.SDL_Rect(rect[0], rect[1], rect[2], rect[3])
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(list_clip))
+		for index in range(start, len(radios)):
+			if y >= rect[1] + rect[3]:
+				break
+			radio = radios[index]
+			row = (rect[0], round(y), rect[2], row_h)
+			row_hit_rect = self.intersect_rect(row, rect)
+			if list_interactive and row_hit_rect is not None:
+				self.fields.add(row_hit_rect)
+			row_hover = list_interactive and row_hit_rect is not None and self.coll(row_hit_rect)
+			playing = (
+				self.pctl.playing_state == PlayingState.URL_STREAM
+				and self.radiobox.loaded_station is not None
+				and self.radiobox.loaded_station.stream_url == radio.stream_url
+			)
+			row_bg = surface_over if row_hover else surface
+			if playing:
+				row_bg = alpha_blend(alpha_mod(accent, 28), row_bg)
+			row_border = accent if playing else border
+			row_border_size = max(1, round(s))
+			self.ddt.bordered_rect(row, row_bg, row_border, row_border_size)
+			# bordered_rect draws outward, so SDL clips the top edge when a row
+			# begins exactly at the list boundary. Redraw that edge just inside.
+			if row[1] == rect[1]:
+				self.ddt.rect((row[0], row[1], row[2], row_border_size), row_border)
+			if playing:
+				playing_edge = max(2, round(3 * s))
+				self.ddt.rect((row[0], row[1], playing_edge, row[3]), accent)
+				self.ddt.rect((row[0] + row[2] - playing_edge, row[1], playing_edge, row[3]), accent)
+
+			thumb_size = row_h - round(14 * s)
+			thumb = (row[0] + round(8 * s), row[1] + round(7 * s), thumb_size, thumb_size)
+			self.ddt.rect(thumb, bg)
+			if not self.tauon.radio_thumb_gen.draw(radio, thumb[0], thumb[1], thumb[2]):
+				icon = self.broadcast_icon
+				icon.render(
+					thumb[0] + (thumb[2] - icon.w) / 2,
+					thumb[1] + (thumb[3] - icon.h) / 2,
+					secondary,
+				)
+
+			right_pad = round(10 * s)
+			play_w = round(36 * s)
+			action_w = round((54 if discover else 34) * s)
+			action_gap = round(6 * s)
+			play_rect = (row[0] + row[2] - right_pad - play_w, row[1] + (row_h - play_w) // 2, play_w, play_w)
+			action_rect = (
+				play_rect[0] - action_gap - action_w,
+				row[1] + (row_h - round(28 * s)) // 2,
+				action_w,
+				round(28 * s),
+			)
+			text_x = thumb[0] + thumb[2] + round(12 * s)
+			text_w = max(20, action_rect[0] - text_x - round(8 * s))
+			self.ddt.text(
+				(text_x, row[1] + round(13 * s)),
+				radio.title or radio.stream_url,
+				primary,
+				212,
+				max_w=text_w,
+				bg=row_bg,
+			)
+			meta = radio.country or _("Internet radio")
+			if playing:
+				meta = _("LIVE") + (f"  ·  {meta}" if meta else "")
+			self.ddt.text(
+				(text_x, row[1] + round(37 * s)),
+				meta,
+				accent if playing else secondary,
+				312,
+				max_w=text_w,
+				bg=row_bg,
+			)
+
+			hit_control = False
+			control_colour, control_hover_colour = self.row_control_colours(row_bg)
+			play_hit_rect = self.intersect_rect(play_rect, rect) if list_interactive else None
+			play_hover = play_hit_rect is not None and self.coll(play_hit_rect)
+			if play_hit_rect is not None:
+				self.fields.add(play_hit_rect)
+			play_colour = control_hover_colour if play_hover else control_colour
+			if play_hover and self.inp.mouse_click:
+				self.radiobox.start(radio)
+				hit_control = True
+			self.tauon.bottom_bar1.play_button.render(
+				play_rect[0] + (play_rect[2] - self.tauon.bottom_bar1.play_button.w) / 2,
+				play_rect[1] + (play_rect[3] - self.tauon.bottom_bar1.play_button.h) / 2,
+				play_colour,
+			)
+
+			if discover:
+				if self.row_button(
+					action_rect,
+					_("Save"),
+					row_bg,
+					clip_to=rect,
+					enabled=list_interactive,
+				):
+					self.tauon.save_to_radios(radio)
+					hit_control = True
+			else:
+				action_hit_rect = self.intersect_rect(action_rect, rect) if list_interactive else None
+				action_hover = action_hit_rect is not None and self.coll(action_hit_rect)
+				if action_hit_rect is not None:
+					self.fields.add(action_hit_rect)
+				menu_colour = control_hover_colour if action_hover else control_colour
+				self.menu_icon.render(
+					action_rect[0] + (action_rect[2] - self.menu_icon.w) / 2,
+					action_rect[1] + (action_rect[3] - self.menu_icon.h) / 2,
+					menu_colour,
+				)
+				if action_hover and self.inp.mouse_click:
+					self.tauon.radio_context_menu.activate((index, radio), position=(action_rect[0], action_rect[1] + action_rect[3]))
+					hit_control = True
+
+			if row_hover and self.inp.level_2_right_click:
+				if discover:
+					self.tauon.radio_entry_menu.activate(radio)
+				else:
+					self.tauon.radio_context_menu.activate((index, radio))
+			elif row_hover and self.inp.mouse_click and not hit_control:
 				self.drag = radio
 				self.click_point = copy.copy(self.inp.mouse_position)
-
-			yy += round(h + gap)
-
-		if self.inp.mouse_up and self.drag and not insert and self.drag not in radios:
-			if not (radiobox.active and self.coll((radiobox.x, radiobox.y, radiobox.w, radiobox.h))):
-				if self.inp.mouse_position[1] > gui.panelY:
-					insert = len(radios)
-
-		count = ((window_size[0] - w) / 2) + w
-		boxx = round(200 * gui.scale)
-		art_rect = (count - boxx / 2, window_size[1] / 3 - boxx / 2, boxx, boxx)
-
-		if window_size[0] > round(700 * gui.scale):
-			if pctl.playing_state == PlayingState.URL_STREAM and radiobox.loaded_station:
-				r = self.tauon.album_art_gen.display(radiobox.dummy_track, (art_rect[0], art_rect[1]), (art_rect[2], art_rect[3]))
-				if r:
-					r = self.tauon.radio_thumb_gen.draw(radiobox.loaded_station, art_rect[0], art_rect[1], art_rect[2])
-					# if not r:
-					# 	self.ddt.rect(art_rect, colours.b)
-			# else:
-			# 	self.ddt.rect(art_rect, [40, 40, 40, 255])
-
-			yy = window_size[1] / 3 - boxx / 2
-			yy += boxx + round(30 * gui.scale)
-
-			if radiobox.loaded_station and pctl.playing_state == PlayingState.URL_STREAM:
-				space = window_size[0] - round(500 * gui.scale)
-				self.ddt.text(
-					(count, yy, 2), radiobox.loaded_station.title, ColourRGBA(230, 230, 230, 255), 213, max_w=space)
-				yy += round(25 * gui.scale)
-				self.ddt.text((count, yy, 2), radiobox.song_key, ColourRGBA(230, 230, 230, 255), 313, max_w=space)
-				if radiobox.dummy_track.album:
-					yy += round(21 * gui.scale)
-					self.ddt.text((count, yy, 2), radiobox.dummy_track.album, ColourRGBA(230, 230, 230, 255), 313, max_w=space)
+			elif row_hover and self.inp.mouse_up and self.drag:
+				if point_proximity_test(self.click_point, self.inp.mouse_position, round(5 * s)):
+					self.radiobox.start(self.drag)
+					self.drag = None
+				elif not discover:
+					insert = index
+			y += stride
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
 
 		if self.drag:
-			gui.update_on_drag = True
-
-		if insert is not None:
-			radios.insert(insert, "New")
-			if self.drag in radios:
-				radios.remove(self.drag)
-			else:
-				self.tauon.toast(_("Added station to: ") + pctl.radio_playlists[pctl.radio_playlist_viewing].name)
-
-			radios[radios.index("New")] = self.drag
+			self.gui.update_on_drag = True
+		if (
+			self.inp.mouse_up
+			and self.drag is not None
+			and not discover
+			and insert is None
+			and self.coll(rect)
+			and not point_proximity_test(self.click_point, self.inp.mouse_position, round(5 * s))
+		):
+			insert = len(radios)
+		if insert is not None and self.drag is not None:
+			old_index = radios.index(self.drag) if self.drag in radios else None
+			if old_index is not None:
+				radios.pop(old_index)
+				if old_index < insert:
+					insert -= 1
+			radios.insert(insert, self.drag)
 			self.drag = None
-			gui.request_frame()
+			self.gui.request_frame()
+		elif self.inp.mouse_up and self.drag and not self.inp.mouse_down:
+			if discover or self.drag in radios:
+				self.drag = None
 
+	def draw_now_playing(self, rect: tuple[int, int, int, int]) -> None:
+		palette = self.palette()
+		bg = palette[0]
+		surface = palette[1]
+		border = palette[3]
+		primary = palette[4]
+		secondary = palette[5]
+		accent = palette[6]
+		s = self.gui.scale
+		hero_bg = surface
+		self.ddt.bordered_rect(rect, hero_bg, border, max(1, round(s)))
+		pad = round(28 * s)
+		self.ddt.text((rect[0] + pad, rect[1] + round(22 * s)), _("NOW PLAYING"), secondary, 11, bg=hero_bg)
+		station = self.radiobox.loaded_station
+		playing = self.pctl.playing_state == PlayingState.URL_STREAM and station is not None
+		if not playing:
+			center_x = rect[0] + rect[2] // 2
+			icon = self.now_playing_broadcast_icon
+			icon_gap = round(22 * s)
+			text_block_h = round(50 * s)
+			group_h = round(icon.h) + icon_gap + text_block_h
+			group_y = rect[1] + max(0, (rect[3] - group_h) // 2)
+			icon.render(center_x - icon.w / 2, group_y, secondary)
+			title_y = group_y + round(icon.h) + icon_gap
+			self.ddt.text((center_x, title_y, 2), _("Nothing playing"), primary, 213, max_w=rect[2] - pad * 2)
+			self.ddt.text(
+				(center_x, title_y + round(28 * s), 2),
+				_("Choose a station to start listening"),
+				secondary,
+				313,
+				max_w=rect[2] - pad * 2,
+			)
+			return
+
+		art_size = min(rect[2] - pad * 2, round(340 * s), max(round(150 * s), rect[3] - round(270 * s)))
+		art_x = rect[0] + (rect[2] - art_size) // 2
+		art_y = rect[1] + round(54 * s)
+		art_rect = (art_x, art_y, art_size, art_size)
+		self.ddt.rect(art_rect, bg)
+		result = 1
+		if self.pctl.radio_image_bin:
+			result = self.tauon.album_art_gen.display(
+				self.radiobox.dummy_track,
+				(art_x, art_y),
+				(art_size, art_size),
+				async_hold=True,
+				caller_id="radio-now-playing",
+			)
+		if result != 0 and not self.tauon.radio_thumb_gen.draw(station, art_x, art_y, art_size):
+			icon = self.now_playing_broadcast_icon
+			fallback_colour = alpha_blend(alpha_mod(secondary, 105), bg)
+			icon.render(
+				art_x + (art_size - icon.w) / 2,
+				art_y + (art_size - icon.h) / 2,
+				fallback_colour,
+			)
+
+		text_y = art_y + art_size + round(22 * s)
+		live_label = _("CONNECTING") if self.radiobox.load_connecting else _("LIVE")
+		self.ddt.text((rect[0] + rect[2] // 2, text_y, 2), live_label, accent, 11, max_w=rect[2] - pad * 2)
+		text_y += round(24 * s)
+		self.ddt.text(
+			(rect[0] + rect[2] // 2, text_y, 2),
+			station.title,
+			primary,
+			213,
+			max_w=rect[2] - pad * 2,
+		)
+		text_y += round(28 * s)
+		title = self.radiobox.dummy_track.title or self.pctl.tag_meta or _("Waiting for track information…")
+		artist = self.radiobox.dummy_track.artist
+		self.ddt.text(
+			(rect[0] + rect[2] // 2, text_y, 2),
+			title,
+			primary,
+			313,
+			max_w=rect[2] - pad * 2,
+		)
+		if artist:
+			text_y += round(22 * s)
+			self.ddt.text(
+				(rect[0] + rect[2] // 2, text_y, 2),
+				artist,
+				secondary,
+				313,
+				max_w=rect[2] - pad * 2,
+			)
+		stream_details = ""
+		if self.tauon.stream_proxy.s_format:
+			stream_details = str(self.tauon.stream_proxy.s_format).upper()
+		if self.tauon.stream_proxy.s_bitrate:
+			stream_details += ("  ·  " if stream_details else "") + str(self.tauon.stream_proxy.s_bitrate) + " kbps"
+		if stream_details:
+			text_y += round(22 * s)
+			self.ddt.text(
+				(rect[0] + rect[2] // 2, text_y, 2),
+				stream_details,
+				secondary,
+				11,
+				max_w=rect[2] - pad * 2,
+			)
+
+		button_y = min(rect[1] + rect[3] - round(52 * s), text_y + round(36 * s))
+		buttons = []
+		if station.website_url:
+			buttons.append((_("Website"), lambda: visit_radio_site(station)))
+		playlist = self.pctl.radio_playlists[self.pctl.radio_playlist_viewing]
+		if not any(saved.stream_url == station.stream_url for saved in playlist.stations):
+			buttons.append((_("Save"), lambda: self.tauon.save_to_radios(station)))
+		buttons.append((_("Stop"), self.pctl.stop))
+		button_gap = round(7 * s)
+		button_w = min(round(92 * s), (rect[2] - pad * 2 - button_gap * (len(buttons) - 1)) // len(buttons))
+		total_w = button_w * len(buttons) + button_gap * (len(buttons) - 1)
+		button_x = rect[0] + (rect[2] - total_w) // 2
+		for label, callback in buttons:
+			if self.button((button_x, button_y, button_w, round(30 * s)), label, primary_action=label == _("Save")):
+				callback()
+			button_x += button_w + button_gap
+
+	def render(self) -> None:
+		pctl = self.pctl
+		gui = self.gui
+		window_size = self.window_size
+		bg = self.palette()[0]
+		s = gui.scale
+		self.ddt.rect((0, gui.panelY, window_size[0], window_size[1] - gui.panelY), bg)
+		if not pctl.radio_playlists:
+			return
+		if pctl.radio_playlist_viewing >= len(pctl.radio_playlists):
+			pctl.radio_playlist_viewing = 0
+		if self.radiobox.tab == 1 and not self.discovery_loaded:
+			self.load_featured()
+
+		margin = round(24 * s)
+		bottom_margin = round(14 * s)
+		gap = round(22 * s)
+		content_top = gui.panelY + margin
+		content_bottom = window_size[1] - gui.panelBY - bottom_margin
+		content_h = max(round(120 * s), content_bottom - content_top)
+		content_w = window_size[0] - margin * 2
+		show_now_playing = content_w >= round(820 * s) and content_h >= round(360 * s)
+		list_w = min(round(610 * s), max(round(400 * s), int(content_w * 0.49))) if show_now_playing else content_w
+
+		list_x = margin
+		list_top = self.draw_header(list_x, content_top, list_w)
+		list_rect = (list_x, list_top, list_w, max(round(40 * s), content_bottom - list_top))
+		self.draw_station_list(list_rect)
+
+		if show_now_playing:
+			hero_x = list_x + list_w + gap
+			hero_rect = (hero_x, content_top, window_size[0] - margin - hero_x, content_h)
+			self.draw_now_playing(hero_rect)
+
+		if self.radiobox.tab == 1:
+			self.draw_filter_popover()
 
 def get_renderer_name(renderer: sdl3.LP_SDL_Renderer) -> str | None:
 	renderer_name = sdl3.SDL_GetRendererName(renderer)
@@ -56626,11 +57546,13 @@ def main(holder: Holder) -> None:
 				gui.delay_frame(0.02)
 				inp.k_input = True
 
+		radio_directory_search_active = gui.radio_view and radiobox.tab == 1 and not radiobox.active
 		text_entry_shortcuts_blocked = (
 			gui.rename_folder_box
 			or tauon.rename_track_box.active
 			or gui.rename_playlist_box
 			or radiobox.active
+			or radio_directory_search_active
 			or pref_box.enabled
 			or tauon.trans_edit_box.active
 			or gui.timed_lyrics_editing_now

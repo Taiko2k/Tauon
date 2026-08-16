@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="54.012" height="38.979" viewBox="0 0 4.764 3.438">
+	<g transform="translate(-88.257 -128.49)">
+		<ellipse cx="90.647" cy="130.208" rx=".393" ry=".396" style="fill:#fff;fill-opacity:1;stroke:none;stroke-width:.38560897;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"/>
+		<path id="broadcast-wave" d="M89.202 131.69a2.079 2.094 0 0 1 0-2.962" style="fill:none;fill-opacity:1;stroke:#fcfefd;stroke-width:.67550188;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"/>
+		<path d="M89.879 130.995a1.113 1.122 0 0 1 0-1.586" style="fill:none;fill-opacity:1;stroke:#fdfefd;stroke-width:.51980162;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"/>
+		<path d="M-91.4 130.995a1.113 1.122 0 0 1 0-1.586" style="fill:none;fill-opacity:1;stroke:#fff;stroke-width:.51980162;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal" transform="scale(-1 1)"/>
+		<use xlink:href="#broadcast-wave" width="100%" height="100%"/>
+		<use xlink:href="#broadcast-wave" width="100%" height="100%" style="fill:#fff" transform="matrix(-1 0 0 1 181.278 0)"/>
+	</g>
+</svg>
