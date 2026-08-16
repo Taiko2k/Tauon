@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: PACKAGE VERSION\n"
+"Project-Id-Version: \n"
 "POT-Creation-Date: 2026-05-03 19:15+1200\n"
-"PO-Revision-Date: 2026-04-17 01:35+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-08-15 11:54+0900\n"
+"Last-Translator: coolvitto\n"
 "Language-Team: Japanese <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ja/>\n"
 "Language: ja_JP\n"
@@ -15,8 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=1; plural=0;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
-"Generated-By: pygettext.py 1.5\n"
+"X-Generator: Poedit 3.9\n"
 
 #: src/tauon/t_modules/t_dbus.py:364
 msgid "Failed to start indicator"
@@ -43,7 +42,7 @@ msgstr "Discord のレート制限解除を待機中…"
 
 #: src/tauon/t_modules/t_discord.py:511
 msgid "Error - Discord not running?"
-msgstr "エラー - Discord が起動していませんか？"
+msgstr "エラー - Discord が起動していない？"
 
 #: src/tauon/t_modules/t_extra.py:557
 msgid "Not yet"
@@ -296,7 +295,7 @@ msgstr "Chromecast を検索中..."
 
 #: src/tauon/t_modules/t_main.py:4867
 msgid "Cast to: %s"
-msgstr "キャスト先: %s"
+msgstr "キャスト先 : %s"
 
 #: src/tauon/t_modules/t_main.py:4868
 msgid "No Chromecast devices found"
@@ -336,7 +335,7 @@ msgstr "M3U プレイリストのインポート中にエラーが発生しま�
 
 #: src/tauon/t_modules/t_main.py:6865
 msgid "Error trying to parse playlist as UTF-8:"
-msgstr "プレイリストを UTF-8 として解析中にエラーが発生しました:"
+msgstr "プレイリストを UTF-8 として解析中にエラーが発生しました :"
 
 #: src/tauon/t_modules/t_main.py:6869
 msgid "Exception importing M3U playlist"
@@ -356,7 +355,7 @@ msgstr "申し訳ありません。"
 
 #: src/tauon/t_modules/t_main.py:7209
 msgid "Failed to locate {N} out of {T} tracks."
-msgstr "{T} 件中 {N} 件のトラックを見つけられませんでした。"
+msgstr "{N} 件 ({T} 件中) のトラックを見つけられませんでした。"
 
 #: src/tauon/t_modules/t_main.py:7341 src/tauon/t_modules/t_main.py:47531
 msgid "A/B Repeat"
@@ -368,7 +367,7 @@ msgstr "B マーカーを設定"
 
 #: src/tauon/t_modules/t_main.py:7345
 msgid "Clear A/B"
-msgstr "A/B をクリア"
+msgstr "A/B を消去"
 
 #: src/tauon/t_modules/t_main.py:7430 src/tauon/t_modules/t_main.py:47533
 msgid "Shuffle Lockdown"
@@ -441,7 +440,7 @@ msgstr "同期を中止中"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Hide Metadata Panel"
-msgstr "メタデータパネルを非表示"
+msgstr "メタデータパネルを隠す"
 
 #: src/tauon/t_modules/t_main.py:7802
 msgid "Show Metadata Panel"
@@ -488,7 +487,7 @@ msgstr "歌詞を隠す"
 #: src/tauon/t_modules/t_main.py:7852 src/tauon/t_modules/t_main.py:7858
 #: src/tauon/t_modules/t_main.py:7863
 msgid "Show Lyrics"
-msgstr "歌詞を示す"
+msgstr "歌詞を表示"
 
 #: src/tauon/t_modules/t_main.py:7902
 msgid "Restart Tauon if presets are not visible yet."
@@ -558,7 +557,7 @@ msgstr "検索中..."
 
 #: src/tauon/t_modules/t_main.py:8171
 msgid "No lyrics for this track were found"
-msgstr "歌詞が見つかりません。"
+msgstr "この曲の歌詞は見つかりませんでした"
 
 #: src/tauon/t_modules/t_main.py:8185
 msgid "Insufficient metadata to get lyrics"
@@ -574,7 +573,7 @@ msgstr "同期歌詞を表示"
 
 #: src/tauon/t_modules/t_main.py:8294
 msgid "Could not clear synced lyrics"
-msgstr "同期歌詞をクリアできませんでした"
+msgstr "同期歌詞を消去できませんでした"
 
 #: src/tauon/t_modules/t_main.py:8295
 msgid "The .lrc file could not be deleted."
@@ -587,7 +586,7 @@ msgstr ".lrc とタグから削除しました"
 #: src/tauon/t_modules/t_main.py:8304 src/tauon/t_modules/t_main.py:8306
 #: src/tauon/t_modules/t_main.py:8308
 msgid "Cleared synced lyrics"
-msgstr "同期歌詞をクリアしました"
+msgstr "同期歌詞を消去しました"
 
 #: src/tauon/t_modules/t_main.py:8306
 msgid "Removed from .lrc"
@@ -599,7 +598,7 @@ msgstr "タグから削除しました"
 
 #: src/tauon/t_modules/t_main.py:8311 src/tauon/t_modules/t_main.py:8316
 msgid "Cleared synced lyrics in Tauon only"
-msgstr "Tauon 内の同期歌詞のみクリアしました"
+msgstr "Tauon 内の同期歌詞のみ消去しました"
 
 #: src/tauon/t_modules/t_main.py:8312
 msgid "The .lrc file was kept because \"Save Synced to .lrc\" is off."
@@ -608,7 +607,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:8318
 msgid "No synced lyrics were cleared"
-msgstr "クリアされた同期歌詞はありません"
+msgstr "消去された同期歌詞はありません"
 
 #: src/tauon/t_modules/t_main.py:8391 src/tauon/t_modules/t_main.py:8410
 msgid "Could not write lyrics to file"
@@ -616,7 +615,7 @@ msgstr "歌詞をファイルに書き込めませんでした"
 
 #: src/tauon/t_modules/t_main.py:8392
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr "このファイル形式には歌詞を書き込む方法がわかりません: "
+msgstr "このファイル形式には歌詞を書き込む方法がわかりません : "
 
 #: src/tauon/t_modules/t_main.py:8393 src/tauon/t_modules/t_main.py:8412
 msgid "(We still saved to the internal database)"
@@ -657,7 +656,7 @@ msgstr "ディレクトリが見つかりません。"
 
 #: src/tauon/t_modules/t_main.py:8575
 msgid "Looking up MusicBrainz ID..."
-msgstr "MBIDを探している"
+msgstr "MusicBrainz ID の検索中..."
 
 #: src/tauon/t_modules/t_main.py:8604
 msgid "Searching fanart.tv for cover art..."
@@ -677,11 +676,11 @@ msgstr "MusicBrainz でカバーアートを検索中..."
 
 #: src/tauon/t_modules/t_main.py:8655
 msgid "Cover art downloaded from MusicBrainz"
-msgstr "カバーアートはMusicBrainzからダウンロードされました"
+msgstr "カバーアートは MusicBrainz からダウンロードされました"
 
 #: src/tauon/t_modules/t_main.py:8667
 msgid "Matching cover art or ID could not be found."
-msgstr "カバーアートまたはIDが見つかりませんでした"
+msgstr "カバーアートまたはIDが見つかりませんでした。"
 
 #: src/tauon/t_modules/t_main.py:8690
 msgid "Error - No handling for this kind of track"
@@ -720,7 +719,7 @@ msgstr "画像ファイルを削除"
 
 #: src/tauon/t_modules/t_main.py:8804
 msgid "Delete Embedded | Folder"
-msgstr "埋め込みを削除 | フォルダ"
+msgstr "埋め込みを削除 | フォルダー"
 
 #: src/tauon/t_modules/t_main.py:8806
 msgid "Delete Embedded | Track"
@@ -765,39 +764,39 @@ msgstr "これには非可逆コーデックから可逆コーデックへの変
 
 #: src/tauon/t_modules/t_main.py:9154
 msgid "Playlist:"
-msgstr "プレイリスト:"
+msgstr "プレイリスト :"
 
 #: src/tauon/t_modules/t_main.py:9155
 msgid "Generated:"
-msgstr "生成日時:"
+msgstr "生成日時 :"
 
 #: src/tauon/t_modules/t_main.py:9156
 msgid "Tracks in playlist:"
-msgstr "プレイリスト内のトラック数:"
+msgstr "プレイリスト内のトラック数 :"
 
 #: src/tauon/t_modules/t_main.py:9158
 msgid "Repeats in playlist:"
-msgstr "プレイリスト内の重複数:"
+msgstr "プレイリスト内の重複数 :"
 
 #: src/tauon/t_modules/t_main.py:9162
 msgid "Total local size:"
-msgstr "ローカル合計サイズ:"
+msgstr "ローカル合計サイズ :"
 
 #: src/tauon/t_modules/t_main.py:9163
 msgid "Playlist duration:"
-msgstr "プレイリストの長さ:"
+msgstr "プレイリストの長さ :"
 
 #: src/tauon/t_modules/t_main.py:9164
 msgid "Total playtime:"
-msgstr "合計再生時間:"
+msgstr "合計再生時間 :"
 
 #: src/tauon/t_modules/t_main.py:9166
 msgid "Track types:"
-msgstr "トラックの種類:"
+msgstr "トラックの種類 :"
 
 #: src/tauon/t_modules/t_main.py:9182
 msgid "Percent of tracks are CUE type:"
-msgstr "CUE タイプのトラック割合:"
+msgstr "CUE タイプのトラック割合 :"
 
 #: src/tauon/t_modules/t_main.py:9192
 msgid "MP3 bitrates (kbps):"
@@ -901,7 +900,7 @@ msgstr "エクスポートが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:9662 src/tauon/t_modules/t_main.py:11867
 msgid "Saved as: "
-msgstr "保存先: "
+msgstr "保存先 : "
 
 #: src/tauon/t_modules/t_main.py:9705 src/tauon/t_modules/t_main.py:47758
 #: src/tauon/t_modules/t_main.py:47759
@@ -947,7 +946,7 @@ msgstr "不完全なアルバムは見つかりませんでした。"
 
 #: src/tauon/t_modules/t_main.py:9923
 msgid "Codec: "
-msgstr "コーデック: "
+msgstr "コーデック : "
 
 #: src/tauon/t_modules/t_main.py:9974 src/tauon/t_modules/t_main.py:47764
 #: src/tauon/t_modules/t_main.py:47765
@@ -1139,12 +1138,12 @@ msgstr "ファイルをゴミ箱に移動しました"
 
 #: src/tauon/t_modules/t_main.py:10920
 msgid "Rename (Single track)"
-msgstr "リネーム （単一）"
+msgstr "名前の変更 (単一)"
 
 #: src/tauon/t_modules/t_main.py:10921 src/tauon/t_modules/t_main.py:47851
 #: src/tauon/t_modules/t_main.py:47893 src/tauon/t_modules/t_main.py:47895
 msgid "Rename Tracks…"
-msgstr "トラックの名前を変更"
+msgstr "トラック名の変更…"
 
 #: src/tauon/t_modules/t_main.py:10930
 msgid "Cannot physically delete"
@@ -1218,19 +1217,19 @@ msgstr "生成された名前が短すぎます"
 
 #: src/tauon/t_modules/t_main.py:11011 src/tauon/t_modules/t_main.py:11015
 msgid "Rename error."
-msgstr "名前変更エラー。"
+msgstr "名前の変更エラー。"
 
 #: src/tauon/t_modules/t_main.py:11015
 msgid "This folder path seems short, I don't wanna try rename that"
-msgstr "このフォルダーパスは短すぎるようです。名前変更は試したくありません"
+msgstr "このフォルダーパスは短すぎるようです。名前の変更は試したくありません"
 
 #: src/tauon/t_modules/t_main.py:11019
 msgid "Rename Failed. The original folder is missing."
-msgstr "名前変更に失敗しました。元のフォルダーが見つかりません。"
+msgstr "名前の変更に失敗しました。元のフォルダーが見つかりません。"
 
 #: src/tauon/t_modules/t_main.py:11026
 msgid "I don't think we should rename that folder."
-msgstr "そのフォルダーは名前変更しないほうがよさそうです。"
+msgstr "そのフォルダーは名前の変更をしないほうがよさそうです。"
 
 #: src/tauon/t_modules/t_main.py:11045
 msgid "The folder already has that name."
@@ -1238,7 +1237,7 @@ msgstr "そのフォルダーはすでにその名前です。"
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "Rename Failed."
-msgstr "名前変更に失敗しました。"
+msgstr "名前の変更に失敗しました。"
 
 #: src/tauon/t_modules/t_main.py:11049
 msgid "A folder with that name already exists"
@@ -1246,7 +1245,7 @@ msgstr "その名前のフォルダーはすでに存在します"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Rename Failed!"
-msgstr "名前変更に失敗しました！"
+msgstr "名前の変更に失敗しました！"
 
 #: src/tauon/t_modules/t_main.py:11081
 msgid "Something went wrong, sorry."
@@ -1258,7 +1257,7 @@ msgstr "フォルダー名を変更しました。"
 
 #: src/tauon/t_modules/t_main.py:11084
 msgid "Renamed to: {name}"
-msgstr "新しい名前: {name}"
+msgstr "新しい名前 : {name}"
 
 #: src/tauon/t_modules/t_main.py:11101
 msgid "Not applicable for a network track."
@@ -1303,7 +1302,7 @@ msgstr "１つトランスコード"
 #: src/tauon/t_modules/t_main.py:11387 src/tauon/t_modules/t_main.py:47914
 #: src/tauon/t_modules/t_main.py:47915 src/tauon/t_modules/t_main.py:47971
 msgid "Transcode Folder"
-msgstr "トランスコード"
+msgstr "トランスコード フォルダー"
 
 #: src/tauon/t_modules/t_main.py:11395
 msgid "Queue {N}"
@@ -1358,7 +1357,7 @@ msgstr "トラック番号"
 
 #: src/tauon/t_modules/t_main.py:11474
 msgid "Play Count"
-msgstr "プレイ回数"
+msgstr "再生回数"
 
 #: src/tauon/t_modules/t_main.py:11475
 msgid "Codec"
@@ -1492,7 +1491,7 @@ msgstr "ListenBrainz は一時停止中です"
 
 #: src/tauon/t_modules/t_main.py:12101
 msgid "Scrobbling is Paused"
-msgstr "Scrobblingが一時停止"
+msgstr "Scrobbling が一時停止"
 
 #: src/tauon/t_modules/t_main.py:12105
 msgid "ListenBrainz is Active"
@@ -1510,18 +1509,18 @@ msgstr "OK、通常のプレイリストになりました。"
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
 msgstr ""
-"ジェネレータープレイリストにトラックを追加しました。ジェネレーターをクリアし"
-"ますか？"
+"ジェネレータープレイリストにトラックを追加しました。ジェネレーターを消去しま"
+"すか？"
 
 #: src/tauon/t_modules/t_main.py:12855 src/tauon/t_modules/t_main.py:30105
 #: src/tauon/t_modules/t_main.py:39103 src/tauon/t_modules/t_main.py:39278
 msgid "Added station to: "
-msgstr "ステーションを追加しました: "
+msgstr "ステーションを追加しました : "
 
 #: src/tauon/t_modules/t_main.py:12879 src/tauon/t_modules/t_main.py:12897
 #: src/tauon/t_modules/t_main.py:23328
 msgid "Artist: "
-msgstr "アーティスト: "
+msgstr "アーティスト : "
 
 #: src/tauon/t_modules/t_main.py:12933
 msgid "Filter Small Artists"
@@ -1533,7 +1532,7 @@ msgstr "すべてのアーティストを含める"
 
 #: src/tauon/t_modules/t_main.py:13022
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "注意: アーティスト画像は fanart.tv から取得されています"
+msgstr "注意 : アーティスト画像は fanart.tv から取得されています"
 
 #: src/tauon/t_modules/t_main.py:13023
 msgid "They encourage you to contribute at {link}"
@@ -1591,7 +1590,7 @@ msgstr "このプレイリストにはジェネレーターがありません"
 
 #: src/tauon/t_modules/t_main.py:15157
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr "OK。このプレイリストは今後インポート時に自動ソートされます"
+msgstr "OK。このプレイリストは今後インポート時に自動並べ替えされます"
 
 #: src/tauon/t_modules/t_main.py:15158
 msgid ""
@@ -1626,7 +1625,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:15288 src/tauon/t_modules/t_main.py:15290
 msgid "No artist image found."
-msgstr "アーティスト画像が見つかりません"
+msgstr "アーティスト画像が見つかりません。"
 
 #: src/tauon/t_modules/t_main.py:15290
 msgid "No providers are enabled in settings!"
@@ -1650,7 +1649,7 @@ msgstr "ロック"
 
 #: src/tauon/t_modules/t_main.py:15532
 msgid "Tag editor app does not appear to be installed."
-msgstr "タグエディターアプリがインストールされていないようです。"
+msgstr "タグエディタ アプリがインストールされていないようです。"
 
 #: src/tauon/t_modules/t_main.py:15536
 msgid "App not found on host OR insufficient Flatpak permissions."
@@ -1671,7 +1670,7 @@ msgstr "ネットワークトラックのタグは編集できません。"
 
 #: src/tauon/t_modules/t_main.py:15634 src/tauon/t_modules/t_main.py:47928
 msgid "Edit with "
-msgstr "編集: "
+msgstr "編集 : "
 
 #: src/tauon/t_modules/t_main.py:15681 src/tauon/t_modules/t_main.py:24155
 msgid "Starting download..."
@@ -1804,7 +1803,7 @@ msgstr "変更は再起動時に適用されます。"
 
 #: src/tauon/t_modules/t_main.py:18688
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr "ヒント: 右クリックのコンテキストメニューからも切り替えられます"
+msgstr "ヒント : 右クリックのコンテキストメニューからも切り替えられます"
 
 #: src/tauon/t_modules/t_main.py:18745
 msgid "Can't enable this if there's no token."
@@ -1841,7 +1840,7 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:19010
 msgid "Could not access! Possible insufficient Flatpak permissions."
 msgstr ""
-"アクセスできませんでした！ Flatpakの権限が不十分である可能性があります。"
+"アクセスできませんでした！ Flatpak の権限が不十分である可能性があります。"
 
 #: src/tauon/t_modules/t_main.py:19017
 msgid "The target may be lost on reboot without necessary Flatpak permissions."
@@ -1924,7 +1923,7 @@ msgstr "この機能は CUE シートトラックの名前変更に対応して�
 
 #: src/tauon/t_modules/t_main.py:22591
 msgid "Track Renaming"
-msgstr "トラックの名前変更"
+msgstr "トラック名の変更"
 
 #: src/tauon/t_modules/t_main.py:22595 src/tauon/t_modules/t_main.py:53002
 msgid "Default"
@@ -1940,15 +1939,15 @@ msgstr "後"
 
 #: src/tauon/t_modules/t_main.py:22627
 msgid "Warning: This may change the file extension"
-msgstr "警告: ファイル拡張子が変わる可能性があります"
+msgstr "警告 : ファイル拡張子が変わる可能性があります"
 
 #: src/tauon/t_modules/t_main.py:22634
 msgid "Warning: The filename might not be unique"
-msgstr "警告: ファイル名が一意でない可能性があります"
+msgstr "警告 : ファイル名が一意でない可能性があります"
 
 #: src/tauon/t_modules/t_main.py:22639
 msgid "Warning: A track has incomplete metadata"
-msgstr "警告: メタデータが不完全なトラックがあります"
+msgstr "警告 : メタデータが不完全なトラックがあります"
 
 #: src/tauon/t_modules/t_main.py:22644
 msgid "Write"
@@ -1960,7 +1959,7 @@ msgstr "フォルダー内のすべてのトラックの実ファイル名を変
 
 #: src/tauon/t_modules/t_main.py:22713 src/tauon/t_modules/t_main.py:22718
 msgid "Rename complete."
-msgstr "名前変更完了。"
+msgstr "名前の変更完了。"
 
 #: src/tauon/t_modules/t_main.py:22714 src/tauon/t_modules/t_main.py:22719
 msgid "{N} / {T} filenames were written."
@@ -1968,7 +1967,7 @@ msgstr "{T} 件中 {N} 件のファイル名を書き込みました。"
 
 #: src/tauon/t_modules/t_main.py:22804
 msgid "Simple tag editor"
-msgstr "シンプルなタグエディター"
+msgstr "シンプルなタグエディタ"
 
 #: src/tauon/t_modules/t_main.py:22806 src/tauon/t_modules/t_main.py:23207
 msgid "?"
@@ -1989,7 +1988,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:22813
 msgid "Number of tracks selected: {N}"
-msgstr "選択中のトラック数: {N}"
+msgstr "選択中のトラック数 : {N}"
 
 #: src/tauon/t_modules/t_main.py:22848
 msgid "<Multiple selected>"
@@ -2033,7 +2032,7 @@ msgstr "CUE シート形式には書き込めません！"
 
 #: src/tauon/t_modules/t_main.py:22927
 msgid "Cannot handle multi-field! Please use external tag editor"
-msgstr "複数値フィールドは処理できません！外部タグエディターを使用してください"
+msgstr "複数値フィールドは処理できません！外部タグエディタを使用してください"
 
 #: src/tauon/t_modules/t_main.py:22946
 msgid "{N} files rewritten"
@@ -2061,11 +2060,11 @@ msgstr "対象フォルダーまたはファイル"
 
 #: src/tauon/t_modules/t_main.py:23166
 msgid "Will overwrite existing file: "
-msgstr "既存のファイルを上書きします: "
+msgstr "既存のファイルを上書きします : "
 
 #: src/tauon/t_modules/t_main.py:23169
 msgid "Will save with playlist name:"
-msgstr "プレイリスト名で保存します:"
+msgstr "プレイリスト名で保存します :"
 
 #: src/tauon/t_modules/t_main.py:23172
 msgid "No file extension?"
@@ -2113,19 +2112,19 @@ msgstr "プレイリストをエクスポートしました"
 
 #: src/tauon/t_modules/t_main.py:23351
 msgid "Year: "
-msgstr "年: "
+msgstr "年 : "
 
 #: src/tauon/t_modules/t_main.py:23374
 msgid "Composer: "
-msgstr "作曲者: "
+msgstr "作曲者 : "
 
 #: src/tauon/t_modules/t_main.py:23446
 msgid "Genre: "
-msgstr "ジャンル: "
+msgstr "ジャンル : "
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "Go / open:"
-msgstr "移動 / 開く:"
+msgstr "移動 / 開く :"
 
 #: src/tauon/t_modules/t_main.py:23526
 msgid "left-click or press Enter."
@@ -2133,7 +2132,7 @@ msgstr "左クリックまたは Enter。"
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "Show / reveal:"
-msgstr "表示 / 場所を開く:"
+msgstr "表示 / 場所を開く :"
 
 #: src/tauon/t_modules/t_main.py:23527
 msgid "right-click or press Shift+Enter."
@@ -2141,7 +2140,7 @@ msgstr "右クリックまたは Shift+Enter。"
 
 #: src/tauon/t_modules/t_main.py:23528
 msgid "Add to current playlist:"
-msgstr "現在のプレイリストに追加:"
+msgstr "現在のプレイリストに追加 :"
 
 #: src/tauon/t_modules/t_main.py:23528
 msgid "Ctrl+left-click."
@@ -2149,7 +2148,7 @@ msgstr "Ctrl+左クリック。"
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "Add to queue:"
-msgstr "キューに追加:"
+msgstr "キューに追加 :"
 
 #: src/tauon/t_modules/t_main.py:23529
 msgid "middle-click (track or album)."
@@ -2232,7 +2231,7 @@ msgstr "はい、寄付しました"
 
 #: src/tauon/t_modules/t_main.py:24510
 msgid "General"
-msgstr "一般"
+msgstr "全般"
 
 #: src/tauon/t_modules/t_main.py:24511
 msgid "Connections"
@@ -2252,7 +2251,7 @@ msgstr "テーマ"
 
 #: src/tauon/t_modules/t_main.py:24515 src/tauon/t_modules/t_main.py:27304
 msgid "View"
-msgstr "ビュー "
+msgstr "表示"
 
 #: src/tauon/t_modules/t_main.py:24516
 msgid "Transcode"
@@ -2373,7 +2372,7 @@ msgstr "色を貼り付けました"
 
 #: src/tauon/t_modules/t_main.py:26076
 msgid "Lyrics lookup"
-msgstr "歌詞検索"
+msgstr "歌詞の検索"
 
 #: src/tauon/t_modules/t_main.py:26077
 msgid "Choose which sources Tauon uses for lyrics."
@@ -2445,7 +2444,7 @@ msgstr "編集した設定を再読み込み"
 
 #: src/tauon/t_modules/t_main.py:26191
 msgid "Open data folder"
-msgstr "データを開く"
+msgstr "データフォルダーを開く"
 
 #: src/tauon/t_modules/t_main.py:26193
 msgid "Open keymap file"
@@ -2625,7 +2624,7 @@ msgstr "変更には再起動が必要です。"
 
 #: src/tauon/t_modules/t_main.py:26361 src/tauon/t_modules/t_main.py:27130
 msgid "Notice: This API is not security hardened."
-msgstr "注意: この API はセキュリティ強化されていません。"
+msgstr "注意 : この API はセキュリティ強化されていません。"
 
 #: src/tauon/t_modules/t_main.py:26362 src/tauon/t_modules/t_main.py:27131
 msgid ""
@@ -2653,7 +2652,7 @@ msgstr "無効"
 
 #: src/tauon/t_modules/t_main.py:26384 src/tauon/t_modules/t_main.py:27160
 msgid "Discord status: {state}"
-msgstr "Discord 状態: {state}"
+msgstr "Discord 状態 : {state}"
 
 #: src/tauon/t_modules/t_main.py:26388 src/tauon/t_modules/t_main.py:27164
 msgid "Enable Discord Rich Presence"
@@ -2726,15 +2725,15 @@ msgstr "ローカルデータベース内のすべてのトラックの Love を
 
 #: src/tauon/t_modules/t_main.py:26638
 msgid "Cleared all loves"
-msgstr "すべての Love をクリアしました"
+msgstr "すべての Love を消去しました"
 
 #: src/tauon/t_modules/t_main.py:26644
 msgid "Error, not connected to last.fm"
-msgstr "エラー: last.fm に接続されていません"
+msgstr "エラー : last.fm に接続されていません"
 
 #: src/tauon/t_modules/t_main.py:26647
 msgid "Warning: This process will take approximately {T} minutes to complete."
-msgstr "警告: この処理の完了には約 {T} 分かかります。"
+msgstr "警告 : この処理の完了には約 {T} 分かかります。"
 
 #: src/tauon/t_modules/t_main.py:26648 src/tauon/t_modules/t_main.py:26669
 msgid "Press again while holding Shift if you understand"
@@ -2747,14 +2746,14 @@ msgstr "処理はすでに実行中です。完了するまでお待ちくださ
 
 #: src/tauon/t_modules/t_main.py:26662
 msgid "Cleared all scrobble counts"
-msgstr "すべての Scrobble 回数をクリアしました"
+msgstr "すべての Scrobble 回数を消去しました"
 
 #: src/tauon/t_modules/t_main.py:26667
 msgid ""
 "Warning: This process can take a long time to complete! (up to an hour or "
 "more)"
 msgstr ""
-"警告: この処理は完了までに長時間かかる場合があります！(最大 1 時間以上)"
+"警告 : この処理は完了までに長時間かかる場合があります！(最大 1 時間以上)"
 
 #: src/tauon/t_modules/t_main.py:26668
 msgid "This feature is not recommended for accounts that have many friends."
@@ -2923,11 +2922,11 @@ msgstr "テキストベースライン"
 
 #: src/tauon/t_modules/t_main.py:27011
 msgid "Thin default"
-msgstr "薄いデフォルト"
+msgstr "デフォルト (細い)"
 
 #: src/tauon/t_modules/t_main.py:27012
 msgid "Thick default"
-msgstr "厚いデフォルト"
+msgstr "デフォルト (太い)"
 
 #: src/tauon/t_modules/t_main.py:27193
 msgid "Discord"
@@ -2951,7 +2950,7 @@ msgstr "アーティストを先に表示"
 
 #: src/tauon/t_modules/t_main.py:27229
 msgid "Member list shows:"
-msgstr "メンバーリストの表示:"
+msgstr "メンバーリストの表示 :"
 
 #: src/tauon/t_modules/t_main.py:27233
 msgid "Song"
@@ -3066,11 +3065,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:27459
 msgid "You can toggle this back off under Settings > General"
-msgstr "これは 設定 > 一般 で再びオフにできます"
+msgstr "これは 設定 > 全般 で再びオフにできます"
 
 #: src/tauon/t_modules/t_main.py:27462
 msgid "Stronger background"
-msgstr "背景を強める"
+msgstr "背景を強調する"
 
 #: src/tauon/t_modules/t_main.py:27464
 msgid "Blur background"
@@ -3223,7 +3222,7 @@ msgstr "再生音量のラウドネス調整。"
 
 #: src/tauon/t_modules/t_main.py:27763
 msgid "Ignore ReplayGain tags."
-msgstr "ReplayGain タグを無視します。"
+msgstr "ReplayGain タグを無視する。"
 
 #: src/tauon/t_modules/t_main.py:27763 src/tauon/t_modules/t_main.py:48000
 msgid "Off"
@@ -3235,15 +3234,15 @@ msgstr "自動"
 
 #: src/tauon/t_modules/t_main.py:27764
 msgid "Use the best tag available."
-msgstr "利用可能な最適なタグを使用します。"
+msgstr "利用可能な最適なタグを使用する。"
 
 #: src/tauon/t_modules/t_main.py:27765
 msgid "Preserve album dynamics."
-msgstr "アルバムのダイナミクスを保ちます。"
+msgstr "アルバムのダイナミクスを保持する。"
 
 #: src/tauon/t_modules/t_main.py:27766
 msgid "Match track loudness."
-msgstr "トラックごとの音量をそろえます。"
+msgstr "トラックごとの音量をそろえる。"
 
 #: src/tauon/t_modules/t_main.py:27766 src/tauon/t_modules/t_main.py:28893
 #: src/tauon/t_modules/t_main.py:28908
@@ -3479,7 +3478,7 @@ msgstr "ユーザーの Love を取得"
 
 #: src/tauon/t_modules/t_main.py:28128
 msgid "Clear local loves"
-msgstr "ローカルの Love をクリア"
+msgstr "ローカルの Love を消去"
 
 #: src/tauon/t_modules/t_main.py:28136
 msgid "Get friend loves"
@@ -3487,7 +3486,7 @@ msgstr "友達の Love を取得"
 
 #: src/tauon/t_modules/t_main.py:28137
 msgid "Clear friend loves"
-msgstr "友達の Love をクリア"
+msgstr "友達の Love を消去"
 
 #: src/tauon/t_modules/t_main.py:28145 src/tauon/t_modules/t_main.py:28525
 msgid "Get scrobble counts"
@@ -3495,7 +3494,7 @@ msgstr "Scrobble 回数を取得"
 
 #: src/tauon/t_modules/t_main.py:28146 src/tauon/t_modules/t_main.py:28526
 msgid "Clear counts"
-msgstr "回数をクリア"
+msgstr "回数を消去"
 
 #: src/tauon/t_modules/t_main.py:28156
 msgid "Controls for import and playback display."
@@ -3529,7 +3528,7 @@ msgstr "トークンを貼り付け"
 #: src/tauon/t_modules/t_main.py:28204 src/tauon/t_modules/t_main.py:47682
 #: src/tauon/t_modules/t_main.py:47998
 msgid "Clear"
-msgstr "クリア"
+msgstr "消去"
 
 #: src/tauon/t_modules/t_main.py:28209
 msgid "Using the default ListenBrainz endpoint."
@@ -3545,7 +3544,7 @@ msgstr "ListenBrainz の追加コントロール。"
 
 #: src/tauon/t_modules/t_main.py:28222
 msgid "Open profile"
-msgstr "プロフィールを開く"
+msgstr "プロファイルを開く"
 
 #: src/tauon/t_modules/t_main.py:28243
 msgid "Reset flips"
@@ -4002,7 +4001,7 @@ msgstr "歌詞を LRCLIB にアップロード中..."
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Scanning: "
-msgstr "スキャン中: "
+msgstr "スキャン中 : "
 
 #: src/tauon/t_modules/t_main.py:30466
 msgid "Scanning Scrobbles..."
@@ -4034,7 +4033,7 @@ msgstr "残り {N} フォルダー {T}"
 
 #: src/tauon/t_modules/t_main.py:31137 src/tauon/t_modules/t_main.py:31718
 msgid "Play, RC: Go to playing"
-msgstr "再生、右クリック: 再生中へ移動"
+msgstr "再生、右クリック : 再生中へ移動"
 
 #: src/tauon/t_modules/t_main.py:31162 src/tauon/t_modules/t_main.py:31743
 msgid "Pause"
@@ -4042,23 +4041,23 @@ msgstr "一時停止"
 
 #: src/tauon/t_modules/t_main.py:31202 src/tauon/t_modules/t_main.py:31765
 msgid "Shuffle On"
-msgstr "シャッフルON"
+msgstr "シャッフル ON"
 
 #: src/tauon/t_modules/t_main.py:31205 src/tauon/t_modules/t_main.py:31768
 msgid "Shuffle Off"
-msgstr "シャッフルOFF"
+msgstr "シャッフル OFF"
 
 #: src/tauon/t_modules/t_main.py:31236
 msgid "Repeat On"
-msgstr "リピートOFF"
+msgstr "リピート On"
 
 #: src/tauon/t_modules/t_main.py:31239
 msgid "Repeat Off"
-msgstr "リピートOFF"
+msgstr "リピート OFF"
 
 #: src/tauon/t_modules/t_main.py:31246
 msgid "Back, RC: Toggle repeat, MC: Revert"
-msgstr "戻る、右クリック: リピート切替、中クリック: 戻す"
+msgstr "戻る、右クリック : リピート切替、中クリック: 戻す"
 
 #: src/tauon/t_modules/t_main.py:31263
 msgid "Playback menu"
@@ -4181,7 +4180,7 @@ msgstr "これ以降トラックが録音されます。"
 
 #: src/tauon/t_modules/t_main.py:35420
 msgid "Tip: You can press F9 to view the output folder."
-msgstr "ヒント: F9 を押すと出力フォルダーを表示できます。"
+msgstr "ヒント : F9 を押すと出力フォルダーを表示できます。"
 
 #: src/tauon/t_modules/t_main.py:35424
 msgid "Browse"
@@ -4197,7 +4196,7 @@ msgstr "コードをスペース区切りで入力します。左から右へ実
 
 #: src/tauon/t_modules/t_main.py:35544
 msgid "Select sources: (default: all playlists)"
-msgstr "ソースを選択: (既定: すべてのプレイリスト)"
+msgstr "ソースを選択 : (既定 : すべてのプレイリスト)"
 
 #: src/tauon/t_modules/t_main.py:35547
 msgid "Select source playlist by name"
@@ -4209,7 +4208,7 @@ msgstr "このプレイリスト自身を選択"
 
 #: src/tauon/t_modules/t_main.py:35553
 msgid "Add tracks from sources: (at least 1 required)"
-msgstr "ソースからトラックを追加: (1 つ以上必須)"
+msgstr "ソースからトラックを追加 : (1 つ以上必須)"
 
 #: src/tauon/t_modules/t_main.py:35557
 msgid "Search artist name"
@@ -4241,7 +4240,7 @@ msgstr "年: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:35587
 msgid "Play count: >, <"
-msgstr "再生回数: >, <"
+msgstr "再生回数 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35590
 msgid "Track duration (minutes): >, <"
@@ -4273,7 +4272,7 @@ msgstr "検索して除外"
 
 #: src/tauon/t_modules/t_main.py:35622
 msgid "Sorters"
-msgstr "ソート"
+msgstr "並べ替え"
 
 #: src/tauon/t_modules/t_main.py:35626
 msgid "Shuffle tracks"
@@ -4285,23 +4284,23 @@ msgstr "アルバムをシャッフル"
 
 #: src/tauon/t_modules/t_main.py:35632
 msgid "Year: >, <"
-msgstr "年: >, <"
+msgstr "年 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35635
 msgid "Track duration: >, <"
-msgstr "トラック長: >, <"
+msgstr "トラック長 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35638
 msgid "Track Playtime: >, <"
-msgstr "トラック再生時間: >, <"
+msgstr "トラック再生時間 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35641
 msgid "Album playtime: >, <"
-msgstr "アルバム再生時間: >, <"
+msgstr "アルバム再生時間 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35644
 msgid "Album duration: >, <"
-msgstr "アルバム長: >, <"
+msgstr "アルバム長 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35647
 msgid "Invert tracks"
@@ -4313,15 +4312,15 @@ msgstr "アルバム順を反転"
 
 #: src/tauon/t_modules/t_main.py:35653
 msgid "Track rating: >, <"
-msgstr "トラック評価: >, <"
+msgstr "トラック評価 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35656
 msgid "Album rating: >, <"
-msgstr "アルバム評価: >, <"
+msgstr "アルバム評価 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35659
 msgid "Modification date: >, <"
-msgstr "更新日: >, <"
+msgstr "更新日 : >, <"
 
 #: src/tauon/t_modules/t_main.py:35665
 msgid "Track number per album"
@@ -4333,7 +4332,7 @@ msgstr "アーティストごとの年"
 
 #: src/tauon/t_modules/t_main.py:35671
 msgid "Sort by column name: >, <"
-msgstr "列名でソート: >, <"
+msgstr "列名で並べ替え : >, <"
 
 #: src/tauon/t_modules/t_main.py:35674
 msgid "Special"
@@ -4345,7 +4344,7 @@ msgstr "インポート時に自動再読み込み"
 
 #: src/tauon/t_modules/t_main.py:35682
 msgid "Status:"
-msgstr "状態:"
+msgstr "状態 :"
 
 #: src/tauon/t_modules/t_main.py:35686
 msgid "Playlist not found"
@@ -4421,11 +4420,11 @@ msgstr "アーティスト読み込み中..."
 
 #: src/tauon/t_modules/t_main.py:36891
 msgid "Busy..."
-msgstr "忙しい"
+msgstr "ビジー..."
 
 #: src/tauon/t_modules/t_main.py:37103
 msgid "Loading Folder Tree..."
-msgstr "フォルダ読み込み中..."
+msgstr "フォルダーツリーの読み込み中..."
 
 #: src/tauon/t_modules/t_main.py:37113 src/tauon/t_modules/t_main.py:37129
 msgid "Folder Tree"
@@ -4441,7 +4440,7 @@ msgstr "ここで自動停止"
 
 #: src/tauon/t_modules/t_main.py:37544 src/tauon/t_modules/t_main.py:48113
 msgid "Clear Queue"
-msgstr "キューをクリア"
+msgstr "キューを消去"
 
 #: src/tauon/t_modules/t_main.py:37546
 msgid "↳ Except for This"
@@ -4477,11 +4476,11 @@ msgstr "キュー"
 
 #: src/tauon/t_modules/t_main.py:37806 src/tauon/t_modules/t_main.py:47826
 msgid "Add to Queue"
-msgstr "キューに追加する"
+msgstr "キューに追加"
 
 #: src/tauon/t_modules/t_main.py:37825
 msgid "Up Next:"
-msgstr "次に再生:"
+msgstr "次に再生 :"
 
 #: src/tauon/t_modules/t_main.py:38068
 msgid "{N} Track"
@@ -4497,7 +4496,7 @@ msgstr "アーティスト名が見つかりません"
 
 #: src/tauon/t_modules/t_main.py:38526 src/tauon/t_modules/t_main.py:38779
 msgid "Looking up..."
-msgstr "探している"
+msgstr "検索中..."
 
 #: src/tauon/t_modules/t_main.py:38566
 msgid "Cooldown..."
@@ -4521,11 +4520,11 @@ msgstr "読み込みに失敗しました"
 
 #: src/tauon/t_modules/t_main.py:40002 src/tauon/t_modules/t_main.py:43059
 msgid "Playing"
-msgstr "現在"
+msgstr "再生中"
 
 #: src/tauon/t_modules/t_main.py:40095
 msgid "Auto-Scroll"
-msgstr "スクロール"
+msgstr "自動スクロール"
 
 #: src/tauon/t_modules/t_main.py:40593
 msgid "Tracks + Art"
@@ -4553,7 +4552,7 @@ msgstr "これ以上元に戻せる手順はありません。"
 
 #: src/tauon/t_modules/t_main.py:41619 src/tauon/t_modules/t_main.py:41633
 msgid "Exit Lyrics Editor"
-msgstr "歌詞エディターを終了"
+msgstr "歌詞エディタを終了"
 
 #: src/tauon/t_modules/t_main.py:41620 src/tauon/t_modules/t_main.py:41634
 #: src/tauon/t_modules/t_main.py:47576 src/tauon/t_modules/t_main.py:47595
@@ -4786,23 +4785,23 @@ msgstr "歌詞を編集"
 
 #: src/tauon/t_modules/t_main.py:42857 src/tauon/t_modules/t_main.py:42953
 msgid "Read Back"
-msgstr "読み戻す"
+msgstr "読み返し"
 
 #: src/tauon/t_modules/t_main.py:42862 src/tauon/t_modules/t_main.py:42963
 msgid "Reopen Editor"
-msgstr "エディターを再度開く"
+msgstr "エディタを再度開く"
 
 #: src/tauon/t_modules/t_main.py:42906
 msgid "Opens an external editor."
-msgstr "外部エディターを開きます。"
+msgstr "外部エディタを開く。"
 
 #: src/tauon/t_modules/t_main.py:42931 src/tauon/t_modules/t_main.py:42949
 msgid ""
 "Edit the opened lyrics in your text editor, then save the file and click "
 "\"Read Back.\""
 msgstr ""
-"開いた歌詞をテキストエディターで編集し、ファイルを保存してから「読み戻す」を"
-"クリックしてください。"
+"開いた歌詞をテキストエディタで編集し、ファイルを保存してから「読み返し」をク"
+"リックしてください。"
 
 #: src/tauon/t_modules/t_main.py:42953
 msgid "Make sure to save your changes."
@@ -4932,11 +4931,11 @@ msgstr "オフラインになっていませんか？"
 
 #: src/tauon/t_modules/t_main.py:45399
 msgid "The following file is missing:"
-msgstr "次のファイルが見つかりません:"
+msgstr "次のファイルが見つかりません :"
 
 #: src/tauon/t_modules/t_main.py:45408
 msgid "We don't have the proper permissions to run the file:"
-msgstr "このファイルを実行するための適切な権限がありません:"
+msgstr "このファイルを実行するための適切な権限がありません :"
 
 #: src/tauon/t_modules/t_main.py:45417
 msgid "We can't upload your lyrics, and we don't know why."
@@ -4944,7 +4943,7 @@ msgstr "歌詞をアップロードできません。理由は不明です。"
 
 #: src/tauon/t_modules/t_main.py:45435
 msgid "Lyrics upload failed with error code: "
-msgstr "歌詞のアップロードに失敗しました。エラーコード: "
+msgstr "歌詞のアップロードに失敗しました。エラーコード : "
 
 #: src/tauon/t_modules/t_main.py:45550
 msgid "Folder copy error."
@@ -4976,7 +4975,7 @@ msgstr "フォルダーの移動が完了しました。"
 
 #: src/tauon/t_modules/t_main.py:45575 src/tauon/t_modules/t_main.py:45577
 msgid "Folder name: {name}"
-msgstr "フォルダー名: {name}"
+msgstr "フォルダー名 : {name}"
 
 #: src/tauon/t_modules/t_main.py:45577
 msgid "Folder copy complete."
@@ -5045,7 +5044,7 @@ msgstr "フォルダーツリー"
 
 #: src/tauon/t_modules/t_main.py:47528
 msgid "Repeat OFF"
-msgstr "リピートOFF"
+msgstr "リピート OFF"
 
 #: src/tauon/t_modules/t_main.py:47529
 msgid "Repeat Track"
@@ -5061,7 +5060,7 @@ msgstr "アルバムのシャッフルロック"
 
 #: src/tauon/t_modules/t_main.py:47536
 msgid "Shuffle OFF"
-msgstr "シャッフルOFF"
+msgstr "シャッフル OFF"
 
 #: src/tauon/t_modules/t_main.py:47537
 msgid "Shuffle Tracks"
@@ -5083,7 +5082,7 @@ msgstr "大サイズにする"
 #: src/tauon/t_modules/t_main.py:47568 src/tauon/t_modules/t_main.py:47815
 #: src/tauon/t_modules/t_main.py:47883
 msgid "Open Folder"
-msgstr "フォルダを開く"
+msgstr "フォルダーを開く"
 
 #: src/tauon/t_modules/t_main.py:47552 src/tauon/t_modules/t_main.py:47553
 #: src/tauon/t_modules/t_main.py:47554 src/tauon/t_modules/t_main.py:48200
@@ -5097,7 +5096,7 @@ msgstr "フォルダースキャン"
 
 #: src/tauon/t_modules/t_main.py:47557 src/tauon/t_modules/t_main.py:47559
 msgid "Move Playing Folder Here"
-msgstr "再生フォルダをここに移動"
+msgstr "再生フォルダーをここに移動"
 
 #: src/tauon/t_modules/t_main.py:47563 src/tauon/t_modules/t_main.py:47905
 msgid "Collapse All"
@@ -5113,7 +5112,7 @@ msgstr "プレイリストに表示"
 
 #: src/tauon/t_modules/t_main.py:47570
 msgid "Image…"
-msgstr "画像..."
+msgstr "画像…"
 
 #: src/tauon/t_modules/t_main.py:47571 src/tauon/t_modules/t_main.py:47888
 #: src/tauon/t_modules/t_main.py:47901
@@ -5144,16 +5143,16 @@ msgstr "コード付き歌詞を消去"
 #: src/tauon/t_modules/t_main.py:47583 src/tauon/t_modules/t_main.py:47596
 #: src/tauon/t_modules/t_main.py:47628 src/tauon/t_modules/t_main.py:47654
 msgid "Toggle Lyrics"
-msgstr "歌詞をトグル"
+msgstr "歌詞の切り替え"
 
 #: src/tauon/t_modules/t_main.py:47584 src/tauon/t_modules/t_main.py:47598
 msgid "Lyrics Editor"
-msgstr "歌詞エディター"
+msgstr "歌詞エディタ"
 
 #: src/tauon/t_modules/t_main.py:47585 src/tauon/t_modules/t_main.py:47600
 #: src/tauon/t_modules/t_main.py:47734
 msgid "Misc…"
-msgstr "その他..."
+msgstr "その他…"
 
 #: src/tauon/t_modules/t_main.py:47586 src/tauon/t_modules/t_main.py:47601
 msgid "Substitute Search..."
@@ -5161,7 +5160,7 @@ msgstr "代替検索..."
 
 #: src/tauon/t_modules/t_main.py:47587 src/tauon/t_modules/t_main.py:47602
 msgid "Paste Lyrics"
-msgstr "歌詞をペースト"
+msgstr "歌詞を貼り付け"
 
 #: src/tauon/t_modules/t_main.py:47588 src/tauon/t_modules/t_main.py:47603
 msgid "Copy Lyrics"
@@ -5169,7 +5168,7 @@ msgstr "歌詞をコピー"
 
 #: src/tauon/t_modules/t_main.py:47589 src/tauon/t_modules/t_main.py:47604
 msgid "Clear Lyrics"
-msgstr "歌詞を消す"
+msgstr "歌詞を消去"
 
 #: src/tauon/t_modules/t_main.py:47590 src/tauon/t_modules/t_main.py:47605
 msgid "Clear Synced Lyrics"
@@ -5222,7 +5221,7 @@ msgstr "画像を削除 <統合>"
 #: src/tauon/t_modules/t_main.py:47665 src/tauon/t_modules/t_main.py:47668
 #: src/tauon/t_modules/t_main.py:53016
 msgid "Rename"
-msgstr "リネーム"
+msgstr "名前の変更"
 
 #: src/tauon/t_modules/t_main.py:47705
 msgid "Regenerate"
@@ -5230,27 +5229,27 @@ msgstr "再生成"
 
 #: src/tauon/t_modules/t_main.py:47706
 msgid "Generate…"
-msgstr "生成する..."
+msgstr "生成…"
 
 #: src/tauon/t_modules/t_main.py:47707
 msgid "Edit Generator..."
-msgstr "ジェネレーターを編集..."
+msgstr "ジェネレーターの編集..."
 
 #: src/tauon/t_modules/t_main.py:47708
 msgid "Sort…"
-msgstr "ソート..."
+msgstr "並べ替え…"
 
 #: src/tauon/t_modules/t_main.py:47709
 msgid "From Current…"
-msgstr "現行から..."
+msgstr "現行から…"
 
 #: src/tauon/t_modules/t_main.py:47714
 msgid "Sort by Imported Tracks"
-msgstr "インポートしたトラック順でソート"
+msgstr "インポートしたトラック順で並べ替え"
 
 #: src/tauon/t_modules/t_main.py:47715
 msgid "Sort by Imported Folders"
-msgstr "インポートしたフォルダー順でソート"
+msgstr "インポートしたフォルダー順で並べ替え"
 
 #: src/tauon/t_modules/t_main.py:47716
 msgid "Sort by Filepath"
@@ -5262,11 +5261,11 @@ msgstr "トラック番号を並べ替える"
 
 #: src/tauon/t_modules/t_main.py:47718
 msgid "Sort Year per Artist"
-msgstr "アーティストごとのソート年"
+msgstr "アーティストごとに年で並べ替え"
 
 #: src/tauon/t_modules/t_main.py:47719
 msgid "Make Playlist Auto-Sorting"
-msgstr "プレイリストを自動ソートにする"
+msgstr "プレイリストを自動的に並べ替える"
 
 #: src/tauon/t_modules/t_main.py:47726
 msgid "Append Playing"
@@ -5274,7 +5273,7 @@ msgstr "再生を追加"
 
 #: src/tauon/t_modules/t_main.py:47731
 msgid "Import/Export…"
-msgstr "インポート/エクスポート..."
+msgstr "インポート/エクスポート…"
 
 #: src/tauon/t_modules/t_main.py:47733
 msgid "Toggle Grouping"
@@ -5339,7 +5338,7 @@ msgstr "コメントあり"
 
 #: src/tauon/t_modules/t_main.py:47816
 msgid "Track Info…"
-msgstr "トラック情報..."
+msgstr "トラック情報…"
 
 #: src/tauon/t_modules/t_main.py:47824 src/tauon/t_modules/t_main.py:48123
 msgid "Love"
@@ -5355,7 +5354,7 @@ msgstr "ギャラリーに表示"
 
 #: src/tauon/t_modules/t_main.py:47832
 msgid "Meta…"
-msgstr "メタ..."
+msgstr "メタ…"
 
 #: src/tauon/t_modules/t_main.py:47843
 msgid "Delete Track File"
@@ -5364,12 +5363,12 @@ msgstr "ファイルを削除する"
 #: src/tauon/t_modules/t_main.py:47854 src/tauon/t_modules/t_main.py:47912
 #: src/tauon/t_modules/t_main.py:47927
 msgid "Edit fields…"
-msgstr "フィールドを編集..."
+msgstr "フィールドの編集…"
 
 #: src/tauon/t_modules/t_main.py:47857 src/tauon/t_modules/t_main.py:47885
 #: src/tauon/t_modules/t_main.py:47886 src/tauon/t_modules/t_main.py:47891
 msgid "Modify Folder…"
-msgstr "フォルダーを変更"
+msgstr "フォルダーの変更…"
 
 #: src/tauon/t_modules/t_main.py:47878 src/tauon/t_modules/t_main.py:47898
 msgid "Edit with"
@@ -5385,7 +5384,7 @@ msgstr "文字化けを修正"
 
 #: src/tauon/t_modules/t_main.py:47913
 msgid "Vacuum Playtimes"
-msgstr "真空プレイタイム"
+msgstr "再生履歴データの最適化"
 
 #: src/tauon/t_modules/t_main.py:47919
 msgid "Copy \"Artist - Album\""
@@ -5397,16 +5396,16 @@ msgstr "キューに追加"
 
 #: src/tauon/t_modules/t_main.py:47937
 msgid "Cut"
-msgstr "カット"
+msgstr "切り取り"
 
 #: src/tauon/t_modules/t_main.py:47938 src/tauon/t_modules/t_main.py:47946
 #: src/tauon/t_modules/t_main.py:47947 src/tauon/t_modules/t_main.py:48213
 msgid "Remove"
-msgstr "削除する"
+msgstr "削除"
 
 #: src/tauon/t_modules/t_main.py:47939
 msgid "Delete Files"
-msgstr "ファイルを削除する"
+msgstr "ファイルを削除"
 
 #: src/tauon/t_modules/t_main.py:47949
 msgid "Search Artist on Wikipedia"
@@ -5414,11 +5413,11 @@ msgstr "ウィキペディアで検索"
 
 #: src/tauon/t_modules/t_main.py:47950
 msgid "Search Track on Genius"
-msgstr "Geniusでトラックを検索"
+msgstr "Genius でトラックを検索"
 
 #: src/tauon/t_modules/t_main.py:47956
 msgid "Search Artist on Sonemic"
-msgstr "Sonemicで検索"
+msgstr "Sonemic で検索"
 
 #: src/tauon/t_modules/t_main.py:47963
 msgid "Search Artist on Bandcamp"
@@ -5466,11 +5465,11 @@ msgstr "終了"
 
 #: src/tauon/t_modules/t_main.py:48001
 msgid "Level Meter"
-msgstr "騒音計"
+msgstr "レベルメーター"
 
 #: src/tauon/t_modules/t_main.py:48002
 msgid "Spectrum Visualizer"
-msgstr "スペクトル"
+msgstr "スペクトルビジュアライザー"
 
 #: src/tauon/t_modules/t_main.py:48006
 msgid "Time"
@@ -5482,7 +5481,7 @@ msgstr "バーに表示"
 
 #: src/tauon/t_modules/t_main.py:48028
 msgid "Import Music Folder"
-msgstr "音楽フォルダをインポート"
+msgstr "音楽フォルダーをインポート"
 
 #: src/tauon/t_modules/t_main.py:48036
 msgid "Settings"
@@ -5490,7 +5489,7 @@ msgstr "設定"
 
 #: src/tauon/t_modules/t_main.py:48037
 msgid "Database…"
-msgstr "データベース..."
+msgstr "データベース…"
 
 #: src/tauon/t_modules/t_main.py:48042
 msgid "Enabled saving state"
@@ -5514,7 +5513,7 @@ msgstr "状態保存を無効化"
 
 #: src/tauon/t_modules/t_main.py:48055
 msgid "Export as CSV"
-msgstr "CSVとしてエクスポート"
+msgstr "CSV としてエクスポート"
 
 #: src/tauon/t_modules/t_main.py:48056
 msgid "Reload All Folders"
@@ -5538,7 +5537,7 @@ msgstr "ネットワークトラックを削除"
 
 #: src/tauon/t_modules/t_main.py:48062
 msgid "Remove Missing Tracks"
-msgstr "クリーン"
+msgstr "欠落しているトラックを削除"
 
 #: src/tauon/t_modules/t_main.py:48063
 msgid "Import FMPS Ratings"
@@ -5558,11 +5557,11 @@ msgstr "不完全なアルバムを検索"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Mark Missing as Found"
-msgstr "見つからないことをマークする"
+msgstr "見つからない項目を発見済みとしてマーク"
 
 #: src/tauon/t_modules/t_main.py:48070
 msgid "Chromecast…"
-msgstr "Chromecast..."
+msgstr "Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:48078 src/tauon/t_modules/t_main.py:48090
 msgid "Tab"
@@ -5582,11 +5581,11 @@ msgstr "スレート"
 
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:48094
 msgid "Square"
-msgstr "平方"
+msgstr "四角"
 
 #: src/tauon/t_modules/t_main.py:48084 src/tauon/t_modules/t_main.py:48095
 msgid "Square Large"
-msgstr "大平方"
+msgstr "四角 (大)"
 
 #: src/tauon/t_modules/t_main.py:48087
 msgid "Copy Title to Clipboard"
@@ -5598,11 +5597,11 @@ msgstr "ミニモード"
 
 #: src/tauon/t_modules/t_main.py:48097
 msgid "Random Track"
-msgstr "ランダムトラック"
+msgstr "トラック (ランダム)"
 
 #: src/tauon/t_modules/t_main.py:48102
 msgid "Radio Random"
-msgstr "ラジオランダム"
+msgstr "ラジオ (ランダム)"
 
 #: src/tauon/t_modules/t_main.py:48107
 msgid "Revert"
@@ -5610,15 +5609,15 @@ msgstr "元に戻す"
 
 #: src/tauon/t_modules/t_main.py:48124
 msgid "Global Search"
-msgstr "サーチ"
+msgstr "グローバル検索"
 
 #: src/tauon/t_modules/t_main.py:48125
 msgid "Locate Artist"
-msgstr "アーティストを探す"
+msgstr "アーティストを検索"
 
 #: src/tauon/t_modules/t_main.py:48126
 msgid "Go To Playing"
-msgstr "現在の歌に行く"
+msgstr "再生中へ移動"
 
 #: src/tauon/t_modules/t_main.py:48166
 msgid "Online Manual"
@@ -5642,15 +5641,15 @@ msgstr "表示..."
 
 #: src/tauon/t_modules/t_main.py:48202
 msgid "Sort Alphabetically"
-msgstr "アルファベット順にソート"
+msgstr "アルファベット順に並べ替え"
 
 #: src/tauon/t_modules/t_main.py:48203
 msgid "Sort by Popularity"
-msgstr "人気順にソート"
+msgstr "人気順に並べ替え"
 
 #: src/tauon/t_modules/t_main.py:48204
 msgid "Sort by Playtime"
-msgstr "再生時間順にソート"
+msgstr "再生時間順に並べ替え"
 
 #: src/tauon/t_modules/t_main.py:48205
 msgid "Toggle Thumbnails"
@@ -5666,7 +5665,7 @@ msgstr "アーティストデータをダウンロード"
 
 #: src/tauon/t_modules/t_main.py:48209
 msgid "Clear Bio"
-msgstr "クリアバイオ"
+msgstr "バイオを消去"
 
 #: src/tauon/t_modules/t_main.py:48210
 msgid "Edit..."
@@ -5678,7 +5677,7 @@ msgstr "閉じる"
 
 #: src/tauon/t_modules/t_main.py:48285
 msgid "ERROR: No backend found"
-msgstr "エラー: バックエンドが見つかりません"
+msgstr "エラー : バックエンドが見つかりません"
 
 #: src/tauon/t_modules/t_main.py:49508
 msgid "Enabled auto theme"
@@ -5710,7 +5709,7 @@ msgstr "フォルダーの再スキャンが完了しました。"
 
 #: src/tauon/t_modules/t_main.py:51470
 msgid "Auto sort skipped because playlist is locked."
-msgstr "プレイリストがロックされているため、自動ソートをスキップしました。"
+msgstr "プレイリストがロックされているため、自動並べ替えをスキップしました。"
 
 #: src/tauon/t_modules/t_main.py:52222
 msgid "Queue is Empty"
@@ -5750,11 +5749,11 @@ msgstr "ディスク"
 
 #: src/tauon/t_modules/t_main.py:52883
 msgid "Play count"
-msgstr "プレイ回数"
+msgstr "再生回数"
 
 #: src/tauon/t_modules/t_main.py:52895
 msgid "Play time"
-msgstr "プレイ時間"
+msgstr "再生時間"
 
 #: src/tauon/t_modules/t_main.py:52900
 msgid "Lyrics"
@@ -5782,7 +5781,7 @@ msgstr "フォルダーをディスクから物理的に削除します"
 
 #: src/tauon/t_modules/t_main.py:53052
 msgid "Raise"
-msgstr "上げる"
+msgstr "階層を上げる"
 
 #: src/tauon/t_modules/t_main.py:53056
 msgid "Moves folder up 2 levels and deletes the old container folder"
@@ -6070,11 +6069,11 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 
 #, fuzzy
 #~ msgid "> Import All Playlists"
-#~ msgstr "音楽フォルダをインポート"
+#~ msgstr "音楽フォルダーをインポート"
 
 #, fuzzy
 #~ msgid "Show Full Album"
-#~ msgstr "シャッフルアルバム"
+#~ msgstr "フルアルバムを表示"
 
 #, fuzzy
 #~ msgid "Fetching..."
@@ -6138,7 +6137,7 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 
 #, fuzzy
 #~ msgid "Forget Account"
-#~ msgstr "アカウントを忘れる"
+#~ msgstr "アカウントを記憶しない"
 
 #~ msgid "Username:"
 #~ msgstr "ユーザー名："
@@ -6163,7 +6162,7 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 #~ msgstr "合計アルバム"
 
 #~ msgid "Total playtime"
-#~ msgstr "総プレイ時間"
+#~ msgstr "総再生時間"
 
 #, fuzzy
 #~ msgid "Represent playtime as stars"
@@ -6254,11 +6253,11 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 
 #, fuzzy
 #~ msgid "Import all user playlists"
-#~ msgstr "音楽フォルダをインポート"
+#~ msgstr "すべてのユーザープレイリストをインポート"
 
 #, fuzzy
 #~ msgid "Import single user playlist..."
-#~ msgstr "音楽フォルダをインポート"
+#~ msgstr "単一ユーザーのプレイリストをインポート..."
 
 #~ msgid "Prefer synced"
 #~ msgstr "同期を優先"
@@ -6268,56 +6267,56 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 
 #, fuzzy
 #~ msgid "FFmpeg does not appear to be installed"
-#~ msgstr "タグエディターアプリがインストールされていないようです。"
+#~ msgstr "タグエディタアプリがインストールされていないようです。"
 
 #, fuzzy
 #~ msgid "Output buffer"
 #~ msgstr "出力を開く"
 
 #~ msgid "Export XSPF"
-#~ msgstr "XSPFでエクスポート"
+#~ msgstr "XSPF でエクスポート"
 
 #~ msgid "Reload Metadata"
 #~ msgstr "メタデータをリロード"
 
 #, fuzzy
 #~ msgid "Remove All After"
-#~ msgstr "複写"
+#~ msgstr "以下すべてを削除"
 
 #~ msgid "Processed one FLAC files"
-#~ msgstr "1つのFLACファイルを処理しました"
+#~ msgstr "1つの FLAC ファイルを処理しました"
 
 #~ msgid "Force subpixel text rendering"
-#~ msgstr "サブピクセルテキスト"
+#~ msgstr "サブピクセル単位のテキストレンダリングを強制する"
 
 #~ msgid "Disconnecting..."
-#~ msgstr "生成中。。。"
+#~ msgstr "生成中..."
 
 #~ msgid "Show playing in Discord"
-#~ msgstr "DiscordRPCを可能"
+#~ msgstr "Discord での再生状況を表示"
 
 #~ msgid "Auto search lyrics"
 #~ msgstr "歌詞の自動検索"
 
 #, fuzzy
 #~ msgid "Set List Sorting..."
-#~ msgstr "検索中..."
+#~ msgstr "ストの並び替えを設定..."
 
 #~ msgid "Show in context menus:"
-#~ msgstr "コンテキストメニューに表示"
+#~ msgstr "コンテキストメニューに表示 :"
 
 #~ msgid "Show License"
 #~ msgstr "ライセンス"
 
 #, fuzzy
 #~ msgid "Package opus-tools does not appear to be installed"
-#~ msgstr "タグエディターアプリがインストールされていないようです。"
+#~ msgstr "タグエディタアプリがインストールされていないようです。"
 
 #~ msgid "Spectrogram"
 #~ msgstr "スペクトログラム"
 
 #~ msgid "Install BASS Audio Library"
-#~ msgstr "インストール BASS"
+#~ msgstr "BASS オーディオライブラリのインストール"
 
 #~ msgid "Transitions"
 #~ msgstr "遷移"
@@ -6326,31 +6325,31 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 #~ msgstr "クロスフェード"
 
 #~ msgid "Use gapless playback"
-#~ msgstr "ギャップレス"
+#~ msgstr "ギャップレス再生を使用する"
 
 #~ msgid "Sort Ascending"
-#~ msgstr "ソート昇順"
+#~ msgstr "昇順で並べ替え"
 
 #~ msgid "Sort Decending"
-#~ msgstr "ソート降順"
+#~ msgstr "降順で並べ替え"
 
 #~ msgid "Open Stream…"
-#~ msgstr "オープンストリーム..."
+#~ msgstr "ストリームを開く..."
 
 #~ msgid "Show playtime lines"
-#~ msgstr "行を表示"
+#~ msgstr "時間線の表示"
 
 #~ msgid "Show love hearts"
-#~ msgstr "心を表示"
+#~ msgstr "love を表示"
 
 #~ msgid "Add release year to folder title"
-#~ msgstr "年をタイトルに追加する"
+#~ msgstr "フォルダー名にリリース年を追加する"
 
 #~ msgid "Add total duration to folder title"
-#~ msgstr "タイトルに期間を追加する"
+#~ msgstr "フォルダー名に合計時間を追加する"
 
 #~ msgid "Always center"
-#~ msgstr "中央"
+#~ msgstr "常に中央"
 
 #~ msgid "Previous Theme"
 #~ msgstr "前のテーマ"
@@ -6368,28 +6367,28 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 #~ msgstr "ダウンロードフォルダーの監視"
 
 #~ msgid "Lyrics settings..."
-#~ msgstr "歌詞..."
+#~ msgstr "歌詞の設定..."
 
 #~ msgid "Import KOEL music"
-#~ msgstr "KOELをインポート"
+#~ msgstr "KOEL をインポート"
 
 #~ msgid "Discogs can be used for sourcing artist images."
-#~ msgstr "Discogsは、アーティスト画像の調達に使用できます。"
+#~ msgstr "Discogs は、アーティスト画像の調達に使用できます。"
 
 #~ msgid "For this you will need a \"Personal Access Token\""
 #~ msgstr "このためには、個人アクセストークンが必要です"
 
 #~ msgid "You can generate one with a Discogs account here:"
-#~ msgstr "ここでDiscogsアカウントで生成できます:"
+#~ msgstr "ここでDiscogsアカウントで生成できます :"
 
 #~ msgid "Click login to open the last.fm web"
-#~ msgstr "[ログイン]をクリックして、"
+#~ msgstr "「ログイン」をクリックして last.fm を開く"
 
 #~ msgid "authorisation page and follow prompt."
 #~ msgstr "last.fm Web認証ページを開きます"
 
 #~ msgid "Then return here and click \"Done\"."
-#~ msgstr "その後、ここに戻り、完了をクリックします"
+#~ msgstr "その後、ここに戻り完了をクリックします"
 
 #~ msgid "Misc"
 #~ msgstr "その他"
@@ -6398,31 +6397,31 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 #~ msgstr "タイトルを自動的に隠す"
 
 #~ msgid "Open HTTP Audio Stream"
-#~ msgstr "HTTPオーディオストリームを開く"
+#~ msgstr "HTTP オーディオストリームを開く"
 
 #~ msgid "Hide Art box"
-#~ msgstr "写真を隠す"
+#~ msgstr "アートボックスを隠す"
 
 #~ msgid "Show Art Box"
-#~ msgstr "写真を示す"
+#~ msgstr "アートボックスを表示"
 
 #~ msgid "Split Lines"
 #~ msgstr "行を分ける"
 
 #~ msgid "Search Google for Images"
-#~ msgstr "Googleで画像を検索"
+#~ msgstr "Google で画像を検索"
 
 #~ msgid "Playback follows selected"
-#~ msgstr "選択した再生に従ってください"
+#~ msgstr "選択項目に合わせて再生"
 
 #~ msgid "Hide column bar"
-#~ msgstr "列バーを非表示"
+#~ msgstr "列バーを隠す"
 
 #~ msgid "Search artist on Wikipedia"
 #~ msgstr "ウィキペディアで検索"
 
 #~ msgid "Search images on Google"
-#~ msgstr "グーグルで画像を検索"
+#~ msgstr "Google で画像を検索"
 
 #~ msgid "Left panel (Queue and artist list)"
 #~ msgstr "左パネル"
@@ -6440,10 +6439,10 @@ msgstr "TIDAL ログインの読み込みに失敗しました。もう一度ロ
 #~ msgstr "常に選択を表示"
 
 #~ msgid "Forget Import Folder"
-#~ msgstr "インポートフォルダを忘れる"
+#~ msgstr "インポートフォルダーの登録解除"
 
 #~ msgid "↳ After Current Album"
-#~ msgstr "現行のアルバムの後"
+#~ msgstr "↳ 現行のアルバムの後"
 
 #~ msgid "Device buffer length"
 #~ msgstr "バッファ長"
