@@ -3,10 +3,8 @@
   <img src="extra/tauonmb.svg" width="128" alt="Tauon icon">
 </p>
 
-<h1 align="center">Tauon</h1>
-
 <p align="center">
-  A powerful and streamlined music player for the desktop.
+  <b>TAUON</b>　// A powerful and streamlined music player for the desktop.
 </p>
 
 <p align="center">
@@ -22,19 +20,17 @@
 
 ## Features :sparkles:
 
-  - Fast, comfortable and responsive UI.
+  - Fast, comfortable and responsive UI with beautiful automatic theming.
+  - Support Milkdrop visualisations.
   - Support for **gapless playback**.
-  - Import tracks and create playlists by simple **drag and drop**.
-  - Supports most common codecs and tracker file types.
+  - Simple **drag and drop** functionality.
+  - Supports common codecs such as **.FLAC** and tracker file types such as **.MOD**.
   - Seamless support for CUE sheets.
   - Stream music from your **PLEX**, **Jellyfin** or **Airsonic** server.
-  - Large album art and gallery browsing!
-  - Download cover art function.
-  - Keep track of play counts. Visualise these so you always know which tracks were your favorite.
+  - Customisable UI with multiple widgets to choose from.
   - Shortcuts for searching artists on *Rate Your Music* and tracks on *Genius*.
-  - Built-in topchart generator.
   - **Extract archives** and import your music downloads in **one click**! :zap:
-
+  - And many more!
 
 ## Download and Install :dizzy:
 
