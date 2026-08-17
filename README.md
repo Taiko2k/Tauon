@@ -1,11 +1,24 @@
 
-<img src="extra/tauonmb.svg" height="100px" >
+<p align="center">
+  <img src="extra/tauonmb.svg" width="128" alt="Tauon icon">
+</p>
 
-## Tauon
+<h1 align="center">Tauon</h1>
 
-**A music player for the desktop.** Designed to be powerful and streamlined, putting the user in control of their music collection.
+<p align="center">
+  A powerful and streamlined music player for the desktop.
+</p>
 
-<img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" hspace="0px" vspace="160px">
+<p align="center">
+  <a href="https://github.com/Taiko2k/Tauon/releases">Download</a> ·
+  <a href="https://tauonmusicbox.rocks/manual/overview/">Manual</a> ·
+  <a href="https://flathub.org/apps/com.github.taiko2k.tauonmb">Flathub</a> ·
+  <a href="https://discord.gg/v4EmhES">Discord</a>
+</p>
+
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" alt="Tauon music player">
+</p>
 
 ## Features :sparkles:
 

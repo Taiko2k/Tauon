@@ -1,121 +1,79 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg
-   width="500.00003"
-   height="500.00003"
-   viewBox="0 0 132.29201 132.29201"
-   version="1.1"
-   id="svg7"
-   xmlns:xlink="http://www.w3.org/1999/xlink"
-   xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <defs
-     id="defs2">
-    <linearGradient
-       id="a-6">
-      <stop
-         offset="0"
-         style="stop-color:#fa6ba3;stop-opacity:1;"
-         id="stop5" />
-      <stop
-         offset="0.52113491"
-         style="stop-color:#ba3feb;stop-opacity:1;"
-         id="stop8" />
-      <stop
-         offset="1"
-         style="stop-color:#4572f7;stop-opacity:1;"
-         id="stop9" />
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="500" height="500" viewBox="103.9 103.9 422.2 422.2"
+     role="img" aria-labelledby="title desc">
+  <title id="title">Tauon app icon</title>
+  <desc id="desc">A colourful record icon.</desc>
+
+  <defs>
+    <linearGradient id="disc" x1="125" y1="110" x2="510" y2="525"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#302f38"/>
+      <stop offset=".5" stop-color="#1d1c24"/>
+      <stop offset="1" stop-color="#15151c"/>
     </linearGradient>
-    <linearGradient
-       xlink:href="#a-6"
-       id="b-3"
-       x1="68.732147"
-       x2="52.031483"
-       y1="25.66061"
-       y2="37.558453"
-       gradientTransform="matrix(5.0119566,0,0,5.0125024,-236.9348,-89.245578)"
-       gradientUnits="userSpaceOnUse" />
-    <linearGradient
-       id="a-8">
-      <stop
-         offset="0"
-         style="stop-color:#6977eb;stop-opacity:1;"
-         id="stop3" />
-      <stop
-         offset="1"
-         style="stop-color:#6100ff;stop-opacity:0;"
-         id="stop7" />
+    <radialGradient id="labelFace">
+      <stop offset="0" stop-color="#24232c"/>
+      <stop offset=".78" stop-color="#15151c"/>
+      <stop offset="1" stop-color="#0c0c13"/>
+    </radialGradient>
+
+    <linearGradient id="warm3" x1="110" y1="315" x2="315" y2="110"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7b3fa5"/>
+      <stop offset=".27" stop-color="#bb4f91"/>
+      <stop offset=".53" stop-color="#e86678"/>
+      <stop offset=".78" stop-color="#fa8a55"/>
+      <stop offset="1" stop-color="#ffc857"/>
     </linearGradient>
-    <radialGradient
-       xlink:href="#a-8"
-       id="radialGradient5"
-       cx="-37.106171"
-       cy="-9.41961"
-       fx="-37.106171"
-       fy="-9.41961"
-       r="61.085987"
-       gradientTransform="matrix(1.5879592,0.94404719,-0.5110877,0.85968842,6.4027662,1.062204)"
-       gradientUnits="userSpaceOnUse" />
-    <radialGradient
-       xlink:href="#a-8"
-       id="radialGradient12"
-       gradientUnits="userSpaceOnUse"
-       gradientTransform="matrix(1.560381,0.98896441,-0.70841362,1.11773,17.36133,-14.346192)"
-       cx="121.7567"
-       cy="38.518688"
-       fx="121.7567"
-       fy="38.518688"
-       r="61.085987" />
+    <linearGradient id="cool3" x1="520" y1="315" x2="315" y2="520"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#514273"/>
+      <stop offset=".32" stop-color="#506da0"/>
+      <stop offset=".66" stop-color="#45a0bd"/>
+      <stop offset="1" stop-color="#62d1c4"/>
+    </linearGradient>
+    <linearGradient id="hub3" x1="235" y1="235" x2="395" y2="395"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e86678"/>
+      <stop offset=".5" stop-color="#8b4a9a"/>
+      <stop offset="1" stop-color="#45a0bd"/>
+    </linearGradient>
+
+    <g id="discBody">
+      <circle cx="315" cy="315" r="210"
+              fill="url(#disc)" stroke="#44414c" stroke-width="2.2"/>
+      <g fill="none">
+        <circle cx="315" cy="315" r="201"
+                stroke="#4b4854" stroke-width="1.5" opacity=".72"/>
+        <circle cx="315" cy="315" r="190"
+                stroke="#42404b" stroke-width="1.1" opacity=".58"/>
+        <circle cx="315" cy="315" r="176"
+                stroke="#3f3d48" stroke-width="1" opacity=".54"/>
+        <circle cx="315" cy="315" r="162"
+                stroke="#3c3a45" stroke-width="1" opacity=".5"/>
+        <circle cx="315" cy="315" r="148"
+                stroke="#393742" stroke-width=".9" opacity=".46"/>
+        <circle cx="315" cy="315" r="134"
+                stroke="#373540" stroke-width=".9" opacity=".43"/>
+      </g>
+    </g>
+
+    <path id="warmQuarter"
+          d="M 110 315 A 205 205 0 0 1 315 110
+             L 315 192 A 123 123 0 0 0 192 315 Z"/>
+    <path id="coolQuarter"
+          d="M 520 315 A 205 205 0 0 1 315 520
+             L 315 438 A 123 123 0 0 0 438 315 Z"/>
   </defs>
-  <ellipse
-     cx="66.13549"
-     cy="66.141769"
-     rx="61.085987"
-     ry="61.094383"
-     style="display:inline;fill:url(#b-3);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="ellipse2" />
-  <path
-     style="display:inline;fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="path9"
-     d="M 127.22148,-66.141769 A 61.085987,61.094383 0 0 1 66.13549,-5.0473862 V -66.141769 Z"
-     transform="scale(1,-1)" />
-  <path
-     style="display:inline;fill:#ffffff;fill-opacity:0;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="ellipse6"
-     d="M -5.0495033,66.141769 A 61.085987,61.094383 0 0 1 -66.13549,127.23615 V 66.141769 Z"
-     transform="scale(-1,1)" />
-  <ellipse
-     cx="66.13549"
-     cy="66.141769"
-     rx="23.223633"
-     ry="23.228233"
-     style="display:inline;fill:#292929;fill-opacity:1;stroke:none;stroke-width:4.72411;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="ellipse3" />
-  <circle
-     cx="66.13549"
-     cy="66.141769"
-     r="3.9020491"
-     style="display:inline;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:14.613;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="circle3-7" />
-  <path
-     d="M 66.1565,5.081025 A 61.090186,61.090186 0 0 0 5.06631,66.17541 l 0.0378,0.982477 A 61.090186,61.090186 0 0 1 66.1565,6.756262 61.090186,61.090186 0 0 1 127.2131,66.872375 l 0.0336,-0.696965 A 61.090186,61.090186 0 0 0 66.1565,5.085218 Z"
-     style="display:inline;opacity:0.187;fill:#fef2fd;fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="path5-5" />
-  <path
-     d="M 127.1837,65.062778 A 61.090186,61.090186 0 0 1 66.1355,125.38463 61.090186,61.090186 0 0 1 5.0873,65.38187 l -0.042,0.772541 a 61.090186,61.090186 0 0 0 61.09018,61.090199 61.090186,61.090186 0 0 0 61.09018,-61.090199 z"
-     style="display:inline;fill:#000000;fill-opacity:0.0912281;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="path6-3" />
-  <ellipse
-     cx="66.13549"
-     cy="66.141769"
-     rx="61.085987"
-     ry="61.094383"
-     style="display:inline;fill:url(#radialGradient5);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="ellipse5" />
-  <ellipse
-     cx="66.13549"
-     cy="66.141769"
-     rx="61.085987"
-     ry="61.094383"
-     style="display:inline;fill:url(#radialGradient12);fill-opacity:1;stroke:none;stroke-width:13.3337;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:9.5;stroke-dasharray:none;stroke-opacity:1"
-     id="ellipse12" />
+
+  <use href="#discBody"/>
+  <use href="#warmQuarter" fill="url(#warm3)"/>
+  <use href="#coolQuarter" fill="url(#cool3)"/>
+  <circle cx="315" cy="315" r="83" fill="url(#hub3)"/>
+  <circle cx="315" cy="315" r="73" fill="url(#labelFace)"
+          stroke="#34323d"/>
+  <circle cx="315" cy="315" r="15" fill="#0a0a11"
+          stroke="#3b3945"/>
+  <circle cx="315" cy="315" r="4" fill="#e86678"/>
 </svg>

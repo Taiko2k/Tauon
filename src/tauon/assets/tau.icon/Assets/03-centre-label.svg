@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1024" height="1024" viewBox="103.9 103.9 422.2 422.2">
+  <defs>
+    <radialGradient id="label-face">
+      <stop offset="0" stop-color="#24232c"/>
+      <stop offset=".78" stop-color="#15151c"/>
+      <stop offset="1" stop-color="#0c0c13"/>
+    </radialGradient>
+    <linearGradient id="hub" x1="235" y1="235" x2="395" y2="395"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#e86678"/>
+      <stop offset=".5" stop-color="#8b4a9a"/>
+      <stop offset="1" stop-color="#45a0bd"/>
+    </linearGradient>
+  </defs>
+  <circle cx="315" cy="315" r="83" fill="url(#hub)"/>
+  <circle cx="315" cy="315" r="73" fill="url(#label-face)"
+          stroke="#34323d"/>
+  <circle cx="315" cy="315" r="15" fill="#0a0a11"
+          stroke="#3b3945"/>
+  <circle cx="315" cy="315" r="4" fill="#e86678"/>
+</svg>
