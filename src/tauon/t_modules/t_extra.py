@@ -74,6 +74,9 @@ class RadioStation:
 	website_url: str = ""
 	icon: str = ""
 	stream_url_fallback: str = ""
+	# Filename only. Custom station images are kept in the managed
+	# ``radio-images`` directory under Tauon's application data directory.
+	custom_image: str = ""
 
 
 @dataclass

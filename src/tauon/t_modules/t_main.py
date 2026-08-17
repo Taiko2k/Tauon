@@ -2565,7 +2565,10 @@ class PlayerCtl:
 
 	def delete_playlist(self, index: int, force: bool = False, check_lock: bool = False) -> None:
 		if self.gui.radio_view:
+			stations = self.radio_playlists[index].stations[:]
 			del self.radio_playlists[index]
+			for station in stations:
+				self.tauon.radiobox.delete_custom_image_file(getattr(station, "custom_image", ""))
 			if not self.radio_playlists:
 				self.radio_playlists = [RadioPlaylist(uid=uid_gen(),name="Default", stations=[])]
 			return
@@ -14426,6 +14429,7 @@ class Tauon:
 
 	def station_browse(self) -> None:
 		self.radiobox.active = False
+		self.radiobox.cancel_custom_image_edit()
 		self.radiobox.edit_mode = False
 		self.radiobox.add_mode = False
 		self.radiobox.tab = 1
@@ -14440,6 +14444,7 @@ class Tauon:
 		self.radiobox.radio_field_title.text = ""
 		self.radiobox.station_editing = None
 		self.radiobox.center = True
+		self.radiobox.begin_custom_image_edit(None)
 
 	def rename_station(self, item: tuple[int, RadioStation]) -> None:
 		station = item[1]
@@ -14450,10 +14455,12 @@ class Tauon:
 		self.radiobox.radio_field.text = station.stream_url
 		self.radiobox.radio_field_title.text = station.title if station.title is not None else ""
 		self.radiobox.station_editing = station
+		self.radiobox.begin_custom_image_edit(station)
 
 	def remove_station(self, item: tuple[int, RadioStation]) -> None:
 		index = item[0]
-		del self.pctl.radio_playlists[self.pctl.radio_playlist_viewing].stations[index]
+		station = self.pctl.radio_playlists[self.pctl.radio_playlist_viewing].stations.pop(index)
+		self.radiobox.delete_custom_image_file(getattr(station, "custom_image", ""))
 
 	def dismiss_dl(self) -> None:
 		self.dl_mon.ready.clear()
@@ -23572,7 +23579,15 @@ class AlbumArt:
 		# 1 = Embedded in tag
 		# 2 = Network location
 
-		if tr.is_network:
+		custom_radio_image = None
+		if tr.file_ext == "RADIO":
+			custom_radio_image = self.tauon.radiobox.custom_image_path()
+
+		if custom_radio_image is not None:
+			# A station override is local, stable artwork and deliberately takes
+			# priority over both the directory favicon and per-song stream art.
+			source_list.append([0, str(custom_radio_image)])
+		elif tr.is_network:
 			# Add url if network target
 			if tr.art_url_key:
 				source_list.append([2, tr.art_url_key])
@@ -38143,6 +38158,9 @@ class RadioBox:
 		self.radio_field: TextBox2        = TextBox2(tauon)
 		self.radio_field_title: TextBox2  = TextBox2(tauon)
 		self.radio_field_search: TextBox2 = TextBox2(tauon)
+		self.custom_image_drop_rect: tuple[int, int, int, int] = (0, 0, 0, 0)
+		self.pending_custom_image_source: Path | None = None
+		self.custom_image_preview: QuickThumbnail = QuickThumbnail(tauon)
 		self.country_filter_code: str = ""
 		self.country_filter_name: str = ""
 		self.countries: list[tuple[str, str, int]] = []
@@ -38200,11 +38218,163 @@ class RadioBox:
 		self.websocket_source_urls = ("https://listen.moe/kpop/stream", "https://listen.moe/stream")
 		self.run_proxy: bool = True
 
+	@property
+	def custom_image_directory(self) -> Path:
+		return self.tauon.user_directory / "radio-images"
+
+	def custom_image_path(self, station: RadioStation | None = None) -> Path | None:
+		"""Resolve a station's managed override without allowing path traversal."""
+		station = station or self.loaded_station
+		if station is None:
+			return None
+		filename = getattr(station, "custom_image", "")
+		if not filename or filename in (".", "..") or Path(filename).name != filename:
+			return None
+		path = self.custom_image_directory / filename
+		return path if path.is_file() else None
+
+	def delete_custom_image_file(self, filename: str) -> None:
+		"""Delete an unreferenced station override from Tauon's managed folder."""
+		if not filename or filename in (".", "..") or Path(filename).name != filename:
+			return
+		for playlist in self.pctl.radio_playlists:
+			for station in playlist.stations:
+				if getattr(station, "custom_image", "") == filename:
+					return
+		path = self.custom_image_directory / filename
+		try:
+			if path.is_file():
+				path.unlink()
+		except OSError:
+			logging.exception(f"Could not delete custom radio image: {path}")
+
+	def _load_custom_image_preview(self, path: Path | None) -> bool:
+		self.custom_image_preview.destruct()
+		if path is None:
+			return False
+		try:
+			preview_size = round(72 * self.gui.scale)
+			self.custom_image_preview.read_and_thumbnail(str(path), preview_size, preview_size)
+			return True
+		except Exception:
+			logging.exception(f"Could not preview custom radio image: {path}")
+			return False
+
+	def begin_custom_image_edit(self, station: RadioStation | None) -> None:
+		"""Start editing without copying a pending image into app data."""
+		self.pending_custom_image_source = None
+		self.radio_field_active = 1
+		self._load_custom_image_preview(self.custom_image_path(station))
+
+	def cancel_custom_image_edit(self) -> None:
+		self.pending_custom_image_source = None
+		self.custom_image_drop_rect = (0, 0, 0, 0)
+		self.custom_image_preview.destruct()
+
+	@staticmethod
+	def _custom_image_suffix(path: Path) -> str:
+		with Image.open(path) as image:
+			image.verify()
+			image_format = (image.format or "").lower()
+		return {
+			"jpeg": ".jpg",
+			"png": ".png",
+			"webp": ".webp",
+			"bmp": ".bmp",
+			"gif": ".gif",
+			"jxl": ".jxl",
+		}.get(image_format, "")
+
+	def accept_custom_image_drop(self, target: str) -> bool:
+		"""Handle file drops while the modal station-image editor is open."""
+		if not self.active or not self.edit_mode:
+			return False
+		# The editor is modal. A drop outside its target must not leak through to
+		# the playlist/import UI underneath it.
+		if not self.coll(self.custom_image_drop_rect):
+			return True
+		path = Path(target)
+		try:
+			suffix = self._custom_image_suffix(path) if path.is_file() else ""
+		except Exception:
+			suffix = ""
+		if not suffix:
+			self.show_message(
+				_("Could not use that station image"),
+				_("Drop a PNG, JPEG, WebP, BMP, GIF, or JPEG XL image."),
+				mode="warning",
+			)
+			return True
+		if not self._load_custom_image_preview(path):
+			self.show_message(_("Could not read that station image"), mode="warning")
+			return True
+		self.pending_custom_image_source = path
+		self.gui.request_frame()
+		return True
+
+	def _custom_image_changed(self, station: RadioStation, old_filename: str) -> None:
+		if self.loaded_station is station:
+			if not self.pctl.radio_image_bin:
+				self.dummy_track.art_url_key = self.station_art_key(station)
+			self.pctl.mac_nowplaying_art_track_index = -1
+			self.pctl.mac_nowplaying_art_ready = False
+		self.tauon.album_art_gen.clear_cache()
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
+		self.delete_custom_image_file(old_filename)
+
+	def remove_custom_image_override(self) -> None:
+		"""Immediately remove the saved override selected in the editor."""
+		self.pending_custom_image_source = None
+		station = self.station_editing
+		if station is not None:
+			old_filename = getattr(station, "custom_image", "")
+			if old_filename:
+				station.custom_image = ""
+				self._custom_image_changed(station, old_filename)
+				# The managed file is already gone, so persist the cleared reference
+				# without waiting for the editor's Save button.
+				self.tauon.bg_save()
+		self._load_custom_image_preview(None)
+		self.gui.request_frame()
+
+	def _commit_custom_image(self, station: RadioStation) -> bool:
+		old_filename = getattr(station, "custom_image", "")
+		if self.pending_custom_image_source is not None:
+			try:
+				suffix = self._custom_image_suffix(self.pending_custom_image_source)
+				if not suffix:
+					raise ValueError("Unsupported image format")
+				self.custom_image_directory.mkdir(parents=True, exist_ok=True)
+				identity = (
+					f"{station.stream_url}\n{time.time_ns()}".encode("utf-8", "replace")
+					+ os.urandom(16)
+				)
+				filename = hashlib.sha256(identity).hexdigest()[:24] + suffix
+				target = self.custom_image_directory / filename
+				shutil.copy2(self.pending_custom_image_source, target)
+			except Exception:
+				logging.exception("Could not copy custom radio image")
+				self.show_message(
+					_("Could not save the station image"),
+					_("Check that the source file is still available and try again."),
+					mode="warning",
+				)
+				return False
+			station.custom_image = filename
+
+		if old_filename != getattr(station, "custom_image", ""):
+			self._custom_image_changed(station, old_filename)
+		return True
+
 	def station_art_key(self, station: RadioStation | None = None) -> str:
 		station = station or self.loaded_station
-		if station is None or not station.icon:
+		if station is None:
 			return ""
-		key = f"{station.icon}\n{station.stream_url}"
+		custom_image = getattr(station, "custom_image", "")
+		if not custom_image and not station.icon:
+			return ""
+		key = f"{custom_image}\n{station.icon}\n{station.stream_url}"
 		return f"radio-station:{hashlib.sha256(key.encode()).hexdigest()[:20]}"
 
 	def clear_artwork(self, station_fallback: bool = True) -> None:
@@ -38880,7 +39050,7 @@ class RadioBox:
 	def render(self) -> None:
 		if self.edit_mode:
 			w = round(510 * self.gui.scale)
-			h = round(120 * self.gui.scale)  # + sh
+			h = round(250 * self.gui.scale)
 
 			self.w = w
 			self.h = h
@@ -38894,14 +39064,18 @@ class RadioBox:
 				self.y = y
 				self.x = x
 			else:
-				yy = self.y
-				y = self.y
-				x = self.x
+				x = min(max(self.x, 0), max(0, self.window_size[0] - w))
+				y = min(max(self.y, 0), max(0, self.window_size[1] - h))
+				yy = y
+				self.x = x
+				self.y = y
 			self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
 			self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
 			self.ddt.text_background_colour = self.colours.box_background
 			if self.inp.key_esc_press or (self.gui.level_2_click and not self.coll((x, y, w, h))):
 				self.active = False
+				self.cancel_custom_image_edit()
+				return
 
 			if self.add_mode:
 				self.ddt.text((x + 10 * self.gui.scale, yy + 8 * self.gui.scale), _("Add Station"), self.colours.box_title_text, 213)
@@ -39004,7 +39178,105 @@ class RadioBox:
 			x + 14 * self.gui.scale, yy, self.colours.box_input_text, active=self.radio_field_active == 2,
 			width=width, click=self.gui.level_2_click)
 
-		if self.draw.button(_("Save"), x + width + round(21 * self.gui.scale), yy - round(20 * self.gui.scale), press=self.gui.level_2_click):
+		yy += round(34 * self.gui.scale)
+		self.ddt.text((x + 10 * self.gui.scale, yy), _("Station image override"), self.colours.box_text_label, 312)
+
+		drop_y = yy + round(18 * self.gui.scale)
+		drop_h = round(92 * self.gui.scale)
+		drop_rect = (x + 8 * self.gui.scale, drop_y, width, drop_h)
+		self.custom_image_drop_rect = drop_rect
+		self.fields.add(drop_rect)
+		drop_hovered = self.coll(drop_rect) and self.gui.ext_drop_mode
+		drop_background = (
+			self.colours.box_button_background_highlight if drop_hovered else self.colours.box_thumb_background
+		)
+		self.ddt.rect(drop_rect, drop_background)
+		self.ddt.rect_s(drop_rect, self.colours.box_text_border, max(1, round(self.gui.scale)))
+
+		current_filename = (
+			getattr(self.station_editing, "custom_image", "") if self.station_editing is not None else ""
+		)
+		override_present = self.pending_custom_image_source is not None or bool(current_filename)
+		preview = self.custom_image_preview
+		if override_present and preview.alive:
+			if preview.texture is None:
+				preview.prime()
+			preview_x = drop_rect[0] + round(10 * self.gui.scale)
+			preview_y = drop_rect[1] + (drop_rect[3] - preview.rect.h) / 2
+			preview.draw(preview_x + (round(72 * self.gui.scale) - preview.rect.w) / 2, preview_y)
+			text_x = drop_rect[0] + round(94 * self.gui.scale)
+			image_name = (
+				self.pending_custom_image_source.name
+				if self.pending_custom_image_source is not None
+				else _("Custom station image")
+			)
+			self.ddt.text(
+				(text_x, drop_rect[1] + round(25 * self.gui.scale)),
+				image_name,
+				self.colours.box_input_text,
+				312,
+				bg=drop_background,
+				max_w=drop_rect[2] - round(105 * self.gui.scale),
+			)
+			self.ddt.text(
+				(text_x, drop_rect[1] + round(50 * self.gui.scale)),
+				_("Drop another image to replace it"),
+				self.colours.box_text_label,
+				11,
+				bg=drop_background,
+				max_w=drop_rect[2] - round(105 * self.gui.scale),
+			)
+		elif override_present:
+			self.ddt.text(
+				(drop_rect[0] + drop_rect[2] // 2, drop_rect[1] + round(29 * self.gui.scale), 2),
+				_("Custom image file is missing"),
+				self.colours.box_input_text,
+				312,
+				bg=drop_background,
+			)
+			self.ddt.text(
+				(drop_rect[0] + drop_rect[2] // 2, drop_rect[1] + round(53 * self.gui.scale), 2),
+				_("Drop an image here to replace it"),
+				self.colours.box_text_label,
+				11,
+				bg=drop_background,
+			)
+		else:
+			self.ddt.text(
+				(drop_rect[0] + drop_rect[2] // 2, drop_rect[1] + round(27 * self.gui.scale), 2),
+				_("Drop an image file here"),
+				self.colours.box_input_text,
+				312,
+				bg=drop_background,
+			)
+			self.ddt.text(
+				(drop_rect[0] + drop_rect[2] // 2, drop_rect[1] + round(52 * self.gui.scale), 2),
+				"PNG, JPEG, WebP, BMP, GIF, JPEG XL",
+				self.colours.box_text_label,
+				11,
+				bg=drop_background,
+			)
+
+		button_x = x + width + round(21 * self.gui.scale)
+		if override_present and self.draw.button(
+			_("Remove image"),
+			button_x,
+			drop_y,
+			w=round(103 * self.gui.scale),
+			h=round(28 * self.gui.scale),
+			font=311,
+			press=self.gui.level_2_click,
+		):
+			self.remove_custom_image_override()
+
+		if self.draw.button(
+			_("Save"),
+			button_x,
+			y + h - round(38 * self.gui.scale),
+			w=round(103 * self.gui.scale),
+			h=round(28 * self.gui.scale),
+			press=self.gui.level_2_click,
+		):
 			if not self.radio_field.text:
 				self.show_message(_("Enter a stream URL"))
 			elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
@@ -39013,14 +39285,23 @@ class RadioBox:
 					radio: RadioStation = RadioStation(
 						title=self.radio_field_title.text,
 						stream_url=self.radio_field.text)
+				old_title = radio.title
+				old_stream_url = radio.stream_url
+				old_website_url = radio.website_url
 				radio.title = self.radio_field_title.text
 				if radio.stream_url != self.radio_field.text:
 					radio.stream_url = self.radio_field.text
 					radio.website_url = "" # Different URL, null the website # TODO(Martin): no way to edit for now
+				if not self._commit_custom_image(radio):
+					radio.title = old_title
+					radio.stream_url = old_stream_url
+					radio.website_url = old_website_url
+					return
 
 				if self.add_mode:
 					self.pctl.radio_playlists[self.pctl.radio_playlist_viewing].stations.append(radio)
 				self.active = False
+				self.cancel_custom_image_edit()
 			else:
 				self.show_message(_("Could not validate URL. Must start with https:// or http://"))
 
@@ -42782,6 +43063,7 @@ class ArtistInfoBox:
 
 class RadioThumbGen:
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon             = tauon
 		self.gui               = tauon.gui
 		self.ddt               = tauon.ddt
 		self.prefs             = tauon.prefs
@@ -42793,28 +43075,46 @@ class RadioThumbGen:
 		self.requests: list[tuple[RadioStation, int]] = []
 		self.size = 100
 
+	@staticmethod
+	def key(station: RadioStation, size: int) -> tuple[str, str, str, str, int]:
+		return (
+			station.title,
+			station.icon,
+			station.stream_url,
+			getattr(station, "custom_image", ""),
+			size,
+		)
+
 	def loader(self) -> None:
 		while self.requests:
 			item = self.requests[0]
 			del self.requests[0]
 			station = item[0]
 			size = item[1]
-			key = (station.title, station.icon, station.stream_url, size)
+			key = self.key(station, size)
 			src = None
 			identity = f"{station.icon}\n{station.stream_url}"
 			filename = f"{filename_safe(station.title)}-{hashlib.sha256(identity.encode()).hexdigest()[:10]}"
 
-			cache_path = os.path.join(self.r_cache_directory, filename + ".jpg")
-			if os.path.isfile(cache_path):
-				src = open(cache_path, "rb")
+			custom_image = self.tauon.radiobox.custom_image_path(station)
+			if custom_image is not None:
+				try:
+					src = custom_image.open("rb")
+				except OSError:
+					logging.exception(f"Could not open custom radio image: {custom_image}")
+				cache_path = ""
 			else:
-				cache_path = os.path.join(self.r_cache_directory, filename + ".png")
+				cache_path = os.path.join(self.r_cache_directory, filename + ".jpg")
 				if os.path.isfile(cache_path):
 					src = open(cache_path, "rb")
 				else:
-					cache_path = os.path.join(self.r_cache_directory, filename)
+					cache_path = os.path.join(self.r_cache_directory, filename + ".png")
 					if os.path.isfile(cache_path):
 						src = open(cache_path, "rb")
+					else:
+						cache_path = os.path.join(self.r_cache_directory, filename)
+						if os.path.isfile(cache_path):
+							src = open(cache_path, "rb")
 
 			if src:
 				pass
@@ -42858,7 +43158,7 @@ class RadioThumbGen:
 			except Exception:
 				logging.exception("malform get radio thumb")
 				self.cache[key] = [0]
-				if station.icon and station.icon not in self.prefs.radio_thumb_bans:
+				if custom_image is None and station.icon and station.icon not in self.prefs.radio_thumb_bans:
 					self.prefs.radio_thumb_bans.append(station.icon)
 				continue
 
@@ -42877,7 +43177,7 @@ class RadioThumbGen:
 	def draw(self, station: RadioStation, x: int, y: int, w: int) -> int:
 		if not station.title:
 			return 0
-		key = (station.title, station.icon, station.stream_url, w)
+		key = self.key(station, w)
 
 		r = self.cache.get(key)
 		if r is None:
@@ -43803,7 +44103,7 @@ class RadioView:
 		art_rect = (art_x, art_y, art_size, art_size)
 		self.ddt.rect(art_rect, bg)
 		result = 1
-		if self.pctl.radio_image_bin:
+		if self.pctl.radio_image_bin or self.radiobox.custom_image_path(station) is not None:
 			result = self.tauon.album_art_gen.display(
 				self.radiobox.dummy_track,
 				(art_x, art_y),
@@ -52825,6 +53125,10 @@ def main(holder: Holder) -> None:
 						bag.radio_playlists.append(nt)
 				else:
 					bag.radio_playlists = save[165]
+				for playlist in bag.radio_playlists:
+					for station in playlist.stations:
+						if not hasattr(station, "custom_image"):
+							station.custom_image = ""
 			if len(save) > 166 and save[166] is not None:
 				bag.radio_playlist_viewing = save[166]
 			if len(save) > 167 and save[167] is not None:
@@ -56785,7 +57089,8 @@ def main(holder: Holder) -> None:
 					.replace("\r", "")
 				)
 				# logging.info(target)
-				tauon.drop_file(target)
+				if not tauon.radiobox.accept_custom_image_drop(target):
+					tauon.drop_file(target)
 
 			elif event.type == sdl3.SDL_EVENT_QUIT:
 
