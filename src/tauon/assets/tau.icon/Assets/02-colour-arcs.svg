@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1024" height="1024" viewBox="103.9 103.9 422.2 422.2">
+  <defs>
+    <linearGradient id="warm" x1="110" y1="315" x2="315" y2="110"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7b3fa5"/>
+      <stop offset=".27" stop-color="#bb4f91"/>
+      <stop offset=".53" stop-color="#e86678"/>
+      <stop offset=".78" stop-color="#fa8a55"/>
+      <stop offset="1" stop-color="#ffc857"/>
+    </linearGradient>
+    <linearGradient id="cool" x1="520" y1="315" x2="315" y2="520"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#514273"/>
+      <stop offset=".32" stop-color="#506da0"/>
+      <stop offset=".66" stop-color="#45a0bd"/>
+      <stop offset="1" stop-color="#62d1c4"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#warm)"
+        d="M 110 315 A 205 205 0 0 1 315 110
+           L 315 192 A 123 123 0 0 0 192 315 Z"/>
+  <path fill="url(#cool)"
+        d="M 520 315 A 205 205 0 0 1 315 520
+           L 315 438 A 123 123 0 0 0 438 315 Z"/>
+</svg>

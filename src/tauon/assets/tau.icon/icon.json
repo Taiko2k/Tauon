@@ -2,28 +2,83 @@
   "fill" : "system-dark",
   "groups" : [
     {
+      "name" : "Centre Label",
       "layers" : [
         {
           "blend-mode" : "normal",
           "glass" : true,
           "hidden" : false,
-          "image-name" : "tauon-record.svg",
-          "name" : "tauon-record",
+          "image-name" : "03-centre-label.svg",
+          "name" : "Centre Label",
           "position" : {
-            "scale" : 1.56,
+            "scale" : 0.76171875,
             "translation-in-points" : [
-              0.011149670148370205,
-              0.022366238317658826
+              0,
+              0
             ]
           }
         }
       ],
       "shadow" : {
         "kind" : "neutral",
-        "opacity" : 0.5
+        "opacity" : 0.35
       },
       "translucency" : {
-        "enabled" : true,
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "name" : "Colour Arcs",
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "02-colour-arcs.svg",
+          "name" : "Colour Arcs",
+          "position" : {
+            "scale" : 0.76171875,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.25
+      },
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0.5
+      }
+    },
+    {
+      "name" : "Vinyl Base",
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "01-vinyl-base.svg",
+          "name" : "Vinyl Base",
+          "position" : {
+            "scale" : 0.76171875,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.35
+      },
+      "translucency" : {
+        "enabled" : false,
         "value" : 0.5
       }
     }

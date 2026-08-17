@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="1024" height="1024" viewBox="103.9 103.9 422.2 422.2">
+  <defs>
+    <linearGradient id="disc" x1="125" y1="110" x2="510" y2="525"
+                    gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#302f38"/>
+      <stop offset=".5" stop-color="#1d1c24"/>
+      <stop offset="1" stop-color="#15151c"/>
+    </linearGradient>
+  </defs>
+  <circle cx="315" cy="315" r="210"
+          fill="url(#disc)" stroke="#44414c" stroke-width="2.2"/>
+  <g fill="none">
+    <circle cx="315" cy="315" r="201"
+            stroke="#4b4854" stroke-width="1.5" opacity=".72"/>
+    <circle cx="315" cy="315" r="190"
+            stroke="#42404b" stroke-width="1.1" opacity=".58"/>
+    <circle cx="315" cy="315" r="176"
+            stroke="#3f3d48" stroke-width="1" opacity=".54"/>
+    <circle cx="315" cy="315" r="162"
+            stroke="#3c3a45" stroke-width="1" opacity=".5"/>
+    <circle cx="315" cy="315" r="148"
+            stroke="#393742" stroke-width=".9" opacity=".46"/>
+    <circle cx="315" cy="315" r="134"
+            stroke="#373540" stroke-width=".9" opacity=".43"/>
+  </g>
+</svg>
