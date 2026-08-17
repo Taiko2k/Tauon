@@ -7556,6 +7556,13 @@ class Tauon:
 		left = prefs.left_window_control
 		right = not left
 		focused = window_is_focused(self.t_window)
+		top_is_dark = test_lumi(colours.top_panel_background) > 0.5
+		mac_inactive = rgb_add_hls(
+			colours.top_panel_background,
+			l=0.30 if top_is_dark else -0.30,
+			s=-0.15,
+		)
+		mac_inactive = ColourRGBA(mac_inactive.r, mac_inactive.g, mac_inactive.b, 255)
 
 		# Close
 		if right:
@@ -7570,7 +7577,7 @@ class Tauon:
 			self.fields.add(rect)
 			colour = self.mac_close
 			if not focused:
-				colour = ColourRGBA(86, 85, 86, 255)
+				colour = mac_inactive
 			elif self.coll(rect):
 				colour = rgb_add_hls(colour, 0, 0.11, 0.05)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -7600,7 +7607,7 @@ class Tauon:
 			self.fields.add(rect)
 			colour = ColourRGBA(160, 55, 225, 255)
 			if not focused:
-				colour = ColourRGBA(86, 85, 86, 255)
+				colour = mac_inactive
 			elif self.coll(rect):
 				colour = rgb_add_hls(colour, 0, 0.1, 0.04)
 			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -7622,7 +7629,7 @@ class Tauon:
 				self.fields.add(rect)
 				colour = self.mac_maximize
 				if not focused:
-					colour = ColourRGBA(86, 85, 86, 255)
+					colour = mac_inactive
 				elif self.coll(rect):
 					colour = rgb_add_hls(colour, 0, 0.11, 0.05)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -7663,7 +7670,7 @@ class Tauon:
 				self.fields.add(rect)
 				colour = self.mac_minimize
 				if not focused:
-					colour = ColourRGBA(86, 85, 86, 255)
+					colour = mac_inactive
 				elif self.coll(rect):
 					colour = rgb_add_hls(colour, 0, 0.1, 0.04)
 				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
@@ -37968,9 +37975,13 @@ class ScrollBox:
 		jump_distance: int = 4,
 		extend_field: int = 0,
 		light_background: bool | None = None,
+		interactive: bool = True,
 	) -> float:
 		if max_value <= 0:
 			return 0
+		if not interactive:
+			self.held = False
+			self.slide_hold = False
 
 		if click is None:
 			click = self.inp.mouse_click
@@ -38007,7 +38018,7 @@ class ScrollBox:
 		fw = w + extend_field
 		fx = x - extend_field
 
-		if self.coll((fx, y, fw, h)):
+		if interactive and self.coll((fx, y, fw, h)):
 			if self.inp.mouse_down:
 				self.gui.request_frame()
 
@@ -38093,8 +38104,9 @@ class ScrollBox:
 
 		colour = fg_off
 		rect = (x, mi + position - half, w, bar_height)
-		self.fields.add(rect)
-		if self.coll(rect):
+		if interactive:
+			self.fields.add(rect)
+		if interactive and self.coll(rect):
 			colour = fg
 		if self.held:
 			colour = fg_h
@@ -42929,6 +42941,13 @@ class RadioView:
 		self.click_point = (0, 0)
 		self.discovery_loaded = False
 
+	def interaction_allowed(self) -> bool:
+		"""Return whether the radio view is the topmost interactive UI layer."""
+		return self.tauon.is_level_zero(include_menus=True)
+
+	def hovered(self, rect: tuple[int, int, int, int], *, enabled: bool = True) -> bool:
+		return enabled and self.interaction_allowed() and self.coll(rect)
+
 	def palette(self) -> tuple[
 		ColourRGBA,
 		ColourRGBA,
@@ -42944,8 +42963,11 @@ class RadioView:
 		surface = rgb_add_hls(bg, l=0.035 if dark else -0.035, s=-0.025)
 		surface_over = rgb_add_hls(surface, l=0.055 if dark else -0.055, s=-0.02)
 		border = rgb_add_hls(bg, l=0.12 if dark else -0.12, s=-0.04)
-		primary = ColourRGBA(242, 242, 244, 255) if dark else ColourRGBA(24, 24, 28, 255)
-		secondary = ColourRGBA(166, 168, 174, 255) if dark else ColourRGBA(82, 84, 90, 255)
+		# Keep text tied to the theme hue instead of imposing neutral greys.
+		primary = rgb_add_hls(bg, l=0.72 if dark else -0.72, s=-0.04)
+		secondary = rgb_add_hls(bg, l=0.52 if dark else -0.52, s=-0.03)
+		primary = readable_text_colour(primary, bg, minimum_contrast=5.5)
+		secondary = readable_text_colour(secondary, bg, minimum_contrast=4.5)
 		accent = self.colours.artist_playing
 		return bg, surface, surface_over, border, primary, secondary, accent
 
@@ -42967,7 +42989,8 @@ class RadioView:
 		primary = palette[4]
 		secondary = palette[5]
 		accent = palette[6]
-		hit_rect = (self.intersect_rect(rect, clip_to) if clip_to else rect) if enabled else None
+		interactive = enabled and self.interaction_allowed()
+		hit_rect = (self.intersect_rect(rect, clip_to) if clip_to else rect) if interactive else None
 		hover = hit_rect is not None and self.coll(hit_rect)
 		button_bg = surface_over if hover or active else surface
 		button_border = accent if active or primary_action else border
@@ -43029,7 +43052,8 @@ class RadioView:
 		enabled: bool,
 	) -> bool:
 		"""Draw a row action whose contrast is derived from its actual row."""
-		hit_rect = self.intersect_rect(rect, clip_to) if enabled else None
+		interactive = enabled and self.interaction_allowed()
+		hit_rect = self.intersect_rect(rect, clip_to) if interactive else None
 		hover = hit_rect is not None and self.coll(hit_rect)
 		control, control_over = self.row_control_colours(background)
 		control_colour = control_over if hover else control
@@ -43137,6 +43161,7 @@ class RadioView:
 		secondary = palette[5]
 		accent = palette[6]
 		s = self.gui.scale
+		layer_interactive = self.interaction_allowed()
 		discover = self.radiobox.tab == 1
 
 		self.ddt.text((x, y), _("Radio"), primary, 215, max_w=w - round(190 * s))
@@ -43180,9 +43205,10 @@ class RadioView:
 		field_w = w - search_button_w - search_gap
 		field_rect = (x, search_y, field_w, round(30 * s))
 		search_text_y = search_y + round(6 * s)
-		search_active = not self.radiobox.active and not self.filter_open
+		search_active = layer_interactive and not self.radiobox.active and not self.filter_open
 		self.ddt.bordered_rect(field_rect, surface, border, max(1, round(s)))
-		self.fields.add(field_rect)
+		if search_active:
+			self.fields.add(field_rect)
 		if not self.radiobox.radio_field_search.text and not self.gui.editline:
 			self.ddt.text(
 				(x + round(10 * s), search_text_y),
@@ -43238,10 +43264,11 @@ class RadioView:
 			country_w = round(country_w)
 			if country_w >= round(64 * s):
 				self.filter_chip_rect = (country_x, chip_y, country_w, chip_h)
-				chip_hover = self.coll(self.filter_chip_rect)
+				chip_hover = self.hovered(self.filter_chip_rect)
 				chip_bg = surface_over if chip_hover else surface
 				self.ddt.bordered_rect(self.filter_chip_rect, chip_bg, accent, max(1, round(s)))
-				self.fields.add(self.filter_chip_rect)
+				if layer_interactive:
+					self.fields.add(self.filter_chip_rect)
 				remove_w = round(24 * s)
 				remove_rect = (
 					country_x + country_w - remove_w,
@@ -43257,15 +43284,17 @@ class RadioView:
 					max_w=country_w - remove_w - round(10 * s),
 					bg=chip_bg,
 				)
+				remove_hover = self.hovered(remove_rect)
 				self.ddt.text(
 					(remove_rect[0] + remove_rect[2] // 2, chip_y + round(3 * s), 2),
 					"×",  # noqa: RUF001 - multiplication sign is the intended close glyph
-					primary if self.coll(remove_rect) else secondary,
+					primary if remove_hover else secondary,
 					11,
 					bg=chip_bg,
 				)
-				self.fields.add(remove_rect)
-				remove_filter_pressed = self.coll(remove_rect) and self.inp.mouse_click
+				if layer_interactive:
+					self.fields.add(remove_rect)
+				remove_filter_pressed = remove_hover and self.inp.mouse_click
 				chip_pressed = chip_hover and self.inp.mouse_click and not remove_filter_pressed
 
 		panel_y = chip_y + chip_h + round(6 * s)
@@ -43287,7 +43316,8 @@ class RadioView:
 			self.inp.mouse_click = False
 			self.radiobox.load_countries()
 		elif (
-			self.filter_open
+			layer_interactive
+			and self.filter_open
 			and self.inp.mouse_click
 			and not self.coll(self.filter_panel_rect)
 			and not self.coll(self.filter_button_rect)
@@ -43295,7 +43325,7 @@ class RadioView:
 		):
 			self.filter_open = False
 			self.inp.mouse_click = False
-		elif not self.filter_open:
+		elif not self.filter_open and layer_interactive:
 			if search_pressed or self.inp.key_return_press:
 				self.inp.key_return_press = False
 				self.discovery_loaded = True
@@ -43320,6 +43350,7 @@ class RadioView:
 			return
 		surface, surface_over, border, primary, secondary, accent = self.palette()[1:]
 		s = self.gui.scale
+		layer_interactive = self.interaction_allowed()
 		rect = self.filter_panel_rect
 		pad = round(12 * s)
 		line = max(1, round(s))
@@ -43329,8 +43360,9 @@ class RadioView:
 		self.ddt.text((rect[0] + pad, title_y), _("Filters"), primary, 213, bg=surface_over)
 		close_size = round(26 * s)
 		close_rect = (rect[0] + rect[2] - pad - close_size, rect[1] + round(5 * s), close_size, close_size)
-		close_hover = self.coll(close_rect)
-		self.fields.add(close_rect)
+		close_hover = self.hovered(close_rect)
+		if layer_interactive:
+			self.fields.add(close_rect)
 		self.ddt.text(
 			(close_rect[0] + close_rect[2] // 2, close_rect[1] + round(4 * s), 2),
 			"×",  # noqa: RUF001 - multiplication sign is the intended close glyph
@@ -43338,7 +43370,7 @@ class RadioView:
 			212,
 			bg=surface_over,
 		)
-		if self.inp.key_esc_press or (close_hover and self.inp.mouse_click):
+		if layer_interactive and (self.inp.key_esc_press or (close_hover and self.inp.mouse_click)):
 			self.filter_open = False
 			self.inp.key_esc_press = False
 			self.inp.mouse_click = False
@@ -43349,7 +43381,8 @@ class RadioView:
 		search_y = rect[1] + round(60 * s)
 		search_rect = (rect[0] + pad, search_y, rect[2] - pad * 2, round(30 * s))
 		self.ddt.bordered_rect(search_rect, surface, border, line)
-		self.fields.add(search_rect)
+		if layer_interactive:
+			self.fields.add(search_rect)
 		search_text_y = search_y + round(6 * s)
 		if not self.country_search.text and not self.gui.editline:
 			self.ddt.text(
@@ -43364,13 +43397,14 @@ class RadioView:
 			search_rect[0] + round(10 * s),
 			search_text_y,
 			primary,
-			active=True,
+			active=layer_interactive,
 			width=search_rect[2] - round(16 * s),
-			click=self.inp.mouse_click,
+			click=self.inp.mouse_click and layer_interactive,
 		)
-		self.inp.input_text = ""
-		return_pressed = self.inp.key_return_press
-		self.inp.key_return_press = False
+		return_pressed = layer_interactive and self.inp.key_return_press
+		if layer_interactive:
+			self.inp.input_text = ""
+			self.inp.key_return_press = False
 
 		list_y = search_y + round(38 * s)
 		list_rect = (
@@ -43418,7 +43452,7 @@ class RadioView:
 		visible = max(1, list_rect[3] // row_h)
 		entries: list[tuple[str, str, int]] = [(_("Any country"), "", 0), *countries]
 		max_scroll = max(0, len(entries) - visible)
-		if self.coll(list_rect) and self.inp.mouse_wheel:
+		if self.hovered(list_rect) and self.inp.mouse_wheel:
 			self.filter_scroll -= self.inp.mouse_wheel
 			self.inp.mouse_wheel = 0
 		self.filter_scroll = min(max(self.filter_scroll, 0), max_scroll)
@@ -43434,7 +43468,7 @@ class RadioView:
 		for name, code, station_count in entries[start:start + visible + 1]:
 			row = (list_rect[0], row_y, list_rect[2] - round(7 * s), row_h)
 			row_hit = self.intersect_rect(row, list_rect)
-			hover = row_hit is not None and self.coll(row_hit)
+			hover = row_hit is not None and self.hovered(row_hit)
 			selected = code == self.radiobox.country_filter_code
 			row_bg = surface if selected else surface_over if hover else surface
 			self.ddt.rect(row, row_bg)
@@ -43456,7 +43490,7 @@ class RadioView:
 					11,
 					bg=row_bg,
 				)
-			if row_hit is not None:
+			if layer_interactive and row_hit is not None:
 				self.fields.add(row_hit)
 			if hover and self.inp.mouse_click:
 				selected_entry = (name, code, station_count)
@@ -43540,7 +43574,7 @@ class RadioView:
 		max_scroll = max(0, len(radios) - visible)
 		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, rect)
 		use_smooth = self.smooth_scroll.enabled() or touch_scroll or self.smooth_scroll.active(scroll_key)
-		list_interactive = not self.filter_open and not self.radiobox.active
+		list_interactive = self.interaction_allowed() and not self.filter_open and not self.radiobox.active
 		if self.coll(rect) and list_interactive:
 			if use_smooth:
 				if self.inp.mouse_wheel:
@@ -43561,6 +43595,7 @@ class RadioView:
 				rect[3],
 				scroll,
 				max_scroll + 1,
+				interactive=list_interactive,
 			)
 		if discover:
 			self.radiobox.scroll_position = scroll
@@ -43706,7 +43741,8 @@ class RadioView:
 		if self.drag:
 			self.gui.update_on_drag = True
 		if (
-			self.inp.mouse_up
+			list_interactive
+			and self.inp.mouse_up
 			and self.drag is not None
 			and not discover
 			and insert is None
