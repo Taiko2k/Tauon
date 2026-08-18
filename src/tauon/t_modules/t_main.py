@@ -24177,6 +24177,7 @@ class AlbumArt:
 				self.gui.theme_temp_current = track.album
 				self.ddt.text_background_colour = self.colours.playlist_panel_background
 				self.gui.request_tracklist_redraw()
+				self.gui.request_frame()
 
 		source = self.get_sources(track)
 
@@ -24539,6 +24540,10 @@ class AlbumArt:
 				self.gui.theme_temp_current = track.album
 				self.ddt.text_background_colour = colours.playlist_panel_background
 				self.gui.request_tracklist_redraw()
+				# Theme extraction may happen after the gallery has rendered (and can
+				# complete on the asynchronous art-loading path), so explicitly
+				# schedule a full frame using the newly applied colours.
+				self.gui.request_frame()
 
 		except Exception:
 			logging.exception("Error extracting theme colours from image")
