@@ -146,8 +146,12 @@ def parse_picture_block(f: BufferedReader) -> bytes:
 	return f.read(a)
 
 
-def parse_wavpack_header(header_data: bytes) -> tuple[int, float] | None:
-	"""Parse a WavPack block header and return (sample_rate, length_seconds)."""
+def parse_wavpack_header(header_data: bytes, dsd_multiplier: int | None = None) -> tuple[int, float] | None:
+	"""Parse a WavPack block header and return (sample_rate, length_seconds) if found.
+
+	If we detect header as DSD (Direct Stream Digital), we apply the detected multiplier,
+	or we return None if we failed detecting DSD multiplier in a DSD block.
+	"""
 	if len(header_data) < 32:
 		return None
 
@@ -182,8 +186,48 @@ def parse_wavpack_header(header_data: bytes) -> tuple[int, float] | None:
 	if sample_rate <= 0:
 		return None
 
+	# DSD samples are packed eight bits at a time
+	# Their effective rate has an additional multiplier stored in the DSD metadata block
+	# Check if we have a DSD block and if so use the multiplier or fail
+	if header[11] & 0x80000000:
+		if dsd_multiplier is None:
+			logging.debug("Detected DSD WavPack header but DSD multiplier was not supplied, skipping")
+			return None
+		sample_rate *= dsd_multiplier
+
 	length = header[8] / sample_rate
 	return sample_rate, length
+
+
+def read_wavpack_dsd_multiplier(file: BufferedReader, block_end: int) -> int | None:
+	"""Walk WavPack block metadata and read its DSD (Direct Stream Digital) rate multiplier."""
+	while file.tell() + 2 <= block_end:
+		metadata_header = file.read(2)
+		if len(metadata_header) != 2:
+			return None
+
+		metadata_id = metadata_header[0]
+		stored_length = metadata_header[1] << 1
+
+		if metadata_id & 0x80:
+			large_length = file.read(2)
+			if len(large_length) != 2:
+				return None
+			stored_length += large_length[0] << 9
+			stored_length += large_length[1] << 17
+
+		if file.tell() + stored_length > block_end:
+			return None
+
+		if metadata_id & 0x3F == 0x0E and stored_length:
+			dsd_exponent = file.read(1)
+			if dsd_exponent and dsd_exponent[0] <= 31:
+				return 1 << dsd_exponent[0]
+			return None
+
+		file.seek(stored_length, 1)
+
+	return None
 
 
 class TrackFile:
@@ -913,9 +957,9 @@ class Ape(TrackFile):
 
 	def __init__(self, file: str) -> None:
 		super().__init__()
-		self.filepath = file
-		self.found_tag = False
-		self.label = ""
+		self.filepath: str = file
+		self.found_tag: bool = False
+		self.label: str = ""
 
 	def read(self) -> None:
 		if not self.file:
@@ -954,11 +998,11 @@ class Ape(TrackFile):
 						footer = struct.unpack("<8c6i", b)
 						found = 2
 					else:
-						logging.error("Tag Scanner: Found incomplete APE tag footer")
+						logging.error(f"Tag Scanner: Found incomplete APE tag footer in {self.filepath}")
 						break
 
 		if found == 0:
-			logging.info("Tag Scanner: Can't find APE tag")
+			logging.info(f"Tag Scanner: Can't find APE tag in {self.filepath}")
 		else:
 			self.found_tag = True
 			tag_len = footer[9]  # The size of the tag data (excludes header)
@@ -1151,7 +1195,14 @@ class Ape(TrackFile):
 
 					signature_pos = scan_pos + relative_pos
 					a.seek(signature_pos)
-					parsed = parse_wavpack_header(a.read(32))
+					header_data = a.read(32)
+					dsd_multiplier: int | None = None
+					if len(header_data) == 32:
+						block_size = int.from_bytes(header_data[4:8], byteorder="little") + 8
+						flags = int.from_bytes(header_data[24:28], byteorder="little")
+						if flags & 0x80000000 and 32 <= block_size <= file_size - signature_pos:
+							dsd_multiplier = read_wavpack_dsd_multiplier(a, signature_pos + block_size)
+					parsed = parse_wavpack_header(header_data, dsd_multiplier)
 					if parsed:
 						self.sample_rate, self.length = parsed
 						found_wvpk = True
