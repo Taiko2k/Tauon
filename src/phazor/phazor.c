@@ -3497,12 +3497,12 @@ int load_next_inner() {
 		case WAVPACK: {
 			char wv_error[80] = "";
 			if (is_net) {
-				wpc = WavpackOpenFileInputEx64(&bs_wv_reader, &bs, NULL, wv_error, OPEN_2CH_MAX, 0);
+				wpc = WavpackOpenFileInputEx64(&bs_wv_reader, &bs, NULL, wv_error, OPEN_2CH_MAX | OPEN_DSD_AS_PCM, 0);
 			} else {
 				// Keep the path based open for local files so the .wvc
 				// correction file keeps working
 				bs_close();
-				wpc = WavpackOpenFileInput(loaded_target_file, wv_error, OPEN_WVC | OPEN_2CH_MAX, 0);
+				wpc = WavpackOpenFileInput(loaded_target_file, wv_error, OPEN_WVC | OPEN_2CH_MAX | OPEN_DSD_AS_PCM, 0);
 			}
 			if (wpc == NULL) {
 				log_msg(LOG_ERROR, "pa: Error loading wavpak file (%s)", wv_error);
