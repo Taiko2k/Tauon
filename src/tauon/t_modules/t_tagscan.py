@@ -948,10 +948,14 @@ class Ape(TrackFile):
 
 				# Found it
 				if s == b"APETAGEX":
-					found = 2
 					a.seek(-8, 1)
 					b = a.read(32)
-					footer = struct.unpack("<8c6i", b)
+					if len(b) == 32:
+						footer = struct.unpack("<8c6i", b)
+						found = 2
+					else:
+						logging.error("Tag Scanner: Found incomplete APE tag footer")
+						break
 
 		if found == 0:
 			logging.info("Tag Scanner: Can't find APE tag")
