@@ -23515,7 +23515,7 @@ class AlbumArt:
 
 		self.embed_cached = (None, None)
 		# Runtime comparison switch. It is deliberately not persisted: normal
-		# startup always uses the current liberal router.
+		# startup always uses the automatic selector.
 		self.use_original_art_theme = False
 
 	def toggle_art_theme_algorithm(self) -> None:
@@ -23527,7 +23527,7 @@ class AlbumArt:
 			track = self.pctl.playing_object()
 			if track is not None:
 				self.display(track, (0, 0), (50, 50), theme_only=True)
-		name = _("Original") if self.use_original_art_theme else _("Liberal router")
+		name = _("Original") if self.use_original_art_theme else _("Automatic")
 		self.show_message(_("Auto theme algorithm: ") + name)
 		self.gui.request_tracklist_redraw()
 		self.gui.request_frame()

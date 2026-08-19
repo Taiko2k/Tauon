@@ -884,8 +884,12 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 
 
 def apply_art_theme(colours: object, image: Image.Image) -> ArtTheme:
-	"""Apply the liberal router and complete role expansion to ColoursClass."""
-	theme = generate_liberal_art_theme(image)
+	"""Apply the selected theme and complete role expansion to ColoursClass."""
+	# Imported here rather than at module scope: the selector scores this
+	# module's candidates, so a top-level import would be circular.
+	from tauon.t_modules.t_art_theme_vivid import select_art_theme  # noqa: PLC0415
+
+	theme, _route = select_art_theme(image)
 	_apply_complete_theme(colours, theme)
 	post_config = getattr(colours, "post_config", None)
 	if callable(post_config):
