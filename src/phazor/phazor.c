@@ -1386,7 +1386,7 @@ Music_Emu* emu;
 
 FILE *ffm;
 char exe_string[4096];
-char ffm_buffer[2048];
+char ffm_buffer[4096];  // float32 stereo, so this is the same frame count the 16 bit path used
 
 int (*ff_start)(char*, int, int);
 int (*ff_read)(char*, int);
@@ -1787,6 +1787,73 @@ void read_to_buffer_char16(char src[], int n_bytes) {
 			fade_fx();
 			high++;
 			i += 4;
+		}
+	}
+	buff_cycle();
+}
+
+static inline float f32le_to_float(const unsigned char *p) {
+	union {
+		uint32_t i;
+		float f;
+	} convert;
+	convert.i = ((uint32_t) p[0]) | ((uint32_t) p[1] << 8) | ((uint32_t) p[2] << 16) | ((uint32_t) p[3] << 24);
+	return convert.f;
+}
+
+static inline float clamp_unit(float v) {
+	if (v > 1.0f) return 1.0f;
+	if (v < -1.0f) return -1.0f;
+	return v;
+}
+
+void read_to_buffer_charf32_resample(char src[], int n_bytes) {
+
+	int i = 0;
+	int f = 0;
+
+	// Convert little endian float32 bytes to float
+	while (i < n_bytes) {
+		re_in[f * 2] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
+		if (src_channels == 1) {
+			re_in[(f * 2) + 1] = re_in[f * 2];
+			i += 4;
+		} else {
+			re_in[(f * 2) + 1] = clamp_unit(f32le_to_float((const unsigned char *) src + i + 4));
+			i += 8;
+		}
+
+		f++;
+	}
+
+	resample_to_buffer(f);
+
+}
+
+
+void read_to_buffer_charf32(char src[], int n_bytes) {
+
+	if (sample_rate_src != sample_rate_out) {
+		read_to_buffer_charf32_resample(src, n_bytes);
+		return;
+	}
+
+	int i = 0;
+	if (src_channels == 1) {
+		while (i < n_bytes) {
+			bfl[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
+			bfr[high] = bfl[high];
+			fade_fx();
+			high++;
+			i += 4;
+		}
+	} else {
+		while (i < n_bytes) {
+			bfl[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
+			bfr[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i + 4));
+			fade_fx();
+			high++;
+			i += 8;
 		}
 	}
 	buff_cycle();
@@ -3152,6 +3219,13 @@ int load_next_inner() {
 		codec = WAVPACK;
 		log_msg(LOG_INFO, "Detected wavpack");
 
+	} else if (memcmp(peak, "DSD ", 4) == 0) {
+		// DSD is decoded to PCM by FFmpeg, at an eighth of the DSD bit rate
+		codec = FFMPEG;
+		log_msg(LOG_INFO, "Detected DSF");
+	} else if (memcmp(peak, "FRM8", 4) == 0) {
+		codec = FFMPEG;
+		log_msg(LOG_INFO, "Detected DSDIFF");
 	} else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
 		int id3_size = (peak[6] << 21) | (peak[7] << 14) | (peak[8] << 7) | peak[9];
 		codec = MPG;
@@ -3177,7 +3251,9 @@ int load_next_inner() {
 			strcmp(ext, ".mp4") == 0 || strcmp(ext, ".MP4") == 0 ||
 			strcmp(ext, ".webm") == 0 || strcmp(ext, ".WEBM") == 0 ||
 			strcmp(ext, ".tta") == 0 || strcmp(ext, ".TTA") == 0 ||
-			strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0
+			strcmp(ext, ".wma") == 0 || strcmp(ext, ".WMA") == 0 ||
+			strcmp(ext, ".dsf") == 0 || strcmp(ext, ".DSF") == 0 ||
+			strcmp(ext, ".dff") == 0 || strcmp(ext, ".DFF") == 0
 		)
 		) codec = FFMPEG;
 
@@ -3946,21 +4022,22 @@ void pump_decode() {
 	} else if (codec == FFMPEG) {
 
 		int b = 0;
-		if (ff_read != NULL) b = ff_read(ffm_buffer, 2048);
+		if (ff_read != NULL) b = ff_read(ffm_buffer, sizeof(ffm_buffer));
 		else {
 			log_msg(LOG_WARNING, "pa: FFmpeg read callback is NULL");
 			decoder_eos();
 			return;
 		}
 
-		if (b % 4 != 0) {
+		// FFmpeg is asked for stereo float32, so 8 bytes per frame
+		if (b % 8 != 0) {
 			log_msg(LOG_WARNING, "pa: Uneven data");
 			decoder_eos();
 			return;
 		}
 
 		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_char16(ffm_buffer, b);
+		read_to_buffer_charf32(ffm_buffer, b);
 		pthread_mutex_unlock(&buffer_mutex);
 		if (b == 0) {
 			log_msg(LOG_INFO, "pa: FFmpeg has finished");

@@ -581,6 +581,38 @@ def get_filesize_string_rounded(file_bytes: int) -> str:
 	return line
 
 
+def get_dsd_rate_name(samplerate: int) -> str | None:
+	"""Return the usual name for a DSD bit rate, e.g. "DSD64", or None if it isn't one.
+
+	DSD rates are stored as the raw 1 bit rate, so a DSD64 file reports 2822400
+	rather than a sample rate anything like PCM would use. They are always a
+	power of two multiple of a base rate, starting at 64x, which is well clear
+	of the highest PCM rates in use (768000 is only 16x).
+	"""
+	if samplerate <= 0:
+		return None
+	for base in (44100, 48000):
+		if samplerate % base:
+			continue
+		multiplier = samplerate // base
+		if multiplier >= 64 and multiplier & (multiplier - 1) == 0:  # power of two
+			return f"DSD{multiplier}"
+	return None
+
+
+def get_samplerate_string(samplerate: int) -> str:
+	"""Format a sample rate for display, naming DSD rates instead of showing raw Hz"""
+	return get_dsd_rate_name(samplerate) or f"{samplerate} Hz"
+
+
+def get_samplerate_string_short(samplerate: int, bit_depth: int) -> str:
+	"""Format a sample rate for the narrow playlist column, as "44.1|16" or "DSD64"."""
+	name = get_dsd_rate_name(samplerate)
+	if name:
+		return name
+	return str(round(samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(bit_depth)
+
+
 def get_modify_date_string(modify_date: float) -> str:
 	ago = round(time.time() - modify_date)
 	if ago < 0:

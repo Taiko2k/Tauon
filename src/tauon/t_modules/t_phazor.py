@@ -85,7 +85,9 @@ class FFRun:
 		cmd += ["-loglevel", "quiet"]
 		if start_ms > 0:
 			cmd += ["-ss", f"{start_ms}ms"]
-		cmd += ["-i", uri.decode(), "-acodec", "pcm_s16le", "-f", "s16le", "-ac", "2", "-ar", f"{samplerate}", "-"]
+		# float32 out: PHAzOR's mixing buffers are float, so this avoids a quantisation
+		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact
+		cmd += ["-i", uri.decode(), "-acodec", "pcm_f32le", "-f", "f32le", "-ac", "2", "-ar", f"{samplerate}", "-"]
 		startupinfo = None
 		if sys.platform == "win32":
 			startupinfo = subprocess.STARTUPINFO()

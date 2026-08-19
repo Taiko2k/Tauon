@@ -42,7 +42,7 @@ from typing import TYPE_CHECKING, Callable
 import sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
-from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time
+from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time, get_samplerate_string
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -888,7 +888,7 @@ class DetailsWidget(Widget):
 		("Duration", lambda t: get_display_time(t.length) if t.length else ""),
 		("Codec", lambda t: t.file_ext),
 		("Bitrate", lambda t: f"{t.bitrate} kbps" if t.bitrate else ""),
-		("Sample rate", lambda t: f"{t.samplerate} Hz" if t.samplerate else ""),
+		("Sample rate", lambda t: get_samplerate_string(t.samplerate) if t.samplerate else ""),
 		("Bit depth", lambda t: f"{t.bit_depth} bit" if t.bit_depth else ""),
 		("Comment", lambda t: t.comment.splitlines()[0] if t.comment else ""),
 	]

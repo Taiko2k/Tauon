@@ -167,12 +167,15 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	get_artist_safe,
 	get_artist_strip_feat,
 	get_display_time,
+	get_dsd_rate_name,
 	get_filesize_string,
 	get_filesize_string_rounded,
 	get_first_artist,
 	get_folder_size,
 	get_hms_time,
 	get_modify_date_string,
+	get_samplerate_string,
+	get_samplerate_string_short,
 	get_split_artists,
 	get_year_from_string,
 	grow_rect,
@@ -36284,8 +36287,8 @@ class StandardPlaylist:
 			ex = n_track.file_ext
 			if n_track.container is not None:
 				ex = n_track.container
-			if ex in ("FLAC", "WAV", "APE"):
-				text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(n_track.bit_depth)
+			if ex in ("FLAC", "WAV", "APE") or get_dsd_rate_name(n_track.samplerate):
+				text = get_samplerate_string_short(n_track.samplerate, n_track.bit_depth)
 			return text
 		if name == "Time":
 			return get_display_time(n_track.length)
@@ -37535,9 +37538,8 @@ class StandardPlaylist:
 							ex = n_track.file_ext
 							if n_track.container is not None:
 								ex = n_track.container
-							if ex in ("FLAC", "WAV", "APE"):
-								text = str(round(n_track.samplerate / 1000, 1)).rstrip("0").rstrip(".") + "|" + str(
-									n_track.bit_depth)
+							if ex in ("FLAC", "WAV", "APE") or get_dsd_rate_name(n_track.samplerate):
+								text = get_samplerate_string_short(n_track.samplerate, n_track.bit_depth)
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:
@@ -52491,6 +52493,8 @@ def main(holder: Holder) -> None:
 			"OPUS":  ColourRGBA(247, 79,  146, 255),  # Pink
 			"AAC":   ColourRGBA(79,  247, 168, 255),  # Teal
 			"WV":    ColourRGBA(229, 23,  18,  255),  # Deep red
+			"DSF":   ColourRGBA(255, 205, 100, 255),  # Warm gold
+			"DFF":   ColourRGBA(255, 205, 100, 255),  # Warm gold
 			"PLEX":  ColourRGBA(229, 160, 13,  255),  # Orange-brown
 			"TAU":   ColourRGBA(111, 98,  190, 255),  # Lavender
 			"SUB":   ColourRGBA(235, 140, 20,  255),  # Golden yellow
@@ -52519,6 +52523,7 @@ def main(holder: Holder) -> None:
 		DA = {
 			"mp3", "wav", "opus", "flac", "ape", "aiff",
 			"m4a", "m4b", "ogg", "oga", "aac", "tta", "wv", "wma",
+			"dsf", "dff",
 		} | MOD_Formats | GME_Formats,
 		Archive = Archive_Formats,
 	)
@@ -59953,7 +59958,7 @@ def main(holder: Holder) -> None:
 						if tc.samplerate != 0:
 							ddt.text((x1, y1), _("Samplerate"), key_colour_off, 212, max_w=70 * gui.scale)
 
-							line = str(tc.samplerate) + " Hz"
+							line = get_samplerate_string(tc.samplerate)
 
 							off = ddt.text((x2, y1), line, value_colour, value_font)
 
