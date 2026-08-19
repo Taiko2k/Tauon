@@ -23814,7 +23814,7 @@ class AlbumArt:
 				tag.read(True)
 				if tag.has_picture and len(tag.picture) > 30:
 					pic = tag.picture
-		elif track.file_ext == "APE":
+		elif track.file_ext in ("APE", "WV", "TTA"):
 			with Ape(filepath) as tag:
 				tag.read()
 				if tag.has_picture and len(tag.picture) > 30:
