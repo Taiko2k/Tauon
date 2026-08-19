@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class ArtTheme:
-	"""The five frozen Snapshot roles plus the artwork's tonal mode."""
+	"""The five theme roles plus the artwork's tonal mode."""
 
 	background: ColourRGBA
 	side: ColourRGBA
@@ -176,8 +176,8 @@ def _readable_identity(
 	return _readable_tint(backgrounds, hue, saturation, prefer_light, minimum)
 
 
-def generate_art_theme(image: Image.Image) -> ArtTheme:
-	"""Generate the frozen Guided V4 / WIP Snapshot palette."""
+def generate_structural_art_theme(image: Image.Image) -> ArtTheme:
+	"""Generate a conservative palette weighted by structural presence."""
 	palette = _quantized_palette(image, 16)
 	total = max(1, sum(population for population, _colour in palette))
 	mean_luminance = sum(contrast_luminance(colour) * population for population, colour in palette) / total
@@ -352,7 +352,7 @@ def _supported_hue_families(
 
 
 def _dark_identity_theme(
-	snapshot: ArtTheme,
+	structural: ArtTheme,
 	identity: _HueFamily,
 	mean_luminance: float,
 ) -> ArtTheme:
@@ -373,7 +373,7 @@ def _dark_identity_theme(
 		True,
 		4.5,
 	)
-	return ArtTheme(background, side, title, artist, accent, snapshot.light_mode)
+	return ArtTheme(background, side, title, artist, accent, structural.light_mode)
 
 
 def _colour_duet_theme(first: _HueFamily, second: _HueFamily) -> ArtTheme:
@@ -418,18 +418,18 @@ def _colour_duet_theme(first: _HueFamily, second: _HueFamily) -> ArtTheme:
 	return ArtTheme(background, side, title, artist, accent, light_mode)
 
 
-def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
-	"""Route strong, repeatable colour opportunities around frozen Snapshot.
+def generate_routed_art_theme(image: Image.Image) -> ArtTheme:
+	"""Route an artwork to whichever palette strategy its colour supports.
 
-	Snapshot remains the default. A cover may take an expressive route when it
-	either contains a substantial dark base plus a supported identity colour, or
-	two supported hue families with clear tonal separation. Light artwork may
-	also use corrected Original when it has a broad neutral field and Original
-	finds a safe chromatic secondary surface. These conditions avoid promoting
-	isolated pixels while permitting the high-contrast pairings that the
-	conservative Snapshot intentionally suppresses.
+	The structural palette is the default. A cover takes an expressive route
+	when it holds either a substantial dark base plus a supported identity
+	colour, or two supported hue families with clear tonal separation. Light
+	artwork with a broad neutral field may instead use the legacy palette when
+	that finds a safe chromatic secondary surface. These conditions avoid
+	promoting isolated pixels while allowing high-contrast pairings that the
+	structural palette suppresses.
 	"""
-	snapshot = generate_art_theme(image)
+	structural = generate_structural_art_theme(image)
 	palette = _quantized_palette(image, 24)
 	total = max(1, sum(population for population, _colour in palette))
 	mean_luminance = sum(contrast_luminance(colour) * population for population, colour in palette) / total
@@ -454,7 +454,7 @@ def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
 			and identity.coverage >= 0.16
 			and identity.chroma >= 0.26
 		):
-			return _dark_identity_theme(snapshot, identity, mean_luminance)
+			return _dark_identity_theme(structural, identity, mean_luminance)
 
 	pairs = []
 	for index, first in enumerate(families):
@@ -480,10 +480,10 @@ def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
 		if mean_luminance < 0.47:
 			return _colour_duet_theme(first, second)
 
-	# Snapshot tends to mute pale, largely neutral covers even when Original's
-	# second frequent colour is a clean, usable source of personality. Route
-	# only this narrow light-art case; near-black or effectively neutral second
-	# surfaces remain with Snapshot, as does fully vivid light artwork.
+	# Pale, largely neutral covers get muted even when the legacy palette's
+	# second frequent colour is a clean source of personality. Route only this
+	# narrow case: near-black or effectively neutral second surfaces stay with
+	# the structural palette, as does fully vivid light artwork.
 	neutral_mass = (
 		sum(
 			population
@@ -498,7 +498,7 @@ def generate_liberal_art_theme(image: Image.Image) -> ArtTheme:
 			_side_hue, side_lightness, side_saturation = _rgb_to_hls(original.side)
 			if side_lightness >= 0.20 and side_saturation >= 0.25:
 				return original
-	return snapshot
+	return structural
 
 
 def _original_readable_text(
@@ -507,7 +507,7 @@ def _original_readable_text(
 	minimum: float,
 	fallback_saturation: float,
 ) -> ColourRGBA:
-	"""Repair Original's extracted text without discarding its hue."""
+	"""Repair extracted text without discarding its hue."""
 	if contrast_ratio(colour, background) >= minimum:
 		return colour
 	background_hue, _background_lightness, _background_saturation = _rgb_to_hls(background)
@@ -527,7 +527,11 @@ def _original_readable_text(
 
 
 def generate_original_art_theme(image: Image.Image) -> ArtTheme | None:
-	"""Extract Original's five roles and repair its foreground contrast."""
+	"""Extract five roles from the most frequent artwork colours.
+
+	This is Tauon's long-standing behaviour, with its foreground contrast
+	repaired. Kept both as a selectable option and as a selector candidate.
+	"""
 	working = image.convert("RGB")
 	working.thumbnail((50, 50), Image.Resampling.LANCZOS)
 	pixels = sorted(working.getcolors(maxcolors=2500) or [], key=lambda item: item[0], reverse=True)
@@ -546,8 +550,7 @@ def generate_original_art_theme(image: Image.Image) -> ArtTheme | None:
 	title = extracted[2] if len(extracted) > 2 else ColourRGBA(235, 235, 235, 255)
 	artist = extracted[3] if len(extracted) > 3 else ColourRGBA(180, 180, 180, 255)
 	accent = max(extracted, key=lambda candidate: contrast_ratio(candidate, background))
-	# Preserve the old production algorithm's first-pass repairs before applying
-	# the stronger correction adopted as the survey's new Original baseline.
+	# Apply the original first-pass repairs before the stronger correction.
 	if contrast_ratio(artist, background) < 1.9:
 		artist = max(
 			(ColourRGBA(25, 25, 25, 255), ColourRGBA(220, 220, 220, 255)),
@@ -567,15 +570,15 @@ def generate_original_art_theme(image: Image.Image) -> ArtTheme | None:
 		title,
 		artist,
 		accent,
-		# Original can return an unmodified middle-valued surface. Choose the
+		# This can return an unmodified middle-valued surface, so choose the
 		# polarity with the stronger black/white contrast rather than applying
-		# Snapshot's overall-art luminance threshold to this one raw swatch.
+		# an overall-artwork luminance threshold to one raw swatch.
 		contrast_luminance(_rgb_tuple(background)) >= 0.18,
 	)
 
 
 def apply_original_art_theme(colours: object, image: Image.Image) -> ArtTheme | None:
-	"""Expand Original's corrected five-role palette over the complete theme."""
+	"""Apply the legacy palette and full role expansion to ColoursClass."""
 	theme = generate_original_art_theme(image)
 	if theme is None:
 		return None
@@ -583,8 +586,8 @@ def apply_original_art_theme(colours: object, image: Image.Image) -> ArtTheme | 
 	post_config = getattr(colours, "post_config", None)
 	if callable(post_config):
 		post_config()
-		# Match the liberal path: retain useful post_config bookkeeping without
-		# allowing its legacy fallbacks to replace generated role colours.
+		# Retain post_config's bookkeeping without letting its legacy fallbacks
+		# replace generated role colours.
 		_apply_complete_theme(colours, theme)
 	return theme
 
@@ -640,7 +643,7 @@ def _alpha(colour: ColourRGBA, alpha: int) -> ColourRGBA:
 
 
 def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
-	"""Expand Snapshot's five roles over every colour-bearing Tauon role."""
+	"""Expand the five roles over every colour-bearing Tauon role."""
 	background = theme.background
 	side = theme.side
 	background_hue, background_lightness, background_saturation = _rgb_to_hls(background)
@@ -675,9 +678,8 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 	column_surface = _surface_variant(background, lightness_delta=-surface_step * 0.045, saturation_factor=0.88)
 	queue_card = _surface_variant(queue, lightness_delta=surface_step * 0.045, saturation_factor=0.92)
 
-	# Use the full extracted identity colour throughout the tracklist. This is
-	# deliberately the colour previously reserved for the playing artist; a
-	# stronger variant below distinguishes the playing row.
+	# The identity colour is used throughout the track list; a stronger variant
+	# below distinguishes the playing row.
 	track_accent = theme.accent
 	if contrast_ratio(track_accent, background) < 4.5:
 		track_accent = _readable_identity(
@@ -713,9 +715,9 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 	# controls look permanently active.
 	bottom_button_off = _mix_hls(bottom, bottom_secondary, 0.24)
 	top_button_off = _mix_hls(top, top_secondary, 0.24)
-	# Original can put a light side panel beside a dark center panel or vice
-	# versa. Side-panel labels therefore need their own polarity and must be
-	# corrected against the surface they are actually rendered on.
+	# A light side panel can sit beside a dark centre panel or vice versa, so
+	# side-panel labels need their own polarity, corrected against the surface
+	# they are actually rendered on.
 	black = ColourRGBA(0, 0, 0, 255)
 	white = ColourRGBA(255, 255, 255, 255)
 	side_prefers_light = contrast_ratio(white, side) >= contrast_ratio(black, side)
@@ -870,10 +872,9 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 	}
 	for name, value in values.items():
 		setattr(colours, name, value)
-	# Snapshot still classifies the artwork tonally to build its palette, but
-	# Tauon's legacy light-mode switch is intentionally left off. Components
-	# must use their generated role colours rather than changing behaviour based
-	# on this global flag.
+	# Artwork is still classified tonally to build the palette, but Tauon's
+	# legacy light-mode switch stays off: components must use their generated
+	# role colours rather than branching on this global flag.
 	setattr(colours, "lm", False)  # noqa: B010 - ColoursClass is deliberately duck typed here.
 	column_colours = getattr(colours, "column_colours", None)
 	if column_colours is not None:
@@ -884,10 +885,10 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 
 
 def apply_art_theme(colours: object, image: Image.Image) -> ArtTheme:
-	"""Apply the selected theme and complete role expansion to ColoursClass."""
+	"""Apply the selected theme and full role expansion to ColoursClass."""
 	# Imported here rather than at module scope: the selector scores this
 	# module's candidates, so a top-level import would be circular.
-	from tauon.t_modules.t_art_theme_vivid import select_art_theme  # noqa: PLC0415
+	from tauon.t_modules.t_art_theme_duotone import select_art_theme  # noqa: PLC0415
 
 	theme, _route = select_art_theme(image)
 	_apply_complete_theme(colours, theme)
