@@ -156,6 +156,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	colour_value,
 	commonprefix,
 	contrast_ratio,
+	ensure_contrast,
 	d_date_display,
 	d_date_display2,
 	filename_safe,
@@ -39870,6 +39871,12 @@ class PlaylistBox:
 		if bg_lumi > 0.8:
 			dark_mode = True
 
+		# tab_text and tab_text_active are corrected against the top panel's tab
+		# strip, not against this panel, so correct them against the surface
+		# actually used here. The selected row then has to reach at least the
+		# prominence of the unselected rows, or it reads as the weaker one.
+		tab_title_colour = ensure_contrast(tab_title_colour, self.colours.playlist_box_background)
+
 		indicate_w = round(3 * gui.scale) if light_mode else round(2 * gui.scale)
 
 		show_scroll = False
@@ -40089,8 +40096,16 @@ class PlaylistBox:
 			text_max_w = tab_width - text_start - 15 * gui.scale
 			# if indicator_run_x:
 			#     text_max_w = tab_width - (indicator_run_x + text_start + 17 * gui.scale + slide)
+			if i == pctl.active_playlist_viewing:
+				# Measured on this row's own background so the comparison is
+				# like for like: the selected row is never less prominent than
+				# a plain row would be in the same place.
+				floor = max(4.5, contrast_ratio(tab_title_colour, real_bg))
+				row_colour = ensure_contrast(self.colours.tab_text_active, real_bg, floor)
+			else:
+				row_colour = ensure_contrast(tab_title_colour, real_bg)
 			self.ddt.text(
-				(tab_start + text_start, yy + self.text_offset), name, tab_title_colour if i != pctl.active_playlist_viewing else self.colours.tab_text_active, 211, max_w=text_max_w, bg=real_bg)
+				(tab_start + text_start, yy + self.text_offset), name, row_colour, 211, max_w=text_max_w, bg=real_bg)
 
 			# Is mouse collided with tab?
 			hit = drop_hit_rect is not None and self.coll(drop_hit_rect)

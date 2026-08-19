@@ -654,6 +654,37 @@ def contrast_ratio(c1: ColourRGBA, c2: ColourRGBA) -> float:
 	return (l1 + 0.05) / (l2 + 0.05)
 
 
+def ensure_contrast(colour: ColourRGBA, background: ColourRGBA, minimum: float = 4.5) -> ColourRGBA:
+	"""Return the colour, or the nearest variant of it that is readable.
+
+	Theme roles are corrected against the surface they were designed for. Where
+	a role is reused on a different surface the result can be unreadable, so the
+	drawing code corrects it against the surface actually behind the text. Hue
+	and saturation are kept and only lightness moves, falling back to black or
+	white when the hue cannot reach the target at any lightness.
+	"""
+	if contrast_ratio(colour, background) >= minimum:
+		return colour
+	hue, start, saturation = colorsys.rgb_to_hls(colour.r / 255, colour.g / 255, colour.b / 255)
+	# test_lumi is inverted: below 0.5 means a bright background, so darken. A
+	# mid-tone background may not have the headroom either way, so if the
+	# preferred direction cannot reach the target, try the other one.
+	preferred = -0.02 if test_lumi(background) < 0.5 else 0.02
+	for step in (preferred, -preferred):
+		lightness = start
+		for _step in range(50):
+			lightness = min(max(lightness + step, 0.0), 1.0)
+			red, green, blue = colorsys.hls_to_rgb(hue, lightness, saturation)
+			candidate = ColourRGBA(round(red * 255), round(green * 255), round(blue * 255), colour.a)
+			if contrast_ratio(candidate, background) >= minimum:
+				return candidate
+	# Nothing in this hue reaches the target, so take the most contrast there is.
+	return max(
+		(ColourRGBA(0, 0, 0, colour.a), ColourRGBA(255, 255, 255, colour.a)),
+		key=lambda fallback: contrast_ratio(fallback, background),
+	)
+
+
 def colour_value(c1: ColourRGBA) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1.r + c1.g + c1.b
