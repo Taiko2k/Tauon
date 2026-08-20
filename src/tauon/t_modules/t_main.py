@@ -212,7 +212,7 @@ from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
-from tauon.t_modules.t_phazor import Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
+from tauon.t_modules.t_phazor import DSD_FORMATS, Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
@@ -21003,12 +21003,52 @@ class Tauon:
 			logging.exception("Failed to query DSD direct support")
 			return False
 
+	def dsd_direct_device_supported(self) -> bool:
+		"""Whether the currently selected output device accepts a DSD stream.
+
+		Separate from :meth:`dsd_direct_supported`, which is about the build.
+		A device without native DSD input plays DSD as PCM with no error, so
+		the settings row says which of the two is standing in the way.
+		"""
+		probe = getattr(self.aud, "get_dsd_device_supported", None)
+		if probe is None:
+			return False
+		try:
+			return bool(probe())
+		except Exception:
+			logging.exception("Failed to query device DSD support")
+			return False
+
 	def set_dsd_direct(self, enabled: bool) -> None:
-		"""Apply the direct DSD preference. Takes effect from the next track load."""
+		"""Apply the direct DSD preference.
+
+		PHAzOR picks the output path when a track is loaded, so the switch would
+		otherwise look like it did nothing until the next track. Reopen a DSD
+		track that is already playing, at the position it had reached, so the
+		change is audible right away.
+		"""
 		self.prefs.dsd_direct = enabled
 		apply = getattr(self.aud, "config_set_dsd_direct", None)
 		if apply is not None:
 			apply(int(enabled))
+
+		track = self.pctl.playing_object()
+		if (
+			track is None
+			or track.is_cue
+			or track.is_network
+			or track.file_ext.lower() not in DSD_FORMATS
+			or self.pctl.playing_state != PlayingState.PLAYING
+		):
+			return
+		resume_time = self.pctl.playing_time
+		self.pctl.target_open = track.fullpath
+		self.pctl.target_object = track
+		self.pctl.jump_time = resume_time
+		self.pctl.decode_time = resume_time
+		self.pctl.playerCommand = "open"
+		self.pctl.playerSubCommand = "now"
+		self.pctl.playerCommandReady = True
 
 	def bg_save(self) -> None:
 		self.worker_save_state = True
@@ -30589,8 +30629,13 @@ class Over:
 		# PulseAudio, Windows and macOS rather than disappearing, which would
 		# leave no hint the feature exists.
 		dsd_supported = self.tauon.dsd_direct_supported()
-		if dsd_supported:
+		if dsd_supported and self.tauon.dsd_direct_device_supported():
 			dsd_note = _("Bypasses volume, EQ and ReplayGain.")
+		elif dsd_supported:
+			# The build can do it, the chosen DAC cannot. Worth saying plainly:
+			# such a device plays DSD as PCM without complaining, so the switch
+			# would otherwise look like it did nothing.
+			dsd_note = _("This device has no native DSD input.")
 		elif self.platform_system == "Linux":
 			# Switching audio stack is something the user can actually act on
 			dsd_note = _("Requires the PipeWire backend.")

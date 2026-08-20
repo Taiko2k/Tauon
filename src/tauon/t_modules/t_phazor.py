@@ -53,6 +53,10 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_main import GuiVar, PlayerCtl, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
 
+# Containers that can be handed to the device as raw DSD instead of being
+# decoded to PCM. Only checked when the direct DSD preference is on.
+DSD_FORMATS = {"dsf", "dff"}
+
 
 class FFRun:
 	def __init__(self, tauon: Tauon) -> None:
@@ -1388,6 +1392,7 @@ def player4(tauon: Tauon) -> None:
 
 	# Absent on PHAzOR builds without direct DSD support
 	dsd_direct_failed = getattr(aud, "get_dsd_direct_failed", None)
+	dsd_direct_active = getattr(aud, "get_dsd_direct_active", None)
 
 	while True:
 		# logging.error(aud.print_status())
@@ -1749,6 +1754,15 @@ def player4(tauon: Tauon) -> None:
 					or stream_url is not None
 					or cachement.get_file_cached_only(target_object) is not None
 				)
+				# A gapless handover swaps decoders underneath a buffer that is
+				# still playing. Raw DSD cannot cross one: the outgoing track's
+				# 1 bit stream is still queued, and the device has to be
+				# re-negotiated whenever DSD is on either side of the join. Send
+				# those through the ordinary stop/start path instead.
+				dsd_boundary = dsd_direct_active is not None and (
+					bool(dsd_direct_active())
+					or (prefs.dsd_direct and target_object.file_ext.lower() in DSD_FORMATS)
+				)
 				if (
 					tauon.player4_state == PlayerState.PLAYING
 					and length
@@ -1759,6 +1773,7 @@ def player4(tauon: Tauon) -> None:
 					and 0 < remain < 5.5
 					and not loaded_track.is_cue
 					and target_gapless_ready
+					and not dsd_boundary
 					and subcommand != "now"
 				):
 					logging.info("Transition gapless")
