@@ -49,6 +49,7 @@
 #ifdef PIPE
 	#include <pipewire/pipewire.h>
 	#include <spa/param/audio/format-utils.h>
+	#include <spa/param/audio/dsd.h>
 	#include <spa/pod/builder.h>
 	#include <spa/utils/result.h>
 #endif
@@ -282,6 +283,7 @@ int config_volume_power = 2;
 int config_feed_samplerate = 48000;
 int config_min_buffer = 30000;
 int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
+int config_dsd_direct = 0;  // Send DSD to the device untouched instead of decoding it to PCM
 
 #define EQ_BAND_COUNT 10
 #define EQ_AUTO_HEADROOM_MARGIN_DB 1.0f
@@ -358,6 +360,7 @@ enum decoder_types {
 	FEED,
 	WAVPACK,
 	GME,
+	DSD_RAW,
 };
 
 enum result_status_enum {
@@ -394,6 +397,13 @@ int flac_got_rate = 0;
 	struct pw_stream *global_stream;
 	int enum_done = 0;
 	int pipe_set_samplerate = 48000;
+	// Layout the device negotiated for a DSD stream. `interleave` follows the
+	// SPA convention: magnitude is how many bytes of one channel are grouped,
+	// negative means those bytes are stored back to front. Defaults match
+	// DSD_U32_BE, which is what most USB DACs advertise.
+	volatile int pipe_dsd_streaming = 0;   // the connected stream is carrying DSD
+	int pipe_dsd_interleave = 4;
+	int pipe_dsd_lsb = 0;
 	// Last rate we asked the device to re-clock to, so we request each rate at
 	// most once and never spin in pump_decode when the device can't comply.
 	int pipe_requested_rate = 0;
@@ -560,6 +570,11 @@ void buff_reset() {
 	high = 0;
 	watermark = high_mark;
 }
+
+// Fill of whichever buffer is actually feeding the device. Direct DSD has its
+// own ring and never puts anything in the float buffers, so the plain
+// get_buff_fill() reads as permanently empty on that path.
+int pending_output_fill();
 
 // Cross-compatibility -------------------------------------------
 
@@ -1381,6 +1396,373 @@ FILE* mod_file = 0;
 openmpt_module* mod = 0;
 
 
+// Direct DSD related ------------------------------------------------
+//
+// When the user enables direct DSD output and the backend can carry it, DSF
+// and DSDIFF files are demuxed here and their 1 bit stream is handed to the
+// device untouched. Nothing in the normal pipeline can be applied to DSD, so
+// this path deliberately bypasses the float mixing buffers, the resampler,
+// ReplayGain, the EQ and the fades. Every other backend keeps decoding DSD to
+// PCM with FFmpeg as before.
+//
+// Internally the stream is kept in a canonical layout: one planar buffer per
+// channel, most significant bit first. It is converted to whatever byte
+// grouping and bit order the device negotiated only on the way out.
+
+#define DSD_MAX_CHANNELS 2
+#define DSD_BUFF_SIZE (2 * 1024 * 1024)  // Per channel. ~5.9s of DSD64, ~0.7s of DSD512
+
+struct dsd_stream_info {
+	int is_dff;             // 0 = DSF (planar, lsb first), 1 = DSDIFF (interleaved, msb first)
+	int channels;
+	uint32_t rate;          // DSD bit rate per channel, e.g. 2822400 for DSD64
+	int lsb_first;          // Bit order as stored in the file
+	uint32_t block_size;    // DSF block size per channel, normally 4096
+	int64_t data_start;     // Offset of the first audio byte
+	int64_t data_bytes;     // Total audio bytes for all channels
+	int64_t data_pos;       // Audio bytes consumed so far
+	int64_t sample_bytes;   // Exact audio bytes per channel, excluding DSF block padding
+};
+
+struct dsd_stream_info dsd_info;
+int dsd_active = 0;             // The loaded track is being played as raw DSD
+int dsd_runtime_disabled = 0;   // Set after the device refuses a DSD stream
+int dsd_reconnect_pending = 0;  // Guards against re-entering the format switch
+int dsd_negotiation_failed = 0; // Latched for the UI so it can explain the fallback
+
+// Only the PipeWire backend can carry a DSD stream to the device. Everywhere
+// else the preference is ignored and DSD keeps going out as PCM.
+int dsd_direct_supported() {
+	#ifdef PIPE
+		return 1;
+	#else
+		return 0;
+	#endif
+}
+
+static int dsd_direct_wanted() {
+	// Once a device has refused a DSD stream, stop offering it. Turning the
+	// preference off and on again clears this, as does restarting.
+	return config_dsd_direct && dsd_direct_supported() && !dsd_runtime_disabled;
+}
+
+// Planar ring buffer, one per channel. All channels share the indices since
+// they always advance together. Allocated on the first direct DSD track so
+// builds that can never use it pay nothing.
+unsigned char *dsd_buf[DSD_MAX_CHANNELS] = { NULL };
+int dsd_low = 0;
+int dsd_high = 0;
+int64_t dsd_bytes_played = 0;  // Per channel, for position reporting
+
+// Staging area for one read of interleaved DSDIFF data before it is split out
+// into the planar ring
+unsigned char dsd_read_buf[16384];
+
+unsigned char dsd_bit_reverse[256];
+
+void dsd_build_bit_reverse_table() {
+	for (int i = 0; i < 256; i++) {
+		unsigned char v = (unsigned char) i;
+		v = (unsigned char) (((v & 0xF0) >> 4) | ((v & 0x0F) << 4));
+		v = (unsigned char) (((v & 0xCC) >> 2) | ((v & 0x33) << 2));
+		v = (unsigned char) (((v & 0xAA) >> 1) | ((v & 0x55) << 1));
+		dsd_bit_reverse[i] = v;
+	}
+}
+
+static int dsd_alloc() {
+	for (int c = 0; c < DSD_MAX_CHANNELS; c++) {
+		if (dsd_buf[c] == NULL) {
+			dsd_buf[c] = malloc(DSD_BUFF_SIZE);
+			if (dsd_buf[c] == NULL) {
+				log_msg(LOG_ERROR, "pa: Could not allocate DSD buffer");
+				return 1;
+			}
+		}
+	}
+	return 0;
+}
+
+int dsd_buff_fill() {
+	if (dsd_low <= dsd_high) return dsd_high - dsd_low;
+	return DSD_BUFF_SIZE - dsd_low + dsd_high;
+}
+
+int dsd_buff_space() {
+	return DSD_BUFF_SIZE - dsd_buff_fill() - 1;
+}
+
+void dsd_buff_reset() {
+	dsd_low = 0;
+	dsd_high = 0;
+}
+
+int pending_output_fill() {
+	return dsd_active ? dsd_buff_fill() : get_buff_fill();
+}
+
+// Read a big endian 64 bit chunk length, as used by DSDIFF
+static int64_t dsd_be64(const unsigned char *p) {
+	int64_t v = 0;
+	for (int i = 0; i < 8; i++) v = (v << 8) | p[i];
+	return v;
+}
+
+static uint32_t dsd_le32(const unsigned char *p) {
+	return ((uint32_t) p[0]) | ((uint32_t) p[1] << 8) | ((uint32_t) p[2] << 16) | ((uint32_t) p[3] << 24);
+}
+
+static int64_t dsd_le64(const unsigned char *p) {
+	int64_t v = 0;
+	for (int i = 7; i >= 0; i--) v = (v << 8) | p[i];
+	return v;
+}
+
+// Parse a DSF header. The byte stream must already be open and positioned at 0.
+// Returns 0 on success.
+static int dsd_open_dsf(struct dsd_stream_info *info) {
+	unsigned char hdr[28];
+	unsigned char fmt[52];
+
+	if (bs_seek_abs(0) != 0) return 1;
+	if (bs_read_exact(hdr, sizeof(hdr)) != (int) sizeof(hdr)) return 1;
+	if (memcmp(hdr, "DSD ", 4) != 0) return 1;
+
+	// The fmt chunk follows the 28 byte DSD chunk
+	if (bs_seek_abs(28) != 0) return 1;
+	if (bs_read_exact(fmt, sizeof(fmt)) != (int) sizeof(fmt)) return 1;
+	if (memcmp(fmt, "fmt ", 4) != 0) return 1;
+
+	uint32_t format_id = dsd_le32(fmt + 16);
+	if (format_id != 0) {
+		log_msg(LOG_ERROR, "pa: DSF is not raw DSD (format id %u)", format_id);
+		return 1;
+	}
+
+	info->is_dff = 0;
+	info->lsb_first = 1;  // DSF stores the earliest sample in the least significant bit
+	info->channels = (int) dsd_le32(fmt + 24);
+	info->rate = dsd_le32(fmt + 28);
+	uint32_t bits = dsd_le32(fmt + 32);
+	int64_t samples = dsd_le64(fmt + 36);
+	info->block_size = dsd_le32(fmt + 44);
+
+	if (bits != 1) {
+		log_msg(LOG_ERROR, "pa: DSF bits per sample is %u, expected 1", bits);
+		return 1;
+	}
+	if (info->channels < 1 || info->channels > DSD_MAX_CHANNELS) {
+		log_msg(LOG_ERROR, "pa: DSF has %d channels, only up to %d supported", info->channels, DSD_MAX_CHANNELS);
+		return 1;
+	}
+	if (info->block_size == 0 || info->block_size > sizeof(dsd_read_buf)) {
+		log_msg(LOG_ERROR, "pa: DSF block size %u out of range", info->block_size);
+		return 1;
+	}
+
+	// The data chunk follows the fmt chunk
+	unsigned char data_hdr[12];
+	if (bs_seek_abs(28 + 52) != 0) return 1;
+	if (bs_read_exact(data_hdr, sizeof(data_hdr)) != (int) sizeof(data_hdr)) return 1;
+	if (memcmp(data_hdr, "data", 4) != 0) return 1;
+
+	int64_t data_chunk_size = dsd_le64(data_hdr + 4);
+	info->data_start = 28 + 52 + 12;
+	info->data_bytes = data_chunk_size - 12;
+	info->data_pos = 0;
+	// Samples are padded out to whole blocks, so the useful length is shorter
+	// than the chunk. Track it so playback stops at the real end.
+	info->sample_bytes = samples / 8;
+	if (info->sample_bytes <= 0 || info->sample_bytes * info->channels > info->data_bytes) {
+		info->sample_bytes = info->data_bytes / info->channels;
+	}
+
+	log_msg(LOG_INFO, "pa: DSF %d ch, %u Hz DSD, block %u", info->channels, info->rate, info->block_size);
+	return 0;
+}
+
+// Parse a DSDIFF (.dff) header. Only uncompressed DSD is handled here; DST
+// compressed files stay on the FFmpeg path since unpacking them would mean
+// decoding, which defeats the point of a direct path.
+static int dsd_open_dff(struct dsd_stream_info *info) {
+	unsigned char hdr[16];
+
+	if (bs_seek_abs(0) != 0) return 1;
+	if (bs_read_exact(hdr, 16) != 16) return 1;
+	if (memcmp(hdr, "FRM8", 4) != 0 || memcmp(hdr + 12, "DSD ", 4) != 0) return 1;
+
+	info->is_dff = 1;
+	info->lsb_first = 0;  // DSDIFF stores the earliest sample in the most significant bit
+	info->channels = 0;
+	info->rate = 0;
+	info->block_size = 0;
+	info->data_start = 0;
+	info->data_bytes = 0;
+	info->data_pos = 0;
+
+	int compressed = 0;
+	int64_t pos = 16;  // First chunk after FRM8 header and the "DSD " form type
+	int64_t file_len = bs_length();
+
+	// Walk the top level chunks looking for PROP (which carries the format)
+	// and DSD (the audio itself)
+	for (int guard = 0; guard < 64; guard++) {
+		// 12 byte chunk header (4 byte id, 8 byte length) plus the first 4
+		// payload bytes, which is where the form/property type lives
+		unsigned char ch[16];
+		if (bs_seek_abs(pos) != 0) break;
+		if (bs_read_exact(ch, 16) != 16) break;
+		int64_t len = dsd_be64(ch + 4);
+		if (len < 0) break;
+
+		if (memcmp(ch, "PROP", 4) == 0 && memcmp(ch + 12, "SND ", 4) == 0) {
+			// Walk the property chunks nested inside PROP, which start after
+			// the PROP header and its 4 byte property type
+			int64_t p = pos + 16;
+			int64_t prop_end = pos + 12 + len;
+			while (p + 12 <= prop_end) {
+				unsigned char pc[16];
+				if (bs_seek_abs(p) != 0) break;
+				if (bs_read_exact(pc, 16) != 16) break;
+				int64_t plen = dsd_be64(pc + 4);
+				if (plen < 0) break;
+
+				if (memcmp(pc, "FS  ", 4) == 0) {
+					info->rate = ((uint32_t) pc[12] << 24) | ((uint32_t) pc[13] << 16)
+						| ((uint32_t) pc[14] << 8) | (uint32_t) pc[15];
+				} else if (memcmp(pc, "CHNL", 4) == 0) {
+					info->channels = (pc[12] << 8) | pc[13];
+				} else if (memcmp(pc, "CMPR", 4) == 0) {
+					// Compression type is a four character code; "DSD " means
+					// uncompressed, "DST " means DST compressed
+					if (memcmp(pc + 12, "DSD ", 4) != 0) compressed = 1;
+				}
+				p += 12 + plen + (plen & 1);  // chunks are padded to even length
+			}
+		} else if (memcmp(ch, "DSD ", 4) == 0) {
+			info->data_start = pos + 12;
+			info->data_bytes = len;
+		} else if (memcmp(ch, "DST ", 4) == 0) {
+			compressed = 1;
+		}
+
+		pos += 12 + len + (len & 1);
+		if (file_len > 0 && pos >= file_len) break;
+	}
+
+	if (compressed) {
+		log_msg(LOG_INFO, "pa: DSDIFF is DST compressed, not eligible for direct DSD");
+		return 1;
+	}
+	if (info->rate == 0 || info->channels < 1 || info->channels > DSD_MAX_CHANNELS || info->data_bytes <= 0) {
+		log_msg(LOG_ERROR, "pa: DSDIFF header incomplete (rate %u, %d ch)", info->rate, info->channels);
+		return 1;
+	}
+
+	info->sample_bytes = info->data_bytes / info->channels;
+	log_msg(LOG_INFO, "pa: DSDIFF %d ch, %u Hz DSD", info->channels, info->rate);
+	return 0;
+}
+
+// Append one channel's worth of bytes to the planar ring, normalising to msb
+// first so the output stage only has to think about the device's layout
+static void dsd_push_channel(int ch, const unsigned char *src, int n, int lsb_first) {
+	int at = dsd_high;
+	for (int i = 0; i < n; i++) {
+		dsd_buf[ch][at] = lsb_first ? dsd_bit_reverse[src[i]] : src[i];
+		at++;
+		if (at >= DSD_BUFF_SIZE) at = 0;
+	}
+}
+
+// Pull one block of audio out of the file and into the ring. Returns the number
+// of bytes per channel added, or 0 at end of stream.
+static int dsd_fill_buffer() {
+	int space = dsd_buff_space();
+	if (space < 4096) return -1;  // Nothing to do right now, try again later
+
+	int64_t remaining = dsd_info.data_bytes - dsd_info.data_pos;
+	if (remaining <= 0) return 0;
+
+	if (dsd_info.is_dff) {
+		// Interleaved, one byte per channel in turn
+		int want = (int) sizeof(dsd_read_buf);
+		if (want > space * dsd_info.channels) want = space * dsd_info.channels;
+		if ((int64_t) want > remaining) want = (int) remaining;
+		want -= want % dsd_info.channels;
+		if (want <= 0) return -1;
+
+		if (bs_seek_abs(dsd_info.data_start + dsd_info.data_pos) != 0) return 0;
+		int got = bs_read_exact(dsd_read_buf, want);
+		if (got < dsd_info.channels) return 0;
+		got -= got % dsd_info.channels;
+
+		int per_channel = got / dsd_info.channels;
+		for (int c = 0; c < dsd_info.channels; c++) {
+			int at = dsd_high;
+			for (int i = 0; i < per_channel; i++) {
+				unsigned char v = dsd_read_buf[i * dsd_info.channels + c];
+				dsd_buf[c][at] = dsd_info.lsb_first ? dsd_bit_reverse[v] : v;
+				at++;
+				if (at >= DSD_BUFF_SIZE) at = 0;
+			}
+		}
+		dsd_info.data_pos += got;
+		dsd_high = (dsd_high + per_channel) % DSD_BUFF_SIZE;
+		return per_channel;
+	}
+
+	// DSF: one block per channel in turn, so read a whole block group
+	uint32_t block = dsd_info.block_size;
+	if ((int) block > space) return -1;
+	if ((int64_t) block * dsd_info.channels > remaining) {
+		// Final partial group
+		block = (uint32_t) (remaining / dsd_info.channels);
+		if (block == 0) return 0;
+	}
+
+	for (int c = 0; c < dsd_info.channels; c++) {
+		int64_t at = dsd_info.data_start + dsd_info.data_pos + (int64_t) c * dsd_info.block_size;
+		if (bs_seek_abs(at) != 0) return 0;
+		int got = bs_read_exact(dsd_read_buf, (int) block);
+		if (got <= 0) return 0;
+		dsd_push_channel(c, dsd_read_buf, got, dsd_info.lsb_first);
+		if (c == dsd_info.channels - 1) {
+			dsd_high = (dsd_high + got) % DSD_BUFF_SIZE;
+			dsd_info.data_pos += (int64_t) dsd_info.block_size * dsd_info.channels;
+			return got;
+		}
+	}
+	return 0;
+}
+
+// Convert bytes_per_channel of planar msb first DSD into the layout the device
+// asked for. `interleave` is the SPA convention: the magnitude is how many
+// bytes of one channel are grouped together, a negative value means those
+// bytes are stored in reverse order. Returns bytes written to dest.
+int dsd_pack(unsigned char *dest, int bytes_per_channel, int channels, int interleave, int bitorder_lsb) {
+	int group = interleave < 0 ? -interleave : interleave;
+	if (group < 1) group = 1;
+	// Only whole groups can be emitted
+	bytes_per_channel -= bytes_per_channel % group;
+	if (bytes_per_channel <= 0) return 0;
+
+	int out = 0;
+	int groups = bytes_per_channel / group;
+	for (int g = 0; g < groups; g++) {
+		for (int c = 0; c < channels; c++) {
+			for (int b = 0; b < group; b++) {
+				// For a reversed group take the bytes back to front
+				int src_b = interleave < 0 ? (group - 1 - b) : b;
+				int idx = (dsd_low + g * group + src_b) % DSD_BUFF_SIZE;
+				unsigned char v = dsd_buf[c][idx];
+				dest[out++] = bitorder_lsb ? dsd_bit_reverse[v] : v;
+			}
+		}
+	}
+	return out;
+}
+
 // GME related -------------------
 
 Music_Emu* emu;
@@ -2063,6 +2445,11 @@ void stop_decoder() {
 		case WAVPACK:
 			WavpackCloseFile(wpc);
 			break;
+		case DSD_RAW:
+			dsd_active = 0;
+			dsd_buff_reset();
+			bs_close();
+			break;
 		case MPG:
 			mpg123_close(mh);
 			break;
@@ -2362,6 +2749,46 @@ static inline void limiter_process_stereo(float *l, float *r) {
 	else if (*r < -1.0f) *r = -1.0f;
 }
 
+// Output side of the direct DSD path. Fills up to max_bytes of the device
+// buffer in the negotiated layout and returns how many bytes were written.
+// Nothing here touches volume, ReplayGain, the EQ or the fades: a DSD stream
+// has to reach the DAC bit for bit or it is just noise.
+int get_dsd_audio(int max_bytes, void *dest, int interleave, int bitorder_lsb) {
+	int group = interleave < 0 ? -interleave : interleave;
+	if (group < 1) group = 1;
+
+	pthread_mutex_lock(&buffer_mutex);
+
+	int channels = dsd_info.channels > 0 ? dsd_info.channels : 2;
+	int frame = group * channels;  // bytes emitted per group of source bytes
+	int available = dsd_buff_fill();
+	int want_groups = max_bytes / frame;
+	int have_groups = available / group;
+	int groups = want_groups < have_groups ? want_groups : have_groups;
+
+	if (groups <= 0 || (mode != PLAYING && mode != ENDING)) {
+		pthread_mutex_unlock(&buffer_mutex);
+		// Silence in DSD is an alternating bit pattern, not zeroes. Zeroes
+		// would be a DC offset that some DACs reproduce as a thump.
+		memset(dest, 0x69, max_bytes);
+		return max_bytes;
+	}
+
+	int bytes_per_channel = groups * group;
+	int written = dsd_pack((unsigned char *) dest, bytes_per_channel, channels, interleave, bitorder_lsb);
+
+	dsd_low = (dsd_low + bytes_per_channel) % DSD_BUFF_SIZE;
+	dsd_bytes_played += bytes_per_channel;
+
+	// Out of buffered audio and the file is finished, so wind the track up
+	if (dsd_buff_fill() == 0 && dsd_info.data_pos >= dsd_info.data_bytes && mode == PLAYING) {
+		mode = ENDING;
+	}
+
+	pthread_mutex_unlock(&buffer_mutex);
+	return written;
+}
+
 int get_audio(int max, float* buff) {
 		int b = 0;
 
@@ -2548,6 +2975,24 @@ int get_audio(int max, float* buff) {
 		buf = buffer->buffer;
 		data = &buf->datas[0];
 
+		if (pipe_dsd_streaming) {
+			// Raw DSD: bytes, not frames, and nothing may be applied to them
+			uint32_t max = data->maxsize;
+			int group = pipe_dsd_interleave < 0 ? -pipe_dsd_interleave : pipe_dsd_interleave;
+			int channels = dsd_info.channels > 0 ? dsd_info.channels : 2;
+			uint32_t unit = (uint32_t) (group * channels);
+			if (buffer->requested > 0 && buffer->requested * unit < max) {
+				max = (uint32_t) buffer->requested * unit;
+			}
+			max -= max % unit;
+			data->chunk->offset = 0;
+			data->chunk->stride = (int32_t) unit;
+			data->chunk->size = (uint32_t) get_dsd_audio(
+				(int) max, data->data, pipe_dsd_interleave, pipe_dsd_lsb);
+			pw_stream_queue_buffer(global_stream, buffer);
+			return;
+		}
+
 		// `requested` is the number of source frames wanted by PipeWire's
 		// resampler, not a guarantee that the mapped buffer is that large.
 		// Respect the actual capacity or high-rate streams can advance our
@@ -2580,6 +3025,16 @@ int get_audio(int max, float* buff) {
 			// Ignore the transient disconnect we trigger ourselves during a
 			// rate switch; only a genuine, unexpected drop means we're lost.
 			if (pipe_expecting_disconnect) return;
+			if (dsd_active && !pipe_dsd_streaming) {
+				// The sink would not take a DSD stream. Most likely the DAC
+				// has no native DSD, or another app is holding the device in
+				// PCM mode. Give up on direct output and let the track play
+				// as PCM instead of failing outright.
+				log_msg(LOG_ERROR, "ph: Device refused a direct DSD stream (%s), falling back to PCM",
+					error ? error : "no error");
+				dsd_runtime_disabled = 1;
+				dsd_negotiation_failed = 1;
+			}
 			log_msg(LOG_ERROR, "PipeWire stream lost (%s)", error ? error : "no error");
 			pulse_connected = false;
 		}
@@ -2606,7 +3061,26 @@ int get_audio(int max, float* buff) {
 
 		uint32_t media_type, media_subtype;
 		if (spa_format_parse(param, &media_type, &media_subtype) < 0) return;
-		if (media_type != SPA_MEDIA_TYPE_audio || media_subtype != SPA_MEDIA_SUBTYPE_raw) return;
+		if (media_type != SPA_MEDIA_TYPE_audio) return;
+
+		if (media_subtype == SPA_MEDIA_SUBTYPE_dsd) {
+			struct spa_audio_info_dsd dsd = { 0 };
+			if (spa_format_audio_dsd_parse(param, &dsd) < 0) {
+				log_msg(LOG_ERROR, "ph: Could not parse negotiated DSD format");
+				return;
+			}
+			pipe_dsd_interleave = dsd.interleave ? dsd.interleave : 1;
+			pipe_dsd_lsb = (dsd.bitorder == SPA_PARAM_BITORDER_lsb) ? 1 : 0;
+			pipe_dsd_streaming = 1;
+			// The DSD rate is in bytes per second, which is what we already
+			// clock the decoder at, so there is nothing to re-rate here
+			log_msg(LOG_INFO, "ph: PipeWire negotiated DSD, %u B/s, %u ch, interleave %d, %s first",
+				dsd.rate, dsd.channels, pipe_dsd_interleave, pipe_dsd_lsb ? "lsb" : "msb");
+			return;
+		}
+
+		pipe_dsd_streaming = 0;
+		if (media_subtype != SPA_MEDIA_SUBTYPE_raw) return;
 
 		struct spa_audio_info_raw info = { 0 };
 		if (spa_format_audio_raw_parse(param, &info) < 0) return;
@@ -2784,6 +3258,24 @@ void decode_seek(int abs_ms, int sample_rate) {
 		case WAVPACK:
 			WavpackSeekSample64(wpc, (int64_t) sample_rate * (abs_ms / 1000.0));
 			break;
+		case DSD_RAW: {
+			// Seek by byte. DSF is stored a block at a time per channel, so
+			// land on a block boundary or the channels would be skewed.
+			int64_t byte = ((int64_t) (dsd_info.rate / 8) * abs_ms) / 1000;
+			if (!dsd_info.is_dff && dsd_info.block_size)
+				byte -= byte % dsd_info.block_size;
+			if (byte < 0) byte = 0;
+			if (byte > dsd_info.sample_bytes) byte = dsd_info.sample_bytes;
+			// The output callback reads exactly this state, so unlike the
+			// other codecs the seek has to be done under the buffer lock or
+			// it can hand out bytes from the old position.
+			pthread_mutex_lock(&buffer_mutex);
+			dsd_info.data_pos = byte * dsd_info.channels;
+			dsd_bytes_played = byte;
+			dsd_buff_reset();
+			pthread_mutex_unlock(&buffer_mutex);
+			break;
+		}
 		case MPG:
 			mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
 			break;
@@ -2854,15 +3346,46 @@ int disconnect_pulse() {
 		spa_pod_builder_init(&b, buffer, sizeof(buffer));
 
 		// Build audio format parameters
-		params[0] = spa_format_audio_raw_build(
-			&b, SPA_PARAM_EnumFormat,
-			&SPA_AUDIO_INFO_RAW_INIT(
-			.format = SPA_AUDIO_FORMAT_F32,
-			.channels = 2,
-			.rate = pipe_set_samplerate));
-		if (params[0] == NULL) {
-			log_msg(LOG_ERROR, "Failed to build audio format parameters");
-			return -EINVAL;
+		if (dsd_active) {
+			// Offer the DSD stream itself. Nothing in the graph can convert
+			// DSD, so this only negotiates against a sink whose hardware
+			// takes it natively; if it cannot, the connect fails and we fall
+			// back to decoding this track as PCM.
+			//
+			// The rate here is bytes per second, not bits: 352800 is DSD64.
+			// interleave and bitorder are left for the device to choose, and
+			// whatever it picks is read back in on_param_changed.
+			// Mirrors what pw-cat offers: channels, rate and a channel map,
+			// with interleave and bitorder left unset so the device picks
+			// whatever grouping its hardware actually wants.
+			struct spa_audio_info_dsd dsd_info_out;
+			spa_zero(dsd_info_out);
+			dsd_info_out.channels = (uint32_t) (dsd_info.channels > 0 ? dsd_info.channels : 2);
+			dsd_info_out.rate = (uint32_t) (dsd_info.rate / 8);
+			if (dsd_info_out.channels == 1) {
+				dsd_info_out.position[0] = SPA_AUDIO_CHANNEL_MONO;
+			} else {
+				dsd_info_out.position[0] = SPA_AUDIO_CHANNEL_FL;
+				dsd_info_out.position[1] = SPA_AUDIO_CHANNEL_FR;
+			}
+			params[0] = spa_format_audio_dsd_build(&b, SPA_PARAM_EnumFormat, &dsd_info_out);
+			if (params[0] == NULL) {
+				log_msg(LOG_ERROR, "Failed to build DSD format parameters");
+				return -EINVAL;
+			}
+			log_msg(LOG_INFO, "ph: Offering direct DSD, %u bytes/s, %u ch",
+				dsd_info_out.rate, dsd_info_out.channels);
+		} else {
+			params[0] = spa_format_audio_raw_build(
+				&b, SPA_PARAM_EnumFormat,
+				&SPA_AUDIO_INFO_RAW_INIT(
+				.format = SPA_AUDIO_FORMAT_F32,
+				.channels = 2,
+				.rate = pipe_set_samplerate));
+			if (params[0] == NULL) {
+				log_msg(LOG_ERROR, "Failed to build audio format parameters");
+				return -EINVAL;
+			}
 		}
 
 		// Select the appropriate device
@@ -2894,7 +3417,12 @@ int disconnect_pulse() {
 		// the device re-clocks instead of resampling us. Without this the format
 		// rate alone just gets adapted to the running graph rate. When resampling
 		// is allowed, clear it so we don't disturb the shared graph rate.
-		if (config_resample == 0) {
+		if (dsd_active) {
+			// Leave the graph rate alone. A DSD stream is passthrough, so the
+			// sink takes the rate from the negotiated format; pw-cat does not
+			// set this either and forcing it risks disturbing the graph.
+			pw_properties_set(mutable_props, PW_KEY_NODE_RATE, NULL);
+		} else if (config_resample == 0) {
 			pw_properties_setf(mutable_props, PW_KEY_NODE_RATE, "1/%d", pipe_set_samplerate);
 		} else {
 			pw_properties_set(mutable_props, PW_KEY_NODE_RATE, NULL);
@@ -3223,11 +3751,12 @@ int load_next_inner() {
 		log_msg(LOG_INFO, "Detected wavpack");
 
 	} else if (memcmp(peak, "DSD ", 4) == 0) {
-		// DSD is decoded to PCM by FFmpeg, at an eighth of the DSD bit rate
-		codec = FFMPEG;
+		// With direct output the 1 bit stream goes to the device untouched,
+		// otherwise FFmpeg decodes it to PCM at an eighth of the DSD bit rate
+		codec = dsd_direct_wanted() ? DSD_RAW : FFMPEG;
 		log_msg(LOG_INFO, "Detected DSF");
 	} else if (memcmp(peak, "FRM8", 4) == 0) {
-		codec = FFMPEG;
+		codec = dsd_direct_wanted() ? DSD_RAW : FFMPEG;
 		log_msg(LOG_INFO, "Detected DSDIFF");
 	} else if (memcmp(peak, "\x49\x44\x33", 3) == 0) {
 		int id3_size = (peak[6] << 21) | (peak[7] << 14) | (peak[8] << 7) | peak[9];
@@ -3344,6 +3873,41 @@ int load_next_inner() {
 	}
 
 	// Start decoders
+	if (codec == DSD_RAW) {
+		// Parse the container ourselves; FFmpeg cannot help here because it
+		// only ever hands back PCM. If anything about the file rules out a
+		// direct path (DST compression, too many channels, a malformed
+		// header) quietly fall back to decoding it as PCM.
+		int failed = (memcmp(peak, "FRM8", 4) == 0) ? dsd_open_dff(&dsd_info) : dsd_open_dsf(&dsd_info);
+		if (failed) {
+			log_msg(LOG_INFO, "pa: Falling back to PCM decode for this DSD file");
+			codec = FFMPEG;
+		} else if (dsd_alloc()) {
+			codec = FFMPEG;
+		} else {
+			pthread_mutex_lock(&buffer_mutex);
+			dsd_buff_reset();
+			dsd_bytes_played = 0;
+			dsd_active = 1;
+			// The device is clocked in bytes per second, not bits
+			sample_rate_src = (int) (dsd_info.rate / 8);
+			src_channels = dsd_info.channels;
+			pthread_mutex_unlock(&buffer_mutex);
+
+			if (load_target_seek > 0) {
+				int64_t byte = ((int64_t) load_target_seek * (dsd_info.rate / 8)) / 1000;
+				byte -= byte % (dsd_info.is_dff ? 1 : dsd_info.block_size);
+				if (byte < 0) byte = 0;
+				if (byte > dsd_info.sample_bytes) byte = dsd_info.sample_bytes;
+				dsd_info.data_pos = byte * dsd_info.channels;
+				dsd_bytes_played = byte;
+			}
+			load_target_seek = 0;
+			decoder_allocated = 1;
+			return 0;
+		}
+	}
+
 	if (codec == FFMPEG) {
 		// FFmpeg reads files and URLs itself
 		bs_close();
@@ -3793,6 +4357,49 @@ void pump_decode() {
 	#endif
 
 	#ifdef PIPE
+	// Moving between PCM and raw DSD changes the stream format, not just its
+	// rate, so the stream has to be torn down and reconnected. pipe_dsd_streaming
+	// is what the stream is actually carrying, set from the negotiated format.
+	if ((dsd_active != 0) != (pipe_dsd_streaming != 0) && !dsd_reconnect_pending) {
+		// Let any PCM already queued play out before changing format
+		if (!dsd_active && get_buff_fill() > 0) return;
+		log_msg(LOG_INFO, "ph: Reconnecting output for %s", dsd_active ? "direct DSD" : "PCM");
+		fade_fill = 0;
+		fade_position = 0;
+		reset_set_value = 0;
+		buff_reset();
+		// Force the rate logic below to re-request on the way back to PCM
+		pipe_requested_rate = 0;
+		if (dsd_active) pipe_set_samplerate = (int) (dsd_info.rate / 8);
+		dsd_reconnect_pending = 1;
+		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+		dsd_reconnect_pending = 0;
+		// If the device would not take DSD the state callback has flagged it
+		// by now, so reopen this track on the PCM decoder instead
+		if (dsd_active && !pipe_dsd_streaming && dsd_negotiation_failed) {
+			// Read the position while the DSD path still owns it, so playback
+			// resumes where it left off rather than from the start
+			int resume_ms = get_position_ms();
+			stop_decoder();  // clears dsd_active and closes the byte stream
+			load_target_seek = resume_ms;
+			// dsd_runtime_disabled is set, so this comes back as FFMPEG
+			if (load_next() != 0) {
+				log_msg(LOG_ERROR, "ph: PCM fallback reload failed");
+				mode = STOPPED;
+				return;
+			}
+			// Bring the stream back up in PCM form. The rate block below only
+			// fires when resampling is disabled, so do it unconditionally here.
+			pipe_requested_rate = sample_rate_src;
+			pipe_set_samplerate = sample_rate_src;
+			pipe_apply_output_rate(sample_rate_src);
+			dsd_reconnect_pending = 1;
+			pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+			dsd_reconnect_pending = 0;
+		}
+		return;
+	}
+
 	// Re-clock the device to the track's native rate once per rate. If the
 	// device honours it, on_param_changed leaves sample_rate_out == src and we
 	// pass through untouched; if it can't, sample_rate_out reflects the real
@@ -4022,6 +4629,14 @@ void pump_decode() {
 			pthread_mutex_unlock(&buffer_mutex);
 			if (done == 0) decoder_eos();
 		}
+	} else if (codec == DSD_RAW) {
+
+		pthread_mutex_lock(&buffer_mutex);
+		int got = dsd_fill_buffer();
+		pthread_mutex_unlock(&buffer_mutex);
+		// -1 just means the ring is full for now, which is not end of stream
+		if (got == 0) decoder_eos();
+
 	} else if (codec == FFMPEG) {
 
 		int b = 0;
@@ -4184,7 +4799,7 @@ void *main_loop(void *thread_id) {
 			switch (command) {
 
 				case PAUSE:
-					if (mode == PLAYING || (mode == RAMP_DOWN && gate == 0)) {
+					if (mode == PLAYING || dsd_active || (mode == RAMP_DOWN && gate == 0)) {
 						mode = PAUSED;
 						//stop_out();
 						command = NONE;
@@ -4207,7 +4822,7 @@ void *main_loop(void *thread_id) {
 						// cancelled; ramp down rather than draining it all
 						mode = RAMP_DOWN;
 					}
-					if ((mode == RAMP_DOWN && (gate == 0 || get_buff_fill() == 0)) || mode == PAUSED) {
+					if ((mode == RAMP_DOWN && (gate == 0 || get_buff_fill() == 0)) || mode == PAUSED || dsd_active) {
 						end();
 					}
 					break;
@@ -4322,7 +4937,17 @@ void *main_loop(void *thread_id) {
 					gate = 0;
 				}
 			#endif
-			if (mode == PLAYING) {
+			if (mode == PLAYING && dsd_active) {
+				// The direct DSD path skips the ramp. A 1 bit stream cannot
+				// be faded, and nothing would drive the gate to zero anyway
+				// since the float buffers stay empty on this path.
+				decode_seek(seek_request_ms, sample_rate_src);
+				reset_set = false;
+				pthread_mutex_lock(&buffer_mutex);
+				command = NONE;
+				pthread_mutex_unlock(&buffer_mutex);
+
+			} else if (mode == PLAYING) {
 				mode = RAMP_DOWN;
 
 				//if (want_sample_rate > 0) decode_seek(seek_request_ms, want_sample_rate);
@@ -4367,22 +4992,26 @@ void *main_loop(void *thread_id) {
 		// transition cutover, the buffer still holds the previous track then.
 		if (mode == PLAYING && codec != FEED && !load_prepared) {
 			int idle_pumps = 0;
-			while (get_buff_fill() < BUFF_SAFE && mode != ENDING) {
+			while (mode != ENDING) {
+				// Stop once the buffer feeding the device has enough in it
+				if (dsd_active) {
+					if (dsd_buff_space() < (int) sizeof(dsd_read_buf)) break;
+				} else if (get_buff_fill() >= BUFF_SAFE) break;
 				// Wait for enough network data so decoding can't block
 				// the loop for long; commands stay responsive meanwhile
 				if (!bs_decode_ready()) break;
-				int before = get_buff_fill();
+				int before = pending_output_fill();
 				pump_decode();
 				// Headers/metadata produce no PCM, but a decoder that makes
 				// no progress at all must not starve command processing
-				if (get_buff_fill() == before) {
+				if (pending_output_fill() == before) {
 					idle_pumps++;
 					if (idle_pumps > 500) break;
 				} else idle_pumps = 0;
 			}
 		}
 
-		if (mode == ENDING && get_buff_fill() == 0) {
+		if (mode == ENDING && pending_output_fill() == 0) {
 			//log_msg(LOG_INFO, "pa: Buffer ran out at end of track");
 			end();
 		}
@@ -4461,6 +5090,7 @@ EXPORT int scan_devices() {
 
 EXPORT int init() {
 	//log_msg(LOG_INFO, "ph: PHAzOR starting up");
+	dsd_build_bit_reverse_table();
 	if (main_running == 0) {
 		main_running = 1;
 		pthread_t main_thread_id;
@@ -4685,6 +5315,12 @@ EXPORT void eq_reset() {
 }
 
 EXPORT int get_position_ms() {
+	if (dsd_active) {
+		// The DSD path never reaches the float buffers, so position comes
+		// from the bytes handed to the device rather than position_count
+		if (command == START || command == LOAD || dsd_info.rate == 0) return 0;
+		return (int) ((dsd_bytes_played / (double) (dsd_info.rate / 8)) * 1000.0);
+	}
 	if (command != START && command != LOAD && !reset_set && current_sample_rate > 0) {
 		return (int) ((position_count / (float) current_sample_rate) * 1000.0);
 	} else return 0;
@@ -4695,6 +5331,12 @@ EXPORT void set_position_ms(int ms) {
 }
 
 EXPORT int get_length_ms() {
+	if (dsd_active) {
+		// Kept separate from current_length_count, which is an int and would
+		// overflow on a long track at the higher DSD rates
+		if (dsd_info.rate == 0) return 0;
+		return (int) ((dsd_info.sample_bytes / (double) (dsd_info.rate / 8)) * 1000.0);
+	}
 	if (!reset_set && sample_rate_src > 0 && current_length_count > 0) {
 		return (int) ((current_length_count / (float) sample_rate_src) * 1000.0);
 	} else return 0;
@@ -4718,6 +5360,45 @@ EXPORT void config_set_resample(int n) {
 
 EXPORT void config_set_always_ffmpeg(int n) {
 	config_always_ffmpeg = n;
+}
+
+// Send DSD to the device untouched rather than decoding it to PCM. Applies
+// from the next track load; the current track keeps whatever path it started on.
+EXPORT void config_set_dsd_direct(int n) {
+	if (n != config_dsd_direct) dsd_runtime_disabled = 0;  // let the user retry
+	config_dsd_direct = n;
+}
+
+// Whether this build can do direct DSD at all. The UI greys the option out
+// when this is 0, which is every backend except PipeWire.
+EXPORT int get_dsd_direct_supported() {
+	return dsd_direct_supported();
+}
+
+// Whether the track playing right now is actually going out as raw DSD. This
+// is not the same as the preference: a DST compressed file, an unusual channel
+// count or a device that would not accept the format all fall back to PCM.
+EXPORT int get_dsd_direct_active() {
+	return dsd_active;
+}
+
+// DSD bit rate of the playing track, e.g. 2822400 for DSD64, else 0
+EXPORT int get_dsd_rate() {
+	return dsd_active ? (int) dsd_info.rate : 0;
+}
+
+// Raw DSD bytes per channel currently buffered. Diagnostics, and lets a test
+// wait for the ring to fill rather than guessing at a sleep.
+EXPORT int get_dsd_buffered_bytes() {
+	return dsd_active ? dsd_buff_fill() : 0;
+}
+
+// Latched when a device refused a DSD stream, so the UI can say why playback
+// went out as PCM. Reading it clears the latch.
+EXPORT int get_dsd_direct_failed() {
+	int v = dsd_negotiation_failed;
+	dsd_negotiation_failed = 0;
+	return v;
 }
 
 EXPORT void config_set_fade_duration(int ms) {

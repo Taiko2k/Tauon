@@ -1102,6 +1102,8 @@ def player4(tauon: Tauon) -> None:
 		aud.config_set_resample(prefs.avoid_resampling ^ True)
 		if hasattr(aud, "config_set_stream_buffer"):
 			aud.config_set_stream_buffer(prefs.stream_buffer)
+		if hasattr(aud, "config_set_dsd_direct"):
+			aud.config_set_dsd_direct(int(prefs.dsd_direct))
 		apply_eq_settings()
 
 	def normalise_eq_bands() -> list[float]:
@@ -1384,6 +1386,9 @@ def player4(tauon: Tauon) -> None:
 	chrome_cool_timer = Timer()
 	chrome_mode = False
 
+	# Absent on PHAzOR builds without direct DSD support
+	dsd_direct_failed = getattr(aud, "get_dsd_direct_failed", None)
+
 	while True:
 		# logging.error(aud.print_status())
 		time.sleep(0.016)
@@ -1398,6 +1403,15 @@ def player4(tauon: Tauon) -> None:
 
 		# Level meter
 		run_levels()
+
+		# PHAzOR latches a flag if a device turned down a direct DSD stream. It
+		# has already dropped the track back to PCM by then, so this is only to
+		# say why, and it reports once rather than on every DSD track.
+		if dsd_direct_failed is not None and dsd_direct_failed():
+			tauon.show_message(
+				_("This device does not accept direct DSD"),
+				_("Playing as PCM instead. Turn the setting off and on again to retry."),
+				mode="warning")
 
 		if chrome_mode:
 			if tauon.chrome is None:
