@@ -86,17 +86,18 @@
 
 	# Linux + macOS + Windows (MINGW64)
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/mingw64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"] },
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/mingw64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"], extra-compile-args = ["-D MINI"] },
 		# Set as optional to allow soft-failure, it's expected not to build on Windows/macOS, but we don't want to fail the entire build on it
 		# I have not found a better way to solve this, ideally we would somehow tag this as Linux-exclusive
-		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], optional = true },
+		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/usr/include/pipewire-0.3", "/usr/include/spa-0.2"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], extra-compile-args = ["-D PIPE"], optional = true },
 	]
 
 	package-dir = {"" = "src"}
 
 	# Should we care about these options or is it fine to omit them here?
-	#   -shared -o libphazor.so -fPIC -Wall -O3 -g #-Wextra
-	#   -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -DPIPE #-Wextra
+	# -D PIPE/-D MINI is needed for sure
+	#   -shared -o libphazor.so -fPIC -Wall -O3 -g -D MINI #-Wextra
+	#   -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -D PIPE #-Wextra
 
 	packages = [
 		"tauon",

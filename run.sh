@@ -102,7 +102,7 @@ compile_phazor() {
 		${opusfile_root_include} \
 		$(pkg-config --cflags --libs python3 samplerate wavpack opusfile vorbisfile libmpg123 flac libopenmpt libgme) \
 		${python_link_flags} \
-		-shared -o ${outFile} -fPIC -Wall -O3 -g
+		-shared -o ${outFile} -fPIC -Wall -O3 -g -D MINI
 	echo "Compiled as ${outFile}!"
 }
 
@@ -113,7 +113,7 @@ compile_phazor_pipewire() {
 	gcc \
 		src/phazor/kissfft/kiss_fftr.c src/phazor/kissfft/kiss_fft.c src/phazor/phazor.c \
 		$(pkg-config --cflags --libs python3 samplerate wavpack opusfile vorbisfile libmpg123 flac libopenmpt libgme libpipewire-0.3) \
-		-shared -o ${outFile} -fPIC -Wall -O3 -g -DPIPE
+		-shared -o ${outFile} -fPIC -Wall -O3 -g -D PIPE
 	echo "Compiled as ${outFile}!"
 }
 

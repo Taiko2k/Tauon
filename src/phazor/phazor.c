@@ -26,8 +26,6 @@
 //	#error "Phazor requires C23 or later."
 #endif
 
-#define MINI
-
 #ifdef WIN64
 	#include <windows.h>
 	#ifndef __MINGW64__
@@ -37,11 +35,16 @@
 	#include <unistd.h>
 #endif
 
-#ifdef PIPE
-	#undef MINI
+#if defined(PIPE) && defined(MINI)
+	#error "Only one backend can be selected!"
 #endif
-
-//#define MINI
+#ifdef PIPE
+	#pragma message("Building using PipeWire as the backend.")
+#elif defined(MINI)
+	#pragma message("Building using miniaudio as the backend.")
+#else
+	#error "You need to select a backend with '-D MINI' or '-D PIPE'!"
+#endif
 
 #ifdef PIPE
 	#include <pipewire/pipewire.h>
