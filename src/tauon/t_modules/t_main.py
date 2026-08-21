@@ -213,7 +213,7 @@ from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
-from tauon.t_modules.t_phazor import Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
+from tauon.t_modules.t_phazor import DSD_FORMATS, Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
@@ -20989,6 +20989,68 @@ class Tauon:
 			return Path(path)
 		return None
 
+	def dsd_direct_supported(self) -> bool:
+		"""Whether the loaded PHAzOR build can hand DSD to the device untouched.
+
+		Only the PipeWire backend can; every other backend decodes DSD to PCM.
+		Older PHAzOR builds have no such export at all.
+		"""
+		probe = getattr(self.aud, "get_dsd_direct_supported", None)
+		if probe is None:
+			return False
+		try:
+			return bool(probe())
+		except Exception:
+			logging.exception("Failed to query DSD direct support")
+			return False
+
+	def dsd_direct_device_supported(self) -> bool:
+		"""Whether the currently selected output device accepts a DSD stream.
+
+		Separate from :meth:`dsd_direct_supported`, which is about the build.
+		A device without native DSD input plays DSD as PCM with no error, so
+		the settings row says which of the two is standing in the way.
+		"""
+		probe = getattr(self.aud, "get_dsd_device_supported", None)
+		if probe is None:
+			return False
+		try:
+			return bool(probe())
+		except Exception:
+			logging.exception("Failed to query device DSD support")
+			return False
+
+	def set_dsd_direct(self, enabled: bool) -> None:
+		"""Apply the direct DSD preference.
+
+		PHAzOR picks the output path when a track is loaded, so the switch would
+		otherwise look like it did nothing until the next track. Reopen a DSD
+		track that is already playing, at the position it had reached, so the
+		change is audible right away.
+		"""
+		self.prefs.dsd_direct = enabled
+		apply = getattr(self.aud, "config_set_dsd_direct", None)
+		if apply is not None:
+			apply(int(enabled))
+
+		track = self.pctl.playing_object()
+		if (
+			track is None
+			or track.is_cue
+			or track.is_network
+			or track.file_ext.lower() not in DSD_FORMATS
+			or self.pctl.playing_state != PlayingState.PLAYING
+		):
+			return
+		resume_time = self.pctl.playing_time
+		self.pctl.target_open = track.fullpath
+		self.pctl.target_object = track
+		self.pctl.jump_time = resume_time
+		self.pctl.decode_time = resume_time
+		self.pctl.playerCommand = "open"
+		self.pctl.playerSubCommand = "now"
+		self.pctl.playerCommandReady = True
+
 	def bg_save(self) -> None:
 		self.worker_save_state = True
 		self.thread_manager.ready("worker")
@@ -30510,12 +30572,13 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(416 * gui.scale)
+		row1_h = round(464 * gui.scale)
 		row2_h = round(355 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
 
 		row_h = round(30 * gui.scale)
+		tall_row_h = round(42 * gui.scale)  # a row carrying a subtitle
 		row_gap = round(6 * gui.scale)
 		left_rect = (x, y, left_w, row1_h)
 		right_rect = (x + left_w + column_gap, y, right_w, row1_h)
@@ -30561,6 +30624,35 @@ class Over:
 		if prefs.avoid_resampling != old_resample:
 			self.pctl.playerCommand = "reload"
 			self.pctl.playerCommandReady = True
+		inner_y += row_h + row_gap
+
+		# Direct DSD is a PipeWire-only capability, so the row greys out on
+		# PulseAudio, Windows and macOS rather than disappearing, which would
+		# leave no hint the feature exists.
+		dsd_supported = self.tauon.dsd_direct_supported()
+		if dsd_supported and self.tauon.dsd_direct_device_supported():
+			dsd_note = _("Bypasses volume, EQ and ReplayGain.")
+		elif dsd_supported:
+			# The build can do it, the chosen DAC cannot. Worth saying plainly:
+			# such a device plays DSD as PCM without complaining, so the switch
+			# would otherwise look like it did nothing.
+			dsd_note = _("This device has no native DSD input.")
+		elif self.platform_system == "Linux":
+			# Switching audio stack is something the user can actually act on
+			dsd_note = _("Requires the PipeWire backend.")
+		else:
+			# No PipeWire to switch to, so pointing at it would be useless advice
+			dsd_note = _("Not supported on this platform.")
+		dsd_new = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, tall_row_h),
+			prefs.dsd_direct,
+			_("Direct DSD output"),
+			dsd_note,
+			accent=accent,
+			disabled=not dsd_supported,
+		)
+		if dsd_supported and dsd_new != prefs.dsd_direct:
+			self.tauon.set_dsd_direct(dsd_new)
 
 		self.draw_audio_device_selector(right_rect, accent)
 
@@ -49776,6 +49868,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("output-samplerate", prefs.samplerate)
 	cf.update_value("resample-quality", prefs.resample)
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
+	cf.update_value("dsd-direct", prefs.dsd_direct)
 	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
 	cf.update_value("precache-local-files", prefs.precache)
 	cf.update_value("cache-use-tmp", prefs.tmp_cache)
@@ -49968,6 +50061,11 @@ def load_prefs(bag: Bag) -> None:
 	prefs.avoid_resampling = cf.sync_add(
 		"bool", "avoid_resampling", prefs.avoid_resampling,
 		"Only implemented for FLAC, MP3, OGG, OPUS")
+	prefs.dsd_direct = cf.sync_add(
+		"bool", "dsd-direct", prefs.dsd_direct,
+		"Send DSD files to the device untouched instead of decoding them to PCM. "
+		"Requires the PipeWire backend and a DAC that accepts native DSD. "
+		"Disables volume, ReplayGain, the EQ and crossfading while a DSD track plays.")
 	prefs.resample = cf.sync_add(
 		"int", "resample-quality", prefs.resample,
 		"0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
