@@ -292,13 +292,72 @@ class SticksVisWidget(Widget):
 
 # Spectrogram colour presets: (name, gradient stops as (position, (r, g, b))).
 # The right-click menu in t_main is built from this list; the selected index is
-# prefs.spectrogram_colour.
+# prefs.spectrogram_colour. Spectral Flow entries use the same raw history but
+# run it through the liquid deformation/contour pass in SpectrogramWidget.
 SPECTRO_PRESETS: list[tuple[str, list[tuple[float, tuple[int, int, int]]]]] = [
 	("Inferno", [
 		(0.0, (0, 0, 4)), (0.22, (60, 10, 90)), (0.45, (150, 40, 90)),
 		(0.7, (230, 100, 30)), (0.9, (250, 200, 60)), (1.0, (255, 250, 200))]),
 	("Greyscale", [(0.0, (0, 0, 0)), (1.0, (255, 255, 255))]),
+	("Flux", [
+		(0.0, (1, 3, 7)), (0.16, (2, 12, 18)), (0.31, (0, 139, 166)),
+		(0.48, (18, 230, 218)), (0.61, (82, 27, 141)), (0.76, (238, 46, 202)),
+		(0.9, (242, 185, 0)), (1.0, (255, 242, 185))]),
+	("Ion", [
+		(0.0, (2, 3, 9)), (0.18, (7, 13, 34)), (0.36, (28, 81, 222)),
+		(0.56, (48, 236, 246)), (0.73, (160, 76, 244)), (0.88, (255, 92, 179)),
+		(1.0, (255, 224, 155))]),
 ]
+
+SPECTRAL_FLOW_PRESETS = frozenset((2, 3))
+SPECTRAL_FLOW_SENSITIVITY = 1.75
+SPECTRAL_FLOW_TURBULENCE = 1.0
+# The legacy palettes map analyser bands directly to texture rows. Doubling
+# their source density gives the scaled widget finer frequency detail while
+# preserving its palette, response curve, time span, and scroll geometry.
+SPECTROGRAM_BINS = 512
+# Tauon's sqrt-magnitude history is already a useful compressed approximation
+# of the prototype's dB-normalized input. Apply its 0.74 response curve directly
+# at the selected 1.75x sensitivity; converting back to linear first crushes the
+# quieter bands into the thin horizontal rails this mode is intended to avoid.
+SPECTRAL_FLOW_AMPLITUDE = tuple(
+	min(1.0, ((value / 255 * SPECTRAL_FLOW_SENSITIVITY) ** 0.74))
+	for value in range(256)
+)
+
+
+def _spectral_flow_hash(x_pos: float, y_pos: float) -> float:
+	"""The prototype's deterministic 2D hash, used by its value noise."""
+	value = math.sin(x_pos * 127.1 + y_pos * 311.7) * 43758.5453123
+	return value - math.floor(value)
+
+
+def _spectral_flow_noise(x_pos: float, y_pos: float) -> float:
+	"""Smooth value noise matching the standalone Spectral Flow prototype."""
+	x_floor = math.floor(x_pos)
+	y_floor = math.floor(y_pos)
+	x_fraction = x_pos - x_floor
+	y_fraction = y_pos - y_floor
+	x_smooth = x_fraction * x_fraction * (3.0 - 2.0 * x_fraction)
+	y_smooth = y_fraction * y_fraction * (3.0 - 2.0 * y_fraction)
+	top_left = _spectral_flow_hash(x_floor, y_floor)
+	top_right = _spectral_flow_hash(x_floor + 1, y_floor)
+	bottom_left = _spectral_flow_hash(x_floor, y_floor + 1)
+	bottom_right = _spectral_flow_hash(x_floor + 1, y_floor + 1)
+	return top_left + (top_right - top_left) * x_smooth + (bottom_left - top_left) * y_smooth \
+		+ (top_left - top_right - bottom_left + bottom_right) * x_smooth * y_smooth
+
+
+def _spectral_flow_fbm(x_pos: float, y_pos: float) -> float:
+	"""Four-octave FBM using the same constants as the web demo."""
+	value = 0.0
+	amplitude = 0.54
+	for _octave in range(4):
+		value += amplitude * _spectral_flow_noise(x_pos, y_pos)
+		x_pos = x_pos * 2.03 + 19.1
+		y_pos = y_pos * 2.01 + 8.7
+		amplitude *= 0.49
+	return value
 
 
 def build_spectro_lut(preset: int) -> list[bytes]:
@@ -342,7 +401,15 @@ class SpectrogramWidget(Widget):
 	frames or producer stalls are absorbed rather than shown as a lurch.
 	The newest column slides in from the right edge. Magnitude values (0-255)
 	are kept in a ring alongside the pixels so switching colour preset
-	recolourises the whole history (per-byte plane translate, C speed). State
+	recolourises the whole history (per-byte plane translate, C speed for the
+	standard palettes). The Spectral Flow palettes instead render a separate
+	low-resolution 2D field from the whole raw history, warping both time and
+	frequency sampling with four-octave value-noise FBM at 100% turbulence. It
+	applies the prototype's 1.75x sensitivity, local spectral-flux edge, contour
+	bands and palette mapping per field pixel, then scales the result smoothly on
+	the GPU.
+	This preserves the prototype's moving liquid islands rather than deforming or
+	recolouring ordinary spectrogram columns. State
 	is class-level: the widget is single-instance and this way the texture and
 	history survive add/remove and layout reloads without SDL lifetime
 	management on GC.
@@ -355,10 +422,16 @@ class SpectrogramWidget(Widget):
 	single_instance = True
 	offscreen = False  # draws with the renderer directly at screen coords
 
-	NORM = 30.0   # get_spectrum_hires sqrt-magnitude that maps to full scale
-	              # (4096 window: magnitudes x2 vs get_spectrum, sqrt -> x1.41)
+	# get_spectrum_hires sqrt-magnitude that maps to full scale (4096 window:
+	# magnitudes x2 vs get_spectrum, sqrt -> x1.41).
+	NORM = 30.0
 	GAMMA = 0.5
 	RESIZE_SETTLE = 0.3  # s the requested size must hold before rebuilding
+	FLOW_NATIVE_MAX_W = 620
+	FLOW_NATIVE_MAX_H = 310
+	FLOW_FALLBACK_MAX_W = 160
+	FLOW_FALLBACK_MAX_H = 56
+	FLOW_FRAME_PERIOD = 1 / 20
 
 	_tex = None
 	_tex_bins = 0
@@ -368,6 +441,16 @@ class SpectrogramWidget(Widget):
 	_filled = 0
 	_lut: list[bytes] | None = None
 	_lut_preset = -1
+	_flow_tex = None
+	_flow_w = 0
+	_flow_h = 0
+	_flow_last_render = 0.0
+	_flow_dirty = True
+	_flow_native = None
+	_flow_native_checked = False
+	_flow_pixels: bytearray | None = None
+	_flow_palette: bytes | None = None
+	_flow_palette_buffer = None
 	# Adaptive playout buffer. The producer appends columns at a jittery rate;
 	# the display consumes them at a smooth, self-pacing rate instead of draining
 	# the whole queue every frame. _col_period is seconds per on-screen column;
@@ -380,6 +463,9 @@ class SpectrogramWidget(Widget):
 	_col_period = 1 / 50    # s per column (adapts to the real production rate)
 	_frac_accum = 0.0       # sub-column scroll offset, 0-1
 	_last_frame = 0.0       # monotonic time of the previous consumed frame
+	_last_playing_state = PlayingState.STOPPED
+	_drain_remaining = 0    # blank columns left before a stopped flow is empty
+	_flow_phase = 0.0        # field-noise clock; frozen while paused/empty
 	_pending_cols = 0
 	_pending_since = 0.0
 
@@ -398,9 +484,11 @@ class SpectrogramWidget(Widget):
 			return
 
 		bins = gui.spectrogram_bins
-		self._ensure(tauon, bins, w)
+		self._ensure(tauon, bins, w, h)
 
-		playing = tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+		playing_state = tauon.pctl.playing_state
+		playing = playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+		flow_mode = cls._lut_preset in SPECTRAL_FLOW_PRESETS
 
 		# Adaptive playout: consume queued columns at a smooth, self-pacing rate
 		# rather than draining the whole queue each frame. _col_period is nudged
@@ -408,18 +496,46 @@ class SpectrogramWidget(Widget):
 		# production rate (no starvation, no pile-up); the sub-column remainder is
 		# the scroll offset, advanced by real elapsed time for constant velocity.
 		now = time.monotonic()
-		if playing and cls._last_frame:
-			backlog = len(gui.spectrogram_buffers)
-			# Slow integrator: more queued -> consume faster (shorter period).
-			cls._col_period *= 1.0 - (backlog - cls.TARGET_BACKLOG) * cls.ADAPT_GAIN
-			cls._col_period = min(max(cls._col_period, 0.008), 0.05)
-			cls._frac_accum += (now - cls._last_frame) / cls._col_period
+		if playing_state != cls._last_playing_state:
+			cls._last_frame = now  # don't catch up across a pause/stop transition
+			if playing:
+				cls._drain_remaining = 0
+			elif playing_state == PlayingState.STOPPED:
+				# The adaptive playout normally retains a small FFT backlog. Those
+				# columns belong to the track that just stopped; leaving them queued
+				# creates a phantom first wave when playback starts again.
+				gui.spectrogram_buffers.clear()
+				if flow_mode:
+					# Blank columns enter at the right and carry the remaining field off
+					# the left. Keep _filled stable during this so the width does not
+					# collapse; it becomes zero atomically when the final column exits.
+					cls._drain_remaining = cls._filled
+			cls._last_playing_state = playing_state
+
+		draining = playing_state == PlayingState.STOPPED and flow_mode and cls._drain_remaining > 0
+		if (playing or draining) and cls._last_frame:
+			elapsed = min(0.1, max(0.0, now - cls._last_frame))
+			cls._flow_phase += elapsed
+			if playing:
+				backlog = len(gui.spectrogram_buffers)
+				# Slow integrator: more queued -> consume faster (shorter period).
+				cls._col_period *= 1.0 - (backlog - cls.TARGET_BACKLOG) * cls.ADAPT_GAIN
+				cls._col_period = min(max(cls._col_period, 0.008), 0.05)
+			cls._frac_accum += elapsed / cls._col_period
 			guard = 0
 			while cls._frac_accum >= 1.0:
-				if not gui.spectrogram_buffers:
-					cls._frac_accum = 1.0  # starved: hold the newest column in view
-					break
-				self._push_column(gui.spectrogram_buffers.pop(0), bins)
+				if playing:
+					if not gui.spectrogram_buffers:
+						cls._frac_accum = 1.0  # starved: hold the newest column in view
+						break
+					self._push_column(gui.spectrogram_buffers.pop(0), bins)
+				else:
+					self._push_empty_column(bins)
+					cls._drain_remaining -= 1
+					if cls._drain_remaining <= 0:
+						cls._filled = 0
+						cls._frac_accum = 0.0
+						break
 				cls._frac_accum -= 1.0
 				guard += 1
 				if guard >= 8:  # cap catch-up after a long stall (no visible lurch)
@@ -431,7 +547,29 @@ class SpectrogramWidget(Widget):
 		lut0 = cls._lut[0]
 		tauon.ddt.rect(rect, ColourRGBA(lut0[2], lut0[1], lut0[0], 255))
 
-		if cls._filled:
+		if cls._filled and flow_mode:
+			if cls._flow_dirty or (
+					(playing or draining) and now - cls._flow_last_render >= cls.FLOW_FRAME_PERIOD):
+				self._render_flow_texture(bins)
+				cls._flow_last_render = now
+				cls._flow_dirty = False
+			# The prototype composites a blurred screen-blend copy behind the field.
+			# A faint expanded additive pass gives SDL the same soft bloom without
+			# maintaining another full-size render target.
+			glow_pad = 3.0 * gui.scale
+			glow_dst = sdl3.SDL_FRect(
+				x - glow_pad, y - glow_pad, w + glow_pad * 2, h + glow_pad * 2)
+			clip = sdl3.SDL_Rect(rect[0], rect[1], rect[2], rect[3])
+			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(clip))
+			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_ADD)
+			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 34)
+			sdl3.SDL_RenderTexture(tauon.renderer, cls._flow_tex, None, ctypes.byref(glow_dst))
+			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 255)
+			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
+			dst = sdl3.SDL_FRect(x, y, w, h)
+			sdl3.SDL_RenderTexture(tauon.renderer, cls._flow_tex, None, ctypes.byref(dst))
+			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
+		elif cls._filled:
 			col_px = 1.5 * gui.scale
 			offset = cls._frac_accum * col_px
 			visible = min(cls._filled, int(w / col_px) + 2)
@@ -459,10 +597,11 @@ class SpectrogramWidget(Widget):
 			tauon.spectrogram_menu.activate()
 			tauon.inp.right_click = False
 
-		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+		draining = playing_state == PlayingState.STOPPED and flow_mode and cls._drain_remaining > 0
+		if playing or draining:
 			gui.delay_frame(tauon.frame_pace())  # keep frames coming for the smooth scroll
 
-	def _ensure(self, tauon: Tauon, bins: int, w: float) -> None:
+	def _ensure(self, tauon: Tauon, bins: int, w: float, h: float) -> None:
 		cls = SpectrogramWidget
 		# Ring length = just enough columns to span the widget's width.
 		want = max(16, int(w / (1.5 * tauon.gui.scale)) + 3)
@@ -489,6 +628,56 @@ class SpectrogramWidget(Widget):
 			cls._lut_preset = tauon.prefs.spectrogram_colour
 			cls._lut = build_spectro_lut(cls._lut_preset)
 			self._recolour(bins)
+			if cls._lut_preset in SPECTRAL_FLOW_PRESETS \
+					and tauon.pctl.playing_state == PlayingState.STOPPED and cls._filled:
+				cls._drain_remaining = cls._filled
+				cls._last_frame = time.monotonic()
+				tauon.gui.request_frame()
+			elif cls._lut_preset not in SPECTRAL_FLOW_PRESETS:
+				cls._drain_remaining = 0
+		if cls._lut_preset in SPECTRAL_FLOW_PRESETS:
+			self._ensure_flow_texture(tauon, bins, w, h)
+
+	def _ensure_flow_texture(self, tauon: Tauon, bins: int, w: float, h: float) -> None:
+		"""Create the high-resolution native (or compact fallback) field texture."""
+		cls = SpectrogramWidget
+		if not cls._flow_native_checked:
+			try:
+				native = tauon.aud.render_spectral_flow
+				byte_pointer = ctypes.POINTER(ctypes.c_ubyte)
+				native.argtypes = (
+					byte_pointer,
+					ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+					ctypes.c_float, ctypes.c_float,
+					byte_pointer, byte_pointer,
+					ctypes.c_int, ctypes.c_int,
+				)
+				native.restype = ctypes.c_int
+				cls._flow_native = native
+			except AttributeError:
+				cls._flow_native = None
+			cls._flow_native_checked = True
+		if cls._flow_native is not None:
+			# Match the prototype's own adaptive field sizing. At the live widget's
+			# typical 840x196 size this is about 520x180, rather than 160x56.
+			flow_w = min(cls.FLOW_NATIVE_MAX_W, max(320, round(w * 0.62)))
+			flow_h = min(cls.FLOW_NATIVE_MAX_H, max(96, round(h * 0.92)))
+		else:
+			flow_w = min(cls.FLOW_FALLBACK_MAX_W, max(96, round(cls._cols * 0.55)))
+			flow_h = min(cls.FLOW_FALLBACK_MAX_H, max(48, round(bins * 0.67)))
+		if cls._flow_tex is not None and (cls._flow_w, cls._flow_h) == (flow_w, flow_h):
+			return
+		if cls._flow_tex is not None:
+			sdl3.SDL_DestroyTexture(cls._flow_tex)
+		cls._flow_tex = sdl3.SDL_CreateTexture(
+			tauon.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
+			sdl3.SDL_TEXTUREACCESS_STREAMING, flow_w, flow_h)
+		sdl3.SDL_SetTextureScaleMode(cls._flow_tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
+		cls._flow_w = flow_w
+		cls._flow_h = flow_h
+		cls._flow_pixels = None
+		cls._flow_dirty = True
 
 	def _rebuild(self, tauon: Tauon, bins: int, cols: int) -> None:
 		"""Destroy and recreate the ring texture at ``cols`` columns, carrying
@@ -524,32 +713,340 @@ class SpectrogramWidget(Widget):
 				dst += n
 		cls._write = keep % cols
 		cls._filled = keep
+		cls._drain_remaining = min(cls._drain_remaining, keep)
+		cls._flow_dirty = True
 		cls._pending_cols = 0
 		cls._lut_preset = -1  # force a LUT refresh + full texture upload
 
 	def _push_column(self, col: list[float], bins: int) -> None:
 		cls = SpectrogramWidget
 		vals = cls._vals
-		lut = cls._lut
 		write = cls._write
 		norm = cls.NORM
 		gamma = cls.GAMMA
-		pix = bytearray(bins * 4)
 		for i in range(min(bins, len(col))):
 			v = col[i] / norm
 			idx = 255 if v >= 1.0 else int((v ** gamma) * 255) if v > 0 else 0
 			row = bins - 1 - i  # low frequencies at the bottom
 			vals[row * cls._cols + write] = idx
-			pix[row * 4:row * 4 + 4] = lut[idx]
-		rect = sdl3.SDL_Rect(write, 0, 1, bins)
-		sdl3.SDL_UpdateTexture(cls._tex, ctypes.byref(rect), bytes(pix), 4)
+		if cls._lut_preset in SPECTRAL_FLOW_PRESETS:
+			cls._flow_dirty = True
+		else:
+			pix = self._colour_column(write, bins)
+			rect = sdl3.SDL_Rect(write, 0, 1, bins)
+			sdl3.SDL_UpdateTexture(cls._tex, ctypes.byref(rect), pix, 4)
 		cls._write = (write + 1) % cls._cols
 		cls._filled = min(cls._filled + 1, cls._cols)
 
+	def _push_empty_column(self, bins: int) -> None:
+		"""Append one silent column while a stopped Spectral Flow drains."""
+		cls = SpectrogramWidget
+		write = cls._write
+		for row in range(bins):
+			cls._vals[row * cls._cols + write] = 0
+		cls._flow_dirty = True
+		cls._write = (write + 1) % cls._cols
+
+	def _colour_column(self, column: int, bins: int) -> bytes:
+		"""Colour one physical history column for a standard preset."""
+		cls = SpectrogramWidget
+		pix = bytearray(bins * 4)
+		for row in range(bins):
+			idx = cls._vals[row * cls._cols + column]
+			pix[row * 4:row * 4 + 4] = cls._lut[idx]
+		return bytes(pix)
+
+	@classmethod
+	def _sample_flow_history(cls, age: float, row: float, bins: int) -> float:
+		"""Bilinearly sample shaped amplitude from the logical history window."""
+		if age < 0.0:
+			age = 0.0
+		elif age >= cls._filled:
+			return 0.0
+		if cls._filled < 1:
+			return 0.0
+		age0 = int(age)
+		age1 = min(cls._filled - 1, age0 + 1)
+		age_mix = age - age0
+		row = min(bins - 1.0, max(0.0, row))
+		row0 = int(row)
+		row1 = min(bins - 1, row0 + 1)
+		row_mix = row - row0
+		column0 = (cls._write - 1 - age0) % cls._cols
+		column1 = (cls._write - 1 - age1) % cls._cols
+		amplitudes = SPECTRAL_FLOW_AMPLITUDE
+		values = cls._vals
+		upper0 = amplitudes[values[row0 * cls._cols + column0]]
+		lower0 = amplitudes[values[row1 * cls._cols + column0]]
+		upper1 = amplitudes[values[row0 * cls._cols + column1]]
+		lower1 = amplitudes[values[row1 * cls._cols + column1]]
+		value0 = upper0 + (lower0 - upper0) * row_mix
+		value1 = upper1 + (lower1 - upper1) * row_mix
+		return value0 + (value1 - value0) * age_mix
+
+	@classmethod
+	def _build_flow_source(cls, bins: int, width: int, height: int) -> list[float]:
+		"""Resample Tauon's sharp FFT history into the demo's broader bands."""
+		source = [0.0] * (width * height)
+		if not cls._filled:
+			return source
+		amplitudes = SPECTRAL_FLOW_AMPLITUDE
+		values = cls._vals
+		history_span = max(1, cls._cols - 2)
+		x_denominator = max(1, width - 1)
+		y_denominator = max(1, height - 1)
+		frequency_radius = max(2.0, bins / 40.0)
+		row_samples: list[tuple[int, int, int, int, int]] = []
+		for y_pos in range(height):
+			base_row = y_pos / y_denominator * (bins - 1)
+			row_samples.append(tuple(
+				round(min(bins - 1.0, max(0.0, base_row + offset))) * cls._cols
+				for offset in (
+					-frequency_radius, -frequency_radius * 0.5, 0.0,
+					frequency_radius * 0.5, frequency_radius,
+				)
+			))
+		for x_pos in range(width):
+			age = (1.0 - x_pos / x_denominator) * history_span - cls._frac_accum
+			if age < 0.0:
+				age = 0.0
+			elif age >= cls._filled:
+				continue
+			leading_gain = 1.0
+			if cls._filled < cls._cols - 1:
+				amount = min(1.0, max(0.0, (cls._filled - 1.0 - age) / 4.0))
+				leading_gain = amount * amount * (3.0 - 2.0 * amount)
+			age0 = int(age)
+			age1 = min(cls._filled - 1, age0 + 1)
+			age_mix = age - age0
+			column0 = (cls._write - 1 - age0) % cls._cols
+			column1 = (cls._write - 1 - age1) % cls._cols
+			for y_pos in range(height):
+				low_offset, mid_low_offset, centre_offset, mid_high_offset, high_offset = row_samples[y_pos]
+				low0 = amplitudes[values[low_offset + column0]]
+				mid_low0 = amplitudes[values[mid_low_offset + column0]]
+				centre0 = amplitudes[values[centre_offset + column0]]
+				mid_high0 = amplitudes[values[mid_high_offset + column0]]
+				high0 = amplitudes[values[high_offset + column0]]
+				low1 = amplitudes[values[low_offset + column1]]
+				mid_low1 = amplitudes[values[mid_low_offset + column1]]
+				centre1 = amplitudes[values[centre_offset + column1]]
+				mid_high1 = amplitudes[values[mid_high_offset + column1]]
+				high1 = amplitudes[values[high_offset + column1]]
+				smoothed0 = low0 * 0.1 + mid_low0 * 0.22 + centre0 * 0.36 + mid_high0 * 0.22 + high0 * 0.1
+				smoothed1 = low1 * 0.1 + mid_low1 * 0.22 + centre1 * 0.36 + mid_high1 * 0.22 + high1 * 0.1
+				broad0 = smoothed0 * 0.25 + max(low0, mid_low0, centre0, mid_high0, high0) * 0.75
+				broad1 = smoothed1 * 0.25 + max(low1, mid_low1, centre1, mid_high1, high1) * 0.75
+				source[y_pos * width + x_pos] = min(
+					1.0, (broad0 + (broad1 - broad0) * age_mix) * leading_gain)
+
+		# A soft dilation turns isolated harmonic lines into the connected spectral
+		# envelope produced by the demo's analyser smoothing and persistence. The
+		# subsequent FBM pass deforms this envelope into cells; it is not a blur of
+		# the final coloured image.
+		expanded = source.copy()
+		for y_pos in range(height):
+			row_offset = y_pos * width
+			upper_offset = max(0, y_pos - 1) * width
+			lower_offset = min(height - 1, y_pos + 1) * width
+			for x_pos in range(width):
+				centre = source[row_offset + x_pos]
+				left = source[row_offset + max(0, x_pos - 1)]
+				right = source[row_offset + min(width - 1, x_pos + 1)]
+				upper = source[upper_offset + x_pos]
+				lower = source[lower_offset + x_pos]
+				neighbour_peak = max(left, right, upper, lower)
+				neighbour_mean = (left + right + upper + lower) * 0.25
+				expanded[row_offset + x_pos] = min(
+					1.0, centre * 0.55 + neighbour_peak * 0.35 + neighbour_mean * 0.18)
+		return expanded
+
+	@classmethod
+	def _build_flow_pixels(cls, bins: int) -> bytes:
+		"""Render the prototype-style turbulent 2D field into BGRA pixels."""
+		width = cls._flow_w
+		height = cls._flow_h
+		pixels = bytearray(width * height * 4)
+		phase = cls._flow_phase
+		age_scale = cls._cols / 512
+		row_scale = bins / 144
+		frac = cls._frac_accum
+		lut = cls._lut
+		history_span = max(1, cls._cols - 2)
+		pixel_offset = 0
+		x_denominator = max(1, width - 1)
+		y_denominator = max(1, height - 1)
+		x_normalized = [x_pos / x_denominator for x_pos in range(width)]
+		edge_warp = []
+		for xn in x_normalized:
+			amount = min(1.0, min(xn, 1.0 - xn) / 0.06)
+			edge_warp.append(amount * amount * (3.0 - 2.0 * amount))
+		y_normalized = [1.0 - y_pos / y_denominator for y_pos in range(height)]
+		base_rows = [y_pos / y_denominator * (bins - 1) for y_pos in range(height)]
+		base_ages = [(1.0 - xn) * history_span - frac for xn in x_normalized]
+		temporal_y = [math.sin(yn * 17.0 + phase * 0.88) * 3.0 for yn in y_normalized]
+		source_height = min(height, 24)
+		source_map = cls._build_flow_source(bins, width, source_height)
+
+		def sample_source(age: float, row: float) -> float:
+			if age < 0.0:
+				age = 0.0
+			elif age >= cls._filled:
+				return 0.0
+			# Frequency has no temporal "outside" to drain into. Extend the
+			# nearest FFT band when turbulence crosses the top/bottom boundary,
+			# matching the prototype's clamped warped-band sampling.
+			row = min(bins - 1.0, max(0.0, row))
+			x_source = (1.0 - age / history_span) * (width - 1)
+			x_source = min(width - 1.0, max(0.0, x_source))
+			y_source = row / max(1, bins - 1) * (source_height - 1)
+			x0 = int(x_source)
+			y0 = int(y_source)
+			x1 = min(width - 1, x0 + 1)
+			y1 = min(source_height - 1, y0 + 1)
+			x_mix = x_source - x0
+			y_mix = y_source - y0
+			top = source_map[y0 * width + x0] + (
+				source_map[y0 * width + x1] - source_map[y0 * width + x0]) * x_mix
+			bottom = source_map[y1 * width + x0] + (
+				source_map[y1 * width + x1] - source_map[y1 * width + x0]) * x_mix
+			return top + (bottom - top) * y_mix
+
+		# Build the prototype's three four-octave FBM fields on a compact grid,
+		# then bilinearly expand them below. This retains its irregular, organic
+		# advection while avoiding hundreds of thousands of Python sin calls per
+		# frame. The final colour field remains at the texture's full resolution.
+		noise_width = min(width, max(32, width // 6 + 1))
+		noise_height = min(height, max(20, height // 3 + 1))
+		warp_a_map: list[float] = []
+		warp_b_map: list[float] = []
+		detail_map: list[float] = []
+		for noise_y in range(noise_height):
+			yn = 1.0 - noise_y / max(1, noise_height - 1)
+			for noise_x in range(noise_width):
+				xn = noise_x / max(1, noise_width - 1)
+				warp_a_map.append(_spectral_flow_fbm(
+					xn * 4.1 - phase * 0.168,
+					yn * 3.6 + phase * 0.056,
+				) - 0.5)
+				warp_b_map.append(_spectral_flow_fbm(
+					xn * 8.2 + 17.3,
+					yn * 7.7 - phase * 0.104,
+				) - 0.5)
+				detail_map.append(_spectral_flow_fbm(
+					xn * 12.0 + phase * 0.08,
+					yn * 11.0 - phase * 0.08,
+				) - 0.5)
+
+		x_noise_samples: list[tuple[int, int, float]] = []
+		for x_pos in range(width):
+			x_noise = x_pos / x_denominator * (noise_width - 1)
+			x0 = int(x_noise)
+			x_noise_samples.append((x0, min(noise_width - 1, x0 + 1), x_noise - x0))
+		y_noise_samples: list[tuple[int, int, float]] = []
+		for y_pos in range(height):
+			y_noise = y_pos / y_denominator * (noise_height - 1)
+			y0 = int(y_noise)
+			y_noise_samples.append((
+				y0 * noise_width,
+				min(noise_height - 1, y0 + 1) * noise_width,
+				y_noise - y0,
+			))
+		vignette_x = [math.sin(math.pi * xn) for xn in x_normalized]
+		vignette_y = [math.sin(math.pi * (1.0 - abs(yn - 0.5) * 0.35)) for yn in y_normalized]
+		response_gain = 0.86 + SPECTRAL_FLOW_SENSITIVITY * 0.13
+
+		def interpolate(
+				field: list[float], x0: int, x1: int, x_mix: float,
+				y0_offset: int, y1_offset: int, y_mix: float,
+		) -> float:
+			top = field[y0_offset + x0] + (field[y0_offset + x1] - field[y0_offset + x0]) * x_mix
+			bottom = field[y1_offset + x0] + (field[y1_offset + x1] - field[y1_offset + x0]) * x_mix
+			return top + (bottom - top) * y_mix
+
+		for y_pos in range(height):
+			base_row = base_rows[y_pos]
+			y0_offset, y1_offset, y_mix = y_noise_samples[y_pos]
+			for x_pos in range(width):
+				x0, x1, x_mix = x_noise_samples[x_pos]
+				warp_a = interpolate(warp_a_map, x0, x1, x_mix, y0_offset, y1_offset, y_mix)
+				warp_b = interpolate(warp_b_map, x0, x1, x_mix, y0_offset, y1_offset, y_mix)
+				detail = interpolate(detail_map, x0, x1, x_mix, y0_offset, y1_offset, y_mix)
+				warped_row = base_row - (
+					warp_a * 20.0 + warp_b * 7.0) * row_scale * SPECTRAL_FLOW_TURBULENCE
+				temporal_age = base_ages[x_pos] + (
+					warp_b * 16.0 + temporal_y[y_pos]
+				) * age_scale * SPECTRAL_FLOW_TURBULENCE * edge_warp[x_pos]
+
+				raw = sample_source(temporal_age, warped_row)
+				neighbor = sample_source(
+					temporal_age + 3.0 * age_scale,
+					warped_row + 2.0 * row_scale,
+				)
+				# The contour term compares against an older neighbour. At the
+				# left edge that neighbour can lie just beyond retained history;
+				# extending the current sample there avoids interpreting the history
+				# boundary as a bright spectral transition. Raw still becomes zero
+				# outside the field, so stopped playback continues to drain cleanly.
+				if temporal_age + 3.0 * age_scale >= cls._filled:
+					neighbor = raw
+				value = min(1.0, (
+					raw * (0.88 + detail * 0.3) + max(0.0, raw - neighbor) * 0.48
+				) * response_gain)
+				islands = min(1.0, max(0.0, (value - 0.07) / 0.5))
+				islands = islands * islands * (3.0 - 2.0 * islands)
+				contour = 0.5 + 0.5 * math.sin(value * 13.5 + warp_a * 7.4 + detail * 2.8)
+				colour_value = min(1.0, islands * (0.27 + value * 0.63 + contour * 0.17))
+				# Preserve a gentle edge rolloff without the dark vertical curtains
+				# produced by the prototype's heavier horizontal vignette.
+				vignette = 0.9 + 0.1 * vignette_x[x_pos] * vignette_y[y_pos]
+				palette_index = round(colour_value * vignette * 255)
+				pixels[pixel_offset:pixel_offset + 4] = lut[palette_index]
+				pixel_offset += 4
+		return bytes(pixels)
+
+	def _render_flow_texture(self, bins: int) -> None:
+		cls = SpectrogramWidget
+		if cls._flow_native is not None:
+			pixel_count = cls._flow_w * cls._flow_h * 4
+			if cls._flow_pixels is None or len(cls._flow_pixels) != pixel_count:
+				cls._flow_pixels = bytearray(pixel_count)
+			palette = b"".join(cls._lut)
+			if palette != cls._flow_palette:
+				cls._flow_palette = palette
+				cls._flow_palette_buffer = (ctypes.c_ubyte * len(palette)).from_buffer_copy(palette)
+			history_buffer = (ctypes.c_ubyte * len(cls._vals)).from_buffer(cls._vals)
+			pixel_buffer = (ctypes.c_ubyte * pixel_count).from_buffer(cls._flow_pixels)
+			status = cls._flow_native(
+				history_buffer,
+				cls._cols,
+				bins,
+				cls._write,
+				cls._filled,
+				cls._frac_accum,
+				cls._flow_phase,
+				cls._flow_palette_buffer,
+				pixel_buffer,
+				cls._flow_w,
+				cls._flow_h,
+			)
+			if status:
+				logging.warning("Native Spectral Flow render failed with status %d", status)
+				return
+			sdl3.SDL_UpdateTexture(
+				cls._flow_tex, None, pixel_buffer, cls._flow_w * 4)
+			return
+		pixels = cls._build_flow_pixels(bins)
+		sdl3.SDL_UpdateTexture(cls._flow_tex, None, pixels, cls._flow_w * 4)
+
 	def _recolour(self, bins: int) -> None:
 		"""Rewrite the whole texture from the magnitude ring with the current
-		LUT — one byte-translate per colour plane, then a single upload."""
+		LUT, or invalidate the separate Spectral Flow field texture."""
 		cls = SpectrogramWidget
+		if cls._lut_preset in SPECTRAL_FLOW_PRESETS:
+			cls._flow_dirty = True
+			return
+
 		vals = bytes(cls._vals)
 		out = bytearray(len(vals) * 4)
 		for plane in range(4):

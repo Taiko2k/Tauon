@@ -4992,6 +4992,366 @@ EXPORT int get_spectrum_hires(int n_bins, float* bins) {
 	return 0;
 }
 
+// Spectral Flow's high-resolution field renderer. The Python UI owns the
+// scrolling magnitude history and SDL texture; this native pass performs the
+// prototype's FBM domain warp and palette mapping without constraining the
+// field to a small Python-friendly resolution.
+static inline float spectral_flow_clamp(float value, float lower, float upper) {
+	if (value < lower) return lower;
+	if (value > upper) return upper;
+	return value;
+}
+
+static bool spectral_flow_resolve_age(float age, int filled, float *resolved) {
+	if (age < 0.0f) {
+		*resolved = 0.0f;
+		return true;
+	}
+	if (age >= filled) {
+		*resolved = filled - 1.0f;
+		return false;
+	}
+	*resolved = age;
+	return true;
+}
+
+// The visualiser is rendered by the UI thread. Keep its size-dependent work
+// buffers for reuse instead of allocating five large arrays every frame; the
+// mutex also makes the exported function safe if another caller is introduced.
+static pthread_mutex_t spectral_flow_render_mutex = PTHREAD_MUTEX_INITIALIZER;
+static float *spectral_flow_field_storage = NULL;
+static float *spectral_flow_noise_storage = NULL;
+static float *spectral_flow_x_storage = NULL;
+static float *spectral_flow_y_storage = NULL;
+static float *spectral_flow_lattice_storage = NULL;
+static size_t spectral_flow_field_capacity = 0;
+static size_t spectral_flow_noise_capacity = 0;
+static size_t spectral_flow_x_capacity = 0;
+static size_t spectral_flow_y_capacity = 0;
+static size_t spectral_flow_lattice_capacity = 0;
+
+static bool spectral_flow_reserve(float **storage, size_t *capacity, size_t count) {
+	if (*capacity >= count) return true;
+	float *resized = realloc(*storage, count * sizeof(float));
+	if (resized == NULL) return false;
+	*storage = resized;
+	*capacity = count;
+	return true;
+}
+
+static float spectral_flow_hash(float x, float y) {
+	float value = sinf(x * 127.1f + y * 311.7f) * 43758.5453123f;
+	return value - floorf(value);
+}
+
+static bool spectral_flow_fill_fbm(
+		float *output, int width, int height,
+		float x_scale, float x_offset, float y_scale, float y_offset,
+		float *x_coordinates, float *y_coordinates
+) {
+	memset(output, 0, (size_t)width * height * sizeof(float));
+	for (int x = 0; x < width; x++) {
+		float xn = x / (float)(width - 1);
+		x_coordinates[x] = xn * x_scale + x_offset;
+	}
+	for (int y = 0; y < height; y++) {
+		float yn = 1.0f - y / (float)(height - 1);
+		y_coordinates[y] = yn * y_scale + y_offset;
+	}
+
+	float amplitude = 0.54f;
+	for (int octave = 0; octave < 4; octave++) {
+		int x_min = (int)floorf(x_coordinates[0]);
+		int x_max = (int)floorf(x_coordinates[width - 1]);
+		int y_min = (int)floorf(y_coordinates[height - 1]);
+		int y_max = (int)floorf(y_coordinates[0]);
+		int lattice_width = x_max - x_min + 2;
+		int lattice_height = y_max - y_min + 2;
+		size_t lattice_count = (size_t)lattice_width * lattice_height;
+		if (!spectral_flow_reserve(
+				&spectral_flow_lattice_storage, &spectral_flow_lattice_capacity, lattice_count)) {
+			return false;
+		}
+		for (int y = 0; y < lattice_height; y++) {
+			for (int x = 0; x < lattice_width; x++) {
+				spectral_flow_lattice_storage[y * lattice_width + x] = spectral_flow_hash(
+					(float)(x_min + x), (float)(y_min + y));
+			}
+		}
+		for (int y = 0; y < height; y++) {
+			float y_coordinate = y_coordinates[y];
+			float y_floor = floorf(y_coordinate);
+			float y_fraction = y_coordinate - y_floor;
+			float y_smooth = y_fraction * y_fraction * (3.0f - 2.0f * y_fraction);
+			int lattice_y = (int)y_floor - y_min;
+			for (int x = 0; x < width; x++) {
+				float x_coordinate = x_coordinates[x];
+				float x_floor = floorf(x_coordinate);
+				float x_fraction = x_coordinate - x_floor;
+				float x_smooth = x_fraction * x_fraction * (3.0f - 2.0f * x_fraction);
+				int lattice_x = (int)x_floor - x_min;
+				int lattice_offset = lattice_y * lattice_width + lattice_x;
+				float top_left = spectral_flow_lattice_storage[lattice_offset];
+				float top_right = spectral_flow_lattice_storage[lattice_offset + 1];
+				float bottom_left = spectral_flow_lattice_storage[lattice_offset + lattice_width];
+				float bottom_right = spectral_flow_lattice_storage[
+					lattice_offset + lattice_width + 1];
+				float noise = top_left + (top_right - top_left) * x_smooth
+					+ (bottom_left - top_left) * y_smooth
+					+ (top_left - top_right - bottom_left + bottom_right)
+						* x_smooth * y_smooth;
+				output[y * width + x] += amplitude * noise;
+			}
+		}
+		for (int x = 0; x < width; x++) {
+			x_coordinates[x] = x_coordinates[x] * 2.03f + 19.1f;
+		}
+		for (int y = 0; y < height; y++) {
+			y_coordinates[y] = y_coordinates[y] * 2.01f + 8.7f;
+		}
+		amplitude *= 0.49f;
+	}
+	return true;
+}
+
+static float spectral_flow_sample(
+		const float *field, int width, int height, float x, float y
+) {
+	if (x < 0.0f || y < 0.0f || x > width - 1 || y > height - 1) return 0.0f;
+	int x0 = (int)x;
+	int y0 = (int)y;
+	int x1 = x0 + 1 < width ? x0 + 1 : x0;
+	int y1 = y0 + 1 < height ? y0 + 1 : y0;
+	float x_mix = x - x0;
+	float y_mix = y - y0;
+	float top = field[y0 * width + x0]
+		+ (field[y0 * width + x1] - field[y0 * width + x0]) * x_mix;
+	float bottom = field[y1 * width + x0]
+		+ (field[y1 * width + x1] - field[y1 * width + x0]) * x_mix;
+	return top + (bottom - top) * y_mix;
+}
+
+EXPORT int render_spectral_flow(
+		const uint8_t *history, int columns, int bins, int write_column, int filled,
+		float fractional_age, float phase, const uint8_t *palette,
+		uint8_t *pixels, int width, int height
+) {
+	if (history == NULL || palette == NULL || pixels == NULL || columns < 2 || bins < 2
+			|| width < 2 || height < 2 || filled < 1) return 1;
+	pthread_mutex_lock(&spectral_flow_render_mutex);
+
+	int source_height = height < 144 ? height : 144;
+	int noise_width = width / 3 + 1;
+	int noise_height = height / 3 + 1;
+	if (noise_width < 64) noise_width = width < 64 ? width : 64;
+	if (noise_height < 48) noise_height = height < 48 ? height : 48;
+	if (noise_width > width) noise_width = width;
+	if (noise_height > height) noise_height = height;
+
+	size_t source_count = (size_t)width * source_height;
+	size_t noise_count = (size_t)noise_width * noise_height;
+	if (!spectral_flow_reserve(
+			&spectral_flow_field_storage, &spectral_flow_field_capacity, source_count * 2)
+			|| !spectral_flow_reserve(
+				&spectral_flow_noise_storage, &spectral_flow_noise_capacity, noise_count * 3)
+			|| !spectral_flow_reserve(
+				&spectral_flow_x_storage, &spectral_flow_x_capacity, (size_t)width * 2)
+			|| !spectral_flow_reserve(
+				&spectral_flow_y_storage, &spectral_flow_y_capacity, height)) {
+		pthread_mutex_unlock(&spectral_flow_render_mutex);
+		return 2;
+	}
+	float *source = spectral_flow_field_storage;
+	float *expanded = source + source_count;
+	float *warp_a = spectral_flow_noise_storage;
+	float *warp_b = warp_a + noise_count;
+	float *detail = warp_b + noise_count;
+	float *edge_warp = spectral_flow_x_storage;
+	float *vignette_x = edge_warp + width;
+	float *vignette_y = spectral_flow_y_storage;
+	memset(source, 0, source_count * sizeof(float));
+
+	static float amplitudes[256];
+	static bool amplitudes_ready = false;
+	if (!amplitudes_ready) {
+		for (int index = 0; index < 256; index++) {
+			float shaped = powf(index / 255.0f * 1.75f, 0.74f);
+			amplitudes[index] = shaped < 1.0f ? shaped : 1.0f;
+		}
+		amplitudes_ready = true;
+	}
+
+	// Collapse Tauon's sharper 256-bin history to the prototype's 144-band
+	// envelope. Five peak-aware taps preserve transient cores without leaving
+	// isolated one-pixel harmonic rails.
+	float frequency_radius = bins / 72.0f;
+	if (frequency_radius < 1.5f) frequency_radius = 1.5f;
+	const float tap_offsets[5] = {
+		-frequency_radius, -frequency_radius * 0.5f, 0.0f,
+		frequency_radius * 0.5f, frequency_radius,
+	};
+	const float tap_weights[5] = {0.10f, 0.22f, 0.36f, 0.22f, 0.10f};
+	float history_span = columns - 2.0f;
+	if (history_span < 1.0f) history_span = 1.0f;
+	for (int x = 0; x < width; x++) {
+		float age = (1.0f - x / (float)(width - 1)) * history_span - fractional_age;
+		if (!spectral_flow_resolve_age(age, filled, &age)) continue;
+		float leading_gain = 1.0f;
+		if (filled < columns - 1) {
+			float amount = spectral_flow_clamp((filled - 1.0f - age) / 4.0f, 0.0f, 1.0f);
+			leading_gain = amount * amount * (3.0f - 2.0f * amount);
+		}
+		int age0 = (int)age;
+		int age1 = age0 + 1 < filled ? age0 + 1 : age0;
+		float age_mix = age - age0;
+		int column0 = (write_column - 1 - age0 + columns * 2) % columns;
+		int column1 = (write_column - 1 - age1 + columns * 2) % columns;
+		for (int y = 0; y < source_height; y++) {
+			float base_row = y / (float)(source_height - 1) * (bins - 1);
+			float smooth0 = 0.0f;
+			float smooth1 = 0.0f;
+			float peak0 = 0.0f;
+			float peak1 = 0.0f;
+			for (int tap = 0; tap < 5; tap++) {
+				int row = (int)lroundf(spectral_flow_clamp(
+					base_row + tap_offsets[tap], 0.0f, bins - 1.0f));
+				float value0 = amplitudes[history[row * columns + column0]];
+				float value1 = amplitudes[history[row * columns + column1]];
+				smooth0 += value0 * tap_weights[tap];
+				smooth1 += value1 * tap_weights[tap];
+				if (value0 > peak0) peak0 = value0;
+				if (value1 > peak1) peak1 = value1;
+			}
+			float broad0 = smooth0 * 0.25f + peak0 * 0.75f;
+			float broad1 = smooth1 * 0.25f + peak1 * 0.75f;
+			source[y * width + x] = spectral_flow_clamp(
+				(broad0 + (broad1 - broad0) * age_mix) * leading_gain, 0.0f, 1.0f);
+		}
+	}
+
+	// Soft pre-warp dilation recreates the connected analyser envelope. This is
+	// intentionally before domain deformation, not a colourization blur.
+	for (int y = 0; y < source_height; y++) {
+		int upper = y > 0 ? y - 1 : y;
+		int lower = y + 1 < source_height ? y + 1 : y;
+		for (int x = 0; x < width; x++) {
+			int left = x > 0 ? x - 1 : x;
+			int right = x + 1 < width ? x + 1 : x;
+			float centre = source[y * width + x];
+			float neighbours[4] = {
+				source[y * width + left], source[y * width + right],
+				source[upper * width + x], source[lower * width + x],
+			};
+			float peak = neighbours[0];
+			float mean = 0.0f;
+			for (int index = 0; index < 4; index++) {
+				mean += neighbours[index];
+				if (neighbours[index] > peak) peak = neighbours[index];
+			}
+			expanded[y * width + x] = spectral_flow_clamp(
+				centre * 0.55f + peak * 0.35f + mean * 0.045f, 0.0f, 1.0f);
+		}
+	}
+	source = expanded;
+
+	if (!spectral_flow_fill_fbm(
+			warp_a, noise_width, noise_height,
+			4.1f, -phase * 0.168f, 3.6f, phase * 0.056f,
+			edge_warp, vignette_y)
+			|| !spectral_flow_fill_fbm(
+				warp_b, noise_width, noise_height,
+				8.2f, 17.3f, 7.7f, -phase * 0.104f,
+				edge_warp, vignette_y)
+			|| !spectral_flow_fill_fbm(
+				detail, noise_width, noise_height,
+				12.0f, phase * 0.08f, 11.0f, -phase * 0.08f,
+				edge_warp, vignette_y)) {
+		pthread_mutex_unlock(&spectral_flow_render_mutex);
+		return 2;
+	}
+	for (size_t offset = 0; offset < noise_count; offset++) {
+		warp_a[offset] -= 0.5f;
+		warp_b[offset] -= 0.5f;
+		detail[offset] -= 0.5f;
+	}
+
+	float age_scale = columns / 512.0f;
+	float row_scale = bins / 144.0f;
+	float response_gain = 0.86f + 1.75f * 0.13f;
+	for (int x = 0; x < width; x++) {
+		float xn = x / (float)(width - 1);
+		float amount = spectral_flow_clamp(
+			fminf(xn, 1.0f - xn) / 0.06f, 0.0f, 1.0f);
+		edge_warp[x] = amount * amount * (3.0f - 2.0f * amount);
+		vignette_x[x] = sinf((float)M_PI * xn);
+	}
+	for (int y = 0; y < height; y++) {
+		float yn = 1.0f - y / (float)(height - 1);
+		vignette_y[y] = sinf((float)M_PI * (1.0f - fabsf(yn - 0.5f) * 0.35f));
+	}
+	for (int y = 0; y < height; y++) {
+		float yn = 1.0f - y / (float)(height - 1);
+		float base_row = y / (float)(height - 1) * (bins - 1);
+		float noise_y = y / (float)(height - 1) * (noise_height - 1);
+		float temporal_y = sinf(yn * 17.0f + phase * 0.88f) * 3.0f;
+		for (int x = 0; x < width; x++) {
+			float xn = x / (float)(width - 1);
+			float noise_x = xn * (noise_width - 1);
+			float field_a = spectral_flow_sample(warp_a, noise_width, noise_height, noise_x, noise_y);
+			float field_b = spectral_flow_sample(warp_b, noise_width, noise_height, noise_x, noise_y);
+			float field_detail = spectral_flow_sample(detail, noise_width, noise_height, noise_x, noise_y);
+			float age = (1.0f - xn) * history_span - fractional_age
+				+ (field_b * 16.0f + temporal_y) * age_scale * edge_warp[x];
+			float row = base_row - (field_a * 20.0f + field_b * 7.0f) * row_scale;
+			float sample_age;
+			bool have_age = spectral_flow_resolve_age(age, filled, &sample_age);
+			float source_x = spectral_flow_clamp(
+				(1.0f - sample_age / history_span) * (width - 1), 0.0f, width - 1.0f);
+			float source_y = spectral_flow_clamp(row, 0.0f, bins - 1.0f)
+				/ (bins - 1.0f) * (source_height - 1);
+			float raw = have_age
+				? spectral_flow_sample(source, width, source_height, source_x, source_y) : 0.0f;
+			float neighbour_age = age + 3.0f * age_scale;
+			float neighbour_row = row + 2.0f * row_scale;
+			float sample_neighbour_age;
+			bool have_neighbour = spectral_flow_resolve_age(
+				neighbour_age, filled, &sample_neighbour_age);
+			float neighbour_x = spectral_flow_clamp(
+				(1.0f - sample_neighbour_age / history_span) * (width - 1), 0.0f, width - 1.0f);
+			float neighbour_y = spectral_flow_clamp(neighbour_row, 0.0f, bins - 1.0f)
+				/ (bins - 1.0f) * (source_height - 1);
+			float neighbour = have_neighbour
+				? spectral_flow_sample(source, width, source_height, neighbour_x, neighbour_y) : raw;
+			float value = (raw * (0.88f + field_detail * 0.3f)
+				+ fmaxf(0.0f, raw - neighbour) * 0.48f) * response_gain;
+			value = spectral_flow_clamp(value, 0.0f, 1.0f);
+			float islands = spectral_flow_clamp((value - 0.07f) / 0.5f, 0.0f, 1.0f);
+			islands = islands * islands * (3.0f - 2.0f * islands);
+			float contour = 0.5f + 0.5f * sinf(
+				value * 13.5f + field_a * 7.4f + field_detail * 2.8f);
+			float colour_value = spectral_flow_clamp(
+				islands * (0.27f + value * 0.63f + contour * 0.17f), 0.0f, 1.0f);
+			int palette_index = (int)lroundf(colour_value * 255.0f);
+			float vignette = 0.9f + 0.1f * vignette_x[x] * vignette_y[y];
+			int floor_value = 2 + ((x * 37 + y * 17 + x * y * 3) & 3);
+			int pixel_offset = (y * width + x) * 4;
+			for (int channel = 0; channel < 3; channel++) {
+				int base = palette[channel];
+				float mapped = floor_value + palette[palette_index * 4 + channel] * vignette;
+				// Silent pixels must exactly match the widget's palette floor. Fade
+				// grain and vignette in with real spectral coverage so an otherwise
+				// empty texture cannot reveal a synthetic opening/drain boundary.
+				int colour = (int)lroundf(base + (mapped - base) * islands);
+				pixels[pixel_offset + channel] = colour < 255 ? colour : 255;
+			}
+			pixels[pixel_offset + 3] = 255;
+		}
+	}
+
+	pthread_mutex_unlock(&spectral_flow_render_mutex);
+	return 0;
+}
+
 EXPORT int is_buffering() {
 	if (buffering == 0) return 0;
 	// Fill ratio as a percentage. Multiply before dividing so this isn't

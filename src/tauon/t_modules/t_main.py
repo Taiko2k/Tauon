@@ -113,6 +113,7 @@ from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	migrate_star_store_71,
 )
 from tauon.t_modules.t_custom import (  # noqa: E402
+	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
 	STACK_COUNTS as CL_STACK_COUNTS,
 	TEMPLATES as CL_TEMPLATES,
@@ -800,7 +801,7 @@ class GuiVar:
 		# Compact instance swaps in its own key so several galleries scroll
 		# independently; "gallery" = the preset / Classic widget channel.
 		self.gallery_scroll_key: str = "gallery"
-		self.spectrogram_bins: int = 256
+		self.spectrogram_bins: int = CL_SPECTROGRAM_BINS
 		self.spectrogram_buffers: list[list[float]] = []
 		self.showcase_mode: bool = False
 		self.timed_lyrics_edit_view: bool = False
@@ -53963,7 +53964,7 @@ def main(holder: Holder) -> None:
 	rebuild_layout_menu()
 
 	# Right-click menu for the Spectrogram widget: colour presets.
-	spectrogram_menu = Menu(tauon, 150)
+	spectrogram_menu = Menu(tauon, 210)
 	tauon.spectrogram_menu = spectrogram_menu
 
 	# Top-level menu items are invoked as func() with no arguments (MenuItem
