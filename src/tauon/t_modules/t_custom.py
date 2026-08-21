@@ -909,7 +909,7 @@ class FeuxBar:
 		mb_off = self._fg(self._tint(colours.media_buttons_off, left, mid, panel, boost=0.6), backdrop, 2.6)
 		mb_over = self._fg(self._tint(colours.media_buttons_over, left, mid, panel, boost=0.6), backdrop, 4.5)
 		box = self._s(32)
-		x = left + self._s(18)
+		x = left + self._s(15)
 		playing = pctl.playing_state == PlayingState.PLAYING
 
 		# BACK
@@ -922,7 +922,7 @@ class FeuxBar:
 				pctl.back()
 			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
 		a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
-		x += box + self._s(6)
+		x += box + self._s(9)
 
 		# PLAY / PAUSE, on a filled disc. The disc takes the contrasting ink so
 		# it reads as the primary control on light and dark panels alike; the
@@ -991,7 +991,7 @@ class FeuxBar:
 		bar_w = bar_right - bar_x
 
 		if show_time:
-			ddt.text((right - self._s(14), self._text_y(212, mid), 1), elapsed, time_colour, 212)
+			ddt.text((right - self._s(14) + 1, self._text_y(212, mid), 1), elapsed, time_colour, 212)
 
 		self._on_seek = False
 		if bar_w < self._s(30):
