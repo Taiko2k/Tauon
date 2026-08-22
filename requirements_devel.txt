@@ -1,2 +1,0 @@
-# Dev package to see types
-pygobject-stubs --config-settings=config=Gtk3,Gdk3
