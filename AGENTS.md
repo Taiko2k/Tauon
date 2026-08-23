@@ -23,6 +23,7 @@ This repository is Tauon, a desktop music player with a large Python/SDL UI laye
 ## Project-Specific Rules
 
 - Do not shadow `_`. It is treated as the translation builtin in this project.
+- Keep code comments concise and relevant. Comments should reflect the current state of the code, not the past.
 
 Fast syntax check:
 
