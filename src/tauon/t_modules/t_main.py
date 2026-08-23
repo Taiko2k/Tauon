@@ -210,7 +210,8 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	year_search,
 )
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
-from tauon.t_modules.t_jellyfin import Jellyfin  # noqa: E402
+from tauon.t_modules.t_jellyfin import Jellyfin
+from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
 from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
 from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
 from tauon.t_modules.t_phazor import Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
@@ -6882,6 +6883,7 @@ class Tauon:
 		self.fader:                                    Fader = Fader(tauon=self)
 		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
 		self.album_art_gen:                         AlbumArt = self.style_overlay.album_art_gen
+		self.litterbox:                      LitterboxCache = LitterboxCache(self.user_directory)
 		self.tool_tip:                               ToolTip = ToolTip(tauon=self)
 		self.tool_tip2:                              ToolTip = ToolTip(tauon=self)
 		self.columns_tool_tip:                      ToolTip3 = ToolTip3(tauon=self)
@@ -19559,6 +19561,9 @@ class Tauon:
 			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
 				json.dump(prefs.lyrics_subs, file)
 
+			# Uploaded art links, so we know when they expire across restarts
+			self.litterbox.save()
+
 			save_prefs(bag=self.bag)
 
 			# Save playlists to export
@@ -29908,7 +29913,7 @@ class Over:
 		left_w = max(round(270 * gui.scale), min(round(w * 0.5), w - round(220 * gui.scale)))
 		right_w = w - left_w - column_gap
 		top_row_h = round(286 * gui.scale)
-		discord_h = round(252 * gui.scale) if prefs.discord_enable else 0
+		discord_h = round(288 * gui.scale) if prefs.discord_enable else 0
 		total_h = top_row_h + (block_gap + discord_h if discord_h else 0)
 		if not draw:
 			return total_h
@@ -30080,6 +30085,13 @@ class Over:
 			(right_col_x, option_y, right_col_w, compact_row_h),
 			prefs.discord_keep_idle,
 			_("Keep idle"),
+			accent=discord_accent,
+		)
+		option_y += compact_row_h + row_gap
+		prefs.discord_litterbox_upload = self.settings_switch_row(
+			(right_col_x, option_y, right_col_w, compact_row_h),
+			prefs.discord_litterbox_upload,
+			_("Upload to catbox.moe"),
 			accent=discord_accent,
 		)
 
@@ -49898,6 +49910,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("discord-lastfm-button",        prefs.discord_lastfm_button)
 	cf.update_value("discord-show-tauon-button",    prefs.discord_show_tauon_button)
 	cf.update_value("discord-keep-idle",            prefs.discord_keep_idle)
+	cf.update_value("discord-litterbox-upload",     prefs.discord_litterbox_upload)
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
@@ -50307,6 +50320,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.discord_keep_idle = cf.sync_add(
 		"bool", "discord-keep-idle", prefs.discord_keep_idle,
 		"Keep Discord rich presence visible while playback is idle")
+	prefs.discord_litterbox_upload = cf.sync_add(
+		"bool", "discord-litterbox-upload", prefs.discord_litterbox_upload,
+		"Upload local album art to litterbox.catbox.moe (3 day expiry) for Discord rich presence")
 	if prefs.discord_card_layout not in ("title_artist", "artist_title"):
 		prefs.discord_card_layout = "title_artist"
 	if prefs.discord_member_list_display not in ("song", "artist"):
@@ -53499,6 +53515,9 @@ def main(holder: Holder) -> None:
 	)
 	if show_upgrade_splash:
 		prefs.show_nag = True
+
+	# Drops links that expired while closed, so they re-upload on demand
+	tauon.litterbox.load()
 
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:

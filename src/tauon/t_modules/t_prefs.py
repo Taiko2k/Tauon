@@ -131,6 +131,7 @@ class Prefs:
 	discord_lastfm_button:       bool = False
 	discord_show_tauon_button:   bool = True
 	discord_keep_idle:           bool = False
+	discord_litterbox_upload:    bool = False
 
 	monitor_downloads: bool = True
 	extract_to_music:  bool = False

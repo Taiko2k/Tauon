@@ -12,6 +12,8 @@ from typing import Optional
 
 import requests
 
+from tauon.t_modules.t_litterbox import get_uploaded_art_url
+
 try:
     from pypresence import ActivityType, Presence, StatusDisplayType
 except Exception:
@@ -207,12 +209,15 @@ def discord_loop_entrypoint(main) -> None:
                 prefs.discord_lastfm_button,
                 prefs.discord_show_tauon_button,
                 prefs.discord_keep_idle,
+                prefs.discord_litterbox_upload,
             )
             force_update = prefs_sig != last_prefs_sig
             if force_update:
                 log(f"Preferences changed: {prefs_sig}")
                 last_prefs_sig = prefs_sig
                 pending_since  = 0.0
+                # Art source may have changed; don't wait out the 25s refresh
+                cached_art_track_index = -1
                 if prefs.discord_keep_idle:
                     activity_hidden = False
 
@@ -402,13 +407,22 @@ def discord_loop_entrypoint(main) -> None:
                     cached_small_image     = None
                     rapid_skip = (now - last_sent_at) < 3.0 and current_index != last_sent_track_index
                     if state_now != PlayingState.URL_STREAM and not rapid_skip:
-                        try:
-                            url = main.get_album_art_url(tr)
-                            if url:
-                                cached_large_image = url
-                                cached_small_image = "tauon-standard"
-                        except Exception:
-                            logging.exception("Discord cover art lookup failed")
+                        url = None
+                        # None whenever the art isn't ours to publish or the
+                        # upload budget is spent, so CAA below is the fallback
+                        if prefs.discord_litterbox_upload:
+                            try:
+                                url = get_uploaded_art_url(main, tr)
+                            except Exception:
+                                logging.exception("Discord art upload failed")
+                        if not url:
+                            try:
+                                url = main.get_album_art_url(tr)
+                            except Exception:
+                                logging.exception("Discord cover art lookup failed")
+                        if url:
+                            cached_large_image = url
+                            cached_small_image = "tauon-standard"
 
                 card_layout = getattr(prefs, "discord_card_layout", "title_artist")
                 if card_layout == "artist_title":
