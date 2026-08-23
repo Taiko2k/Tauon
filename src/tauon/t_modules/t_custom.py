@@ -395,7 +395,10 @@ class SpectrogramWidget(Widget):
 	new column is one tiny SDL_UpdateTexture write, and the visible window is
 	at most two scaled blits per frame. Float (subpixel) dest rects + a
 	fractional offset give a continuous scroll instead of a per-column step;
-	linear filtering smooths both axes. An adaptive playout buffer consumes the
+	linear filtering smooths both axes. (The Spectral Flow field is scrolled the
+	same way: it is rebuilt well below the display rate, so each frame pans the
+	last field by the true elapsed distance across a reserved strip of its newest
+	columns rather than holding still until the next rebuild.) An adaptive playout buffer consumes the
 	jittery producer queue at a smooth, self-pacing rate (holding a small column
 	backlog as a cushion), so scroll velocity stays constant and occasional late
 	frames or producer stalls are absorbed rather than shown as a lurch.
@@ -431,7 +434,20 @@ class SpectrogramWidget(Widget):
 	FLOW_NATIVE_MAX_H = 310
 	FLOW_FALLBACK_MAX_W = 160
 	FLOW_FALLBACK_MAX_H = 56
-	FLOW_FRAME_PERIOD = 1 / 20
+	FLOW_FRAME_PERIOD = 1 / 20          # pure-Python fallback field rate
+	FLOW_NATIVE_FRAME_PERIOD = 1 / 30   # native field rate (~5 ms per render)
+	# Between field renders the finished field is panned (see draw), so scroll
+	# velocity is continuous instead of stepping at the field rate. The pan needs
+	# a strip of not-yet-shown newest field columns to travel into; this is its
+	# width in field pixels, about twice one render period's travel so a late
+	# render still has somewhere to go.
+	FLOW_PAN_MARGIN = 3.5
+	# Analyser-style temporal smoothing for flow-mode history columns. Tauon
+	# feeds raw FFT frames; the prototype's AnalyserNode smooths them, and
+	# without that the flux edge and contour terms turn per-frame FFT variance
+	# into a boiling field. Asymmetric so transients still punch through.
+	FLOW_ATTACK = 0.58
+	FLOW_RELEASE = 0.26
 
 	_tex = None
 	_tex_bins = 0
@@ -451,6 +467,8 @@ class SpectrogramWidget(Widget):
 	_flow_pixels: bytearray | None = None
 	_flow_palette: bytes | None = None
 	_flow_palette_buffer = None
+	_flow_smooth: list[float] | None = None  # per-bin temporal smoothing state
+	_flow_render_scroll = 0.0                # scroll clock when the field was built
 	# Adaptive playout buffer. The producer appends columns at a jittery rate;
 	# the display consumes them at a smooth, self-pacing rate instead of draining
 	# the whole queue every frame. _col_period is seconds per on-screen column;
@@ -459,7 +477,7 @@ class SpectrogramWidget(Widget):
 	# _frac_accum is the sub-column scroll position (0-1), advanced by real
 	# elapsed time so velocity is constant regardless of frame/producer jitter.
 	TARGET_BACKLOG = 2      # columns to keep queued (jitter cushion)
-	ADAPT_GAIN = 0.0015     # per-frame pull of _col_period toward the target
+	ADAPT_RATE = 0.09       # per-second pull of _col_period toward the target
 	_col_period = 1 / 50    # s per column (adapts to the real production rate)
 	_frac_accum = 0.0       # sub-column scroll offset, 0-1
 	_last_frame = 0.0       # monotonic time of the previous consumed frame
@@ -468,6 +486,7 @@ class SpectrogramWidget(Widget):
 	_flow_phase = 0.0        # field-noise clock; frozen while paused/empty
 	_pending_cols = 0
 	_pending_since = 0.0
+	_consumed = 0            # columns ever consumed; with _frac_accum, the scroll clock
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
@@ -505,6 +524,7 @@ class SpectrogramWidget(Widget):
 				# columns belong to the track that just stopped; leaving them queued
 				# creates a phantom first wave when playback starts again.
 				gui.spectrogram_buffers.clear()
+				cls._flow_smooth = None  # don't carry a decay tail into the next track
 				if flow_mode:
 					# Blank columns enter at the right and carry the remaining field off
 					# the left. Keep _filled stable during this so the width does not
@@ -519,7 +539,11 @@ class SpectrogramWidget(Widget):
 			if playing:
 				backlog = len(gui.spectrogram_buffers)
 				# Slow integrator: more queued -> consume faster (shorter period).
-				cls._col_period *= 1.0 - (backlog - cls.TARGET_BACKLOG) * cls.ADAPT_GAIN
+				# Scaled by elapsed time so the settling rate — and with it the
+				# scroll velocity's wobble — is the same on a 60 Hz and a 144 Hz
+				# display instead of running 2.4x faster on the latter.
+				cls._col_period *= 1.0 - (
+					backlog - cls.TARGET_BACKLOG) * cls.ADAPT_RATE * elapsed
 				cls._col_period = min(max(cls._col_period, 0.008), 0.05)
 			cls._frac_accum += elapsed / cls._col_period
 			guard = 0
@@ -548,11 +572,25 @@ class SpectrogramWidget(Widget):
 		tauon.ddt.rect(rect, ColourRGBA(lut0[2], lut0[1], lut0[0], 255))
 
 		if cls._filled and flow_mode:
+			period = cls.FLOW_NATIVE_FRAME_PERIOD if cls._flow_native is not None \
+				else cls.FLOW_FRAME_PERIOD
 			if cls._flow_dirty or (
-					(playing or draining) and now - cls._flow_last_render >= cls.FLOW_FRAME_PERIOD):
+					(playing or draining) and now - cls._flow_last_render >= period):
 				self._render_flow_texture(bins)
 				cls._flow_last_render = now
+				cls._flow_render_scroll = cls._consumed + cls._frac_accum
 				cls._flow_dirty = False
+			# The field is expensive enough that it is rebuilt well below the
+			# display rate. Rather than let it step, hold back the newest strip of
+			# it and pan across that strip as the scroll clock advances: every
+			# frame translates the same field by the true elapsed distance, so
+			# motion is continuous and no edge is ever left uncovered. A late
+			# render saturates the pan (a brief hold) instead of jumping.
+			margin = min(cls.FLOW_PAN_MARGIN, cls._flow_w * 0.25)
+			history_span = max(1, cls._cols - 2)
+			advance = (cls._consumed + cls._frac_accum) - cls._flow_render_scroll
+			pan = min(margin, max(0.0, advance * (cls._flow_w - 1) / history_span))
+			src = sdl3.SDL_FRect(pan, 0, cls._flow_w - margin, cls._flow_h)
 			# The prototype composites a blurred screen-blend copy behind the field.
 			# A faint expanded additive pass gives SDL the same soft bloom without
 			# maintaining another full-size render target.
@@ -563,11 +601,13 @@ class SpectrogramWidget(Widget):
 			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(clip))
 			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_ADD)
 			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 34)
-			sdl3.SDL_RenderTexture(tauon.renderer, cls._flow_tex, None, ctypes.byref(glow_dst))
+			sdl3.SDL_RenderTexture(
+				tauon.renderer, cls._flow_tex, ctypes.byref(src), ctypes.byref(glow_dst))
 			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 255)
 			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
 			dst = sdl3.SDL_FRect(x, y, w, h)
-			sdl3.SDL_RenderTexture(tauon.renderer, cls._flow_tex, None, ctypes.byref(dst))
+			sdl3.SDL_RenderTexture(
+				tauon.renderer, cls._flow_tex, ctypes.byref(src), ctypes.byref(dst))
 			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
 		elif cls._filled:
 			col_px = 1.5 * gui.scale
@@ -724,12 +764,27 @@ class SpectrogramWidget(Widget):
 		write = cls._write
 		norm = cls.NORM
 		gamma = cls.GAMMA
+		flow = cls._lut_preset in SPECTRAL_FLOW_PRESETS
+		smooth = cls._flow_smooth
+		if flow and (smooth is None or len(smooth) != bins):
+			smooth = cls._flow_smooth = [0.0] * bins
+		attack = cls.FLOW_ATTACK
+		release = cls.FLOW_RELEASE
 		for i in range(min(bins, len(col))):
 			v = col[i] / norm
 			idx = 255 if v >= 1.0 else int((v ** gamma) * 255) if v > 0 else 0
 			row = bins - 1 - i  # low frequencies at the bottom
+			if flow:
+				# Attack/release smoothing along time, standing in for the
+				# prototype's analyser smoothing. Applied only in flow mode: the
+				# ordinary palettes want the raw per-frame detail.
+				previous = smooth[row]
+				previous += (idx - previous) * (attack if idx > previous else release)
+				smooth[row] = previous
+				idx = int(previous)
 			vals[row * cls._cols + write] = idx
-		if cls._lut_preset in SPECTRAL_FLOW_PRESETS:
+		cls._consumed += 1
+		if flow:
 			cls._flow_dirty = True
 		else:
 			pix = self._colour_column(write, bins)
@@ -745,6 +800,7 @@ class SpectrogramWidget(Widget):
 		for row in range(bins):
 			cls._vals[row * cls._cols + write] = 0
 		cls._flow_dirty = True
+		cls._consumed += 1
 		cls._write = (write + 1) % cls._cols
 
 	def _colour_column(self, column: int, bins: int) -> bytes:
