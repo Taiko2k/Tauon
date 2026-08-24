@@ -42,10 +42,22 @@ from typing import TYPE_CHECKING, Callable
 import sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
-from tauon.t_modules.t_extra import ColourRGBA, atomic_save, get_display_time, get_samplerate_string
+from tauon.t_modules.t_extra import (
+	ColourRGBA,
+	Timer,
+	alpha_blend,
+	atomic_save,
+	ensure_contrast,
+	get_display_time,
+	get_samplerate_string,
+	hls_pull_contrast,
+	rgb_add_hls,
+	rgb_to_hls,
+	test_lumi,
+)
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon
+	from tauon.t_modules.t_main import Tauon, ToolTip
 
 
 def _t(s: str) -> str:
@@ -1174,6 +1186,728 @@ class PlaybackPanelWidget(Widget):
 		bar = tauon.bottom_bar_ao1 if tauon.prefs.shuffle_lock else tauon.bottom_bar1
 		bar.update()
 		bar.render()
+
+
+class FeuxBar:
+	"""Renderer for the "Playback panel: Feux" widget.
+
+	A roomier take on the bottom bar, split into three pods by hairlines:
+	cover art and the track title on the left, transport plus a solid scrub
+	bar in the middle, shuffle / repeat / volume / menu on the right.
+
+	Colours come from the same theme roles the standard bar uses
+	(bottom_panel_colour, the media/mode button roles, the seek and volume
+	bar roles) and go through the same art tinting (style_overlay), so the
+	panel reacts to an art background the way BottomBarType1 does. Every
+	foreground is then corrected with ensure_contrast() against the surface
+	actually behind it, so the panel is readable on light themes as well as
+	dark ones without needing its own colour table.
+
+	Owned by PlaybackPanelFeuxWidget, which renders it offscreen: the engine
+	narrows window_size to the segment first, so this fills that segment from
+	the scratch origin. The segment's height is the user's to drag -- the art
+	keeps a constant padding and grows into it, the pods lay out off a centre
+	line that stays centred, and the width the art takes comes out of the
+	scrub bar. PANEL_H is only the height it starts at.
+	"""
+
+	PANEL_H = 66   # unscaled; the widget's default height, not a limit
+	POD1_W  = 264  # now-playing pod, at the default height
+	ART     = 56   # art at the default height; derived from PAD in practice
+	PAD     = 5    # constant gap above and below the art -- see _art_size
+	DISC    = 38
+	STOP_D  = 28
+	VOL_W   = 88
+	BAR_H   = 7
+
+	# Glint: a band of light crossing the disc on every transport state
+	# change (see _draw_glint). SWAP is the fraction of the sweep at which
+	# the glyph changes -- the light is over it by then, so the change
+	# happens inside the flash rather than a beat before it. Set it to 0 for
+	# an instant swap with the glint as pure decoration.
+	GLINT_TIME = 0.20   # seconds for one sweep
+	GLINT_W    = 15     # unscaled band width, measured across the sweep
+	GLINT_SWAP = 0.40
+	GLINT_PEAK = 115    # alpha at the middle of the band
+
+	LOVED_COLOUR = ColourRGBA(244, 100, 100, 255)
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.gui = tauon.gui
+		self.ddt = tauon.ddt
+		self.inp = tauon.inp
+		self.pctl = tauon.pctl
+		self.colours = tauon.colours
+		self.coll = tauon.coll
+		self.fields = tauon.fields
+		self.assets: dict[str, object] | None = None
+		self.seek_drag = False
+		self.seek_value = 0.0
+		self.vol_drag = False
+		self._on_seek = False
+		self.glint = Timer(force=100)          # expired: no glint on the first frame
+		self.glint_playing: bool | None = None
+
+	# -- assets ---------------------------------------------------------
+
+	def _load_assets(self) -> dict:
+		if self.assets is None:
+			from tauon.t_modules.t_main import asset_loader  # local import avoids cycle
+			bag = self.tauon.bag
+			names = (
+				"feux-bb", "feux-ff", "feux-play", "feux-pause", "feux-stop",
+				"feux-disc", "feux-disc-sm", "feux-heart", "feux-heart-on",
+				"feux-menu", "feux-shuffle", "feux-shuffle-off", "feux-shuffle-a",
+				"feux-repeat", "feux-repeat-off", "feux-repeat-a",
+				"feux-corner-tl", "feux-corner-tr", "feux-corner-bl", "feux-corner-br",
+			)
+			self.assets = {
+				n: asset_loader(bag, bag.loaded_asset_dc, n + ".png", True) for n in names
+			}
+		return self.assets
+
+	# -- colour ---------------------------------------------------------
+
+	def _s(self, value: float) -> int:
+		return round(value * self.gui.scale)
+
+	def _art_size(self, h: int) -> int:
+		"""Side of the cover art in a panel `h` tall.
+
+		The padding around the art is what stays constant as the panel is
+		resized, so the art itself takes up the slack -- a taller panel shows
+		bigger art rather than more empty space. At the default PANEL_H this
+		is exactly ART.
+		"""
+		return max(self._s(20), h - 2 * self._s(self.PAD))
+
+	def _backdrop(self, panel: ColourRGBA, x: float, y: float) -> ColourRGBA:
+		"""The opaque surface actually behind an element: the panel fill
+		blended over whatever the art background is showing locally."""
+		sample = self.tauon.style_overlay.sample_background(x, y)
+		if sample is None:
+			return ColourRGBA(panel.r, panel.g, panel.b, 255)
+		f = panel.a / 255
+		return ColourRGBA(
+			round(panel.r * f + sample.r * (1 - f)),
+			round(panel.g * f + sample.g * (1 - f)),
+			round(panel.b * f + sample.b * (1 - f)), 255)
+
+	def _tint(self, colour: ColourRGBA, x: float, y: float, panel: ColourRGBA,
+			amount: float = 0.2, boost: float = 1.0) -> ColourRGBA:
+		return self.tauon.style_overlay.tint_from_background(colour, x, y, amount, panel, boost)
+
+	def _fg(self, colour: ColourRGBA, backdrop: ColourRGBA, minimum: float = 3.0) -> ColourRGBA:
+		"""A foreground role, corrected to stay readable on this surface."""
+		return ensure_contrast(colour, backdrop, minimum)
+
+	def _text_y(self, font: int, centre: float) -> int:
+		"""The y to pass ddt.text() to sit `font` visually centred on `centre`.
+
+		ddt.text() takes y as a baseline anchor pulled back by a fixed
+		13 * scale, so text of any size shares an alignment line at
+		y + 13 * scale; from there the cap-height centre is about 0.35 em
+		above the baseline.
+		"""
+		points = self.ddt.f_dict.get(font, (None, 0, 9 * self.gui.scale))[2]
+		pixels = points * 4 / 3  # Pango points at 96 dpi
+		return round(centre - 13 * self.gui.scale + pixels * 0.35)
+
+	def _tip(self, tip: ToolTip, x: float, y: float, text: str) -> None:
+		"""Tooltips are drawn later in the frame, at real screen coordinates,
+		so a widget rendering in its own local space has to convert first."""
+		sx, sy = self.inp.to_screen(x, y)
+		tip.test(sx, sy, text)
+
+	def _close(self, menu) -> None:
+		"""Deactivate a menu this panel opened, clearing the class-wide flag
+		when it was the last one up (render_menus() tears the popup window
+		down on the frame no menu is active)."""
+		from tauon.t_modules.t_main import Menu  # local import avoids cycle
+		menu.active = False
+		for m in Menu.instances:
+			if m.active:
+				break
+		else:
+			Menu.active = False
+
+	def _step(self, colour: ColourRGBA, amount: float) -> ColourRGBA:
+		"""Move a surface colour `amount` in lightness, away from itself, with
+		its hue and saturation untouched.
+
+		Furniture derived this way inherits the panel's tint instead of
+		flattening to grey, and the direction flips on a light panel so the
+		same call reads as a lift on dark and a recess on light.
+		"""
+		return rgb_add_hls(colour, l=amount if test_lumi(colour) > 0.5 else -amount)
+
+	def _mix(self, a: ColourRGBA, b: ColourRGBA, amount: float) -> ColourRGBA:
+		return ColourRGBA(
+			round(a.r + (b.r - a.r) * amount),
+			round(a.g + (b.g - a.g) * amount),
+			round(a.b + (b.b - a.b) * amount), a.a)
+
+	# -- render ---------------------------------------------------------
+
+	def render(self, height: float | None = None) -> None:
+		"""Draw the panel `height` tall against the bottom of the current
+		window space. `height` defaults to the whole of it, which is what the
+		layout widget wants (the engine has narrowed window_size to the
+		segment); the standard layout passes gui.panelBY instead, so the panel
+		is a bar along the bottom of the real window.
+		"""
+		tauon = self.tauon
+		gui = self.gui
+		ddt = self.ddt
+		inp = self.inp
+		pctl = self.pctl
+		colours = self.colours
+		a = self._load_assets()
+
+		w = round(tauon.window_size[0])
+		# Whatever height it has been given, everything lays out off `mid`,
+		# which stays centred in it.
+		h = round(height) if height is not None else round(tauon.window_size[1])
+		top = round(tauon.window_size[1]) - h
+		mid = top + h // 2
+		art = self._art_size(h)
+		panel = colours.bottom_panel_colour
+
+		# Match the standard bar: punch the panel colour in (for window
+		# transparency) unless art is showing underneath, then blend over it.
+		if not gui.have_art_bg:
+			sdl3.SDL_SetRenderDrawBlendMode(self.tauon.renderer, sdl3.SDL_BLENDMODE_NONE)
+		ddt.rect((0, top, w, h), panel)
+		sdl3.SDL_SetRenderDrawBlendMode(self.tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		ddt.text_background_colour = panel
+
+		back_l = self._backdrop(panel, self._s(60), mid)
+		back_c = self._backdrop(panel, w // 2, mid)
+		back_r = self._backdrop(panel, w - self._s(80), mid)
+		ink = ColourRGBA(255, 255, 255, 255) if test_lumi(back_c) > 0.5 else ColourRGBA(0, 0, 0, 255)
+		hairline = self._mix(back_c, ink, 0.10)
+
+		# Pod widths. The right pod is measured from its real contents so the
+		# divider lands on it; both collapse on a narrow segment.
+		pod3_w = (self._s(16) + a["feux-shuffle"].w + self._s(9) + a["feux-repeat"].w
+			+ self._s(16) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
+		show_right = w > pod3_w + self._s(430)
+		if not show_right:
+			pod3_w = 0
+		# Wider art pushes the divider right, so the title keeps its width and
+		# the space comes out of the middle pod (i.e. the scrub bar). The floor
+		# is the art plus the same sliver of title it leaves at the default
+		# height, so a narrow segment still never runs the art past the line.
+		grown = art - self._s(self.ART)
+		pod1_min = self._s(110) + grown
+		pod1_w = min(self._s(self.POD1_W) + grown, max(pod1_min, w - pod3_w - self._s(250)))
+		pod2_right = w - pod3_w
+
+		self._draw_now_playing(top, h, mid, pod1_w, art, panel, back_l)
+		line_w = max(1, self._s(1))
+		# Inset from both ends, so the divider stays centred and keeps a
+		# sensible length whether the panel is squat or tall.
+		line_y = min(self._s(16), h // 4)
+		if pod1_w > pod1_min:
+			ddt.rect((pod1_w, top + line_y, line_w, h - line_y * 2), hairline)
+		self._draw_transport(top, h, mid, pod1_w, pod2_right, panel, back_c, ink)
+		if show_right:
+			ddt.rect((pod2_right, top + line_y, line_w, h - line_y * 2), hairline)
+			self._draw_modes(top, h, mid, w, panel, back_r)
+
+		# Right-click anywhere the pods did not claim opens the panel's context
+		# menu, as it does on the standard bar. Each pod consumes the click for
+		# its own menu first, so only what is left reaches here.
+		if inp.right_click and self.coll((0, top, w, h)):
+			tauon.mode_menu.activate()
+			inp.right_click = False
+
+		# Wheel anywhere over the panel that isn't the scrub bar sets volume,
+		# as it does on the standard bar.
+		if inp.mouse_wheel != 0 and self.coll((0, top, w, h)) and not self._on_seek:
+			pctl.player_volume = min(100, max(0, pctl.player_volume + (
+				inp.mouse_wheel * self.tauon.prefs.volume_wheel_increment)))
+			pctl.set_volume()
+			gui.request_frame()
+
+	# -- pods -----------------------------------------------------------
+
+	def _draw_now_playing(self, top: int, h: int, mid: int, pod_w: int, art: int,
+			panel: ColourRGBA, backdrop: ColourRGBA) -> None:
+		tauon = self.tauon
+		ddt = self.ddt
+		inp = self.inp
+		pctl = self.pctl
+		colours = self.colours
+		a = self.assets
+
+		# Equal padding on the left, top and bottom.
+		art_x = self._s(self.PAD)
+		art_y = mid - art // 2
+		track = pctl.playing_object()
+
+		if track is not None and pctl.playing_state != PlayingState.STOPPED:
+			tauon.album_art_gen.display(
+				track, (art_x, art_y), (art, art), async_hold=True, caller_id="feux_bar")
+		else:
+			ddt.rect((art_x, art_y, art, art), self._mix(backdrop, colours.art_box, 0.7))
+
+		# Follow the window: round the art only while the window itself is
+		# rounded, by painting the panel back over each corner.
+		if tauon.corner_round_radius():
+			for name, (cx, cy) in (
+				("feux-corner-tl", (art_x, art_y)),
+				("feux-corner-tr", (art_x + art - a["feux-corner-tr"].w, art_y)),
+				("feux-corner-bl", (art_x, art_y + art - a["feux-corner-bl"].h)),
+				("feux-corner-br", (art_x + art - a["feux-corner-br"].w,
+					art_y + art - a["feux-corner-br"].h)),
+			):
+				a[name].render(cx, cy, backdrop)
+
+		# Thresholds shift with the art: a taller panel widens the pod by
+		# exactly the art's growth, so the room left for the text is unchanged.
+		grown = art - self._s(self.ART)
+		heart_x = pod_w
+		if pod_w > self._s(150) + grown and pctl.playing_ready():
+			loved = bool(tauon.love(False))
+			icon = a["feux-heart-on"] if loved else a["feux-heart"]
+			heart_x = pod_w - self._s(14) - icon.w
+			rect = (heart_x - self._s(8), mid - self._s(15), icon.w + self._s(16), self._s(30))
+			self.fields.add(rect)
+			colour = self.LOVED_COLOUR if loved else colours.mode_button_off
+			if self.coll(rect):
+				colour = self.LOVED_COLOUR if loved else colours.mode_button_over
+				if inp.mouse_click:
+					tauon.bar_love()
+					inp.mouse_click = False
+				self._tip(tauon.tool_tip2, heart_x, top - self._s(4), _t("Un-Love Track") if loved else _t("Love Track"))
+			colour = self._tint(colour, heart_x, mid, panel, boost=0.6)
+			icon.render(heart_x, mid - icon.h // 2, self._fg(colour, backdrop, 2.6))
+
+		text_x = art_x + art + self._s(10)
+		text_w = max(self._s(20), heart_x - self._s(10) - text_x)
+		if text_w < self._s(24):
+			return
+
+		title = ""
+		line2 = ""
+		if track is not None:
+			title = track.title or track.filename
+			line2 = track.artist or track.album or ""
+			if track.album and track.artist:
+				line2 = track.artist + "  ·  " + track.album
+
+		title_colour = self._fg(
+			self._tint(colours.bar_title_text, text_x, mid, panel, boost=0.6), backdrop, 4.5)
+		sub_colour = self._fg(self._step(backdrop, 0.42), backdrop, 2.6)
+
+		# Both lines hang off the centre line so they stay put as the panel
+		# grows (the offsets are the default layout's distance from it).
+		if title:
+			ddt.text((text_x, mid - self._s(16)), title, title_colour, 213, max_w=text_w)
+		if line2:
+			ddt.text((text_x, mid + self._s(2)), line2, sub_colour, 12, max_w=text_w)
+
+		# Click-through to the playing track, like the standard bar's title.
+		rect = (art_x, top, heart_x - art_x, h)
+		if self.coll(rect) and pctl.playing_ready():
+			if inp.mouse_click:
+				pctl.show_current()
+			if inp.right_click:
+				tauon.mode_menu.activate()
+				inp.right_click = False
+
+	def _draw_transport(self, top: int, h: int, mid: int, left: int, right: int,
+			panel: ColourRGBA, backdrop: ColourRGBA, ink: ColourRGBA) -> None:
+		tauon = self.tauon
+		gui = self.gui
+		ddt = self.ddt
+		inp = self.inp
+		pctl = self.pctl
+		colours = self.colours
+		a = self.assets
+
+		mb_off = self._fg(self._tint(colours.media_buttons_off, left, mid, panel, boost=0.6), backdrop, 2.6)
+		mb_over = self._fg(self._tint(colours.media_buttons_over, left, mid, panel, boost=0.6), backdrop, 4.5)
+		box = self._s(32)
+		x = left + self._s(15)
+		playing = pctl.playing_state == PlayingState.PLAYING
+
+		# The disc glints whenever the transport state changes, whatever caused
+		# it -- this button, a keyboard shortcut, MPRIS, the queue running out.
+		# The first frame only records the state, so it doesn't glint on start.
+		if playing != self.glint_playing:
+			if self.glint_playing is not None:
+				self.glint.set()
+			self.glint_playing = playing
+		glint = self.glint.get()
+		glinting = glint < self.GLINT_TIME
+		if glinting:
+			gui.request_frame()
+
+		# BACK
+		rect = (x, mid - self._s(17), box, self._s(34))
+		self.fields.add(rect)
+		colour = mb_off
+		if self.coll(rect):
+			colour = mb_over
+			if inp.mouse_click:
+				pctl.back()
+			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
+		a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
+		x += box + self._s(9)
+
+		# PLAY / PAUSE, on a filled disc. The disc takes the contrasting ink so
+		# it reads as the primary control on light and dark panels alike; the
+		# glyph is punched back out of it in the panel's own colour. It stops
+		# short of the full ink so it keeps a little of the panel's own colour
+		# and tone -- a pure white disc on a dark panel is louder than anything
+		# else down there. Hover lifts it, without going all the way either.
+		disc = a["feux-disc"].w
+		disc_x = x
+		rect = (disc_x, mid - disc // 2, disc, disc)
+		self.fields.add(rect)
+		disc_colour = self._mix(backdrop, ink, 0.75)
+		if self.coll(rect):
+			disc_colour = self._mix(backdrop, ink, 0.88)
+			if inp.mouse_click:
+				# pause() toggles, so it covers resuming from paused too.
+				if playing or pctl.playing_state == PlayingState.PAUSED:
+					pctl.pause()
+				else:
+					pctl.play()
+				inp.mouse_click = False
+			self._tip(tauon.tool_tip2, disc_x, top - self._s(4), _t("Pause") if playing else _t("Play"))
+		a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
+		# Hold the outgoing glyph until the light reaches it (see GLINT_SWAP).
+		shown = playing
+		if glinting and glint < self.GLINT_TIME * self.GLINT_SWAP:
+			shown = not playing
+		glyph = a["feux-pause"] if shown else a["feux-play"]
+		glyph_colour = self._fg(ColourRGBA(backdrop.r, backdrop.g, backdrop.b, 255), disc_colour, 4.5)
+		glyph.render(disc_x + round((disc - glyph.w) / 2), mid - round(glyph.h / 2), glyph_colour)
+		if glinting:
+			self._draw_glint(disc_x + disc / 2, mid, disc // 2, glint / self.GLINT_TIME)
+		x += disc + self._s(8)
+
+		# STOP, a smaller disc beside it
+		stop = a["feux-disc-sm"].w
+		rect = (x, mid - stop // 2, stop, stop)
+		self.fields.add(rect)
+		ring = self._step(backdrop, 0.07)
+		glyph_c = mb_off
+		if self.coll(rect):
+			ring = self._step(backdrop, 0.13)
+			glyph_c = mb_over
+			if inp.mouse_click:
+				pctl.stop()
+			if inp.right_click:
+				tauon.stop_menu.activate(position=(x, mid - self._s(6)))
+				inp.right_click = False
+			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Stop"))
+		a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
+		a["feux-stop"].render(
+			x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
+		x += stop + self._s(8)
+
+		# FORWARD
+		rect = (x, mid - self._s(17), box, self._s(34))
+		self.fields.add(rect)
+		colour = mb_off
+		if self.coll(rect):
+			colour = mb_over
+			if inp.mouse_click:
+				pctl.advance()
+			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Forward"))
+		a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
+		x += box + self._s(16)
+
+		# TIMES + SCRUB BAR
+		length = pctl.playing_length
+		elapsed = get_display_time(pctl.playing_time)
+		time_colour = self._fg(self._tint(colours.time_playing, x, mid, panel, boost=0.6), backdrop, 4.5)
+
+		show_time = right - x > self._s(200)
+		el_w = ddt.get_text_w(elapsed, 212) if show_time else 0
+		bar_x = x
+		bar_right = right - self._s(14) - (el_w + self._s(12) if show_time else 0)
+		bar_w = bar_right - bar_x
+
+		if show_time:
+			ddt.text((right - self._s(14) + 1, self._text_y(212, mid), 1), elapsed, time_colour, 212)
+
+		self._on_seek = False
+		if bar_w < self._s(30):
+			return
+
+		bar_h = self._s(self.BAR_H)
+		bar_y = mid - bar_h // 2
+		seek_bg = self._tint(colours.seek_bar_background, bar_x + bar_w / 2, mid, panel, boost=0.6)
+		seek_fill = colours.seek_bar_fill
+		# Same guard the standard bar uses: if a bright backdrop pushed the
+		# track lighter than the fill, pull the fill back above it.
+		if rgb_to_hls(seek_bg.r, seek_bg.g, seek_bg.b)[1] > rgb_to_hls(
+				colours.seek_bar_background.r, colours.seek_bar_background.g,
+				colours.seek_bar_background.b)[1] + 0.01:
+			seek_fill = hls_pull_contrast(seek_fill, seek_bg, floor=0.12)
+		seek_fill = self._fg(seek_fill, alpha_blend(seek_bg, backdrop), 1.6)
+
+		hit = (bar_x, bar_y - self._s(9), bar_w, bar_h + self._s(18))
+		self.fields.add(hit)
+		if self.coll(hit):
+			self._on_seek = True
+			inp.global_clicked = True
+			if inp.mouse_click:
+				self.seek_drag = True
+			if inp.mouse_wheel != 0:
+				pctl.seek_time(pctl.playing_time + (inp.mouse_wheel * 3))
+			if inp.right_click:
+				pctl.pause()
+				inp.right_click = False
+
+		progress = 0.0
+		if length > 0:
+			progress = min(1.0, max(0.0, pctl.playing_time / length))
+		if self.seek_drag:
+			gui.update_on_drag = True
+			gui.request_frame()
+			progress = min(1.0, max(0.0, (inp.mouse_position[0] - bar_x) / max(1, bar_w)))
+			if not inp.mouse_down:
+				self.seek_drag = False
+				if pctl.playing_ready():
+					pctl.seek_decimal(progress)
+
+		ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
+		if progress > 0:
+			ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
+		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
+
+	def _draw_glint(self, cx: float, cy: float, r: int, k: float) -> None:
+		"""A band of light crossing the disc from top left to bottom right,
+		`k` of the way through its sweep.
+
+		Drawn as rows of rects, one per pixel row of the disc: at each row the
+		circle's half width is known, so the band takes the disc's round edge
+		without anything to clip against. Each row is then cut into slices
+		along the sweep so the band falls off from its middle instead of
+		reading as a flat bar.
+
+		The light is white in both themes -- it reads as something falling on
+		the disc, so it always lifts. Following the disc's own ink instead
+		would turn it into a shadow crossing a dark disc on a light theme,
+		which reads as the surface being occluded rather than catching light.
+		Alpha blending does the rest: the same peak lifts a dark disc further
+		than a light one, the way a real highlight does.
+		"""
+		ddt = self.ddt
+		# Asset sizes come off SDL as floats, so the radius arrives as one too;
+		# the row loop and isqrt() below both need a real int.
+		r = int(r)
+		if r < 3:
+			return
+		light = ColourRGBA(255, 255, 255, 0)
+		sq2 = math.sqrt(2)
+		half_w = max(2.0, self.GLINT_W * self.gui.scale / 2)
+		# Distance along the sweep, in the same units as the radius: a point
+		# (dx, dy) sits at (dx + dy) / sqrt(2), which runs -r..r inside the
+		# disc. Starting a band-width beyond that puts it fully clear at each
+		# end, so there is nothing to fade in or out.
+		reach = r + half_w
+		t = -reach + 2 * reach * k
+		slices = 8
+		step = 2 * half_w * sq2 / slices   # slice width along x
+		cxr = round(cx)
+		cyr = round(cy)
+		for dy in range(-r + 1, r):
+			half = math.isqrt(max(0, r * r - dy * dy - 1))
+			if half < 1:
+				continue
+			# x of the band's leading edge on this row: dx = u * sqrt(2) - dy.
+			base = (t - half_w) * sq2 - dy
+			if base - half > 0 or base + step * slices + half < 0:
+				continue
+			for j in range(slices):
+				# Round both ends so neighbouring slices share a pixel edge
+				# rather than overlapping and double-blending into a seam.
+				ix0 = cxr + round(max(-half, base + step * j))
+				ix1 = cxr + round(min(half, base + step * (j + 1)))
+				if ix1 <= ix0:
+					continue
+				d = (j + 0.5) / slices * 2 - 1     # -1 .. 1 across the band
+				alpha = round(self.GLINT_PEAK * (1 - d * d))
+				if alpha < 2:
+					continue
+				ddt.rect((ix0, cyr + dy, ix1 - ix0, 1),
+					ColourRGBA(light.r, light.g, light.b, alpha))
+
+	def _draw_modes(self, top: int, h: int, mid: int, w: int,
+			panel: ColourRGBA, backdrop: ColourRGBA) -> None:
+		tauon = self.tauon
+		gui = self.gui
+		ddt = self.ddt
+		inp = self.inp
+		pctl = self.pctl
+		colours = self.colours
+		a = self.assets
+
+		md_off = self._fg(self._tint(colours.mode_button_off, w - self._s(80), mid, panel, boost=0.6), backdrop, 2.6)
+		md_over = self._fg(self._tint(colours.mode_button_over, w - self._s(80), mid, panel, boost=0.6), backdrop, 4.5)
+		md_active = self._fg(self._tint(colours.mode_button_active, w - self._s(80), mid, panel, boost=0.6), backdrop, 4.5)
+
+		x = w - self._s(18)
+		gap = self._s(9)      # between the shuffle and repeat icons
+		inner = gap // 2      # each of their hitboxes claims half of it
+
+		# MENU. Left opens the playback menu, right the panel's own context
+		# menu -- the same pair the standard bar's hamburger carries.
+		icon = a["feux-menu"]
+		x -= icon.w
+		rect = (x - self._s(9), mid - self._s(15), icon.w + self._s(18), self._s(30))
+		self.fields.add(rect)
+		colour = md_active if tauon.extra_menu.active or tauon.mode_menu.active else md_off
+		if self.coll(rect):
+			colour = md_over
+			if inp.mouse_click or inp.right_click:
+				target = tauon.mode_menu if inp.right_click else tauon.extra_menu
+				# The button toggles: a second press closes the menu rather
+				# than reopening it. Inline, the menu is still active here and
+				# we close it ourselves; in popup-window mode the event loop
+				# already dismissed it and let this same click fall through to
+				# us, which is what click_dismissed marks.
+				if target.active:
+					self._close(target)
+				elif not target.click_dismissed:
+					# Opens upward off the panel's top edge, right-aligned with
+					# the icon, so it clears the panel instead of running off
+					# the bottom of the window.
+					target.activate(
+						position=(max(0, x + icon.w - round(target.w)), top),
+						bottom_anchor=True)
+				inp.right_click = False
+		icon.render(x, mid - icon.h // 2, colour)
+		x -= self._s(16)
+
+		# VOLUME (bar only, no speaker)
+		vol_w = self._s(self.VOL_W)
+		bar_h = self._s(self.BAR_H)
+		x -= vol_w
+		vol_x = x
+		vol_y = mid - bar_h // 2
+		vol_bg = self._tint(colours.volume_bar_background, vol_x + vol_w / 2, mid, panel, boost=0.6)
+		vol_fill = self._fg(colours.volume_bar_fill, alpha_blend(vol_bg, backdrop), 1.6)
+
+		hit = (vol_x, vol_y - self._s(9), vol_w, bar_h + self._s(18))
+		self.fields.add(hit)
+		if self.coll(hit):
+			inp.global_clicked = True
+			if inp.mouse_click:
+				self.vol_drag = True
+			if inp.right_click:
+				pctl.toggle_mute()
+				inp.right_click = False
+		if self.vol_drag:
+			gui.update_on_drag = True
+			gui.request_frame()
+			value = min(1.0, max(0.0, (inp.mouse_position[0] - vol_x) / max(1, vol_w)))
+			pctl.player_volume = int(value * 100)
+			if not inp.mouse_down:
+				self.vol_drag = False
+				pctl.set_volume(True)
+			else:
+				pctl.set_volume(False)
+
+		ddt.rect((vol_x, vol_y, vol_w, bar_h), vol_bg)
+		filled = round(vol_w * min(100, max(0, pctl.player_volume)) / 100)
+		if filled > 0:
+			ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
+		gui.volume_bar_rect = (vol_x, vol_y, filled, bar_h)
+		x -= self._s(16)
+
+		# REPEAT
+		if pctl.album_repeat_mode:
+			icon = a["feux-repeat-a"]
+		elif pctl.repeat_mode:
+			icon = a["feux-repeat"]
+		else:
+			icon = a["feux-repeat-off"]
+		x -= icon.w
+		# Shuffle and repeat sit closer together than the pads either side of
+		# them, so their inner pads split the gap between the two instead of
+		# each taking it whole -- overlapping boxes would light up both
+		# buttons on hover and toggle both modes on a click in the seam.
+		rect = (x - inner, mid - self._s(15), icon.w + inner + self._s(8), self._s(30))
+		self.fields.add(rect)
+		colour = md_active if pctl.repeat_mode else md_off
+		if self.coll(rect):
+			if not pctl.repeat_mode:
+				colour = md_over
+			if inp.mouse_click:
+				tauon.toggle_repeat()
+			if inp.right_click:
+				tauon.repeat_menu.activate(position=(x + icon.w, mid + self._s(14)))
+				inp.right_click = False
+			self._tip(tauon.tool_tip, x, top - self._s(4),
+				_t("Repeat album") if pctl.album_repeat_mode else _t("Repeat track"))
+		icon.render(x, mid - icon.h // 2, colour)
+		# Tighter than the other gaps on purpose: the repeat-off glyph carries
+		# about 6 px of its own left padding, so an even gap here reads as a
+		# wide one and throws the shuffle icon off centre.
+		x -= gap
+
+		# SHUFFLE
+		if pctl.album_shuffle_mode:
+			icon = a["feux-shuffle-a"]
+		elif pctl.random_mode:
+			icon = a["feux-shuffle"]
+		else:
+			icon = a["feux-shuffle-off"]
+		x -= icon.w
+		rect = (x - self._s(8), mid - self._s(15), icon.w + self._s(8) + (gap - inner), self._s(30))
+		self.fields.add(rect)
+		colour = md_active if pctl.random_mode else md_off
+		if self.coll(rect):
+			if not pctl.random_mode:
+				colour = md_over
+			if inp.mouse_click:
+				tauon.toggle_random()
+			if inp.right_click:
+				tauon.shuffle_menu.activate(position=(x + icon.w, mid + self._s(14)))
+				inp.right_click = False
+			self._tip(tauon.tool_tip, x, top - self._s(4), _t("Shuffle"))
+		icon.render(x, mid - icon.h // 2, colour)
+
+
+class PlaybackPanelFeuxWidget(Widget):
+	"""The Feux playback panel (see FeuxBar) as a layout widget.
+
+	Rendered offscreen like the standard Playback Panel: the engine narrows
+	window_size to the segment, so the bar lands at the scratch origin and
+	its fields/menus are reframed to real screen coordinates.
+
+	Height-locked like the other bars, but PANEL_H is only where it starts:
+	dragging its boundary edits the leaf's fixed_h and FeuxBar lays out to
+	whatever height it is given.
+	"""
+
+	kind = "playback_panel_feux"
+	name = "Playback panel: Feux"
+	lock_v = True
+	fixed_h = FeuxBar.PANEL_H  # starting height; the segment stays resizable
+	min_w = 260
+	min_h = 40
+	single_instance = True
+	edit_label = False
+	offscreen = True
+
+	def __init__(self) -> None:
+		self.bar: FeuxBar | None = None
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
+		if self.bar is None:
+			self.bar = FeuxBar(tauon)
+		tauon.ddt.text_background_colour = tauon.colours.bottom_panel_colour
+		self.bar.render(h)
 
 
 class RectPanelWidget(Widget):
@@ -2724,6 +3458,10 @@ def _playback_panel(spec: WidgetSpec) -> Widget:
 	return PlaybackPanelWidget()
 
 
+def _playback_panel_feux(spec: WidgetSpec) -> Widget:
+	return PlaybackPanelFeuxWidget()
+
+
 def _playlist_list(spec: WidgetSpec) -> Widget:
 	return PlaylistListWidget()
 
@@ -2822,6 +3560,9 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		single_instance=True, colour=ColourRGBA(12, 12, 16, 255)),
 	WidgetSpec("playback_panel", "Playback Panel", "Panels", _playback_panel,
 		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
+	WidgetSpec("playback_panel_feux", "Playback panel: Feux", "Panels", _playback_panel_feux,
+		lock_v=True, fixed_h=FeuxBar.PANEL_H, single_instance=True,
+		colour=ColourRGBA(20, 20, 22, 255)),
 	WidgetSpec("top_panel", "Header Bar", "Panels", _top_panel,
 		lock_v=True, fixed_h=30, single_instance=True, draws_window_controls=True,
 		colour=ColourRGBA(38, 38, 46, 255)),
@@ -3700,6 +4441,36 @@ class CustomLayout:
 			target.border = False if isinstance(parent, TabStack) else DEFAULT_WIDGET_BORDER
 		self.save_slots()
 		return True
+
+	def toggle_playback_panel(self) -> bool:
+		"""Swap the playback panel(s) in the active layout between the classic
+		bar and the Feux panel.
+
+		_adopt() re-reads the incoming widget's lock/fixed size, so the segment
+		lands on the new panel's default height rather than keeping the one the
+		old panel was using. Returns False when the layout has no playback
+		panel to swap.
+		"""
+		root = self.ensure_slot()
+		other = {"playback_panel": "playback_panel_feux",
+			"playback_panel_feux": "playback_panel"}
+		swapped = False
+		for leaf in iter_leaves(root):
+			if not isinstance(leaf, Leaf) or leaf.widget is None:
+				continue
+			kind = other.get(leaf.widget.kind)
+			if kind is None:
+				continue
+			widget = make_widget(kind)
+			if widget is None:
+				continue
+			leaf.widget = widget
+			leaf._adopt(widget)
+			swapped = True
+		if swapped:
+			self.save_slots()
+			self.gui.request_frame()
+		return swapped
 
 	def act_remove_widget(self, target: Node) -> None:
 		if isinstance(target, Leaf):

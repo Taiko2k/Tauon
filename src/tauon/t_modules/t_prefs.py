@@ -219,6 +219,11 @@ class Prefs:
 	art_bg_blur = 9
 	art_bg_frosted: bool = True
 
+	# Which playback panel the standard (non-custom) layout draws along the
+	# bottom: the classic bar, or the roomier Feux panel. gui.panelBY follows
+	# it (see GuiVar.rescale). The custom layout picks its panel per widget.
+	feux_panel: bool = False
+
 	random_mode: bool = False
 	repeat_mode: bool = False
 

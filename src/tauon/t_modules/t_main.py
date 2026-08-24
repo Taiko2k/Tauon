@@ -120,6 +120,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	WIDGET_SPECS as CL_WIDGET_SPECS,
 	AlbumflowWidget,
 	CustomLayout,
+	FeuxBar,
 	GridGalleryWidget,
 	draw_layout_glyph,
 )
@@ -633,6 +634,11 @@ class GuiVar:
 	#		 sdl3.SDL_StopTextInput()
 	#	 self.text_input_request = False
 
+	def bottom_panel_height(self) -> float:
+		"""Height of the standard layout's bottom panel, which depends on which
+		playback panel is selected -- the Feux panel is the taller of the two."""
+		return round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
+
 	def rescale(self) -> None:
 		self.spec_y = round(5 * self.scale)
 		self.spec_w = round(80 * self.scale)
@@ -647,7 +653,7 @@ class GuiVar:
 		self.bar = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
 		self.bar4 = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
 		self.set_height = round(25 * self.scale)
-		self.panelBY = round(51 * self.scale)
+		self.panelBY = self.bottom_panel_height()
 		self.panelY = round(30 * self.scale)
 		self.panelY2 = round(30 * self.scale)
 		self.playlist_top = self.panelY + (8 * self.scale)
@@ -6873,6 +6879,9 @@ class Tauon:
 		self.deco:                                      Deco = Deco(tauon=self)
 		self.bottom_bar1:                     BottomBarType1 = BottomBarType1(tauon=self)
 		self.bottom_bar_ao1:               BottomBarType_ao1 = BottomBarType_ao1(tauon=self)
+		# The standard layout's alternative bottom panel (prefs.feux_panel).
+		# The custom layout's widget owns its own instance.
+		self.feux_bar:                               FeuxBar = FeuxBar(self)
 		self.top_panel:                             TopPanel = TopPanel(tauon=self)
 		self.playlist_box:                       PlaylistBox = PlaylistBox(tauon=self)
 		self.radio_view:                           RadioView = RadioView(tauon=self)
@@ -8542,6 +8551,24 @@ class Tauon:
 		self.prefs.left_panel_mode = "folder view"
 		self.gui.lsp = True
 		self.gui.update_layout = True
+
+	def toggle_panel_type(self) -> None:
+		"""Switch the playback panel between the classic bar and Feux.
+
+		The standard layout renders whichever prefs.feux_panel names, so the
+		bottom panel height moves to that panel's default with it. A custom
+		layout instead swaps the widget in the active layout, which resets its
+		segment to the new widget's default height.
+		"""
+		if self.gui.custom_mode:
+			if not self.custom.toggle_playback_panel():
+				self.show_message(_("This layout has no playback panel"), mode="info")
+				return
+		else:
+			self.prefs.feux_panel = not self.prefs.feux_panel
+			self.gui.panelBY = self.gui.bottom_panel_height()
+			self.gui.update_layout = True
+		self.gui.request_frame()
 
 	def lsp_menu_test_queue(self) -> bool:
 		if not self.gui.lsp:
@@ -19532,6 +19559,7 @@ class Tauon:
 			prefs.milk_favorite_presets,  # 194
 			prefs.art_bg_frosted,  # 195
 			prefs.replay_allow_compression,  # 196
+			prefs.feux_panel,  # 197
 		]
 
 		try:
@@ -53233,6 +53261,11 @@ def main(holder: Holder) -> None:
 				prefs.art_bg_frosted = save[195]
 			if len(save) > 196 and save[196] is not None:
 				prefs.replay_allow_compression = save[196]
+			if len(save) > 197 and save[197] is not None:
+				prefs.feux_panel = save[197]
+				# GuiVar.rescale() ran before the state file was read, so the
+				# bottom panel is still sized for the classic bar.
+				gui.panelBY = gui.bottom_panel_height()
 
 			del save
 			break
@@ -54829,6 +54862,9 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
 	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
 	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
+
+	mode_menu.br()
+	mode_menu.add(MenuItem(_("Toggle Panel Type"), tauon.toggle_panel_type))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
@@ -59677,6 +59713,8 @@ def main(holder: Holder) -> None:
 				# double-rendering the same stateful bar object.
 				if gui.custom_mode:
 					pass
+				elif prefs.feux_panel:
+					tauon.feux_bar.render(gui.panelBY)
 				elif prefs.shuffle_lock:
 					tauon.bottom_bar_ao1.render()
 				else:
