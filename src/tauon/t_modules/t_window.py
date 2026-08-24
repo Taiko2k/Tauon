@@ -50,6 +50,31 @@ def renderer_key(renderer: sdl3.LP_SDL_Renderer) -> int:
 	return ctypes.cast(renderer, ctypes.c_void_p).value or 0
 
 
+def fit_to_bounds(
+	bounds: tuple[int, int, int, int],
+	rect: tuple[int, int, int, int],
+	alt_x: int | None = None,
+	alt_y: int | None = None,
+) -> tuple[int, int]:
+	"""Move `rect` (x, y, w, h) so it sits inside `bounds`, preferring a flip.
+
+	`alt_x`/`alt_y` are the mirrored positions on the other side of the anchor -
+	what a menu flips to when it does not fit the way it naturally opens. An axis
+	that overflows uses its alternative when that one fits, and otherwise slides
+	back inside the bounds.
+	"""
+	def fit(v: int, size: int, lo: int, span: int, alt: int | None) -> int:
+		if lo <= v and v + size <= lo + span:
+			return v
+		if alt is not None and lo <= alt and alt + size <= lo + span:
+			return alt
+		return max(lo, min(v, lo + span - size))
+
+	x, y, w, h = rect
+	bx, by, bw, bh = bounds
+	return fit(int(x), int(w), bx, bw, alt_x), fit(int(y), int(h), by, bh, alt_y)
+
+
 class SecondaryWindow:
 	"""A borderless popup window with its own renderer and draw context."""
 
@@ -97,6 +122,45 @@ class SecondaryWindow:
 			self.scale = px_w.value / pt_w.value
 		else:
 			self.scale = 1.0
+
+	def usable_bounds(self) -> tuple[int, int, int, int] | None:
+		"""Area this window should stay inside, in content pixels relative to the parent.
+
+		This is the display's *usable* area - what is left after the macOS Dock
+		and menu bar, or the Windows taskbar - so a menu opened near the bottom of
+		the screen is placed above the Dock instead of running underneath it (the
+		Dock sits at a higher window level, so it draws over the popup).
+
+		Returns None when the platform places popups itself: on Wayland a popup is
+		an xdg_popup that the compositor already constrains to the display, and
+		window positions are not queryable there anyway.
+		"""
+		if sdl3.SDL_GetCurrentVideoDriver() == b"wayland":
+			return None
+
+		display = sdl3.SDL_GetDisplayForWindow(self.parent)
+		if not display:
+			return None
+
+		# A fullscreen window covers the reserved strips (the Dock hides itself),
+		# so constrain against the whole display rather than the usable area.
+		fullscreen = bool(sdl3.SDL_GetWindowFlags(self.parent) & sdl3.SDL_WINDOW_FULLSCREEN)
+		rect = sdl3.SDL_Rect()
+		get_bounds = sdl3.SDL_GetDisplayBounds if fullscreen else sdl3.SDL_GetDisplayUsableBounds
+		if not get_bounds(display, ctypes.byref(rect)):
+			return None
+
+		# Display bounds are in points and global; popup offsets are in content
+		# pixels relative to the parent window's top-left.
+		self._refresh_scale()
+		wx, wy = ctypes.c_int(0), ctypes.c_int(0)
+		sdl3.SDL_GetWindowPosition(self.parent, ctypes.byref(wx), ctypes.byref(wy))
+		return (
+			int((rect.x - wx.value) * self.scale),
+			int((rect.y - wy.value) * self.scale),
+			int(rect.w * self.scale),
+			int(rect.h * self.scale),
+		)
 
 	def _to_points(self, value: int) -> int:
 		return int(round(value / self.scale)) if self.scale else int(value)

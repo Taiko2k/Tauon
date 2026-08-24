@@ -15253,7 +15253,7 @@ class Tauon:
 		window as before; one that would spill outside is pointed at its own
 		popup window(s) instead.
 		"""
-		from tauon.t_modules.t_window import SecondaryWindow
+		from tauon.t_modules.t_window import SecondaryWindow, fit_to_bounds
 
 		menu = self.active_menu()
 
@@ -15282,13 +15282,28 @@ class Tauon:
 
 		# Bottom-anchored menus (e.g. the bottom-panel playback menu) open upward:
 		# the anchor marks the menu's bottom edge, so the window top is anchor - h.
+		main_x = menu.popup_anchor[0]
 		main_top_y = menu.popup_anchor[1] - h if menu.popup_bottom_anchor else menu.popup_anchor[1]
 
-		if not popup.show(w, h, menu.popup_anchor[0], main_top_y):
+		# Everywhere except Wayland we position the popup window ourselves, and
+		# nothing keeps it clear of the screen furniture: a menu opened near the
+		# bottom of the screen would extend under the macOS Dock (which draws over
+		# it) or the Windows taskbar. Keep it inside the display's usable area,
+		# flipping to the other side of the anchor when that fits. bounds is None
+		# on Wayland, where the compositor constrains popups for us.
+		bounds = popup.usable_bounds()
+		if bounds is not None:
+			main_x, main_top_y = fit_to_bounds(
+				bounds, (main_x, main_top_y, w, h),
+				alt_x=main_x - w,
+				alt_y=menu.popup_anchor[1] if menu.popup_bottom_anchor else menu.popup_anchor[1] - h,
+			)
+
+		if not popup.show(w, h, main_x, main_top_y):
 			# Popup unavailable (creation failed): fall back to drawing the menu
 			# inline in the main window, anchored where it was requested.
 			menu.popup_window = None
-			menu.pos = [menu.popup_anchor[0], main_top_y]
+			menu.pos = [main_x, main_top_y]
 			for instance in Menu.instances:
 				instance.render()
 			return
@@ -15302,8 +15317,12 @@ class Tauon:
 				self.submenu_popup = SecondaryWindow(self, focusable=False)
 			sub = self.submenu_popup
 			sw, sh = menu.submenu_size()
-			sx = menu.popup_anchor[0] + menu.w
+			sx = main_x + menu.w
 			sy = main_top_y + menu.sub_y_position
+			if bounds is not None:
+				# Same constraint for the submenu column, which flips to the left
+				# of the parent menu when it will not fit to the right.
+				sx, sy = fit_to_bounds(bounds, (sx, sy, sw, sh), alt_x=main_x - sw)
 			if sub.show(sw, sh, int(sx), int(sy)):
 				sub.begin_frame()
 				menu.popup_window = sub
