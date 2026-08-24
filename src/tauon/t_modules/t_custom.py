@@ -1550,6 +1550,13 @@ class FeuxBar:
 		box = self._s(32)
 		x = left + self._s(15)
 		playing = pctl.playing_state == PlayingState.PLAYING
+		# Shuffle lockdown disables everything that would let you choose what
+		# plays next or where in it you are, so the panel hides those controls
+		# outright: back, stop, forward and the scrub bar here, shuffle and
+		# repeat in the right-hand pod. Nothing moves -- every x step below
+		# still runs, so the disc, the elapsed time and the right pod sit
+		# exactly where they do with the buttons showing.
+		lock = tauon.prefs.shuffle_lock
 
 		# The disc glints whenever the transport state changes, whatever caused
 		# it -- this button, a keyboard shortcut, MPRIS, the queue running out.
@@ -1564,15 +1571,16 @@ class FeuxBar:
 			gui.request_frame()
 
 		# BACK
-		rect = (x, mid - self._s(17), box, self._s(34))
-		self.fields.add(rect)
-		colour = mb_off
-		if self.coll(rect):
-			colour = mb_over
-			if inp.mouse_click:
-				pctl.back()
-			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
-		a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
+		if not lock:
+			rect = (x, mid - self._s(17), box, self._s(34))
+			self.fields.add(rect)
+			colour = mb_off
+			if self.coll(rect):
+				colour = mb_over
+				if inp.mouse_click:
+					pctl.back()
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
+			a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
 
 		# PLAY / PAUSE, on a filled disc. The disc takes the contrasting ink so
@@ -1610,34 +1618,36 @@ class FeuxBar:
 
 		# STOP, a smaller disc beside it
 		stop = a["feux-disc-sm"].w
-		rect = (x, mid - stop // 2, stop, stop)
-		self.fields.add(rect)
-		ring = self._step(backdrop, 0.07)
-		glyph_c = mb_off
-		if self.coll(rect):
-			ring = self._step(backdrop, 0.13)
-			glyph_c = mb_over
-			if inp.mouse_click:
-				pctl.stop()
-			if inp.right_click:
-				tauon.stop_menu.activate(position=(x, mid - self._s(6)))
-				inp.right_click = False
-			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Stop"))
-		a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
-		a["feux-stop"].render(
-			x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
+		if not lock:
+			rect = (x, mid - stop // 2, stop, stop)
+			self.fields.add(rect)
+			ring = self._step(backdrop, 0.07)
+			glyph_c = mb_off
+			if self.coll(rect):
+				ring = self._step(backdrop, 0.13)
+				glyph_c = mb_over
+				if inp.mouse_click:
+					pctl.stop()
+				if inp.right_click:
+					tauon.stop_menu.activate(position=(x, mid - self._s(6)))
+					inp.right_click = False
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Stop"))
+			a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
+			a["feux-stop"].render(
+				x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
 		x += stop + self._s(8)
 
 		# FORWARD
-		rect = (x, mid - self._s(17), box, self._s(34))
-		self.fields.add(rect)
-		colour = mb_off
-		if self.coll(rect):
-			colour = mb_over
-			if inp.mouse_click:
-				pctl.advance()
-			self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Forward"))
-		a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
+		if not lock:
+			rect = (x, mid - self._s(17), box, self._s(34))
+			self.fields.add(rect)
+			colour = mb_off
+			if self.coll(rect):
+				colour = mb_over
+				if inp.mouse_click:
+					pctl.advance()
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Forward"))
+			a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)
 
 		# TIMES + SCRUB BAR
@@ -1655,6 +1665,10 @@ class FeuxBar:
 			ddt.text((right - self._s(14) + 1, self._text_y(212, mid), 1), elapsed, time_colour, 212)
 
 		self._on_seek = False
+		if lock:
+			self.seek_drag = False
+			gui.seek_bar_rect = (0, 0, 0, 0)
+			return
 		if bar_w < self._s(30):
 			return
 
@@ -1840,6 +1854,12 @@ class FeuxBar:
 			ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
 		gui.volume_bar_rect = (vol_x, vol_y, filled, bar_h)
 		x -= self._s(16)
+
+		# Shuffle lockdown takes both mode buttons away (see _draw_transport).
+		# The pod keeps the width it measured them at, so the volume bar and
+		# the menu stay where they are.
+		if tauon.prefs.shuffle_lock:
+			return
 
 		# REPEAT
 		if pctl.album_repeat_mode:
