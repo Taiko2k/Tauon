@@ -8570,6 +8570,23 @@ class Tauon:
 			self.gui.update_layout = True
 		self.gui.request_frame()
 
+	def feux_panel_showing(self) -> bool:
+		"""Whether the Feux playback panel is the one currently on screen.
+
+		The standard layout draws whichever panel prefs.feux_panel names; a
+		custom layout instead holds the panel as a widget, and one on a hidden
+		tab page doesn't count.
+		"""
+		if self.gui.custom_mode:
+			return self.custom.has_visible_widget("playback_panel_feux")
+		return self.prefs.feux_panel
+
+	def toggle_feux_art(self) -> None:
+		"""Show or hide the Feux panel's cover art. The title and artist fall
+		back against the panel's left edge while it is hidden."""
+		self.prefs.feux_panel_art = not self.prefs.feux_panel_art
+		self.gui.request_frame()
+
 	def lsp_menu_test_queue(self) -> bool:
 		if not self.gui.lsp:
 			return False
@@ -19560,6 +19577,7 @@ class Tauon:
 			prefs.art_bg_frosted,  # 195
 			prefs.replay_allow_compression,  # 196
 			prefs.feux_panel,  # 197
+			prefs.feux_panel_art,  # 198
 		]
 
 		try:
@@ -53364,6 +53382,8 @@ def main(holder: Holder) -> None:
 				# GuiVar.rescale() ran before the state file was read, so the
 				# bottom panel is still sized for the classic bar.
 				gui.panelBY = gui.bottom_panel_height()
+			if len(save) > 198 and save[198] is not None:
+				prefs.feux_panel_art = save[198]
 
 			del save
 			break
@@ -54963,6 +54983,11 @@ def main(holder: Holder) -> None:
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Toggle Panel Type"), tauon.toggle_panel_type))
+	# Only meaningful while the Feux panel is the one being drawn -- the
+	# classic bar has no art to hide.
+	mode_menu.add(MenuItem(_("Show Album Art"), tauon.toggle_feux_art,
+		check_test=lambda: prefs.feux_panel_art,
+		show_test=lambda ref=None: tauon.feux_panel_showing()))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))

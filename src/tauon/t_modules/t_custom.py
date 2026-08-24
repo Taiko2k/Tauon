@@ -1282,6 +1282,17 @@ class FeuxBar:
 		"""
 		return max(self._s(20), h - 2 * self._s(self.PAD))
 
+	def _text_x(self, art: int, show_art: bool) -> int:
+		"""Where the now-playing text starts.
+
+		Past the art normally; hard against the panel's left edge when the art
+		is hidden (prefs.feux_panel_art), with only the margin the art itself
+		would have kept.
+		"""
+		if not show_art:
+			return self._s(self.PAD + 6)
+		return self._s(self.PAD) + art + self._s(10)
+
 	def _backdrop(self, panel: ColourRGBA, x: float, y: float) -> ColourRGBA:
 		"""The opaque surface actually behind an element: the panel fill
 		blended over whatever the art background is showing locally."""
@@ -1372,6 +1383,7 @@ class FeuxBar:
 		top = round(tauon.window_size[1]) - h
 		mid = top + h // 2
 		art = self._art_size(h)
+		show_art = self.tauon.prefs.feux_panel_art
 		panel = colours.bottom_panel_colour
 
 		# Match the standard bar: punch the panel colour in (for window
@@ -1404,7 +1416,7 @@ class FeuxBar:
 		pod1_w = min(self._s(self.POD1_W) + grown, max(pod1_min, w - pod3_w - self._s(250)))
 		pod2_right = w - pod3_w
 
-		self._draw_now_playing(top, h, mid, pod1_w, art, panel, back_l)
+		self._draw_now_playing(top, h, mid, pod1_w, art, show_art, panel, back_l)
 		line_w = max(1, self._s(1))
 		# Inset from both ends, so the divider stays centred and keeps a
 		# sensible length whether the panel is squat or tall.
@@ -1434,7 +1446,7 @@ class FeuxBar:
 	# -- pods -----------------------------------------------------------
 
 	def _draw_now_playing(self, top: int, h: int, mid: int, pod_w: int, art: int,
-			panel: ColourRGBA, backdrop: ColourRGBA) -> None:
+			show_art: bool, panel: ColourRGBA, backdrop: ColourRGBA) -> None:
 		tauon = self.tauon
 		ddt = self.ddt
 		inp = self.inp
@@ -1447,27 +1459,31 @@ class FeuxBar:
 		art_y = mid - art // 2
 		track = pctl.playing_object()
 
-		if track is not None and pctl.playing_state != PlayingState.STOPPED:
-			tauon.album_art_gen.display(
-				track, (art_x, art_y), (art, art), async_hold=True, caller_id="feux_bar")
-		else:
-			ddt.rect((art_x, art_y, art, art), self._mix(backdrop, colours.art_box, 0.7))
+		if show_art:
+			if track is not None and pctl.playing_state != PlayingState.STOPPED:
+				tauon.album_art_gen.display(
+					track, (art_x, art_y), (art, art), async_hold=True, caller_id="feux_bar")
+			else:
+				ddt.rect((art_x, art_y, art, art), self._mix(backdrop, colours.art_box, 0.7))
 
-		# Follow the window: round the art only while the window itself is
-		# rounded, by painting the panel back over each corner.
-		if tauon.corner_round_radius():
-			for name, (cx, cy) in (
-				("feux-corner-tl", (art_x, art_y)),
-				("feux-corner-tr", (art_x + art - a["feux-corner-tr"].w, art_y)),
-				("feux-corner-bl", (art_x, art_y + art - a["feux-corner-bl"].h)),
-				("feux-corner-br", (art_x + art - a["feux-corner-br"].w,
-					art_y + art - a["feux-corner-br"].h)),
-			):
-				a[name].render(cx, cy, backdrop)
+			# Follow the window: round the art only while the window itself is
+			# rounded, by painting the panel back over each corner.
+			if tauon.corner_round_radius():
+				for name, (cx, cy) in (
+					("feux-corner-tl", (art_x, art_y)),
+					("feux-corner-tr", (art_x + art - a["feux-corner-tr"].w, art_y)),
+					("feux-corner-bl", (art_x, art_y + art - a["feux-corner-bl"].h)),
+					("feux-corner-br", (art_x + art - a["feux-corner-br"].w,
+						art_y + art - a["feux-corner-br"].h)),
+				):
+					a[name].render(cx, cy, backdrop)
 
 		# Thresholds shift with the art: a taller panel widens the pod by
 		# exactly the art's growth, so the room left for the text is unchanged.
+		# Hiding the art keeps the pod as it is -- the space it frees goes to
+		# the text, not to the scrub bar -- so only text_x moves.
 		grown = art - self._s(self.ART)
+		text_x = self._text_x(art, show_art)
 		heart_x = pod_w
 		if pod_w > self._s(150) + grown and pctl.playing_ready():
 			loved = bool(tauon.love(False))
@@ -1485,7 +1501,6 @@ class FeuxBar:
 			colour = self._tint(colour, heart_x, mid, panel, boost=0.6)
 			icon.render(heart_x, mid - icon.h // 2, self._fg(colour, backdrop, 2.6))
 
-		text_x = art_x + art + self._s(10)
 		text_w = max(self._s(20), heart_x - self._s(10) - text_x)
 		if text_w < self._s(24):
 			return
@@ -1510,7 +1525,8 @@ class FeuxBar:
 			ddt.text((text_x, mid + self._s(2)), line2, sub_colour, 12, max_w=text_w)
 
 		# Click-through to the playing track, like the standard bar's title.
-		rect = (art_x, top, heart_x - art_x, h)
+		left = art_x if show_art else 0
+		rect = (left, top, heart_x - left, h)
 		if self.coll(rect) and pctl.playing_ready():
 			if inp.mouse_click:
 				pctl.show_current()
