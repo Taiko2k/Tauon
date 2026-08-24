@@ -426,6 +426,9 @@ class Prefs:
 
 	use_gamepad: bool = True
 	avoid_resampling: bool = False
+	# Send DSD to the device as DSD instead of decoding it to PCM. PipeWire only,
+	# and only with a DAC that takes native DSD.
+	dsd_direct: bool = False
 	use_scancodes: bool = False
 
 	artist_list_threshold = 4
