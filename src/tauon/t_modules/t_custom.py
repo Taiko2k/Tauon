@@ -46,6 +46,7 @@ from tauon.t_modules.t_extra import (
 	ColourRGBA,
 	Timer,
 	alpha_blend,
+	alpha_mod,
 	atomic_save,
 	ensure_contrast,
 	get_display_time,
@@ -5614,6 +5615,10 @@ class CustomLayout:
 		# Side panels, galleries, metadata, queue, and similar widgets share
 		# this fill; matching it makes the selector strip read as their chrome.
 		bg = colours.side_panel_background
+		# menu_text is a menu role, corrected against menu_background, not
+		# against the panel fill borrowed for this strip; on a light theme the
+		# two disagree and the labels vanish.
+		title_colour = alpha_mod(ensure_contrast(alpha_blend(colours.menu_text, bg), bg), 255)
 		line = max(1, round(gui.scale))
 		tab_rects = self._tab_rects(node)
 		active_bridge = self._active_tab_bridge_rect(node, tab_rects)
@@ -5655,7 +5660,7 @@ class CustomLayout:
 			ddt.text(
 				(left + round(10 * gui.scale), round(top + (tab_height - text_h) / 2)),
 				title,
-				colours.menu_text,
+				title_colour,
 				12,
 				bg=bg,
 				max_w=max(0, tab_w - round(20 * gui.scale)),

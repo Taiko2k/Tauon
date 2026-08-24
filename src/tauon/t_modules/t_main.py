@@ -5371,7 +5371,12 @@ class MenuIcon:
 		self.colour = ColourRGBA(170, 170, 170, 255)
 		self.base_asset = None
 		self.base_asset_mod = None
+		# Forces a colour in every state, for icons that signal a state (loved,
+		# locked). Return None to fall back to the normal grey/highlight pair.
 		self.colour_callback = None
+		# Supplies the highlight colour in place of self.colour, for an icon
+		# whose colour varies but which should still grey out when not hovered.
+		self.select_colour_callback = None
 		self.mode_callback = None
 		self.xoff = 0
 		self.yoff = 0
@@ -5685,7 +5690,10 @@ class Menu:
 				if icon.colour_callback is not None:
 					colour = icon.colour_callback()
 				if colour is None and selected and fx.text_colour != colours.menu_text_disabled:
-					colour = icon.colour
+					if icon.select_colour_callback is not None:
+						colour = icon.select_colour_callback()
+					else:
+						colour = icon.colour
 
 				if colour is None and icon.base_asset_mod:
 					colour = off_colour
@@ -41827,6 +41835,21 @@ class QueueBox:
 	def recalc(self) -> None:
 		self.tab_h = 34 * self.gui.scale
 
+	def ink(self, colour: ColourRGBA, bg: ColourRGBA, minimum: float = 4.5) -> ColourRGBA:
+		"""A text colour corrected to stay readable on the surface behind it.
+
+		The queue's text colours are picked for a dark panel and only flip on a
+		very light one, so a mid-tone theme (or a card colour the theme sets
+		itself) leaves pale text on a pale surface.
+
+		A dimmed role carries its fade in its alpha, which is part of what the
+		text ends up looking like, so it is flattened onto the surface before
+		being measured and the result is drawn opaque. On an opaque panel that
+		is the same pixels as before; on a translucent one the text stops
+		fading into the desktop as well as into the panel.
+		"""
+		return alpha_mod(ensure_contrast(alpha_blend(colour, bg), bg, minimum), 255)
+
 	def except_for_this_show_test(self, _) -> bool:
 		return self.queue_remove_show(_) and self.inp.test_shift(_)
 
@@ -42006,6 +42029,12 @@ class QueueBox:
 			text_colour1 = ColourRGBA(0, 0, 0, 130)
 			text_colour2 = ColourRGBA(0, 0, 0, 230)
 
+		# The flip above only catches a near-white surface; everything between
+		# stays on white text. The artist line is meant to sit back from the
+		# title, so it is held to a lower floor rather than matched to it.
+		text_colour1 = self.ink(text_colour1, bg, 3.0)
+		text_colour2 = self.ink(text_colour2, bg)
+
 		self.tauon.gall_ren.render(track, (rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale), round(28 * self.gui.scale))
 
 		self.ddt.rect((rect[0] + 4 * self.gui.scale, rect[1] + 4 * self.gui.scale, 26, 26), ColourRGBA(0, 0, 0, 6))
@@ -42079,7 +42108,10 @@ class QueueBox:
 		if h > 40 * self.gui.scale:
 			if not self.pctl.force_queue:
 				text = _("Add to Queue") if self.inp.quick_drag else _("Queue")
-				self.ddt.text((x + (w // 2), y + 15 * self.gui.scale, 2), text, alpha_mod(self.colours.index_text, 200), 212)
+				# index_text is a tracklist role, corrected here against the
+				# queue panel it is being reused on.
+				heading = self.ink(alpha_mod(self.colours.index_text, 200), self.ddt.text_background_colour, 3.0)
+				self.ddt.text((x + (w // 2), y + 15 * self.gui.scale, 2), text, heading, 212)
 
 		qb_right_click = 0
 
@@ -42096,6 +42128,9 @@ class QueueBox:
 		text_colour = rgb_add_hls(self.colours.queue_background, 0, 0.3, -0.15)
 		if test_lumi(self.colours.queue_background) < 0.2:
 			text_colour = ColourRGBA(0, 0, 0, 200)
+		# Lightening the panel by a fixed step runs out of contrast well before
+		# the branch above takes over, so correct against the panel.
+		text_colour = self.ink(text_colour, self.colours.queue_background, 3.0)
 
 		line = _("Up Next:")
 		if self.pctl.force_queue:
@@ -54933,7 +54968,7 @@ def main(holder: Holder) -> None:
 	gui.add_icon.xoff = 3
 	gui.add_icon.yoff = 0
 	gui.add_icon.colour = ColourRGBA(237, 80, 221, 255)
-	gui.add_icon.colour_callback = tauon.new_playlist_colour_callback
+	gui.add_icon.select_colour_callback = tauon.new_playlist_colour_callback
 
 	x_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, tauon.new_playlist_deco, icon=gui.add_icon))
 
@@ -59759,7 +59794,7 @@ def main(holder: Holder) -> None:
 							ddt.text(
 								(panel_x + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
 								text,
-								alpha_mod(colours.index_text, 200),
+								tauon.queue_box.ink(alpha_mod(colours.index_text, 200), colours.queue_background, 3.0),
 								212,
 							)
 
