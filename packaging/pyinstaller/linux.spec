@@ -54,6 +54,13 @@ a = Analysis(
 	noarchive=False,
 	optimize=0,
 )
+# Remove libpipewire-0.3.so to use the host's PipeWire installation so library and SPA modules match
+# without having to weirdly include both and possibly also set SPA_PLUGIN_DIR
+a.binaries = [
+	entry
+	for entry in a.binaries
+	if not Path(entry[0]).name.startswith("libpipewire-0.3.so")
+]
 pyz = PYZ(a.pure)
 
 exe = EXE(
