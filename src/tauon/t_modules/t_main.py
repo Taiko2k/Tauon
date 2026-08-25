@@ -59098,12 +59098,12 @@ def main(holder: Holder) -> None:
 					or tauon.radio_view_scroll.held
 				)
 				scroll_bar_suppressed_by_album_rating = update_tracklist_scrollbar_lock(tracklist_scroll_hitbox)
-				scroll_bar_blocks_side_drag = (
+				if scroll_bar_held:
+					gui.side_drag = False
+				scroll_bar_blocks_side_drag = not gui.side_drag and (
 					scroll_bar_held
 					or (tauon.coll(tracklist_scroll_hitbox) and not scroll_bar_suppressed_by_album_rating)
 				)
-				if scroll_bar_held:
-					gui.side_drag = False
 
 				if (
 					(tauon.coll(rect) or gui.side_drag is True)
