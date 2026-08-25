@@ -344,24 +344,29 @@ def _prepare_upload(raw: bytes) -> bytes | None:
 	return out.getvalue()
 
 
-def _upload(data: bytes) -> str | None:
+def _upload(data: bytes, agent: str) -> str | None:
+	"POST the art to litterbox, returning the public URL or None."
 	try:
 		response = requests.post(
 			API_URL,
 			data={"reqtype": "fileupload", "time": RETENTION},
 			files={"fileToUpload": ("cover.jpg", data, "image/jpeg")},
+			headers={"User-Agent": agent},
 			timeout=30,
 		)
-		response.raise_for_status()
 	except Exception:
-		logging.exception("Litterbox: upload failed")
+		logging.exception("Litterbox: upload request failed")
 		return None
 
-	url = (response.text or "").strip()
-	if not url.startswith("https://"):
-		logging.warning(f"Litterbox: unexpected upload response: {url[:120]!r}")
+	body = (response.text or "").strip()
+	if response.status_code != 200 or not body.startswith("https://"):
+		# Litterbox answers every rejection with 412 and puts the reason in the
+		# body, e.g. "No files given." or "Bad file type!", so the status alone
+		# says nothing about what went wrong
+		logging.warning(
+			f"Litterbox: upload rejected (HTTP {response.status_code}): {body[:200]!r}")
 		return None
-	return url
+	return body
 
 
 def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
@@ -418,7 +423,7 @@ def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
 		return None
 
 	cache.record_upload()
-	url = _upload(data)
+	url = _upload(data, tauon.t_agent)
 	if url is None:
 		cache.disable_uploads()
 		cache.refuse(tr.index)
