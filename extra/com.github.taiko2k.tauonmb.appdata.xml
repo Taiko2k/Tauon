@@ -60,9 +60,12 @@
 
   <releases>
 
-    <release version="11.2.0" date="2026-08-08">
+    <release version="12.0.0" date="2026-08-25">
       <description>
         <ul>
+          <li>Added new widgets AlbumFlow, Tab Switcher and Faux Playback Panel</li>
+          <li>Redesigned Radio view</li>
+          <li>Improved lyrics editors and auto theme mode</li>
           <li>Various fixes</li>
         </ul>
       </description>
