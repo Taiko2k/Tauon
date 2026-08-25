@@ -2,10 +2,14 @@
 Changelog
 ---------
 
-### v11.2.0
+### v12.0.0
 
  - Added new widget AlbumFlow
  - Added new widget Tab Switcher
+ - Added new widget Faux Playback Panel
+ - Improved auto theme mode
+ - Redesigned Radio view
+ - Fixed radio playback
  - Revamps & refinements to both synced and static lyrics editors
  - Fixed bug that caused GNOME to occasionally crash when Tauon did
  - Touch shortcut: swipe sideways to queue (middle click)
