@@ -1352,6 +1352,18 @@ def player4(tauon: Tauon) -> None:
 		if feeder.enabled:
 			aud.set_load_net(n)
 
+	# How much decoded audio phazor holds back before starting, in frames.
+	# Radio gets a bigger cushion than the default: a live stream can't be
+	# re-read, so an underrun is a dropout rather than a moment's wait.
+	default_min_buffer = 30000
+	min_buffer_frames = default_min_buffer
+
+	def set_min_buffer(frames: int) -> None:
+		nonlocal min_buffer_frames
+		if frames != min_buffer_frames:
+			min_buffer_frames = frames
+			aud.config_set_min_buffer(frames)
+
 	def set_native_output_compressor() -> None:
 		compressor_wanted = output_compressor_wanted()
 		pctl.output_compression_enabled = compressor_wanted
@@ -1385,6 +1397,7 @@ def player4(tauon: Tauon) -> None:
 
 	stall_timer = Timer()
 	wall_timer = Timer()
+	radio_dry_timer = Timer()
 
 	chrome_update = 0
 	chrome_cool_timer = Timer()
@@ -1539,30 +1552,28 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "url":
 				pctl.download_time = 0
-				w = 0
+				set_min_buffer(int(prefs.samplerate * 1.5))
 				if not tauon.radiobox.run_proxy:
 					set_load_net(0)
 					aud.start(pctl.url.encode(), 0, 0, ctypes.c_float(prepare_replaygain(None)))
 					tauon.player4_state = PlayerState.URL_STREAM
 					player_timer.hit()
+					radio_dry_timer.set()
+				elif tauon.stream_proxy.wait_for_audio():
+					aud.config_set_feed_samplerate(prefs.samplerate)
+					set_load_net(0)
+					aud.start(b"RAW FEED", 0, 0, ctypes.c_float(prepare_replaygain(None)))
+					tauon.player4_state = PlayerState.URL_STREAM
+					player_timer.hit()
+					radio_dry_timer.set()
 				else:
-					while len(tauon.stream_proxy.chunks) < 200:
-						time.sleep(0.1)
-						w += 1
-						if w > 100:
-							logging.info("Taking too long!")
-							tauon.stream_proxy.stop()
-							pctl.playerCommand = "stop"
-							pctl.playerCommandReady = True
-							break
-					else:
-						aud.config_set_feed_samplerate(prefs.samplerate)
-						set_load_net(0)
-						aud.start(b"RAW FEED", 0, 0, ctypes.c_float(prepare_replaygain(None)))
-						tauon.player4_state = PlayerState.URL_STREAM
-						player_timer.hit()
+					logging.warning(f"Radio stream produced no audio: {tauon.stream_proxy.state_log()}")
+					tauon.stream_proxy.stop()
+					pctl.playerCommand = "stop"
+					pctl.playerCommandReady = True
 
 			if command == "open":
+				set_min_buffer(default_min_buffer)
 				if tauon.player4_state == PlayerState.PAUSED:
 					aud.set_volume(int(pctl.player_volume))
 
@@ -2222,6 +2233,18 @@ def player4(tauon: Tauon) -> None:
 				if gui.buffering != buffering:
 					gui.buffering = buffering
 					gui.request_frame()
+
+				# A dropped station leaves nothing feeding the buffer, and
+				# nothing signals the end of a raw feed the way a decoder
+				# reaching the end of a track does. Left alone the player sits
+				# there silently pretending to play, so stop once the stream
+				# is gone and what was buffered has played out.
+				if tauon.radiobox.run_proxy:
+					if aud.get_buffered_ms() > 0 or tauon.stream_proxy.download_running:
+						radio_dry_timer.set()
+					elif radio_dry_timer.get() > 1.5:
+						logging.info(f"Radio stream ended: {tauon.stream_proxy.state_log()}")
+						pctl.stop()
 
 			if tauon.player4_state == PlayerState.PLAYING:
 				if loaded_track_streamed:

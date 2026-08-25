@@ -3039,7 +3039,10 @@ int get_audio(int max, float* buff) {
 			log_msg(LOG_INFO, "pa: Buffering -> Playing");
 		}
 
-		if (get_buff_fill() < 10 && loaded_target_file[0] == 'h') {
+		// Streams can't be waited on the way a local file can, so an
+		// underrun means pausing to re-buffer. FEED is radio, which has no
+		// decoder of its own to report a stall.
+		if (get_buff_fill() < 10 && (loaded_target_file[0] == 'h' || codec == FEED)) {
 
 			if (mode == PLAYING) {
 				if (buffering == 0) log_msg(LOG_INFO, "pa: Buffering...");
@@ -4987,6 +4990,7 @@ void *main_loop(void *thread_id) {
 	bool using_fade = false;
 	int load_prepared = 0;     // target loaded, transition cutover pending
 	int preload_waited_ms = 0;
+	int ramp_waited_ms = 0;    // how long we have been waiting for a ramp-down
 
 	// SRC ----------------------------
 
@@ -5078,6 +5082,20 @@ void *main_loop(void *thread_id) {
 			}
 		#endif
 
+		// A ramp-down only progresses while get_audio() is consuming samples.
+		// Track how long we have been waiting for one so a stuck ramp can't
+		// wedge the command queue; the gate ramp itself is a few milliseconds.
+		if (mode == RAMP_DOWN) ramp_waited_ms += 5;
+		else ramp_waited_ms = 0;
+
+		// A ramp-down is finished when the gate has closed. With nothing left
+		// in the buffer there are no samples to ramp with, so get_audio()
+		// would never move the gate and the command would wait forever -- most
+		// visibly on radio, where a stalled or ended stream leaves the player
+		// in PLAYING with a dry buffer. The timeout covers anything else that
+		// stops the gate moving, such as an output device that has gone away.
+		bool ramp_settled = (gate == 0 || get_buff_fill() == 0 || ramp_waited_ms > 1000);
+
 		if (command != NONE) {
 			if (command == EXIT) {
 				break;
@@ -5086,7 +5104,7 @@ void *main_loop(void *thread_id) {
 
 				case PAUSE:
 					if (mode == PLAYING || (dsd_active && mode == ENDING)
-							|| (mode == RAMP_DOWN && gate == 0)) {
+							|| (mode == RAMP_DOWN && ramp_settled)) {
 						mode = PAUSED;
 						//stop_out();
 						command = NONE;
@@ -5109,7 +5127,7 @@ void *main_loop(void *thread_id) {
 						// cancelled; ramp down rather than draining it all
 						mode = RAMP_DOWN;
 					}
-					if ((mode == RAMP_DOWN && (gate == 0 || get_buff_fill() == 0)) || mode == PAUSED
+					if ((mode == RAMP_DOWN && ramp_settled) || mode == PAUSED
 							|| (dsd_active && mode != STOPPED)) {
 						end();
 					}
@@ -5139,7 +5157,8 @@ void *main_loop(void *thread_id) {
 						if (mode == PLAYING) {
 							mode = RAMP_DOWN;
 						}
-						if (mode == RAMP_DOWN && gate == 0) {
+						if (mode == RAMP_DOWN && ramp_settled) {
+							gate = 0;
 							command = LOAD;
 						} else break;
 					}
@@ -5270,8 +5289,9 @@ void *main_loop(void *thread_id) {
 				command = NONE;
 			}
 
-			if (mode == RAMP_DOWN && gate == 0) {
+			if (mode == RAMP_DOWN && ramp_settled) {
 				pthread_mutex_lock(&buffer_mutex);
+				gate = 0;
 				buff_reset();
 				mode = PLAYING;
 				command = NONE;

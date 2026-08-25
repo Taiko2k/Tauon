@@ -52,6 +52,9 @@ class StreamEnc:
 		self.encode_running = False
 		self.pump_running = False
 		self.feed_running = False
+		# Set once the decoder has produced audio for this request, which is
+		# what playback actually waits on before it can start
+		self.decoded_ready = False
 
 		self.download_process = False
 		self.abort = False
@@ -77,6 +80,7 @@ class StreamEnc:
 			f"request_id={self.request_id} abort={self.abort} "
 			f"download_running={self.download_running} encode_running={self.encode_running} "
 			f"pump_running={self.pump_running} feed_running={self.feed_running} "
+			f"decoded_ready={self.decoded_ready} "
 			f"chunks={self.c} response_open={self.download_response is not None} "
 			f"decoder_running={self.decoder_process is not None and self.decoder_process.poll() is None} "
 			f"record_decoder_running={self.record_decoder_process is not None and self.record_decoder_process.poll() is None} "
@@ -223,10 +227,44 @@ class StreamEnc:
 		logging.info(f"Radio stream is idle before request {request_id}")
 		return True
 
+	def wait_for_audio(self, timeout: float = 10) -> bool:
+		"""Block until the decoder has produced audio for the current request.
+
+		This is what playback waits on before starting, rather than a fixed
+		amount of downloaded data: phazor does its own pre-buffering of
+		decoded audio, so waiting for compressed data here only adds delay.
+		"""
+		request_id = self.request_id
+		deadline = time.monotonic() + timeout
+		stream_ended: float | None = None
+		while not self.decoded_ready:
+			if self.abort or self.request_id != request_id:
+				return False
+			if time.monotonic() > deadline:
+				return False
+			if not self.download_running:
+				# Give the decoder a moment to drain what it already has
+				now = time.monotonic()
+				if stream_ended is None:
+					stream_ended = now
+				elif now - stream_ended > 0.5:
+					return False
+			else:
+				stream_ended = None
+			time.sleep(0.005)
+		return True
+
 	def start_download(self, url: str, request_id: int = 0) -> bool:
 		logging.info(f"Radio stream start_download request={request_id} url={url}")
-		self.abort = True
+		# Claim the request first: a competing start_download will then lose
+		# the wait_until_idle check rather than tear this one down
 		self.request_id = request_id
+		self.abort = True
+		if self.download_running or self.encode_running or self.pump_running:
+			# Setting abort alone won't wake a download thread parked in a
+			# socket read; stop() closes the response, which does
+			logging.info(f"Stopping existing radio stream before request {request_id}: {self.state_log()}")
+			self.stop()
 		if not self.wait_until_idle(request_id):
 			logging.warning(f"Radio stream start_download failed waiting for idle: {self.state_log()}")
 			return False
@@ -322,6 +360,12 @@ class StreamEnc:
 		cmd = [
 			str(self.tauon.get_ffmpeg()),
 			"-loglevel", "quiet",
+			# This is a live stream, so don't sit on several seconds of it
+			# working out what it is. Analysing half a second is plenty to
+			# identify a radio stream and roughly halves the time to first
+			# audio; nobuffer drops the matching input-side buffering.
+			"-fflags", "nobuffer",
+			"-analyzeduration", "500000",
 			"-i", "pipe:0",
 			"-acodec", "pcm_s16le",
 			"-f", "s16le",
@@ -354,6 +398,11 @@ class StreamEnc:
 						chunk = self.chunks[position]
 						try:
 							decoder.stdin.write(chunk)
+							# The pipe is buffered (128 KB on current Pythons),
+							# which for a 128 kbps station is eight seconds of
+							# audio the decoder would not see until the buffer
+							# filled. Hand each chunk over as it arrives.
+							decoder.stdin.flush()
 						except (BrokenPipeError, OSError, ValueError):
 							break
 						self.tauon.vb.input(self.tauon.stream_proxy.chunks[position])
@@ -393,6 +442,7 @@ class StreamEnc:
 				if raw_audio is None:
 					try:
 						raw_audio = raw_queue.get(timeout=0.01)
+						self.decoded_ready = True
 					except Empty:
 						if decoder.poll() is not None:
 							logging.info(f"Radio decoder process ended with code {decoder.poll()} for request {request_id}")
@@ -505,6 +555,7 @@ class StreamEnc:
 
 							try:
 								decoder.stdin.write(self.chunks[position])
+								decoder.stdin.flush()
 							except (BrokenPipeError, OSError, ValueError):
 								break
 							position += 1
@@ -642,6 +693,7 @@ class StreamEnc:
 				if raw_audio:
 					try:
 						encoder.stdin.write(raw_audio)
+						encoder.stdin.flush()
 					except (BrokenPipeError, OSError, ValueError):
 						logging.warning("Encoder pipe closed")
 						break

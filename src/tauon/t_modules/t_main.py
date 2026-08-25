@@ -38369,7 +38369,6 @@ class RadioBox:
 		self.dummy_track.file_ext = "RADIO"
 		self.playing_title: str = ""
 
-		self.proxy_started: bool = False
 		self.loaded_url: str | None = None
 		self.loaded_station: RadioStation | None = None
 		self.load_connecting: bool = False
@@ -38800,15 +38799,6 @@ class RadioBox:
 		)
 		# Otherwise we'll be mute if we're starting from a paused state
 		self.pctl.set_volume()
-		if self.is_m3u(url):
-			url = self.extract_stream_m3u(url)
-			logging.info(f"Extracted URL is: {url}")
-			if not url:
-				logging.info("Failed to extract stream from M3U")
-				return
-
-		if self.load_connecting:
-			self.abort_load(clear_station=False)
 
 		if self.websocket:
 			self.websocket.close()
@@ -38831,20 +38821,6 @@ class RadioBox:
 			self.prefs.auto_rec = False
 			return
 
-		self.run_proxy = True
-		if url.endswith(".ts"):
-			self.run_proxy = False
-
-		if self.run_proxy and not self.proxy_started and self.prefs.backend != Backend.PHAZOR:
-			shoot = threading.Thread(target=stream_proxy, args=[self.tauon])
-			shoot.daemon = True
-			shoot.start()
-			self.proxy_started = True
-
-		# self.pctl.url = url
-		self.pctl.url = f"http://127.0.0.1:{7812}"
-		if not self.run_proxy:
-			self.pctl.url = station.stream_url
 		self.loaded_url = None
 		self.pctl.tag_meta = ""
 		self.pctl.radio_meta_on = ""
@@ -38852,42 +38828,72 @@ class RadioBox:
 		self.song_key = ""
 		self.pctl.playing_time = 0
 		self.pctl.decode_time = 0
-		if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running or self.tauon.stream_proxy.pump_running:
-			logging.info(
-				f"Stopping existing radio stream before new request: "
-				f"{self.tauon.stream_proxy.state_log()}"
-			)
-			self.tauon.stream_proxy.stop()
 
+		# Bumping the id makes any start2 already in flight stale, so clicking
+		# through stations doesn't wait on the previous one to finish
 		self.load_request_id += 1
 		request_id = self.load_request_id
 		self.load_connecting = True
 		self.load_failed = False
-		logging.info(f"Radio start request queued request_id={request_id} run_proxy={self.run_proxy} url={url!r}")
+		logging.info(f"Radio start request queued request_id={request_id} url={url!r}")
+		self.gui.request_frame()
 
-		shoot = threading.Thread(target=self.start2, args=[url, request_id, self.run_proxy])
+		# Everything that can block - resolving an M3U, tearing down the
+		# previous stream, connecting - happens off the UI thread from here
+		shoot = threading.Thread(target=self.start2, args=[station, request_id])
 		shoot.daemon = True
 		shoot.start()
 
-	def start2(self, url: str, request_id: int, run_proxy: bool) -> None:
+	def fail_load(self, request_id: int) -> None:
+		"""Mark a radio load as failed, unless it has already been superseded"""
+		if request_id != self.load_request_id:
+			return
+		self.load_failed_timer.set()
+		self.load_failed = True
+		self.load_connecting = False
+		self.gui.request_frame()
+
+	def start2(self, station: RadioStation, request_id: int) -> None:
+		url = station.stream_url
 		logging.info(
-			f"Radio start2 entered request_id={request_id} current_request={self.load_request_id} "
-			f"run_proxy={run_proxy} url={url!r}"
+			f"Radio start2 entered request_id={request_id} current_request={self.load_request_id} url={url!r}"
 		)
 		if request_id != self.load_request_id:
 			logging.info(f"Radio start2 ignoring stale request_id={request_id}")
 			return
 
+		if self.is_m3u(url):
+			url = self.extract_stream_m3u(url)
+			logging.info(f"Extracted URL is: {url}")
+			if not url:
+				logging.info("Failed to extract stream from M3U")
+				self.fail_load(request_id)
+				return
+
+		if request_id != self.load_request_id:
+			logging.info(f"Radio start2 ignoring stale request_id={request_id} after M3U resolve")
+			return
+
+		run_proxy = not url.endswith(".ts")
+		self.run_proxy = run_proxy
+
+		# self.pctl.url = url
+		self.pctl.url = f"http://127.0.0.1:{7812}"
+		if not run_proxy:
+			self.pctl.url = station.stream_url
+			# The proxy path tears the previous stream down as part of
+			# start_download; nothing else does it for a direct URL
+			if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running \
+					or self.tauon.stream_proxy.pump_running:
+				self.tauon.stream_proxy.stop()
+
 		if run_proxy and not self.tauon.stream_proxy.start_download(url, request_id):
 			if request_id == self.load_request_id:
-				self.load_failed_timer.set()
-				self.load_failed = True
-				self.load_connecting = False
-				self.gui.request_frame()
 				logging.error(
 					f"Starting radio failed request_id={request_id}: "
 					f"{self.tauon.stream_proxy.state_log()}"
 				)
+			self.fail_load(request_id)
 			# self.show_message(_("Failed to establish a connection"), mode="error")
 			return
 
