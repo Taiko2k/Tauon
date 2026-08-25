@@ -903,6 +903,31 @@ def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) ->
 	return ColourRGBA(int(colour[0] * 255), int(colour[1] * 255), int(colour[2] * 255), source.a)
 
 
+def hue_matched(
+	background: ColourRGBA, reference: ColourRGBA, alpha: int | None = None,
+	lighten: float = 0.0, desaturate: float = 0.0,
+) -> ColourRGBA:
+	"""Recolour ``reference`` onto the hue of ``background``.
+
+	Takes the reference's saturation and lightness — so the tint keeps its
+	character — but the background's hue, so it belongs to the theme rather
+	than being fixed. ``lighten`` (0-1) moves the result that fraction of the
+	way to white and ``desaturate`` (0-1) that fraction of the way to grey,
+	for a softer, more readable tint. A background with almost no saturation
+	has no meaningful hue, so the reference keeps its own.
+	"""
+	if alpha is None:
+		alpha = reference.a
+	bh, _bl, bs = colorsys.rgb_to_hls(background.r / 255, background.g / 255, background.b / 255)
+	rh, rl, rs = colorsys.rgb_to_hls(reference.r / 255, reference.g / 255, reference.b / 255)
+	if bs >= 0.08:
+		rh = bh
+	rl += (1 - rl) * min(max(lighten, 0), 1)
+	rs *= 1 - min(max(desaturate, 0), 1)
+	r, g, b = colorsys.hls_to_rgb(rh, rl, rs)
+	return ColourRGBA(round(r * 255), round(g * 255), round(b * 255), alpha)
+
+
 def is_light(colour: ColourRGBA) -> bool:
 	return test_lumi(colour) < 0.2
 

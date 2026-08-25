@@ -186,6 +186,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	hls_to_rgb,
 	hms_to_seconds,
 	hsl_to_rgb,
+	hue_matched,
 	is_grey,
 	is_light,
 	j_chars,
@@ -55552,7 +55553,11 @@ def main(holder: Holder) -> None:
 
 			if colours.side_panel_background != colours.gallery_background:
 				line2_colour = ColourRGBA(240, 240, 240, 255)
-				line1_colour = alpha_mod(ColourRGBA(20, 220, 220, 255), 120)
+				# A light, mostly-neutral tint on the gallery background's own
+				# hue, instead of a fixed cyan that clashes with some themes.
+				line1_colour = hue_matched(
+					colours.gallery_background, ColourRGBA(20, 220, 220, 255), 175,
+					lighten=0.5, desaturate=0.55)
 
 			if test_lumi(colours.gallery_background) < 0.5 or (prefs.use_card_style and colours.lm):
 				line1_colour = colours.grey(80)
