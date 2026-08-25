@@ -4055,6 +4055,12 @@ DEFAULT_WIDGET_BORDER = True
 SEGMENT_BORDER_COLOUR = ColourRGBA(60, 60, 68, 255)
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Blank", "Volcano", "Tracks + Gallery (Compact)"]
+# The standard (non-custom) layouts, in their default order. They share a
+# single user-orderable sequence with the custom slots (see layout_items()):
+# the layout menu, the settings card and layout cycling all read that order.
+# Keys are ViewBox method names; t_main maps them to labels and icons. Unlike
+# custom slots these can be reordered but never deleted.
+PRESET_LAYOUTS = ("side_normal", "side_reversed", "gallery1", "tracks", "lyrics", "radio")
 
 
 class CustomLayout:
@@ -4074,6 +4080,11 @@ class CustomLayout:
 		self.slots: list[Node | None] = [None]
 		self.slot_names: list[str | None] = [None]
 		self.active_slot = 0
+		# The unified layout order shared by the standard layouts and the custom
+		# slots: a permutation of PRESET_LAYOUTS plus one "slot:<index>" key per
+		# slot (see layout_items()). Kept normalised, persisted alongside the
+		# slots.
+		self.layout_order: list[str] = []
 		self._loaded = False
 		# Guards save_slots(): only True after load_slots() succeeded (or seeded
 		# a first run). While False, saving would serialise the placeholder
@@ -4232,6 +4243,56 @@ class CustomLayout:
 			return _t("Empty Slot")
 		return _t("Custom Layout")
 
+	# -- unified layout order --------------------------------------------------
+
+	def _normalise_order(self) -> None:
+		"""Keep ``layout_order`` a permutation of the presets plus every slot:
+		drop unknown or duplicated keys and append whatever is missing (new
+		slots, presets added in a later version, a hand-edited file)."""
+		valid = [*PRESET_LAYOUTS, *(f"slot:{i}" for i in range(len(self.slots)))]
+		seen: set[str] = set()
+		order = []
+		for key in self.layout_order:
+			if key in valid and key not in seen:
+				seen.add(key)
+				order.append(key)
+		order.extend(key for key in valid if key not in seen)
+		self.layout_order = order
+
+	def layout_items(self) -> list[tuple[str, str | int]]:
+		"""Every layout in user order as ``("preset", key)`` / ``("slot", index)``."""
+		self.ensure_loaded()
+		self._normalise_order()
+		return [
+			("slot", int(key[5:])) if key.startswith("slot:") else ("preset", key)
+			for key in self.layout_order
+		]
+
+	def move_layout(self, pos: int, delta: int) -> None:
+		"""Swap the layout at position ``pos`` in the unified order with a
+		neighbour (reorders the layout menu and the cycle order)."""
+		self.ensure_loaded()
+		self._normalise_order()
+		j = pos + delta
+		if pos == j or not (0 <= pos < len(self.layout_order) and 0 <= j < len(self.layout_order)):
+			return
+		self.layout_order[pos], self.layout_order[j] = self.layout_order[j], self.layout_order[pos]
+		self.save_slots()
+		self._refresh_layout_menu()
+
+	def _order_forget_slot(self, i: int) -> None:
+		"""Drop slot ``i`` from the order and renumber the slots above it."""
+		order = []
+		for key in self.layout_order:
+			if not key.startswith("slot:"):
+				order.append(key)
+				continue
+			n = int(key[5:])
+			if n == i:
+				continue
+			order.append(f"slot:{n - 1}" if n > i else key)
+		self.layout_order = order
+
 	def _refresh_layout_menu(self) -> None:
 		"""Rebuild the corner layout menu's slot entries (names/count changed).
 		The rebuild function is installed by t_main's menu construction; absent
@@ -4278,6 +4339,11 @@ class CustomLayout:
 					for i in range(len(slots))
 				]
 				self.slot_columns = [c if isinstance(c, dict) else None for c in self.slot_columns]
+				# The shared preset/slot order (missing in files written before
+				# the standard layouts joined the order — _normalise_order then
+				# seeds the default).
+				order = data.get("order")
+				self.layout_order = [str(k) for k in order] if isinstance(order, list) else []
 			else:
 				# First run (no saved layouts): seed ready-made layouts plus one
 				# empty slot.
@@ -4288,6 +4354,8 @@ class CustomLayout:
 				]
 				self.slot_names = ["Volcano", "Tracks + Gallery (Compact)", None]
 				self.slot_columns = [None, None, None]
+				self.layout_order = []
+			self._normalise_order()
 			self._save_ok = True
 		except Exception:
 			# _save_ok stays False: the file may hold layouts we couldn't read,
@@ -4308,6 +4376,8 @@ class CustomLayout:
 			data["active"] = self.active_slot
 			data["names"] = {str(i): n for i, n in enumerate(self.slot_names) if n}
 			data["columns"] = {str(i): c for i, c in enumerate(self.slot_columns) if c is not None}
+			self._normalise_order()
+			data["order"] = list(self.layout_order)
 			with atomic_save(self._path(), "w") as file:
 				file.write(json.dumps(data, indent=1))
 		except Exception:
@@ -4710,24 +4780,8 @@ class CustomLayout:
 		self.slots.append(None)
 		self.slot_names.append(None)
 		self.slot_columns.append(None)
-		self.save_slots()
-		self._refresh_layout_menu()
-
-	def move_slot(self, i: int, delta: int) -> None:
-		"""Swap slot ``i`` with a neighbour (reorders the layout menu).
-		active_slot and the live-columns owner follow their slots."""
-		self.ensure_loaded()
-		j = i + delta
-		if i == j or not (0 <= i < len(self.slots) and 0 <= j < len(self.slots)):
-			return
-		for lst in (self.slots, self.slot_names, self.slot_columns):
-			lst[i], lst[j] = lst[j], lst[i]
-
-		def follow(v: int) -> int:
-			return j if v == i else i if v == j else v
-		self.active_slot = follow(self.active_slot)
-		if self._columns_owner is not None:
-			self._columns_owner = follow(self._columns_owner)
+		# New slots go to the end of the shared layout order.
+		self._normalise_order()
 		self.save_slots()
 		self._refresh_layout_menu()
 
@@ -4739,6 +4793,7 @@ class CustomLayout:
 		if not 0 <= i < len(self.slots):
 			return
 		was_owner = self._columns_owner == i
+		self._order_forget_slot(i)
 		del self.slots[i]
 		del self.slot_names[i]
 		del self.slot_columns[i]

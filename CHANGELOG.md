@@ -7,6 +7,7 @@ Changelog
  - Added new widget AlbumFlow
  - Added new widget Tab Switcher
  - Added new widget Faux Playback Panel
+ - Standard layouts can now be reordered
  - Improved auto theme mode
  - Redesigned Radio view
  - Fixed radio playback

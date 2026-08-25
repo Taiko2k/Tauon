@@ -27350,6 +27350,21 @@ class PowerTag:
 		self.ani_timer: Timer = Timer()
 		self.ani_timer.force_set(10)
 
+def preset_layout_info() -> dict[str, tuple[str, str, int, ColourRGBA]]:
+	"""Display info for the standard layouts, keyed by ViewBox method name:
+	label, menu icon, icon x offset, accent colour. Shared by the layout menu
+	and the layout-order settings card (labels are translated on each call, so
+	this is a function rather than a constant)."""
+	return {
+		"side_normal":   (_("Tracks + Art"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
+		"side_reversed": (_("Tracks + Art (Reversed)"), "tracks+side-menu-reversed.png", 0, ColourRGBA(76, 183, 229, 255)),
+		"gallery1":      (_("Tracks + Gallery"), "gallery1-menu.png", 0, ColourRGBA(76, 137, 229, 255)),
+		"tracks":        (_("Tracks"), "tracks-menu.png", 1, ColourRGBA(76, 229, 229, 255)),
+		"lyrics":        (_("Art + Lyrics"), "lyrics-menu.png", 1, ColourRGBA(107, 76, 229, 255)),
+		"radio":         (_("Radio"), "radio-view-menu.png", 1, ColourRGBA(92, 86, 255, 255)),
+	}
+
+
 class Over:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon:             Tauon = tauon
@@ -30277,27 +30292,34 @@ class Over:
 	def render_settings_layouts_card(self, x: int, y: int, w: int, accent: ColourRGBA, draw: bool = True) -> int:
 		gui = self.gui
 		custom = self.tauon.custom
-		custom.ensure_loaded()
+		items = custom.layout_items()
 		row_h = round(30 * gui.scale)
 		row_gap = round(6 * gui.scale)
-		slot_count = len(custom.slots)
 		# Header + rows + the New Empty Slot tile + bottom pad
-		card_h = round(128 * gui.scale) + slot_count * (row_h + row_gap)
+		card_h = round(128 * gui.scale) + len(items) * (row_h + row_gap)
 		card_rect = (x, y, w, card_h)
 		if not draw:
 			return card_h
 
 		inner_x, inner_y, inner_w, section_h = self.draw_settings_section(
 			card_rect,
-			_("Custom Layouts"),
-			_("The order layouts appear in the layout menu. The current layout is highlighted."),
+			_("Layouts"),
+			_("The order layouts appear in the layout menu and when cycling layouts. The current layout is highlighted."),
 			accent,
 		)
+		presets = preset_layout_info()
 		button_w = round(26 * gui.scale)
 		button_gap = round(4 * gui.scale)
 		buttons_x = inner_x + inner_w - (button_w * 3 + button_gap * 2) - round(6 * gui.scale)
-		for i in range(slot_count):
-			active = gui.custom_mode and i == custom.active_slot
+		for pos, (kind, ref) in enumerate(items):
+			if kind == "slot":
+				title = custom.slot_title(ref)
+				active = gui.custom_mode and ref == custom.active_slot
+			else:
+				title = presets.get(ref, (ref,))[0]
+				# The standard layouts only read as active outside custom mode
+				# (custom mode is an overlay over one of them).
+				active = not gui.custom_mode and bool(getattr(self.tauon.view_box, ref)(False))
 			fill = self.settings_surface(self.colours.box_button_background, 6)
 			if active:
 				fill = alpha_blend(alpha_mod(accent, 26), fill)
@@ -30307,35 +30329,37 @@ class Over:
 			self.ddt.bordered_rect((inner_x, inner_y, inner_w, row_h), fill, border, round(1 * gui.scale))
 			self.ddt.text(
 				(inner_x + round(14 * gui.scale), inner_y + round(7 * gui.scale)),
-				custom.slot_title(i),
+				title,
 				self.colours.box_text,
 				212,
 				bg=fill,
 				max_w=buttons_x - inner_x - round(22 * gui.scale),
 			)
-			if i > 0:
+			if pos > 0:
 				self.settings_icon_button(
 					(buttons_x, inner_y, button_w, row_h),
-					lambda i=i: custom.move_slot(i, -1),
+					lambda pos=pos: custom.move_layout(pos, -1),
 					accent=accent,
 					draw_icon=self.draw_move_up_icon,
 					tooltip=_("Move up"),
 				)
-			if i < slot_count - 1:
+			if pos < len(items) - 1:
 				self.settings_icon_button(
 					(buttons_x + button_w + button_gap, inner_y, button_w, row_h),
-					lambda i=i: custom.move_slot(i, 1),
+					lambda pos=pos: custom.move_layout(pos, 1),
 					accent=accent,
 					draw_icon=self.draw_move_down_icon,
 					tooltip=_("Move down"),
 				)
-			self.settings_icon_button(
-				(buttons_x + (button_w + button_gap) * 2, inner_y, button_w, row_h),
-				lambda i=i: self.request_delete_layout(i),
-				accent=accent,
-				icon=self.gui.delete_icon,
-				tooltip=_("Delete"),
-			)
+			# Standard layouts can be reordered but not deleted.
+			if kind == "slot":
+				self.settings_icon_button(
+					(buttons_x + (button_w + button_gap) * 2, inner_y, button_w, row_h),
+					lambda ref=ref: self.request_delete_layout(ref),
+					accent=accent,
+					icon=self.gui.delete_icon,
+					tooltip=_("Delete"),
+				)
 			inner_y += row_h + row_gap
 
 		self.settings_action_tile(
@@ -46427,63 +46451,48 @@ class ViewBox:
 			self.x_menu.close_next_frame = True
 		return None
 
-	def _custom_cycle_slots(self) -> list[int]:
-		"""Slot indexes worth cycling through: the non-blank custom layouts."""
+	def current_layout_index(self, items: list[tuple[str, str | int]]) -> int:
+		"""Position of the active layout in ``items``, or -1 when none matches
+		(e.g. the timed lyrics editor, which no layout entry represents)."""
+		if self.gui.custom_mode:
+			slot = self.tauon.custom.active_slot
+			for i, (kind, ref) in enumerate(items):
+				if kind == "slot" and ref == slot:
+					return i
+			return -1
+		for i, (kind, ref) in enumerate(items):
+			if kind == "preset" and getattr(self, ref)(False):
+				return i
+		return -1
+
+	def apply_layout(self, kind: str, ref: str | int) -> None:
+		"""Switch to one entry of the layout order (a custom slot or a standard
+		layout)."""
 		custom = self.tauon.custom
-		if not custom._loaded:
-			custom.load_slots()
-		return [i for i, s in enumerate(custom.slots) if not custom._is_blank_tree(s)]
+		if kind == "slot":
+			custom.enter(ref)
+			return
+		if self.gui.custom_mode:
+			custom.exit_mode()
+		# The standard layout methods are toggles, so calling one that is
+		# already active would turn it back off — that can happen after leaving
+		# custom mode (an overlay: it reveals whichever layout was underneath).
+		if not getattr(self, ref)(False):
+			getattr(self, ref)(True)
 
 	def cycle(self, reverse: bool = False) -> None:
-		"""Step to the next/previous layout: Tracks → Tracks + Art → Gallery →
-		Showcase → each (non-blank) custom layout slot → back to Tracks."""
-		custom = self.tauon.custom
-		slots = self._custom_cycle_slots()
-
-		if self.gui.custom_mode:
-			try:
-				idx = slots.index(custom.active_slot)
-			except ValueError:
-				idx = -1  # active slot is blank: step out of custom either way
-			if not reverse:
-				if idx != -1 and idx + 1 < len(slots):
-					custom.enter(slots[idx + 1])
-					return
-				custom.exit_mode()
-				self.tracks(True)
-			else:
-				if idx > 0:
-					custom.enter(slots[idx - 1])
-					return
-				custom.exit_mode()
-				# The underlying preset may already be showcase (custom mode is
-				# an overlay); lyrics(True) would toggle it back off.
-				if not self.lyrics():
-					self.lyrics(True)
+		"""Step to the next/previous layout, following the user-defined order
+		of the layout menu (standard layouts and custom slots alike)."""
+		items = self.tauon.custom.layout_items()
+		if not items:
 			return
-
-		if not reverse:
-			if self.tracks():
-				self.side(True)
-			elif self.side():
-				self.gallery1(True)
-			elif self.gallery1():
-				self.lyrics(True)
-			elif self.lyrics() and slots:
-				custom.enter(slots[0])
-			else:
-				self.tracks(True)
-		elif self.tracks():
-			if slots:
-				custom.enter(slots[-1])
-			else:
-				self.lyrics(True)
-		elif self.lyrics():
-			self.gallery1(True)
-		elif self.gallery1():
-			self.side(True)
-		else:
-			self.tracks(True)
+		index = self.current_layout_index(items)
+		if index == -1:
+			# Nothing recognisable is active: start at either end.
+			index = len(items) - 1 if not reverse else 0
+			self.apply_layout(*items[index])
+			return
+		self.apply_layout(*items[(index + (-1 if reverse else 1)) % len(items)])
 
 	def render(self) -> None:
 		gui     = self.gui
@@ -54123,27 +54132,13 @@ def main(holder: Holder) -> None:
 			return None
 		return cb
 
-	for _vb_name, _vb_label, _vb_icon, _vb_xoff, _vb_colour in (
-		("side_normal", _("Tracks + Art"), "tracks+side-menu.png", 0, ColourRGBA(76, 183, 229, 255)),
-		("side_reversed", _("Tracks + Art (Reversed)"), "tracks+side-menu-reversed.png", 0, ColourRGBA(76, 183, 229, 255)),
-		("gallery1", _("Tracks + Gallery"), "gallery1-menu.png", 0, ColourRGBA(76, 137, 229, 255)),
-		("tracks", _("Tracks"), "tracks-menu.png", 1, ColourRGBA(76, 229, 229, 255)),
-		("lyrics", _("Art + Lyrics"), "lyrics-menu.png", 1, ColourRGBA(107, 76, 229, 255)),
-		("radio", _("Radio"), "radio-view-menu.png", 1, ColourRGBA(92, 86, 255, 255)),
-	):
-		_vb_menu_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, _vb_icon, True))
-		_vb_menu_icon.colour = _vb_colour
-		_vb_menu_icon.colour_callback = _layout_menu_icon_colour(_vb_name, _vb_colour)
-		_vb_menu_icon.xoff = _vb_xoff
-		_vb_menu_icon.yoff = 1
-		layout_menu.add(MenuItem(_vb_label, _layout_menu_pick(_vb_name), icon=_vb_menu_icon))
-
 	# Custom layout slots: one entry per slot (any number), named by the slot
 	# (rename / template loads set names; unnamed empty slots read "Empty
 	# Slot"), same glyph with a cycled per-slot accent. Picking the
 	# already-active slot toggles custom mode off; picking another switches to
-	# it. The slot section is rebuilt (tauon.rebuild_layout_menu) whenever
-	# slots are created, deleted or renamed.
+	# it. Standard layouts and slots share one user-defined order (the Layouts
+	# settings card), so the whole menu is rebuilt (tauon.rebuild_layout_menu)
+	# whenever slots are created, deleted, renamed or reordered.
 	def _layout_menu_pick_custom(slot: int) -> Callable[[], None]:
 		def cb() -> None:
 			if gui.custom_mode and tauon.custom.active_slot == slot:
@@ -54167,7 +54162,6 @@ def main(holder: Holder) -> None:
 		text = _("Exit Edit Mode") if gui.custom_edit else _("Enter Edit Mode")
 		return Decorator(colours.menu_text, colours.menu_background, text)
 
-	_layout_menu_head = list(layout_menu.items)  # the fixed preset entries above
 	_slot_accents = (
 		ColourRGBA(170, 225, 90, 255),   # lime
 		ColourRGBA(230, 85, 210, 255),   # magenta
@@ -54180,16 +54174,25 @@ def main(holder: Holder) -> None:
 	)
 
 	def rebuild_layout_menu() -> None:
-		layout_menu.items[:] = _layout_menu_head
-		for _slot in range(len(tauon.custom.slots)):
-			_slot_colour = _slot_accents[_slot % len(_slot_accents)]
-			_slot_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "custom-layout-menu.png", True))
-			_slot_icon.colour = _slot_colour
-			_slot_icon.colour_callback = _layout_menu_custom_colour(_slot, _slot_colour)
-			_slot_icon.xoff = 1
-			_slot_icon.yoff = 1
-			layout_menu.add(MenuItem(
-				tauon.custom.slot_title(_slot), _layout_menu_pick_custom(_slot), icon=_slot_icon))
+		layout_menu.items.clear()
+		_presets = preset_layout_info()
+		for _kind, _ref in tauon.custom.layout_items():
+			if _kind == "preset":
+				_label, _icon_name, _xoff, _colour = _presets[_ref]
+				_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, _icon_name, True))
+				_icon.colour_callback = _layout_menu_icon_colour(_ref, _colour)
+				_pick = _layout_menu_pick(_ref)
+			else:
+				_label = tauon.custom.slot_title(_ref)
+				_colour = _slot_accents[_ref % len(_slot_accents)]
+				_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "custom-layout-menu.png", True))
+				_icon.colour_callback = _layout_menu_custom_colour(_ref, _colour)
+				_xoff = 1
+				_pick = _layout_menu_pick_custom(_ref)
+			_icon.colour = _colour
+			_icon.xoff = _xoff
+			_icon.yoff = 1
+			layout_menu.add(MenuItem(_label, _pick, icon=_icon))
 		layout_menu.br()
 		layout_menu.add(MenuItem(_("Enter Edit Mode"), tauon.custom.toggle_edit, _edit_mode_deco,
 			disable_test=lambda: not gui.custom_mode))
