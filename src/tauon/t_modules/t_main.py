@@ -27147,18 +27147,18 @@ class PresetDownloadBox:
 				self.cancel()
 
 class NagBox:
-	SPLASH_VERSION = "11.0.0"
+	SPLASH_VERSION = "12.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
-		("New layout engine supporting custom layouts!", False),
-		("Added rounded corners setting", False),
-		("Added lyrics search to global search", False),
-		("Added new widget: Spectogram", False),
-		("Added new widget: Track Details", False),
-		("Added new widget: Compact Gallery", False),
-		("Improvements to network buffering", False),
+		("Enhanced auto theme (Colourise mode)", False),
+		("New optional playback panel design!", False),
+		("Revamped radio player", False),
+		("New Album Flow widget", False),
+		("New Tab Switcher widget", False),
+		("New spectrogram styles: Ion and Flux", False),
+		("Many small theming fixes", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -27196,8 +27196,8 @@ class NagBox:
 		self.tauon.show_message(_("Yay! Thank you!! 🎉 ✨"), mode="done")
 
 	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
-		top = ColourRGBA(205, 226, 92, 255)
-		bottom = ColourRGBA(86, 190, 104, 255)
+		top = ColourRGBA(112, 197, 240, 255)
+		bottom = ColourRGBA(248, 222, 88, 255)
 		steps = max(1, round(h / max(self.gui.scale, 1)))
 		for step in range(steps):
 			ratio = step / max(steps - 1, 1)
@@ -27241,11 +27241,11 @@ class NagBox:
 		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
-		version_text = "Tauon v11"
+		version_text = "Tauon v12"
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Your ultimate Tauon upgrade is here!"),
+			_("The best version of Tauon yet!"),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
