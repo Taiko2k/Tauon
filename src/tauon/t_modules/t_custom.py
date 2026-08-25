@@ -324,7 +324,7 @@ SPECTRO_PRESETS: list[tuple[str, list[tuple[float, tuple[int, int, int]]]]] = [
 
 SPECTRAL_FLOW_PRESETS = frozenset((2, 3))
 SPECTRAL_FLOW_SENSITIVITY = 1.75
-SPECTRAL_FLOW_TURBULENCE = 1.0
+SPECTRAL_FLOW_TURBULENCE = 0.75
 # The legacy palettes map analyser bands directly to texture rows. Doubling
 # their source density gives the scaled widget finer frequency detail while
 # preserving its palette, response curve, time span, and scroll geometry.
@@ -1185,8 +1185,20 @@ class PlaybackPanelWidget(Widget):
 		# blends against it, so a stale colour from another widget bleeds through.
 		tauon.ddt.text_background_colour = tauon.colours.bottom_panel_colour
 		bar = tauon.bottom_bar_ao1 if tauon.prefs.shuffle_lock else tauon.bottom_bar1
-		bar.update()
-		bar.render()
+		# Both bars lay themselves out from window_size[1] - panelBY, which in
+		# the standard layout is their own height. Here the segment IS the bar,
+		# so panelBY has to be the segment height for the duration -- otherwise
+		# the classic view's panel choice leaks in: with the Feux panel enabled
+		# there, panelBY is its taller height, and this bar puts its seek bar
+		# above the top of the scratch (so it never gets blitted) and drags the
+		# title up with it.
+		panel_by = tauon.gui.panelBY
+		tauon.gui.panelBY = round(h)
+		try:
+			bar.update()
+			bar.render()
+		finally:
+			tauon.gui.panelBY = panel_by
 
 
 class FeuxBar:
