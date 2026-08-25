@@ -15065,7 +15065,9 @@ class Tauon:
 			if gui.lsp and not gui.rsp:
 				inset_width -= 10 * gui.scale
 
-			if gui.lsp:
+			# Only nudge for the left panel when the tracklist actually borders it.
+			# With the side panel on the left, the tracklist borders that instead.
+			if gui.lsp and not gui.rsp_on_left:
 				inset_left -= 10 * gui.scale
 				inset_width += 10 * gui.scale
 
