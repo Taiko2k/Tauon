@@ -45783,7 +45783,12 @@ class Showcase:
 			t1 = self.colours.grey(30)
 			self.gui.vis_4_colour = ColourRGBA(40, 40, 40, 255)
 
-		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), self.colours.lyrics_panel_background)
+		# The text below sits directly on this fill, so it needs to be handed to
+		# ddt.text as the background -- the module-level default is whatever the
+		# last view left behind (the playlist panel colour), which throws off both
+		# the subpixel blending and any alpha the text colours carry.
+		panel_bg = self.colours.lyrics_panel_background
+		self.ddt.rect((0, self.gui.panelY, self.window_size[0], self.window_size[1] - self.gui.panelY), panel_bg)
 
 		# if not self.prefs.shuffle_lock:
 		# 	if draw.button(_("Return"), 25 * self.gui.scale, self.window_size[1] - self.gui.panelBY - 40 * self.gui.scale,
@@ -45852,18 +45857,18 @@ class Showcase:
 				meta_w = min(box_w, self.window_size[0] - round(60 * self.gui.scale))
 				meta_x = round(self.window_size[0] / 2)
 				title = clean_string(track.filename) if track.title == "" else track.title
-				self.ddt.text((meta_x, meta_y, 2), title, t1, 219, meta_w)
+				self.ddt.text((meta_x, meta_y, 2), title, t1, 219, meta_w, bg=panel_bg)
 				meta_y += round(32 * self.gui.scale)
 				if track.artist:
-					self.ddt.text((meta_x, meta_y, 2), track.artist, alpha_mod(t1, 210), 316, meta_w)
+					self.ddt.text((meta_x, meta_y, 2), track.artist, alpha_mod(t1, 210), 316, meta_w, bg=panel_bg)
 					meta_y += round(23 * self.gui.scale)
 				if track.album:
 					album_line = track.album
 					if track.date:
 						album_line = f"{album_line} - {track.date}"
-					self.ddt.text((meta_x, meta_y, 2), album_line, alpha_mod(t1, 160), 14, meta_w)
+					self.ddt.text((meta_x, meta_y, 2), album_line, alpha_mod(t1, 160), 14, meta_w, bg=panel_bg)
 				elif track.date:
-					self.ddt.text((meta_x, meta_y, 2), track.date, alpha_mod(t1, 160), 14, meta_w)
+					self.ddt.text((meta_x, meta_y, 2), track.date, alpha_mod(t1, 160), 14, meta_w, bg=panel_bg)
 				self.gui.showed_title = True
 				self.ddt.alpha_bg = False
 				self.ddt.force_gray = False
@@ -45927,25 +45932,25 @@ class Showcase:
 				y = int(self.window_size[1] / 2) - round(60 * self.gui.scale)
 
 				if track.artist == "" and track.title == "":
-					self.ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w)
+					self.ddt.text((x, y, 2), clean_string(track.filename), t1, 216, w, bg=panel_bg)
 				else:
-					self.ddt.text((x, y, 2), track.artist, t1, 20, w)
+					self.ddt.text((x, y, 2), track.artist, t1, 20, w, bg=panel_bg)
 					y += round(48 * self.gui.scale)
 
 					if self.window_size[0] < 700 * self.gui.scale:
 						if len(track.title) < 30:
-							self.ddt.text((x, y, 2), track.title, t1, 220, w)
+							self.ddt.text((x, y, 2), track.title, t1, 220, w, bg=panel_bg)
 						elif len(track.title) < 40:
-							self.ddt.text((x, y, 2), track.title, t1, 217, w)
+							self.ddt.text((x, y, 2), track.title, t1, 217, w, bg=panel_bg)
 						else:
-							self.ddt.text((x, y, 2), track.title, t1, 213, w)
+							self.ddt.text((x, y, 2), track.title, t1, 213, w, bg=panel_bg)
 
 					elif len(track.title) < 35:
-						self.ddt.text((x, y, 2), track.title, t1, 220, w)
+						self.ddt.text((x, y, 2), track.title, t1, 220, w, bg=panel_bg)
 					elif len(track.title) < 50:
-						self.ddt.text((x, y, 2), track.title, t1, 219, w)
+						self.ddt.text((x, y, 2), track.title, t1, 219, w, bg=panel_bg)
 					else:
-						self.ddt.text((x, y, 2), track.title, t1, 216, w)
+						self.ddt.text((x, y, 2), track.title, t1, 216, w, bg=panel_bg)
 
 				self.gui.spec4_rec.x = x - (self.gui.spec4_rec.w // 2)
 				self.gui.spec4_rec.y = y + round(50 * self.gui.scale)

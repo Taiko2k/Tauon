@@ -1579,6 +1579,13 @@ class FeuxBar:
 				colour = mb_over
 				if inp.mouse_click:
 					pctl.back()
+				# Right-click toggles repeat, as it does on the standard bar.
+				# The toast matters more here than there: the right-hand pod
+				# that shows the mode is dropped when the panel gets narrow.
+				if inp.right_click:
+					tauon.toggle_repeat()
+					tauon.toast(_t("Repeat On") if pctl.repeat_mode else _t("Repeat Off"))
+					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
 			a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
@@ -1646,6 +1653,11 @@ class FeuxBar:
 				colour = mb_over
 				if inp.mouse_click:
 					pctl.advance()
+				# Right-click toggles shuffle, mirroring back's repeat toggle.
+				if inp.right_click:
+					tauon.toggle_random()
+					tauon.toast(_t("Shuffle On") if pctl.random_mode else _t("Shuffle Off"))
+					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Forward"))
 			a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)
@@ -1796,7 +1808,10 @@ class FeuxBar:
 		x -= icon.w
 		rect = (x - self._s(9), mid - self._s(15), icon.w + self._s(18), self._s(30))
 		self.fields.add(rect)
-		colour = md_active if tauon.extra_menu.active or tauon.mode_menu.active else md_off
+		# Only the playback menu lights the button up. The mode menu can be
+		# opened by right-clicking anywhere on the panel, so highlighting for
+		# it would light the hamburger for a click nowhere near it.
+		colour = md_active if tauon.extra_menu.active else md_off
 		if self.coll(rect):
 			colour = md_over
 			if inp.mouse_click or inp.right_click:
