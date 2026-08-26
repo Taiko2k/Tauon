@@ -9,7 +9,7 @@ expire on their own, so nothing we publish outlives the cache tracking it.
 Embedded art is always allowed. A file on disk is only published if its name
 looks like cover art and it isn't loose in the user's home, Documents,
 Downloads or Pictures folder. Anything rejected falls back to the MusicBrainz
-lookup, which publishes nothing.
+lookup, which publishes nothing
 """
 
 from __future__ import annotations
@@ -140,8 +140,10 @@ class LitterboxCache:
 		self.entries: dict[str, tuple[str, float]] = {}
 		# Upload timestamps inside the rate limit window
 		self.uploads: deque[float] = deque()
-		# track index -> time we last refused to upload for it
-		self.negative: dict[int, float] = {}
+		# (track index, art cycle position) -> time we last refused to upload
+		# for it. Keyed on the position too, so cycling the art re-evaluates
+		# instead of inheriting the refusal of the image that was showing before
+		self.negative: dict[tuple[int, int], float] = {}
 		self.loaded: bool = False
 		# Set by a failed upload; cached art still works, nothing new is sent
 		self.upload_disabled: bool = False
@@ -262,21 +264,37 @@ class LitterboxCache:
 
 	# --- per-track refusal memo ---
 
-	def recently_refused(self, index: int) -> bool:
-		at = self.negative.get(index)
+	def recently_refused(self, index: int, offset: int) -> bool:
+		at = self.negative.get((index, offset))
 		return at is not None and time.time() - at < NEGATIVE_MEMO_S
 
-	def refuse(self, index: int) -> None:
-		self.negative[index] = time.time()
+	def refuse(self, index: int, offset: int) -> None:
+		self.negative[(index, offset)] = time.time()
 		if len(self.negative) > 512:
 			self.negative.clear()
 
 
-def _read_art_bytes(tauon: Tauon, tr: TrackClass) -> tuple[bytes, int, str] | None:
+def current_art_offset(tauon: Tauon, tr: TrackClass) -> int:
+	"""The art cycle position the user has selected for this track's folder.
+
+	Read straight out of the shared offsets rather than through
+	AlbumArt.get_offset, which writes a clamped value back: a background upload
+	has no business moving the position the UI is showing. The value is only
+	clamped against the real source list once we have it, in _read_art_bytes.
+	"""
+	try:
+		return int(tauon.folder_image_offsets.get(os.path.dirname(tr.fullpath), 0))
+	except Exception:
+		return 0
+
+
+def _read_art_bytes(tauon: Tauon, tr: TrackClass, offset: int) -> tuple[bytes, int, str] | None:
 	"""Return (raw image bytes, source type, source path) for a track's art.
 
-	Source type is 0 for a file on disk, 1 for art embedded in the tag. Network
-	art (2) is skipped, being remote already and usually only LAN reachable.
+	``offset`` is the cycle position to publish, so what Discord shows is the
+	image the user cycled to rather than always the first one found. Source type
+	is 0 for a file on disk, 1 for art embedded in the tag. Network art (2) is
+	skipped, being remote already and usually only LAN reachable.
 	"""
 	art = tauon.album_art_gen
 	try:
@@ -287,11 +305,7 @@ def _read_art_bytes(tauon: Tauon, tr: TrackClass) -> tuple[bytes, int, str] | No
 	if not sources:
 		return None
 
-	try:
-		offset = art.get_offset(tr.fullpath, sources)
-	except Exception:
-		offset = 0
-	if offset >= len(sources):
+	if offset < 0 or offset >= len(sources):
 		offset = 0
 
 	source_type, source_path = sources[offset][0], sources[offset][1]
@@ -372,6 +386,9 @@ def _upload(data: bytes, agent: str) -> str | None:
 def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
 	"""Return a public URL for this track's art, uploading it if needed.
 
+	The art published is whichever image the folder's cycle position currently
+	selects, so the front/back/inlay the user picked is what Discord shows.
+
 	None means the caller should fall back to the MusicBrainz lookup: no local
 	art, art we won't publish, the rate limit hit, or an upload having failed
 	earlier this session.
@@ -382,12 +399,16 @@ def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
 
 	if getattr(tr, "is_network", False) or tr.file_ext == "RADIO":
 		return None
-	if cache.recently_refused(tr.index):
+
+	# Cheap dict read, so the refusal memo below can be per cycle position
+	# without paying for a source list and a re-hash on every refresh
+	offset = current_art_offset(tauon, tr)
+	if cache.recently_refused(tr.index, offset):
 		return None
 
-	found = _read_art_bytes(tauon, tr)
+	found = _read_art_bytes(tauon, tr, offset)
 	if found is None:
-		cache.refuse(tr.index)
+		cache.refuse(tr.index, offset)
 		return None
 	raw, source_type, source_path = found
 
@@ -400,14 +421,14 @@ def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
 
 	# Checked after the cache lookup, so already published art keeps showing
 	if cache.upload_disabled:
-		cache.refuse(tr.index)
+		cache.refuse(tr.index, offset)
 		return None
 
 	if source_type == 0:
 		allowed, reason = file_is_safe_to_upload(source_path, tr)
 		if not allowed:
 			logging.info(f"Litterbox: not uploading {source_path!r} - {reason}")
-			cache.refuse(tr.index)
+			cache.refuse(tr.index, offset)
 			return None
 
 	if not cache.rate_limit_ok():
@@ -419,14 +440,14 @@ def get_uploaded_art_url(tauon: Tauon, tr: TrackClass) -> str | None:
 
 	data = _prepare_upload(raw)
 	if data is None:
-		cache.refuse(tr.index)
+		cache.refuse(tr.index, offset)
 		return None
 
 	cache.record_upload()
 	url = _upload(data, tauon.t_agent)
 	if url is None:
 		cache.disable_uploads()
-		cache.refuse(tr.index)
+		cache.refuse(tr.index, offset)
 		return None
 
 	cache.put(digest, url)
