@@ -979,6 +979,9 @@ class GuiVar:
 		self.save_position = [0, 0]
 
 		self.draw_vis4_top: bool = False
+		# Screen-space rect the vis 4 blit is clipped to, or None for unclipped
+		# (the showcase, where the strip has the whole panel to itself)
+		self.vis4_clip: tuple[int, int, int, int] | None = None
 		# self.vis_4_colour = ColourRGBA(0,0,0,255)
 		self.vis_4_colour: ColourRGBA | None = None
 
@@ -45980,6 +45983,7 @@ class Showcase:
 
 				self.gui.spec4_rec.x = x - (self.gui.spec4_rec.w // 2)
 				self.gui.spec4_rec.y = y + round(50 * self.gui.scale)
+				self.gui.vis4_clip = None
 
 				if self.prefs.showcase_vis and self.window_size[1] > 369 and not self.tauon.search_over.active \
 				and self.pctl.playing_state != PlayingState.URL_STREAM:
@@ -46072,7 +46076,16 @@ class Showcase:
 			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
 		# sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		# The strip is a fixed-size texture, so a segment smaller than it (or a
+		# tall bar reaching the texture's edge) would otherwise spill past the
+		# host widget - clip the blit to the rect the caller reserved for it.
+		clip = self.gui.vis4_clip
+		if clip is not None:
+			clip_rect = sdl3.SDL_Rect(clip[0], clip[1], clip[2], clip[3])
+			sdl3.SDL_SetRenderClipRect(self.renderer, ctypes.byref(clip_rect))
 		sdl3.SDL_RenderTexture(self.renderer, self.gui.spec4_tex, None, self.gui.spec4_rec)
+		if clip is not None:
+			sdl3.SDL_SetRenderClipRect(self.renderer, None)
 
 class ColourPulse2:
 	"""Animates colour between two colours"""

@@ -288,6 +288,11 @@ class SticksVisWidget(Widget):
 		# down the rec rather than at its middle. Offset by rec.h/4 so the bars
 		# (not the empty texture) land in the segment's vertical centre.
 		rec.y = round(y + (h - rec.h) / 2 + rec.h / 4)
+		# The strip is a fixed 322x100 (scaled) texture, so in a segment shorter
+		# than that - or when a loud bar runs to the texture's edge - it would
+		# paint over the neighbouring segments. Clip the blit to this widget's
+		# rect; render_vis applies it wherever the draw finally happens.
+		gui.vis4_clip = (round(x), round(y), round(w), round(h))
 		if tauon.prefs.backend != Backend.PHAZOR:
 			tauon.ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			tauon.ddt.text(
@@ -4488,6 +4493,7 @@ class CustomLayout:
 		self.gui.milkdrop_in_widget = False  # hand the visualisers back to the presets
 		self.gui.vis4_in_widget = False
 		self.gui.draw_vis4_top = False
+		self.gui.vis4_clip = None
 		self.gui.spectrogram_in_widget = False
 		self._close_menu()
 		# Force a full preset playlist render so it repaints at full size and
