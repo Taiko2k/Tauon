@@ -46349,12 +46349,12 @@ class ViewBox:
 			return self.prefs.album_mode is True  # and self.gui.show_playlist is True
 
 		if self.prefs.album_mode and not self.gui.combo_mode:
-			self.gui.hide_tracklist_in_gallery ^= True
+			# Already in gallery view - keep the tracklist visible rather than
+			# cycling into a gallery-only view.
+			self.gui.hide_tracklist_in_gallery = False
 			self.gui.rspw = self.gui.pref_gallery_w
 			self.gui.update_layout = True
-			# self.x_menu.active = False
 			self.x_menu.close_next_frame = True
-			# Menu.active = False
 			return None
 
 		if self.x_menu.active:
