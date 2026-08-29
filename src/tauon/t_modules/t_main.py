@@ -13598,19 +13598,8 @@ class Tauon:
 		return None
 
 	def clean_track_title(self, title: str | None) -> str:
-		if not title:
-			return ""
-
-		cleaned = title.strip()
-		cleaned = re.sub(r"[\(\[\{].*?[\)\]\}]", "", cleaned)
-		cleaned = re.split(r"\s*(?:ft\.?|feat\.?|featuring|with)\b", cleaned, flags=re.I)[0]
-		if " - " in cleaned:
-			left, right = cleaned.split(" - ", 1)
-			if re.search(r"(?i)(remix|mix|version|edit|remaster|remastered|live|acoustic|instrumental|single|radio|bonus)", right):
-				cleaned = left
-		cleaned = cleaned.strip()
-		cleaned = re.sub(r"[-–—:;]+$", "", cleaned).strip()
-		return cleaned or title.strip()
+		from tauon.t_modules.t_discord import clean_track_title
+		return clean_track_title(title)
 
 	def discord_loop(self) -> None:
 		try:

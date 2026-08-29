@@ -4,6 +4,7 @@ import asyncio
 import builtins
 import json
 import logging
+import re
 import threading
 import time
 import urllib.parse
@@ -29,6 +30,47 @@ _MIN_UPDATE_GAP_S        = 15.0
 _MIN_UPDATE_GAP_CHANGE_S = 1.5
 _POLL_INTERVAL_S         = 1
 _IDLE_CLEAR_DELAY_S      = 30.0
+
+
+# Featured-artist credits, the only thing the title cleaner strips. Matched as
+# whole words with leading whitespace required, so "Drift" is never mistaken
+# for "ft" and "Dance with Me" is never mistaken for a credit.
+_CREDIT_WORDS = r"feat\.|feat\b|ft\.|ft\b|featuring\b|w/"
+_CREDIT_RE    = re.compile(r"(?i)^[\(\[\{]\s*(?:" + _CREDIT_WORDS + r")")
+_BRACKET_RE   = re.compile(r"[\(\[\{][^\(\)\[\]\{\}]*[\)\]\}]")
+_FEAT_RE      = re.compile(r"(?i)\s+[-–—]?\s*(?:" + _CREDIT_WORDS + r")\s*\S")
+_TRAIL_RE     = re.compile(r"[-–—:;,/]+$")
+
+
+def clean_track_title(title: Optional[str]) -> str:
+    """Trim featured-artist credits off a track title for display.
+
+    Removes "(feat. …)" style groups and trailing "feat. …" credits, and
+    nothing else — remix, live and remaster markers are part of what the
+    track is, so they stay. A title that cleans away to nothing falls back
+    to the original.
+    """
+    if not title:
+        return ""
+
+    original = " ".join(title.split()).strip()
+    cleaned  = original
+
+    # Drop bracketed credits, but never a group that opens the title —
+    # "(Don't Fear) The Reaper" is the song, not an annotation.
+    def _strip_bracket(match: re.Match) -> str:
+        if match.start() == 0 or not _CREDIT_RE.match(match.group(0)):
+            return match.group(0)
+        return " "
+
+    cleaned = _BRACKET_RE.sub(_strip_bracket, cleaned)
+
+    feat = _FEAT_RE.search(cleaned)
+    if feat and cleaned[:feat.start()].strip():
+        cleaned = cleaned[:feat.start()]
+
+    cleaned = _TRAIL_RE.sub("", " ".join(cleaned.split()).strip()).strip()
+    return cleaned or original
 
 
 def build_lastfm_track_url(artist: Optional[str], title: Optional[str]) -> Optional[str]:

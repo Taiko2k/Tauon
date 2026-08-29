@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### v12.0.1
+
+ - Fixed discord song text
+
 ### v12.0.0
 
  - Added new widget AlbumFlow
