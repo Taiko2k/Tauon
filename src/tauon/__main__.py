@@ -133,6 +133,20 @@ def main() -> None:
 	t_main(holder)
 
 
+COMMANDS = frozenset({
+	"play",
+	"pause",
+	"playpause",
+	"stop",
+	"next",
+	"previous",
+	"raise",
+	"shuffle",
+	"repeat",
+	"reloadtheme",
+})
+
+
 def transfer_args_and_exit() -> None:
 	"""Early arg processing"""
 	import urllib.request
@@ -154,33 +168,11 @@ def transfer_args_and_exit() -> None:
 
 			url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
 			urllib.request.urlopen(url)
-		if item == "--play-pause":
-			url = base + "playpause/"
-			urllib.request.urlopen(url)
-		if item == "--play":
-			url = base + "play/"
-			urllib.request.urlopen(url)
-		if item == "--pause":
-			url = base + "pause/"
-			urllib.request.urlopen(url)
-		if item == "--stop":
-			url = base + "stop/"
-			urllib.request.urlopen(url)
-		if item == "--next":
-			url = base + "next/"
-			urllib.request.urlopen(url)
-		if item == "--previous":
-			url = base + "previous/"
-			urllib.request.urlopen(url)
-		if item == "--shuffle":
-			url = base + "shuffle/"
-			urllib.request.urlopen(url)
-		if item == "--repeat":
-			url = base + "repeat/"
-			urllib.request.urlopen(url)
-		if item == "--reload-theme":
-			url = base + "reloadtheme/"
-			urllib.request.urlopen(url)
+		if item.startswith("--"):
+			# Accept both hyphenated and unhyphenated spellings, e.g. --play-pause and --playpause
+			command = item[2:].replace("-", "")
+			if command in COMMANDS:
+				urllib.request.urlopen(base + command + "/")
 
 	sys.exit()
 

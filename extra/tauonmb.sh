@@ -35,13 +35,17 @@ EOF
 	exit 0
 }
 
+handled=0
+
 while [[ -n ${1-} ]]; do
 	case ${1} in
 		-h | --help)
 			usage
 			;;
-		--play | --pause | --playpause | --stop | --next | --previous | --raise | --reloadtheme | --shuffle | --repeat)
-			if ! RESPONSE=$(curl --fail --silent --show-error --output /dev/null --write-out "%{http_code}" "${BASE_URL}/${1#--}"); then
+		--play | --pause | --playpause | --play-pause | --stop | --next | --previous | --raise | --reloadtheme | --reload-theme | --shuffle | --repeat)
+			COMMAND=${1#--}
+			COMMAND=${COMMAND//-/}
+			if ! RESPONSE=$(curl --fail --silent --show-error --output /dev/null --write-out "%{http_code}" "${BASE_URL}/${COMMAND}"); then
 				if [[ "${RESPONSE}" -ne 200 ]]; then
 					echo -e "${RED}${BOLD}Error:${RESTORE} Could not connect to Tauon. HTTP Status: ${RESPONSE}" >&2
 					echo -e "${YELLOW}Hint:${RESTORE} Make sure Tauon is running." >&2
@@ -51,6 +55,8 @@ while [[ -n ${1-} ]]; do
 					exit 1
 				fi
 			fi
+			handled=1
+			shift
 			;;
 		*)
 			exec tauonmb "${@}"
@@ -58,4 +64,8 @@ while [[ -n ${1-} ]]; do
 	esac
 done
 
-exec tauonmb "${@}"
+if [[ ${handled} -eq 1 ]]; then
+	exit 0
+fi
+
+exec tauonmb
