@@ -25,17 +25,17 @@ Actions=PlayPause;Previous;Next;Stop
 X-GNOME-UsesNotifications=true
 
 [Desktop Action PlayPause]
-Exec=com.github.taiko2k.tauonmb.sh playpause
+Exec=com.github.taiko2k.tauonmb.sh --playpause
 Name=Play/Pause
 
 [Desktop Action Previous]
-Exec=com.github.taiko2k.tauonmb.sh prev
+Exec=com.github.taiko2k.tauonmb.sh --previous
 Name=Previous Track
 
 [Desktop Action Next]
-Exec=com.github.taiko2k.tauonmb.sh next
+Exec=com.github.taiko2k.tauonmb.sh --next
 Name=Next Track
 
 [Desktop Action Stop]
-Exec=com.github.taiko2k.tauonmb.sh stop
+Exec=com.github.taiko2k.tauonmb.sh --stop
 Name=Stop

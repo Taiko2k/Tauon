@@ -16,27 +16,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import ctypes
-import ctypes.util
 import logging
-import os
-import pickle
-import subprocess
 import sys
-from ctypes import c_int, pointer
 from pathlib import Path
-
-from gi.repository import GLib
 
 install_directory = Path(__file__).resolve().parent
 sys.path.insert(0, str(install_directory.parent))
 
-from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
 from tauon.t_modules.t_logging import CustomLoggingFormatter, LogHistoryHandler  # noqa: E402
-
-pyinstaller_mode = bool(
-	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
-)
 
 log = LogHistoryHandler()
 formatter = logging.Formatter("[%(levelname)s] %(message)s")
@@ -52,6 +39,98 @@ logging.basicConfig(
 	],
 )
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
+
+# Remote control commands, mapped to their endpoint on the controller server.
+# Leading dashes are optional and hyphens within a command are ignored, so
+# --play-pause, --playpause and playpause are all equivalent.
+COMMANDS = {
+	"play": "play",
+	"pause": "pause",
+	"playpause": "playpause",
+	"stop": "stop",
+	"next": "next",
+	"advance": "next",
+	"previous": "previous",
+	"prev": "previous",
+	"back": "previous",
+	"raise": "raise",
+	"shuffle": "shuffle",
+	"repeat": "repeat",
+	"reloadtheme": "reloadtheme",
+}
+
+
+def resolve_command(item: str) -> str | None:
+	"""Return the endpoint for a command argument, or None if it isn't one"""
+	return COMMANDS.get(item.removeprefix("--").replace("-", ""))
+
+
+def is_file_argument(item: str) -> bool:
+	"""Whether an argument names a file to open rather than a command"""
+	return (
+		not item.endswith(".py")
+		and not item.startswith("-")
+		and not item.endswith("exe")
+		and (item.startswith("file://") or Path(item).exists())
+	)
+
+
+def transfer_args_and_exit() -> None:
+	"""Hand our arguments to the already running instance and exit"""
+	import urllib.error
+	import urllib.request
+
+	base = "http://localhost:7813/"
+
+	def send(path: str) -> None:
+		try:
+			urllib.request.urlopen(base + path)
+		except urllib.error.URLError:
+			logging.error("Could not connect to Tauon. Make sure Tauon is running.")  # noqa: TRY400
+			sys.exit(1)
+
+	if len(sys.argv) <= 1:
+		send("raise/")
+
+	for item in sys.argv[1:]:
+		# An existing path is a file to open, even if it looks like a command
+		if is_file_argument(item):
+			import base64
+
+			send("open/" + base64.urlsafe_b64encode(item.encode()).decode())
+			continue
+
+		command = resolve_command(item)
+		if command is not None:
+			send(command + "/")
+
+	sys.exit()
+
+
+# A remote control command, or an explicit --no-start, means we talk to the
+# already running instance instead of starting up ourselves
+if "--no-start" in sys.argv or any(
+	resolve_command(item) is not None and not is_file_argument(item) for item in sys.argv[1:]
+):
+	transfer_args_and_exit()
+
+# Everything below is only needed to actually start up. Importing GLib and the
+# rest costs far more than the whole remote control path above, so keep them
+# after it - a command like --playpause must not pay for them.
+import ctypes  # noqa: E402
+import ctypes.util  # noqa: E402
+import os  # noqa: E402
+import pickle  # noqa: E402
+import subprocess  # noqa: E402
+from ctypes import c_int, pointer  # noqa: E402
+
+from gi.repository import GLib  # noqa: E402
+
+from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
+
+pyinstaller_mode = bool(
+	hasattr(sys, "_MEIPASS") or getattr(sys, "frozen", False) or install_directory.name.endswith("_internal")
+)
 
 # https://docs.python.org/3/library/warnings.html
 logging.captureWarnings(capture=True)
@@ -132,53 +211,6 @@ def main() -> None:
 
 	t_main(holder)
 
-
-COMMANDS = frozenset({
-	"play",
-	"pause",
-	"playpause",
-	"stop",
-	"next",
-	"previous",
-	"raise",
-	"shuffle",
-	"repeat",
-	"reloadtheme",
-})
-
-
-def transfer_args_and_exit() -> None:
-	"""Early arg processing"""
-	import urllib.request
-
-	base = "http://localhost:7813/"
-
-	if len(sys.argv) <= 1:
-		url = base + "raise/"
-		urllib.request.urlopen(url)
-
-	for item in sys.argv:
-		if (
-			not item.endswith(".py")
-			and not item.startswith("-")
-			and not item.endswith("exe")
-			and (item.startswith("file://") or Path(item).exists())
-		):
-			import base64
-
-			url = base + "open/" + base64.urlsafe_b64encode(item.encode()).decode()
-			urllib.request.urlopen(url)
-		if item.startswith("--"):
-			# Accept both hyphenated and unhyphenated spellings, e.g. --play-pause and --playpause
-			command = item[2:].replace("-", "")
-			if command in COMMANDS:
-				urllib.request.urlopen(base + command + "/")
-
-	sys.exit()
-
-
-if "--no-start" in sys.argv:
-	transfer_args_and_exit()
 
 ## TODO(Martin): This code is partially duped in t_main.py
 # If we're installed, use home data locations
