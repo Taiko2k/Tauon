@@ -24294,7 +24294,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False, async_hold: bool = False, caller_id: str | None = None) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False, async_hold: bool = False, caller_id: str | None = None, no_theme: bool = False) -> int | None:
 		"""Draw the art for the given track at location, sized to fit box.
 
 		Without async_hold this always blocks to return the requested art.
@@ -24303,6 +24303,10 @@ class AlbumArt:
 		blank flash). Only use it for a live UI display box; thumbnailers etc.
 		want the synchronous result. Callers passing async_hold should pass a
 		unique caller_id so their previous art can be tracked for the hold.
+
+		no_theme draws the art without letting it drive the "Auto-theme"
+		setting, for art shown incidentally (e.g. the track info box) rather
+		than as the album currently being viewed.
 		"""
 		# A non-positive box (can happen for a very short/narrow Custom Layout
 		# segment) would crash the PIL thumbnail/resize, so skip drawing.
@@ -24311,7 +24315,7 @@ class AlbumArt:
 		index = track.index
 		filepath = track.fullpath
 
-		if self.prefs.colour_from_image and track.album != self.gui.theme_temp_current and box[0] != 115:
+		if self.prefs.colour_from_image and not no_theme and track.album != self.gui.theme_temp_current:
 			if track.album in self.gui.temp_themes:
 				self.tauon.colours.__dict__.update(self.gui.temp_themes[track.album].__dict__)
 				self.gui.theme_temp_current = track.album
@@ -24342,7 +24346,7 @@ class AlbumArt:
 				return self.fast_display(track.index, location, box, source, offset)
 
 		if async_hold and not theme_only:
-			return self.display_async(track, location, box, source, offset, index, caller_id)
+			return self.display_async(track, location, box, source, offset, index, caller_id, no_theme)
 
 		# Load and render, blocking
 		r = self.load_art_image(track, source, offset, theme_only)
@@ -24352,11 +24356,11 @@ class AlbumArt:
 
 		try:
 			if theme_only:
-				self.extract_art_theme(im, track, box)
+				self.extract_art_theme(im, track, no_theme)
 				return None
 
 			g, o_size = self.resize_art_image(im, o_size, box)
-			self.extract_art_theme(im, track, box)
+			self.extract_art_theme(im, track, no_theme)
 			unit = self.create_unit_and_render(g, o_size, image_format, index, offset, box, source, location)
 			if caller_id:
 				self.caller_history[caller_id] = unit
@@ -24372,7 +24376,7 @@ class AlbumArt:
 			return 1
 		return 0
 
-	def display_async(self, track: TrackClass, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, index: int, caller_id: str | None) -> int | None:
+	def display_async(self, track: TrackClass, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, index: int, caller_id: str | None, no_theme: bool = False) -> int | None:
 		"""Non-blocking version of the display() slow path.
 
 		The source image is loaded and resized on a worker thread; one disk
@@ -24407,7 +24411,7 @@ class AlbumArt:
 					self.async_loads[load_key] = {box}
 					shoot = threading.Thread(
 						target=self.async_prepare,
-						args=(track, source, offset, load_key))
+						args=(track, source, offset, load_key, no_theme))
 					shoot.daemon = True
 					shoot.start()
 
@@ -24434,7 +24438,7 @@ class AlbumArt:
 			return 1
 		return 0
 
-	def async_prepare(self, track: TrackClass, source: list[tuple[int, str]], offset: int, load_key: tuple) -> None:
+	def async_prepare(self, track: TrackClass, source: list[tuple[int, str]], offset: int, load_key: tuple, no_theme: bool = False) -> None:
 		"""Load an art image once off the UI thread, then produce every size
 		requested of it from that single load (see display_async)"""
 		r = self.load_art_image(track, source, offset, in_worker=True)
@@ -24461,7 +24465,7 @@ class AlbumArt:
 					b = next(iter(boxes))
 				g, sized_o_size = self.resize_art_image(im, o_size, b)
 				if not themed:
-					self.extract_art_theme(im, track, b)
+					self.extract_art_theme(im, track, no_theme)
 					themed = True
 				with self.async_lock:
 					if load_key not in self.async_loads:  # clear_cache() happened; result is stale
@@ -24615,13 +24619,16 @@ class AlbumArt:
 		g.seek(0)
 		return g, o_size
 
-	def extract_art_theme(self, im: ImageFile, track: TrackClass, box: tuple[int, int]) -> None:
+	def extract_art_theme(self, im: ImageFile, track: TrackClass, no_theme: bool = False) -> None:
 		"""Set theme colours from the image (the "Carbon" theme and the
 		"colour from image" setting).
 
 		Pass the original full-size image (colours are sampled from an internal
 		copy of it, so results don't vary with the display size). Best effort:
 		on failure the theme is simply left unchanged.
+
+		no_theme suppresses the "Auto-theme" setting for art that is only being
+		shown incidentally (see display()).
 		"""
 		try:
 			# Processing for "Carbon" theme
@@ -24660,8 +24667,8 @@ class AlbumArt:
 				self.colours.last_album = track.parent_folder_path
 
 			# Processing for "Auto-theme" setting
-			if self.prefs.colour_from_image and box[0] != 115 and track.album != self.gui.theme_temp_current \
-					and track.album not in self.gui.temp_themes:  # and pctl.master_library[index].parent_folder_path != colours.last_album: #mark2233
+			if self.prefs.colour_from_image and not no_theme and track.album != self.gui.theme_temp_current \
+					and track.album not in self.gui.temp_themes:
 				colours = ColoursClass()
 				colours.last_album = track.parent_folder_path
 				if self.use_original_art_theme:
@@ -60058,11 +60065,13 @@ def main(holder: Holder) -> None:
 						# if not tc.is_network: # Don't draw album art if from network location for better performance
 						if comment_mode == 1:
 							tauon.album_art_gen.display(
-								tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size)
-							)  # Mirror this size in auto theme #mark2233
+								tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size),
+								no_theme=True,
+							)
 						else:
 							tauon.album_art_gen.display(
-								tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)), (art_size, art_size)
+								tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)), (art_size, art_size),
+								no_theme=True,
 							)
 
 						y -= int(24 * gui.scale)
