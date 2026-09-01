@@ -106,6 +106,7 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
+from tauon.t_modules.t_art_anim import AnimatedArt, fits_texture_budget, frame_at, read_animation  # noqa: E402
 from tauon.t_modules.t_art_theme import apply_art_theme, apply_original_art_theme  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import (  # noqa: E402
@@ -23599,6 +23600,11 @@ class ImageObject:
 		self.offset = 0
 		self.stats = True
 		self.format = ""
+		# Animated art. frame_textures holds every frame, of which texture is
+		# the first; both stay None for a still image, which is the common case.
+		self.frame_textures: list | None = None
+		self.frame_delays: list[float] | None = None
+		self.anim_duration: float = 0.0
 
 class AlbumArt:
 	def __init__(self, tauon: Tauon, style_overlay: StyleOverlay) -> None:
@@ -23643,10 +23649,16 @@ class AlbumArt:
 		# State for display(async_hold=True), see display_async()
 		self.async_lock: threading.LockType = threading.Lock()
 		self.async_loads: dict[tuple, set] = {}      # (source, offset) -> requested boxes. One disk load per art
-		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (BytesIO, original size, format, time)
+		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (frame BytesIOs, original size, format, frame delays, time)
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
 		self.net_art_failed: dict[str, float] = {}  # art_url_key -> monotonic time of last failed network fetch
+
+		# Animated art playback. The clock is kept per source image rather than
+		# per cache unit, so the same art shown at two sizes stays in step and
+		# doesn't jump back to frame one when a unit is rebuilt (e.g. on resize).
+		self.anim_clocks: dict[str, float] = {}
+		self.anim_wake: float = 0.0
 
 		self.base64cache = (0, 0, "")
 		self.processing64on = None
@@ -23785,7 +23797,7 @@ class AlbumArt:
 		im.thumbnail((size, size), Image.Resampling.LANCZOS)
 		return im
 
-	def fast_display(self, index: int, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int) -> int:
+	def fast_display(self, index: int, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, animate: bool = False) -> int:
 		"""Renders cached image only by given size for faster performance"""
 		found_unit = None
 		max_h = 0
@@ -23798,10 +23810,10 @@ class AlbumArt:
 		if found_unit is None:
 			return 1
 
-		self.render_fit(found_unit, location, box)
+		self.render_fit(found_unit, location, box, animate)
 		return 0
 
-	def render_fit(self, unit: ImageObject, location: list[int], box: tuple[int, int]) -> None:
+	def render_fit(self, unit: ImageObject, location: list[int], box: tuple[int, int], animate: bool = False) -> None:
 		"""Render a cached unit scaled to fit the given box.
 
 		Unlike render(), this handles a unit that was made for a different box
@@ -23837,7 +23849,7 @@ class AlbumArt:
 		self.temp_dest.y = int((box[1] - self.temp_dest.h) / 2) + self.temp_dest.y
 
 		# render the image
-		sdl3.SDL_RenderTexture(self.renderer, unit.texture, None, self.temp_dest)
+		sdl3.SDL_RenderTexture(self.renderer, self.current_frame(unit, animate), None, self.temp_dest)
 		self.style_overlay.hole_punches.append(self.temp_dest)
 
 		self.gui.art_drawn_rect = (self.temp_dest.x, self.temp_dest.y, self.temp_dest.w, self.temp_dest.h)
@@ -24294,7 +24306,7 @@ class AlbumArt:
 			im.save(save_path + ".jpg", "JPEG")
 		return None
 
-	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False, async_hold: bool = False, caller_id: str | None = None, no_theme: bool = False) -> int | None:
+	def display(self, track: TrackClass, location: list[int], box: tuple[int, int], fast: bool = False, theme_only: bool = False, async_hold: bool = False, caller_id: str | None = None, no_theme: bool = False, animate: bool = True) -> int | None:
 		"""Draw the art for the given track at location, sized to fit box.
 
 		Without async_hold this always blocks to return the requested art.
@@ -24307,6 +24319,11 @@ class AlbumArt:
 		no_theme draws the art without letting it drive the "Auto-theme"
 		setting, for art shown incidentally (e.g. the track info box) rather
 		than as the album currently being viewed.
+
+		animate plays animated art (GIF/APNG/JPEG XL) rather than showing its
+		first frame, scheduling a frame for when each of its frames falls due.
+		Turn it off for art drawn somewhere it should sit still, or drawn once
+		into a texture of its own.
 		"""
 		# A non-positive box (can happen for a very short/narrow Custom Layout
 		# segment) would crash the PIL thumbnail/resize, so skip drawing.
@@ -24337,31 +24354,33 @@ class AlbumArt:
 			for unit in self.image_cache:
 				if unit.source == source[offset][1] and unit.request_size == box:
 					self.touch_cache_unit(unit)
-					self.render(unit, location)
+					self.render(unit, location, animate)
 					if caller_id:
 						self.caller_history[caller_id] = unit
 					return 0
 
 			if fast:
-				return self.fast_display(track.index, location, box, source, offset)
+				return self.fast_display(track.index, location, box, source, offset, animate)
 
 		if async_hold and not theme_only:
-			return self.display_async(track, location, box, source, offset, index, caller_id, no_theme)
+			return self.display_async(track, location, box, source, offset, index, caller_id, no_theme, animate)
 
 		# Load and render, blocking
-		r = self.load_art_image(track, source, offset, theme_only)
+		r = self.load_art_image(track, source, offset, theme_only, animate=animate and not theme_only)
 		if not isinstance(r, tuple):
 			return r
-		im, o_size, image_format = r
+		im, o_size, image_format, anim = r
 
 		try:
 			if theme_only:
 				self.extract_art_theme(im, track, no_theme)
 				return None
 
-			g, o_size = self.resize_art_image(im, o_size, box)
+			g_list, o_size = self.resize_art_image(im, o_size, box, anim)
 			self.extract_art_theme(im, track, no_theme)
-			unit = self.create_unit_and_render(g, o_size, image_format, index, offset, box, source, location)
+			unit = self.create_unit_and_render(
+				g_list, o_size, image_format, index, offset, box, source, location,
+				delays=anim.delays if anim else None, animate=animate)
 			if caller_id:
 				self.caller_history[caller_id] = unit
 
@@ -24376,7 +24395,7 @@ class AlbumArt:
 			return 1
 		return 0
 
-	def display_async(self, track: TrackClass, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, index: int, caller_id: str | None, no_theme: bool = False) -> int | None:
+	def display_async(self, track: TrackClass, location: list[int], box: tuple[int, int], source: list[tuple[int, str]], offset: int, index: int, caller_id: str | None, no_theme: bool = False, animate: bool = False) -> int | None:
 		"""Non-blocking version of the display() slow path.
 
 		The source image is loaded and resized on a worker thread; one disk
@@ -24390,8 +24409,8 @@ class AlbumArt:
 		with self.async_lock:
 			# Drop entries nothing came back for (e.g. sizes requested mid window-resize)
 			for k, r in list(self.async_results.items()):
-				if now - r[3] > 5:
-					r[0].close()
+				if now - r[4] > 5:
+					self.close_frame_data(r[0])
 					del self.async_results[k]
 			for k, t in list(self.async_failed.items()):
 				if now - t > 10:  # Allow an eventual retry
@@ -24411,7 +24430,7 @@ class AlbumArt:
 					self.async_loads[load_key] = {box}
 					shoot = threading.Thread(
 						target=self.async_prepare,
-						args=(track, source, offset, load_key, no_theme))
+						args=(track, source, offset, load_key, no_theme, animate))
 					shoot.daemon = True
 					shoot.start()
 
@@ -24421,15 +24440,16 @@ class AlbumArt:
 					if held is not None and held in self.image_cache:
 						self.touch_cache_unit(held)
 						if held.request_size == box:
-							self.render(held, location)
+							self.render(held, location, animate)
 						else:
-							self.render_fit(held, location, box)
+							self.render_fit(held, location, box, animate)
 						return 0
 				return None
 
-		g, o_size, image_format, _ = pickup
+		g_list, o_size, image_format, delays, _ = pickup
 		try:
-			unit = self.create_unit_and_render(g, o_size, image_format, index, offset, box, source, location)
+			unit = self.create_unit_and_render(
+				g_list, o_size, image_format, index, offset, box, source, location, delays=delays, animate=animate)
 			if caller_id:
 				self.caller_history[caller_id] = unit
 		except Exception:
@@ -24438,10 +24458,10 @@ class AlbumArt:
 			return 1
 		return 0
 
-	def async_prepare(self, track: TrackClass, source: list[tuple[int, str]], offset: int, load_key: tuple, no_theme: bool = False) -> None:
+	def async_prepare(self, track: TrackClass, source: list[tuple[int, str]], offset: int, load_key: tuple, no_theme: bool = False, animate: bool = False) -> None:
 		"""Load an art image once off the UI thread, then produce every size
 		requested of it from that single load (see display_async)"""
-		r = self.load_art_image(track, source, offset, in_worker=True)
+		r = self.load_art_image(track, source, offset, in_worker=True, animate=animate)
 		if not isinstance(r, tuple):
 			# Load failed; mark every size that was waiting on it as failed
 			now = time.monotonic()
@@ -24451,7 +24471,7 @@ class AlbumArt:
 			self.gui.request_frame()
 			return
 
-		im, o_size, image_format = r
+		im, o_size, image_format, anim = r
 		themed = False
 		try:
 			while True:
@@ -24463,15 +24483,16 @@ class AlbumArt:
 					# Peek rather than pop, so a repeat request while we resize
 					# sees the job still pending instead of starting another
 					b = next(iter(boxes))
-				g, sized_o_size = self.resize_art_image(im, o_size, b)
+				g_list, sized_o_size = self.resize_art_image(im, o_size, b, anim)
 				if not themed:
 					self.extract_art_theme(im, track, no_theme)
 					themed = True
 				with self.async_lock:
 					if load_key not in self.async_loads:  # clear_cache() happened; result is stale
-						g.close()
+						self.close_frame_data(g_list)
 						break
-					self.async_results[(load_key[0], load_key[1], b)] = (g, sized_o_size, image_format, time.monotonic())
+					self.async_results[(load_key[0], load_key[1], b)] = (
+						g_list, sized_o_size, image_format, anim.delays if anim else None, time.monotonic())
 					self.async_loads[load_key].discard(b)
 				self.gui.request_frame()
 		except Exception:
@@ -24482,14 +24503,18 @@ class AlbumArt:
 					self.async_failed[(load_key[0], load_key[1], b)] = now
 		self.gui.request_frame()
 
-	def load_art_image(self, track: TrackClass, source: list[tuple[int, str]], offset: int, theme_only: bool = False, in_worker: bool = False) -> tuple[ImageFile, tuple[int, int], str] | int | None:
+	def load_art_image(self, track: TrackClass, source: list[tuple[int, str]], offset: int, theme_only: bool = False, in_worker: bool = False, animate: bool = False) -> tuple[ImageFile, tuple[int, int], str, AnimatedArt | None] | int | None:
 		"""Fetch and decode the source image; this is the one disk (or network)
 		load per art, which resize_art_image() can then be run against several
 		times.
 
-		Returns (image, original size, format) on success, or an int/None
-		result code for display() to pass through. This is the slow part of
-		display(); with in_worker it runs on a thread (see display_async).
+		Returns (image, original size, format, animation) on success, or an
+		int/None result code for display() to pass through. This is the slow part
+		of display(); with in_worker it runs on a thread (see display_async).
+
+		animate decodes the whole frame sequence of an animated image, which the
+		animation is None without. The returned image is the first frame either
+		way, so everything downstream that wants a still needs no special case.
 		"""
 		index = track.index
 		try:
@@ -24557,12 +24582,15 @@ class AlbumArt:
 			o_size = im.size
 
 			format = im.format
+			anim = read_animation(im) if animate else None
 
 			try:
 				if im.format == "JPEG":
 					format = "JPG"
 
-				if im.mode != "RGB":
+				if anim is not None:
+					im = anim.frames[0]
+				elif im.mode != "RGB":
 					im = im.convert("RGB")
 			except Exception:
 				logging.exception("Failed to convert image")
@@ -24572,6 +24600,7 @@ class AlbumArt:
 						self.downloaded_image = None
 						self.downloaded_track = None
 					return None
+				anim = None
 				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
 				o_size = im.size
 
@@ -24590,13 +24619,16 @@ class AlbumArt:
 			except Exception:
 				logging.exception(" -- Error, no source cache?")
 			return 1
-		return im, o_size, format
+		return im, o_size, format, anim
 
-	def resize_art_image(self, im: ImageFile, o_size: tuple[int, int], box: tuple[int, int]) -> tuple[BytesIO, tuple[int, int]]:
+	def resize_art_image(self, im: ImageFile, o_size: tuple[int, int], box: tuple[int, int], anim: AnimatedArt | None = None) -> tuple[list[BytesIO], tuple[int, int]]:
 		"""Resize a loaded image to fit box and encode it ready for texture upload.
 
 		Non-destructive, so several sizes can be made from a single load.
-		Returns (BMP data, original size)."""
+		Returns (list of BMP data, original size) -- one entry per animation
+		frame, so a still image is just a list of one. Animation is dropped for a
+		display size whose frames would not fit the texture budget."""
+		frames = [im]
 		try:
 			if self.prefs.zoom_art:
 				new_size = fit_box(o_size, box)
@@ -24604,7 +24636,9 @@ class AlbumArt:
 				# Fit within box, preserving aspect, never upscaling
 				scale = min(box[0] / o_size[0], box[1] / o_size[1], 1)
 				new_size = (max(1, round(o_size[0] * scale)), max(1, round(o_size[1] * scale)))
-			im = im.resize(new_size, Image.Resampling.LANCZOS)
+			if anim is not None and fits_texture_budget(new_size, len(anim.frames)):
+				frames = anim.frames
+			frames = [frame.resize(new_size, Image.Resampling.LANCZOS) for frame in frames]
 		except Exception:
 			logging.exception("Failed to resize image")
 			im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
@@ -24613,11 +24647,20 @@ class AlbumArt:
 				im = im.resize(fit_box(o_size, box), Image.Resampling.LANCZOS)
 			else:
 				im.thumbnail((box[0], box[1]), Image.Resampling.LANCZOS)
+			frames = [im]
 
-		g = io.BytesIO()
-		im.save(g, "BMP")
-		g.seek(0)
-		return g, o_size
+		g_list = []
+		for frame in frames:
+			g = io.BytesIO()
+			frame.save(g, "BMP")
+			g.seek(0)
+			g_list.append(g)
+		return g_list, o_size
+
+	@staticmethod
+	def close_frame_data(g_list: list[BytesIO]) -> None:
+		for g in g_list:
+			g.close()
 
 	def extract_art_theme(self, im: ImageFile, track: TrackClass, no_theme: bool = False) -> None:
 		"""Set theme colours from the image (the "Carbon" theme and the
@@ -24703,11 +24746,20 @@ class AlbumArt:
 			return
 		self.image_cache.append(unit)
 
-	def create_unit_and_render(self, g: BytesIO, o_size: tuple[int, int], image_format: str, index: int, offset: int, box: tuple[int, int], source: list[tuple[int, str]], location: list[int]) -> ImageObject:
-		"""Upload decoded image data as a texture, cache it and render it (main thread only)"""
-		s_image = self.ddt.load_image(g)
+	def create_unit_and_render(self, g_list: list[BytesIO], o_size: tuple[int, int], image_format: str, index: int, offset: int, box: tuple[int, int], source: list[tuple[int, str]], location: list[int], *, delays: list[float] | None = None, animate: bool = False) -> ImageObject:
+		"""Upload decoded image data as a texture, cache it and render it (main thread only)
 
-		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
+		g_list holds one entry per animation frame, so a still image is a list of
+		one and delays is None.
+		"""
+		textures = []
+		for g in g_list:
+			s_image = self.ddt.load_image(g)
+			textures.append(sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image))
+			sdl3.SDL_DestroySurface(s_image)
+			g.close()
+
+		c = textures[0]
 
 		tex_w = pointer(c_float(0))
 		tex_h = pointer(c_float(0))
@@ -24716,10 +24768,6 @@ class AlbumArt:
 		dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
 		dst.w = int(tex_w.contents.value)
 		dst.h = int(tex_h.contents.value)
-
-		# Clean up
-		sdl3.SDL_DestroySurface(s_image)
-		g.close()
 
 		unit = ImageObject()
 		unit.index = index
@@ -24732,17 +24780,80 @@ class AlbumArt:
 		unit.offset = offset
 		unit.format = image_format
 
+		if len(textures) > 1 and delays and len(delays) >= len(textures):
+			unit.frame_textures = textures
+			unit.frame_delays = delays[:len(textures)]
+			unit.anim_duration = sum(unit.frame_delays)
+
 		self.image_cache.append(unit)
 
-		self.render(unit, location)
+		self.render(unit, location, animate)
 
 		if len(self.image_cache) > 3:
-			sdl3.SDL_DestroyTexture(self.image_cache[0].texture)
+			self.destroy_unit(self.image_cache[0])
 			del self.image_cache[0]
 
 		return unit
 
-	def render(self, unit, location) -> None:
+	@staticmethod
+	def destroy_unit(unit: ImageObject) -> None:
+		"""Free a cached unit's texture, or all of its frames' if it is animated"""
+		if unit.frame_textures:
+			for texture in unit.frame_textures:
+				sdl3.SDL_DestroyTexture(texture)
+			unit.frame_textures = None
+		elif unit.texture is not None:
+			sdl3.SDL_DestroyTexture(unit.texture)
+		unit.texture = None
+
+	def current_frame(self, unit: ImageObject, animate: bool) -> sdl3.LP_SDL_Texture:
+		"""The texture to draw for a unit right now, running any animation on.
+
+		The frame is picked from a clock shared by every unit of the same source
+		image, so the same art drawn at two sizes stays in step. Callers that
+		should not animate (the gallery and the blurred background don't come
+		through here at all) still get the current frame -- what animate governs
+		is whether this display asks for the frame after it.
+		"""
+		if not unit.frame_textures or unit.anim_duration <= 0:
+			return unit.texture
+
+		now = time.monotonic()
+		start = self.anim_clocks.get(unit.source)
+		if start is None:
+			start = now
+			self.anim_clocks[unit.source] = start
+			if len(self.anim_clocks) > 8:
+				# Only a couple of arts are ever on screen at once; drop the
+				# clocks of sources no longer cached rather than grow forever
+				live = {cached.source for cached in self.image_cache}
+				live.add(unit.source)
+				self.anim_clocks = {k: v for k, v in self.anim_clocks.items() if k in live}
+
+		index, remaining = frame_at(unit.frame_delays, (now - start) % unit.anim_duration)
+
+		if animate:
+			self.schedule_anim_frame(remaining)
+		return unit.frame_textures[index]
+
+	def schedule_anim_frame(self, remaining: float) -> None:
+		"""Ask for one more frame when the next animation frame is due.
+
+		Deliberately not request_frame(), which would redraw at the display
+		refresh rate for art running at a tenth of it. A wake already pending no
+		later than this one covers this display too, so drawing repeatedly within
+		one animation frame doesn't pile up timers.
+		"""
+		if self.gui.lowered:
+			return
+		now = time.monotonic()
+		due = now + remaining
+		if now < self.anim_wake <= due + 0.005:
+			return
+		self.anim_wake = due
+		self.gui.delay_frame(max(remaining, 0.001))
+
+	def render(self, unit, location, animate: bool = False) -> None:
 		rect = unit.rect
 
 		self.gui.art_aspect_ratio = unit.actual_size[0] / unit.actual_size[1]
@@ -24752,14 +24863,15 @@ class AlbumArt:
 
 		self.tauon.style_overlay.hole_punches.append(rect)
 
-		sdl3.SDL_RenderTexture(self.renderer, unit.texture, None, rect)
+		sdl3.SDL_RenderTexture(self.renderer, self.current_frame(unit, animate), None, rect)
 
 		self.gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
 	def clear_cache(self) -> None:
 		for unit in self.image_cache:
-			sdl3.SDL_DestroyTexture(unit.texture)
+			self.destroy_unit(unit)
 
+		self.anim_clocks.clear()
 		self.image_cache.clear()
 		self.source_cache.clear()
 		self.downloaded_track = None
@@ -24767,7 +24879,7 @@ class AlbumArt:
 		with self.async_lock:
 			self.async_loads.clear()  # In-flight workers see their job vanish and stop
 			for r in self.async_results.values():
-				r[0].close()
+				self.close_frame_data(r[0])
 			self.async_results.clear()
 			self.async_failed.clear()
 			self.caller_history.clear()
@@ -45117,7 +45229,9 @@ class Milky:
 
 		sdl3.SDL_SetRenderTarget(self.renderer, self.render_texture)
 
-		self.tauon.album_art_gen.display(target_track, (0, 0), (w, h), fast=False)
+		# Burned into the visualiser's own texture once, so it holds a single
+		# frame of animated art rather than driving the animation itself
+		self.tauon.album_art_gen.display(target_track, (0, 0), (w, h), fast=False, animate=False)
 		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
 
 		sdl3.SDL_FlushRenderer(self.renderer)

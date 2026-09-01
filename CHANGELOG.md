@@ -4,6 +4,7 @@ Changelog
 
 ### v12.0.1
 
+ - Added animated cover art support (GIF, APNG and JPEG XL)
  - Fixed discord song text
 
 ### v12.0.0
