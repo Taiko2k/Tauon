@@ -102,7 +102,6 @@ class Widget:
 	min_w: int = 40
 	min_h: int = 30
 	single_instance: bool = False
-	draws_window_controls: bool = False
 	# Show the name tag in the edit-mode overlay (the fixed chrome bars opt out).
 	edit_label: bool = True
 	# When True the engine routes the widget through the offscreen scratch
@@ -1151,7 +1150,6 @@ class TopPanelWidget(Widget):
 	min_w = 80
 	min_h = 20
 	single_instance = True
-	draws_window_controls = True
 	edit_label = False
 	offscreen = True
 
@@ -3497,7 +3495,7 @@ class WidgetSpec:
 
 	def __init__(self, kind: str, name: str, category: str, factory: Callable[[WidgetSpec], Widget],
 			lock_v: bool = False, lock_h: bool = False, fixed_w: int = 0, fixed_h: int = 0,
-			single_instance: bool = False, draws_window_controls: bool = False,
+			single_instance: bool = False,
 			colour: ColourRGBA | None = None) -> None:
 		self.kind = kind
 		self.name = name
@@ -3508,7 +3506,6 @@ class WidgetSpec:
 		self.fixed_w = fixed_w
 		self.fixed_h = fixed_h
 		self.single_instance = single_instance
-		self.draws_window_controls = draws_window_controls
 		self.colour = colour or ColourRGBA(28, 28, 34, 255)
 
 	def make(self) -> Widget:
@@ -3633,7 +3630,7 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		lock_v=True, fixed_h=FeuxBar.PANEL_H, single_instance=True,
 		colour=ColourRGBA(20, 20, 22, 255)),
 	WidgetSpec("top_panel", "Header Bar", "Panels", _top_panel,
-		lock_v=True, fixed_h=30, single_instance=True, draws_window_controls=True,
+		lock_v=True, fixed_h=30, single_instance=True,
 		colour=ColourRGBA(38, 38, 46, 255)),
 ]
 SPEC_BY_KIND: dict[str, WidgetSpec] = {s.kind: s for s in WIDGET_SPECS}
@@ -3662,6 +3659,9 @@ class Node:
 		self.gutter: int = 0               # margin outside the border, px (unscaled)
 		self.padding: int = 0              # inset inside the border, px (unscaled)
 		self.border: bool = False
+		# User-set label for this node when it is a page of a TabStack (empty
+		# means the selector label is derived from the widgets it contains).
+		self.tab_title: str = ""
 		self.rect: tuple[float, float, float, float] = (0, 0, 0, 0)
 		# The full slot allotted by the parent stack, before the gutter inset
 		# (equals rect when gutter is 0). Resize boundaries and drag math use
@@ -3675,6 +3675,7 @@ class Node:
 			"fixed_w": self.fixed_w, "fixed_h": self.fixed_h, "aspect": self.aspect,
 			"square": self.square,
 			"gutter": self.gutter, "padding": self.padding, "border": self.border,
+			"tab_title": self.tab_title,
 		}
 
 	def _load_base(self, d: dict) -> None:
@@ -3688,6 +3689,8 @@ class Node:
 		self.gutter = d.get("gutter", 0)
 		self.padding = d.get("padding", 0)
 		self.border = d.get("border", False)
+		title = d.get("tab_title", "")
+		self.tab_title = title if isinstance(title, str) else ""
 
 
 class Leaf(Node):
@@ -4048,7 +4051,7 @@ CL_INSET_MAX = 64
 # can't start.
 BOUNDARY_GRAB = 5
 # Height of a tabbed switcher's selector strip (unscaled px).
-TAB_BAR_HEIGHT = 30
+TAB_BAR_HEIGHT = 24
 # Space between adjacent selectors (unscaled px).
 TAB_GAP = 3
 # Defaults applied to a segment when a widget is first added to it (Add menu
@@ -4127,6 +4130,15 @@ class CustomLayout:
 		# build_custom_layout_menu() in t_main and assigned here. The engine only
 		# activates it and exposes callbacks; all drawing is the native system's.
 		self.menu = None
+		# Where the Header Bar widget painted on the last render (None when the
+		# layout has none). Cached because the window hit-test callback reads it
+		# from SDL's callback, off the main loop — it must not walk the layout
+		# tree while an edit is mutating it.
+		self._header_rect: tuple[float, float, float, float] | None = None
+		# Right-click menu for a tab-switcher selector (also built in t_main),
+		# with the (TabStack, index) it was opened on.
+		self.tab_menu = None
+		self.tab_menu_target: tuple["TabStack", int] | None = None
 
 	# -- templates / defaults -----------------------------------------------
 
@@ -4495,6 +4507,8 @@ class CustomLayout:
 		self.gui.draw_vis4_top = False
 		self.gui.vis4_clip = None
 		self.gui.spectrogram_in_widget = False
+		self.gui.top_panel_in_widget = True  # the standard layout always has one
+		self._header_rect = None
 		self._close_menu()
 		# Force a full preset playlist render so it repaints at full size and
 		# clears the Tracklist widget's clip rect (else cache_render would keep
@@ -4625,15 +4639,22 @@ class CustomLayout:
 		parent stack — collapsing just that one row/column into a single empty
 		segment in its place. Everything outside that stack is left intact.
 
-		If the segment sits directly in the root (no enclosing sub-stack), this is
-		a no-op: there is no nested stack to remove and we never clear the whole
-		layout. (Use Remove to clear a single segment's widget.)
+		When the target sits directly in the root, the stack being removed IS
+		the whole layout (usually the top bar / body / bottom bar column), so
+		the slot collapses to one empty segment to build on again. That throws
+		away everything, so it goes through a confirm first.
+
+		A no-op when the target is the root itself: a bare segment has no
+		enclosing stack. (Use Remove to clear a single segment's widget.)
 		"""
 		root = self.slots[self.active_slot]
-		if not isinstance(root, Stack) or target is None:
+		if root is None or target is None:
 			return
 		parent = find_parent(root, target)
-		if parent is None or parent is root:
+		if parent is None:
+			return
+		if parent is root:
+			self._confirm_clear_slot()
 			return
 		grand = find_parent(root, parent)
 		if grand is None:
@@ -4642,6 +4663,18 @@ class CustomLayout:
 		new.weight = parent.weight
 		grand.children[grand.children.index(parent)] = new
 		self.save_slots()
+
+	def act_clear_slot(self) -> None:
+		"""Throw the whole tree away, leaving one empty segment filling the
+		slot. Unlike an unmaterialised (None) slot this is a real tree, so
+		ensure_slot() won't quietly put the Blank template back."""
+		self._loaded = True  # authored in memory; don't let a lazy load replace it
+		self.slots[self.active_slot] = self._empty()
+		self.save_slots()
+		self._refresh_layout_menu()  # the slot may now read "Empty Slot"
+		self.gui.request_tracklist_redraw()
+		self.gui.update_layout = True
+		self.gui.request_frame()
 
 	def _lock_target(self, root: Node, target: Node, axis: str) -> Node | None:
 		"""The node a v/h lock controls: the nearest node on the path from
@@ -4759,6 +4792,15 @@ class CustomLayout:
 		self.save_slots()
 		self._refresh_layout_menu()
 
+	def act_rename_tab(self, name: str) -> None:
+		"""Set the explicit selector label of the tab the menu was opened on."""
+		page = self._tab_menu_page()
+		if page is None:
+			return
+		page.tab_title = name.strip()
+		self.save_slots()
+		self.gui.request_frame()
+
 	def act_new_slot(self) -> None:
 		"""Append a fresh empty slot and switch to it."""
 		self.ensure_slot()  # make sure lists are loaded before growing them
@@ -4871,6 +4913,8 @@ class CustomLayout:
 				for m in Menu.instances:
 					m.active = False
 				Menu.active = False
+				if self._try_tab_input(inp):
+					return
 				root = self.ensure_slot()
 				layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
 				self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
@@ -4903,20 +4947,8 @@ class CustomLayout:
 
 		# Tab selectors are layout chrome and remain clickable in both view and
 		# edit modes. Handle them before widget input or edit-mode dragging.
-		if inp.mouse_click:
-			root = self.ensure_slot()
-			layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
-			tab_hit = self._tab_at(root, inp.mouse_position[0], inp.mouse_position[1])
-			if tab_hit is not None:
-				tabs, index = tab_hit
-				if tabs.active != index:
-					tabs.active = index
-					self.save_slots()
-					gui.request_tracklist_redraw()
-					gui.update_layout = True
-					gui.request_frame()
-				self._consume(inp)
-				return
+		if self._try_tab_input(inp):
+			return
 
 		if not gui.custom_edit:
 			# Boundary resize on stacks marked resizable works with edit mode off.
@@ -5014,6 +5046,34 @@ class CustomLayout:
 				self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
 
 		self._consume(inp)
+
+	def _try_tab_input(self, inp) -> bool:
+		"""Handle a click or right-click on a tab selector. Returns True when
+		the event belonged to the tab strip (and was consumed)."""
+		if not (inp.mouse_click or inp.right_click):
+			return False
+		gui = self.gui
+		root = self.ensure_slot()
+		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
+		tab_hit = self._tab_at(root, inp.mouse_position[0], inp.mouse_position[1])
+		if tab_hit is None:
+			return False
+		tabs, index = tab_hit
+		if inp.right_click:
+			# Right-click targets the tab under the pointer without selecting it.
+			self.tab_menu_target = (tabs, index)
+			if self.tab_menu is not None:
+				self.tab_menu.activate(
+					in_reference=None,
+					position=[inp.mouse_position[0], inp.mouse_position[1]])
+		elif tabs.active != index:
+			tabs.active = index
+			self.save_slots()
+			gui.request_tracklist_redraw()
+			gui.update_layout = True
+			gui.request_frame()
+		self._consume(inp)
+		return True
 
 	def _try_start_widget_drag(self, inp) -> None:
 		root = self.ensure_slot()
@@ -5229,9 +5289,13 @@ class CustomLayout:
 	# menu reference (unused — they read self.menu_target).
 
 	def _close_menu(self) -> None:
-		"""Close the native context menu if it is the active one."""
-		if self.menu is not None and self.menu.active:
-			self.menu.active = False
+		"""Close our native context menus if one of them is the active one."""
+		closed = False
+		for menu in (self.menu, self.tab_menu):
+			if menu is not None and menu.active:
+				menu.active = False
+				closed = True
+		if closed:
 			from tauon.t_modules.t_main import Menu  # local import avoids cycle
 			for m in Menu.instances:
 				if m.active:
@@ -5320,17 +5384,25 @@ class CustomLayout:
 	def _confirm_load_template(self, name) -> None:
 		self.act_load_template(name)
 
-	def _menu_rename(self, ref=None) -> None:
-		"""Open the shared rename box (the playlist one) targeting this slot."""
+	def _confirm_clear_slot(self) -> None:
+		"""Confirm before Remove Stack takes out the root — i.e. everything."""
+		self.tauon.gui.message_box_confirm_callback = self.act_clear_slot
+		self.tauon.gui.message_box_no_callback = None
+		self.tauon.gui.message_box_confirm_reference = ()
+		self.tauon.show_message(
+			_t("Remove the whole layout? Leaves an empty slot."), mode="confirm")
+
+	def _open_rename_box(self, text: str, callback: Callable[[str], None]) -> None:
+		"""Open the shared rename box (the playlist one) on arbitrary text."""
 		tauon = self.tauon
 		gui = self.gui
 		# Drop back to view mode: edit mode's input handling interferes with
-		# the rename box's text entry, and the rename doesn't need it.
+		# the rename box's text entry, and a rename doesn't need it.
 		gui.custom_edit = False
 		gui.request_frame()
 		box = tauon.rename_playlist_box
 		box.edit_generator = False
-		box.done_callback = self.act_rename_slot
+		box.done_callback = callback
 		box.x = tauon.inp.mouse_position[0]
 		box.y = tauon.inp.mouse_position[1]
 		# Same on-screen clamping rename_playlist() applies (the box's render
@@ -5338,9 +5410,42 @@ class CustomLayout:
 		box.y = min(box.y, round(350 * gui.scale))
 		if box.y < gui.panelY:
 			box.y = gui.panelY + round(10 * gui.scale)
-		tauon.rename_text_area.set_text(self.slot_title(self.active_slot))
+		tauon.rename_text_area.set_text(text)
 		tauon.rename_text_area.highlight_all()
 		gui.rename_playlist_box = True
+
+	def _menu_rename(self, ref=None) -> None:
+		"""Rename the active layout slot."""
+		self._open_rename_box(self.slot_title(self.active_slot), self.act_rename_slot)
+
+	def _menu_rename_tab(self, ref=None) -> None:
+		"""Rename the tab the tab menu was opened on."""
+		page = self._tab_menu_page()
+		if page is None:
+			return
+		self._open_rename_box(self._tab_title(page, self.tab_menu_target[1]), self.act_rename_tab)
+
+	def _menu_reset_tab_name(self, ref=None) -> None:
+		"""Drop the explicit name so the label goes back to being derived."""
+		page = self._tab_menu_page()
+		if page is None or not page.tab_title:
+			return
+		page.tab_title = ""
+		self.save_slots()
+		self.gui.request_frame()
+
+	def _tab_menu_page(self) -> Node | None:
+		"""The page node the tab menu was opened on, if it is still there."""
+		if self.tab_menu_target is None:
+			return None
+		tabs, index = self.tab_menu_target
+		if not 0 <= index < len(tabs.children):
+			return None
+		return tabs.children[index]
+
+	def _t_tab_named(self, ref=None) -> bool:
+		page = self._tab_menu_page()
+		return page is not None and bool(page.tab_title)
 
 	def _menu_new_slot(self, ref=None) -> None:
 		self.act_new_slot()
@@ -5434,20 +5539,23 @@ class CustomLayout:
 		return node is not None and not node.border
 
 	def top_panel_rect(self) -> tuple[float, float, float, float] | None:
-		"""The active layout's Header Bar (top panel) widget content rect, or
-		None when custom mode is off / no top panel is placed. Used by the main
-		loop's window-menu right-click fallback, which needs the panel's real
-		on-screen geometry (the widget itself renders reframed to a (0,0)
-		origin).
+		"""Where the active layout's Header Bar (top panel) widget actually
+		paints, or None when custom mode is off, no top panel is placed, or its
+		segment is too small to draw. The widget itself renders reframed to a
+		(0, 0) origin, so callers needing real on-screen geometry come here: the
+		main loop's window-menu right-click fallback, and the placement of the
+		top-panel visualisers, which are drawn onto the window over the layout.
 		"""
 		if not self.gui.custom_mode:
 			return None
-		root = self.slots[self.active_slot]
-		if root is None:
-			return None
+		return self._header_rect
+
+	def _find_top_panel_rect(self, root: Node) -> tuple[float, float, float, float] | None:
+		"""Locate the Header Bar in a laid-out tree. render() calls this once a
+		frame; everything else reads the cache through top_panel_rect()."""
 		for lf in iter_visible_leaves(root):
 			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
-				return content_rect(lf, self.gui.scale)
+				return self._leaf_paint_rect(lf)
 		return None
 
 	def tracklist_rect(self) -> tuple[int, int, int, int] | None:
@@ -5626,6 +5734,19 @@ class CustomLayout:
 			gui.spectrogram_in_widget = spectro
 			gui.update_layout = True
 
+		# The top-panel visualisers (level meter / spectrum / scrolling
+		# spectrogram) are drawn by the frame loop into the Header Bar. Same
+		# deal: the gui.vis switch lives in update_layout_do(), so poke a layout
+		# update when a Header Bar appears or disappears.
+		header = count_visible_kind(root, "top_panel") > 0
+		if header != gui.top_panel_in_widget:
+			gui.top_panel_in_widget = header
+			gui.update_layout = True
+		# Geometry for everything drawn onto the Header Bar from outside it (the
+		# window controls, the visualisers, the corner button) and for the drag
+		# grip's hit-test.
+		self._header_rect = self._find_top_panel_rect(root) if header else None
+
 		for leaf in iter_visible_leaves(root):
 			if isinstance(leaf, Leaf):
 				parent = find_parent(root, leaf)
@@ -5648,10 +5769,6 @@ class CustomLayout:
 		if interactive and inp.mouse_up:
 			inp.quick_drag = False
 
-		# Window-controls fallback when nothing provides them.
-		if not self._provides_window_controls(root):
-			self._draw_window_controls_fallback()
-
 		if gui.custom_edit:
 			self._draw_edit_overlay(root)
 		else:
@@ -5666,7 +5783,10 @@ class CustomLayout:
 		self._draw_corner_edit_button()
 
 	def _tab_title(self, node: Node, index: int) -> str:
-		"""Derive a page label from the widgets it contains."""
+		"""A page's selector label: the name set by Rename Tab if there is one,
+		otherwise derived from the widgets the page contains."""
+		if node.tab_title:
+			return node.tab_title
 		names = [
 			leaf.widget.name
 			for leaf in iter_leaves(node)
@@ -5828,8 +5948,12 @@ class CustomLayout:
 	# -- corner edit-toggle button ------------------------------------------
 
 	def _corner_rect(self) -> tuple[int, int, int, int]:
-		"""Top-left edit-toggle rect, aligned to where the standard corner panel
-		button sits (clearing the window controls)."""
+		"""Edit-toggle rect: the Header Bar's first slot, aligned to where the
+		standard corner panel button sits (clearing the window controls) — the
+		standard TopPanel skips drawing its own there in custom mode. Anchored
+		to the Header Bar widget wherever it is placed, falling back to the
+		window's top-left corner when the layout has none.
+		"""
 		gui = self.gui
 		tauon = self.tauon
 		scale = gui.scale
@@ -5848,8 +5972,51 @@ class CustomLayout:
 				if tauon.draw_max_button:
 					wwx += 33
 			wwx = round(wwx * scale)
+		ax = ay = 0.0
+		hdr = self.top_panel_rect()
+		if hdr is not None:
+			ax, ay = hdr[0], hdr[1]
 		yy = gui.panelY - gui.panelY2
-		return (round(wwx + 9 * scale), round(yy + 3 * scale), round(34 * scale), round(25 * scale))
+		return (round(ax + wwx + 9 * scale), round(ay + yy + 3 * scale),
+			round(34 * scale), round(25 * scale))
+
+	def grip_band(self) -> tuple[float, float, float, float]:
+		"""The strip the window drag grip occupies in custom mode.
+
+		Normally the Header Bar widget's own rect, wherever it has been placed.
+		With no Header Bar the whole top strip of the window becomes grip
+		instead — there is no tab strip up there to leave clickable, and the
+		layout would otherwise have no draggable area at all.
+		"""
+		hdr = self.top_panel_rect()
+		if hdr is not None:
+			return hdr
+		return (0.0, 0.0, float(self.tauon.window_size[0]), float(self.gui.panelY))
+
+	def grip_holes(self) -> list[tuple[float, float, float, float]]:
+		"""Rects inside grip_band() that must stay pressable rather than acting
+		as the drag grip: the corner layout button and the window controls.
+		A grip swallows the click, so without these the buttons drawn over the
+		bar would be dead (and the hover-reveal ones unreachable).
+		"""
+		tauon = self.tauon
+		gui = self.gui
+		holes: list[tuple[float, float, float, float]] = [self._corner_reveal_rect()]
+		if tauon.draw_border:
+			# Same anchor and size the main loop uses for the window controls'
+			# own hover zone, so the hole can't drift from the buttons.
+			bx, by, bw, _bh = self.grip_band()
+			w = round(110 * gui.scale)
+			hx = bx if tauon.prefs.left_window_control else bx + bw - w
+			holes.append((hx, by, float(w), round(45 * gui.scale)))
+		return holes
+
+	def _corner_reveal_rect(self) -> tuple[int, int, int, int]:
+		"""Hover zone that reveals the button when no Header Bar sits behind it.
+		Padded out from the button so it can be found without pixel-hunting."""
+		x, y, w, h = self._corner_rect()
+		pad = round(14 * self.gui.scale)
+		return (max(0, x - pad), max(0, y - pad), w + pad * 2, h + pad * 2)
 
 	def _corner_button_hit(self, mx: float, my: float) -> bool:
 		if not self.gui.custom_mode:
@@ -5861,6 +6028,18 @@ class CustomLayout:
 		gui = self.gui
 		ddt = self.ddt
 		colours = self.tauon.colours
+		# With no Header Bar behind it the button would float over whatever is
+		# up there, so reveal it on hover instead — the same treatment the
+		# window controls get. Edit mode keeps it visible unconditionally: it is
+		# the way back out, and hiding that is a trap.
+		if not gui.custom_edit and self.top_panel_rect() is None:
+			zone = self._corner_reveal_rect()
+			# Registered every frame so moving into the zone triggers a redraw
+			# (and the button appears) — same fields requirement as everything
+			# else that reacts to hover.
+			self.tauon.fields.add(zone)
+			if not self.tauon.coll(zone):
+				return
 		x, y, w, h = self._corner_rect()
 		# Match the standard corner panel-switcher button it replaces: the same
 		# dimmed corner_button colour, corner_button_active while edit mode is
@@ -5874,10 +6053,6 @@ class CustomLayout:
 		gx = x + round((w - gw) / 2)
 		gy = y + round((h - gh) / 2)
 		draw_layout_glyph(ddt, gui.scale, gx, gy, gw, gh, col)
-
-	def _provides_window_controls(self, root: Node) -> bool:
-		return any(isinstance(l, Leaf) and l.widget is not None and l.widget.draws_window_controls
-			for l in iter_visible_leaves(root))
 
 	def _leaf_paint_rect(self, leaf: Leaf) -> tuple[float, float, float, float] | None:
 		"""The rect the leaf's widget actually paints: the content rect snapped
@@ -6230,53 +6405,3 @@ class CustomLayout:
 			ddt.text((xx + round(6 * scale), yy), name, ColourRGBA(200, 200, 200, 255), 12,
 				bg=ColourRGBA(30, 30, 30, 255), max_w=tag_w - round(10 * scale))
 
-	# -- window controls fallback -------------------------------------------
-
-	def _draw_window_controls_fallback(self) -> None:
-		"""Minimal min/maximize/close drawn top-right, shown on hover — so a
-		layout without a Top Panel is still controllable.
-		"""
-		gui = self.gui
-		ddt = self.ddt
-		inp = self.tauon.inp
-		ww = self.tauon.window_size[0]
-		bw = round(46 * gui.scale)
-		bh = round(28 * gui.scale)
-		zone = (ww - bw * 3, 0, bw * 3, bh)
-		# Register the hover zone every frame so moving into it triggers a redraw
-		# (and the controls appear) — same fields requirement as everything else.
-		self.tauon.fields.add(zone)
-		hovering = self.tauon.coll(zone)
-		if not hovering:
-			return
-		labels = [("—", self._win_minimize), ("□", self._win_maximize), ("✕", self._win_close)]
-		for i, (label, cb) in enumerate(labels):
-			bx = ww - bw * (3 - i)
-			rect = (bx, 0, bw, bh)
-			self.tauon.fields.add(rect)
-			over = self.tauon.coll(rect)
-			ddt.rect(rect, ColourRGBA(70, 70, 78, 200) if over else ColourRGBA(40, 40, 46, 160))
-			ddt.text_background_colour = ColourRGBA(70, 70, 78, 200) if over else ColourRGBA(40, 40, 46, 160)
-			ddt.text((bx + round(bw / 2), round(bh / 2) - 8 * gui.scale, 2), label, ColourRGBA(230, 230, 230, 255), 212)
-			if over and inp.mouse_click:
-				inp.mouse_click = False
-				cb()
-
-	def _win_minimize(self) -> None:
-		try:
-			sdl3.SDL_MinimizeWindow(self.tauon.t_window)
-		except Exception:
-			logging.exception("minimize failed")
-
-	def _win_maximize(self) -> None:
-		try:
-			flags = sdl3.SDL_GetWindowFlags(self.tauon.t_window)
-			if flags & sdl3.SDL_WINDOW_MAXIMIZED:
-				sdl3.SDL_RestoreWindow(self.tauon.t_window)
-			else:
-				sdl3.SDL_MaximizeWindow(self.tauon.t_window)
-		except Exception:
-			logging.exception("maximize failed")
-
-	def _win_close(self) -> None:
-		self.tauon.exit("Custom layout close button")

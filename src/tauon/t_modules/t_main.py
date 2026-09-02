@@ -799,6 +799,11 @@ class GuiVar:
 		# Ditto for the Spectrogram widget (gui.vis 6): PHAZOR pushes raw
 		# spectrum columns of spectrogram_bins values into spectrogram_buffers.
 		self.spectrogram_in_widget: bool = False
+		# A Header Bar widget is in the active custom layout. The top-panel
+		# visualisers (gui.vis 1/2/3) are drawn into it, so with no Header Bar
+		# update_layout_do() switches them off — there is nowhere to put them.
+		# True outside custom mode: the standard layout always has a top panel.
+		self.top_panel_in_widget: bool = True
 		# When non-zero, render_gallery uses this row length instead of deriving
 		# it from album_mode_art_size, and switches to edge-to-edge placement
 		# inset by gallery_grid_margin (scaled px) on the left/right. Set (and
@@ -7516,7 +7521,26 @@ class Tauon:
 			# if draw_border and y < 3 * gui.scale and x < window_size[0] - 40 * gui.scale and not gui.maximized:
 			#     return sdl3.SDL_HITTEST_RESIZE_TOP
 
-		if y < gui.panelY:
+		# Custom Layout: the drag grip belongs to the Header Bar widget wherever
+		# it is placed, so it replaces the top-strip test below entirely — the
+		# window's own top edge may be showing any widget at all.
+		if gui.custom_mode:
+			bx, by, bw, bh = self.custom.grip_band()
+			if bx <= x < bx + bw and by <= y < by + bh:
+				if self.tab_menu.active or inp.mouse_up or inp.mouse_down:  # mouse up/down is a Wayland workaround
+					return sdl3.SDL_HITTEST_NORMAL
+				# Left of the tab strip's end is the panel's own furniture. With
+				# no Header Bar there is no tab strip, and drag_zone_start_x
+				# holds a stale value from whenever one last rendered, so the
+				# whole band is grip.
+				if gui.top_panel_in_widget and x < bx + self.top_panel.drag_zone_start_x:
+					return sdl3.SDL_HITTEST_NORMAL
+				for hole in self.custom.grip_holes():
+					if coll_point((x, y), hole):
+						return sdl3.SDL_HITTEST_NORMAL
+				return sdl3.SDL_HITTEST_DRAGGABLE
+
+		elif y < gui.panelY:
 			if gui.top_bar_mode2:
 				if y < gui.panelY - gui.panelY2:
 					if prefs.left_window_control and x < 100 * gui.scale:
@@ -7553,13 +7577,29 @@ class Tauon:
 			return sdl3.SDL_HITTEST_NORMAL
 		return sdl3.SDL_HITTEST_NORMAL
 
-	def draw_window_tools(self) -> None:
+	def draw_window_tools(self, anchor: tuple[float, float, float] | None = None) -> None:
+		"""Draw the min/max/close buttons in the strip they belong to.
+
+		By default that strip is the window's own top edge — the standard
+		layout's top panel, and mini mode. ``anchor`` overrides it with
+		(left, right, top) in window coordinates, which the Custom Layout uses
+		to put the buttons on its Header Bar widget wherever that is placed.
+		Sides still follow prefs.left_window_control, and the style still
+		follows gui.macstyle; only the origin moves.
+		"""
 		gui         = self.gui
 		inp         = self.inp
 		colours     = self.colours
 		window_size = self.window_size
 		ddt         = self.ddt
 		prefs       = self.prefs
+
+		if anchor is None:
+			a_left, a_right, a_top = 0, window_size[0], 0
+		else:
+			# Snap to whole pixels: a layout rect can land on a fraction, and the
+			# button rects are hit-tested as well as drawn.
+			a_left, a_right, a_top = round(anchor[0]), round(anchor[1]), round(anchor[2])
 
 		# rect = (window_size[0] - 55 * gui.scale, window_size[1] - 35 * gui.scale, 53 * gui.scale, 33 * gui.scale)
 		# self.fields.add(rect)
@@ -7574,9 +7614,9 @@ class Tauon:
 		x_off = colours.window_button_x_off
 
 		h = round(28 * gui.scale)
-		y = round(1 * gui.scale)
+		y = round(a_top + 1 * gui.scale)
 		if macstyle:
-			y = round(9 * gui.scale)
+			y = round(a_top + 9 * gui.scale)
 
 		x_width = round(26 * gui.scale)
 		ma_width = round(33 * gui.scale)
@@ -7584,7 +7624,7 @@ class Tauon:
 		re_width = round(30 * gui.scale)
 		last_width = 0
 
-		xx = 0
+		xx = a_left
 		left = prefs.left_window_control
 		right = not left
 		focused = window_is_focused(self.t_window)
@@ -7598,13 +7638,13 @@ class Tauon:
 
 		# Close
 		if right:
-			xx = window_size[0] - x_width
+			xx = a_right - x_width
 			xx -= round(2 * gui.scale)
 
 		if macstyle:
-			xx = window_size[0] - 27 * gui.scale
+			xx = a_right - 27 * gui.scale
 			if left:
-				xx = round(4 * gui.scale)
+				xx = round(a_left + 4 * gui.scale)
 			rect = (xx + 5, y - 1, 14 * gui.scale, 14 * gui.scale)
 			self.fields.add(rect)
 			colour = self.mac_close
@@ -14841,6 +14881,16 @@ class Tauon:
 			if gui.vis > 0:
 				gui.turbo = True
 
+		# Custom mode: the top-panel visualisers are drawn into the Header Bar
+		# widget. With no Header Bar placed there is nowhere to draw them, so
+		# switch them off entirely — that also stops PHAZOR feeding the level /
+		# spectrum data (the producers are gated on gui.vis), which would
+		# otherwise pile up unconsumed. Modes 4/6 belong to their own widgets
+		# and are left alone.
+		if gui.custom_mode and gui.vis in (1, 2, 3) and not gui.top_panel_in_widget:
+			gui.vis = 0
+			gui.turbo = False
+
 		# The spectrogram widget feeds from its own C path (get_spectrum_hires,
 		# separate FFT buffers) so it runs alongside whichever gui.vis was chosen
 		# above rather than replacing it — it just needs the vis thread active.
@@ -14916,12 +14966,10 @@ class Tauon:
 
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
-			# gui.spec_rect[0] = window_size[0] - gui.offset_extra - 90
-			gui.spec1_rec.x = round(window_size[0] - gui.offset_extra - 90 * gui.scale)
-
-			# gui.spec_x = window_size[0] - gui.offset_extra - 90
-
-			gui.spec2_rec.x = round(window_size[0] - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra)
+			# The top-panel visualiser rects (spec1_rec / spec2_rec /
+			# spec_level_rec) used to be placed here. They are positioned in the
+			# frame loop instead: in custom mode they follow the Header Bar
+			# widget, which a boundary drag can move without a layout pass.
 
 			gui.scroll_hide_box = (1, gui.panelY, 28 * gui.scale, window_size[1] - gui.panelBY - gui.panelY)
 
@@ -54225,6 +54273,18 @@ def main(holder: Holder) -> None:
 		cl_menu.add(MenuItem(_("Delete Slot"), cm._menu_delete_slot))
 		cl_menu.add(MenuItem(_("New Slot"), cm._menu_new_slot))
 
+	# Right-click menu for a tabbed switcher's selectors. Available in both view
+	# and edit mode (the tab strip is chrome and stays live in both); its items
+	# act on tauon.custom.tab_menu_target, the (TabStack, index) the menu opened
+	# on.
+	if cm.tab_menu is None:
+		cl_tab_menu = Menu(tauon, 145)
+		cm.tab_menu = cl_tab_menu
+		# . Menu entry: rename one page of a Custom Layout tabbed switcher
+		cl_tab_menu.add(MenuItem(_("Rename Tab…"), cm._menu_rename_tab))
+		cl_tab_menu.add(MenuItem(_("Reset Tab Name"), cm._menu_reset_tab_name,
+			show_test=cm._t_tab_named))
+
 	# Corner layout menu: opened by the corner layout/edit button (drawn after
 	# the panel button by the TopPanel normally; by the custom engine while in
 	# custom mode, where the panel button is hidden). Mirrors the View Switcher
@@ -60056,18 +60116,15 @@ def main(holder: Holder) -> None:
 					# custom.handle_input() neutralised the click earlier in the
 					# frame, only restoring it inside custom.render() above. Handle
 					# it here (view mode only): the empty Header Bar widget area
-					# right of the tabs (segment coords + reframed tabs_right_x),
-					# plus the visualiser strip, which is drawn over the layout at
-					# the window's far right (absolute coords).
+					# right of the tabs (segment coords + reframed tabs_right_x).
+					# The visualiser strip sits at the right end of that same
+					# area, so it needs no region of its own.
 					if not gui.custom_edit and inp.right_click:
-						over_vis = tauon.coll(
-							(window_size[0] - 130 * gui.scale - gui.offset_extra, 0, 125 * gui.scale, gui.panelY)
-						) and not gui.top_bar_mode2
 						tpr = tauon.custom.top_panel_rect()
 						over_panel = tpr is not None and tauon.coll((
 							tpr[0] + tauon.top_panel.tabs_right_x, tpr[1],
 							tpr[2] - tauon.top_panel.tabs_right_x, tpr[3]))
-						if over_vis or over_panel:
+						if over_panel:
 							tauon.window_menu.activate(None, (inp.mouse_position[0], inp.mouse_position[1]))
 							inp.right_click = False
 
@@ -60557,12 +60614,32 @@ def main(holder: Holder) -> None:
 								ddt.text((x2, y1), tc.comment, value_colour, 12)
 
 				if tauon.draw_border and gui.mode != GuiMode.MINI:
-					tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
-					if prefs.left_window_control:
-						tool_rect[0] = 0
+					# The buttons belong to the top panel. In custom mode that is
+					# the Header Bar widget, which can be placed anywhere — so
+					# anchor them to it, and fall back to the window's top edge
+					# when the layout has no Header Bar at all.
+					win_anchor = None
+					if gui.custom_mode:
+						hdr = tauon.custom.top_panel_rect()
+						if hdr is not None:
+							win_anchor = (hdr[0], hdr[0] + hdr[2], hdr[1])
+					if win_anchor is None:
+						tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
+						if prefs.left_window_control:
+							tool_rect[0] = 0
+					else:
+						tool_rect = [win_anchor[1] - 110 * gui.scale, win_anchor[2] + 2,
+							95 * gui.scale, 45 * gui.scale]
+						if prefs.left_window_control:
+							tool_rect[0] = win_anchor[0]
 					tauon.fields.add(tool_rect)
-					if not gui.top_bar_mode2 or tauon.coll(tool_rect):
-						tauon.draw_window_tools()
+					# With a panel behind them the buttons are always shown.
+					# Without one they'd float over whatever is up there, so
+					# reveal them on hover instead — the same treatment
+					# top_bar_mode2 and mini mode get.
+					hover_only = gui.top_bar_mode2 or (gui.custom_mode and win_anchor is None)
+					if not hover_only or tauon.coll(tool_rect):
+						tauon.draw_window_tools(win_anchor)
 
 					if not gui.fullscreen and not gui.maximized:
 						tauon.draw_window_border()
@@ -61672,12 +61749,35 @@ def main(holder: Holder) -> None:
 				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 				gui.present = True
 
+			# The level meter / spectrum / scrolling spectrogram are top-panel
+			# furniture, drawn straight onto the window at the panel's right end.
+			# Normally that is the window's top-right corner; in custom mode the
+			# Header Bar widget can be anywhere, so anchor them to its rect
+			# instead. Recomputed per frame rather than in update_layout_do()
+			# because a boundary drag moves the widget without a layout pass.
+			# vis_show goes False when no Header Bar is placed — update_layout_do
+			# also switches gui.vis off in that case, but not until the next
+			# layout pass, so this covers the frames in between.
+			vis_right = window_size[0]
+			vis_top = 0
+			vis_show = True
+			if gui.custom_mode:
+				vis_panel = tauon.custom.top_panel_rect()
+				if vis_panel is None:
+					vis_show = False
+				else:
+					vis_right = round(vis_panel[0] + vis_panel[2])
+					vis_top = round(vis_panel[1])
+
 			if gui.vis == 5:
 				# milky
 				pass
 
-			if gui.vis == 3:
+			if gui.vis == 3 and vis_show:
 				# Scrolling spectrogram
+				gui.spec2_rec.x = round(vis_right - gui.spec2_rec.w - 10 * gui.scale - gui.offset_extra)
+				gui.spec2_rec.y = vis_top + round(4 * gui.scale)
+				gui.spec2_dest.y = gui.spec2_rec.y
 
 				# if not vis_update:
 				#     logging.info("No UPDATE " + str(random.randint(1,50)))
@@ -61736,8 +61836,10 @@ def main(holder: Holder) -> None:
 				showcase.render_vis(True)
 				# gui.level_update = False
 
-			if gui.vis == 2 and gui.spec is not None:
+			if gui.vis == 2 and gui.spec is not None and vis_show:
 				# Standard spectrum visualiser
+				gui.spec1_rec.x = round(vis_right - gui.offset_extra - 90 * gui.scale)
+				gui.spec1_rec.y = vis_top + gui.spec_y
 				if gui.update_spec == 0 and pctl.playing_state != PlayingState.PAUSED:
 					if tauon.vis_decay_timer.get() > 0.007:  # Controls speed of decay after stop
 						tauon.vis_decay_timer.set()
@@ -61824,7 +61926,7 @@ def main(holder: Holder) -> None:
 					sdl3.SDL_SetRenderTarget(renderer, None)
 					sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
-			if gui.vis == 1:
+			if gui.vis == 1 and vis_show:
 				if prefs.backend == Backend.GSTREAMER or True:
 					if pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 						# gui.level_update = True
@@ -61842,7 +61944,7 @@ def main(holder: Holder) -> None:
 
 				sdl3.SDL_SetRenderTarget(renderer, gui.spec_level_tex)
 
-				x = window_size[0] - 20 * gui.scale - gui.offset_extra
+				x = vis_right - 20 * gui.scale - gui.offset_extra
 				y = gui.level_y
 				w = gui.level_w
 				s = gui.level_s
@@ -61850,6 +61952,7 @@ def main(holder: Holder) -> None:
 				y = 0
 
 				gui.spec_level_rec.x = round(x - 70 * gui.scale)
+				gui.spec_level_rec.y = vis_top + round(gui.level_y - 10 * gui.scale)
 				# Frosted art bg: translucent backing (replace-blend, since
 				# the texture persists between frames)
 				level_bg = colours.grey(10)
