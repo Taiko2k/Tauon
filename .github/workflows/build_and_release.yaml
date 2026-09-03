@@ -5,8 +5,120 @@ on:
   pull_request:
 
 jobs:
-  build-linux:
-    name: "Linux"
+  build-linux-arm64:
+    name: "Linux arm64"
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+          cache: 'pip'
+
+      - name: Install deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gettext \
+            gobject-introspection \
+            gir1.2-rsvg-2.0 \
+            gir1.2-notify-0.7 \
+            gir1.2-girepository-3.0-dev \
+            kde-config-gtk-style \
+            libcanberra-gtk3-module \
+            libgirepository1.0-dev \
+            libgirepository-2.0-dev \
+            libglib2.0-dev \
+            python3-gi-cairo \
+            libayatana-appindicator3-dev \
+            libcairo2-dev \
+            libpipewire-0.3-dev \
+            libdbus-1-dev \
+            libjxl-dev \
+            libflac-dev \
+            libgme-dev \
+            libmpg123-dev \
+            libopenmpt-dev \
+            libopusfile-dev \
+            libsamplerate0-dev \
+            libvorbis-dev \
+            libwavpack-dev \
+            p7zip
+          # JPEG-XL hack since 24.04 is too old
+          sudo apt-get install -y \
+            libgif7 \
+            liblcms2-dev \
+            wget
+          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl-dev_0.10.3-4ubuntu1_arm64.deb
+          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_arm64.deb
+          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_arm64.deb
+          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_arm64.deb
+          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux-arm64
+          sudo dpkg -i *.deb
+
+      - name: Install Python dependencies and setup venv
+        env:
+          SDL_GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python -m pip install --upgrade pip
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install \
+            ".[all]" \
+            build \
+            pyinstaller
+          python -c "import sdl3"
+        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+
+      - name: Build the project using python-build
+        run: |
+          source .venv/bin/activate
+          python -m tools.i18n.compile_translations
+          python -m build --wheel
+
+      - name: Install the project into a venv
+        run: |
+          source .venv/bin/activate
+          pip install --prefix ".venv" dist/*.whl
+
+      - name: "[DEBUG] List all files"
+        run: find .
+
+      # (Martin): ln hack is due to https://github.com/Taiko2k/Tauon/issues/2052
+      - name: Build Linux App with PyInstaller
+        run: |
+          source .venv/bin/activate
+          pyinstaller --log-level=DEBUG packaging/pyinstaller/linux.spec
+          ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
+          touch dist/TauonMusicBox/_internal/portable
+
+      - name: Create 7Z
+        run: |
+          APP_NAME="TauonMusicBox"
+          cd "dist/${APP_NAME}"
+
+          ARCHIVE_PATH="../../${APP_NAME}-linux-arm64.7z"
+
+          7z a -r -snl "${ARCHIVE_PATH}" "."
+
+      - name: Upload 7Z artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: TauonMusicBox-linux-arm64
+          path: TauonMusicBox-linux-arm64.7z
+
+      #- name: Run Tauon for testing
+      #  run: |
+      #    source .venv/bin/activate
+      #    tauonmb
+
+  build-linux-x64:
+    name: "Linux x64"
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout source code
@@ -58,7 +170,7 @@ jobs:
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
           wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux
+          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux-x64
           sudo dpkg -i *.deb
         # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
@@ -118,8 +230,10 @@ jobs:
       #    source .venv/bin/activate
       #    tauonmb
 
-  build-macos:
-    name: "macOS"
+  build-macos-arm64:
+    name: "macOS arm64"
+    # Keep lowest version we can reasonably build on,
+    # as that's the resulting minimally-supported macOS version in the built app
     runs-on: macos-15
     env:
       # Pinned projectM master for the Milkdrop visualiser library
@@ -171,7 +285,7 @@ jobs:
 
       - name: Download lirclib solver
         run: |
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos
+          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos-arm64
 
       - name: Build macOS Now Playing helper
         run: |
@@ -290,8 +404,8 @@ jobs:
       #    hdiutil attach dist/dmg/Tauon.dmg
       #    /Volumes/Tauon/Tauon.app/Contents/MacOS/Tauon
 
-  build-windows:
-    name: "Windows"
+  build-windows-x64:
+    name: "Windows x64"
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -378,8 +492,7 @@ jobs:
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver.exe
-          curl -L -o librespot.exe  https://github.com/Taiko2k/Tauon/releases/download/Extras/librespot.exe # v0.6.0 - https://github.com/librespot-org/librespot/releases
+          curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-x64.exe
           curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/Extras/TauonSMTC.dll
           mkdir fonts
           curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
@@ -462,7 +575,7 @@ jobs:
           path: extra/Output/TauonMusicBox-windows-installer.exe
 
   get-info:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     outputs:
       date: ${{ steps.vars.outputs.date }}
       shorthash: ${{ steps.vars.outputs.shorthash }}
@@ -481,8 +594,8 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux, build-windows, build-macos]
-    runs-on: ubuntu-24.04
+    needs: [get-info, build-linux-arm64, build-linux-x64, build-windows-x64, build-macos-arm64]
+    runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
         uses: actions/download-artifact@v8
