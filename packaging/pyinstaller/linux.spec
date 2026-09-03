@@ -8,9 +8,15 @@ REPO_ROOT = SPEC_DIR.parents[1]
 
 python_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
 
-ubuntu_lib_path = "/usr/lib/x86_64-linux-gnu"
+ubuntu_x64_lib_path = "/usr/lib/x86_64-linux-gnu"
+ubuntu_arm64_lib_path = "/usr/lib/aarch64-linux-gnu"
 arch_lib_path = "/usr/lib"
-lib_path = ubuntu_lib_path if Path(ubuntu_lib_path).exists() else arch_lib_path
+if Path(ubuntu_x64_lib_path).exists():
+	lib_path = ubuntu_x64_lib_path
+elif Path(ubuntu_arm64_lib_path).exists():
+	lib_path = ubuntu_arm64_lib_path
+else:
+	lib_path = arch_lib_path
 
 a = Analysis(
 	[str(REPO_ROOT / "src/tauon/__main__.py")],
