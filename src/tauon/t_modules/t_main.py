@@ -52540,8 +52540,7 @@ def main(holder: Holder) -> None:
 	mac_maximize = ColourRGBA(254, 176, 36, 255)
 	mac_minimize = ColourRGBA(42, 189, 49, 255)
 	try:
-		# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-		gi.require_version("Gtk", "3.0")
+		gi.require_version("Gtk", "4.0")
 		from gi.repository import Gtk
 
 		gtk_settings = Gtk.Settings().get_default()
