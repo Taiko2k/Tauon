@@ -235,6 +235,7 @@ from tauon.t_modules.t_tagscan import (  # noqa: E402
 )
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
+from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
 	authserve,
@@ -6773,6 +6774,10 @@ class Tauon:
 		self.strings: Strings                              = Strings()
 		self.gui: GuiVar                                  = gui
 		self.prefs: Prefs                                = bag.prefs
+		# Compositor blur behind the window while a glass style is on (Wayland
+		# only, a no-op everywhere else). It reads the wanted state from prefs
+		# each frame, so setting changes need not notify it
+		self.wayland_blur: WaylandBlur                   = WaylandBlur(self)
 		self.snap_mode: bool                            = bag.snap_mode
 		self.flatpak_mode: bool                         = bag.flatpak_mode
 		self.core_use: int                        = 0
@@ -62128,6 +62133,7 @@ def main(holder: Holder) -> None:
 		if gui.present:
 			sdl3.SDL_SetRenderTarget(renderer, None)
 			tauon.render_rounded_corners()
+			tauon.wayland_blur.sync()
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False
@@ -62189,6 +62195,7 @@ def main(holder: Holder) -> None:
 	ddt.clear_text_cache()
 	tauon.clear_img_cache(False)
 
+	tauon.wayland_blur.shutdown()
 	sdl3.SDL_DestroyWindow(t_window)
 
 	pctl.playerCommand = "unload"
