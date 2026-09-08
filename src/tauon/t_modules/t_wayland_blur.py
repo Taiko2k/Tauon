@@ -1,7 +1,7 @@
 """Background blur behind the window on Wayland
 
 Implements ``ext-background-effect-v1`` (KWin 6.7+, Hyprland 0.56+, niri
-26.04+, Mutter 51+) so the compositor blurs behind Tauon while a glass style
+26.04+, Mutter 51+, Cosmic-Comp 1.3.0+) so the compositor blurs behind Tauon while a glass style
 is selected. Hyprland no longer blurs translucent windows unless asked
 through this protocol.
 
