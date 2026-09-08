@@ -110,7 +110,11 @@ def main() -> None:
 		py_files.extend(str((Path(dirpath) / file).relative_to(REPO_ROOT)) for file in filenames if file.endswith(".py"))
 	# Run pygettext.py with all .py files as arguments
 	if py_files:
-		_ = subprocess.run([sys.executable, str(pygettext_path), *py_files], check=True, cwd=REPO_ROOT)  # noqa: S603
+		# -k N_ picks up strings marked for deferred translation (t_extra.N_),
+		# e.g. label tables built before the catalogue is loaded. Appends to
+		# pygettext's default '_' keyword rather than replacing it.
+		_ = subprocess.run(  # noqa: S603
+			[sys.executable, str(pygettext_path), "-k", "N_", *py_files], check=True, cwd=REPO_ROOT)
 
 	logging.info("Copy template")
 	(REPO_ROOT / "messages.pot").replace(pot_path)

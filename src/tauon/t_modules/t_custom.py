@@ -30,7 +30,6 @@ Implemented here:
 """
 from __future__ import annotations
 
-import builtins
 import ctypes
 import json
 import logging
@@ -44,6 +43,7 @@ import sdl3
 from tauon.t_modules.t_enums import Backend, PlayingState
 from tauon.t_modules.t_extra import (
 	ColourRGBA,
+	N_,
 	Timer,
 	alpha_blend,
 	alpha_mod,
@@ -59,13 +59,6 @@ from tauon.t_modules.t_extra import (
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, ToolTip
-
-
-def _t(s: str) -> str:
-	"""Translate via the app's installed gettext ``_`` when present, else
-	identity (so the module is importable/testable standalone)."""
-	f = getattr(builtins, "_", None)
-	return f(s) if callable(f) else s
 
 
 def draw_layout_glyph(ddt, scale: float, x: float, y: float, w: float, h: float, colour) -> None:
@@ -187,7 +180,7 @@ class MilkDropWidget(Widget):
 		hover = tauon.coll(rect) and tauon.is_level_zero(False)
 
 		if not tauon.prefs.milk or not tauon.milky.available:
-			text = _t("MilkDrop is disabled") if tauon.milky.available else _t("MilkDrop is unavailable")
+			text = _("MilkDrop is disabled") if tauon.milky.available else _("MilkDrop is unavailable")
 			ddt.rect(rect, ColourRGBA(8, 8, 8, 255))
 			ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			ddt.text(
@@ -251,7 +244,7 @@ class MilkDropWidget(Widget):
 
 		if tauon.prefs.auto_milk:
 			yy += round(30 * gui.scale)
-			tag(_t("Auto Cycle"), xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
+			tag(_("Auto Cycle"), xx, yy, 12, 14, ColourRGBA(210, 210, 210, 255))
 
 		if tauon.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			tauon.milky.fps.reset()
@@ -296,7 +289,7 @@ class SticksVisWidget(Widget):
 			tauon.ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			tauon.ddt.text(
 				(round(x + w / 2), round(y + h / 2) - round(8 * gui.scale), 2),
-				_t("Visualiser requires the Phazor backend"), ColourRGBA(110, 110, 110, 255), 212,
+				_("Visualiser requires the Phazor backend"), ColourRGBA(110, 110, 110, 255), 212,
 				max_w=round(w) - round(8 * gui.scale))
 			return
 		if gui.vis != 4:
@@ -515,7 +508,7 @@ class SpectrogramWidget(Widget):
 			tauon.ddt.text_background_colour = ColourRGBA(8, 8, 8, 255)
 			tauon.ddt.text(
 				(rect[0] + rect[2] // 2, rect[1] + rect[3] // 2 - round(8 * gui.scale), 2),
-				_t("Visualiser requires the Phazor backend"), ColourRGBA(110, 110, 110, 255), 212,
+				_("Visualiser requires the Phazor backend"), ColourRGBA(110, 110, 110, 255), 212,
 				max_w=rect[2] - round(8 * gui.scale))
 			return
 
@@ -1513,7 +1506,7 @@ class FeuxBar:
 				if inp.mouse_click:
 					tauon.bar_love()
 					inp.mouse_click = False
-				self._tip(tauon.tool_tip2, heart_x, top - self._s(4), _t("Un-Love Track") if loved else _t("Love Track"))
+				self._tip(tauon.tool_tip2, heart_x, top - self._s(4), _("Un-Love Track") if loved else _("Love Track"))
 			colour = self._tint(colour, heart_x, mid, panel, boost=0.6)
 			icon.render(heart_x, mid - icon.h // 2, self._fg(colour, backdrop, 2.6))
 
@@ -1599,9 +1592,9 @@ class FeuxBar:
 				# that shows the mode is dropped when the panel gets narrow.
 				if inp.right_click:
 					tauon.toggle_repeat()
-					tauon.toast(_t("Repeat On") if pctl.repeat_mode else _t("Repeat Off"))
+					tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
 					inp.right_click = False
-				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Back"))
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Back"))
 			a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
 
@@ -1625,7 +1618,7 @@ class FeuxBar:
 				else:
 					pctl.play()
 				inp.mouse_click = False
-			self._tip(tauon.tool_tip2, disc_x, top - self._s(4), _t("Pause") if playing else _t("Play"))
+			self._tip(tauon.tool_tip2, disc_x, top - self._s(4), _("Pause") if playing else _("Play"))
 		a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
 		# Hold the outgoing glyph until the light reaches it (see GLINT_SWAP).
 		shown = playing
@@ -1653,7 +1646,7 @@ class FeuxBar:
 				if inp.right_click:
 					tauon.stop_menu.activate(position=(x, mid - self._s(6)))
 					inp.right_click = False
-				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Stop"))
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Stop"))
 			a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
 			a["feux-stop"].render(
 				x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
@@ -1671,9 +1664,9 @@ class FeuxBar:
 				# Right-click toggles shuffle, mirroring back's repeat toggle.
 				if inp.right_click:
 					tauon.toggle_random()
-					tauon.toast(_t("Shuffle On") if pctl.random_mode else _t("Shuffle Off"))
+					tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
 					inp.right_click = False
-				self._tip(tauon.tool_tip2, x, top - self._s(4), _t("Forward"))
+				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Forward"))
 			a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)
 
@@ -1915,7 +1908,7 @@ class FeuxBar:
 				tauon.repeat_menu.activate(position=(x + icon.w, mid + self._s(14)))
 				inp.right_click = False
 			self._tip(tauon.tool_tip, x, top - self._s(4),
-				_t("Repeat album") if pctl.album_repeat_mode else _t("Repeat track"))
+				_("Repeat album") if pctl.album_repeat_mode else _("Repeat track"))
 		icon.render(x, mid - icon.h // 2, colour)
 		# Tighter than the other gaps on purpose: the repeat-off glyph carries
 		# about 6 px of its own left padding, so an even gap here reads as a
@@ -1941,7 +1934,7 @@ class FeuxBar:
 			if inp.right_click:
 				tauon.shuffle_menu.activate(position=(x + icon.w, mid + self._s(14)))
 				inp.right_click = False
-			self._tip(tauon.tool_tip, x, top - self._s(4), _t("Shuffle"))
+			self._tip(tauon.tool_tip, x, top - self._s(4), _("Shuffle"))
 		icon.render(x, mid - icon.h // 2, colour)
 
 
@@ -2228,23 +2221,23 @@ class DetailsWidget(Widget):
 	# (label, value getter) — most common fields first; the no-track state
 	# lists every label from this table.
 	_FIELDS: list[tuple[str, Callable]] = [
-		("Title", lambda t: t.title),
-		("Artist", lambda t: t.artist),
-		("Album", lambda t: t.album),
-		("Album Artist", lambda t: t.album_artist),
-		("Composer", lambda t: t.composer),
-		("Date", lambda t: t.date),
-		("Genre", lambda t: t.genre),
-		("Track", lambda t: f"{t.track_number}/{t.track_total}" if t.track_number and t.track_total
+		(N_("Title"), lambda t: t.title),
+		(N_("Artist"), lambda t: t.artist),
+		(N_("Album"), lambda t: t.album),
+		(N_("Album Artist"), lambda t: t.album_artist),
+		(N_("Composer"), lambda t: t.composer),
+		(N_("Date"), lambda t: t.date),
+		(N_("Genre"), lambda t: t.genre),
+		(N_("Track"), lambda t: f"{t.track_number}/{t.track_total}" if t.track_number and t.track_total
 			else t.track_number),
-		("Disc", lambda t: f"{t.disc_number}/{t.disc_total}" if t.disc_number and t.disc_total
+		(N_("Disc"), lambda t: f"{t.disc_number}/{t.disc_total}" if t.disc_number and t.disc_total
 			else t.disc_number),
-		("Duration", lambda t: get_display_time(t.length) if t.length else ""),
-		("Codec", lambda t: t.file_ext),
-		("Bitrate", lambda t: f"{t.bitrate} kbps" if t.bitrate else ""),
-		("Sample rate", lambda t: get_samplerate_string(t.samplerate) if t.samplerate else ""),
-		("Bit depth", lambda t: f"{t.bit_depth} bit" if t.bit_depth else ""),
-		("Comment", lambda t: t.comment.splitlines()[0] if t.comment else ""),
+		(N_("Duration"), lambda t: get_display_time(t.length) if t.length else ""),
+		(N_("Codec"), lambda t: t.file_ext),
+		(N_("Bitrate"), lambda t: f"{t.bitrate} kbps" if t.bitrate else ""),
+		(N_("Sample rate"), lambda t: get_samplerate_string(t.samplerate) if t.samplerate else ""),
+		(N_("Bit depth"), lambda t: f"{t.bit_depth} bit" if t.bit_depth else ""),
+		(N_("Comment"), lambda t: t.comment.splitlines()[0] if t.comment else ""),
 	]
 
 	def __init__(self) -> None:
@@ -2252,7 +2245,7 @@ class DetailsWidget(Widget):
 
 	@classmethod
 	def _rows(cls, track) -> list[tuple[str, str]]:
-		rows = [(_t(label), str(getter(track)).strip()) for label, getter in cls._FIELDS]
+		rows = [(_(label), str(getter(track)).strip()) for label, getter in cls._FIELDS]
 		return [(label, value) for label, value in rows if value]
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
@@ -2268,7 +2261,7 @@ class DetailsWidget(Widget):
 		# row background, both fading out further down the list.
 		empty = track is None
 		if empty:
-			rows = [(_t(label), "") for label, _ in self._FIELDS]
+			rows = [(_(label), "") for label, _getter in self._FIELDS]
 		else:
 			rows = self._rows(track)
 
@@ -3464,7 +3457,7 @@ class AlbumflowWidget(_AlbumflowBase):
 		ddt = tauon.ddt
 		colours = tauon.colours
 		if not tauon.album_dex:
-			ddt.text((w / 2, h / 2 - 8 * gui.scale, 2), _t("No albums"),
+			ddt.text((w / 2, h / 2 - 8 * gui.scale, 2), _("No albums"),
 				colours.side_bar_line2, 211)
 			return
 
@@ -3478,8 +3471,8 @@ class AlbumflowWidget(_AlbumflowBase):
 		selected_position = tauon.album_dex[self.selection]
 		if selected_position < len(playlist):
 			track = tauon.pctl.get_track(playlist[selected_position])
-			album = track.album or track.parent_folder_name or _t("Unknown Album")
-			artist = track.album_artist or track.artist or _t("Unknown Artist")
+			album = track.album or track.parent_folder_name or _("Unknown Album")
+			artist = track.album_artist or track.artist or _("Unknown Artist")
 			title_y = min(h - 38 * gui.scale, centre_y + art_height * 0.65)
 			max_text_w = max(40, min(w - 30 * gui.scale, art_height * 1.8))
 			ddt.text((w / 2, title_y, 2), album, colours.side_bar_line1, 212, max_w=max_text_w)
@@ -4252,13 +4245,13 @@ class CustomLayout:
 		Renaming or loading a template sets an explicit name; unnamed slots
 		derive one: "Empty Slot" when empty/Blank, else a generic label."""
 		if not 0 <= slot < len(self.slots):
-			return _t("Empty Slot")
+			return _("Empty Slot")
 		name = self.slot_names[slot]
 		if name:
 			return name
 		if self._is_blank_tree(self.slots[slot]):
-			return _t("Empty Slot")
-		return _t("Custom Layout")
+			return _("Empty Slot")
+		return _("Custom Layout")
 
 	# -- unified layout order --------------------------------------------------
 
@@ -4574,7 +4567,7 @@ class CustomLayout:
 		if spec is None:
 			return False
 		if spec.single_instance and count_kind(root, kind) > 0:
-			self.tauon.show_message(_t("Only one %s allowed") % spec.name, mode="warning")
+			self.tauon.show_message(_("Only one %s allowed") % spec.name, mode="warning")
 			return False
 		if not isinstance(target, Leaf):
 			return False
@@ -4706,7 +4699,7 @@ class CustomLayout:
 			return
 		node = self._lock_target(root, target, axis)
 		if node is None:
-			self.tauon.show_message(_t("Can't lock: nothing divides the layout in that direction"), mode="warning")
+			self.tauon.show_message(_("Can't lock: nothing divides the layout in that direction"), mode="warning")
 			return
 		if axis == "v":
 			new = not node.lock_v
@@ -5379,7 +5372,7 @@ class CustomLayout:
 		self.tauon.gui.message_box_confirm_callback = self._confirm_load_template
 		self.tauon.gui.message_box_no_callback = None
 		self.tauon.gui.message_box_confirm_reference = (name,)
-		self.tauon.show_message(_t("Load '%s' template? Replaces this layout.") % name, mode="confirm")
+		self.tauon.show_message(_("Load '%s' template? Replaces this layout.") % name, mode="confirm")
 
 	def _confirm_load_template(self, name) -> None:
 		self.act_load_template(name)
@@ -5390,7 +5383,7 @@ class CustomLayout:
 		self.tauon.gui.message_box_no_callback = None
 		self.tauon.gui.message_box_confirm_reference = ()
 		self.tauon.show_message(
-			_t("Remove the whole layout? Leaves an empty slot."), mode="confirm")
+			_("Remove the whole layout? Leaves an empty slot."), mode="confirm")
 
 	def _open_rename_box(self, text: str, callback: Callable[[str], None]) -> None:
 		"""Open the shared rename box (the playlist one) on arbitrary text."""
@@ -5455,7 +5448,7 @@ class CustomLayout:
 		self.tauon.gui.message_box_no_callback = None
 		self.tauon.gui.message_box_confirm_reference = ()
 		self.tauon.show_message(
-			_t("Delete layout '%s'?") % self.slot_title(self.active_slot), mode="confirm")
+			_("Delete layout '%s'?") % self.slot_title(self.active_slot), mode="confirm")
 
 	def _confirm_delete_slot(self) -> None:
 		self.act_delete_slot()
@@ -5795,8 +5788,8 @@ class CustomLayout:
 		if len(names) == 1:
 			return names[0]
 		if names:
-			return _t("Tab %d") % (index + 1)
-		return _t("Empty Tab")
+			return _("Tab %d") % (index + 1)
+		return _("Empty Tab")
 
 	def _draw_tab_bars(self, node: Node) -> None:
 		"""Draw visible tab strips through the same offscreen path as widgets.

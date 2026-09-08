@@ -168,7 +168,12 @@ class TauonPlaylist:
 	file_size: int = 0  # if this is different from last time we'll rescan it
 
 
-def _(m: str) -> str:
+def N_(m: str) -> str:  # noqa: N802 - N_() is the standard gettext no-op marker name
+	"""Mark a string for extraction without translating it yet.
+
+	For strings defined before the translation catalogue is loaded (module
+	and class-level tables); translate at the point of use with ``_()``.
+	"""
 	return m
 
 
