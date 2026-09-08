@@ -308,7 +308,7 @@ def discord_loop_entrypoint(main) -> None:
                     next_reconnect_at = now + reconnect_delay
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
                     log(f"Connection failed ({consecutive_failures}): {exc}")
-                    set_status(builtins._("Reconnecting to Discord..."))
+                    set_status(builtins._("Reconnecting to Discord…"))
                     wakeup.wait(timeout=0.25)
                     wakeup.clear()
                     continue
@@ -373,7 +373,7 @@ def discord_loop_entrypoint(main) -> None:
                     close_rpc()
                     next_reconnect_at = time.time() + reconnect_delay
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
-                    set_status(builtins._("Reconnecting to Discord..."))
+                    set_status(builtins._("Reconnecting to Discord…"))
                     wakeup.wait(timeout=0.5)
                     wakeup.clear()
                     continue
@@ -583,7 +583,7 @@ def discord_loop_entrypoint(main) -> None:
                     last_sent_sig = ""
                     next_reconnect_at = time.time() + reconnect_delay
                     reconnect_delay   = min(reconnect_delay * 1.8, 45.0)
-                    set_status(builtins._("Reconnecting to Discord..."))
+                    set_status(builtins._("Reconnecting to Discord…"))
                     wakeup.wait(timeout=0.5)
                     wakeup.clear()
                     continue
