@@ -902,6 +902,16 @@ def hls_pull_contrast(base: ColourRGBA, backdrop: ColourRGBA, floor: float = 0.1
 	return ColourRGBA(round(r * 255), round(g * 255), round(b * 255), base.a)
 
 
+def hls_raise_lightness(colour: ColourRGBA, floor: float, knee: float = 0.55) -> ColourRGBA:
+	"""Ensure colour's lightness is at least `floor`.
+
+	hls_pull_contrast against black: the same knee remap, but for the case
+	where what ends up behind the colour isn't knowable (the desktop showing
+	through a translucent window), so there is no backdrop to measure
+	against and only an absolute floor can be set."""
+	return hls_pull_contrast(colour, ColourRGBA(0, 0, 0, colour.a), floor, knee)
+
+
 def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) -> ColourRGBA:
 	c = colorsys.rgb_to_hls(source.r / 255, source.g / 255, source.b / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))

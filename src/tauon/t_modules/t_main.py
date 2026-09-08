@@ -184,6 +184,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	grow_rect,
 	hls_hue_mix,
 	hls_pull_contrast,
+	hls_raise_lightness,
 	hls_to_rgb,
 	hms_to_seconds,
 	hsl_to_rgb,
@@ -1726,6 +1727,11 @@ class ColoursClass:
 		# filled in by post_config
 		self.base_alpha: dict[str, int] = {}
 
+		# Theme-supplied RGBA of the icons and text the window-transparency
+		# styles lighten, so repeated passes always start from the theme's
+		# own value rather than lifting an already-lifted colour
+		self.base_rgb: dict[str, tuple[int, int, int, int]] = {}
+
 	# The art background draws underneath the UI, so these fills are made
 	# translucent to let it show through. Panels take the bulk of it; the
 	# smaller furniture sitting on them lets less through.
@@ -1753,6 +1759,87 @@ class ColoursClass:
 	# differing values would leak through the alias and look more opaque in one
 	transparency_panel_alpha = 175
 
+	# Icons and text drawn on the panels the transparency styles make
+	# see-through, keyed by the panel behind them. Whatever the compositor puts
+	# there is unknown and usually brighter than the theme's own panel, so a
+	# theme's dark greys stop reading as foreground; these get a lightness
+	# floor. Keyed by panel because the floor only suits a dark one. Only text
+	# and icons drawn straight onto a panel belong here — tab and column-header
+	# labels sit on their own opaque fills, which the glass never shows through.
+	transparency_panel_contents = (
+		("top_panel_background", "text", (
+			"status_text_normal",
+			"status_text_over",
+		)),
+		("top_panel_background", "icon", (
+			"corner_button",
+			"corner_button_active",
+		)),
+		("bottom_panel_colour", "control", (
+			"media_buttons_off",
+			"media_buttons_over",
+			"media_buttons_active",
+			"mode_button_off",
+			"mode_button_over",
+			"mode_button_active",
+		)),
+		("bottom_panel_colour", "text", (
+			"time_sub",
+		)),
+		("side_panel_background", "text", (
+			"side_bar_line1",
+			"side_bar_line2",
+			"bar_title_text",
+			"folder_title",
+			"gallery_artist_line",
+		)),
+	)
+	# Full mode alone makes the tracklist see-through, so its row text is only
+	# lifted there; in accent mode those rows keep the theme's own colours
+	transparency_tracklist_contents = (
+		("playlist_panel_background", "text", (
+			"index_text",
+			"title_text",
+			"artist_text",
+			"album_text",
+			"bar_time",
+			"index_playing",
+			"title_playing",
+			"artist_playing",
+			"album_playing",
+			"time_text",
+			"time_playing",
+			"playlist_text_missing",
+		)),
+	)
+	# Per kind of content: lightness floor, the knee below which lightness is
+	# remapped into it, how far towards white the result is then pushed, and
+	# the alpha bounds. The knee keeps a theme's related shades (a button's
+	# off/over/active) in order instead of collapsing them onto the floor.
+	# Text is barely touched on purpose: a glyph is antialiased over a fill
+	# that is already translucent, so the treatment that suits a flat icon
+	# reads far stronger on type. It gets a small lift and no brightening,
+	# which leaves its alpha at whatever the theme asked for.
+	transparency_content_styles = (
+		# kind,  floor, knee, brighten, min alpha, max alpha
+		("icon", 0.34, 0.60, 0.65, 70, 180),
+		# The transport and mode buttons are the same idea as the corner ones,
+		# but big enough that the same treatment reads stronger, so they carry
+		# less of it
+		("control", 0.22, 0.60, 0.78, 45, 160),
+		("text", 0.28, 0.42, 0.00, 0, 255),
+	)
+	# What a colour lands on is not the panel's own colour but the panel over
+	# whatever the compositor has behind it, which is unknowable — assume a mid
+	# backdrop. Assuming too dark a one is what makes glass UI look painted on:
+	# the alpha comes out high, and then the real, brighter backdrop shows
+	# through it anyway.
+	transparency_backdrop_lightness = 0.5
+	# Below this the theme is carrying the colour's brightness in its alpha
+	# rather than its channels (the corner buttons are white at alpha 50), so
+	# the lift has to work on what that alpha actually paints
+	transparency_solid_alpha = 200
+
 	def apply_transparency(self, full: bool = False) -> None:
 		"""Translucent panel fills for compositor window transparency.
 
@@ -1778,6 +1865,100 @@ class ColoursClass:
 				c = getattr(self, name, None)
 				if c is not None and not any(c is panel for panel in fixed):
 					c.a = self.transparency_panel_alpha
+
+		self.lift_transparency_contents(full)
+
+	def as_glass(self, colour: ColourRGBA, panel: ColourRGBA, style: tuple) -> ColourRGBA:
+		"""Repaint an opaque colour as a brighter, translucent one that blends
+		back to the same lightness over `panel`.
+
+		Only near-grey colours are brightened this way. Compositing a pastel
+		back down over the panel costs it saturation, which a grey has none of
+		to lose but an accent does — so the more colour a theme put in, the
+		less of this it gets, and a strongly coloured one is left alone."""
+		_kind, _floor, _knee, brighten, min_alpha, max_alpha = style
+		hue, target, sat = rgb_to_hls(colour.r, colour.g, colour.b)
+		panel_f = panel.a / 255
+		backdrop = (
+			rgb_to_hls(panel.r, panel.g, panel.b)[1] * panel_f
+			+ self.transparency_backdrop_lightness * (1 - panel_f))
+		grey_factor = 1.0 - min(1.0, sat / 0.25)
+		bright = target + (1 - target) * brighten * grey_factor
+		alpha = 1.0
+		if bright > backdrop:
+			alpha = (target - backdrop) / (bright - backdrop)
+		alpha = round(min(max(alpha * 255, min_alpha), max_alpha))
+		out = hls_to_rgb(hue, bright, sat)
+		return ColourRGBA(out.r, out.g, out.b, alpha)
+
+	def lift_transparency_contents(self, full: bool) -> None:
+		"""Raise the lightness of icons and text sitting on see-through panels.
+
+		Each group is only lifted where its own panel is dark, since a light
+		theme wants its dark foreground kept, and by how much depends on what
+		kind of thing it is (see transparency_content_styles). Anything not
+		being lifted is put back to the theme's own colour, so switching
+		between the styles doesn't leave the tracklist carrying full mode's
+		lift."""
+		groups = self.transparency_panel_contents
+		if full:
+			groups += self.transparency_tracklist_contents
+		# Snapshot every colour before lifting any of them: themes alias these
+		# names freely, and a base taken after a shared object was lifted would
+		# ratchet it further on the next pass
+		all_names = [
+			name for _panel, _kind, names in
+			self.transparency_panel_contents + self.transparency_tracklist_contents
+			for name in names
+		]
+		for name in all_names:
+			colour = getattr(self, name, None)
+			if colour is not None and name not in self.base_rgb:
+				self.base_rgb[name] = (colour.r, colour.g, colour.b, colour.a)
+
+		# A theme may point an icon or text colour at a panel fill; lifting in
+		# place would then brighten the panel itself
+		panels = [c for name in self.art_bg_panel_colours if (c := getattr(self, name, None)) is not None]
+		panels += [self.art_box, self.window_frame]
+
+		lifted_objects = []
+		for panel_name, kind, names in groups:
+			panel = getattr(self, panel_name, None)
+			if panel is None or test_lumi(panel) < 0.5:
+				continue
+			style = next(s for s in self.transparency_content_styles if s[0] == kind)
+			for name in names:
+				colour = getattr(self, name, None)
+				if colour is None or any(colour is panel_colour for panel_colour in panels):
+					continue
+				lifted_objects.append(colour)
+				base = ColourRGBA(*self.base_rgb[name])
+				if base.a < self.transparency_solid_alpha:
+					# The theme paints this through its alpha, so lift what that
+					# alpha actually puts on the panel and carry it in the
+					# channels instead — over glass there is no telling what the
+					# alpha would otherwise be blending with
+					blended = alpha_blend(base, panel)
+					base = ColourRGBA(blended.r, blended.g, blended.b, 255)
+				lifted = hls_raise_lightness(base, style[1], style[2])
+				if not style[3] and (lifted.r, lifted.g, lifted.b) == (base.r, base.g, base.b):
+					# Nothing to brighten and nothing to lift: the theme's own
+					# colour, just held off being a fully opaque slab
+					colour.r, colour.g, colour.b = base.r, base.g, base.b
+					colour.a = min(base.a, style[5])
+					continue
+				glass = self.as_glass(lifted, panel, style)
+				colour.r, colour.g, colour.b = glass.r, glass.g, glass.b
+				# Never more opaque than the theme asked for
+				colour.a = min(base.a, glass.a)
+
+		# Compare by identity, not name: a name left out of the lift may still
+		# be an alias of one that was lifted, and must not undo it
+		for name in all_names:
+			colour = getattr(self, name, None)
+			if colour is None or any(colour is lifted for lifted in lifted_objects):
+				continue
+			colour.r, colour.g, colour.b, colour.a = self.base_rgb[name]
 
 	def post_config(self) -> None:
 		if self.box_thumb_background is None:
