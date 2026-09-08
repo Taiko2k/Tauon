@@ -20050,46 +20050,31 @@ class Tauon:
 		return None
 
 	# --- Background style: one mutually exclusive choice between the plain
-	# theme, window transparency, auto-theming from art, and the album-art
-	# backgrounds (settings → theme card)
+	# theme, auto-theming from art, and the album-art backgrounds. Window
+	# transparency is a separate, independent switch (settings → theme card)
 
 	def _clear_background_style(self) -> None:
-		"""Turn every background-style mode off (back to the base theme)"""
+		"""Turn every background-style mode off (back to the base theme)
+
+		Window transparency is chosen separately and is left alone."""
 		if self.prefs.art_bg:
 			self.prefs.art_bg = False
 			self.style_overlay.flush()
 			self.thread_manager.ready("style")
-		if self.prefs.transparent_mode:
-			self.prefs.transparent_mode = 0
-			self.gui.reload_theme = True  # Restores panel alphas
 		if self.prefs.colour_from_image:
 			self.prefs.colour_from_image = False
 			self.gui.theme_temp_current = -1
 			self.gui.reload_theme = True
-		self.gui.update_layout = True  # Removes panel translucency
+		# Removes panel translucency (and restores the transparency alphas
+		# if a glass style is on)
+		self.gui.update_layout = True
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 
 	def set_bg_style_base(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return not self.prefs.art_bg and not self.prefs.transparent_mode and not self.prefs.colour_from_image
+			return not self.prefs.art_bg and not self.prefs.colour_from_image
 		self._clear_background_style()
-		return None
-
-	def set_bg_style_transparent_accent(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.transparent_mode == 1 and not self.prefs.art_bg and not self.prefs.colour_from_image
-		self._clear_background_style()
-		self.prefs.transparent_mode = 1
-		self.gui.reload_theme = True
-		return None
-
-	def set_bg_style_full_transparent(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.transparent_mode == 2 and not self.prefs.art_bg and not self.prefs.colour_from_image
-		self._clear_background_style()
-		self.prefs.transparent_mode = 2
-		self.gui.reload_theme = True
 		return None
 
 	def set_bg_style_colourise(self, mode: int = 0) -> bool | None:
@@ -20101,15 +20086,49 @@ class Tauon:
 		self.gui.reload_theme = True
 		return None
 
+	# --- Window transparency, independent of the background style above
+
+	def _set_transparency(self, level: int) -> None:
+		if self.prefs.transparent_mode == level:
+			return
+		self.prefs.transparent_mode = level
+		# Theme reload applies the transparency alphas, or restores the
+		# theme's own opaque ones when turning it back off
+		self.gui.reload_theme = True
+		self.gui.update_layout = True
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
+
+	def set_transparency_off(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return not self.prefs.transparent_mode
+		self._set_transparency(0)
+		return None
+
+	def set_transparency_accent(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.transparent_mode == 1
+		self._set_transparency(1)
+		return None
+
+	def set_transparency_full(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.transparent_mode == 2
+		self._set_transparency(2)
+		return None
+
 	def _set_art_bg(self, frosted: bool, stronger: int, fanart: bool = False) -> None:
 		# Leaving the other background styles
-		if self.prefs.transparent_mode:
-			self.prefs.transparent_mode = 0
-			self.gui.reload_theme = True
 		if self.prefs.colour_from_image:
 			self.prefs.colour_from_image = False
 			self.gui.theme_temp_current = -1
 			self.gui.reload_theme = True
+		# The art fills the window, so window transparency has nothing to show
+		# through; turn it off (and hide its switcher) while an art background
+		# is in use
+		if self.prefs.transparent_mode:
+			self.prefs.transparent_mode = 0
+			self.gui.reload_theme = True  # Restores panel alphas
 		# The blur image only needs regenerating when the look or source
 		# changes; strength is applied at draw time via panel translucency
 		regenerate = (
@@ -30545,8 +30564,16 @@ class Over:
 		preset_columns = max(1, min(theme_count, (card_inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
 		preset_rows = max(1, math.ceil(theme_count / preset_columns))
 		preset_grid_h = preset_rows * preset_h + max(0, preset_rows - 1) * preset_gap
-		# Preset grid, action buttons, then the Background Style bar at the bottom
-		card_h = round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h + style_label_h + style_bar_h
+		# Window transparency only applies to the two non-art background
+		# styles; its switcher is hidden (and forced off) for the others
+		show_transparency = not prefs.art_bg
+		# Preset grid, action buttons, then the Background Style bar (and the
+		# Window Transparency bar when it applies) at the bottom
+		card_h = (
+			round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h
+			+ style_label_h + style_bar_h)
+		if show_transparency:
+			card_h += row_gap + style_label_h + style_bar_h
 		card_rect = (x, y, w, card_h)
 		if not draw:
 			return card_rect[3]
@@ -30633,6 +30660,10 @@ class Over:
 				self.ddt.rect((segment_x, strip_y, segment_width, strip_h), colour_value)
 
 		style_bar_y = card_rect[1] + card_rect[3] - round(14 * gui.scale) - style_bar_h
+		if show_transparency:
+			glass_bar_y = style_bar_y
+			glass_label_y = glass_bar_y - style_label_h
+			style_bar_y = glass_label_y - row_gap - style_bar_h
 		style_label_y = style_bar_y - style_label_h
 		action_y = style_label_y - row_gap - action_h
 		icon_button_w = round(26 * gui.scale)
@@ -30661,15 +30692,13 @@ class Over:
 			tooltip=_("Delete"),
 		)
 
-		# One mutually exclusive choice between the plain theme, window
-		# transparency, auto-theming and the album-art backgrounds
+		# One mutually exclusive choice between the plain theme, auto-theming
+		# and the album-art backgrounds
 		self.ddt.text((inner_x, style_label_y), _("Background Style"), self.colours.box_text_label, 11)
 		self.settings_segmented_bar(
 			(inner_x, style_bar_y),
 			(
 				(_("Standard"), self.tauon.set_bg_style_base(1), self.tauon.set_bg_style_base),
-				(_("Glass"), self.tauon.set_bg_style_transparent_accent(1), self.tauon.set_bg_style_transparent_accent),
-				(_("Glass+"), self.tauon.set_bg_style_full_transparent(1), self.tauon.set_bg_style_full_transparent),
 				(_("Colourise"), self.tauon.set_bg_style_colourise(1), self.tauon.set_bg_style_colourise),
 				(_("Art"), self.tauon.set_art_bg_clear(1), self.tauon.set_art_bg_clear),
 				(_("Artist"), self.tauon.set_art_bg_artist(1), self.tauon.set_art_bg_artist),
@@ -30679,6 +30708,21 @@ class Over:
 			accent,
 			width=inner_w,
 		)
+
+		# Window transparency is picked separately, and combines with either
+		# of the two non-art background styles
+		if show_transparency:
+			self.ddt.text((inner_x, glass_label_y), _("Window Transparency"), self.colours.box_text_label, 11)
+			self.settings_segmented_bar(
+				(inner_x, glass_bar_y),
+				(
+					(_("Off"), self.tauon.set_transparency_off(1), self.tauon.set_transparency_off),
+					(_("Accents"), self.tauon.set_transparency_accent(1), self.tauon.set_transparency_accent),
+					(_("Full"), self.tauon.set_transparency_full(1), self.tauon.set_transparency_full),
+				),
+				accent,
+				width=inner_w,
+			)
 
 		return card_rect[3]
 
