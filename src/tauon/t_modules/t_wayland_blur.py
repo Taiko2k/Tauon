@@ -1,22 +1,17 @@
 """Background blur behind the window on Wayland
 
-Implements the ``ext-background-effect-v1`` staging protocol so compositors
-blur whatever is behind Tauon while a glass (window transparency) style is
-selected. Supported by KWin 6.7+, Hyprland 0.56+, niri 26.04+ and Mutter 51+;
-Hyprland in particular no longer blurs translucent windows unless the client
-asks for it through this protocol.
+Implements ``ext-background-effect-v1`` (KWin 6.7+, Hyprland 0.56+, niri
+26.04+, Mutter 51+) so the compositor blurs behind Tauon while a glass style
+is selected. Hyprland no longer blurs translucent windows unless asked
+through this protocol.
 
-The protocol is tiny — a manager global that hands out a per-surface effect
-object, and one ``set_blur_region`` request on it — so rather than adding a
-wayland-scanner build step it is marshalled here directly against
-libwayland-client, exactly as the generated code would. Anything missing
-(non-Wayland session, no library, compositor without the global) simply
-disables the feature.
+The protocol is two small interfaces, so it is marshalled directly against
+libwayland-client rather than adding a wayland-scanner build step. Anything
+missing simply disables the feature.
 
-The blur region is double-buffered surface state applied on the next
-``wl_surface.commit``, and SDL owns this surface's commit cycle, so nothing
-here commits: `sync` is called just before ``SDL_RenderPresent`` and SDL's
-own commit publishes the region.
+The blur region is double-buffered surface state; SDL owns this surface's
+commit cycle, so nothing here commits — `sync` runs just before
+``SDL_RenderPresent`` and SDL's own commit publishes the region.
 """
 
 # Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
@@ -33,7 +28,7 @@ import sdl3
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
 
-# wl_proxy_marshal_flags: destroy the proxy after sending the request
+# Destroy the proxy after sending the request
 WL_MARSHAL_FLAG_DESTROY = 1
 
 # Request opcodes, in interface declaration order
@@ -53,7 +48,6 @@ CAPABILITY_BLUR = 1
 MANAGER_NAME = b"ext_background_effect_manager_v1"
 EFFECT_NAME = b"ext_background_effect_surface_v1"
 COMPOSITOR_NAME = b"wl_compositor"
-# wl_compositor version we can make use of (create_region exists since 1)
 COMPOSITOR_WANT_VERSION = 4
 
 
@@ -76,23 +70,20 @@ class WlInterface(ctypes.Structure):
 	)
 
 
-# Registry listener callbacks
+# Listener callback types
 GLOBAL_CALLBACK = ctypes.CFUNCTYPE(
 	None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32, ctypes.c_char_p, ctypes.c_uint32)
 GLOBAL_REMOVE_CALLBACK = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32)
-# ext_background_effect_manager_v1.capabilities
 CAPABILITIES_CALLBACK = ctypes.CFUNCTYPE(None, ctypes.c_void_p, ctypes.c_void_p, ctypes.c_uint32)
 
 
 def region_rects(width: int, height: int, radius: int) -> list[tuple[int, int, int, int]]:
 	"""The rects making up the blur region, in surface-local coordinates
 
-	The region tracks the window's real size: the protocol says an oversized
-	rect is clipped to the surface, but Hyprland 0.56 clips it to the size the
-	surface had when the effect object was made, leaving part of a since
-	resized window unblurred. With rounded corners the region has to follow
-	the window's shape anyway, or blur shows through the corners Tauon cut
-	away, so the arcs are approximated a row at a time.
+	Sized to the window rather than left oversized for the compositor to clip:
+	Hyprland 0.56 clips instead to the size the surface had when the effect
+	object was made. Rounded corners are approximated a row at a time, so blur
+	doesn't show through the corners Tauon cut away.
 	"""
 	if width <= 0 or height <= 0:
 		return []
@@ -107,8 +98,7 @@ def region_rects(width: int, height: int, radius: int) -> list[tuple[int, int, i
 	if middle > 0:
 		rects.append((0, radius, width, middle))
 	for row in range(radius):
-		# Horizontal inset of the corner arc at this row, sampled at the row's
-		# centre; the same inset serves the two corners on that edge
+		# Inset of the corner arc at this row, shared by both corners on the edge
 		distance = radius - row - 0.5
 		inset = math.ceil(radius - math.sqrt(max(radius * radius - distance * distance, 0.0)))
 		span = width - inset * 2
@@ -143,8 +133,7 @@ class WaylandBlur:
 		self.compositor_interface: WlInterface | None = None
 		self.region_interface: WlInterface | None = None
 		self.registry_interface: WlInterface | None = None
-		# wl_interface/wl_message/callback objects the C side holds pointers
-		# into; they must outlive every proxy that references them
+		# C holds pointers into these; they must outlive the proxies using them
 		self.keep_alive: list = []
 
 		self.globals: dict[bytes, tuple[int, int]] = {}
@@ -155,19 +144,14 @@ class WaylandBlur:
 	# --- Public interface
 
 	def sync(self) -> None:
-		"""Apply the wanted blur state; call once per frame, before present
-
-		The region is double-buffered surface state, so what is set here is
-		published by the commit inside the present that follows.
-		"""
+		"""Apply the wanted blur state; call once per frame, before present"""
 		if self.unavailable:
 			return
 		if not self.attached and not self.attach():
 			return
 		if not self.check_surface():
 			return
-		# Events for our queue are read by SDL's own dispatch and left pending;
-		# draining is non-blocking and keeps the capabilities up to date
+		# SDL's dispatch leaves our queue's events pending; draining is non-blocking
 		self.lib.wl_display_dispatch_queue_pending(ctypes.c_void_p(self.display), ctypes.c_void_p(self.queue))
 
 		wanted = self.wanted_shape()
@@ -196,8 +180,8 @@ class WaylandBlur:
 	def wanted_shape(self) -> tuple[int, int, int] | None:
 		"""``(width, height, radius)`` for the blur region, or None for no blur
 
-		Surface-local coordinates are logical units, so this works from the
-		window's logical size; a resize changes the shape and re-sends it.
+		Surface-local coordinates are logical units, so a resize changes the
+		shape and re-sends it.
 		"""
 		if not self.prefs.transparent_mode or not self.capabilities & CAPABILITY_BLUR:
 			return None
@@ -222,7 +206,7 @@ class WaylandBlur:
 			return
 		self.marshal(
 			self.effect, EXT_BACKGROUND_EFFECT_SURFACE_SET_BLUR_REGION, None, 1, 0, ctypes.c_void_p(region))
-		# set_blur_region copies the region, so it can go straight away
+		# set_blur_region copies the region
 		self.marshal(region, WL_REGION_DESTROY, None, self.compositor_version, WL_MARSHAL_FLAG_DESTROY)
 
 	def create_region(self, width: int, height: int, radius: int) -> int | None:
@@ -245,12 +229,10 @@ class WaylandBlur:
 	def attach(self) -> bool:
 		"""Connect to the compositor's background-effect global
 
-		Returns False (and disables further attempts) when anything needed is
-		missing; blur is entirely optional.
+		False when anything needed is missing; blur is entirely optional.
 		"""
 		try:
-			# Ask SDL what it actually chose rather than trusting tauon.wayland,
-			# which only reflects the SDL_VIDEODRIVER environment variable
+			# tauon.wayland only reflects SDL_VIDEODRIVER; ask SDL what it chose
 			if sdl3.SDL_GetCurrentVideoDriver() != b"wayland":
 				self.unavailable = True
 				return False
@@ -326,8 +308,8 @@ class WaylandBlur:
 			self.unavailable = True
 			return False
 
-		# Only the return types matter; the arguments are passed as explicit
-		# ctypes values (wl_proxy_marshal_flags is variadic)
+		# Arguments are passed as explicit ctypes values, so only return types
+		# are set here (wl_proxy_marshal_flags is variadic)
 		lib.wl_proxy_marshal_flags.restype = ctypes.c_void_p
 		lib.wl_proxy_create_wrapper.restype = ctypes.c_void_p
 		lib.wl_proxy_create_wrapper.argtypes = (ctypes.c_void_p,)
@@ -410,9 +392,8 @@ class WaylandBlur:
 	def collect_globals(self, display: int) -> bool:
 		"""Read the registry on a queue of our own
 
-		SDL dispatches this display's default queue, so the registry is put on
-		a private queue (via a proxy wrapper) to avoid taking events SDL is
-		waiting for.
+		SDL dispatches the display's default queue, so a proxy wrapper puts the
+		registry on a private one rather than taking events SDL waits for.
 		"""
 		lib = self.lib
 		self.queue = lib.wl_display_create_queue(ctypes.c_void_p(display))
@@ -445,8 +426,7 @@ class WaylandBlur:
 			ctypes.cast(global_callback, ctypes.c_void_p),
 			ctypes.cast(global_remove_callback, ctypes.c_void_p),
 		)
-		# The listener holds bare addresses, so the callback objects have to
-		# outlive the proxy they are attached to
+		# The listener holds bare addresses; the callbacks must outlive the proxy
 		self.keep_alive.extend((listener, global_callback, global_remove_callback))
 		lib.wl_proxy_add_listener(ctypes.c_void_p(self.registry), ctypes.cast(listener, ctypes.c_void_p), None)
 		lib.wl_display_roundtrip_queue(ctypes.c_void_p(display), ctypes.c_void_p(self.queue))

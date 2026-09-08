@@ -1748,18 +1748,26 @@ class ColoursClass:
 		"folder_line",
 	)
 
+	# Shared by both window-transparency styles: themes routinely point several
+	# panel names at one colour object (lyrics defaults to the side panel's), so
+	# differing values would leak through the alias and look more opaque in one
+	transparency_panel_alpha = 175
+
 	def apply_transparency(self, full: bool = False) -> None:
 		"""Translucent panel fills for compositor window transparency.
 
 		Accent mode leaves the tracklist area opaque; full mode makes every
-		panel see-through."""
+		panel see-through. Both use the same alphas, so the styles differ in
+		which panels are translucent, not in how translucent they are."""
 		self.top_panel_background.a = 140
-		self.side_panel_background.a = 140
+		self.side_panel_background.a = self.transparency_panel_alpha
 		self.art_box.a = 100
 		self.window_frame.a = 100
 		self.bottom_panel_colour.a = 200
 
 		if full:
+			# Don't write through an alias into a panel set above
+			fixed = (self.top_panel_background, self.art_box, self.window_frame, self.bottom_panel_colour)
 			for name in (
 				"playlist_panel_background",
 				"gallery_background",
@@ -1768,8 +1776,8 @@ class ColoursClass:
 				"lyrics_panel_background",
 			):
 				c = getattr(self, name, None)
-				if c is not None:
-					c.a = 175
+				if c is not None and not any(c is panel for panel in fixed):
+					c.a = self.transparency_panel_alpha
 
 	def post_config(self) -> None:
 		if self.box_thumb_background is None:
