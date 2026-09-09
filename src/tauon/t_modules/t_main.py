@@ -43112,11 +43112,19 @@ class MetaBox:
 		if self.colours.lm:
 			margin += 1 * self.gui.scale
 
+		# Scrolled text starts above the panel, and there is nothing opaque
+		# above it to hide the overflow once the window is see-through — the
+		# lines would show through the album art box
+		# The annotations say int, but the panel geometry arrives scaled
+		# (gui.rspw is a float), so these do need rounding
+		clip = sdl3.SDL_Rect(round(x), round(y), round(w), round(h))  # noqa: RUF057
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
 		self.lyrics_ren_mini.render(
 			self.pctl.track_queue[self.pctl.queue_step], x + margin,
 			y + self.lyrics_ren_mini.lyrics_position + 13 * self.gui.scale,
 			w - 50 * self.gui.scale,
 			None, 0)
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
 
 		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
