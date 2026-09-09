@@ -5696,6 +5696,12 @@ class CustomLayout:
 		if gui.have_art_bg:
 			tauon.style_overlay.display(background=True)
 		else:
+			# A window-transparency style leaves the panel colour translucent, so
+			# blending it over the standard layout underneath would both ghost
+			# that layout through and leave two translucent layers stacked.
+			# Replace the pixels instead, for exactly one layer of base.
+			if tauon.prefs.transparent_mode:
+				ddt.clear_rect((0, 0, ww, wh))
 			ddt.rect((0, 0, ww, wh), tauon.colours.playlist_panel_background)
 
 		root = self.ensure_slot()
@@ -6208,7 +6214,17 @@ class CustomLayout:
 
 		src = sdl3.SDL_FRect(0, 0, iw, ih)
 		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
+		# The widget painted its own panel fill into the scratch, which under a
+		# transparency style is already the single translucent layer that panel
+		# is meant to have. Blending it onto the layout base would stack a
+		# second one, which is what makes custom mode read darker than the
+		# standard layout; copy the pixels over the base instead.
+		replace = bool(tauon.prefs.transparent_mode) and not gui.have_art_bg
+		if replace:
+			sdl3.SDL_SetTextureBlendMode(scratch, sdl3.SDL_BLENDMODE_NONE)
 		sdl3.SDL_RenderTexture(renderer, scratch, src, dst)
+		if replace:
+			sdl3.SDL_SetTextureBlendMode(scratch, sdl3.SDL_BLENDMODE_BLEND)
 
 	def _draw_art_bg_veil(self, root: Node, ww: int, wh: int) -> None:
 		"""Dim the art background between widgets. Widgets dim their own rects
