@@ -27815,6 +27815,9 @@ class Over:
 		self.settings_content_scroll = 0.0
 		self.settings_content_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.settings_scale_preview_value: float | None = None
+		# Title of the settings slider the mouse is dragging, so it keeps
+		# following the pointer once that leaves the slider's own row
+		self.settings_slider_held: str | None = None
 		# True until the first card of the settings category being rendered
 		# has drawn its accent bar; only that card gets one (see
 		# draw_settings_section / render_settings_category)
@@ -28751,7 +28754,19 @@ class Over:
 
 		hit_rect = grow_rect((slider_x, slider_y - round(10 * self.gui.scale), slider_w, round(20 * self.gui.scale)), round(4 * self.gui.scale))
 		self.fields.add(hit_rect)
-		if self.coll(hit_rect) and self.inp.mouse_down:
+		# A drag that started on this slider keeps it: the pointer wanders off
+		# a track this thin almost immediately, and the value should follow it
+		# out there rather than stop dead
+		held = self.settings_slider_held == title
+		if not self.inp.mouse_down:
+			if held:
+				self.settings_slider_held = None
+			held = False
+		elif not held and self.settings_slider_held is None and coll_point(self.inp.click_location, hit_rect):
+			self.settings_slider_held = title
+			held = True
+		if held:
+			self.gui.request_frame()
 			portion = (self.inp.mouse_position[0] - slider_x) / max(slider_w, 1)
 			portion = min(max(portion, 0.0), 1.0)
 			if use_log_scale:
@@ -31091,7 +31106,10 @@ class Over:
 			self.settings_scale_preview_value
 		)
 		scale_slider_rect = (inner_x, inner_y, inner_w, round(46 * gui.scale))
-		holding_scale_slider = self.inp.mouse_down and self.coll(scale_slider_rect)
+		# Matches the slider's own grab, so the readout doesn't fall back to
+		# "auto" the moment a drag wanders off the row
+		holding_scale_slider = self.inp.mouse_down and (
+			self.settings_slider_held == _("Interface scale") or self.coll(scale_slider_rect))
 		new_preview_scale = self.draw_settings_range_slider(
 			scale_slider_rect,
 			_("Interface scale"),
@@ -32981,6 +32999,10 @@ class Over:
 
 	def render(self) -> None:
 		"""Render settings through a view-local contrast palette."""
+		# A slider that goes away mid-drag (its row hidden, or disabled) never
+		# sees the button come back up, so let go here too
+		if not self.inp.mouse_down:
+			self.settings_slider_held = None
 		theme_colours = self.colours
 		self.colours = self.settings_render_colours()
 		try:
