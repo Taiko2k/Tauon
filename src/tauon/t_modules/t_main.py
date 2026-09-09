@@ -238,6 +238,7 @@ from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E4
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
 from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
+from tauon.t_modules.t_windows_blur import WindowsBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
 	authserve,
@@ -6992,6 +6993,7 @@ class Tauon:
 		# each frame, so setting changes need not notify it
 		self.wayland_blur: WaylandBlur                   = WaylandBlur(self)
 		self.macos_blur: MacOSBlur                       = MacOSBlur(self)
+		self.windows_blur: WindowsBlur                   = WindowsBlur(self)
 		self.snap_mode: bool                            = bag.snap_mode
 		self.flatpak_mode: bool                         = bag.flatpak_mode
 		self.core_use: int                        = 0
@@ -62442,6 +62444,7 @@ def main(holder: Holder) -> None:
 			tauon.render_rounded_corners()
 			tauon.wayland_blur.sync()
 			tauon.macos_blur.sync()
+			tauon.windows_blur.sync()
 			sdl3.SDL_RenderPresent(renderer)
 
 			gui.present = False
@@ -62505,6 +62508,7 @@ def main(holder: Holder) -> None:
 
 	tauon.wayland_blur.shutdown()
 	tauon.macos_blur.shutdown()
+	tauon.windows_blur.shutdown()
 	sdl3.SDL_DestroyWindow(t_window)
 
 	pctl.playerCommand = "unload"
