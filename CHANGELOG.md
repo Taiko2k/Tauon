@@ -2,9 +2,11 @@
 Changelog
 ---------
 
-### v12.0.1
+### v12.1.0
 
  - Added animated cover art support (GIF, APNG and JPEG XL)
+ - Added Wayland blur support
+ - Reworked glass mode
  - Fixed discord song text
  - Tweaked header bar in custom mode
 

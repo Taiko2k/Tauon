@@ -1754,6 +1754,14 @@ class ColoursClass:
 		"folder_line",
 	)
 
+	# How opaque the tracklist and its neighbours are held at full darkness:
+	# enough fill for the theme's row colours to read over whatever the desktop
+	# is showing, while still visibly glass
+	transparency_dark_panel_alpha = 240
+	# Past this much darkness the fill carries the rows on its own, so their
+	# text is left as the theme drew it
+	transparency_darkness_lift_limit = 0.5
+
 	# Shared by both window-transparency styles: themes routinely point several
 	# panel names at one colour object (lyrics defaults to the side panel's), so
 	# differing values would leak through the alias and look more opaque in one
@@ -1840,33 +1848,49 @@ class ColoursClass:
 	# the lift has to work on what that alpha actually paints
 	transparency_solid_alpha = 200
 
-	def apply_transparency(self, full: bool = False) -> None:
+	def apply_transparency(self, darkness: float = 0.0, intensity: float = 1.0) -> None:
 		"""Translucent panel fills for compositor window transparency.
 
-		Accent mode leaves the tracklist area opaque; full mode makes every
-		panel see-through. Both use the same alphas, so the styles differ in
-		which panels are translucent, not in how translucent they are."""
-		self.top_panel_background.a = 140
-		self.side_panel_background.a = self.transparency_panel_alpha
-		self.art_box.a = 100
-		self.window_frame.a = 100
-		self.bottom_panel_colour.a = 200
+		Every panel is made see-through; `darkness` (0-1) holds the tracklist
+		fill progressively closer to opaque, so rows stay readable over a busy
+		desktop, and `intensity` scales how far off opaque the whole lot sits
+		(1.0 being the default look)."""
+		self.top_panel_background.a = self.scale_transparency(140, intensity)
+		self.side_panel_background.a = self.scale_transparency(self.transparency_panel_alpha, intensity)
+		self.art_box.a = self.scale_transparency(100, intensity)
+		self.window_frame.a = self.scale_transparency(100, intensity)
+		self.bottom_panel_colour.a = self.scale_transparency(200, intensity)
 
-		if full:
-			# Don't write through an alias into a panel set above
-			fixed = (self.top_panel_background, self.art_box, self.window_frame, self.bottom_panel_colour)
-			for name in (
-				"playlist_panel_background",
-				"gallery_background",
-				"queue_background",
-				"playlist_box_background",
-				"lyrics_panel_background",
-			):
-				c = getattr(self, name, None)
-				if c is not None and not any(c is panel for panel in fixed):
-					c.a = self.transparency_panel_alpha
+		darkness = min(max(darkness, 0.0), 1.0)
+		tracklist_alpha = self.scale_transparency(
+			round(self.transparency_panel_alpha
+				+ (self.transparency_dark_panel_alpha - self.transparency_panel_alpha) * darkness),
+			intensity)
+		# Don't write through an alias into a panel set above. The side panel
+		# matters most: themes routinely point the queue, playlist box and
+		# lyrics panel at its colour object, and those are not the tracklist
+		fixed = (
+			self.top_panel_background, self.art_box, self.window_frame,
+			self.bottom_panel_colour, self.side_panel_background)
+		for name in (
+			"playlist_panel_background",
+			"gallery_background",
+			"queue_background",
+			"playlist_box_background",
+			"lyrics_panel_background",
+		):
+			c = getattr(self, name, None)
+			if c is not None and not any(c is panel for panel in fixed):
+				c.a = tracklist_alpha
 
-		self.lift_transparency_contents(full)
+		# A darkened tracklist keeps enough of its own fill to carry the theme's
+		# row colours; only a see-through one needs its text lifted
+		self.lift_transparency_contents(darkness < self.transparency_darkness_lift_limit)
+
+	@staticmethod
+	def scale_transparency(alpha: int, intensity: float) -> int:
+		"""Scale how far `alpha` sits off opaque, keeping it in range."""
+		return max(0, min(255, 255 - round((255 - alpha) * intensity)))
 
 	def as_glass(self, colour: ColourRGBA, panel: ColourRGBA, style: tuple) -> ColourRGBA:
 		"""Repaint an opaque colour as a brighter, translucent one that blends
@@ -1891,17 +1915,16 @@ class ColoursClass:
 		out = hls_to_rgb(hue, bright, sat)
 		return ColourRGBA(out.r, out.g, out.b, alpha)
 
-	def lift_transparency_contents(self, full: bool) -> None:
+	def lift_transparency_contents(self, see_through_tracklist: bool) -> None:
 		"""Raise the lightness of icons and text sitting on see-through panels.
 
 		Each group is only lifted where its own panel is dark, since a light
 		theme wants its dark foreground kept, and by how much depends on what
 		kind of thing it is (see transparency_content_styles). Anything not
-		being lifted is put back to the theme's own colour, so switching
-		between the styles doesn't leave the tracklist carrying full mode's
-		lift."""
+		being lifted is put back to the theme's own colour, so turning the
+		darker tracklist back on doesn't leave its rows carrying the lift."""
 		groups = self.transparency_panel_contents
-		if full:
+		if see_through_tracklist:
 			groups += self.transparency_tracklist_contents
 		# Snapshot every colour before lifting any of them: themes alias these
 		# names freely, and a base taken after a shared object was lifted would
@@ -15000,7 +15023,9 @@ class Tauon:
 		# The window-transparency styles set their own panel alphas at theme
 		# (re)load; don't clobber them back to opaque here
 		if not prefs.art_bg and prefs.transparent_mode:
-			colours.apply_transparency(full=prefs.transparent_mode == 2)
+			colours.apply_transparency(
+				darkness=prefs.transparency_tracklist_darkness,
+				intensity=prefs.transparency_intensity)
 
 		# -----
 
@@ -20288,28 +20313,20 @@ class Tauon:
 		self.prefs.transparent_mode = level
 		# Theme reload applies the transparency alphas, or restores the
 		# theme's own opaque ones when turning it back off
+		self.refresh_transparency()
+
+	def toggle_glass_mode(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.transparent_mode)
+		self._set_transparency(0 if self.prefs.transparent_mode else 1)
+		return None
+
+	def refresh_transparency(self) -> None:
+		"""Re-apply the glass alphas after one of their inputs changed."""
 		self.gui.reload_theme = True
 		self.gui.update_layout = True
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
-
-	def set_transparency_off(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return not self.prefs.transparent_mode
-		self._set_transparency(0)
-		return None
-
-	def set_transparency_accent(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.transparent_mode == 1
-		self._set_transparency(1)
-		return None
-
-	def set_transparency_full(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.transparent_mode == 2
-		self._set_transparency(2)
-		return None
 
 	def _set_art_bg(self, frosted: bool, stronger: int, fanart: bool = False) -> None:
 		# Leaving the other background styles
@@ -24980,7 +24997,9 @@ class AlbumArt:
 				else:
 					apply_art_theme(colours, im)
 				if self.prefs.transparent_mode:
-					colours.apply_transparency(full=self.prefs.transparent_mode == 2)
+					colours.apply_transparency(
+						darkness=self.prefs.transparency_tracklist_darkness,
+						intensity=self.prefs.transparency_intensity)
 				colours.base_alpha = {}
 				for name in colours.art_bg_panel_colours + colours.art_bg_element_colours:
 					colour = getattr(colours, name, None)
@@ -28310,7 +28329,9 @@ class Over:
 	def apply_theme_preview_colours(self, source: ColoursClass) -> None:
 		preview = clone_theme_colours(source)
 		if self.prefs.transparent_mode:
-			preview.apply_transparency(full=self.prefs.transparent_mode == 2)
+			preview.apply_transparency(
+				darkness=self.prefs.transparency_tracklist_darkness,
+				intensity=self.prefs.transparency_intensity)
 		theme_colours = self.tauon.colours
 		theme_colours.__dict__.clear()
 		theme_colours.__dict__.update(copy.deepcopy(preview.__dict__))
@@ -28653,6 +28674,7 @@ class Over:
 		callback=None,
 		log_scale: bool = False,
 		disabled: bool = False,
+		notch: float | None = None,
 	) -> float:
 		if accent is None:
 			accent = self.settings_page_accent()
@@ -28711,6 +28733,15 @@ class Over:
 
 		self.ddt.rect(slider_rect, self.settings_overlay(border, 20))
 		self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
+		if notch is not None and max_value > min_value:
+			# A tick at the default, so the value it was tuned around is
+			# findable again by eye
+			notch_ratio = min(max((notch - min_value) / (max_value - min_value), 0.0), 1.0)
+			notch_h = round(6 * self.gui.scale)
+			self.ddt.rect(
+				(slider_x + round(slider_w * notch_ratio), slider_y - notch_h - round(2 * self.gui.scale),
+					max(1, round(1 * self.gui.scale)), notch_h),
+				self.settings_overlay(border, 60))
 		self.ddt.rect(grip_rect, accent)
 
 		if disabled:
@@ -30760,16 +30791,22 @@ class Over:
 		preset_columns = max(1, min(theme_count, (card_inner_w + preset_gap) // max(preset_w + preset_gap, 1)))
 		preset_rows = max(1, math.ceil(theme_count / preset_columns))
 		preset_grid_h = preset_rows * preset_h + max(0, preset_rows - 1) * preset_gap
+		switch_h = round(34 * gui.scale)
+		slider_h = round(46 * gui.scale)
 		# Window transparency only applies to the two non-art background
-		# styles; its switcher is hidden (and forced off) for the others
+		# styles; its controls are hidden (and forced off) for the others,
+		# and the two that shape the glass only appear once it is on
 		show_transparency = not prefs.art_bg
+		show_glass_options = show_transparency and bool(prefs.transparent_mode)
 		# Preset grid, action buttons, then the Background Style bar (and the
-		# Window Transparency bar when it applies) at the bottom
+		# glass mode controls when they apply) at the bottom
 		card_h = (
 			round(132 * gui.scale) + preset_grid_h + row_gap * 3 + action_h
 			+ style_label_h + style_bar_h)
 		if show_transparency:
-			card_h += row_gap + style_label_h + style_bar_h
+			card_h += row_gap + style_label_h + switch_h
+			if show_glass_options:
+				card_h += (row_gap + slider_h) * 2
 		card_rect = (x, y, w, card_h)
 		if not draw:
 			return card_rect[3]
@@ -30857,8 +30894,14 @@ class Over:
 
 		style_bar_y = card_rect[1] + card_rect[3] - round(14 * gui.scale) - style_bar_h
 		if show_transparency:
-			glass_bar_y = style_bar_y
-			glass_label_y = glass_bar_y - style_label_h
+			glass_bottom = style_bar_y + style_bar_h
+			if show_glass_options:
+				glass_dark_y = glass_bottom - slider_h
+				glass_intensity_y = glass_dark_y - row_gap - slider_h
+				glass_switch_y = glass_intensity_y - row_gap - switch_h
+			else:
+				glass_switch_y = glass_bottom - switch_h
+			glass_label_y = glass_switch_y - style_label_h
 			style_bar_y = glass_label_y - row_gap - style_bar_h
 		style_label_y = style_bar_y - style_label_h
 		action_y = style_label_y - row_gap - action_h
@@ -30906,19 +30949,46 @@ class Over:
 		)
 
 		# Window transparency is picked separately, and combines with either
-		# of the two non-art background styles
+		# of the two non-art background styles. Its controls are narrow: they
+		# are settings for the window rather than another choice of style, and
+		# a full-width switch alongside the style bar reads as one.
 		if show_transparency:
+			glass_w = max(round(220 * gui.scale), inner_w // 2)
 			self.ddt.text((inner_x, glass_label_y), _("Window Transparency"), self.colours.box_text_label, 11)
-			self.settings_segmented_bar(
-				(inner_x, glass_bar_y),
-				(
-					(_("Off"), self.tauon.set_transparency_off(1), self.tauon.set_transparency_off),
-					(_("Accents"), self.tauon.set_transparency_accent(1), self.tauon.set_transparency_accent),
-					(_("Full"), self.tauon.set_transparency_full(1), self.tauon.set_transparency_full),
-				),
-				accent,
-				width=inner_w,
+			self.settings_switch_row(
+				(inner_x, glass_switch_y, glass_w, switch_h),
+				self.tauon.toggle_glass_mode,
+				_("Glass mode"),
+				accent=accent,
 			)
+			if show_glass_options:
+				new_intensity = self.draw_settings_range_slider(
+					(inner_x, glass_intensity_y, glass_w, slider_h),
+					_("Adjust intensity"),
+					prefs.transparency_intensity,
+					0.5,
+					1.5,
+					0.05,
+					accent=accent,
+					formatter=lambda value: f"{round(value * 100)}%",
+					notch=1.0,
+				)
+				if abs(new_intensity - prefs.transparency_intensity) > 0.001:
+					prefs.transparency_intensity = new_intensity
+					self.tauon.refresh_transparency()
+				new_darkness = self.draw_settings_range_slider(
+					(inner_x, glass_dark_y, glass_w, slider_h),
+					_("Darken tracklist"),
+					prefs.transparency_tracklist_darkness,
+					0.0,
+					1.0,
+					0.05,
+					accent=accent,
+					formatter=lambda value: f"{round(value * 100)}%",
+				)
+				if abs(new_darkness - prefs.transparency_tracklist_darkness) > 0.001:
+					prefs.transparency_tracklist_darkness = new_darkness
+					self.tauon.refresh_transparency()
 
 		return card_rect[3]
 
@@ -38329,6 +38399,14 @@ class StandardPlaylist:
 			cy += cut
 			ch -= cut
 		r = sdl3.SDL_FRect(round(cx), round(cy), round(cw), round(ch))
+		# The texture already carries the tracklist's own translucent panel
+		# fill. Custom Layout paints a base fill across the window before the
+		# widgets draw, so blending over it would stack a second layer and the
+		# tracklist would read darker there than in the preset layouts; clear
+		# the region so both end up with the one fill. (Not over an art
+		# background, where the art below is meant to show through.)
+		if self.prefs.transparent_mode and not gui.have_art_bg:
+			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, r, r)
 
 	def cache_render(self) -> None:
@@ -50446,6 +50524,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
+	cf.update_value("transparency-intensity", prefs.transparency_intensity)
 	cf.update_value("rounded-corners", prefs.rounded_corners)
 	cf.update_value("rounded-corner-radius", prefs.corner_radius)
 	cf.update_value("mac-style", prefs.macstyle)
@@ -50735,7 +50815,17 @@ def load_prefs(bag: Bag) -> None:
 	cf.add_text("[ui]")
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
-	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=opaque(default), 1=accents, 2=full")
+	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
+	prefs.transparency_tracklist_darkness = cf.sync_add(
+		"float", "transparency-tracklist-darkness", prefs.transparency_tracklist_darkness,
+		"How much heavier than the other glass panels the tracklist fill is, 0 to 1")
+	prefs.transparency_intensity = cf.sync_add(
+		"float", "transparency-intensity", prefs.transparency_intensity,
+		"Scales how far off opaque the glass panels sit, 0.5 to 1.5")
+	# The setting used to be a three-way choice, so an old config can hold a 2
+	prefs.transparent_mode = 1 if prefs.transparent_mode else 0
+	prefs.transparency_intensity = max(0.5, min(1.5, prefs.transparency_intensity))
+	prefs.transparency_tracklist_darkness = max(0.0, min(1.0, prefs.transparency_tracklist_darkness))
 	if first_run and prefs.macos:
 		# Round by default on macOS where every other window has rounded corners
 		prefs.rounded_corners = True
@@ -59330,7 +59420,9 @@ def main(holder: Holder) -> None:
 				tauon.deco.unload()
 
 			if prefs.transparent_mode:
-				colours.apply_transparency(full=prefs.transparent_mode == 2)
+				colours.apply_transparency(
+				darkness=prefs.transparency_tracklist_darkness,
+				intensity=prefs.transparency_intensity)
 
 			prefs.theme_name = gui.theme_name
 

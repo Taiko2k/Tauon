@@ -306,6 +306,11 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
+	# How much heavier than the other panels the tracklist fill is held, so a
+	# busy desktop doesn't read through the rows. 0 keeps it in line with them
+	transparency_tracklist_darkness: float = 0.0
+	# Scales how far every glass panel is held off opaque; 1.0 is the default
+	transparency_intensity: float = 1.0
 	rounded_corners: bool = False
 	corner_radius: int = 10
 	left_panel_mode = "playlist"
