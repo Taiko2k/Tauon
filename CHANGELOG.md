@@ -6,6 +6,7 @@ Changelog
 
  - Added animated cover art support (GIF, APNG and JPEG XL)
  - Added Wayland blur support
+ - Added macOS blur support
  - Reworked glass mode
  - Fixed discord song text
  - Tweaked header bar in custom mode
