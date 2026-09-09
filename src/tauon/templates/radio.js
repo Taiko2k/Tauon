@@ -36,7 +36,8 @@ setServerIcons(mode=0);
 vol_slider = document.getElementById("vol-slider");
 
 function volChange() {
-    sound.volume = vol_slider.value / 100;
+    // Don't use linear volume: https://www.dr-lex.be/info-stuff/implement-a-volume-control.html
+    sound.volume = Math.pow(vol_slider.value / 100, 1.7)
 }
 
 vol_slider.addEventListener("input", volChange, false);
