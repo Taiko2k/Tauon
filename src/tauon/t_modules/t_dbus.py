@@ -334,6 +334,7 @@ class Gnome:
 		self.bus_object = None
 		self.tauon: Tauon = tauon
 		self.resume_playback: bool = False
+		self.mainloop: GLib.MainLoop | None = None
 
 	def focus(self) -> None:
 		if self.bus_object is not None:
@@ -467,5 +468,5 @@ class Gnome:
 			except Exception:
 				logging.exception("MPRIS2 CONNECT FAILED")
 
-		mainloop = GLib.MainLoop()
-		mainloop.run()
+		self.mainloop = GLib.MainLoop()
+		self.mainloop.run()

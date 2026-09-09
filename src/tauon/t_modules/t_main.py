@@ -7178,6 +7178,7 @@ class Tauon:
 		self.art_box:                             ArtBox = ArtBox(tauon=self)
 		self.nagbox:                              NagBox = NagBox(tauon=self)
 
+		self.gnome_thread: threading.Thread | None = None
 		if not self.macos and not self.windows:
 			self.gnome = Gnome(tauon=self)
 
@@ -54433,9 +54434,9 @@ def main(holder: Holder) -> None:
 
 	if not macos and not tauon.windows:
 		try:
-			gnome_thread = threading.Thread(target=tauon.gnome.main)
-			gnome_thread.daemon = True
-			gnome_thread.start()
+			tauon.gnome_thread = threading.Thread(target=tauon.gnome.main)
+			tauon.gnome_thread.daemon = True
+			tauon.gnome_thread.start()
 		except Exception:
 			logging.exception("Could not start Dbus thread")
 
@@ -62590,6 +62591,17 @@ def main(holder: Holder) -> None:
 
 	# sdl3.IMG_Quit()
 	# sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
+	if getattr(tauon, "gnome", None) is not None and tauon.gnome.mainloop is not None:
+		GLib.idle_add(tauon.gnome.mainloop.quit)
+		if tauon.gnome_thread is not None:
+			tauon.gnome_thread.join(timeout=2)
+
+			if tauon.gnome_thread.is_alive():
+				logging.warning("Dbus thread did not stop within 2s")
+
+	if tauon.sdl_tray is not None:
+		tauon.destroy_sdl_tray()
+
 	sdl3.SDL_Quit()
 	# logging.info("SDL unloaded")
 
