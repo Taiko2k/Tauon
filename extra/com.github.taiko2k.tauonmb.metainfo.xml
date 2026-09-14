@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Copyright 2019 Taiko2k captain.gxj@gmail.com -->
+<!-- Copyright 2019-2026 Taiko2k captain.gxj@gmail.com -->
 <component type="desktop-application">
   <id>com.github.taiko2k.tauonmb</id>
   <name>Tauon</name>
@@ -7,23 +7,31 @@
     <name>Taiko2k</name>
   </developer>
   <summary>Play your music with style</summary>
+  <summary xml:lang="ja">音楽をスタイリッシュに再生</summary>
+  <summary xml:lang="de">Spiele deine Musik mit Stil</summary>
+  <summary xml:lang="pt_BR">Reproduza suas músicas com estilo</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>GPL-3.0+</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/Tauon/issues</url>
   <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
   <url type="help">https://tauonmusicbox.rocks/#manual</url>
-  <icon type="remote" height="256" width="256">https://github.com/Taiko2k/Tauon/assets/17271572/c975e54a-5db1-4007-bab5-e6d14603822d</icon>
+  <url type="donation">https://github.com/sponsors/Taiko2k</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#aa94c4</color>
     <color type="primary" scheme_preference="dark">#7b20c3</color>
   </branding>
 
-  <recommends>
-    <control>keyboard</control>
+  <supports>
     <control>pointing</control>
+    <control>keyboard</control>
+  </supports>
+
+  <recommends>
+    <!-- The main window enforces a 560x330 logical-pixel minimum -->
+    <display_length compare="ge">560</display_length>
   </recommends>
 
   <description>
@@ -44,10 +52,39 @@
     </ul>
   </description>
 
+  <provides>
+    <mediatype>application/ogg</mediatype>
+    <mediatype>audio/x-vorbis+ogg</mediatype>
+    <mediatype>application/x-ogg</mediatype>
+    <mediatype>audio/ogg</mediatype>
+    <mediatype>audio/x-ogg</mediatype>
+    <mediatype>audio/x-opus+ogg</mediatype>
+    <mediatype>audio/flac</mediatype>
+    <mediatype>audio/x-flac</mediatype>
+    <mediatype>application/flac</mediatype>
+    <mediatype>audio/wav</mediatype>
+    <mediatype>audio/x-wav</mediatype>
+    <mediatype>audio/tta</mediatype>
+    <mediatype>audio/x-tta</mediatype>
+    <mediatype>audio/mpeg</mediatype>
+    <mediatype>audio/mp3</mediatype>
+    <mediatype>audio/x-mp3</mediatype>
+    <mediatype>audio/m4a</mediatype>
+    <mediatype>audio/x-m4a</mediatype>
+    <mediatype>audio/ape</mediatype>
+    <mediatype>audio/x-ape</mediatype>
+    <mediatype>x-content/audio-player</mediatype>
+    <mediatype>audio/scpls</mediatype>
+    <mediatype>audio/x-scpls</mediatype>
+    <mediatype>audio/x-pls</mediatype>
+    <mediatype>audio/m3u</mediatype>
+    <mediatype>application/xspf+xml</mediatype>
+  </provides>
+
   <screenshots>
 
     <screenshot type="default">
-      <image type="source">https://github.com/Taiko2k/Tauon/assets/17271572/99125a5e-90c0-435e-9c11-943fa95093ae</image>
+      <image type="source" width="1120" height="600">https://github.com/Taiko2k/Tauon/assets/17271572/99125a5e-90c0-435e-9c11-943fa95093ae</image>
       <caption>Main player layout with track list and album art</caption>
     </screenshot>
 
@@ -84,11 +121,6 @@
   <translation type="gettext">tauon</translation>
 
   <content_rating type="oars-1.1" />
-
-  <kudos>
-    <kudo>Notifications</kudo>
-    <kudo>HiDpiIcon</kudo>
-  </kudos>
 
   <update_contact>captain.gxj_AT_gmail.com</update_contact>
 

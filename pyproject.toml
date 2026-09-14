@@ -2,7 +2,7 @@
 	name = "tauon-music-box"
 	# Should also be bumped in:
 	# * __main__.py
-	# * extra/com.github.taiko2k.tauonmb.appdata.xml for Flatpak
+	# * extra/com.github.taiko2k.tauonmb.metainfo.xml for Flatpak
 	version = "12.0.0"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
