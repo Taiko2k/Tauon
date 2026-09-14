@@ -3433,7 +3433,10 @@ class PlayerCtl:
 	def set_volume(self, notify: bool = True) -> None:
 		self.volume_update_timer.set()
 
-		if self.playerCommandReady:
+		if not self.playerCommandReady:
+			self.playerCommand = "volume"
+			self.playerCommandReady = True
+		elif self.playerCommand != "volume":
 			# send vol command later if command busy. Solution not great.
 			def govol() -> None:
 				time.sleep(1)
@@ -3445,9 +3448,12 @@ class PlayerCtl:
 					self.playerCommand = "volume"
 					self.playerCommandReady = True
 			shooter(govol)
-		else:
-			self.playerCommand = "volume"
-			self.playerCommandReady = True
+		# A queued "volume" command reads player_volume when the player runs
+		# it, so it picks up this change too and there is nothing to defer.
+		# Dragging the volume bar calls this every frame, and spawning a
+		# retry thread each time flooded the player with volume commands for
+		# seconds after the drag had ended.
+
 		if notify:
 			self.refresh_now_playing()
 

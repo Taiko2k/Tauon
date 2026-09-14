@@ -1527,6 +1527,19 @@ def player4(tauon: Tauon) -> None:
 		if tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM):
 			run_vis()
 
+		# Volume is handled before the command branch for the same reason the
+		# visualisers are: dragging the volume bar queues a "volume" command
+		# every frame, and taking the command branch for each of them means
+		# the playback branch below never runs, so track() never advances
+		# pctl.playing_time. The seek bar froze while the bar was held, and
+		# since track() clamps a catch-up to 2s (and only resyncs to the real
+		# position when it is out by less than 5s) the lost time was never
+		# made up — the position stayed wrong for the rest of the track.
+		if pctl.playerCommandReady and pctl.playerCommand == "volume":
+			pctl.playerCommand = ""
+			pctl.playerCommandReady = False
+			aud.ramp_volume(int(pctl.player_volume), 750)
+
 		# Command processing
 		if pctl.playerCommandReady:
 			command = pctl.playerCommand
@@ -2122,8 +2135,7 @@ def player4(tauon: Tauon) -> None:
 				wall_timer.set()
 				player_timer.set()
 
-			if command == "volume":
-				aud.ramp_volume(int(pctl.player_volume), 750)
+			# "volume" is consumed before the command branch, see above.
 
 			if command == "seteq":
 				apply_eq_settings()
