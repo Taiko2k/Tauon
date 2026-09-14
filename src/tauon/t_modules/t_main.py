@@ -28396,12 +28396,20 @@ class Over:
 		self.sync_theme_editor_controls_from_current_colour()
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
+	def resume_theme_editor(self) -> None:
+		self.enabled = True
+		self.theme_editor_enabled = True
+		self.tauon.fader.fall()
+		self.sync_theme_editor_controls_from_current_colour()
+		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
+
 	def clear_theme_editor_state(self) -> None:
 		self.theme_editor_enabled = False
-		self.theme_editor_draft_colours = None
-		self.theme_editor_original_colours = None
-		self.theme_editor_target_path = None
-		self.theme_editor_dirty = False
+		# Unsaved edits are kept so reopening the editor on the same theme resumes them
+		if not self.theme_editor_dirty:
+			self.theme_editor_draft_colours = None
+			self.theme_editor_original_colours = None
+			self.theme_editor_target_path = None
 		self.theme_editor_drag_target = None
 		self.theme_editor_window_position = None
 		self.theme_editor_hue_value = 0.0
@@ -28417,6 +28425,9 @@ class Over:
 				_("Create a new theme first to edit a copy of the active look."),
 				mode="warning",
 			)
+			return
+		if self.theme_editor_dirty and self.theme_editor_target_path == self.active_theme_path():
+			self.resume_theme_editor()
 			return
 		self.begin_theme_editor(self.gui.theme_name, self.active_theme_path(), is_new=False)
 
