@@ -41,6 +41,9 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
 
+# Some broken servers send invalid JSON with control chars, see https://github.com/Taiko2k/Tauon/issues/1112
+CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+
 
 class SubsonicService:
 	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
@@ -66,6 +69,146 @@ class SubsonicService:
 		if isinstance(value, list):
 			return value
 		return [value]
+
+	def _request_json(self, point: str, p: dict[str, str] | None = None) -> tuple[int, dict | None]:
+		"""Make a request, returning the HTTP status alongside the decoded body.
+
+		Unlike r(), this reports the status code and never shows the user an error, so callers can
+		tell a missing endpoint or a rate limit apart from a server that's actually broken.
+		"""
+		url, params = self.r(point, p=p, get_url=True)
+		response = requests.get(url, params=params, timeout=10)
+		try:
+			return response.status_code, json.loads(CONTROL_CHAR_RE.sub("", response.text))
+		except json.decoder.JSONDecodeError:
+			return response.status_code, None
+
+	def _endpoint_exists(self, point: str, p: dict[str, str] | None = None) -> bool:
+		"""Test whether the server implements an endpoint. Servers that don't route it return 404."""
+		try:
+			status, _d = self._request_json(point, p=p)
+		except Exception:
+			# Assume it exists so a transient failure gets reported by the normal path instead
+			logging.exception(f"Error probing Subsonic endpoint {point}")
+			return True
+		return status != 404
+
+	def _throttle_delay(self, status: int, d: dict | None) -> float | None:
+		"""Seconds to wait before retrying a throttled request, or None if this wasn't a throttle."""
+		if status != 429:
+			return None
+		detail = ""
+		if isinstance(d, dict):
+			detail = str(d.get("detail", ""))
+		match = re.search(r"(\d+)\s*second", detail)
+		if match:
+			# Honour what the server actually asked for, capping only absurd values. Retrying sooner
+			# than this just earns another 429, so the caller gives up rather than polling.
+			return min(float(match.group(1)) + 1, 3600)
+		return 10.0
+
+	def _request_with_retry(
+		self,
+		point: str,
+		p: dict[str, str] | None = None,
+		attempts: int = 4,
+		budget: float = 120.0,
+	) -> tuple[int, dict | None] | None:
+		"""Request an endpoint, waiting out rate limits within a bounded budget.
+
+		Returns None once the server has throttled us past that budget, so callers report a failure
+		instead of blocking the scan indefinitely.
+		"""
+		waited = 0.0
+
+		for attempt in range(attempts):
+			status, d = self._request_json(point, p=p)
+			delay = self._throttle_delay(status, d)
+			if delay is None:
+				return status, d
+
+			if attempt == attempts - 1 or waited + delay > budget:
+				break
+
+			logging.info(f"Rate limited on {point}, waiting {delay}s")
+			time.sleep(delay)
+			waited += delay
+
+		logging.error(f"Giving up on {point}, rate limited after waiting {waited}s")
+		return None
+
+	def _list_albums(self) -> list[tuple[str, str]]:
+		"""Page through every album on the server via getAlbumList2.
+
+		Used in place of folder browsing on servers without getMusicDirectory.
+		"""
+		albums: list[tuple[str, str]] = []
+		seen: set[str] = set()
+		duplicates = 0
+		offset = 0
+		size = 500  # The Subsonic spec caps a single page at 500
+
+		while True:
+			# Everything here is guarded, as escaping this would leave the scan flag stuck on
+			try:
+				result = self._request_with_retry(
+					"getAlbumList2", p={"type": "alphabeticalByName", "size": size, "offset": offset},
+				)
+				if result is None:
+					self.show_message(
+						_("Error listing albums from Subsonic server"), "Rate limited", mode="error")
+					return albums
+
+				_status, d = result
+				if not d or "subsonic-response" not in d:
+					logging.error(f"Invalid response from Subsonic getAlbumList2: {d}")
+					self.show_message(_("Error listing albums from Subsonic server"), mode="error")
+					return albums
+
+				subsonic_response = d["subsonic-response"]
+				if subsonic_response.get("status") != "ok":
+					logging.error(f"Subsonic getAlbumList2 failed: {subsonic_response.get('error')}")
+					self.show_message(_("Error listing albums from Subsonic server"), mode="error")
+					return albums
+
+				# A missing key is a legitimately empty library, but the wrong type is a broken
+				# server. Don't quietly turn that into an empty playlist.
+				album_list = subsonic_response.get("albumList2", {})
+				if not isinstance(album_list, dict):
+					logging.error(f"Unexpected albumList2 from Subsonic server: {album_list!r}")
+					self.show_message(_("Error listing albums from Subsonic server"), mode="error")
+					return albums
+
+				page = self._as_list(album_list.get("album"))
+
+				for album in page:
+					if not isinstance(album, dict):
+						logging.warning(f"Skipping malformed album entry from Subsonic server: {album!r}")
+						continue
+					album_id = album.get("id")
+					if album_id is None:
+						continue
+					# Servers page this by a non unique sort key, so the same album can come back on
+					# two pages. Taking it twice would import every one of its tracks twice.
+					if album_id in seen:
+						duplicates += 1
+						continue
+					seen.add(album_id)
+					albums.append((album_id, album.get("name", "")))
+
+				if len(page) < size:
+					break
+				offset += size
+			except Exception:
+				logging.exception("Error listing albums from Subsonic server")
+				self.show_message(_("Error listing albums from Subsonic server"), mode="error")
+				return albums
+
+		if duplicates:
+			# Paging shifted under us, so some albums may equally have been skipped
+			logging.warning(f"Subsonic server returned {duplicates} duplicate albums while paging")
+
+		return albums
 
 	def r(
 		self,
@@ -431,6 +574,14 @@ class SubsonicService:
 					)
 				)
 
+		# Some servers (notably Funkwhale) don't implement the folder browsing endpoints at all, as a
+		# folder hierarchy doesn't match how they store music. Walk albums by tag instead on those.
+		# https://github.com/Taiko2k/Tauon/issues/2336
+		tag_mode = bool(folders) and not self._endpoint_exists("getMusicDirectory", p={"id": folders[0][0]})
+		if tag_mode:
+			logging.info("Server has no getMusicDirectory, falling back to scanning albums by tag")
+			folders = self._list_albums()
+
 		playlist: list[int] = []
 		songsets: list[tuple[TrackClass, str, str, int]] = []
 		for i in range(len(folders)):
@@ -531,6 +682,93 @@ class SubsonicService:
 				return
 			statuses[index] = 2
 
+		failed_albums: list[str] = []
+		failed_albums_lock = threading.Lock()
+
+		def album_failed(album_id: str) -> None:
+			"""Warn once that the import is incomplete, rather than quietly dropping albums."""
+			with failed_albums_lock:
+				first = not failed_albums
+				failed_albums.append(album_id)
+			if first:
+				self.show_message(
+					_("Some albums could not be read from the server"),
+					"See console log for more details",
+					mode="warning",
+				)
+
+		def getalbum(index: int, album_id: str, name: str) -> None:
+			"""Fetch one album's tracks by tag, for servers without folder browsing."""
+			try:
+				result = self._request_with_retry("getAlbum", p={"id": album_id})
+				if result is None:
+					logging.error(f"Gave up reading album {album_id!r}, server kept rate limiting us")
+					album_failed(album_id)
+					return
+
+				_status, d = result
+				if not d or "album" not in d.get("subsonic-response", {}):
+					logging.error(f"Failed to read album {album_id!r} from Subsonic server: {d}")
+					album_failed(album_id)
+					return
+
+				album = d["subsonic-response"]["album"]
+				album_artist = album.get("artist", "")
+				# Only albums carry genres here, tracks don't, so every track takes the album's
+				genre_names = [
+					g["name"] for g in self._as_list(album.get("genres"))
+					if isinstance(g, dict) and g.get("name")
+				]
+
+				self.gui.request_frame()
+
+				for song in self._as_list(album.get("song")):
+					self.gui.to_got += 1
+					nt = self.tauon.TrackClass()
+
+					nt.album_artist = album_artist
+					if "title" in song:
+						nt.title = song["title"]
+					if "artist" in song:
+						nt.artist = song["artist"]
+					if "album" in song:
+						nt.album = song["album"]
+					if "track" in song:
+						nt.track_number = song["track"]
+					if "discNumber" in song:
+						nt.disc_number = song["discNumber"]
+					if "year" in song:
+						nt.date = str(song["year"])
+					if "duration" in song:
+						nt.length = song["duration"]
+					if genre_names:
+						if len(genre_names) > 1:
+							nt.genres = genre_names
+						nt.genre = " / ".join(genre_names)
+
+					nt.file_ext = "SUB"
+					nt.parent_folder_name = name
+					if "path" in song:
+						nt.fullpath = song["path"]
+						nt.parent_folder_path = os.path.dirname(song["path"])
+						nt.parent_folder_name = os.path.basename(nt.parent_folder_path) or name
+					if "coverArt" in song:
+						nt.art_url_key = song["coverArt"]
+					nt.url_key = song["id"]
+					# subsonic_folder_id is deliberately left unset. It holds a folder id, and album
+					# ids aren't interchangeable with it, so album star/rating cleanly no-op instead
+					# of acting on an unrelated item.
+					nt.is_network = True
+
+					songsets[index].append((nt, name, song["id"], 0))
+			except Exception:
+				logging.exception("Error reading album from Subsonic server")
+				album_failed(album_id)
+			finally:
+				statuses[index] = 2
+
+		fetch = getalbum if tag_mode else getsongs
+
 		i = -1
 		for folder_id, name in folders:
 			i += 1
@@ -538,7 +776,7 @@ class SubsonicService:
 				time.sleep(0.1)
 
 			statuses[i] = 1
-			t = threading.Thread(target=getsongs, args=([i, folder_id, name]))
+			t = threading.Thread(target=fetch, args=([i, folder_id, name]))
 			t.daemon = True
 			t.start()
 
