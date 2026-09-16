@@ -97,6 +97,14 @@
 
   <releases>
 
+    <release version="12.1.0" date="2026-09-17">
+      <description>
+        <ul>
+          <li>Improved glass mode</li>
+        </ul>
+      </description>
+    </release>
+    
     <release version="12.0.0" date="2026-08-25">
       <description>
         <ul>
