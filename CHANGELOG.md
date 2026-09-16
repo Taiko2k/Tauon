@@ -8,6 +8,7 @@ Changelog
  - Added Wayland blur support
  - Added macOS blur support
  - Reworked glass mode
+ - Improved subsonic compatibility
  - Fixed discord song text
  - Tweaked header bar in custom mode
 

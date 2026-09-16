@@ -1221,7 +1221,15 @@ class FeuxBar:
 	"""
 
 	PANEL_H = 66   # unscaled; the widget's default height, not a limit
-	POD1_W  = 264  # now-playing pod, at the default height
+	POD1_W  = 264  # now-playing pod, at the default height -- the drag default
+	# Drag bounds for the now-playing pod (prefs.feux_panel_pod1_w), unscaled.
+	# The floor is the default itself: the pod is already as tight as the title
+	# wants, so the drag only ever buys it more room, never takes room back off
+	# it. The ceiling keeps the transport somewhere to sit. The panel clamps to
+	# the room the segment actually has on top of these.
+	POD1_MIN_W = POD1_W
+	POD1_MAX_W = 520
+	POD1_GRAB  = 4    # unscaled; half the width of the divider's hot spot
 	ART     = 56   # art at the default height; derived from PAD in practice
 	PAD     = 5    # constant gap above and below the art -- see _art_size
 	DISC    = 38
@@ -1254,6 +1262,8 @@ class FeuxBar:
 		self.seek_drag = False
 		self.seek_value = 0.0
 		self.vol_drag = False
+		self.pod1_drag = False
+		self.pod1_grab = 0.0   # pointer offset from the divider when grabbed
 		self._on_seek = False
 		self.glint = Timer(force=100)          # expired: no glint on the first frame
 		self.glint_playing: bool | None = None
@@ -1422,8 +1432,21 @@ class FeuxBar:
 		# height, so a narrow segment still never runs the art past the line.
 		grown = art - self._s(self.ART)
 		pod1_min = self._s(110) + grown
-		pod1_w = min(self._s(self.POD1_W) + grown, max(pod1_min, w - pod3_w - self._s(250)))
+		# The divider is the user's to drag (see _drag_divider): the pod width
+		# is a preference in unscaled pixels, so it keeps its proportions
+		# across a scale change, and what it takes comes out of pod 2 -- i.e.
+		# out of the scrub bar. `room` is the most this segment can spare.
+		room = max(pod1_min, w - pod3_w - self._s(250))
+		base = min(max(tauon.prefs.feux_panel_pod1_w, self.POD1_MIN_W), self.POD1_MAX_W)
+		pod1_w = min(self._s(base) + grown, room)
 		pod2_right = w - pod3_w
+
+		# Ahead of the pod, so the grab takes the click before the title's
+		# click-through does on the sliver where the two rects meet.
+		if pod1_w > pod1_min:
+			self._drag_divider(top, h, pod1_w, grown, room)
+		else:
+			self.pod1_drag = False
 
 		self._draw_now_playing(top, h, mid, pod1_w, art, show_art, panel, back_l)
 		line_w = max(1, self._s(1))
@@ -1453,6 +1476,61 @@ class FeuxBar:
 			gui.request_frame()
 
 	# -- pods -----------------------------------------------------------
+
+	def _drag_divider(self, top: int, h: int, x: int, grown: int, room: int) -> None:
+		"""Drag the hairline at `x`, between the now-playing pod and the transport.
+
+		Dragging it moves width between the track title and the scrub bar:
+		the pod is laid out from prefs.feux_panel_pod1_w, and pod 2 is simply
+		what is left over, so everything the title gains the scrub bar loses.
+
+		The preference is unscaled, and the pointer is converted back through
+		the same terms render() used to place the divider -- `grown`, the
+		width the art took from the panel's height, then the UI scale -- so the
+		line tracks the pointer exactly and the chosen width keeps its
+		proportions if the scale later changes. It is clamped to POD1_MIN_W /
+		POD1_MAX_W and to `room`, the most this segment can spare; clamping the
+		stored value (rather than only the drawn one) is what stops a drag
+		against a narrow window from banking width that jumps out when the
+		window is widened again. Double-click restores the default.
+		"""
+		gui = self.gui
+		inp = self.inp
+		prefs = self.tauon.prefs
+
+		# The layout editor drives the real mouse itself and puts its own
+		# resize cursors up; widgets are inert while it is open.
+		if gui.custom_edit:
+			self.pod1_drag = False
+			return
+
+		grab = max(2, self._s(self.POD1_GRAB))
+		hit = (x - grab, top, grab * 2, h)
+		self.fields.add(hit)
+		over = self.coll(hit)
+		if over or self.pod1_drag:
+			gui.cursor_want = 1  # EW-resize
+		if over and inp.mouse_click:
+			if inp.d_mouse_click:
+				prefs.feux_panel_pod1_w = self.POD1_W
+				self.pod1_drag = False
+			else:
+				self.pod1_drag = True
+				self.pod1_grab = inp.mouse_position[0] - x
+			inp.mouse_click = False
+			inp.global_clicked = True
+			gui.request_frame()
+		if not self.pod1_drag:
+			return
+		if not inp.mouse_down:
+			self.pod1_drag = False
+			return
+		gui.update_on_drag = True
+		gui.request_frame()
+		low = float(self.POD1_MIN_W)
+		high = max(low, min(float(self.POD1_MAX_W), (room - grown) / gui.scale))
+		want = (inp.mouse_position[0] - self.pod1_grab - grown) / gui.scale
+		prefs.feux_panel_pod1_w = min(max(want, low), high)
 
 	def _draw_now_playing(self, top: int, h: int, mid: int, pod_w: int, art: int,
 			show_art: bool, panel: ColourRGBA, backdrop: ColourRGBA) -> None:

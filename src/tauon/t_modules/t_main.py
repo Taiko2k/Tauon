@@ -3433,7 +3433,10 @@ class PlayerCtl:
 	def set_volume(self, notify: bool = True) -> None:
 		self.volume_update_timer.set()
 
-		if self.playerCommandReady:
+		if not self.playerCommandReady:
+			self.playerCommand = "volume"
+			self.playerCommandReady = True
+		elif self.playerCommand != "volume":
 			# send vol command later if command busy. Solution not great.
 			def govol() -> None:
 				time.sleep(1)
@@ -3445,9 +3448,12 @@ class PlayerCtl:
 					self.playerCommand = "volume"
 					self.playerCommandReady = True
 			shooter(govol)
-		else:
-			self.playerCommand = "volume"
-			self.playerCommandReady = True
+		# A queued "volume" command reads player_volume when the player runs
+		# it, so it picks up this change too and there is nothing to defer.
+		# Dragging the volume bar calls this every frame, and spawning a
+		# retry thread each time flooded the player with volume commands for
+		# seconds after the drag had ended.
+
 		if notify:
 			self.refresh_now_playing()
 
@@ -19872,6 +19878,7 @@ class Tauon:
 			prefs.replay_allow_compression,  # 196
 			prefs.feux_panel,  # 197
 			prefs.feux_panel_art,  # 198
+			prefs.feux_panel_pod1_w,  # 199
 		]
 
 		try:
@@ -28390,12 +28397,20 @@ class Over:
 		self.sync_theme_editor_controls_from_current_colour()
 		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
 
+	def resume_theme_editor(self) -> None:
+		self.enabled = True
+		self.theme_editor_enabled = True
+		self.tauon.fader.fall()
+		self.sync_theme_editor_controls_from_current_colour()
+		self.apply_theme_preview_colours(self.theme_editor_draft_colours)
+
 	def clear_theme_editor_state(self) -> None:
 		self.theme_editor_enabled = False
-		self.theme_editor_draft_colours = None
-		self.theme_editor_original_colours = None
-		self.theme_editor_target_path = None
-		self.theme_editor_dirty = False
+		# Unsaved edits are kept so reopening the editor on the same theme resumes them
+		if not self.theme_editor_dirty:
+			self.theme_editor_draft_colours = None
+			self.theme_editor_original_colours = None
+			self.theme_editor_target_path = None
 		self.theme_editor_drag_target = None
 		self.theme_editor_window_position = None
 		self.theme_editor_hue_value = 0.0
@@ -28411,6 +28426,9 @@ class Over:
 				_("Create a new theme first to edit a copy of the active look."),
 				mode="warning",
 			)
+			return
+		if self.theme_editor_dirty and self.theme_editor_target_path == self.active_theme_path():
+			self.resume_theme_editor()
 			return
 		self.begin_theme_editor(self.gui.theme_name, self.active_theme_path(), is_new=False)
 
@@ -53996,6 +54014,8 @@ def main(holder: Holder) -> None:
 				gui.panelBY = gui.bottom_panel_height()
 			if len(save) > 198 and save[198] is not None:
 				prefs.feux_panel_art = save[198]
+			if len(save) > 199 and save[199] is not None:
+				prefs.feux_panel_pod1_w = save[199]
 
 			del save
 			break
