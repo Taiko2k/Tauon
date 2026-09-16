@@ -19878,6 +19878,7 @@ class Tauon:
 			prefs.replay_allow_compression,  # 196
 			prefs.feux_panel,  # 197
 			prefs.feux_panel_art,  # 198
+			prefs.feux_panel_pod1_w,  # 199
 		]
 
 		try:
@@ -54013,6 +54014,8 @@ def main(holder: Holder) -> None:
 				gui.panelBY = gui.bottom_panel_height()
 			if len(save) > 198 and save[198] is not None:
 				prefs.feux_panel_art = save[198]
+			if len(save) > 199 and save[199] is not None:
+				prefs.feux_panel_pod1_w = save[199]
 
 			del save
 			break

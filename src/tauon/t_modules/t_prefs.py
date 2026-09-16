@@ -227,6 +227,13 @@ class Prefs:
 	# title and artist sit against the panel's left edge instead. Shared by
 	# the standard and custom layouts -- there is only ever one Feux panel.
 	feux_panel_art: bool = True
+	# Width of the Feux panel's now-playing pod -- the art and title, up to the
+	# hairline the user drags. Stored unscaled (see FeuxBar.POD1_W, the default)
+	# so a chosen width holds its proportions across a UI scale change; the
+	# panel clamps it to FeuxBar.POD1_MIN_W / POD1_MAX_W -- the floor is the
+	# default, so the drag only widens the pod -- and to what the segment can
+	# actually spare. Whatever it takes comes out of the scrub bar.
+	feux_panel_pod1_w: float = 264.0
 
 	random_mode: bool = False
 	repeat_mode: bool = False
