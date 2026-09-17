@@ -1797,7 +1797,7 @@ class FeuxBar:
 
 		progress = 0.0
 		if length > 0:
-			progress = min(1.0, max(0.0, pctl.playing_time / length))
+			progress = min(1.0, max(0.0, int(pctl.playing_time) / length))
 		if self.seek_drag:
 			gui.update_on_drag = True
 			gui.request_frame()
