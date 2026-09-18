@@ -975,7 +975,6 @@ class GuiVar:
 		self.side_bar_drag_original = 0
 
 		self.scroll_direction = 0
-		self.add_music_folder_ready: bool = False
 
 		self.playlist_current_visible_tracks = 0
 		self.playlist_current_visible_tracks_id = 0
@@ -2887,8 +2886,6 @@ class PlayerCtl:
 			logging.info("Lost the playing playlist!")
 			self.active_playlist_playing = self.active_playlist_viewing
 			self.playlist_playing_position = -1
-
-		self.tauon.test_show_add_home_music()
 
 		# Cleanup
 		ids: list[int] = []
@@ -15434,20 +15431,6 @@ class Tauon:
 		if prefs.art_bg:
 			self.thread_manager.ready("style")
 
-	def test_show_add_home_music(self) -> None:
-		self.gui.add_music_folder_ready = True
-
-		if self.music_directory is None:
-			self.gui.add_music_folder_ready = False
-			return
-
-		music_path = os.path.normpath(str(self.music_directory))
-
-		for item in self.pctl.multi_playlist:
-			if any(os.path.normpath(path) == music_path for path in item.last_folder):
-				self.gui.add_music_folder_ready = False
-				break
-
 	def active_menu(self) -> Menu | None:
 		"""The context menu currently being shown, if any."""
 		for menu in Menu.instances:
@@ -15910,7 +15893,7 @@ class Tauon:
 		return Decorator(self.colours.menu_text, ColourRGBA(30, 150, 120, 255), _("Clean Database!"))
 
 	def show_import_music(self, _: int) -> bool:
-		return self.gui.add_music_folder_ready
+		return self.music_directory is not None
 
 	def import_music(self) -> None:
 		pl = self.pl_gen(_("Music"))
@@ -15921,7 +15904,6 @@ class Tauon:
 		load_order.playlist = pl.uuid_int
 		self.load_orders.append(load_order)
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
-		self.gui.add_music_folder_ready = False
 
 	def clip_aar_al(self, index: int) -> None:
 		if self.pctl.master_library[index].album_artist == "":
@@ -55857,7 +55839,6 @@ def main(holder: Holder) -> None:
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
 	# SDL_EventState(SDL_SYSWMEVENT, 1)
-	tauon.test_show_add_home_music()
 
 	if gui.restart_album_mode:
 		tauon.toggle_album_mode(force_on=True)
