@@ -1777,6 +1777,7 @@ def player4(tauon: Tauon) -> None:
 					not target_object.is_network
 					or stream_url is not None
 					or cachement.get_file_cached_only(target_object) is not None
+                    or cachement.get_local_instant(target_object) is not None
 				)
 				# A gapless handover swaps decoders underneath a buffer that is
 				# still playing. Raw DSD cannot cross one: the outgoing track's
