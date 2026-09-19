@@ -46059,11 +46059,12 @@ class Milky:
 class MilkPresetChooser:
 	"""Full-screen Milkdrop preset picker (the MilkDrop menu's "Choose Preset").
 
-	Lists every scanned preset as compact labels in top-to-bottom columns over
-	a translucent backdrop (same look as the search overlay). Clicking a label
-	loads that preset; clicking the backdrop, Escape or right-click closes.
-	Favorited presets get a gold star in the label gutter. The mouse wheel
-	scrolls whole columns when there are more than fit the window.
+	Lists scanned presets as compact labels in top-to-bottom columns over a
+	translucent backdrop (same look as the search overlay). Typing filters the
+	list, and the star button limits it to favorites. Clicking a label loads that
+	preset; clicking the backdrop, Escape or right-click closes. Favorited presets
+	get a gold star in the label gutter.
+	The mouse wheel scrolls whole columns when there are more than fit the window.
 
 	Input never leaks to the UI underneath: handle_input runs early in the
 	frame (dream-room style), captures the pointer state for the overlay and
@@ -46080,9 +46081,20 @@ class MilkPresetChooser:
 		self.active: bool = False
 		self.scroll_cols: int = 0
 		self._presets: list[Path] = []  # alphabetical snapshot taken on activate
+		self.filter_text: str = ""
+		self.favorites_only: bool = False
 		self._mouse: tuple[float, float] = (-1.0, -1.0)
 		self._click: bool = False
 		self._wheel: float = 0.0
+
+	def filtered_presets(self) -> list[Path]:
+		terms = self.filter_text.casefold().split()
+		favorites = self.tauon.prefs.milk_favorite_presets
+		return [
+			preset for preset in self._presets
+			if (not self.favorites_only or str(preset) in favorites)
+			and (not terms or all(term in preset.stem.casefold() for term in terms))
+		]
 
 	def activate(self) -> None:
 		pm = self.tauon.milky.projectm
@@ -46094,9 +46106,13 @@ class MilkPresetChooser:
 		self._presets = sorted(pm.presets, key=lambda p: p.stem.casefold())
 		self.active = True
 		self.scroll_cols = 0
+		self.filter_text = ""
+		self.favorites_only = False
 		self._click = False
 		self._wheel = 0.0
 		self._mouse = (self.inp.mouse_position[0], self.inp.mouse_position[1])
+		self.tauon.cursor_blink_timer.set()
+		TextBox.cursor = True
 		self.gui.request_frame()
 
 	def close(self) -> None:
@@ -46115,6 +46131,31 @@ class MilkPresetChooser:
 			return
 		if inp.right_click:
 			self.close()
+		control_down = inp.key_ctrl_down or inp.key_rctrl_down
+		filter_changed = False
+		if control_down and inp.key_v_press:
+			paste = " ".join(copy_from_clipboard().splitlines())
+			if paste:
+				self.filter_text += paste
+				filter_changed = True
+			inp.key_v_press = False
+		elif inp.input_text:
+			self.filter_text += inp.input_text
+			filter_changed = True
+		if inp.backspace_press:
+			if control_down:
+				trimmed = self.filter_text.rstrip()
+				self.filter_text = trimmed.rsplit(maxsplit=1)[0] if " " in trimmed else ""
+			else:
+				self.filter_text = self.filter_text[:-inp.backspace_press]
+			filter_changed = True
+			inp.backspace_press = 0
+			inp.key_backspace_press = False
+		if filter_changed:
+			self.scroll_cols = 0
+			self.tauon.cursor_blink_timer.set()
+			TextBox.cursor = True
+			self.gui.request_frame()
 		if inp.mouse_position[0] > -2000:
 			self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
 		if inp.mouse_click:
@@ -46126,6 +46167,9 @@ class MilkPresetChooser:
 		inp.middle_click = False
 		inp.mouse_wheel = 0
 		inp.input_text = ""
+		inp.key_return_press = False
+		inp.key_tab_press = False
+		inp.key_del = False
 		inp.mouse_position[0] = -3000.0
 		inp.mouse_position[1] = -3000.0
 
@@ -46135,8 +46179,7 @@ class MilkPresetChooser:
 		gui = self.gui
 		ddt = self.ddt
 		pm = self.tauon.milky.projectm
-		presets = self._presets
-		if not presets:
+		if not self._presets:
 			self.close()
 			return
 
@@ -46148,8 +46191,98 @@ class MilkPresetChooser:
 		pad = round(12 * gui.scale)
 		row_h = round(13 * gui.scale)
 		col_w = round(150 * gui.scale)
+		search_h = round(30 * gui.scale)
+		favorite_gap = round(8 * gui.scale)
+		favorite_size = search_h
+		search_w = min(round(480 * gui.scale), w - pad * 2 - favorite_gap - favorite_size)
+		search_rect = (pad, pad, search_w, search_h)
+		favorite_rect = (
+			search_rect[0] + search_rect[2] + favorite_gap,
+			search_rect[1],
+			favorite_size,
+			favorite_size,
+		)
+		search_bg = ColourRGBA(12, 12, 12, 255)
+		search_border = ColourRGBA(105, 105, 105, 255)
+
+		clear_w = search_h if self.filter_text else 0
+		clear_rect = (search_rect[0] + search_rect[2] - clear_w, search_rect[1], clear_w, search_rect[3])
+		mx, my = self._mouse
+		click = self._click
+		self._click = False
+		click_consumed = False
+		if click and search_rect[0] <= mx < search_rect[0] + search_rect[2] \
+				and search_rect[1] <= my < search_rect[1] + search_rect[3]:
+			click_consumed = True
+			if self.filter_text and clear_rect[0] <= mx < clear_rect[0] + clear_rect[2]:
+				self.filter_text = ""
+				self.scroll_cols = 0
+				self.tauon.cursor_blink_timer.set()
+				TextBox.cursor = True
+		elif click and favorite_rect[0] <= mx < favorite_rect[0] + favorite_rect[2] \
+				and favorite_rect[1] <= my < favorite_rect[1] + favorite_rect[3]:
+			click_consumed = True
+			self.favorites_only = not self.favorites_only
+			self.scroll_cols = 0
+
+		presets = self.filtered_presets()
+		ddt.bordered_rect(search_rect, search_bg, search_border, max(1, round(gui.scale)))
+		text_x = search_rect[0] + round(10 * gui.scale)
+		text_y = search_rect[1] + round(6 * gui.scale)
+		text_max_w = search_rect[2] - round(18 * gui.scale) - clear_w
+		if self.filter_text:
+			shown = self.tauon.right_trunc(self.filter_text, 312, text_max_w, dots=False)
+			ddt.text((text_x, text_y), shown, ColourRGBA(235, 235, 235, 255), 312, max_w=text_max_w, bg=search_bg)
+			clear_hover = (
+				clear_rect[0] <= self._mouse[0] < clear_rect[0] + clear_rect[2]
+				and clear_rect[1] <= self._mouse[1] < clear_rect[1] + clear_rect[3]
+			)
+			ddt.text(
+				(clear_rect[0] + clear_rect[2] // 2, text_y, 2),
+				"×",  # noqa: RUF001 - multiplication sign is the intended clear glyph
+				ColourRGBA(255, 255, 255, 255) if clear_hover else ColourRGBA(170, 170, 170, 255),
+				312,
+				bg=search_bg,
+			)
+		else:
+			ddt.text(
+				(text_x, text_y), _("Filter presets…"), ColourRGBA(95, 95, 95, 255), 312,
+				max_w=text_max_w, bg=search_bg)
+			shown = ""
+
+		if TextBox.cursor:
+			cursor_x = text_x + ddt.get_text_w(shown, 312) + round(gui.scale)
+			ddt.rect((cursor_x, text_y + round(2 * gui.scale), max(1, round(gui.scale)), round(14 * gui.scale)),
+				ColourRGBA(235, 235, 235, 255))
+		self.tauon.animate_monitor_timer.set()
+
+		favorite_hover = (
+			favorite_rect[0] <= mx < favorite_rect[0] + favorite_rect[2]
+			and favorite_rect[1] <= my < favorite_rect[1] + favorite_rect[3]
+		)
+		if favorite_hover and not self.favorites_only:
+			ddt.rect(favorite_rect, ColourRGBA(255, 255, 255, 18))
+		if self.favorites_only:
+			favorite_colour = ColourRGBA(244, 209, 66, 255)
+		elif favorite_hover:
+			favorite_colour = ColourRGBA(175, 175, 175, 255)
+		else:
+			favorite_colour = ColourRGBA(95, 95, 95, 255)
+		favorite_icon = gui.star_row_icon
+		favorite_icon.render(
+			favorite_rect[0] + (favorite_rect[2] - favorite_icon.w) / 2,
+			favorite_rect[1] + (favorite_rect[3] - favorite_icon.h) / 2,
+			favorite_colour,
+		)
+
+		count_text = _("{count} of {total}").format(count=len(presets), total=len(self._presets))
+		count_x = favorite_rect[0] + favorite_rect[2] + round(12 * gui.scale)
+		if count_x + ddt.get_text_w(count_text, 312) < w - pad:
+			ddt.text((count_x, text_y), count_text, ColourRGBA(145, 145, 145, 255), 312)
+
 		star_w = ddt.get_text_w("★", 10) + round(4 * gui.scale)  # label gutter, keeps columns aligned
-		rows = max(1, (h - pad * 2) // row_h)
+		list_top = search_rect[1] + search_rect[3] + pad
+		rows = max(1, (h - list_top - pad) // row_h)
 		n_cols = -(-len(presets) // rows)  # ceil
 		vis_cols = max(1, (w - pad) // col_w)
 
@@ -46158,15 +46291,25 @@ class MilkPresetChooser:
 			self._wheel = 0.0
 		self.scroll_cols = max(0, min(self.scroll_cols, max(0, n_cols - vis_cols)))
 
-		mx, my = self._mouse
-		click = self._click
-		self._click = False
-		on_label = False
-
 		favorites = self.tauon.prefs.milk_favorite_presets
 		text_colour = ColourRGBA(200, 200, 200, 255)
 		hover_colour = ColourRGBA(255, 255, 255, 255)
 		gold = ColourRGBA(244, 209, 66, 255)
+
+		if not presets:
+			favorite_count = sum(str(preset) in favorites for preset in self._presets)
+			if self.favorites_only and favorite_count == 0:
+				empty_text = _("No favorite presets yet")
+			elif self.favorites_only:
+				empty_text = _("No matching favorite presets")
+			else:
+				empty_text = _("No matching presets")
+			ddt.text(
+				(w // 2, list_top + round(40 * gui.scale), 2),
+				empty_text,
+				ColourRGBA(190, 190, 190, 255),
+				313,
+			)
 
 		for col in range(vis_cols):
 			start = (self.scroll_cols + col) * rows
@@ -46174,7 +46317,7 @@ class MilkPresetChooser:
 				break
 			x = pad + col * col_w
 			for row, preset in enumerate(presets[start:start + rows]):
-				y = pad + row * row_h
+				y = list_top + row * row_h
 				rect = (x, y, col_w - round(6 * gui.scale), row_h)
 				hover = rect[0] <= mx < rect[0] + rect[2] and rect[1] <= my < rect[1] + rect[3]
 				# Hover highlight: just brighten the label text
@@ -46189,9 +46332,9 @@ class MilkPresetChooser:
 					max_w=rect[2] - star_w - round(4 * gui.scale))
 				if click and hover:
 					pm.load_next = preset
-					on_label = True
+					click_consumed = True
 					self.close()
-		if click and not on_label:
+		if click and not click_consumed:
 			self.close()
 
 
@@ -58725,6 +58868,7 @@ def main(holder: Holder) -> None:
 			or tauon.trans_edit_box.active
 			or gui.timed_lyrics_editing_now
 			or tauon.export_playlist_box.active
+			or tauon.milk_choose.active
 		)
 
 		if inp.k_input and inp.key_focused == 0:
