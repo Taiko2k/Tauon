@@ -216,7 +216,13 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
-from tauon.t_modules.t_lyrics import genius, get_lrclib_challenge, lyric_sources, uses_scraping  # noqa: E402
+from tauon.t_modules.t_lyrics import (  # noqa: E402
+	genius,
+	get_lrclib_challenge,
+	lyric_sources,
+	provides_synced,
+	uses_scraping,
+)
 from tauon.t_modules.t_nowplaying_macos import MacNowPlayingHelper  # noqa: E402
 from tauon.t_modules.t_phazor import DSD_FORMATS, Cachement, get_phazor_path, phazor_exists, player4  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
@@ -9731,42 +9737,50 @@ class Tauon:
 
 		logging.info(f"Searching for lyrics: {s_artist} - {s_title}")
 
-		found = False
-		for name in self.prefs.lyrics_enables:
+		found_lyrics = False
+		found_synced = False
+		enabled_sources = [name for name in lyric_sources if name in self.prefs.lyrics_enables]
+		enabled_sources.sort(key=lambda name: (name not in provides_synced, name in uses_scraping))
+		for name in enabled_sources:
+			if found_lyrics and name not in provides_synced:
+				break
 
-			if name in lyric_sources:
-				func = lyric_sources[name]
+			func = lyric_sources[name]
+			lyrics = ""
+			synced = ""
 
-				try:
-					lyrics, synced = func(s_artist, s_title, user_agent=self.t_agent)
-					if lyrics or synced:
-						if lyrics:
-							logging.info(f"Found lyrics from {name}")
-							track_object.lyrics = lyrics
-							clear_search_cache(track_object)
-							self.gui.lyrics_editor_update_now[0] = True
-							if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
-								self.write_lyrics(track_object)
-						if synced:
-							logging.info("Found synced lyrics")
-							track_object.synced = synced
-							clear_search_cache(track_object)
-							self.gui.lyrics_editor_update_now[1] = True
-							# TODO (Flynn): SYLT
-							if not self.gui.timed_lyrics_edit_view:
-								if self.prefs.save_synced_to_lrc:
-									self.write_lyrics(track_object, True, synced_target="lrc")
-								if self.prefs.save_lyrics_changes_to_files:
-									self.write_lyrics(track_object, True, synced_target="tags")
-						found = True
+			try:
+				lyrics, synced = func(s_artist, s_title, user_agent=self.t_agent)
+				if lyrics or synced:
+					if lyrics and not found_lyrics:
+						logging.info(f"Found lyrics from {name}")
+						track_object.lyrics = lyrics
+						found_lyrics = True
+						clear_search_cache(track_object)
+						self.gui.lyrics_editor_update_now[0] = True
+						if not self.gui.timed_lyrics_edit_view and self.prefs.save_lyrics_changes_to_files:
+							self.write_lyrics(track_object)
+					if synced:
+						logging.info(f"Found synced lyrics from {name}")
+						track_object.synced = synced
+						found_synced = True
+						clear_search_cache(track_object)
+						self.gui.lyrics_editor_update_now[1] = True
+						# TODO (Flynn): SYLT
+						if not self.gui.timed_lyrics_edit_view:
+							if self.prefs.save_synced_to_lrc:
+								self.write_lyrics(track_object, True, synced_target="lrc")
+							if self.prefs.save_lyrics_changes_to_files:
+								self.write_lyrics(track_object, True, synced_target="tags")
+					if found_synced:
 						break
-				except Exception:
-					logging.exception("Failed to find lyrics")
+			except Exception:
+				logging.exception("Failed to find lyrics")
 
-				if not found:
-					logging.error(f"Could not find lyrics from source {name}")
+			if not lyrics and not synced:
+				logging.error(f"Could not find lyrics from source {name}")
 
-		if not found:
+		if not (found_lyrics or found_synced):
 			self.now_searching = "errored"
 			if not silent:
 				self.show_message(_("No lyrics for this track were found"))

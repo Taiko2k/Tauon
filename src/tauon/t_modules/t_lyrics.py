@@ -279,3 +279,7 @@ lyric_sources = {
 uses_scraping = {
 	"Genius",
 }
+
+provides_synced = {
+	"LRCLIB",
+}
