@@ -26,6 +26,7 @@ I would highly recommend not using this project as an example on how to code cle
 from __future__ import annotations
 
 import base64
+import bisect
 import builtins
 import colorsys
 import copy
@@ -36710,18 +36711,133 @@ class StandardPlaylist:
 		self.star_store    = tauon.star_store
 		self.window_size   = tauon.window_size
 		self.smooth_scroll = tauon.smooth_scroll
+		self._tracklist_layout_key: tuple | None = None
+		self._tracklist_spacer_rows: list[int] = []
+		self._tracklist_prefix_rows: list[int] = [0]
+		self._album_art_block_starts: list[int] = []
+
+	def _album_art_column_width(self) -> int:
+		if not self.gui.set_mode:
+			return 0
+		return max((round(column[1]) for column in self.gui.pl_st if column[0] == "Album Art"), default=0)
+
+	def _ensure_tracklist_layout(self) -> None:
+		"""Cache visual row offsets and album blocks until playlist geometry changes."""
+		pctl = self.pctl
+		playlist = pctl.default_playlist
+		playlist_length = len(playlist)
+		playlist_id = 0
+		hide_titles = True
+		if pctl.multi_playlist and 0 <= pctl.active_playlist_viewing < len(pctl.multi_playlist):
+			active_playlist = pctl.multi_playlist[pctl.active_playlist_viewing]
+			playlist_id = active_playlist.uuid_int
+			hide_titles = active_playlist.hide_title
+
+		art_column_width = self._album_art_column_width()
+		layout_key = (
+			id(playlist),
+			playlist_id,
+			playlist_length,
+			getattr(pctl, "db_inc", 0),
+			playlist[0] if playlist else None,
+			playlist[-1] if playlist else None,
+			art_column_width,
+			self.gui.playlist_row_height,
+			self.prefs.column_album_art_full_height,
+			self.prefs.break_enable,
+			hide_titles,
+		)
+		if layout_key == self._tracklist_layout_key:
+			return
+
+		step_rows = [1] * playlist_length
+		spacer_rows = [0] * playlist_length
+		block_starts: list[int] = []
+		show_titles = self.prefs.break_enable and not hide_titles
+		reserve_art = self.prefs.column_album_art_full_height and art_column_width > 8 * self.gui.scale
+		minimum_art_rows = 0
+		if reserve_art:
+			horizontal_padding = round(1 * self.gui.scale)
+			vertical_padding = round(5 * self.gui.scale)
+			art_size = max(1, art_column_width - horizontal_padding * 2)
+			minimum_art_rows = math.ceil((art_size + vertical_padding * 2) / max(self.gui.playlist_row_height, 1))
+
+		block_start = 0
+		previous_track = None
+		for position, track_id in enumerate(playlist):
+			track = pctl.get_track(track_id)
+			folder_title = show_titles and (
+				position == 0 or track.parent_folder_path != previous_track.parent_folder_path)
+			if folder_title:
+				step_rows[position] += 1
+
+			if position == 0:
+				block_starts.append(position)
+			elif not self._same_album_art_block(track, previous_track):
+				if reserve_art:
+					previous_position = position - 1
+					available_rows = position - block_start + int(folder_title)
+					spacer_rows[previous_position] = max(0, minimum_art_rows - available_rows)
+					step_rows[previous_position] += spacer_rows[previous_position]
+				block_starts.append(position)
+				block_start = position
+
+			previous_track = track
+		if playlist and reserve_art:
+			last_position = playlist_length - 1
+			spacer_rows[last_position] = max(0, minimum_art_rows - (playlist_length - block_start))
+			step_rows[last_position] += spacer_rows[last_position]
+
+		prefix_rows = [0]
+		for rows in step_rows:
+			prefix_rows.append(prefix_rows[-1] + rows)
+
+		self._tracklist_layout_key = layout_key
+		self._tracklist_spacer_rows = spacer_rows
+		self._tracklist_prefix_rows = prefix_rows
+		self._album_art_block_starts = block_starts
 
 	def _tracklist_step_height(self, track_position: int) -> float:
 		if track_position < 0 or track_position >= len(self.pctl.default_playlist):
 			return float(self.gui.playlist_row_height)
+		self._ensure_tracklist_layout()
+		step_rows = self._tracklist_prefix_rows[track_position + 1] - self._tracklist_prefix_rows[track_position]
+		return float(step_rows * self.gui.playlist_row_height)
 
-		step = float(self.gui.playlist_row_height)
-		if not self.pctl.multi_playlist[self.pctl.active_playlist_viewing].hide_title and self.prefs.break_enable:
-			if track_position == 0 or self.pctl.get_track(self.pctl.default_playlist[track_position]).parent_folder_path != self.pctl.get_track(
-				self.pctl.default_playlist[track_position - 1]
-			).parent_folder_path:
-				step += self.gui.playlist_row_height
-		return step
+	def _tracklist_scroll_row(self) -> float:
+		self._ensure_tracklist_layout()
+		position = min(max(self.pctl.playlist_view_position, 0), len(self.pctl.default_playlist))
+		return self._tracklist_prefix_rows[position] + self.gui.playlist_scroll_pixels / max(
+			self.gui.playlist_row_height, 1)
+
+	def _set_tracklist_scroll_row(self, target_row: float) -> None:
+		self._ensure_tracklist_layout()
+		if not self._tracklist_prefix_rows:
+			return
+		target_row = min(max(target_row, 0), self._tracklist_prefix_rows[-1])
+		position = bisect.bisect_right(self._tracklist_prefix_rows, target_row) - 1
+		position = min(max(position, 0), len(self.pctl.default_playlist))
+		self.pctl.playlist_view_position = position
+		if position == len(self.pctl.default_playlist):
+			self.gui.playlist_scroll_pixels = 0
+		else:
+			self.gui.playlist_scroll_pixels = (
+				target_row - self._tracklist_prefix_rows[position]
+			) * self.gui.playlist_row_height
+
+	def scroll_tracklist_rows(self, rows: float) -> None:
+		self._set_tracklist_scroll_row(self._tracklist_scroll_row() + rows)
+
+	def tracklist_scroll_fraction(self) -> float:
+		self._ensure_tracklist_layout()
+		total_rows = self._tracklist_prefix_rows[-1]
+		if total_rows <= 0:
+			return 0
+		return self._tracklist_scroll_row() / total_rows
+
+	def set_tracklist_scroll_fraction(self, fraction: float) -> None:
+		self._ensure_tracklist_layout()
+		self._set_tracklist_scroll_row(self._tracklist_prefix_rows[-1] * min(max(fraction, 0), 1))
 
 	def _apply_tracklist_pixel_scroll(self) -> None:
 		pctl = self.pctl
@@ -36779,23 +36895,13 @@ class StandardPlaylist:
 		pctl = self.pctl
 		if track_position < 0 or track_position >= len(pctl.default_playlist):
 			return track_position, track_position
-
-		start = track_position
-		while start > 0:
-			track = pctl.get_track(pctl.default_playlist[start])
-			previous_track = pctl.get_track(pctl.default_playlist[start - 1])
-			if not self._same_album_art_block(track, previous_track):
-				break
-			start -= 1
-
-		end = track_position + 1
-		while end < len(pctl.default_playlist):
-			track = pctl.get_track(pctl.default_playlist[end - 1])
-			next_track = pctl.get_track(pctl.default_playlist[end])
-			if not self._same_album_art_block(track, next_track):
-				break
-			end += 1
-
+		self._ensure_tracklist_layout()
+		block_index = bisect.bisect_right(self._album_art_block_starts, track_position) - 1
+		start = self._album_art_block_starts[block_index]
+		if block_index + 1 < len(self._album_art_block_starts):
+			end = self._album_art_block_starts[block_index + 1]
+		else:
+			end = len(pctl.default_playlist)
 		return start, end
 
 	def _folder_title_would_appear(self, track_position: int) -> bool:
@@ -36841,7 +36947,8 @@ class StandardPlaylist:
 		if block_end != track_position:
 			return
 
-		block_y = title_y - (block_end - block_start) * self.gui.playlist_row_height
+		spacer_rows = self._tracklist_spacer_rows[block_end - 1]
+		block_y = title_y - (block_end - block_start + spacer_rows) * self.gui.playlist_row_height
 		self._queue_album_art_block(block_start, block_end, block_y, column_x, column_width, rendered_blocks, draws)
 
 	def _queue_album_art_block(
@@ -36862,15 +36969,18 @@ class StandardPlaylist:
 
 		horizontal_padding = round(1 * self.gui.scale)
 		vertical_padding = round(5 * self.gui.scale)
-		folder_title_bottom_gap = round(5 * self.gui.scale)
 
 		art_size = max(1, round(column_width) - horizontal_padding * 2)
-		block_height = (block_end - block_start) * self.gui.playlist_row_height
-		allowed_bottom = block_y + block_height - vertical_padding
-		if self._folder_title_would_appear(block_end):
-			allowed_bottom = block_y + block_height + self.gui.playlist_row_height - folder_title_bottom_gap
 		draw_y = block_y + vertical_padding
-		draw_height = min(art_size, allowed_bottom - draw_y)
+		if self.prefs.column_album_art_full_height:
+			draw_height = art_size
+		else:
+			folder_title_bottom_gap = round(5 * self.gui.scale)
+			block_height = (block_end - block_start) * self.gui.playlist_row_height
+			allowed_bottom = block_y + block_height - vertical_padding
+			if self._folder_title_would_appear(block_end):
+				allowed_bottom = block_y + block_height + self.gui.playlist_row_height - folder_title_bottom_gap
+			draw_height = min(art_size, allowed_bottom - draw_y)
 
 		playlist_bottom = self.window_size[1] - self.gui.panelBY
 		if draw_height <= 0 or draw_y >= playlist_bottom or draw_y + draw_height <= self.gui.playlist_top:
@@ -37190,6 +37300,8 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
+		self._ensure_tracklist_layout()
+		self._apply_tracklist_pixel_scroll()
 		self.update_album_rating_hover()
 
 		highlight_width    = gui.tracklist_highlight_width
@@ -37211,7 +37323,6 @@ class StandardPlaylist:
 			window_size[1] - gui.panelBY - gui.panelY,
 		)
 
-		w = 0
 		gui.row_extra = 0
 		cv = 0  # update gui.playlist_current_visible_tracks
 
@@ -37297,12 +37408,9 @@ class StandardPlaylist:
 				tauon.scroll_hide_timer.set()
 				gui.frame_callback_list.append(TestTimer(0.9))
 		elif mouse_scroll:
-			gui.playlist_scroll_pixels = 0
-			pctl.playlist_view_position -= self.smooth_scroll.scroll("playlist", mx)
+			self.scroll_tracklist_rows(-self.smooth_scroll.scroll("playlist", mx))
 
-			pctl.playlist_view_position = min(pctl.playlist_view_position, len(pctl.default_playlist))
-			if pctl.playlist_view_position < 1:
-				pctl.playlist_view_position = 0
+			if self._tracklist_scroll_row() <= 0:
 				if pctl.default_playlist:
 					tauon.edge_playlist2.pulse()
 
@@ -37374,7 +37482,9 @@ class StandardPlaylist:
 		# type (0 is track, 1 is fold title), track_position, track_object, box, input_box,
 		list_items = []
 		number = 0
-		render_rows = gui.playlist_view_length + 2
+		self._ensure_tracklist_layout()
+		scroll_rows = math.ceil(max(gui.playlist_scroll_pixels, 0) / max(gui.playlist_row_height, 1))
+		render_rows = gui.playlist_view_length + scroll_rows + 2
 		row_input_right_pad = 0
 		if prefs.scroll_enable:
 			tracklist_right = left + gui.highlight_left + highlight_width
@@ -37741,6 +37851,7 @@ class StandardPlaylist:
 			list_items.append(
 				(0, track_position, track_object, track_box, input_box, highlight, number, drag_highlight, playing))
 			number += 1
+			number += self._tracklist_spacer_rows[track_position]
 
 			if number >= render_rows:
 				break
@@ -38385,14 +38496,11 @@ class StandardPlaylist:
 
 			# -----------------------------------------------------------------
 			# Count the number if visible tracks (used by Show Current function)
-			if gui.playlist_top + gui.playlist_row_height * w > window_size[0] - gui.panelBY - gui.playlist_row_height:
-				pass
-			else:
+			if (
+				line_y + gui.playlist_row_height > gui.playlist_top
+				and line_y < window_size[1] - gui.panelBY
+			):
 				cv += 1
-
-			# w += 1
-			# if w > gui.playlist_view_length:
-			#     break
 
 		for track, location, art_size, draw_height in album_art_column_draws:
 			tauon.gall_ren.render(track, location, art_size, max_height=draw_height)
@@ -38402,7 +38510,7 @@ class StandardPlaylist:
 		gui.playlist_current_visible_tracks = cv
 		gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
-		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * len(list_items) <
+		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * number - gui.playlist_scroll_pixels <
 				self.inp.mouse_position[1] < window_size[1] - 55 and width + left > self.inp.mouse_position[0] > gui.playlist_left + 15):
 			tauon.playlist_menu.activate()
 
@@ -38474,7 +38582,9 @@ class StandardPlaylist:
 
 		track_position = max(self.pctl.playlist_view_position, 0)
 		number = 0
-		render_rows = gui.playlist_view_length + 2
+		self._ensure_tracklist_layout()
+		scroll_rows = math.ceil(max(gui.playlist_scroll_pixels, 0) / max(gui.playlist_row_height, 1))
+		render_rows = gui.playlist_view_length + scroll_rows + 2
 		playlist_length = len(self.pctl.default_playlist)
 
 		while track_position < playlist_length and number < render_rows:
@@ -38502,6 +38612,7 @@ class StandardPlaylist:
 				number += 1
 
 			number += 1
+			number += self._tracklist_spacer_rows[track_position]
 			track_position += 1
 
 class ArtBox:
@@ -50765,6 +50876,7 @@ def save_prefs(bag: Bag) -> None:
 
 	cf.update_value("double-digit-indices", prefs.dd_index)
 	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
+	cf.update_value("column-album-art-full-height", prefs.column_album_art_full_height)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("import-auto-sort", prefs.auto_sort)
@@ -51135,6 +51247,10 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "column-album-artist-fallsback",
 		prefs.column_aa_fallback_artist,
 		"'Album artist' column shows 'artist' if otherwise blank.")
+	prefs.column_album_art_full_height = cf.sync_add(
+		"bool", "column-album-art-full-height",
+		prefs.column_album_art_full_height,
+		"Reserve enough tracklist rows to show column album art without cropping.")
 	prefs.left_align_album_artist_title = cf.sync_add(
 		"bool", "left-aligned-album-artist-title",
 		prefs.left_align_album_artist_title,
@@ -55578,6 +55694,12 @@ def main(holder: Holder) -> None:
 		gui.request_frame()
 		gui.request_tracklist_redraw()
 
+	def _tl_toggle_full_album_art() -> None:
+		prefs.column_album_art_full_height ^= True
+		gui.playlist_scroll_pixels = 0
+		gui.request_frame()
+		gui.request_tracklist_redraw()
+
 	def _tl_stepper(attr: str, lo: int, hi: int) -> tuple[Callable, Callable, Callable]:
 		def value(ref=None) -> int:
 			return getattr(prefs, attr)
@@ -55618,6 +55740,7 @@ def main(holder: Holder) -> None:
 		toggle_item(_("Year"), tauon.toggle_append_date, lambda: tauon.toggle_append_date(1))
 		toggle_item(_("Duration"), tauon.toggle_append_total_time, lambda: tauon.toggle_append_total_time(1))
 		toggle_item(_("Scroll bar on left"), _tl_toggle_scrollbar_left, lambda: prefs.tracklist_scrollbar_left)
+		toggle_item(_("Show full album art"), _tl_toggle_full_album_art, lambda: prefs.column_album_art_full_height)
 
 		menu.add_incrementor_to_sub(sub, _("Font size"), *_tl_stepper("playlist_font_size", 12, 17))
 		menu.add_incrementor_to_sub(sub, _("Row height"), *_tl_stepper("playlist_row_height", 15, 45))
@@ -57429,10 +57552,8 @@ def main(holder: Holder) -> None:
 						elif sbp < top:
 							sbp = top
 						per = (sbp - top) / (ey - top - sbl)
-						pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
-						gui.playlist_scroll_pixels = 0
+						playlist_render.set_tracklist_scroll_fraction(per)
 						logging.debug("Position set by scroll bar (right click)")
-						pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
 					elif inp.mouse_click:
 						if inp.mouse_position[1] < sbp:
@@ -57448,13 +57569,8 @@ def main(holder: Holder) -> None:
 					else:
 						if sbp < inp.mouse_position[1] < sbp + sbl:
 							gui.scroll_direction = 0
-						pctl.playlist_view_position += gui.scroll_direction * 2
-						gui.playlist_scroll_pixels = 0
+						playlist_render.scroll_tracklist_rows(gui.scroll_direction * 2)
 						logging.debug("Position set by scroll bar (slide)")
-						pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
-						pctl.playlist_view_position = min(
-							pctl.playlist_view_position, len(pctl.default_playlist)
-						)
 
 						if sbp + sbl > ey:
 							sbp = ey - sbl
@@ -57474,12 +57590,11 @@ def main(holder: Holder) -> None:
 					elif sbp < top:
 						sbp = top
 					per = (sbp - top) / (ey - top - sbl)
-					pctl.playlist_view_position = int(len(pctl.default_playlist) * per)
-					gui.playlist_scroll_pixels = 0
+					playlist_render.set_tracklist_scroll_fraction(per)
 					logging.debug("Position set by scroll bar (drag)")
 
 				elif len(pctl.default_playlist) > 0:
-					per = (pctl.playlist_view_position + (gui.playlist_scroll_pixels / max(gui.playlist_row_height, 1))) / len(pctl.default_playlist)
+					per = playlist_render.tracklist_scroll_fraction()
 					sbp = int((ey - top - sbl) * per) + top + 1
 
 				bg = ColourRGBA(255, 255, 255, 6)
@@ -59260,19 +59375,17 @@ def main(holder: Holder) -> None:
 
 			if keymaps.test("pagedown"):  # key_PGD:
 				if len(pctl.default_playlist) > 10:
-					pctl.playlist_view_position += gui.playlist_view_length - 4
-					if pctl.playlist_view_position >= len(pctl.default_playlist):
-						pctl.playlist_view_position = len(pctl.default_playlist) - 2
+					playlist_render.scroll_tracklist_rows(gui.playlist_view_length - 4)
 					gui.request_tracklist_redraw()
-					pctl.selected_in_playlist = pctl.playlist_view_position
+					pctl.selected_in_playlist = min(
+						pctl.playlist_view_position, len(pctl.default_playlist) - 1)
 					logging.debug("Position changed by page key")
 					gui.shift_selection.clear()
 			if keymaps.test("pageup"):
 				if len(pctl.default_playlist) > 0:
-					pctl.playlist_view_position -= gui.playlist_view_length - 4
-					pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
+					playlist_render.scroll_tracklist_rows(4 - gui.playlist_view_length)
 					gui.request_tracklist_redraw()
-					pctl.selected_in_playlist = pctl.playlist_view_position
+					pctl.selected_in_playlist = max(pctl.playlist_view_position, 0)
 					logging.debug("Position changed by page key")
 					gui.shift_selection.clear()
 

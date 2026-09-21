@@ -7,6 +7,8 @@ Changelog
  - Added animated cover art support (GIF, APNG and JPEG XL)
  - Added Wayland blur support
  - Added macOS blur support
+ - Added setting to reserve album art space in columns view
+ - Added search bar to preset selector
  - Reworked glass mode
  - Improved subsonic compatibility
  - Fixed discord song text
