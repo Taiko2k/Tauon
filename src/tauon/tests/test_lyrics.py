@@ -104,3 +104,16 @@ def test_lyric_search_uses_api_before_unneeded_scraper(monkeypatch: pytest.Monke
 	assert track.lyrics == "API static lyrics"
 	static_api.assert_called_once_with("Artist", "Title", user_agent="Tauon/Test")
 	static_scraper.assert_not_called()
+
+
+def test_will_overwrite_synced_ignores_network_track(monkeypatch: pytest.MonkeyPatch) -> None:
+	track = SimpleNamespace(file_ext="SUB", fullpath="Artist/Album/track.flac", is_network=True)
+	editor = t_main.TimedLyricsEdit.__new__(t_main.TimedLyricsEdit)
+	editor.file_has_synced_already = None
+	editor.struct_track = 1
+	editor.pctl = SimpleNamespace(master_library={1: track})
+	mutagen_file = Mock()
+	monkeypatch.setattr(t_main.mutagen, "File", mutagen_file)
+
+	assert editor.will_overwrite_synced() is False
+	mutagen_file.assert_not_called()

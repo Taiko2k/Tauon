@@ -48996,9 +48996,8 @@ class TimedLyricsEdit:
 			return self.file_has_synced_already
 		track = self.pctl.master_library[self.struct_track]
 		lyr = ''
-		if not track.fullpath:
+		if not self.can_write_at_all():
 			return False
-		file = Path(track.fullpath)
 		try:
 			if track.file_ext == "MP3":
 				try:
@@ -49021,14 +49020,12 @@ class TimedLyricsEdit:
 					audio.read()
 					lyr = ''.join(audio.lyrics)
 			else:
-				try:
-					audio = mutagen.File(track.fullpath)
-				except Exception as e:
-					logging.error(e)
-				if type(audio.tags) is mutagen.mp4.MP4Tags:
-					if "\xa9lyr" in audio.tags:
-						lyr = audio.tags["\xa9lyr"][0]
-		except AttributeError:
+				audio = mutagen.File(track.fullpath)
+				tags = getattr(audio, "tags", None)
+				if isinstance(tags, mutagen.mp4.MP4Tags) and "\xa9lyr" in tags:
+					lyr = tags["\xa9lyr"][0]
+		except Exception:
+			logging.exception("Could not inspect synced lyrics in file")
 			return False
 		if lyr:
 			return lyrics_are_synced(lyr)
@@ -49036,7 +49033,8 @@ class TimedLyricsEdit:
 
 
 	def can_write_at_all(self) -> bool:
-		return self.pctl.master_library[self.struct_track].file_ext in \
+		track = self.pctl.master_library[self.struct_track]
+		return not track.is_network and bool(track.fullpath) and track.file_ext in \
 			("MP3", "FLAC", "OPUS", "OGG", "OGA", "WV", "APE", "TTA", "M4A", "MP4", "M4B","M4P")
 
 
