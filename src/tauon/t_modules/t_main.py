@@ -13868,6 +13868,8 @@ class Tauon:
 						url = image["thumbnails"].get("small")
 
 					if url:
+						if url.startswith("http://coverartarchive.org/"):
+							url = "https://" + url.removeprefix("http://")
 						logging.info("got mb image url for discord")
 						self.pctl.mbid_image_url_cache[final_id] = url
 						return url
