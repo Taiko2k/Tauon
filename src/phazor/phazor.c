@@ -735,10 +735,11 @@ int flac_got_rate = 0;
 		log_msg(LOG_ERROR,
 			"PipeWire core error: id=%u res=%d (%s) msg=%s",
 			id, res, spa_strerror(res), message ? message : "(null)");
-		// Mark disconnected so the app can attempt reconnect
-		pulse_connected = false;
 
+		// Other core errors, such as a call on a removed object, leave the stream running
 		if (res == -EPIPE || res == -ECONNRESET) {
+			// Mark disconnected so the app can attempt reconnect
+			pulse_connected = false;
 			pw_need_restart = true;
 			if (loop) pw_main_loop_quit(loop);
 		}
@@ -3843,7 +3844,9 @@ void connect_pulse() {
 		// only re-requests when a later track needs a different rate.
 		pipe_requested_rate = pipe_set_samplerate;
 
-		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_connect, SPA_ID_INVALID, NULL, 0, true, NULL);
+		// pipe_update used since it has additional guards in case the stream is ERROR but still connected
+		// meanwhile, pipe_connect only accepts an unconnected one
+		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 	#endif
 
 	if (decoder_allocated == 1 && current_sample_rate > 0 &&
