@@ -8931,6 +8931,10 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def menu_ab_repeat(self) -> None:
+		if self.pctl.ab_repeat_b >= 0:
+			self.pctl.clear_ab_repeat()
+			return
+
 		if self.pctl.playing_state == PlayingState.STOPPED or self.pctl.playing_length <= 0:
 			return
 
@@ -8939,14 +8943,12 @@ class Tauon:
 		if self.pctl.ab_repeat_a < 0:
 			self.pctl.ab_repeat_a = marker_time
 			self.pctl.ab_repeat_b = -1.0
-		elif self.pctl.ab_repeat_b < 0:
+		else:
 			if marker_time <= self.pctl.ab_repeat_a:
 				marker_time = min(self.pctl.playing_length, self.pctl.ab_repeat_a + 0.1)
 				if marker_time <= self.pctl.ab_repeat_a:
 					return
 			self.pctl.ab_repeat_b = marker_time
-		else:
-			self.pctl.clear_ab_repeat(update_gui=False)
 
 		self.gui.request_frame()
 

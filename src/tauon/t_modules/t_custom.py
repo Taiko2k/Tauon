@@ -1810,6 +1810,7 @@ class FeuxBar:
 		ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
 		if progress > 0:
 			ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
+		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
 		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
 
 	def _draw_glint(self, cx: float, cy: float, r: int, k: float) -> None:
