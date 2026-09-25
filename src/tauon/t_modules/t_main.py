@@ -46619,8 +46619,9 @@ class Showcase:
 
 				y = int(self.window_size[1] / 2) - 60 - self.gui.scale
 				self.ddt.text((x, y, 2), self.pctl.tag_meta, self.colours.side_bar_line1, 216, w)
+			self.render_vis_at(self.window_size[0] // 2, y + round(50 * self.gui.scale))
 		else:
-			if len(self.pctl.track_queue) < 1:
+			if len(self.pctl.track_queue) < 1 and self.pctl.playing_state != PlayingState.URL_STREAM:
 				self.ddt.alpha_bg = False
 				return
 
@@ -46761,16 +46762,7 @@ class Showcase:
 					else:
 						self.ddt.text((x, y, 2), track.title, t1, 216, w, bg=panel_bg)
 
-				self.gui.spec4_rec.x = x - (self.gui.spec4_rec.w // 2)
-				self.gui.spec4_rec.y = y + round(50 * self.gui.scale)
-				self.gui.vis4_clip = None
-
-				if self.prefs.showcase_vis and self.window_size[1] > 369 and not self.tauon.search_over.active \
-				and self.pctl.playing_state != PlayingState.URL_STREAM:
-					if self.gui.message_box or not self.tauon.is_level_zero(include_menus=True):
-						self.render_vis()
-					else:
-						self.gui.draw_vis4_top = True
+				self.render_vis_at(x, y + round(50 * self.gui.scale))
 			else:
 				x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 				x -= 100 * self.gui.scale
@@ -46796,6 +46788,16 @@ class Showcase:
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
+
+	def render_vis_at(self, x: int, y: int) -> None:
+		self.gui.spec4_rec.x = x - (self.gui.spec4_rec.w // 2)
+		self.gui.spec4_rec.y = y
+		self.gui.vis4_clip = None
+		if self.prefs.showcase_vis and self.window_size[1] > 369 and not self.tauon.search_over.active:
+			if self.gui.message_box or not self.tauon.is_level_zero(include_menus=True):
+				self.render_vis()
+			else:
+				self.gui.draw_vis4_top = True
 
 	def render_vis(self, top: bool = False) -> None:
 		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.spec4_tex)
