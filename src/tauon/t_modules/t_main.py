@@ -5367,7 +5367,7 @@ class ListenBrainz:
 				logging.exception("Error trying to get track_number")
 
 		if track_object.length:
-			additional["duration"] = str(int(track_object.length))
+			additional["duration"] = int(track_object.length)
 
 		additional["media_player"] = self.t_title
 		additional["submission_client"] = self.t_title
