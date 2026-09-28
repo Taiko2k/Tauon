@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-09-28 22:57+0000\n"
+"PO-Revision-Date: 2026-09-29 23:51+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -686,7 +686,7 @@ msgstr "Показать текст песни"
 
 #: src/tauon/t_modules/t_main.py:9217
 msgid "Prefer Lyrics Display"
-msgstr "Предпочитать показ текста песни"
+msgstr "Приоритет тексту песни"
 
 #: src/tauon/t_modules/t_main.py:9222
 msgid "MilkDrop visualiser is not available"
@@ -1493,7 +1493,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:12749
 msgid "Autodetect failed"
-msgstr "Автоматическое определение не удалось"
+msgstr "Автоопределение не удалось"
 
 #: src/tauon/t_modules/t_main.py:12787
 msgid "Transcode Single"
@@ -1564,7 +1564,7 @@ msgstr "Является CUE Sheet"
 
 #: src/tauon/t_modules/t_main.py:12890
 msgid "Internal Track ID"
-msgstr "Внутренний ИД дорожки"
+msgstr "Внутренний ИД трека"
 
 #: src/tauon/t_modules/t_main.py:12891
 msgid "File Changed"
@@ -1572,7 +1572,7 @@ msgstr "Файл изменён"
 
 #: src/tauon/t_modules/t_main.py:12896
 msgid "Auto Resize"
-msgstr "Автоматическое изменение размера"
+msgstr "Автоизменение размера"
 
 #: src/tauon/t_modules/t_main.py:12897
 msgid "Hide bar"
@@ -1746,7 +1746,8 @@ msgstr "В этом плейлисте нет генератора"
 
 #: src/tauon/t_modules/t_main.py:16853
 msgid "OK. This playlist will automatically sort on import from now on"
-msgstr "OK. Теперь этот плейлист будет автоматически сортироваться при импорте"
+msgstr ""
+"Хорошо. Теперь этот плейлист будет автоматически сортироваться при импорте"
 
 #: src/tauon/t_modules/t_main.py:16854
 msgid ""
@@ -2099,7 +2100,7 @@ msgstr "Оригинал"
 
 #: src/tauon/t_modules/t_main.py:23762
 msgid "Automatic"
-msgstr "Авто"
+msgstr "Автоматически"
 
 #: src/tauon/t_modules/t_main.py:23763
 msgid "Auto theme algorithm: "
@@ -2857,7 +2858,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:29713
 msgid "Auto-import playlists from this folder"
-msgstr "Автоматически импортировать плейлисты из этой папки"
+msgstr "Автоимпорт плейлистов из этой папки"
 
 #: src/tauon/t_modules/t_main.py:29714
 msgid "Runs during \"Rescan All Folders\" only."
@@ -3058,7 +3059,7 @@ msgstr "Сначала песня"
 
 #: src/tauon/t_modules/t_main.py:30380
 msgid "Artist first"
-msgstr "Сначала исполнитель"
+msgstr "Сначала артист"
 
 #: src/tauon/t_modules/t_main.py:30388
 msgid "Member list shows:"
@@ -3342,7 +3343,7 @@ msgstr "Выравнивание громкости воспроизведени
 
 #: src/tauon/t_modules/t_main.py:31003
 msgid "Auto"
-msgstr "Автоматически"
+msgstr "Авто"
 
 #: src/tauon/t_modules/t_main.py:31014
 msgid "Pre-amp"
@@ -4079,7 +4080,7 @@ msgstr "Сканирование тегов…  {N} осталось"
 
 #: src/tauon/t_modules/t_main.py:33902
 msgid "Auto-importing playlists…"
-msgstr "Автоматический импорт списков воспроизведения…"
+msgstr "Автоматический импорт плейлистов…"
 
 #: src/tauon/t_modules/t_main.py:33904
 msgid "File copy in progress…"
@@ -5850,7 +5851,7 @@ msgstr "Быстрый выбор обложки"
 
 #: src/tauon/t_modules/t_main.py:54714
 msgid "Use Centered Style"
-msgstr "Использовать центрированный стиль"
+msgstr "Центрированный стиль"
 
 #: src/tauon/t_modules/t_main.py:54726
 msgid "Zoom Art to Fit"
@@ -6058,7 +6059,7 @@ msgstr "Время тишины"
 
 #: src/tauon/t_modules/t_main.py:55027
 msgid "Copy \"Artist - Album\""
-msgstr "Копировать \"Исполнитель - Альбом\""
+msgstr "Копировать «Артист - Альбом»"
 
 #: src/tauon/t_modules/t_main.py:55032
 msgid "Add to queue"
@@ -6086,11 +6087,11 @@ msgstr "Искать артиста на Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55071
 msgid "Search Artist on Bandcamp"
-msgstr "Искать артиста на Bandcamp"
+msgstr "Искать артиста в Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55075
 msgid "Copy \"Artist - Track\""
-msgstr "Копировать \"Исполнитель - Трек\""
+msgstr "Копировать «Артист - Трек»"
 
 #: src/tauon/t_modules/t_main.py:55076
 msgid "Copy TIDAL Album URL"
@@ -6134,7 +6135,7 @@ msgstr "Подсказки звёзд"
 
 #: src/tauon/t_modules/t_main.py:55151
 msgid "Playcount lines"
-msgstr "Линии счётчика воспроизведений"
+msgstr "Линии счётчика прослушиваний"
 
 #: src/tauon/t_modules/t_main.py:55152
 msgid "Left align"
@@ -6178,7 +6179,7 @@ msgstr "Поиск артиста в Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55169
 msgid "Bandcamp artist search"
-msgstr "Поиск артиста на Bandcamp"
+msgstr "Поиск артиста в Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55170
 msgid "Genius track search"
