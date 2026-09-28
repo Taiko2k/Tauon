@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-09-28 22:51+0000\n"
+"PO-Revision-Date: 2026-09-28 22:57+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -2099,7 +2099,7 @@ msgstr "Оригинал"
 
 #: src/tauon/t_modules/t_main.py:23762
 msgid "Automatic"
-msgstr "Автоматически"
+msgstr "Авто"
 
 #: src/tauon/t_modules/t_main.py:23763
 msgid "Auto theme algorithm: "
@@ -3302,7 +3302,7 @@ msgstr "Использовать постоянный сетевой кэш"
 
 #: src/tauon/t_modules/t_main.py:30937
 msgid "Wait for entire file"
-msgstr "Ждать весь файл"
+msgstr "Ждать загрузки всего файла"
 
 #: src/tauon/t_modules/t_main.py:30941
 msgid "Cache size"
@@ -3318,7 +3318,7 @@ msgstr "Обходит громкость, эквалайзер и ReplayGain."
 
 #: src/tauon/t_modules/t_main.py:30969
 msgid "This device has no native DSD input."
-msgstr "У этого устройства нет собственного входа DSD."
+msgstr "У этого устройства нет родного входа DSD."
 
 #: src/tauon/t_modules/t_main.py:30972
 msgid "Requires the PipeWire backend."
@@ -3379,11 +3379,11 @@ msgstr "Десятиполосный эквалайзер воспроизвед
 
 #: src/tauon/t_modules/t_main.py:31071
 msgid "Enable EQ"
-msgstr "Включить эквалайзер"
+msgstr "Вкл. эквалайзер"
 
 #: src/tauon/t_modules/t_main.py:31074
 msgid "Reset"
-msgstr "Сбросить"
+msgstr "Сброс"
 
 #: src/tauon/t_modules/t_main.py:31161
 msgid "Encoding"
@@ -3515,7 +3515,7 @@ msgstr "Источники обложек."
 
 #: src/tauon/t_modules/t_main.py:31317
 msgid "Account not connected."
-msgstr "Аккаунт не подключён."
+msgstr "Учётная запись не подключена."
 
 #: src/tauon/t_modules/t_main.py:31330
 msgid "Scrobble playback and sync loves."
@@ -3929,7 +3929,7 @@ msgstr "Вернуться к Last.fm"
 
 #: src/tauon/t_modules/t_main.py:32084
 msgid "Accounts"
-msgstr "Аккаунты"
+msgstr "Учётные записи"
 
 #: src/tauon/t_modules/t_main.py:32085
 msgid "Pick a service to configure."
