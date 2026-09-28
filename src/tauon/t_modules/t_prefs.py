@@ -345,6 +345,7 @@ class Prefs:
 	subsonic_user = ""
 	subsonic_password = ""
 	subsonic_password_plain: bool = False
+	subsonic_generator_cache: bool = False
 
 	subsonic_playlists = {}
 

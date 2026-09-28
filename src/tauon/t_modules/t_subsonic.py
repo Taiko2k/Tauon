@@ -28,6 +28,8 @@ import re
 import secrets
 import threading
 import time
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
 import requests
@@ -57,6 +59,7 @@ class SubsonicService:
 		self.show_message = tauon.show_message
 		self.playlists = tauon.prefs.subsonic_playlists
 		self.scanning: bool = False
+		self.last_music: list[int] | None = None
 		self.lyrics_scan_lock = threading.Lock()
 		self.lyrics_scan_pending: set[str] = set()
 		self.lyrics_scan_checked: set[str] = set()
@@ -69,6 +72,14 @@ class SubsonicService:
 		if isinstance(value, list):
 			return value
 		return [value]
+
+	def _created_time(self, created: str) -> float:
+		"""Convert a Subsonic `created` timestamp to epoch seconds. Returns 0 if it can't be parsed."""
+		try:
+			dt = datetime.fromisoformat(str(created))
+		except ValueError:
+			return 0
+		return (dt if dt.tzinfo else dt.replace(tzinfo=UTC)).timestamp()
 
 	def _request_json(self, point: str, p: dict[str, str] | None = None) -> tuple[int, dict | None]:
 		"""Make a request, returning the HTTP status alongside the decoded body.
@@ -209,6 +220,117 @@ class SubsonicService:
 			logging.warning(f"Subsonic server returned {duplicates} duplicate albums while paging")
 
 		return albums
+
+	def _search3_songs(self) -> list[tuple[TrackClass, str, str, int]] | None:
+		"""Fetch every song with an empty search3 query. Returns None if that doesn't work on this server."""
+		songs: list[tuple[TrackClass, str, str, int]] = []
+		seen: set[str] = set()
+
+		def fetch(offset: int, count: int) -> list[dict] | None:
+			try:
+				result = self._request_with_retry(
+					"search3",
+					p={"query": '""', "songCount": count, "songOffset": offset, "artistCount": 0, "albumCount": 0},
+				)
+			except Exception:
+				logging.exception("Error paging songs with search3")
+				return None
+			if result is None:
+				return None
+
+			_status, d = result
+			response = d.get("subsonic-response", {}) if isinstance(d, dict) else {}
+			if response.get("status") != "ok":
+				logging.warning(f"search3 sync failed, falling back to folder scan: {response.get('error')}")
+				return None
+			return self._as_list(response.get("searchResult3", {}).get("song"))
+
+		first = fetch(0, 500)
+		if first is None:
+			return None
+		# Some servers send fewer than 500 songs per page, so step by the first page's size
+		stride = len(first)
+		offset = stride
+		pages = [first]
+		done = False
+
+		with ThreadPoolExecutor(max_workers=4) as pool:
+			while True:
+				for i, page in enumerate(pages):
+					new = [s for s in page if isinstance(s, dict) and s.get("id") and s["id"] not in seen]
+					# A server that ignores songOffset keeps sending the same page
+					if not new:
+						done = True
+						break
+					if len(page) < stride and any(pages[i + 1:]):
+						logging.warning("search3 returned a short page mid-library, falling back to folder scan")
+						return None
+					self._add_search3_songs(new, seen, songs)
+
+				self.gui.request_frame()
+				if done:
+					break
+				pages = list(pool.map(lambda o: fetch(o, stride), [offset + n * stride for n in range(4)]))
+				if any(page is None for page in pages):
+					return None
+				offset += 4 * stride
+
+		if not songs:
+			logging.info("search3 returned no songs, falling back to folder scan")
+			return None
+		return songs
+
+	def _add_search3_songs(
+		self, new: list[dict], seen: set[str], songs: list[tuple[TrackClass, str, str, int]],
+	) -> None:
+		for song in new:
+			seen.add(song["id"])
+			self.gui.to_got += 1
+			nt = self.tauon.TrackClass()
+
+			album_artists = [
+				artist["name"] for artist in self._as_list(song.get("albumArtists"))
+				if isinstance(artist, dict) and artist.get("name")
+			]
+			nt.album_artist = song.get("displayAlbumArtist") or " / ".join(album_artists)
+			if "title" in song:
+				nt.title = song["title"]
+			if "artist" in song:
+				nt.artist = song["artist"]
+			if "album" in song:
+				nt.album = song["album"]
+			if "track" in song:
+				nt.track_number = song["track"]
+			if "discNumber" in song:
+				nt.disc_number = song["discNumber"]
+			if "year" in song:
+				nt.date = str(song["year"])
+			if "duration" in song:
+				nt.length = song["duration"]
+			if "created" in song:
+				nt.modified_time = self._created_time(song["created"])
+			genre_names = [
+				g["name"] for g in self._as_list(song.get("genres")) if isinstance(g, dict) and g.get("name")
+			]
+			if genre_names:
+				if len(genre_names) > 1:
+					nt.genres = genre_names
+				nt.genre = " / ".join(genre_names)
+
+			name = song.get("album", "")
+			nt.file_ext = "SUB"
+			nt.parent_folder_name = name
+			if "path" in song:
+				nt.fullpath = song["path"]
+				nt.parent_folder_path = os.path.dirname(song["path"])
+				nt.parent_folder_name = os.path.basename(nt.parent_folder_path) or name
+			if "coverArt" in song:
+				nt.art_url_key = song["coverArt"]
+			nt.url_key = song["id"]
+			nt.subsonic_folder_id = song.get("parent")
+			nt.is_network = True
+
+			songs.append((nt, name, song["id"], int(song.get("userRating", 0))))
 
 	def r(
 		self,
@@ -574,6 +696,14 @@ class SubsonicService:
 					)
 				)
 
+		# OpenSubsonic servers return the whole library for an empty search3 query
+		search3_songs = None
+		if a["subsonic-response"].get("openSubsonic"):
+			search3_songs = self._search3_songs()
+		if search3_songs is not None:
+			logging.info(f"Read {len(search3_songs)} songs with search3")
+			folders = []
+
 		# Some servers (notably Funkwhale) don't implement the folder browsing endpoints at all, as a
 		# folder hierarchy doesn't match how they store music. Walk albums by tag instead on those.
 		# https://github.com/Taiko2k/Tauon/issues/2336
@@ -586,6 +716,8 @@ class SubsonicService:
 		songsets: list[tuple[TrackClass, str, str, int]] = []
 		for i in range(len(folders)):
 			songsets.append([])
+		if search3_songs is not None:
+			songsets.append(search3_songs)
 		statuses = [0] * len(folders)
 		liked_track_ids: list[int] = []
 
@@ -651,6 +783,8 @@ class SubsonicService:
 					nt.date = str(song["year"])
 				if "duration" in song:
 					nt.length = song["duration"]
+				if "created" in song:
+					nt.modified_time = self._created_time(song["created"])
 				# [{'name': 'Pop'}, {'name': 'Rap'}, {'name': 'Rock'}]
 				if song.get("genres"):
 					genres: dict[str, str] = song["genres"]
@@ -741,6 +875,8 @@ class SubsonicService:
 						nt.date = str(song["year"])
 					if "duration" in song:
 						nt.length = song["duration"]
+					if "created" in song:
+						nt.modified_time = self._created_time(song["created"])
 					if genre_names:
 						if len(genre_names) > 1:
 							nt.genres = genre_names
@@ -791,12 +927,12 @@ class SubsonicService:
 			self.scanning = False
 			return []
 
-		liked_tracks: list[str] = []
+		liked_tracks: set[str] = set()
 		starred2 = a.get("subsonic-response", {}).get("starred2", {})
 		for song in self._as_list(starred2.get("song")):
 			song_id = song.get("id")
 			if song_id:
-				liked_tracks.append(song_id)
+				liked_tracks.add(song_id)
 
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
@@ -838,6 +974,7 @@ class SubsonicService:
 		set_favs(liked_track_ids)
 
 		self.scanning = False
+		self.last_music = playlist
 		if return_list:
 			return playlist
 

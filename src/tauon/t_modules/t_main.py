@@ -16545,7 +16545,10 @@ class Tauon:
 					playlist.extend(self.tau.get_playlist(self.pctl.multi_playlist[pl].title, return_list=True))
 
 			elif cm == "air":
-				if not self.subsonic.scanning:
+				if self.prefs.subsonic_generator_cache and self.subsonic.last_music is not None \
+						and self.gui.rename_playlist_box and self.rename_playlist_box.edit_generator:
+					playlist.extend(self.subsonic.last_music)
+				elif not self.subsonic.scanning:
 					playlist.extend(self.subsonic.get_music3(return_list=True))
 
 			elif cm == "a":
@@ -16617,6 +16620,18 @@ class Tauon:
 
 			elif cm == "m<":
 				playlist = self.gen_last_modified(0, playlist, reverse=False)
+
+			elif cm[:2] in ("m>", "m<"):
+				try:
+					# Local midnight: m>X includes day X, m<X doesn't
+					value = datetime.datetime.strptime(cm[2:], "%Y-%m-%d").timestamp()
+				except ValueError:
+					errors = True
+				else:
+					if cm[1] == ">":
+						playlist = [x for x in playlist if self.pctl.master_library[x].modified_time >= value]
+					else:
+						playlist = [x for x in playlist if self.pctl.master_library[x].modified_time < value]
 
 			elif cm in ("ly", "lyrics"):
 				playlist = self.gen_lyrics(0, playlist)
@@ -31930,7 +31945,7 @@ class Over:
 
 		if view == 7:
 			card1_h = round(218 * gui.scale)
-			card2_h = round(212 * gui.scale)
+			card2_h = round(260 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -31987,6 +32002,14 @@ class Over:
 				prefs.scrobble_subsonic,
 				_("Allow local scrobbling"),
 				_("Disable if your server scrobbles on its own."),
+				accent,
+			)
+			inner_y += info_row_h + row_gap
+			prefs.subsonic_generator_cache = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, info_row_h),
+				prefs.subsonic_generator_cache,
+				_("Don't refetch while editing generators"),
+				_("Reuse the last fetched library while you type a generator query."),
 				accent,
 			)
 			inner_y += info_row_h + row_gap
@@ -40520,6 +40543,9 @@ class RenamePlaylistBox:
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "rat>3.5", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Track rating 0-5: >, <, ="), hint_colour, hint_font)
+			yy += round(12 * self.gui.scale)
+			self.ddt.text((xx, yy), "m>date", code_colour, code_font)
+			self.ddt.text((xx2, yy), _("Last Modified (YYYY-MM-DD): >, <"), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "l", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Loved tracks"), hint_colour, hint_font)
@@ -50772,6 +50798,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("subsonic-username", prefs.subsonic_user)
 	cf.update_value("subsonic-password", prefs.subsonic_password)
 	cf.update_value("subsonic-password-plain", prefs.subsonic_password_plain)
+	cf.update_value("subsonic-generator-cache", prefs.subsonic_generator_cache)
 	cf.update_value("subsonic-server-url", prefs.subsonic_server)
 
 	cf.update_value("jelly-username", prefs.jelly_username)
@@ -51436,6 +51463,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.subsonic_user = cf.sync_add("string", "subsonic-username", prefs.subsonic_user)
 	prefs.subsonic_password = cf.sync_add("string", "subsonic-password", prefs.subsonic_password)
 	prefs.subsonic_password_plain = cf.sync_add("bool", "subsonic-password-plain", prefs.subsonic_password_plain)
+	prefs.subsonic_generator_cache = cf.sync_add("bool", "subsonic-generator-cache", prefs.subsonic_generator_cache)
 	prefs.subsonic_server = cf.sync_add("string", "subsonic-server-url", prefs.subsonic_server)
 
 	cf.br()
