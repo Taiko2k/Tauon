@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-04-23 01:10+0000\n"
+"PO-Revision-Date: 2026-09-28 22:18+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.10.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_custom.py:183
@@ -696,7 +696,7 @@ msgstr "Визуализация MilkDrop недоступна"
 
 #: src/tauon/t_modules/t_main.py:9229
 msgid "Downloading Milkdrop presets"
-msgstr "Загрузка пресетов Milkdrop"
+msgstr "Загружаются предустановки Milkdrop"
 
 #: src/tauon/t_modules/t_main.py:9230 src/tauon/t_modules/t_main.py:17382
 msgid "Starting download…"
@@ -708,11 +708,11 @@ msgstr "Milkdrop всё равно будет включён."
 
 #: src/tauon/t_modules/t_main.py:9261
 msgid "Restart Tauon if presets are not visible yet."
-msgstr "Перезапустите Tauon, если пресеты ещё не видны."
+msgstr "Перезапустите Tauon, если предустановки ещё не видны."
 
 #: src/tauon/t_modules/t_main.py:9291 src/tauon/t_modules/t_main.py:9332
 msgid "Preset download cancelled"
-msgstr "Загрузка пресетов отменена"
+msgstr "Загрузка предустановок отменена"
 
 #: src/tauon/t_modules/t_main.py:9292 src/tauon/t_modules/t_main.py:9333
 #: src/tauon/t_modules/t_main.py:9375
@@ -721,15 +721,15 @@ msgstr "Визуализатор Milkdrop включён."
 
 #: src/tauon/t_modules/t_main.py:9316
 msgid "Downloading preset pack…"
-msgstr "Загрузка пакета пресетов…"
+msgstr "Загружается пакет предустановок…"
 
 #: src/tauon/t_modules/t_main.py:9319 src/tauon/t_modules/t_main.py:9364
 msgid "Extracting presets…"
-msgstr "Извлечение пресетов…"
+msgstr "Извлечение предустановок…"
 
 #: src/tauon/t_modules/t_main.py:9339
 msgid "Preset package contains an unsafe path"
-msgstr "Пакет пресетов содержит небезопасный путь"
+msgstr "Пакет предустановок содержит небезопасный путь"
 
 #: src/tauon/t_modules/t_main.py:9374
 msgid "Presets ready"
@@ -2474,7 +2474,7 @@ msgstr "Конвертация"
 
 #: src/tauon/t_modules/t_main.py:27631
 msgid "Services"
-msgstr "Сервисы"
+msgstr "Службы"
 
 #: src/tauon/t_modules/t_main.py:27632
 msgid "Advanced"
@@ -2603,7 +2603,7 @@ msgstr "Искать автоматически, когда тексты вкл�
 
 #: src/tauon/t_modules/t_main.py:29371
 msgid "Scraping source"
-msgstr "Источник со скрейпингом"
+msgstr "Источник с разбором страниц"
 
 #: src/tauon/t_modules/t_main.py:29371
 msgid "API source"
@@ -2639,11 +2639,11 @@ msgstr "Действие по окончании плейлиста"
 
 #: src/tauon/t_modules/t_main.py:29452
 msgid "Repeat"
-msgstr "Повторять"
+msgstr "Повторить"
 
 #: src/tauon/t_modules/t_main.py:29453
 msgid "Next playlist"
-msgstr "Следующий плейлист"
+msgstr "След. плейлист"
 
 #: src/tauon/t_modules/t_main.py:29454
 msgid "Cycle all"
@@ -2663,7 +2663,7 @@ msgstr "Открыть файл конфигурации"
 
 #: src/tauon/t_modules/t_main.py:29470
 msgid "Reload edited config"
-msgstr "Перезагрузить изменённую конфигурацию"
+msgstr "Перезагрузить изменения настроек"
 
 #: src/tauon/t_modules/t_main.py:29472
 msgid "Open data folder"
@@ -2776,7 +2776,7 @@ msgstr "Процесс импорта"
 
 #: src/tauon/t_modules/t_main.py:29594 src/tauon/t_modules/t_main.py:30272
 msgid "Remote, presence and sharing"
-msgstr "Удалённый доступ, присутствие и общий доступ"
+msgstr "Удалён. доступ, статус и общий доступ"
 
 #: src/tauon/t_modules/t_main.py:29595 src/tauon/t_modules/t_main.py:30273
 msgid "Network and sharing features."
@@ -2825,7 +2825,7 @@ msgstr "Статус Discord: {state}"
 
 #: src/tauon/t_modules/t_main.py:29637 src/tauon/t_modules/t_main.py:30322
 msgid "Enable Discord Rich Presence"
-msgstr "Discord Rich Presence"
+msgstr "Статус активности Discord"
 
 #: src/tauon/t_modules/t_main.py:29649 src/tauon/t_modules/t_main.py:30329
 msgid "Sorry, this feature is unavailable with snap"
@@ -3148,7 +3148,7 @@ msgstr "Стандартный"
 
 #: src/tauon/t_modules/t_main.py:30717
 msgid "Colourise"
-msgstr "Раскрасить"
+msgstr "Закрасить"
 
 #: src/tauon/t_modules/t_main.py:30718
 msgid "Art"
@@ -3209,7 +3209,7 @@ msgstr "Радиус углов"
 
 #: src/tauon/t_modules/t_main.py:30791
 msgid "Mini-mode always on top"
-msgstr "Мини-режим всегда на переднем плане"
+msgstr "Мини-режим всегда поверх др. окон"
 
 #: src/tauon/t_modules/t_main.py:30793
 msgid "Always-on-top feature not yet implemented for Wayland mode"
@@ -3253,7 +3253,7 @@ msgstr "Показывать значок в трее"
 
 #: src/tauon/t_modules/t_main.py:30873
 msgid "Close to tray"
-msgstr "Закрывать в системный лоток"
+msgstr "Закрывать в трей"
 
 #: src/tauon/t_modules/t_main.py:30875
 msgid "Start in tray"
@@ -3490,7 +3490,7 @@ msgstr "ПКМ по вкладке > Разное… > Назначить пле
 
 #: src/tauon/t_modules/t_main.py:31278
 msgid "Scrobbles and loves."
-msgstr "Скробблы и отметки Love."
+msgstr "Скробблы и избранное."
 
 #: src/tauon/t_modules/t_main.py:31279 src/tauon/t_modules/t_main.py:31446
 msgid "Token-based scrobbling."
@@ -3571,7 +3571,7 @@ msgstr "Синхронизация библиотеки"
 
 #: src/tauon/t_modules/t_main.py:31379
 msgid "Pull loves and scrobble counts into Tauon."
-msgstr "Загружать отметки Love и счётчики скробблов в Tauon."
+msgstr "Загрузка меток избранного и счётчиков скробблов в Tauon."
 
 #: src/tauon/t_modules/t_main.py:31385
 msgid "Get user loves"
@@ -3579,7 +3579,7 @@ msgstr "Получить лайки пользователя"
 
 #: src/tauon/t_modules/t_main.py:31386
 msgid "Clear local loves"
-msgstr "Очистить локальные лайки"
+msgstr "Очистить локал. лайки"
 
 #: src/tauon/t_modules/t_main.py:31394
 msgid "Get friend loves"
@@ -3920,7 +3920,7 @@ msgstr "Импортировать треки"
 
 #: src/tauon/t_modules/t_main.py:32042
 msgid "Service"
-msgstr "Сервис"
+msgstr "Служба"
 
 #: src/tauon/t_modules/t_main.py:32043
 msgid "No layout available."
@@ -3928,7 +3928,7 @@ msgstr "Макет недоступен."
 
 #: src/tauon/t_modules/t_main.py:32046
 msgid "This service view is not available right now."
-msgstr "Этот экран сервиса сейчас недоступен."
+msgstr "Экран этой службы сейчас недоступен."
 
 #: src/tauon/t_modules/t_main.py:32049
 msgid "Back to Last.fm"
@@ -3940,7 +3940,7 @@ msgstr "Аккаунты"
 
 #: src/tauon/t_modules/t_main.py:32085
 msgid "Pick a service to configure."
-msgstr "Выберите сервис для настройки."
+msgstr "Выберите службу для настройки."
 
 #: src/tauon/t_modules/t_main.py:32091
 msgid "Scrobbling"
@@ -4782,7 +4782,7 @@ msgstr "Веб-сайт"
 
 #: src/tauon/t_modules/t_main.py:45799
 msgid "No MilkDrop presets found"
-msgstr "Пресеты MilkDrop не найдены"
+msgstr "Предустановки MilkDrop не найдены"
 
 #: src/tauon/t_modules/t_main.py:46069 src/tauon/t_modules/t_main.py:49743
 msgid "Playing"
@@ -5873,15 +5873,15 @@ msgstr "Обрезка"
 
 #: src/tauon/t_modules/t_main.py:54747
 msgid "Favorite This Preset"
-msgstr "Добавить этот пресет в избранное"
+msgstr "Избранная предустановка"
 
 #: src/tauon/t_modules/t_main.py:54749
 msgid "Choose Preset"
-msgstr "Выбрать пресет"
+msgstr "Выбрать предустановку"
 
 #: src/tauon/t_modules/t_main.py:54758
 msgid "Open Preset Folder"
-msgstr "Открыть папку пресетов"
+msgstr "Открыть папку предустановок"
 
 #: src/tauon/t_modules/t_main.py:54765
 msgid "Next"
@@ -6393,7 +6393,7 @@ msgstr "Перейти к активному"
 
 #: src/tauon/t_modules/t_main.py:55385
 msgid "Online Manual"
-msgstr "Онлайн-руководство"
+msgstr "Сетевая справка"
 
 #: src/tauon/t_modules/t_main.py:55386
 msgid "Show Release Notes"
