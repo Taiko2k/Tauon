@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-09-28 22:25+0000\n"
+"PO-Revision-Date: 2026-09-28 22:41+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -346,11 +346,11 @@ msgstr "Повторное сканирование каталогов…"
 
 #: src/tauon/t_modules/t_main.py:2608 src/tauon/t_modules/t_main.py:2612
 msgid "Playlist is locked to prevent accidental deletion"
-msgstr "Плейлист заблокирован, чтобы предотвратить случайное удаление"
+msgstr "Плейлист заблокирован от случайного удаления"
 
 #: src/tauon/t_modules/t_main.py:2722
 msgid "Are you sure you want to delete playlist: {name}?"
-msgstr "Вы уверены, что хотите удалить плейлист: {name}?"
+msgstr "Удалить плейлист: {name}?"
 
 #: src/tauon/t_modules/t_main.py:4511 src/tauon/t_modules/t_main.py:20503
 msgid "Optional module python-pylast not installed"
@@ -362,7 +362,7 @@ msgstr "Открыта страница веб-авторизации"
 
 #: src/tauon/t_modules/t_main.py:4530
 msgid "Once authorised click the 'done' button."
-msgstr "После авторизации нажмите кнопку \"Готово\"."
+msgstr "После авторизации нажмите «Готово»."
 
 #: src/tauon/t_modules/t_main.py:4536
 msgid "You need to log in first"
@@ -382,7 +382,7 @@ msgstr "Ошибка"
 
 #: src/tauon/t_modules/t_main.py:4564
 msgid "Logout will complete on app restart."
-msgstr "Выход из системы будет завершен при перезапуске приложения."
+msgstr "Выход завершится после перезапуска приложения."
 
 #: src/tauon/t_modules/t_main.py:4572
 msgid "Already connected to Last.fm"
@@ -426,11 +426,11 @@ msgstr "Произошла ошибка, попробуйте войти зан�
 
 #: src/tauon/t_modules/t_main.py:4909
 msgid "Getting friend data…"
-msgstr "Получение данных о друзьях…"
+msgstr "Получение данных друзей…"
 
 #: src/tauon/t_modules/t_main.py:4909
 msgid "This may take a very long time."
-msgstr "Это может занять очень много времени."
+msgstr "Это может занять много времени."
 
 #: src/tauon/t_modules/t_main.py:4932
 msgid "There was an error getting friends loves"
@@ -438,7 +438,7 @@ msgstr "Произошла ошибка при получении лайков �
 
 #: src/tauon/t_modules/t_main.py:4940
 msgid "Scanning loved tracks for: {username}"
-msgstr "Сканирование любимых треков для: {username}"
+msgstr "Сканирование избранных треков для: {username}"
 
 #: src/tauon/t_modules/t_main.py:4944
 msgid "No username found"
@@ -446,7 +446,7 @@ msgstr "Имя пользователя не найдено"
 
 #: src/tauon/t_modules/t_main.py:4988
 msgid "User has no loved tracks."
-msgstr "У пользователя нет любимых треков."
+msgstr "У пользователя нет избранных треков."
 
 #: src/tauon/t_modules/t_main.py:4991
 msgid "{N} matched tracks are up to date."
@@ -458,9 +458,7 @@ msgstr "{N} треков найдено. {T} обновлено."
 
 #: src/tauon/t_modules/t_main.py:4996
 msgid "Of {N} loved tracks, no matches were found in local db"
-msgstr ""
-"Из {N} любимых треков не было найдено ни одного совпадения в локальной базе "
-"данных"
+msgstr "Из {N} избранных треков совпадений в локальной базе нет"
 
 #: src/tauon/t_modules/t_main.py:5000
 msgid "This doesn't seem to be working :("
@@ -468,7 +466,7 @@ msgstr "Похоже, это не работает :("
 
 #: src/tauon/t_modules/t_main.py:5060 src/tauon/t_modules/t_main.py:5114
 msgid "ListenBrainz is enabled but there is no token."
-msgstr "ListenBrainz включен, но нет токена."
+msgstr "ListenBrainz включён, но токена нет."
 
 #: src/tauon/t_modules/t_main.py:5060 src/tauon/t_modules/t_main.py:5114
 msgid "How did this even happen."
@@ -496,7 +494,7 @@ msgstr "дн."
 
 #: src/tauon/t_modules/t_main.py:5362
 msgid "Scanning for Chromecasts…"
-msgstr "Сканирование трансляций Chromecast…"
+msgstr "Поиск трансляций Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:5363
 msgid "Cast to: %s"
@@ -616,7 +614,7 @@ msgstr "Папка назначения не существует."
 
 #: src/tauon/t_modules/t_main.py:8968
 msgid "The destination and source folders are the same."
-msgstr "Папки назначения и источника одинаковы."
+msgstr "Папки назначения и источника совпадают."
 
 #: src/tauon/t_modules/t_main.py:8972 src/tauon/t_modules/t_main.py:11988
 msgid "Safety interrupt! The source path seems oddly short."
@@ -948,13 +946,11 @@ msgstr "Невозможно использовать относительные
 #: src/tauon/t_modules/t_main.py:10265 src/tauon/t_modules/t_main.py:10310
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
-msgstr ""
-"Одна или несколько дорожек хранятся на отдельном диске, отличном от файла "
-"списка воспроизведения."
+msgstr "Часть треков хранится на другом диске, нежели файл плейлиста."
 
 #: src/tauon/t_modules/t_main.py:10360
 msgid "Playlist is locked to prevent accidental erasure"
-msgstr "Плейлист заблокирован, чтобы предотвратить случайное удаление"
+msgstr "Плейлист заблокирован от случайного удаления"
 
 #: src/tauon/t_modules/t_main.py:10393 src/tauon/t_modules/t_main.py:10664
 #: src/tauon/t_modules/t_main.py:10675 src/tauon/t_modules/t_main.py:10694
@@ -1033,7 +1029,7 @@ msgstr "Популярные жанры"
 
 #: src/tauon/t_modules/t_main.py:10801
 msgid "Cannot sync when in transcode inplace mode"
-msgstr "Невозможно выполнить синхронизацию в режиме транскодирования на месте"
+msgstr "Синхронизация недоступна в режиме транскодирования на месте"
 
 #: src/tauon/t_modules/t_main.py:10811
 msgid "No target folder selected"
@@ -1061,7 +1057,7 @@ msgstr "Предупреждение о синхронизации"
 
 #: src/tauon/t_modules/t_main.py:10893 src/tauon/t_modules/t_main.py:10923
 msgid "Multiple folders to sync have the same name. Skipping."
-msgstr "Несколько папок для синхронизации имеют одинаковое имя. Пропуск."
+msgstr "Несколько папок синхронизации имеют одинаковое имя. Пропуск."
 
 #: src/tauon/t_modules/t_main.py:10899
 msgid "One or more folders is missing"
@@ -1243,7 +1239,7 @@ msgstr "Отсортированные по альбому"
 
 #: src/tauon/t_modules/t_main.py:11746
 msgid "Cannot reload while a transcode is in progress!"
-msgstr "Невозможно перезагрузить страницу во время транскодирования!"
+msgstr "Нельзя перезагрузить страницу во время конвертации!"
 
 #: src/tauon/t_modules/t_main.py:11756
 msgid "Configuration reloaded"
@@ -1283,7 +1279,7 @@ msgstr "В буфере обмена находится более одной п
 
 #: src/tauon/t_modules/t_main.py:11947
 msgid "This function can only move one folder at a time."
-msgstr "Эта функция может перемещать только одну папку за раз."
+msgstr "Эта функция перемещает только одну папку за раз."
 
 #: src/tauon/t_modules/t_main.py:11992
 msgid "The target directory is missing!"
@@ -1358,7 +1354,7 @@ msgstr "Одна или несколько дорожек взяты из сет
 
 #: src/tauon/t_modules/t_main.py:12322
 msgid "This folder path seems short, I don't wanna try delete that"
-msgstr "Этот путь к папке кажется коротким, я не хочу пробовать удалять его"
+msgstr "Этот путь слишком короткий, удалять не буду"
 
 #: src/tauon/t_modules/t_main.py:12326
 msgid "Error deleting folder. The folder seems to be missing."
@@ -1407,7 +1403,7 @@ msgstr "Каталог нельзя поместить в корзину."
 #: src/tauon/t_modules/t_main.py:12375
 msgid "Try again while holding shift to force delete."
 msgstr ""
-"Попробуйте еще раз, удерживая клавишу Shift, чтобы принудительно удалить."
+"Попробуйте ещё раз, удерживая клавишу Shift, чтобы удалить принудительно."
 
 #: src/tauon/t_modules/t_main.py:12388 src/tauon/t_modules/t_main.py:25599
 msgid "Cannot rename"
@@ -1423,8 +1419,7 @@ msgstr "Ошибка переименования."
 
 #: src/tauon/t_modules/t_main.py:12401
 msgid "This folder path seems short, I don't wanna try rename that"
-msgstr ""
-"Этот путь к папке кажется коротким, я не хочу пробовать переименовывать его"
+msgstr "Этот путь слишком короткий, переименовывать не буду"
 
 #: src/tauon/t_modules/t_main.py:12405
 msgid "Rename Failed. The original folder is missing."
@@ -1965,8 +1960,8 @@ msgid ""
 "This menu entry appears after selecting 'copy'. See manual (github wiki) for "
 "more info."
 msgstr ""
-"Этот пункт меню появляется после выбора «копировать». Дополнительную "
-"информацию см. в руководстве (github wiki)."
+"Этот пункт меню появляется после выбора «копировать». Подробности см. в "
+"руководстве (Вики в GitHub)."
 
 #: src/tauon/t_modules/t_main.py:20194
 msgid "Notifications for this DE not supported"
@@ -1985,9 +1980,7 @@ msgstr "Изменение будет применено при перезапу
 
 #: src/tauon/t_modules/t_main.py:20458
 msgid "Tip: You can also toggle this from a right-click context menu"
-msgstr ""
-"Совет: Вы также можете переключить это из контекстного меню, вызываемого по "
-"ПКМ"
+msgstr "Совет: это также переключается в контекстном меню ПКМ"
 
 #: src/tauon/t_modules/t_main.py:20515
 msgid "Can't enable this if there's no token."
@@ -3148,7 +3141,7 @@ msgstr "Стандартный"
 
 #: src/tauon/t_modules/t_main.py:30717
 msgid "Colourise"
-msgstr "Закрасить"
+msgstr "Раскрасить"
 
 #: src/tauon/t_modules/t_main.py:30718
 msgid "Art"
@@ -3209,7 +3202,7 @@ msgstr "Радиус углов"
 
 #: src/tauon/t_modules/t_main.py:30791
 msgid "Mini-mode always on top"
-msgstr "Мини-режим всегда поверх др. окон"
+msgstr "Мини-режим поверх окон"
 
 #: src/tauon/t_modules/t_main.py:30793
 msgid "Always-on-top feature not yet implemented for Wayland mode"
