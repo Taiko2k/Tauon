@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-09-28 22:18+0000\n"
+"PO-Revision-Date: 2026-09-28 22:25+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -110,7 +110,7 @@ msgstr "Название"
 #: src/tauon/t_modules/t_main.py:30400 src/tauon/t_modules/t_main.py:30719
 #: src/tauon/t_modules/t_main.py:60391 src/tauon/t_modules/t_main.py:60397
 msgid "Artist"
-msgstr "Исполнитель"
+msgstr "Артист"
 
 #: src/tauon/t_modules/t_custom.py:2226 src/tauon/t_modules/t_main.py:12869
 #: src/tauon/t_modules/t_main.py:31004 src/tauon/t_modules/t_main.py:60411
@@ -121,7 +121,7 @@ msgstr "Альбом"
 #: src/tauon/t_modules/t_custom.py:2227 src/tauon/t_modules/t_main.py:12882
 #: src/tauon/t_modules/t_main.py:60482 src/tauon/t_modules/t_main.py:60488
 msgid "Album Artist"
-msgstr "Исполнитель альбома"
+msgstr "Артист альбома"
 
 #: src/tauon/t_modules/t_custom.py:2228 src/tauon/t_modules/t_main.py:12886
 #: src/tauon/t_modules/t_main.py:60578 src/tauon/t_modules/t_main.py:60584
@@ -242,7 +242,7 @@ msgstr "Прямой эфир"
 
 #: src/tauon/t_modules/t_discord.py:595
 msgid "Waiting for Discord rate limit…"
-msgstr "Ожидание ограничения частоты Discord..."
+msgstr "Ожидание ограничения частоты Discord…"
 
 #: src/tauon/t_modules/t_discord.py:603
 msgid "Error - Discord not running?"
@@ -939,7 +939,7 @@ msgstr "Это удалит все встроенные изображения �
 
 #: src/tauon/t_modules/t_main.py:10253 src/tauon/t_modules/t_main.py:10298
 msgid "There are no tracks in this playlist. Nothing to export"
-msgstr "В этом плейлисте нет треков. Нечего экспортировать."
+msgstr "В этом плейлисте нет треков. Нечего экспортировать"
 
 #: src/tauon/t_modules/t_main.py:10264 src/tauon/t_modules/t_main.py:10309
 msgid "Cannot use relative paths"
@@ -1679,19 +1679,19 @@ msgstr "Добавлена станция в: "
 #: src/tauon/t_modules/t_main.py:14314 src/tauon/t_modules/t_main.py:14332
 #: src/tauon/t_modules/t_main.py:26357
 msgid "Artist: "
-msgstr "Исполнитель: "
+msgstr "Артист: "
 
 #: src/tauon/t_modules/t_main.py:14368
 msgid "Filter Small Artists"
-msgstr "Фильтровать коротких исполнителей"
+msgstr "Фильтровать коротких артистов"
 
 #: src/tauon/t_modules/t_main.py:14372
 msgid "Include All Artists"
-msgstr "Включить всех исполнителей"
+msgstr "Включить всех артистов"
 
 #: src/tauon/t_modules/t_main.py:14457
 msgid "Notice: Artist image sourced from fanart.tv"
-msgstr "Примечание: изображение исполнителя взято с сайта fanart.tv"
+msgstr "Примечание: изображение артиста взято с сайта fanart.tv"
 
 #: src/tauon/t_modules/t_main.py:14458
 msgid "They encourage you to contribute at {link}"
@@ -1786,7 +1786,7 @@ msgstr "Чтобы выйти из этого режима, нажмите «О�
 
 #: src/tauon/t_modules/t_main.py:16984 src/tauon/t_modules/t_main.py:16986
 msgid "No artist image found."
-msgstr "Изображение исполнителя не найдено."
+msgstr "Изображение артиста не найдено."
 
 #: src/tauon/t_modules/t_main.py:16986
 msgid "No providers are enabled in settings!"
@@ -1893,7 +1893,7 @@ msgstr "Предупреждение о кодировке: отсутствуе
 
 #: src/tauon/t_modules/t_main.py:17996
 msgid "No exact matching artist could be found in this playlist"
-msgstr "В этом плейлисте не найдены точно совпадающие исполнители"
+msgstr "В этом плейлисте не найдены точно совпадающие артисты"
 
 #: src/tauon/t_modules/t_main.py:18369 src/tauon/t_modules/t_main.py:18377
 msgid "There was an error generating the chart"
@@ -2200,11 +2200,11 @@ msgstr "Имя альбома"
 
 #: src/tauon/t_modules/t_main.py:25889
 msgid "Artist name"
-msgstr "Имя исполнителя"
+msgstr "Имя артиста"
 
 #: src/tauon/t_modules/t_main.py:25891
 msgid "Album-artist name"
-msgstr "Имя исполнителя альбома"
+msgstr "Имя артиста альбома"
 
 #: src/tauon/t_modules/t_main.py:25897
 msgid "Editing network tracks is not recommended!"
@@ -2396,7 +2396,7 @@ msgstr "Основные изменения"
 
 #: src/tauon/t_modules/t_main.py:27480
 msgid "Please help me make free software. ❤️  "
-msgstr "Пожалуйста, помогите мне создавать свободное ПО. ❤️  "
+msgstr "Пожалуйста, поддержите меня в разработке свободного ПО. ❤️  "
 
 #: src/tauon/t_modules/t_main.py:27483
 msgid "Special thanks to everyone who donated."
@@ -2619,11 +2619,11 @@ msgstr "Общие настройки библиотеки и панелей."
 
 #: src/tauon/t_modules/t_main.py:29428
 msgid "Auto fetch artist data"
-msgstr "Автоматическое получение данных об исполнителе"
+msgstr "Автоматическое получение данных об артисте"
 
 #: src/tauon/t_modules/t_main.py:29429
 msgid "Fetch artist data while the panel is open."
-msgstr "Получать данные об исполнителе, пока панель открыта."
+msgstr "Получать данные об артисте, пока панель открыта."
 
 #: src/tauon/t_modules/t_main.py:29437
 msgid "Auto reload playlists"
@@ -3658,12 +3658,12 @@ msgstr "Хорошо"
 
 #: src/tauon/t_modules/t_main.py:31517
 msgid "Artwork sources for artist images and covers."
-msgstr "Источники изображений исполнителей и обложек."
+msgstr "Источники изображений артистов и обложек."
 
 #: src/tauon/t_modules/t_main.py:31522
 msgid "Use fanart.tv for artist images and manual cover art lookup."
 msgstr ""
-"Использовать fanart.tv для изображений исполнителей и ручного поиска обложек."
+"Использовать fanart.tv для изображений артистов и ручного поиска обложек."
 
 #: src/tauon/t_modules/t_main.py:31530
 msgid "Cover art (manual only)"
@@ -3671,7 +3671,7 @@ msgstr "Обложки (только вручную)"
 
 #: src/tauon/t_modules/t_main.py:31537
 msgid "Artist images (automatic)"
-msgstr "Изображения исполнителей (автоматически)"
+msgstr "Изображения артистов (автоматически)"
 
 #: src/tauon/t_modules/t_main.py:31544
 msgid "Flip current"
@@ -4553,15 +4553,15 @@ msgstr "Местоположение 1 из {N}"
 
 #: src/tauon/t_modules/t_main.py:41416
 msgid "No artists in playlist"
-msgstr "Нет исполнителей в плейлисте"
+msgstr "Нет артистов в плейлисте"
 
 #: src/tauon/t_modules/t_main.py:41419
 msgid "Artist threshold not met"
-msgstr "Пороговое значение исполнителя не достигнуто"
+msgstr "Пороговое значение артиста не достигнуто"
 
 #: src/tauon/t_modules/t_main.py:41421
 msgid "Loading Artist List…"
-msgstr "Загрузка списка исполнителей…"
+msgstr "Загрузка списка артистов…"
 
 #: src/tauon/t_modules/t_main.py:41423
 msgid "Busy…"
@@ -4637,7 +4637,7 @@ msgstr "{N} Треки"
 
 #: src/tauon/t_modules/t_main.py:43131
 msgid "No artist name found"
-msgstr "Имя исполнителя не найдено"
+msgstr "Имя артиста не найдено"
 
 #: src/tauon/t_modules/t_main.py:43142 src/tauon/t_modules/t_main.py:43425
 msgid "Looking up…"
@@ -4653,11 +4653,11 @@ msgstr "Загрузка…"
 
 #: src/tauon/t_modules/t_main.py:43414
 msgid "No artist data downloaded"
-msgstr "Данные исполнителя не загружены"
+msgstr "Данные артиста не загружены"
 
 #: src/tauon/t_modules/t_main.py:43435
 msgid "No artist bio found"
-msgstr "Биография исполнителя не найдена"
+msgstr "Биография артиста не найдена"
 
 #: src/tauon/t_modules/t_main.py:43532
 msgid "Load Failed"
@@ -5164,11 +5164,11 @@ msgstr "Информационная панель: 2-й текст"
 
 #: src/tauon/t_modules/t_main.py:50119
 msgid "Artist bio: BG"
-msgstr "Биография исполнителя: фон"
+msgstr "Биография артиста: фон"
 
 #: src/tauon/t_modules/t_main.py:50120
 msgid "Artist bio: text"
-msgstr "Биография исполнителя: текст"
+msgstr "Биография артиста: текст"
 
 #: src/tauon/t_modules/t_main.py:50121
 msgid "Bottom panel: BG"
@@ -5512,7 +5512,7 @@ msgstr "Плейлисты + очередь"
 
 #: src/tauon/t_modules/t_main.py:54267
 msgid "Artist List"
-msgstr "Список исполнителей"
+msgstr "Список артистов"
 
 #: src/tauon/t_modules/t_main.py:54269
 msgid "Folder Navigator"
@@ -6081,7 +6081,7 @@ msgstr "Удалить файлы"
 
 #: src/tauon/t_modules/t_main.py:55057
 msgid "Search Artist on Wikipedia"
-msgstr "Искать исполнителя в Википедии"
+msgstr "Искать артиста в Википедии"
 
 #: src/tauon/t_modules/t_main.py:55058
 msgid "Search Track on Genius"
@@ -6089,11 +6089,11 @@ msgstr "Искать дорожку на Genius"
 
 #: src/tauon/t_modules/t_main.py:55064
 msgid "Search Artist on Sonemic"
-msgstr "Искать исполнителя на Sonemic"
+msgstr "Искать артиста на Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55071
 msgid "Search Artist on Bandcamp"
-msgstr "Искать исполнителя на Bandcamp"
+msgstr "Искать артиста на Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55075
 msgid "Copy \"Artist - Track\""
@@ -6177,15 +6177,15 @@ msgstr "Крупный вид"
 
 #: src/tauon/t_modules/t_main.py:55167
 msgid "Wikipedia artist search"
-msgstr "Поиск исполнителя в Википедии"
+msgstr "Поиск артиста в Википедии"
 
 #: src/tauon/t_modules/t_main.py:55168
 msgid "Sonemic artist search"
-msgstr "Поиск исполнителя в Sonemic"
+msgstr "Поиск артиста в Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55169
 msgid "Bandcamp artist search"
-msgstr "Поиск исполнителя на Bandcamp"
+msgstr "Поиск артиста на Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55170
 msgid "Genius track search"
@@ -6385,7 +6385,7 @@ msgstr "Глобальный поиск"
 
 #: src/tauon/t_modules/t_main.py:55344
 msgid "Locate Artist"
-msgstr "Найти исполнителя"
+msgstr "Найти артиста"
 
 #: src/tauon/t_modules/t_main.py:55345
 msgid "Go To Playing"
@@ -6433,7 +6433,7 @@ msgstr "Переключить фильтр"
 
 #: src/tauon/t_modules/t_main.py:55427
 msgid "Download Artist Data"
-msgstr "Загрузить данные исполнителя"
+msgstr "Загрузить данные артиста"
 
 #: src/tauon/t_modules/t_main.py:55428
 msgid "Clear Bio"
@@ -6453,7 +6453,7 @@ msgstr "ОШИБКА: Бэкенд не найден"
 
 #: src/tauon/t_modules/t_main.py:56633 src/tauon/t_modules/t_main.py:56650
 msgid "Various Artists"
-msgstr "Разные исполнители"
+msgstr "Разные артисты"
 
 #: src/tauon/t_modules/t_main.py:58600
 msgid "Disabled auto theme"
