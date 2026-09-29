@@ -5725,6 +5725,8 @@ class Menu:
 		self.w = self.request_width * self.gui.scale
 		if self.gui.scale == 2:
 			self.w += 15
+		self._submenu_widths = []
+		self._widths_dirty = True
 
 	def __init__(self, tauon: Tauon, width: int, show_icons: bool = False) -> None:
 		self.tauon:           Tauon = tauon
@@ -5739,6 +5741,10 @@ class Menu:
 		self.base_v_size = 22
 		self.active: bool = False
 		self.request_width: int = width
+		self._submenu_widths: list[int] = []
+		self._widths_dirty = True
+		self._has_dynamic_labels = False
+		self._dynamic_labels: dict[MenuItem, str] = {}
 		self.close_next_frame: bool = False
 		# True while the click currently being processed dismissed this menu (a
 		# press outside its popup window). Lets toggle buttons skip reopening on
@@ -5837,7 +5843,10 @@ class Menu:
 	def add(self, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
 			menu_item.render_func = self.deco
+		elif menu_item.render_func != self.deco:
+			self._has_dynamic_labels = True
 		self.items.append(menu_item)
+		self._widths_dirty = True
 
 	def add_incrementor(self, title: str, get_value, on_minus, on_plus, show_test=None) -> None:
 		"""Add an incrementor row: label on the left, a [-] value [+] stepper on
@@ -5850,6 +5859,7 @@ class Menu:
 		item.inc_minus = on_minus
 		item.inc_plus = on_plus
 		self.items.append(item)
+		self._widths_dirty = True
 
 	def add_incrementor_to_sub(self, sub_menu_index: int, title: str, get_value, on_minus, on_plus, show_test=None) -> None:
 		"""Incrementor row (see add_incrementor), appended to a submenu."""
@@ -5860,19 +5870,95 @@ class Menu:
 		item.inc_minus = on_minus
 		item.inc_plus = on_plus
 		self.subs[sub_menu_index].append(item)
+		self._widths_dirty = True
 
 	def br(self) -> None:
 		self.items.append(None)
+		self._widths_dirty = True
 
 	def add_sub(self, title: str, width: int, show_test=None) -> None:
 		self.items.append(MenuItem(title, self.deco, sub_menu_width=width, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
 		self.sub_number += 1
 		self.subs.append([])
+		self._widths_dirty = True
 
 	def add_to_sub(self, sub_menu_index: int, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
 			menu_item.render_func = self.deco
+		elif menu_item.render_func != self.deco:
+			self._has_dynamic_labels = True
 		self.subs[sub_menu_index].append(menu_item)
+		self._widths_dirty = True
+
+	def displayed_label(self, item: MenuItem) -> str:
+		if item.render_func is None or item.render_func == self.deco:
+			return item.title
+		if item.show_test is not None and not self.test_item_active(item):
+			return item.title
+		fx = item.render_func(self.reference) if item.pass_ref_deco else item.render_func()
+		return fx.text if fx.text is not None else item.title
+
+	def dynamic_labels_changed(self) -> bool:
+		for items in (self.items, *self.subs):
+			for item in items:
+				if (item is not None and item.render_func is not None and item.render_func != self.deco
+						and self._dynamic_labels.get(item) != self.displayed_label(item)):
+					return True
+		return False
+
+	def needs_width_update(self) -> bool:
+		return self._widths_dirty or (self._has_dynamic_labels and self.dynamic_labels_changed())
+
+	def update_widths(self) -> None:
+		"""Grow the menu and submenus to fit their current labels and controls."""
+		scale = self.gui.scale
+		dynamic_labels = {}
+
+		def text_width(item: MenuItem) -> int:
+			label = self.displayed_label(item)
+			if item.render_func is not None and item.render_func != self.deco:
+				dynamic_labels[item] = label
+			return self.ddt.get_text_w(label, self.font)
+
+		main_width = self.w
+		icon_space = 25 * scale if self.show_icons else 0
+
+		for item in self.items:
+			if item is None:
+				continue
+			left = 12 * scale + icon_space
+			if item.check_test is not None:
+				left += 16 * scale
+			right = 22 * scale if item.is_sub_menu else 9 * scale
+			if item.incrementor:
+				right = 2 * self.h + 32 * scale
+			elif item.hint is not None:
+				right += self.ddt.get_text_w(item.hint, self.font) + 4 * scale
+			main_width = max(main_width, left + text_width(item) + right)
+
+		requested_sub_widths = [0] * len(self.subs)
+		for item in self.items:
+			if item is not None and item.is_sub_menu and item.sub_menu_number is not None:
+				requested_sub_widths[item.sub_menu_number] = int(item.sub_menu_width * scale)
+
+		for sub_index, sub_items in enumerate(self.subs):
+			icon_space = 24 * scale if any(item.icon is not None for item in sub_items) else 0
+			sub_width = requested_sub_widths[sub_index]
+			if sub_index < len(self._submenu_widths):
+				sub_width = max(sub_width, self._submenu_widths[sub_index])
+			for item in sub_items:
+				left = 10 * scale + icon_space
+				if item.check_test is not None:
+					left += 16 * scale
+				right = 2 * self.h + 32 * scale if item.incrementor else 10 * scale
+				sub_width = max(sub_width, left + text_width(item) + right)
+			requested_sub_widths[sub_index] = math.ceil(sub_width)
+
+		self.w = math.ceil(main_width)
+		self._submenu_widths = requested_sub_widths
+		self._dynamic_labels = dynamic_labels
+		self._has_dynamic_labels = bool(dynamic_labels)
+		self._widths_dirty = False
 
 	def test_item_active(self, item: MenuItem) -> bool:
 		return not (item.show_test is not None and item.show_test(self.reference) is False)
@@ -6176,7 +6262,10 @@ class Menu:
 					if coll_point(self.pointer, (x_run, y_run, self.w, self.h - 1)):
 						self.clicked = False
 				else:
-					label_max_w = self.w - (x + 9 * gui.scale)
+					right_space = 22 * gui.scale if self.items[i].is_sub_menu else 9 * gui.scale
+					if self.items[i].hint is not None:
+						right_space += self.ddt.get_text_w(self.items[i].hint, self.font) + 4 * gui.scale
+					label_max_w = self.w - (x + right_space)
 				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 
 				# Render the items hint
@@ -6254,6 +6343,8 @@ class Menu:
 		Menu.switch = self.id
 		self.sub_active = -1
 		self.popup_window = None
+		self.rescale()
+		self.update_widths()
 
 		# Decide placement: a menu opens down-right from the anchor (or upward for
 		# a bottom-anchored menu). If the main column would extend past the window
@@ -6266,6 +6357,7 @@ class Menu:
 		win_w, win_h = self.window_size[0], self.window_size[1]
 		main_w, main_h = self.popup_size()
 		anchor = [int(self.pos[0]), int(self.pos[1])]
+		self.popup_anchor = anchor
 		self.popup_bottom_anchor = bottom_anchor
 
 		if bottom_anchor:
@@ -6277,7 +6369,6 @@ class Menu:
 		if self.use_popup:
 			# Popup mode: anchor the popup window at the requested point; the
 			# compositor keeps it on-screen, so no in-window repositioning needed.
-			self.popup_anchor = anchor
 			self.pos = [0, 0]
 		else:
 			# Inline mode: it fits at the natural position, so draw there as-is
@@ -6311,11 +6402,7 @@ class Menu:
 		gui = self.gui
 		if not (-1 < self.sub_active < len(self.subs)):
 			return 1, 1
-		sub_w = 0
-		for item in self.items:
-			if item is not None and item.is_sub_menu and item.sub_menu_number == self.sub_active:
-				sub_w = int(item.sub_menu_width * gui.scale)
-				break
+		sub_w = self._submenu_widths[self.sub_active] if self.sub_active < len(self._submenu_widths) else 0
 		shown = sum(
 			1 for s in self.subs[self.sub_active]
 			if s.show_test is None or s.show_test(self.reference)
@@ -6417,7 +6504,8 @@ class Menu:
 					self.clicked = False
 				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 			else:
-				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, bg=bg)
+				label_max_w = sub_w - (text_x - ox) - 10 * gui.scale
+				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 			ddt.rect_a((ox, y), (4 * gui.scale, self.h), colours.menu_tab)
 
 			row += 1
@@ -15564,6 +15652,17 @@ class Tauon:
 		from tauon.t_modules.t_window import SecondaryWindow, fit_to_bounds
 
 		menu = self.active_menu()
+		if menu is not None and menu.needs_width_update():
+			menu.update_widths()
+			if not menu.use_popup:
+				main_w, main_h = menu.popup_size()
+				anchor_x, anchor_y = menu.popup_anchor
+				if anchor_x + main_w > self.window_size[0] or (
+					anchor_y - main_h < menu.gui.panelY if menu.popup_bottom_anchor
+					else anchor_y + main_h > self.window_size[1]
+				):
+					menu.use_popup = True
+					menu.pos = [0, 0]
 
 		# Inline menus (and the no-menu case) render straight into the main
 		# window; any popup windows from a previous popup menu are torn down.
@@ -56065,39 +56164,6 @@ def main(holder: Holder) -> None:
 	# Hold the splash/loading screen for a minimum duration
 	# while tauon.core_timer.get() < 0.5:
 	#     time.sleep(0.01)
-
-	# Resize menu widths to text length (length can vary due to translations)
-	for menu in Menu.instances:
-		w = 0
-		icon_space = 0
-
-		if menu.show_icons:
-			icon_space = 25 * gui.scale
-
-		for item in menu.items:
-			if item is None:
-				continue
-			test_width = ddt.get_text_w(item.title, menu.font) + icon_space + 21 * gui.scale
-			if not item.is_sub_menu and item.hint:
-				test_width += ddt.get_text_w(item.hint, menu.font) + 4 * gui.scale
-
-			w = max(test_width, w)
-
-			# sub
-			if item.is_sub_menu:
-				ww = 0
-				sub_icon_space = 0
-				for sub_item in menu.subs[item.sub_menu_number]:
-					if sub_item.icon is not None:
-						sub_icon_space = 25
-						break
-				for sub_item in menu.subs[item.sub_menu_number]:
-					test_width = math.ceil(ddt.get_text_w(sub_item.title, menu.font) / gui.scale) + sub_icon_space + 23
-					ww = max(test_width, ww)
-
-				item.sub_menu_width = max(ww, item.sub_menu_width)
-
-		menu.w = max(w, menu.w)
 
 	if gui.restore_showcase_view:
 		tauon.enter_showcase_view()
