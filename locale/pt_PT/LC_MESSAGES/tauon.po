@@ -6,16 +6,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-07-17 13:57+0100\n"
-"Last-Translator: Ricardo Simões - xmcorporation.com "
-"<xmcorporation@gmail.com>\n"
-"Language-Team: \n"
+"PO-Revision-Date: 2026-09-29 23:51+0000\n"
+"Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
+"Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
+"tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Poedit 3.9\n"
+"X-Generator: Weblate 2026.10.dev0\n"
+"Plural-Forms: nplurals=2; plural=n > 1;\n"
 
 #: src/tauon/t_modules/t_custom.py:183
 msgid "MilkDrop is disabled"
@@ -42,7 +43,7 @@ msgstr "Faixa de Desamor"
 #: src/tauon/t_modules/t_custom.py:1509 src/tauon/t_modules/t_main.py:12179
 #: src/tauon/t_modules/t_main.py:17933 src/tauon/t_modules/t_main.py:17934
 msgid "Love Track"
-msgstr "Love Track"
+msgstr "Gostar da Faixa"
 
 #: src/tauon/t_modules/t_custom.py:1595 src/tauon/t_modules/t_main.py:34754
 msgid "Repeat On"
@@ -364,7 +365,7 @@ msgstr "Após a autorização, clique no botão &quot;Concluído&quot;."
 
 #: src/tauon/t_modules/t_main.py:4536
 msgid "You need to log in first"
-msgstr "Precisa de fazer login primeiro."
+msgstr "Precisa de iniciar sessão primeiro"
 
 #: src/tauon/t_modules/t_main.py:4552
 msgid "Error - Not authorized"
@@ -578,7 +579,7 @@ msgstr "Limpar A/B"
 
 #: src/tauon/t_modules/t_main.py:8797 src/tauon/t_modules/t_main.py:54589
 msgid "Shuffle Lockdown"
-msgstr "Shuffle Lockdown"
+msgstr "Bloquear Reprodução Aleatória"
 
 #: src/tauon/t_modules/t_main.py:8798 src/tauon/t_modules/t_main.py:55389
 msgid "Exit Shuffle Lockdown"
@@ -728,7 +729,7 @@ msgstr "Extrair predefinições…"
 
 #: src/tauon/t_modules/t_main.py:9339
 msgid "Preset package contains an unsafe path"
-msgstr "O pacote predefinido contém um caminho inseguro."
+msgstr "O pacote predefinido contém um caminho inseguro"
 
 #: src/tauon/t_modules/t_main.py:9374
 msgid "Presets ready"
@@ -773,7 +774,7 @@ msgstr "Procura…"
 
 #: src/tauon/t_modules/t_main.py:9561
 msgid "No lyrics for this track were found"
-msgstr "Não foram encontradas letras para esta música."
+msgstr "Não foram encontradas letras para esta música"
 
 #: src/tauon/t_modules/t_main.py:9575
 msgid "Insufficient metadata to get lyrics"
@@ -1045,7 +1046,7 @@ msgstr "Nenhuma pasta de destino selecionada"
 
 #: src/tauon/t_modules/t_main.py:10817
 msgid "Target folder could not be found"
-msgstr "A pasta de destino não foi encontrada."
+msgstr "A pasta de destino não foi encontrada"
 
 #: src/tauon/t_modules/t_main.py:10858
 msgid "Deleting folders…"
@@ -1488,7 +1489,7 @@ msgstr "Erro ao mudar de diretório"
 
 #: src/tauon/t_modules/t_main.py:12526
 msgid "The directory does not appear to exist"
-msgstr "O diretório parece não existir."
+msgstr "O diretório parece não existir"
 
 #: src/tauon/t_modules/t_main.py:12554
 msgid "System Error!"
@@ -1780,7 +1781,7 @@ msgstr "A regeneração já está em curso…"
 
 #: src/tauon/t_modules/t_main.py:16884
 msgid "No duplicates were found"
-msgstr "Não foram encontrados duplicados."
+msgstr "Não foram encontrados duplicados"
 
 #: src/tauon/t_modules/t_main.py:16886
 msgid "{N} duplicates removed"
@@ -1791,8 +1792,8 @@ msgid ""
 "You can now add/remove albums to this playlist by right clicking in gallery "
 "of any playlist"
 msgstr ""
-"Agora pode adicionar/remover álbuns desta lista de reprodução clicando com o "
-"botão direito do rato na galeria de qualquer lista de reprodução."
+"Agora pode adicionar/remover álbuns desta lista de reprodução ao clicar com "
+"o botão direito do rato na galeria de qualquer lista de reprodução"
 
 #: src/tauon/t_modules/t_main.py:16894
 msgid "To exit this mode, click \"Disengage\" from main MENU"
@@ -1908,8 +1909,8 @@ msgstr "Aviso de codificação: Faltam um ou mais ficheiros"
 #: src/tauon/t_modules/t_main.py:17996
 msgid "No exact matching artist could be found in this playlist"
 msgstr ""
-"Não foi possível encontrar nenhum artista exatamente igual nesta lista de "
-"reprodução."
+"Não foi possível encontrar nenhum artista que correspondesse exatamente "
+"nesta lista de reprodução"
 
 #: src/tauon/t_modules/t_main.py:18369 src/tauon/t_modules/t_main.py:18377
 msgid "There was an error generating the chart"
@@ -2074,7 +2075,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:21103
 msgid "FFmpeg could not be found"
-msgstr "Não foi possível encontrar o FFmpeg."
+msgstr "Não foi possível encontrar o FFmpeg"
 
 #: src/tauon/t_modules/t_main.py:21261
 msgid "Missing username, password and/or server name"
@@ -2938,7 +2939,7 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:29911 src/tauon/t_modules/t_main.py:29932
 msgid "Press again while holding Shift if you understand"
 msgstr ""
-"Pressione novamente enquanto mantém a tecla Shift pressionada se entendeu."
+"Pressione novamente enquanto mantém a tecla Shift pressionada se entendeu"
 
 #: src/tauon/t_modules/t_main.py:29919 src/tauon/t_modules/t_main.py:29941
 #: src/tauon/t_modules/t_main.py:29949
@@ -3849,7 +3850,7 @@ msgstr "Teste de conectividade"
 
 #: src/tauon/t_modules/t_main.py:31829
 msgid "Run music import first"
-msgstr "Execute primeiro a importação de música."
+msgstr "Execute primeiro a importação de música"
 
 #: src/tauon/t_modules/t_main.py:31837
 msgid "Connect to a Jellyfin server."
@@ -4084,7 +4085,7 @@ msgstr "Colar"
 
 #: src/tauon/t_modules/t_main.py:33106
 msgid "Tauon SHUFFLE!"
-msgstr "Tauon SHUFFLE!"
+msgstr "Tauon ALEATÓRIO!"
 
 #: src/tauon/t_modules/t_main.py:33108
 msgid "ALBUM SHUFFLE"
@@ -4700,7 +4701,7 @@ msgstr "Nenhum dado do artista foi descarregado"
 
 #: src/tauon/t_modules/t_main.py:43435
 msgid "No artist bio found"
-msgstr "Nenhuma biografia do artista encontrada."
+msgstr "Nenhuma biografia do artista encontrada"
 
 #: src/tauon/t_modules/t_main.py:43532
 msgid "Load Failed"
@@ -5074,7 +5075,7 @@ msgstr "Mesmo que substitua letras sincronizadas"
 
 #: src/tauon/t_modules/t_main.py:48684
 msgid "Backup file does not exist"
-msgstr "O ficheiro de cópia de segurança não existe."
+msgstr "O ficheiro de cópia de segurança não existe"
 
 #: src/tauon/t_modules/t_main.py:48692
 msgid "Put the lyrics in this file."
@@ -5420,7 +5421,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:51832
 msgid "Failed to extract rar archive."
-msgstr "Falha ao extrair o ficheiro RAR."
+msgstr "Falha ao extrair o ficheiro rar."
 
 #: src/tauon/t_modules/t_main.py:51848
 msgid "Failed to extract 7z archive."
