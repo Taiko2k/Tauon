@@ -107,6 +107,7 @@ from unidecode import unidecode
 builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
+from tauon.t_modules.t_activity import ActivityPopover  # noqa: E402
 from tauon.t_modules.t_art_anim import AnimatedArt, fits_texture_budget, frame_at, read_animation  # noqa: E402
 from tauon.t_modules.t_art_theme import apply_art_theme, apply_original_art_theme  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
@@ -1011,6 +1012,9 @@ class GuiVar:
 
 		self.transcoding_batch_total = 0
 		self.transcoding_batch_done = 0
+		self.transcoding_batch_active = 0
+		self.transcoding_overall_total = 0
+		self.transcoding_overall_done = 0
 
 		self.seek_bar_rect = (0, 0, 0, 0)
 		self.volume_bar_rect = (0, 0, 0, 0)
@@ -7741,6 +7745,9 @@ class Tauon:
 				return sdl3.SDL_HITTEST_DRAGGABLE
 			return sdl3.SDL_HITTEST_NORMAL
 
+		if self.top_panel.activity.open and coll_point((x, y), self.top_panel.activity.panel_rect):
+			return sdl3.SDL_HITTEST_NORMAL
+
 		# Standard player mode
 		if not gui.maximized:
 			if y < 0 and x > window_size[0]:
@@ -9371,6 +9378,26 @@ class Tauon:
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
 
+	def queue_transcode(self, folders: list[list[int]]) -> None:
+		if not self.transcode_list:
+			self.gui.transcoding_overall_total = 0
+			self.gui.transcoding_overall_done = 0
+			self.gui.transcoding_batch_total = 0
+			self.gui.transcoding_batch_done = 0
+			self.gui.transcoding_batch_active = 0
+		self.gui.transcoding_overall_total += sum(len(folder) for folder in folders)
+		self.transcode_list.extend(folders)
+		self.gui.request_frame()
+		if folders:
+			self.thread_manager.ready("worker")
+
+	def finish_transcode(self) -> None:
+		self.gui.transcoding_overall_done += len(self.transcode_list[0])
+		self.gui.transcoding_batch_total = 0
+		self.gui.transcoding_batch_done = 0
+		self.gui.transcoding_batch_active = 0
+		del self.transcode_list[0]
+
 	def cancel_import(self) -> None:
 		if self.transcode_list:
 			del self.transcode_list[1:]
@@ -10664,7 +10691,7 @@ class Tauon:
 		if get_list:
 			return folders
 
-		self.transcode_list.extend(folders)
+		self.queue_transcode(folders)
 		return None
 
 	def get_folder_tracks_local(self, pl_in: int) -> list[int]:
@@ -11136,8 +11163,7 @@ class Tauon:
 						self.gui.sync_progress = _("{N} Folders Remaining").format(N=str(remain))
 					else:
 						self.gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
-					self.transcode_list.append(folder_dict[item])
-					self.thread_manager.ready("worker")
+					self.queue_transcode([folder_dict[item]])
 					while self.transcode_list:
 						time.sleep(1)
 					if self.gui.stop_sync:
@@ -12087,8 +12113,7 @@ class Tauon:
 						return
 
 		#logging.info(folder)
-		self.transcode_list.append(folder)
-		self.thread_manager.ready("worker")
+		self.queue_transcode([folder])
 
 	def transfer(self, index: int, args: list[int]) -> None:
 		old_cargo = copy.deepcopy(self.pctl.cargo)
@@ -15629,6 +15654,8 @@ class Tauon:
 
 	def is_level_zero(self, include_menus: bool = True) -> bool:
 		if include_menus:
+			if self.top_panel.activity.open:
+				return False
 			for menu in Menu.instances:
 				if menu.active:
 					return False
@@ -17875,6 +17902,8 @@ class Tauon:
 
 		if not os.path.isfile(path):
 			self.show_message(_("Encoding warning: Missing one or more files"))
+			if manual_directory is None:
+				self.gui.transcoding_batch_active -= 1
 			self.core_use -= 1
 			return
 
@@ -17979,7 +18008,9 @@ class Tauon:
 
 					self.star_store.db[new_key] = new_star
 
-		self.gui.transcoding_batch_done += 1
+		if manual_directory is None:
+			self.gui.transcoding_batch_done += 1
+			self.gui.transcoding_batch_active -= 1
 		if cleanup:
 			os.remove(path)
 		self.core_use -= 1
@@ -33384,6 +33415,7 @@ class TopPanel:
 		self.tab_d_click_ref = None
 
 		self.adds: list[list[int | Timer]] = []
+		self.activity = ActivityPopover(tauon, readable_text_colour)
 
 	def left_overflow_switch_playlist(self, pl: int) -> None:
 		self.prime_side = 0
@@ -34196,154 +34228,8 @@ class TopPanel:
 		# LAYOUT --------------------------------
 		x += self.menu_space + word_length
 
-		self.drag_zone_start_x = x - 5 * gui.scale
-		status = True
-
-		if pctl.loading_in_progress:
-			bg = colours.status_info_text
-			if gui.to_got == "xspf":
-				text = _("Importing XSPF playlist")
-			elif gui.to_got == "xspfl":
-				text = _("Importing XSPF playlist…")
-			elif gui.to_got == "ex":
-				text = _("Extracting Archive…")
-			else:
-				text = _("Importing…  ") + str(gui.to_got)  # + "/" + str(gui.to_get)
-				if inp.right_click and self.coll([x, y, 180 * gui.scale, 18 * gui.scale]):
-					tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-		elif tauon.after_scan:
-			# bg = colours.status_info_text
-			bg = ColourRGBA(100, 200, 100, 255)
-			text = _("Scanning Tags…  {N} remaining").format(N=str(len(tauon.after_scan)))
-		elif tauon.playlist_autoscan:
-			# bg = colours.status_info_text
-			bg = ColourRGBA(100, 200, 100, 255)
-			text = _("Auto-importing playlists…")
-		elif tauon.move_in_progress:
-			text = _("File copy in progress…")
-			bg = colours.status_info_text
-		elif tauon.cm_clean_db and gui.to_get > 0:
-			per = str(int(gui.to_got / gui.to_get * 100))
-			text = _("Cleaning db…  ") + per + "%"
-			bg = ColourRGBA(100, 200, 100, 255)
-		elif tauon.to_scan:
-			text = _("Rescanning Tags…  {N} remaining").format(N=str(len(tauon.to_scan)))
-			bg = ColourRGBA(100, 200, 100, 255)
-		elif tauon.plex.scanning:
-			text = _("Accessing PLEX library…")
-			if gui.to_got:
-				text += f" {gui.to_got}"
-			bg = ColourRGBA(229, 160, 13, 255)
-		elif tauon.subsonic.scanning:
-			text = _("Accessing AIRSONIC library…")
-			if gui.to_got:
-				text += f" {gui.to_got}"
-			bg = ColourRGBA(58, 194, 224, 255)
-		elif tauon.jellyfin.scanning:
-			text = _("Accessing JELLYFIN library…")
-			bg = ColourRGBA(90, 170, 240, 255)
-		elif tauon.chrome_mode:
-			text = _("Chromecast Mode")
-			bg = ColourRGBA(207, 94, 219, 255)
-		elif gui.sync_progress and not tauon.transcode_list:
-			text = gui.sync_progress
-			bg = ColourRGBA(100, 200, 100, 255)
-			if inp.right_click and self.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
-				tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-		elif tauon.transcode_list and gui.tc_cancel:
-			bg = ColourRGBA(150, 150, 150, 255)
-			text = _("Stopping transcode…")
-		elif tauon.lrclib_uploads:
-			bg = ColourRGBA(100, 200, 100, 255)
-			text = _("Uploading lyrics to LRCLIB…")
-		elif tauon.lastfm.scanning_friends or tauon.lastfm.scanning_loves:
-			text = _("Scanning: ") + tauon.lastfm.scanning_username
-			bg = ColourRGBA(200, 150, 240, 255)
-		elif tauon.lastfm.scanning_scrobbles:
-			text = _("Scanning Scrobbles…")
-			bg = ColourRGBA(219, 88, 18, 255)
-		elif gui.buffering:
-			text = _("Buffering… ")
-			text += gui.buffering_text
-			bg = ColourRGBA(18, 180, 180, 255)
-		elif tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
-			text = _("Network error. Will try again later.")
-			bg = ColourRGBA(250, 250, 250, 255)
-			gui.last_fm_icon.render(x - 4 * gui.scale, y + 4 * gui.scale, ColourRGBA(250, 40, 40, 255))
-			x += 21 * gui.scale
-		elif tauon.listen_alongers:
-			new = {}
-			for ip, timer in tauon.listen_alongers.items():
-				if timer.get() < 6:
-					new[ip] = timer
-			tauon.listen_alongers = new
-
-			text = _("{N} listening along").format(N=len(tauon.listen_alongers))
-			bg = ColourRGBA(40, 190, 235, 255)
-		else:
-			status = False
-
-		if status:
-			bg = tauon.style_overlay.tint_from_background(
-				bg, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
-			x += ddt.text((x, y), text, bg, 311)
-			# x += ddt.get_text_w(text, 11)
-		# TODO(Taiko): list listening clients
-		elif tauon.transcode_list:
-			bg = tauon.style_overlay.tint_from_background(
-				colours.status_info_text, x, y + 8 * gui.scale, 0.2,
-				colours.top_panel_background)
-			# if inp.key_ctrl_down and inp.key_c_press:
-			# 	del tauon.transcode_list[1:]
-			# 	gui.tc_cancel = True
-			if inp.right_click and self.coll([x, y, 280 * gui.scale, 18 * gui.scale]):
-				tauon.cancel_menu.activate(position=(x + 20 * gui.scale, y + 23 * gui.scale))
-
-			w = 100 * gui.scale
-			x += ddt.text((x, y), _("Transcoding"), bg, 311) + 8 * gui.scale
-
-			if gui.transcoding_batch_total:
-
-				# c1 = ColourRGBA(40, 40, 40, 255)
-				# c2 = ColourRGBA(60, 60, 60, 255)
-				# c3 = ColourRGBA(130, 130, 130, 255)
-				#
-				# if colours.lm:
-				# 	c1 = ColourRGBA(100, 100, 100, 255)
-				# 	c2 = ColourRGBA(130, 130, 130, 255)
-				# 	c3 = ColourRGBA(180, 180, 180, 255)
-
-				c1 = ColourRGBA(40, 40, 40, 255)
-				c2 = ColourRGBA(100, 59, 200, 200)
-				c3 = ColourRGBA(150, 70, 200, 255)
-
-				if colours.lm:
-					c1 = ColourRGBA(100, 100, 100, 255)
-					c2 = ColourRGBA(170, 140, 255, 255)
-					c3 = ColourRGBA(230, 170, 255, 255)
-
-				yy = y + 4 * gui.scale
-				h = 9 * gui.scale
-				box = [x, yy, w, h]
-				# ddt.rect_r(box, ColourRGBA(100, 100, 100, 255))
-				ddt.rect(box, c1)
-
-				done = round(gui.transcoding_batch_done / gui.transcoding_batch_total * 100)
-				doing = round(self.tauon.core_use / gui.transcoding_batch_total * 100)
-
-				ddt.rect([x, yy, done, h], c3)
-				ddt.rect([x + done, yy, doing, h], c2)
-
-			x += w + 8 * gui.scale
-
-			if gui.sync_progress:
-				text = gui.sync_progress
-			else:
-				text = _("{N} Folder Remaining {T}").format(N=str(len(tauon.transcode_list)), T=tauon.transcode_state)
-				if len(tauon.transcode_list) > 1:
-					text = _("{N} Folders Remaining {T}").format(N=str(len(tauon.transcode_list)), T=tauon.transcode_state)
-
-			x += ddt.text((x, y), text, bg, 311) + 8 * gui.scale
+		activity_width = self.activity.render_button(x, y)
+		self.drag_zone_start_x = x + activity_width + (5 if activity_width else -5) * gui.scale
 
 
 		if colours.lm:
@@ -52882,11 +52768,13 @@ def worker1(tauon: Tauon) -> None:
 
 		# FOLDER ENC
 		if tauon.transcode_list:
+			folder_items = tauon.transcode_list[0]
+			gui.transcoding_batch_total = len(folder_items)
+			gui.transcoding_batch_done = 0
+			gui.transcoding_batch_active = 0
 			try:
 				tauon.transcode_state = ""
 				gui.request_frame()
-
-				folder_items = tauon.transcode_list[0]
 
 				ref_track_object = pctl.master_library[folder_items[0]]
 				ref_album = ref_track_object.album
@@ -52924,9 +52812,6 @@ def worker1(tauon: Tauon) -> None:
 				if prefs.transcode_codec in ("opus", "ogg", "flac", "mp3"):
 					cores = os.cpu_count()
 
-					total = len(folder_items)
-					gui.transcoding_batch_total = total
-					gui.transcoding_batch_done = 0
 					dones = []
 
 					q = 0
@@ -52935,6 +52820,7 @@ def worker1(tauon: Tauon) -> None:
 							agg = [[folder_items[q], Path(folder_name)]]
 							if agg not in dones:
 								tauon.core_use += 1
+								gui.transcoding_batch_active += 1
 								dones.append(agg)
 								loaderThread = threading.Thread(target=tauon.transcode_single, args=agg)
 								loaderThread.daemon = True
@@ -52965,7 +52851,7 @@ def worker1(tauon: Tauon) -> None:
 
 				#logging.info(tauon.transcode_list[0])
 
-				del tauon.transcode_list[0]
+				tauon.finish_transcode()
 				tauon.transcode_state = ""
 				gui.request_frame()
 			except Exception:
@@ -52975,7 +52861,7 @@ def worker1(tauon: Tauon) -> None:
 				tauon.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
 				gui.request_frame()
 				time.sleep(0.1)
-				del tauon.transcode_list[0]
+				tauon.finish_transcode()
 
 			if len(tauon.transcode_list) == 0:
 				if gui.tc_cancel:
@@ -58941,6 +58827,10 @@ def main(holder: Holder) -> None:
 			inp.key_return_press = False
 			inp.key_tab_press = False
 
+		tauon.top_panel.activity.handle_input(
+			allowed=gui.mode == GuiMode.MAIN and not Menu.active and not gui.message_box
+			and not gui.custom_edit and not tauon.dream_room.active)
+
 		if inp.k_input:
 			if inp.mouse_click or inp.right_click or inp.mouse_up:
 				inp.last_click_location = copy.deepcopy(inp.click_location)
@@ -59102,6 +58992,10 @@ def main(holder: Holder) -> None:
 
 			if mouse_enter_window:
 				inp.key_return_press = False
+
+			if inp.key_esc_press and tauon.top_panel.activity.open:
+				tauon.top_panel.activity.close()
+				inp.key_esc_press = False
 
 			if gui.fullscreen and inp.key_esc_press:
 				gui.fullscreen = False
@@ -59880,6 +59774,11 @@ def main(holder: Holder) -> None:
 					ggc = 0
 					gbc.enable()
 					# logging.info("Enabling garbage collecting")
+
+			tauon.top_panel.activity.button_drawn = False
+			tauon.top_panel.activity.handle_input(
+				allowed=gui.mode == GuiMode.MAIN and not Menu.active and not gui.message_box
+				and not gui.custom_edit and not tauon.dream_room.active)
 
 			# Custom Layout System: handle edit/interaction input early and consume
 			# the events so the underlying UI doesn't also react. Inert when off.
@@ -62010,6 +61909,11 @@ def main(holder: Holder) -> None:
 						colours.grey(230),
 						313,
 					)
+
+			if gui.mode == GuiMode.MAIN and not Menu.active and not gui.message_box:
+				tauon.top_panel.activity.render()
+			else:
+				tauon.top_panel.activity.close()
 
 			# Render Menus-------------------------------
 			tauon.draw_popup_menus()
