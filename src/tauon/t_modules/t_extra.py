@@ -22,7 +22,6 @@ TODO(Martin): Rewrite all tuple[int, int, int, int] things into actual ColorWhat
 from __future__ import annotations
 
 import colorsys
-import glob
 import locale
 import logging
 import math
@@ -957,9 +956,14 @@ def is_light(colour: ColourRGBA) -> bool:
 
 def folder_file_scan(path: str, extensions: set[str]) -> float:
 	match = 0
-	count = sum([len(files) for r, d, files in os.walk(path)])
-	for ext in extensions:
-		match += len(glob.glob(path + "/**/*." + ext.lower(), recursive=True))
+	count = 0
+	suffixes = tuple(f".{ext.lower()}" for ext in extensions)
+	for directory, _directory_names, filenames in os.walk(path):
+		count += len(filenames)
+		relative = os.path.relpath(directory, path)
+		if any(part.startswith(".") for part in Path(relative).parts):
+			continue
+		match += sum(not filename.startswith(".") and os.path.normcase(filename).endswith(suffixes) for filename in filenames)
 
 	if count == 0:
 		return 0

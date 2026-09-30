@@ -69,7 +69,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict, deque
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from ctypes import (
 	POINTER,
 	Structure,
@@ -14996,9 +14996,7 @@ class Tauon:
 		self.radiobox.delete_custom_image_file(getattr(station, "custom_image", ""))
 
 	def dismiss_dl(self) -> None:
-		self.dl_mon.ready.clear()
-		self.dl_mon.done.update(self.dl_mon.watching)
-		self.dl_mon.watching.clear()
+		self.dl_mon.dismiss()
 
 	def download_img(self, link: str, target_dir: str, track: TrackClass) -> None:
 		try:
@@ -34571,7 +34569,7 @@ class TopPanel:
 							tauon.load_orders.append(copy.deepcopy(load_order))
 
 						if len(tauon.dl_mon.ready) > 0:
-							tauon.dl_mon.ready.clear()
+							tauon.dl_mon.clear_ready()
 							pctl.switch_playlist(pln)
 
 							pctl.playlist_view_position = len(pctl.default_playlist)
@@ -47950,11 +47948,42 @@ class DLMon:
 		self.ticker.force_set(8)
 
 		self.watching: dict[str, int] = {}
-		self.ready = set()
-		self.done = set()
+		self.ready: set[str] = set()
+		self.done: set[str] = set()
 		self.unavailable_directories: set[str] = set()
+		self._scan_future: Future[DLMon] | None = None
+		self.scan_generation = 0
+
+	def clear_ready(self) -> None:
+		self.scan_generation += 1
+		self.ready.clear()
+
+	def dismiss(self) -> None:
+		self.clear_ready()
+		self.done.update(self.watching)
+		self.watching.clear()
 
 	def scan(self) -> None:
+		if self._scan_future is not None:
+			if not self._scan_future.done():
+				return
+			future = self._scan_future
+			self._scan_future = None
+			try:
+				result = future.result()
+			except Exception:
+				logging.exception("Failed to scan download directories")
+			else:
+				if result.scan_generation == self.scan_generation:
+					self.watching = result.watching
+					self.ready = result.ready.difference(self.tauon.quick_import_done)
+					self.done = result.done
+					self.unavailable_directories = result.unavailable_directories
+					self.gui.request_frame()
+
+		if not self.prefs.auto_extract or not self.prefs.monitor_downloads:
+			return
+
 		if len(self.watching) == 0:
 			if self.ticker.get() < 10:
 				return
@@ -47962,8 +47991,34 @@ class DLMon:
 			return
 
 		self.ticker.set()
+		# The worker owns its scan state; the UI publishes completed snapshots.
+		snapshot = copy.copy(self)
+		snapshot.watching = self.watching.copy()
+		snapshot.ready = self.ready.copy()
+		snapshot.done = self.done.copy()
+		snapshot.unavailable_directories = self.unavailable_directories.copy()
+		snapshot.prefs = copy.copy(self.prefs)
+		self._scan_future = Future()
+		threading.Thread(
+			target=self._scan_worker,
+			args=(snapshot, tuple(self.tauon.download_directories), self._scan_future),
+			daemon=True,
+			name="download-monitor",
+		).start()
 
-		for downloads in self.tauon.download_directories:
+	def _scan_worker(self, snapshot: DLMon, directories: tuple[str, ...], future: Future[DLMon]) -> None:
+		try:
+			snapshot._scan(directories)
+		except Exception as error:  # noqa: BLE001 - The future reports failures to the UI thread.
+			future.set_exception(error)
+		else:
+			future.set_result(snapshot)
+		finally:
+			self.gui.request_frame()
+			self.tauon.wake()
+
+	def _scan(self, directories: tuple[str, ...]) -> None:
+		for downloads in directories:
 			try:
 				items = os.listdir(downloads)
 			except PermissionError:
@@ -47985,7 +48040,7 @@ class DLMon:
 					continue
 
 				if path in self.ready and not os.path.exists(path):
-					del self.ready[path]
+					self.ready.discard(path)
 					continue
 
 				if path in self.watching and not os.path.exists(path):
@@ -48028,7 +48083,6 @@ class DLMon:
 
 							elif archive_file_scan(path, self.formats.DA, self.tauon.launch_prefix) >= 0.4:
 								self.ready.add(path)
-								self.gui.request_frame()
 								#logging.info("Archive detected as music")
 							else:
 								pass
@@ -48062,9 +48116,10 @@ class DLMon:
 
 								# Check if folder not already imported
 								imported = False
-								for pl in self.pctl.multi_playlist:
-									for i in pl.playlist_ids:
-										if path.replace("\\", "/") == self.pctl.master_library[i].fullpath[:len(path)]:
+								for pl in tuple(self.pctl.multi_playlist):
+									for i in tuple(pl.playlist_ids):
+										track = self.pctl.master_library.get(i)
+										if track is not None and path.replace("\\", "/") == track.fullpath[:len(path)]:
 											imported = True
 										if imported:
 											break
@@ -48072,7 +48127,6 @@ class DLMon:
 										break
 								else:
 									self.ready.add(path)
-								self.gui.request_frame()
 							self.done.add(path)
 						else:
 							self.watching[path] = size
@@ -48081,20 +48135,10 @@ class DLMon:
 				else:
 					self.done.add(path)
 
-		if len(self.ready) > 0:
-			temp = set()
-			#logging.info(self.tauon.quick_import_done)
-			#logging.info(self.ready)
-			for item in self.ready:
-				if item not in self.tauon.quick_import_done:
-					if os.path.exists(path):
-						temp.add(item)
-				# else:
-				# 	logging.info("FILE IMPORTED")
-			self.ready = temp
-
-		if len(self.watching) > 0:
-			self.tauon.gui.request_frame()
+		self.ready = {
+			item for item in self.ready
+			if item not in self.tauon.quick_import_done and os.path.exists(item)
+		}
 
 class Fader:
 
@@ -59182,6 +59226,7 @@ def main(holder: Holder) -> None:
 					gui.request_frame()
 
 		tauon.queue_box.update_auto_queue()
+		tauon.dl_mon.scan()
 		if mouse_moved and tauon.fields.test():
 			gui.request_frame()
 
@@ -59349,9 +59394,6 @@ def main(holder: Holder) -> None:
 			continue
 
 		gui.new_playlist_cooldown = False
-
-		if prefs.auto_extract and prefs.monitor_downloads:
-			tauon.dl_mon.scan()
 
 		if inp.mouse_down and not tauon.coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
 			# logging.info(sdl3.SDL_GetMouseState(None, None))
