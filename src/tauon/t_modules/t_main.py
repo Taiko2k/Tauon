@@ -7293,7 +7293,7 @@ class Tauon:
 		self.deco:                                      Deco = Deco(tauon=self)
 		self.bottom_bar1:                     BottomBarType1 = BottomBarType1(tauon=self)
 		self.bottom_bar_ao1:               BottomBarType_ao1 = BottomBarType_ao1(tauon=self)
-		# The standard layout's alternative bottom panel (prefs.feux_panel).
+		# The standard layout's full bottom panel (prefs.feux_panel).
 		# The custom layout's widget owns its own instance.
 		self.feux_bar:                               FeuxBar = FeuxBar(self)
 		self.top_panel:                             TopPanel = TopPanel(tauon=self)
@@ -9039,6 +9039,10 @@ class Tauon:
 			self.gui.panelBY = self.gui.bottom_panel_height()
 			self.gui.update_layout = True
 		self.gui.request_frame()
+
+	def panel_type_deco(self) -> Decorator:
+		text = _("Switch to Compact Panel") if self.feux_panel_showing() else _("Switch to Full Panel")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def feux_panel_showing(self) -> bool:
 		"""Whether the Feux playback panel is the one currently on screen.
@@ -54870,8 +54874,7 @@ def main(holder: Holder) -> None:
 				prefs.replay_allow_compression = save[196]
 			if len(save) > 197 and save[197] is not None:
 				prefs.feux_panel = save[197]
-				# GuiVar.rescale() ran before the state file was read, so the
-				# bottom panel is still sized for the classic bar.
+				# Match the height to the restored panel preference.
 				gui.panelBY = gui.bottom_panel_height()
 			if len(save) > 198 and save[198] is not None:
 				prefs.feux_panel_art = save[198]
@@ -56488,7 +56491,7 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
 
 	mode_menu.br()
-	mode_menu.add(MenuItem(_("Toggle Panel Type"), tauon.toggle_panel_type))
+	mode_menu.add(MenuItem(_("Switch to Compact Panel"), tauon.toggle_panel_type, tauon.panel_type_deco))
 	# Only meaningful while the Feux panel is the one being drawn -- the
 	# classic bar has no art to hide.
 	mode_menu.add(MenuItem(_("Show Album Art"), tauon.toggle_feux_art,

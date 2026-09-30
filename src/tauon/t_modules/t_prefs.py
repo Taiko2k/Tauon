@@ -222,7 +222,7 @@ class Prefs:
 	# Which playback panel the standard (non-custom) layout draws along the
 	# bottom: the classic bar, or the roomier Feux panel. gui.panelBY follows
 	# it (see GuiVar.rescale). The custom layout picks its panel per widget.
-	feux_panel: bool = False
+	feux_panel: bool = True
 	# Whether the Feux panel shows cover art on its left. With it off the
 	# title and artist sit against the panel's left edge instead. Shared by
 	# the standard and custom layouts -- there is only ever one Feux panel.
