@@ -34889,7 +34889,8 @@ class BottomBarType1:
 		if tauon.radiobox.load_connecting or gui.buffering:
 			x = self.seek_bar_position[0] - round(26 - gui.scale)
 			y = self.seek_bar_position[1]
-			while x < self.seek_bar_position[0] + self.seek_bar_size[0]:
+			# A zero-width shard (image failed to load) would otherwise loop forever
+			while self.buffer_shard.w > 0 and x < self.seek_bar_position[0] + self.seek_bar_size[0]:
 				offset = (math.floor(((tauon.core_timer.get() * 1) % 1) * 13) / 13) * self.buffer_shard.w
 				gui.delay_frame(0.01)
 
