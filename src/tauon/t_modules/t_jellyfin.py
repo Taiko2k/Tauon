@@ -67,6 +67,10 @@ class Jellyfin:
 		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
 		self.playlists = []
 
+		self.lyrics_scan_lock = threading.Lock()
+		self.lyrics_scan_pending: set[str] = set()
+		self.lyrics_scan_checked: set[str] = set()
+
 	@property
 	def server_url(self) -> str:
 		"""Return the Jellyfin server URL with trailing slashes stripped."""
@@ -171,6 +175,77 @@ class Jellyfin:
 			return io.BytesIO(response.content)
 		logging.error(f"Jellyfin album art api error: {response.status_code} {response.text}")
 		return None
+
+	def _timestamp_from_ticks(self, ticks: int) -> str:
+		seconds, ticks = divmod(max(0, ticks), 10000000)
+		return f"{seconds // 60:02d}:{seconds % 60:02d}.{ticks // 10000:03d}"
+
+	def get_lyrics(self, track_object: TrackClass) -> tuple[str, str]:
+		if not self.connected or not self.accessToken:
+			self._authenticate()
+
+		if not self.connected:
+			return "", ""
+
+		headers = {
+			"Token": self.accessToken,
+			"X-Application": "Tauon/1.0",
+			"Authorization": self._get_jellyfin_auth(),
+		}
+		base_url = f"{self.server_url}/Audio/{track_object.url_key}/Lyrics"
+		response = requests.get(base_url, headers=headers, timeout=10)
+
+		if response.status_code != HTTPStatus.OK:
+			# 404 just means the server has no lyrics for this track
+			if response.status_code != HTTPStatus.NOT_FOUND:
+				logging.error(f"Jellyfin lyrics api error: {response.status_code} {response.text}")
+			return "", ""
+
+		plain = []
+		synced = []
+		for line in response.json().get("Lyrics", []):
+			text = str(line.get("Text") or "")
+			plain.append(text)
+			# Start is only present for synced (LRC) lyrics, in 100ns ticks
+			if line.get("Start") is not None:
+				synced.append(f"[{self._timestamp_from_ticks(int(line['Start']))}]{text}")
+		return "\n".join(plain).strip(), "\n".join(synced).strip()
+
+	def scan_lyrics(self, track_object: TrackClass) -> None:
+		if not track_object.url_key or track_object.lyrics or track_object.synced:
+			return
+
+		with self.lyrics_scan_lock:
+			if track_object.url_key in self.lyrics_scan_pending or track_object.url_key in self.lyrics_scan_checked:
+				return
+			self.lyrics_scan_pending.add(track_object.url_key)
+
+		def worker() -> None:
+			try:
+				lyrics, synced = self.get_lyrics(track_object)
+				if lyrics:
+					track_object.lyrics = lyrics
+					self.gui.lyrics_editor_update_now[0] = True
+				if synced:
+					track_object.synced = synced
+					self.gui.lyrics_editor_update_now[1] = True
+				if lyrics or synced:
+					logging.info(f"Found lyrics from Jellyfin server for {track_object.artist} - {track_object.title}")
+					self.gui.request_frame()
+					self.tauon.lyrics_ren_mini.to_reload = True
+					self.tauon.timed_lyrics_ren.index = -1
+					self.pctl.notify_database_changed()
+					self.pctl.refresh_now_playing(force=True)
+			except Exception:
+				logging.exception("Failed to scan lyrics from Jellyfin server")
+			finally:
+				with self.lyrics_scan_lock:
+					self.lyrics_scan_pending.discard(track_object.url_key)
+					self.lyrics_scan_checked.add(track_object.url_key)
+
+		shoot = threading.Thread(target=worker)
+		shoot.daemon = True
+		shoot.start()
 
 	def favorite(self, track: TrackClass, un: bool = False) -> None:
 		try:

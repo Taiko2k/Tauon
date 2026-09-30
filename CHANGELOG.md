@@ -7,6 +7,7 @@ Changelog
  - Added activity overview button
  - Added queue album group expantion
  - Added auto queue feature
+ - Added Jellyfin lyrics support
 
 ### v12.1.0
 

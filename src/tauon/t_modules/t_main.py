@@ -3209,6 +3209,7 @@ class PlayerCtl:
 			return self.tauon.plex.resolve_stream(track_object.url_key), None
 
 		if track_object.file_ext == "JELY":
+			self.tauon.jellyfin.scan_lyrics(track_object)
 			return self.tauon.jellyfin.resolve_stream(track_object.url_key)
 
 		if track_object.file_ext == "SUB":
