@@ -31694,7 +31694,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(464 * gui.scale)
+		row1_h = round(500 * gui.scale)
 		row2_h = round(355 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
@@ -31745,6 +31745,15 @@ class Over:
 		prefs.avoid_resampling = self.settings_switch_row((inner_x, inner_y, inner_w, row_h), prefs.avoid_resampling, _("Avoid resampling"), accent=accent)
 		if prefs.avoid_resampling != old_resample:
 			self.pctl.playerCommand = "reload"
+			self.pctl.playerCommandReady = True
+		inner_y += row_h + row_gap
+
+		old_force_stereo = prefs.force_stereo_output
+		prefs.force_stereo_output = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, row_h), prefs.force_stereo_output, _("Force stereo output"), accent=accent,
+		)
+		if prefs.force_stereo_output != old_force_stereo:
+			self.pctl.playerCommand = "set-device"
 			self.pctl.playerCommandReady = True
 		inner_y += row_h + row_gap
 
@@ -51380,6 +51389,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("output-samplerate", prefs.samplerate)
 	cf.update_value("resample-quality", prefs.resample)
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
+	cf.update_value("force-stereo-output", prefs.force_stereo_output)
 	cf.update_value("dsd-direct", prefs.dsd_direct)
 	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
 	cf.update_value("precache-local-files", prefs.precache)
@@ -51577,6 +51587,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.avoid_resampling = cf.sync_add(
 		"bool", "avoid_resampling", prefs.avoid_resampling,
 		"Only implemented for FLAC, MP3, OGG, OPUS")
+	prefs.force_stereo_output = cf.sync_add(
+		"bool", "force-stereo-output", prefs.force_stereo_output,
+		"Downmix PCM audio to stereo instead of using the output device's speaker layout.")
 	prefs.dsd_direct = cf.sync_add(
 		"bool", "dsd-direct", prefs.dsd_direct,
 		"Send DSD files to the device untouched instead of decoding them to PCM. "

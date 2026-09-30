@@ -1092,6 +1092,8 @@ def player4(tauon: Tauon) -> None:
 		aud.config_set_fade_duration(prefs.cross_fade_time)
 		st = prefs.phazor_device_selected.encode()
 		aud.config_set_dev_name(st)
+		if hasattr(aud, "config_set_force_stereo"):
+			aud.config_set_force_stereo(int(prefs.force_stereo_output))
 		if set_device:
 			aud.pause()
 			aud.wait()
