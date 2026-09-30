@@ -13,9 +13,9 @@ if TYPE_CHECKING:
 # Every frame is decoded up front and held as a texture, so both a frame count
 # and a memory budget are needed to stop a pathological image eating the heap.
 # Art over either limit is simply shown as a still.
-ANIM_FRAME_LIMIT = 200
-ANIM_SOURCE_BUDGET = 96 * 1024 * 1024   # Full size decoded frames, held only while loading
-ANIM_TEXTURE_BUDGET = 64 * 1024 * 1024  # Frame textures, held for as long as the art is cached
+ANIM_FRAME_LIMIT = 1000
+ANIM_SOURCE_BUDGET = 192 * 1024 * 1024  # Full size decoded frames, held only while loading
+ANIM_TEXTURE_BUDGET = 128 * 1024 * 1024  # Frame textures, held for as long as the art is cached
 
 # Frame delay to use where the file gives none, or gives one too short to be
 # worth honouring. 100 ms matches what browsers substitute for GIFs, which are
