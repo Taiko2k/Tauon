@@ -129,6 +129,7 @@ class TauonQueueItem:
 	auto_stop: bool
 	# None follows the source album; a list queues its remaining tracks individually.
 	tracks: list[TauonQueueItem] | None = None
+	auto_queued: bool = False
 
 	def __post_init__(self) -> None:
 		"""Restore nested queue tracks from saved dictionaries."""

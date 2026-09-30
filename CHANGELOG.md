@@ -2,10 +2,11 @@
 Changelog
 ---------
 
-### V12.2.0
+### v12.2.0
 
  - Added activity overview button
  - Added queue album group expantion
+ - Added auto queue feature
 
 ### v12.1.0
 

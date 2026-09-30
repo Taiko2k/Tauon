@@ -4213,6 +4213,24 @@ class PlayerCtl:
 		self, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
+		queue = self.queue_box
+		with queue.auto_queue_lock:
+			advancing = queue.auto_queue_advancing
+			if not dry:
+				queue.update_auto_queue(advanced=advancing)
+				queue.auto_queue_advancing = True
+			try:
+				result = self._advance(rr=rr, quiet=quiet, inplace=inplace, end=end, force=force, play=play, dry=dry)
+				if not dry:
+					queue.update_auto_queue(advanced=True)
+				return result
+			finally:
+				queue.auto_queue_advancing = advancing
+
+	def _advance(
+		self, *, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
+		force: bool = False, play: bool = True, dry: bool = False,
+	) -> int | None:
 
 		if self.playing_state == PlayingState.PAUSED and not self.prefs.resume_on_jump:
 			play = False
@@ -4372,6 +4390,7 @@ class PlayerCtl:
 
 					logging.info("Remove expired album from queue")
 					del self.force_queue[0]
+					self.queue_box.update_auto_queue(advanced=True)
 
 					if q.auto_stop:
 						self.stop_mode = StopMode.TRACK
@@ -4418,6 +4437,7 @@ class PlayerCtl:
 						del self.force_queue[0]
 				else:
 					del self.force_queue[0]
+				self.queue_box.update_auto_queue(advanced=True)
 				if q.auto_stop or (album_finished and queue_album.auto_stop):
 					self.stop_mode = StopMode.TRACK
 				if self.prefs.stop_end_queue and not self.force_queue:
@@ -19973,8 +19993,9 @@ class Tauon:
 			tauonplaylist_jar.append(v.__dict__)
 		for v in pctl.radio_playlists:
 			radioplaylist_jar.append(v.__dict__)
-		for v in pctl.force_queue:
-			tauonqueueitem_jar.append(asdict(v))
+		with self.queue_box.auto_queue_lock:
+			view_prefs["auto-queue"] = self.queue_box.auto_queue_state()
+			tauonqueueitem_jar.extend(asdict(v) for v in pctl.force_queue)
 		for v in pctl.master_library.values():
 			trackclass_jar.append({k: getattr(v, k) for k in v.__slots__})
 
@@ -42734,19 +42755,146 @@ class QueueBox:
 		self.scroll_position: int = 0
 		self.right_click_id = None
 		self.d_click_ref = None
+		self.restore_auto_queue(self.prefs.view_prefs.get("auto-queue", {}))
 		self.recalc()
 
 		self.queue_menu.add(MenuItem(_("Remove This"), self.right_remove_item, show_test=self.queue_remove_show))
 		self.queue_menu.add(MenuItem(_("Play Now"), self.play_now, show_test=self.queue_remove_show))
 		self.queue_menu.add(MenuItem(_("Auto-Stop Here"), self.toggle_auto_stop, self.toggle_auto_stop_deco, show_test=self.queue_remove_show))
 
-		self.queue_menu.add(MenuItem(_("Pause Queue"), self.toggle_pause, tauon.queue_pause_deco))
-		self.queue_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, hint="Alt+Shift+Q"))
+		self.queue_menu.add(MenuItem(_("Pause Queue"), self.toggle_pause, tauon.queue_pause_deco, show_test=self.queue_pause_show))
+		self.queue_menu.add(MenuItem(_("Auto Queue"), self.toggle_auto_queue, check_test=lambda: self.prefs.auto_queue))
+		self.queue_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, show_test=self.queue_items_show, hint="Alt+Shift+Q"))
 
 		self.queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
 
-		self.queue_menu.add(MenuItem(_("Queue to New Playlist"), self.make_as_playlist, tauon.queue_deco))
+		self.queue_menu.add(MenuItem(_("Queue to New Playlist"), self.make_as_playlist, tauon.queue_deco, show_test=self.queue_items_show))
 		# self.queue_menu.add("Finish Playing Album", tauon.finish_current, tauon.finish_current_deco)
+
+	def restore_auto_queue(self, state: dict) -> None:
+		self.auto_queue_lock = threading.RLock()
+		self.auto_queue_advancing = False
+		self.prefs.auto_queue = state.get("enabled", False)
+		self.auto_queue_mode: bool | None = state.get("mode")
+		self.auto_queue_source: int | None = state.get("source")
+		self.auto_queue_position: tuple[int, int] | None = state.get("position")
+		self.auto_queue_playing: tuple[int, int, int] | None = state.get("playing")
+
+	def auto_queue_state(self) -> dict:
+		with self.auto_queue_lock:
+			return {
+				"enabled": self.prefs.auto_queue,
+				"mode": self.auto_queue_mode,
+				"source": self.auto_queue_source,
+				"position": self.auto_queue_position,
+				"playing": self.auto_queue_playing,
+			}
+
+	def toggle_auto_queue(self) -> None:
+		with self.auto_queue_lock:
+			self.prefs.auto_queue ^= True
+			self.update_auto_queue()
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
+
+	def update_auto_queue(self, *, advanced: bool = False) -> None:
+		if not self.prefs.auto_queue:
+			return
+		with self.auto_queue_lock:
+			self._update_auto_queue(advanced=advanced)
+
+	def _update_auto_queue(self, *, advanced: bool = False) -> None:
+		if self.pctl.playing_state == PlayingState.URL_STREAM or self.pctl.pause_queue:
+			return
+		pctl = self.pctl
+		if not 0 <= pctl.active_playlist_playing < len(pctl.multi_playlist):
+			return
+		playlist_id = pctl.pl_to_id(pctl.active_playlist_playing)
+		playing = pctl.playing_object()
+		current = (playlist_id, playing.index if playing is not None else -1, pctl.queue_step)
+		mode_changed = self.auto_queue_mode is not None and self.auto_queue_mode != pctl.random_mode
+		manual_change = not pctl.random_mode and not advanced and self.auto_queue_playing is not None and current != self.auto_queue_playing
+		changed = mode_changed or manual_change
+		if changed:
+			manual_items = []
+			for item in pctl.force_queue:
+				if item.tracks is not None:
+					item.tracks[:] = [track for track in item.tracks if not track.auto_queued]
+					if item.tracks or not item.auto_queued:
+						manual_items.append(item)
+				elif not item.auto_queued:
+					manual_items.append(item)
+			pctl.force_queue[:] = manual_items
+			self.scroll_position = 0
+			self.dragging = None
+			self.auto_queue_position = None
+		self.auto_queue_mode = pctl.random_mode
+		self.auto_queue_playing = current
+		if self.auto_queue_source != playlist_id:
+			self.auto_queue_source = playlist_id
+			self.auto_queue_position = None
+
+		queued = [track for item in pctl.force_queue for track in self.album_tracks(item)]
+		needed = 10 - len(queued)
+		if needed > 0:
+			playlist = pctl.playing_playlist()
+			excluded = {track.track_id for track in queued}
+			if pctl.random_mode:
+				if playing is not None:
+					excluded.add(playing.index)
+				positions = {track_id: position for position, track_id in enumerate(playlist) if track_id in pctl.master_library}
+				while needed > 0:
+					available = [track_id for track_id in positions if track_id not in excluded]
+					if not available:
+						break
+					if self.prefs.true_shuffle:
+						pool = pctl.shuffle_pools.get(playlist_id, [])
+						available = list(dict.fromkeys(track_id for track_id in pool if track_id in positions and track_id not in excluded))
+						if not available:
+							pctl.update_shuffle_pool(playlist_id)
+							pool = pctl.shuffle_pools[playlist_id]
+							available = list(dict.fromkeys(track_id for track_id in pool if track_id in positions and track_id not in excluded))
+					selected = random.sample(available, min(needed, len(available)))
+					for track_id in selected:
+						pctl.force_queue.append(queue_item_gen(track_id, positions[track_id], playlist_id, auto_queued=True))
+						if self.prefs.true_shuffle:
+							pool.remove(track_id)
+						excluded.add(track_id)
+					needed -= len(selected)
+					changed = True
+			else:
+				position = pctl.playlist_playing_position if playing is not None else -1
+				if playing is not None and (not 0 <= position < len(playlist) or playlist[position] != playing.index):
+					position = playlist.index(playing.index) if playing.index in playlist else -1
+				if self.auto_queue_position is None and not changed:
+					for track in reversed(queued):
+						if track.playlist_id == playlist_id and track.track_id in playlist:
+							position = track.position if 0 <= track.position < len(playlist) and playlist[track.position] == track.track_id else playlist.index(track.track_id)
+							break
+				elif self.auto_queue_position is not None:
+					position, track_id = self.auto_queue_position
+					if not 0 <= position < len(playlist) or playlist[position] != track_id:
+						position = playlist.index(track_id) if track_id in playlist else position - 1
+				repeat = self.prefs.end_setting == "repeat"
+				for _step in range(len(playlist) * (needed + 1) if repeat else len(playlist)):
+					position += 1
+					if position >= len(playlist):
+						if not repeat or not playlist:
+							break
+						position = 0
+					track_id = playlist[position]
+					self.auto_queue_position = (position, track_id)
+					if track_id not in pctl.master_library or (not repeat and track_id in excluded):
+						continue
+					pctl.force_queue.append(queue_item_gen(track_id, position, playlist_id, auto_queued=True))
+					excluded.add(track_id)
+					needed -= 1
+					changed = True
+					if not needed:
+						break
+		if changed:
+			self.gui.request_tracklist_redraw()
+			self.gui.request_frame()
 
 	def recalc(self) -> None:
 		self.tab_h = 34 * self.gui.scale
@@ -42788,6 +42936,12 @@ class QueueBox:
 
 	def except_for_this_show_test(self, reference: int) -> bool:
 		return self.queue_remove_show(reference) and self.inp.test_shift(reference)
+
+	def queue_items_show(self, _reference: int) -> bool:
+		return bool(self.pctl.force_queue)
+
+	def queue_pause_show(self, reference: int) -> bool:
+		return self.queue_items_show(reference) or self.pctl.pause_queue
 
 	def album_tracks(self, item: TauonQueueItem) -> list[TauonQueueItem]:
 		if item.tracks is not None:
@@ -43348,7 +43502,7 @@ class QueueBox:
 			text_colour = ColourRGBA(0, 0, 0, 200)
 		text_colour = self.ink(text_colour, self.colours.queue_background, 3.0)
 		if not self.pctl.force_queue and h > 40 * scale:
-			text = _("Add to Queue") if self.inp.quick_drag else _("Queue")
+			text = _("Add to Queue") if self.inp.quick_drag else _("Queue is Empty")
 			heading = self.ink(alpha_mod(self.colours.index_text, 200), self.ddt.text_background_colour, 3.0)
 			self.ddt.text((x + w // 2, y + 15 * scale, 2), text, heading, 212)
 		elif self.pctl.force_queue:
@@ -43392,6 +43546,7 @@ class QueueBox:
 			if qb_right_click == 1:
 				self.right_click_id = None
 			self.queue_menu.activate(position=self.inp.mouse_position)
+			self.inp.right_click = False
 
 class MetaBox:
 
@@ -50941,9 +51096,9 @@ def no_padding() -> int:
 def uid_gen() -> int:
 	return random.randrange(1, 100000000)
 
-def queue_item_gen(track_id: int, position: int, pl_id: int, queue_type: QueueType = QueueType.TRACK, album_stage: int = 0) -> TauonQueueItem:
+def queue_item_gen(track_id: int, position: int, pl_id: int, queue_type: QueueType = QueueType.TRACK, album_stage: int = 0, *, auto_queued: bool = False) -> TauonQueueItem:
 	auto_stop = False
-	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=queue_type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop)
+	return TauonQueueItem(track_id=track_id, position=position, playlist_id=pl_id, type=queue_type, album_stage=album_stage, uuid_int=uid_gen(), auto_stop=auto_stop, auto_queued=auto_queued)
 
 def get_themes(dirs: Directories, deco: bool = False) -> list[tuple[str, str]] | dict[str, str]:
 	themes: list[tuple[str, str]] = []  # full path, theme file name
@@ -59026,6 +59181,7 @@ def main(holder: Holder) -> None:
 					gui.mouse_in_window = False
 					gui.request_frame()
 
+		tauon.queue_box.update_auto_queue()
 		if mouse_moved and tauon.fields.test():
 			gui.request_frame()
 
@@ -60945,7 +61101,7 @@ def main(holder: Holder) -> None:
 						else:
 							gui.pl_box_h = 0
 
-						if pctl.force_queue or preview_queue or not prefs.show_playlist_list or not prefs.hide_queue:
+						if pctl.force_queue or preview_queue or prefs.left_panel_mode == "queue" or not prefs.show_playlist_list or not prefs.hide_queue:
 							tauon.queue_box.draw(panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
 
 							if prefs.show_playlist_list and gui.pl_box_h:
@@ -60953,17 +61109,6 @@ def main(holder: Holder) -> None:
 								rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, round(gui.scale * 2))
 								ddt.rect(rect, ColourRGBA(0, 0, 0, 255))
 								ddt.rect(rect, alpha_blend(ColourRGBA(255, 255, 255, 11), colours.queue_background))
-						elif prefs.left_panel_mode == "queue":
-							text = _("Queue is Empty")
-							rect = (panel_x, gui.panelY + gui.pl_box_h, gui.lspw, full - gui.pl_box_h)
-							ddt.rect(rect, colours.queue_background)
-							ddt.text_background_colour = colours.queue_background
-							ddt.text(
-								(panel_x + (gui.lspw // 2), gui.panelY + gui.pl_box_h + 15 * gui.scale, 2),
-								text,
-								tauon.queue_box.ink(alpha_mod(colours.index_text, 200), colours.queue_background, 3.0),
-								212,
-							)
 
 				# ------------------------------------------------
 				# Scroll Bar

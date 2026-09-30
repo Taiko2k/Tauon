@@ -419,6 +419,7 @@ class Prefs:
 	artist_list_style = 1
 	discord_enable: bool = False
 	stop_end_queue: bool = False
+	auto_queue: bool = False
 
 	block_suspend: bool = False
 	smart_bypass: bool = True
