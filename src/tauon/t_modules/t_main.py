@@ -1139,7 +1139,13 @@ class GuiVar:
 
 		self.stop_sync: bool = False
 		self.sync_progress = ""
-		self.sync_speed = ""
+		self.sync_speed = 0
+		self.sync_folders_total = 0
+		self.sync_folders_done = 0
+		self.sync_files_total = 0
+		self.sync_files_done = 0
+		self.sync_transcode_folder: list[int] | None = None
+		self.sync_transcode_failed = False
 
 		self.bar_hover_timer = Timer()
 
@@ -9564,6 +9570,9 @@ class Tauon:
 			self.thread_manager.ready("worker")
 
 	def finish_transcode(self) -> None:
+		if (self.transcode_list[0] is self.gui.sync_transcode_folder
+				and self.gui.transcoding_batch_done < self.gui.transcoding_batch_total):
+			self.gui.sync_transcode_failed = True
 		self.gui.transcoding_overall_done += len(self.transcode_list[0])
 		self.gui.transcoding_batch_total = 0
 		self.gui.transcoding_batch_done = 0
@@ -11228,23 +11237,38 @@ class Tauon:
 			self.show_message(_("Cannot sync when in transcode inplace mode"))
 			return
 
-		# Find target path
+		self.gui.sync_folders_total = self.gui.sync_folders_done = 0
+		self.gui.sync_files_total = self.gui.sync_files_done = 0
+		self.gui.sync_speed = 0
+		self.gui.sync_transcode_folder = None
+		self.gui.sync_transcode_failed = False
 		self.gui.sync_progress = "Starting Sync..."
 		self.gui.request_frame()
-
-		path = Path(self.sync_target.text.strip().rstrip("/").rstrip("\\").replace("\n", "").replace("\r", ""))
-		logging.debug(f"sync_path: {path}")
-		if not path:
-			self.show_message(_("No target folder selected"))
+		try:
+			self.sync_to_device(pl)
+		except Exception:
+			logging.exception("Sync failed")
+			self.show_message(_("Sync failed"), mode="error")
+		finally:
+			self.gui.sync_speed = 0
 			self.gui.sync_progress = ""
 			self.gui.stop_sync = False
+			self.gui.sync_transcode_folder = None
+			self.gui.sync_transcode_failed = False
+			self.gui.sync_folders_total = self.gui.sync_folders_done = 0
+			self.gui.sync_files_total = self.gui.sync_files_done = 0
 			self.gui.request_frame()
+
+	def sync_to_device(self, pl: int) -> None:
+		# Find target path
+		target = self.sync_target.text.strip().replace("\n", "").replace("\r", "")
+		if not target:
+			self.show_message(_("No target folder selected"))
 			return
+		path = Path(target)
+		logging.debug(f"sync_path: {path}")
 		if not path.is_dir():
 			self.show_message(_("Target folder could not be found"))
-			self.gui.sync_progress = ""
-			self.gui.stop_sync = False
-			self.gui.request_frame()
 			return
 
 		self.prefs.sync_target = str(path)
@@ -11260,9 +11284,8 @@ class Tauon:
 		folder_dict: dict[str, list[int]] = {}
 
 		if self.gui.stop_sync:
-			self.gui.sync_progress = ""
-			self.gui.stop_sync = False
-			self.gui.request_frame()
+			self.show_message(_("Sync canceled"), mode="warning")
+			return
 
 		# Find the folder names the transcode function would name them
 		for folder in folders:
@@ -11278,7 +11301,6 @@ class Tauon:
 		# Find deletes
 		if self.prefs.sync_deletes:
 			for d_folder in d_folder_names:
-				d_folder = d_folder.name
 				if self.gui.stop_sync:
 					break
 				if d_folder not in folder_names:
@@ -11297,17 +11319,24 @@ class Tauon:
 			else:
 				logging.error(f"Already exists: {folder}")
 
+		self.gui.sync_folders_total = len(todos)
 		self.gui.request_frame()
+		failed = False
+		aborted = False
 		# -----
 		# Prepare and copy
 		for i, item in enumerate(todos):
 			self.gui.sync_progress = _("Copying files to device")
+			self.gui.sync_files_total = self.gui.sync_files_done = 0
+			self.gui.sync_speed = 0
+			self.gui.request_frame()
 			if self.gui.stop_sync:
 				break
 
 			free_space = shutil.disk_usage(path)[2] / 8 / 100000000  # in GB
 			if free_space < 0.6:
 				self.show_message(_("Sync aborted! Low disk space on target device"), mode="warning")
+				aborted = True
 				break
 
 			if self.prefs.bypass_transcode or (self.prefs.smart_bypass and 0 < self.pctl.get_track(folder_dict[item][0]).bitrate <= 128):
@@ -11318,12 +11347,14 @@ class Tauon:
 					if (path / item).exists():
 						self.show_message(
 							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
+						failed = True
 						continue
 
 					(path / item).mkdir()
 					encode_done = source_parent
 				else:
 					self.show_message(_("One or more folders is missing"))
+					failed = True
 					continue
 			else:
 				encode_done = self.prefs.encoder_output / item
@@ -11335,11 +11366,20 @@ class Tauon:
 						self.gui.sync_progress = _("{N} Folders Remaining").format(N=str(remain))
 					else:
 						self.gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
+					self.gui.sync_transcode_folder = folder_dict[item]
+					self.gui.sync_transcode_failed = False
 					self.queue_transcode([folder_dict[item]])
 					while self.transcode_list:
+						if self.gui.stop_sync:
+							del self.transcode_list[1:]
+							self.gui.tc_cancel = True
 						time.sleep(1)
+					self.gui.sync_transcode_folder = None
 					if self.gui.stop_sync:
 						break
+					if self.gui.sync_transcode_failed:
+						failed = True
+						continue
 				else:
 					logging.warning("A transcode is already done")
 
@@ -11347,49 +11387,67 @@ class Tauon:
 					if (path / item).exists():
 						self.show_message(
 							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
+						failed = True
 						continue
 
 					(path / item).mkdir()
+				else:
+					failed = True
+					continue
 
-			for file in encode_done.iterdir():
-				file = file.name
+			files = [entry for entry in encode_done.iterdir() if entry.is_file()]
+			self.gui.sync_files_total = len(files)
+			self.gui.sync_progress = _("Copying files to device")
+			self.gui.request_frame()
+			folder_failed = False
+			for source_file in files:
+				if self.gui.stop_sync:
+					break
+				file = source_file.name
 				logging.info(f"Copy file {file} to {path / item}…")
-				# self.gui.sync_progress += "."
-				self.gui.request_frame()
-
-				if (encode_done / file).is_file():
-					size = os.path.getsize(encode_done / file)
-					self.sync_file_timer.set()
+				self.sync_file_timer.set()
+				try:
+					size = source_file.stat().st_size
 					try:
-						shutil.copyfile(encode_done / file, path / item / file)
+						shutil.copyfile(source_file, path / item / file)
 					except OSError as e:
-						if str(e).startswith("[Errno 22] Invalid argument: "):
-							sanitized_file = re.sub(r'[<>:"/\\|?*]', "_", file)
-							if sanitized_file == file:
-								logging.exception("Unknown OSError trying to copy file, maybe FS does not support the name?")
-							else:
-								shutil.copyfile(encode_done / file, path / item / sanitized_file)
-								logging.warning(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
-						else:
-							logging.exception("Unknown OSError trying to copy file")
-					except Exception:
-						logging.exception("Unknown error trying to copy file")
+						if e.errno != 22:
+							raise
+						sanitized_file = re.sub(r'[<>:"/\\|?*]', "_", file)
+						if sanitized_file == file:
+							raise
+						shutil.copyfile(source_file, path / item / sanitized_file)
+						logging.warning(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
+				except Exception:
+					logging.exception("Unknown error trying to copy file")
+					folder_failed = True
+					continue
+				self.gui.sync_files_done += 1
 
 				if self.gui.sync_speed == 0 or (self.sync_file_update_timer.get() > 1 and not file.endswith(".jpg")):
 					self.sync_file_update_timer.set()
-					self.gui.sync_speed = size / self.sync_file_timer.get()
+					self.gui.sync_speed = size / max(self.sync_file_timer.get(), 0.000001)
 					self.gui.sync_progress = _("Copying files to device") + " @ " + get_filesize_string_rounded(
 						self.gui.sync_speed) + "/s"
-					if self.gui.stop_sync:
-						self.gui.sync_progress = _("Aborting Sync") + " @ " + get_filesize_string_rounded(self.gui.sync_speed) + "/s"
+				if self.gui.stop_sync:
+					self.gui.sync_progress = _("Aborting Sync")
+				self.gui.request_frame()
 
+			failed |= folder_failed
+			if self.gui.stop_sync:
+				break
+			if not folder_failed:
+				self.gui.sync_folders_done += 1
+				self.gui.request_frame()
 			logging.info("Finished copying folder")
 
-		self.gui.sync_speed = 0
-		self.gui.sync_progress = ""
-		self.gui.stop_sync = False
-		self.gui.request_frame()
-		self.show_message(_("Sync completed"), mode="done")
+		if self.gui.stop_sync:
+			self.show_message(_("Sync canceled"), mode="warning")
+		elif not aborted:
+			if failed:
+				self.show_message(_("Sync finished with errors"), mode="warning")
+			else:
+				self.show_message(_("Sync completed"), mode="done")
 
 	def auto_sync(self, pl: int) -> None:
 		shoot_dl = threading.Thread(target=self.auto_sync_thread, args=([pl]))
@@ -53467,6 +53525,8 @@ def worker1(tauon: Tauon) -> None:
 				gui.request_frame()
 			except Exception:
 				logging.exception("Transcode failed")
+				if folder_items is gui.sync_transcode_folder:
+					gui.sync_transcode_failed = True
 				tauon.transcode_state = "Transcode Error"
 				time.sleep(0.2)
 				tauon.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
