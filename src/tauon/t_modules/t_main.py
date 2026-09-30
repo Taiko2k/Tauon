@@ -2259,19 +2259,38 @@ def copy_trackfile_metadata(nt: TrackClass, audio: TrackFile) -> None:
 	for field in _TRACKFILE_METADATA_FIELDS:
 		setattr(nt, field, getattr(audio, field))
 
+@dataclass
+class DropImportAction:
+	"""One duplicate decision shared by all files in an external drop."""
+
+	complete: bool = True
+	checked: bool = False
+	prompted: bool = False
+
+def unique_playlist_tracks(tracks: list[int], seen: set[int]) -> list[int]:
+	"""Keep the first incoming occurrence of tracks absent from the destination."""
+	unique = []
+	for track_id in tracks:
+		if track_id not in seen:
+			unique.append(track_id)
+			seen.add(track_id)
+	return unique
+
 class LoadClass:
 	"""Object for import track jobs (passed to worker thread)"""
 
 	def __init__(self) -> None:
 		self.target:            str = ""
 		self.playlist:          int = 0  # Playlist UID
-		self.tracks:            list[TrackClass] = []
+		self.tracks:            list[int] = []
 		self.stage:             int = 0
 		self.playlist_position: int | None = None
 		self.replace_stem:      bool = False
 		self.notify:            bool = False
 		self.play:              bool = False
 		self.force_scan:        bool = False
+		self.drop_action: DropImportAction | None = None
+		self.preserve_order: bool = False
 
 class MOD(Structure):
 	"""Access functions from libopenmpt for scanning tracker files"""
@@ -7281,6 +7300,7 @@ class Tauon:
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
+		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
 		self.milk_choose:                       MilkPresetChooser = MilkPresetChooser(tauon=self)
 		self.search_text                          = self.search_over.search_text
@@ -7339,6 +7359,7 @@ class Tauon:
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
 		self.load_orders:         list[LoadClass] = []
+		self.drop_import_action: DropImportAction | None = None
 		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
 		self.album_info_cache_key: tuple[int, TrackClass | None, int] = (-1, None, -1)
@@ -8597,6 +8618,7 @@ class Tauon:
 						nt = self.tag_scan(nt)
 						self.pctl.master_library[self.pctl.master_count] = nt
 						playlist.append(self.pctl.master_count)
+						location_dict[line] = nt
 						self.pctl.master_count += 1
 						found_file += 1
 					# Last resort, guess based on title
@@ -8610,7 +8632,22 @@ class Tauon:
 		logging.info(f"playlist imported with {found_imported} tracks already in library, {found_file} found from filepath, {found_title} from title and {not_found} not found")
 		return playlist, stations
 
-	def load_m3u(self, m3u_path: str) -> None:
+	def append_imported_playlist(self, playlist: TauonPlaylist, drop_action: DropImportAction | None) -> None:
+		if drop_action is not None:
+			order = LoadClass()
+			order.target = playlist.playlist_file
+			order.playlist = playlist.uuid_int
+			order.tracks = playlist.playlist_ids
+			order.stage = 2
+			order.drop_action = drop_action
+			order.preserve_order = True
+			playlist.playlist_ids = []
+			self.pctl.multi_playlist.append(playlist)
+			self.load_orders.append(order)
+		else:
+			self.pctl.multi_playlist.append(playlist)
+
+	def load_m3u(self, m3u_path: str, *, drop_action: DropImportAction | None = None) -> None:
 		"""Import an m3u file and create a new Tauon playlist for it"""
 		path = Path(m3u_path)
 		name = path.stem
@@ -8624,8 +8661,7 @@ class Tauon:
 			filesize = path.stat().st_size
 			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize, export_type="m3u", auto_import=True)
 			logging.info(f"Imported m3u file as {final_playlist.title}")
-			self.pctl.multi_playlist.append(
-				final_playlist)
+			self.append_imported_playlist(final_playlist, drop_action)
 		if stations:
 			self.add_stations(stations, name)
 		if not playlist and not stations:
@@ -8861,6 +8897,8 @@ class Tauon:
 
 				self.pctl.master_library[self.pctl.master_count] = nt
 				playlist.append(self.pctl.master_count)
+				if nt.fullpath:
+					location_dict[nt.fullpath] = self.pctl.master_count
 				self.pctl.master_count += 1
 				if nt.found:
 					continue
@@ -8884,7 +8922,7 @@ class Tauon:
 		return playlist, stations, name
 
 
-	def load_xspf(self, xspf_path: str) -> None:
+	def load_xspf(self, xspf_path: str, *, drop_action: DropImportAction | None = None) -> None:
 		# self.log("Importing XSPF playlist: " + path, title=True)
 
 		if not Path(xspf_path).is_file():
@@ -8900,8 +8938,7 @@ class Tauon:
 			filesize = path.stat().st_size
 			final_playlist = self.pl_gen(title=name, playlist_ids=playlist, playlist_file=str(path), file_size=filesize, export_type="xspf", auto_import=True)
 			logging.info(f"Imported xspf file as {final_playlist.title}")
-			self.pctl.multi_playlist.append(
-				final_playlist)
+			self.append_imported_playlist(final_playlist, drop_action)
 		if stations:
 			self.add_stations(stations, name)
 		if not stations and not playlist:
@@ -15796,7 +15833,8 @@ class Tauon:
 			and not self.search_over.active \
 			and not self.milk_choose.active \
 			and not self.gui.box_over \
-			and not self.trans_edit_box.active
+			and not self.trans_edit_box.active \
+			and not self.duplicate_import_box.active
 
 	def get_radio_art(self) -> None:
 		if self.radiobox.loaded_url in self.radiobox.websocket_source_urls:
@@ -16140,14 +16178,122 @@ class Tauon:
 	def is_tidal_track(self, ref: MenuTrackRef) -> bool:
 		return self.pctl.master_library[ref.track_id].file_ext == "TIDAL"
 
+	def add_playlist_tracks(
+		self, playlist_id: int, tracks: list[int], on_added: Callable[[int], None] | None = None,
+	) -> None:
+		"""Pause a playlist addition until the user has resolved any duplicates."""
+		tracks = tracks[:]
+		pl = self.pctl.id_to_pl(playlist_id)
+		if pl is None:
+			return
+		unique = unique_playlist_tracks(tracks, set(self.pctl.multi_playlist[pl].playlist_ids))
+
+		def finish(skip_duplicates: bool) -> None:
+			target = self.pctl.id_to_pl(playlist_id)
+			if target is None:
+				return
+			playlist = self.pctl.multi_playlist[target].playlist_ids
+			incoming = unique_playlist_tracks(tracks, set(playlist)) if skip_duplicates else tracks
+			playlist.extend(incoming)
+			if incoming:
+				self.pctl.after_import_flag = True
+				self.dropped_playlist = target
+				self.pctl.notify_database_changed()
+				self.pctl.update_shuffle_pool(playlist_id)
+				self.tree_view_box.clear_target_pl(target)
+				self.gui.request_tracklist_redraw()
+				self.thread_manager.ready("worker")
+			if on_added is not None:
+				on_added(len(incoming))
+			self.gui.request_frame()
+
+		duplicate_count = len(tracks) - len(unique)
+		if duplicate_count:
+			self.duplicate_import_box.request(duplicate_count, finish)
+		else:
+			finish(False)
+
+	def drop_selected_tracks(self, pl: int, adds: list[list[int | Timer]]) -> None:
+		playlist_id = self.pctl.pl_to_id(pl)
+		tracks = [self.pctl.default_playlist[position] for position in self.gui.shift_selection]
+		self.inp.quick_drag = False
+		self.gui.playlist_hold = False
+
+		def added(count: int) -> None:
+			if count:
+				adds.append([playlist_id, count, Timer()])
+				if self.pctl.gen_codes.get(playlist_id) and "self" not in self.pctl.gen_codes[playlist_id]:
+					self.clear_gen_ask(playlist_id)
+
+		self.add_playlist_tracks(playlist_id, tracks, added)
+
+	def combine_playlists(self, source: int, destination: int, *, check_lock: bool = False) -> None:
+		source_id = self.pctl.pl_to_id(source)
+		destination_id = self.pctl.pl_to_id(destination)
+		if source_id == destination_id:
+			return
+		tracks = self.pctl.multi_playlist[source].playlist_ids[:]
+
+		def added(_count: int) -> None:
+			self.pctl.delete_playlist_by_id(source_id, force=True, check_lock=check_lock)
+			target = self.pctl.id_to_pl(destination_id)
+			if target is not None:
+				self.dropped_playlist = target
+			self.pctl.notify_database_changed()
+
+		self.add_playlist_tracks(destination_id, tracks, added)
+
+	def prepare_drop_import(self, order: LoadClass) -> bool:
+		"""Wait for the whole external drop to scan before checking and committing it."""
+		action = order.drop_action
+		if action is None or action.checked:
+			return True
+		if not action.complete or action.prompted:
+			return False
+		orders = [item for item in self.load_orders if item.drop_action is action]
+		if any(item.stage != 2 for item in orders):
+			return False
+		target_ids = {item.playlist for item in orders}
+		seen_by_playlist = {
+			playlist.uuid_int: set(playlist.playlist_ids) for playlist in self.pctl.multi_playlist
+			if playlist.uuid_int in target_ids
+		}
+		duplicate_count = 0
+		for item in orders:
+			if not item.preserve_order:
+				self.sort_track_2(None, item.tracks)
+			seen = seen_by_playlist.get(item.playlist)
+			if seen is not None:
+				duplicate_count += len(item.tracks) - len(unique_playlist_tracks(item.tracks, seen))
+		if not duplicate_count:
+			action.checked = True
+			return True
+
+		def finish(skip_duplicates: bool) -> None:
+			if skip_duplicates:
+				seen_by_playlist = {
+					playlist.uuid_int: set(playlist.playlist_ids) for playlist in self.pctl.multi_playlist
+					if playlist.uuid_int in target_ids
+				}
+				for item in orders:
+					seen = seen_by_playlist.get(item.playlist)
+					if seen is not None:
+						item.tracks = unique_playlist_tracks(item.tracks, seen)
+			action.checked = True
+			self.gui.request_frame()
+
+		action.prompted = True
+		self.duplicate_import_box.request(duplicate_count, finish)
+		return False
+
 	def drop_tracks_to_new_playlist(self, track_list: list[int], _hidden: bool = False) -> None:
 		pl = self.new_playlist(switch=False)
+		tracks = [self.pctl.default_playlist[position] for position in track_list]
 		albums = []
 		artists = []
 		for item in track_list:
 			albums.append(self.pctl.get_track(self.pctl.default_playlist[item]).album)
 			artists.append(self.pctl.get_track(self.pctl.default_playlist[item]).artist)
-			self.pctl.multi_playlist[pl].playlist_ids.append(self.pctl.default_playlist[item])
 
 		if len(track_list) > 1:
 			if len(albums) > 0 and albums.count(albums[0]) == len(albums):
@@ -16162,8 +16308,7 @@ class Tauon:
 
 		if self.tree_view_box.dragging_name:
 			self.pctl.multi_playlist[pl].title = self.tree_view_box.dragging_name
-		self.dropped_playlist = pl
-		self.pctl.notify_database_changed()
+		self.add_playlist_tracks(self.pctl.pl_to_id(pl), tracks)
 
 	def queue_deco(self) -> Decorator:
 		line_colour = self.colours.menu_text if len(self.pctl.force_queue) > 0 else self.colours.menu_text_disabled
@@ -21165,6 +21310,7 @@ class Tauon:
 		load_order = LoadClass()
 		load_order.target = target.replace("\\", "/")
 		load_order.playlist = self.pctl.multi_playlist[self.gui.drop_playlist_target].uuid_int
+		load_order.drop_action = self.drop_import_action or DropImportAction()
 
 		if self.flatpak_mode:
 			if not os.path.exists(target):
@@ -21173,7 +21319,7 @@ class Tauon:
 					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
 					mode="bubble")
 			elif target.startswith("/run/user/"):
-				self.gui.message_box_confirm_reference = (copy.deepcopy(load_order),)
+				self.gui.message_box_confirm_reference = (load_order,)
 				self.gui.message_box_confirm_callback = lambda x: self.load_orders.append(x)
 				self.gui.message_box_no_callback = lambda x: self.show_message(
 						_("The target may be lost on reboot without necessary Flatpak permissions."),
@@ -21193,7 +21339,7 @@ class Tauon:
 			self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder.append(load_order.target)
 			reduce_paths(self.pctl.multi_playlist[self.gui.drop_playlist_target].last_folder)
 
-		self.load_orders.append(copy.deepcopy(load_order))
+		self.load_orders.append(load_order)
 
 		#logging.info('dropped: ' + str(dropped_file))
 		self.gui.request_frame()
@@ -27601,6 +27747,115 @@ class MessageBox:
 		else:
 			ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
 
+class DuplicateImportBox:
+	"""Modal duplicate choices with continuations owned by each import action."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.requests: deque[tuple[int, Callable[[bool], None]]] = deque()
+		self.click = False
+		self.enter = False
+		self.skip_selected = True
+		self.mouse = (0.0, 0.0)
+
+	@property
+	def active(self) -> bool:
+		return bool(self.requests)
+
+	def request(self, count: int, continuation: Callable[[bool], None]) -> None:
+		self.requests.append((count, continuation))
+		self.tauon.inp.quick_drag = False
+		self.tauon.gui.playlist_hold = False
+		self.tauon.gui.request_frame()
+
+	def choose(self, skip_duplicates: bool) -> None:
+		if not self.active:
+			return
+		continuation = self.requests.popleft()[1]
+		self.click = False
+		self.enter = False
+		self.skip_selected = True
+		continuation(skip_duplicates)
+		self.tauon.gui.request_frame()
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.tauon.inp
+		if inp.mouse_position[0] > -2000:
+			self.mouse = tuple(inp.mouse_position)
+		self.click = inp.mouse_click
+		self.enter = inp.key_return_press
+		if inp.key_tab_press or inp.key_left_press or inp.key_right_press:
+			self.skip_selected = not self.skip_selected
+		for attribute in (
+			"mouse_click", "d_mouse_click", "mouse_up", "mouse_down", "right_click", "middle_click",
+			"key_return_press", "key_esc_press", "key_tab_press", "key_left_press", "key_right_press",
+			"key_up_press", "key_down_press", "key_del", "key_home_press", "key_end_press", "k_input",
+			"key_c_press", "key_v_press", "key_a_press", "key_s_press", "key_z_press", "key_x_press",
+			"key_backspace_press", "level_2_right_click", "level_2_enter", "touch_released",
+		):
+			setattr(inp, attribute, False)
+		inp.backspace_press = 0
+		inp.mouse_wheel = 0
+		inp.touch_scroll_y = 0
+		inp.touch_scroll_x = 0
+		inp.input_text = ""
+		inp.mouse_position[:] = [-3000.0, -3000.0]
+		self.tauon.gui.keymaps.hits.clear()
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		tauon = self.tauon
+		ddt = tauon.ddt
+		scale = tauon.gui.scale
+		colours = tauon.colours
+		count = self.requests[0][0]
+		title = _("Duplicate tracks found")
+		detail = (
+			_("This action would add a duplicate track.") if count == 1
+			else _("This action would add {N} duplicate tracks.").format(N=count)
+		)
+		add_label = _("Add duplicates")
+		skip_label = _("Skip duplicates")
+		add_w = ddt.get_text_w(add_label, 212) + round(24 * scale)
+		skip_w = ddt.get_text_w(skip_label, 212) + round(24 * scale)
+		w = max(round(380 * scale), add_w + skip_w + round(60 * scale))
+		w = min(w, tauon.window_size[0] - round(20 * scale))
+		text_w = w - round(40 * scale)
+		detail_h = ddt.get_text_wh(detail, 12, text_w, True)[1]
+		h = round(106 * scale) + detail_h
+		x = (tauon.window_size[0] - w) // 2
+		y = (tauon.window_size[1] - h) // 2
+		ddt.rect((0, 0, *tauon.window_size), ColourRGBA(0, 0, 0, 130))
+		ddt.rect((x - 2 * scale, y - 2 * scale, w + 4 * scale, h + 4 * scale), colours.box_text_border)
+		ddt.rect((x, y, w, h), colours.message_box_bg)
+		ddt.text_background_colour = colours.message_box_bg
+		ddt.text((x + 20 * scale, y + 14 * scale), title, colours.message_box_text, 15, max_w=text_w)
+		ddt.text((x + 20 * scale, y + 43 * scale, 4, text_w), detail, colours.message_box_text, 12)
+		button_y = y + h - round(43 * scale)
+		button_x = x + (w - add_w - skip_w - round(16 * scale)) // 2
+		position = tauon.inp.mouse_position[:]
+		tauon.inp.mouse_position[:] = self.mouse
+		try:
+			add = tauon.draw.button(
+				add_label, button_x, button_y, w=add_w, h=round(28 * scale), press=self.click,
+			)
+			skip = tauon.draw.button(
+				skip_label, button_x + add_w + round(16 * scale), button_y,
+				w=skip_w, h=round(28 * scale), press=self.click,
+			)
+			focus_x = button_x + add_w + round(16 * scale) if self.skip_selected else button_x
+			focus_w = skip_w if self.skip_selected else add_w
+			ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
+		finally:
+			tauon.inp.mouse_position[:] = position
+		if add or skip or self.enter:
+			self.choose(skip if add or skip else self.skip_selected)
+		self.click = False
+		self.enter = False
+
 class PresetDownloadBox:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -33990,8 +34245,7 @@ class TopPanel:
 							# pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 
 							if self.inp.key_shift_down:
-								pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[tauon.playlist_box.drag_on].playlist_ids
-								pctl.delete_playlist(tauon.playlist_box.drag_on, check_lock=True, force=True)
+								tauon.combine_playlists(tauon.playlist_box.drag_on, i, check_lock=True)
 							else:
 								pctl.move_playlist(tauon.playlist_box.drag_on, i)
 
@@ -34016,27 +34270,7 @@ class TopPanel:
 				elif not gui.radio_view and self.inp.quick_drag is True and self.inp.mouse_up:
 					self.tab_d_click_ref = -1
 					self.tab_d_click_timer.force_set(100)
-					if (pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
-						tauon.clear_gen_ask(pctl.pl_to_id(i))
-					self.inp.quick_drag = False
-					modified = False
-					gui.request_tracklist_redraw()
-
-					for item in gui.shift_selection:
-						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
-						modified = True
-					if len(gui.shift_selection) > 0:
-						modified = True
-						self.adds.append(
-							[pctl.multi_playlist[i].uuid_int, len(gui.shift_selection), Timer()])  # ID, num, timer
-
-					if modified:
-						pctl.after_import_flag = True
-						tauon.dropped_playlist = i
-						pctl.notify_database_changed()
-						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
-						tauon.tree_view_box.clear_target_pl(i)
-						tauon.thread_manager.ready("worker")
+					tauon.drop_selected_tracks(i, self.adds)
 
 				if self.inp.mouse_up and tauon.radio_view.drag:
 					pctl.radio_playlists[i].stations.append(tauon.radio_view.drag)
@@ -40843,8 +41077,7 @@ class PlaylistBox:
 					# Move playlist tab
 					if i != self.drag_on and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale):
 						if self.inp.key_shift_down:
-							pctl.multi_playlist[i].playlist_ids += pctl.multi_playlist[self.drag_on].playlist_ids
-							pctl.delete_playlist(self.drag_on, force=True)
+							tauon.combine_playlists(self.drag_on, i)
 						else:
 							pctl.move_playlist(self.drag_on, i)
 
@@ -40874,26 +41107,7 @@ class PlaylistBox:
 				if self.inp.quick_drag is True and self.inp.mouse_up:
 					self.tauon.top_panel.tab_d_click_ref = -1
 					self.tauon.top_panel.tab_d_click_timer.force_set(100)
-					if (pctl.gen_codes.get(pctl.pl_to_id(i)) and "self" not in pctl.gen_codes[pctl.pl_to_id(i)]):
-						self.tauon.clear_gen_ask(pctl.pl_to_id(i))
-					self.inp.quick_drag = False
-					modified = False
-					gui.request_tracklist_redraw()
-
-					for item in self.gui.shift_selection:
-						pctl.multi_playlist[i].playlist_ids.append(pctl.default_playlist[item])
-						modified = True
-					if len(self.gui.shift_selection) > 0:
-						self.adds.append(
-							[pctl.multi_playlist[i].uuid_int, len(self.gui.shift_selection), Timer()])  # ID, num, timer
-						modified = True
-					if modified:
-						pctl.after_import_flag = True
-						tauon.dropped_playlist = i
-						tauon.thread_manager.ready("worker")
-						pctl.notify_database_changed()
-						pctl.update_shuffle_pool(pctl.multi_playlist[i].uuid_int)
-						tauon.tree_view_box.clear_target_pl(i)
+					tauon.drop_selected_tracks(i, self.adds)
 
 			# Toggle hidden flag on click
 			pin_hit_rect = clipped_to_box((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale, 26 * gui.scale))
@@ -52090,6 +52304,7 @@ def worker1(tauon: Tauon) -> None:
 	prefs = tauon.prefs
 	loaded_paths_cache = {}
 	loaded_cue_cache = {}
+	active_drop_action: DropImportAction | None = None
 	tauon.added = []
 
 	def get_quoted_from_line(line: str) -> str:
@@ -52444,7 +52659,7 @@ def worker1(tauon: Tauon) -> None:
 
 		if path.lower().endswith(".xspf"):
 			logging.info(f"Found XSPF file at: {path}")
-			tauon.load_xspf(path)
+			tauon.load_xspf(path, drop_action=active_drop_action)
 			return 0
 
 		if path.lower().endswith(".milk"):
@@ -52452,7 +52667,7 @@ def worker1(tauon: Tauon) -> None:
 				tauon.milky.projectm.load_next = Path(path)
 
 		if path.lower().endswith(".m3u") or path.lower().endswith(".m3u8"):
-			tauon.load_m3u(path)
+			tauon.load_m3u(path, drop_action=active_drop_action)
 			return 0
 
 		if path.endswith(".pls"):
@@ -52605,6 +52820,7 @@ def worker1(tauon: Tauon) -> None:
 		def commit_track(nt: TrackClass) -> None:
 			pctl.master_library[pctl.master_count] = nt
 			tauon.added.append(pctl.master_count)
+			loaded_paths_cache[nt.fullpath] = pctl.master_count
 
 			if prefs.auto_sort or force_scan:
 				tauon.tag_scan(nt)
@@ -53109,6 +53325,7 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.loaderCommandReady is True:
 			for order in tauon.load_orders:
 				if order.stage == 1:
+					active_drop_action = order.drop_action
 					if tauon.loaderCommand == LoaderCommand.FOLDER:
 						gui.to_get = 0
 						gui.to_got = 0
@@ -53144,6 +53361,7 @@ def worker1(tauon: Tauon) -> None:
 								del order.tracks[i]
 
 					tauon.added = []
+					active_drop_action = None
 					order.stage = 2
 					tauon.loaderCommandReady = False
 					#logging.info("DONE LOADING")
@@ -58242,11 +58460,16 @@ def main(holder: Holder) -> None:
 
 				elif link.startswith("file:///"):
 					link = link.replace("\r", "")
+					action = tauon.drop_import_action or DropImportAction()
+					tauon.drop_import_action = action
 					for line in link.split("\n"):
 						target = str(urllib.parse.unquote(line)).replace("file:///", "/")
 						tauon.drop_file(target)
+					if action.complete:
+						tauon.drop_import_action = None
 			elif event.type == sdl3.SDL_EVENT_DROP_BEGIN:
 				gui.ext_drop_mode = True
+				tauon.drop_import_action = DropImportAction(complete=False)
 			elif event.type == sdl3.SDL_EVENT_DROP_POSITION:
 				inp.mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
 				inp.mouse_position[1] = int(event.drop.y / logical_size[0] * window_size[0])
@@ -58257,6 +58480,9 @@ def main(holder: Holder) -> None:
 				gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_DROP_COMPLETE:
 				gui.ext_drop_mode = False
+				if tauon.drop_import_action is not None:
+					tauon.drop_import_action.complete = True
+					tauon.drop_import_action = None
 			elif event.type == sdl3.SDL_EVENT_DROP_FILE:
 				gui.ext_drop_mode = False
 				dropped_file_sdl = event.drop.data
@@ -59070,6 +59296,8 @@ def main(holder: Holder) -> None:
 				c_xay_timer.force_set(-0.01)
 				gui.delay_frame(0.02)
 				inp.k_input = True
+
+		tauon.duplicate_import_box.handle_input()
 
 		radio_directory_search_active = gui.radio_view and radiobox.tab == 1 and not radiobox.active
 		text_entry_shortcuts_blocked = (
@@ -60126,10 +60354,13 @@ def main(holder: Holder) -> None:
 				if len(tauon.load_orders) > 0:
 					for i, order in enumerate(tauon.load_orders):
 						if order.stage == 2:
+							if not tauon.prepare_drop_import(order):
+								continue
 							target_pl = 0
 
 							# Sort the tracks by track number
-							tauon.sort_track_2(None, order.tracks)
+							if not order.preserve_order:
+								tauon.sort_track_2(None, order.tracks)
 
 							for p, playlist in enumerate(pctl.multi_playlist):
 								if playlist.uuid_int == order.playlist:
@@ -60200,10 +60431,10 @@ def main(holder: Holder) -> None:
 								if item.playlist == order.playlist:
 									break
 							else:
-								if _("New Playlist") in pctl.multi_playlist[target_pl].title:
+								if not order.preserve_order and _("New Playlist") in pctl.multi_playlist[target_pl].title:
 									tauon.auto_name_pl(target_pl)
 
-								if prefs.auto_sort:
+								if prefs.auto_sort and not order.preserve_order:
 									if pctl.multi_playlist[target_pl].locked:
 										tauon.show_message(_("Auto sort skipped because playlist is locked."))
 									else:
@@ -62822,6 +63053,7 @@ def main(holder: Holder) -> None:
 
 		if gui.present:
 			sdl3.SDL_SetRenderTarget(renderer, None)
+			tauon.duplicate_import_box.render()
 			tauon.render_rounded_corners()
 			tauon.wayland_blur.sync()
 			tauon.macos_blur.sync()
