@@ -127,6 +127,13 @@ class TauonQueueItem:
 	album_stage: int
 	uuid_int: int
 	auto_stop: bool
+	# None follows the source album; a list queues its remaining tracks individually.
+	tracks: list[TauonQueueItem] | None = None
+
+	def __post_init__(self) -> None:
+		"""Restore nested queue tracks from saved dictionaries."""
+		if self.tracks is not None:
+			self.tracks = [TauonQueueItem(**track) if isinstance(track, dict) else track for track in self.tracks]
 
 
 @dataclass
