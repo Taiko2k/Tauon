@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### V12.2.0
+
+ - Added activity overview button
+ - Added queue album group expantion
+
 ### v12.1.0
 
  - Added animated cover art support (GIF, APNG and JPEG XL)

@@ -1725,6 +1725,11 @@ class FeuxBar:
 					tauon.stop_menu.activate(position=(x, mid - self._s(6)))
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Stop"))
+			# Keep the blended glyph's lightness, with the circle's hue and saturation.
+			glyph_c = alpha_blend(glyph_c, ring)
+			glyph_lightness = rgb_to_hls(glyph_c.r, glyph_c.g, glyph_c.b)[1]
+			ring_lightness = rgb_to_hls(ring.r, ring.g, ring.b)[1]
+			glyph_c = rgb_add_hls(ring, l=glyph_lightness - ring_lightness)
 			a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
 			a["feux-stop"].render(
 				x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)

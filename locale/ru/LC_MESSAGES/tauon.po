@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-09-29 23:51+0000\n"
+"PO-Revision-Date: 2026-09-28 22:57+0000\n"
 "Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -2100,7 +2100,7 @@ msgstr "Оригинал"
 
 #: src/tauon/t_modules/t_main.py:23762
 msgid "Automatic"
-msgstr "Автоматически"
+msgstr "Авто"
 
 #: src/tauon/t_modules/t_main.py:23763
 msgid "Auto theme algorithm: "
@@ -6087,7 +6087,7 @@ msgstr "Искать артиста на Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55071
 msgid "Search Artist on Bandcamp"
-msgstr "Искать артиста в Bandcamp"
+msgstr "Искать артиста на Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55075
 msgid "Copy \"Artist - Track\""
@@ -6179,7 +6179,7 @@ msgstr "Поиск артиста в Sonemic"
 
 #: src/tauon/t_modules/t_main.py:55169
 msgid "Bandcamp artist search"
-msgstr "Поиск артиста в Bandcamp"
+msgstr "Поиск артиста на Bandcamp"
 
 #: src/tauon/t_modules/t_main.py:55170
 msgid "Genius track search"
