@@ -47350,6 +47350,9 @@ class Showcase:
 				self.gui.draw_vis4_top = True
 
 	def render_vis(self, top: bool = False) -> None:
+		if top and self.tauon.search_over.active:
+			self.gui.draw_vis4_top = False
+			return
 		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.spec4_tex)
 		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(self.renderer)

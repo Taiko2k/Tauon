@@ -273,6 +273,9 @@ class SticksVisWidget(Widget):
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
+		gui.draw_vis4_top = False
+		if tauon.search_over.active:
+			return
 		rec = gui.spec4_rec
 		rec.x = round(x + (w - rec.w) / 2)
 		# The bars are drawn at by=50 in the 200-tall spec4_tex, which is blitted
