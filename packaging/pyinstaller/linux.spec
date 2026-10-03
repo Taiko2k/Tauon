@@ -24,10 +24,6 @@ a = Analysis(
 	binaries=[],
 	datas=[
 		(certifi.where(), "certifi"),
-		(f"{lib_path}/gtk-3.0/modules/libcolorreload-gtk-module.so", "lib/gtk-3.0/modules"),
-		(f"{lib_path}/gtk-3.0/modules/libwindow-decorations-gtk-module.so", "lib/gtk-3.0/modules"),
-		(f"{lib_path}/gtk-3.0/modules/libcanberra-gtk-module.so", "lib/gtk-3.0/modules"),
-		(f"{lib_path}/gtk-3.0/modules/libcanberra-gtk3-module.so", "lib/gtk-3.0/modules"),
 		(f"{lib_path}/girepository-1.0/Notify-0.7.typelib", "gi_typelibs"),
 		(str(REPO_ROOT / ".venv/lib/python3.14/site-packages/sdl3/bin/libSDL3.so"), "."),
 		(str(REPO_ROOT / ".venv/lib/python3.14/site-packages/sdl3/bin/libSDL3_image.so"), "."),
