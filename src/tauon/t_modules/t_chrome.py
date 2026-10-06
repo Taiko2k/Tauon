@@ -249,7 +249,8 @@ class Chrome:
 
 		if url is None:
 			mime = native_cast_mime_type(tr)
-			if mime is None:
+			if mime is None or tr.is_cue:
+				# Cast seeks include CUE offsets, so keep the complete album source.
 				cache = self.audio_cache
 				controller = self.media_controller
 				try:

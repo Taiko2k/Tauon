@@ -133,14 +133,10 @@ class Jellyfin:
 			return ""
 
 		base_url = f"{self.server_url}/Audio/{stream_id}/stream"
-		# headers = {
-		# "Token": self.accessToken,
-		# "X-Application": "Tauon/1.0",
-		# "Authorization": self._get_jellyfin_auth(),
-		# }
 		params = {
 			"UserId": self.userId,
 			"static": "true",
+			"api_key": self.accessToken,
 		}
 
 		if self.prefs.network_stream_bitrate > 0:

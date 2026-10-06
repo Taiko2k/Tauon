@@ -11,6 +11,7 @@ Changelog
  - Added playback speed adjustment
  - Added pre-roll silence option
  - Added setting to disable radio scrobble
+ - Fixed various outbound streaming issues
  - Fixed format support for Chromecast
  - Fixed a possible db corruption state
  - Filed filepath copy when no metadata

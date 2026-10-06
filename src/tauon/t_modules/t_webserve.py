@@ -32,6 +32,10 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
+import mutagen
+import requests
+from urllib3.exceptions import HTTPError as Urllib3HTTPError
+
 from tauon.t_modules.t_cast_audio import audio_mime_type
 from tauon.t_modules.t_enums import Backend, PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
@@ -47,6 +51,7 @@ except Exception:
 	Zeroconf = None
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
 	from typing import Any
 
 	from tauon.t_modules.t_main import AlbumArt, GuiVar, PlayerCtl, Prefs, Strings, Tauon, TrackClass
@@ -328,6 +333,129 @@ def send_file(path: str, mime: str, server) -> None:
 		server.end_headers()
 
 
+def cached_audio_mime_type(path: str, track: TrackClass) -> str:
+	"""Identify extensionless downloads and remuxed or transcoded cache files."""
+	try:
+		audio = mutagen.File(path)
+		if audio is not None:
+			return audio.mime[0]
+	except (OSError, mutagen.MutagenError):
+		logging.warning("Could not identify cached Listen Along audio")
+	return audio_mime_type(track.container or track.file_ext)
+
+
+def send_network_audio(
+	track: TrackClass,
+	tauon: Tauon,
+	server: BaseHTTPRequestHandler,
+	*,
+	current_only: bool = True,
+	transcode: Callable[[str], None] | None = None,
+) -> None:
+	"""Serve remote audio without exposing provider URLs or credentials."""
+	pctl = tauon.pctl
+	cache = tauon.cachement
+
+	def send_cached_audio(path: str) -> None:
+		if transcode is not None:
+			transcode(path)
+		else:
+			send_file(path, cached_audio_mime_type(path, track), server)
+
+	path = cache.get_local_instant(track)
+	if path:
+		if current_only and pctl.playing_object() is not track:
+			server.send_error(403)
+			return
+		send_cached_audio(path)
+		return
+
+	url = None
+	params = None
+	if transcode is None:
+		try:
+			url, params = pctl.get_url(track)
+		except Exception:  # noqa: BLE001
+			logging.error("Could not resolve remote audio")  # noqa: TRY400
+			server.send_error(502)
+			return
+
+	if current_only and pctl.playing_object() is not track:
+		server.send_error(403)
+		return
+	if transcode is not None or (isinstance(url, (list, tuple)) and len(url) > 1):
+		# The playback cache downloads network audio and remuxes multipart streams.
+		status, path = cache.get_file(track)
+		deadline = time.monotonic() + 120
+		while status == 1 and time.monotonic() < deadline:
+			if current_only and pctl.playing_object() is not track:
+				server.send_error(403)
+				return
+			if cache.error == track:
+				status = 2
+				break
+			path = cache.get_local_instant(track)
+			if path:
+				status = 0
+				break
+			time.sleep(0.1)
+		if current_only and pctl.playing_object() is not track:
+			server.send_error(403)
+			return
+		if status == 0 and path:
+			send_cached_audio(path)
+		else:
+			server.send_error(503 if status == 1 else 502)
+		return
+	if isinstance(url, (list, tuple)) and len(url) == 1:
+		url = url[0]
+
+	if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+		server.send_error(502)
+		return
+
+	headers = {"Accept-Encoding": "identity"}
+	if server.headers.get("Range"):
+		headers["Range"] = server.headers["Range"]
+	response_started = False
+	try:
+		with requests.get(url, params=params, headers=headers, stream=True, timeout=(5, 30)) as response:
+			if current_only and pctl.playing_object() is not track:
+				server.send_error(403)
+				return
+			if response.status_code not in (200, 206, 416):
+				server.send_error(404 if response.status_code == 404 else 502)
+				return
+			if response.status_code == 416:
+				server.send_response(416)
+				if "Content-Range" in response.headers:
+					server.send_header("Content-Range", response.headers["Content-Range"])
+				server.send_header("Content-Length", "0")
+				server.end_headers()
+				return
+			server.send_response(response.status_code)
+			server.send_header(
+				"Content-Type",
+				response.headers.get("Content-Type") or audio_mime_type(track.container or track.file_ext),
+			)
+			for name in ("Content-Length", "Content-Range", "Accept-Ranges", "Content-Encoding"):
+				if name in response.headers:
+					server.send_header(name, response.headers[name])
+			server.send_header("Connection", "close")
+			server.end_headers()
+			server.close_connection = True
+			response_started = True
+			for chunk in response.raw.stream(65536, decode_content=False):
+				server.wfile.write(chunk)
+	except (BrokenPipeError, ConnectionResetError):
+		pass
+	except (requests.RequestException, Urllib3HTTPError, OSError):
+		logging.error("Could not stream remote audio")  # noqa: TRY400
+		if not response_started:
+			server.send_error(502)
+		server.close_connection = True
+
+
 def webserve(
 	pctl: PlayerCtl,
 	prefs: Prefs,
@@ -393,22 +521,18 @@ def webserve(
 					self.end_headers()
 					return
 				sid = self.get_track_id(track)
-				if sid != value or track.is_network:
+				if sid != value:
 					self.send_response(403)
 					self.end_headers()
+					return
+				if track.is_network:
+					send_network_audio(track, tauon, self)
 					return
 				if not track.fullpath or not os.path.isfile(track.fullpath):
 					self.send_response(404)
 					self.end_headers()
 					return
-				mime = "audio/mpeg"
-				if track.file_ext == "FLAC":
-					mime = "audio/flac"
-				if track.file_ext in {"OGG", "OPUS", "OGA"}:
-					mime = "audio/ogg"
-				if track.file_ext == "M4A":
-					mime = "audio/mp4"
-				send_file(track.fullpath, mime, self)
+				send_file(track.fullpath, audio_mime_type(track.file_ext), self)
 
 			elif path == "/llapi/poll":
 				self.send_response(200)
@@ -445,7 +569,7 @@ def webserve(
 					self.end_headers()
 					return
 				sid = self.get_track_id(track)
-				if sid != value or track.is_network:
+				if sid != value:
 					self.send_response(403)
 					self.end_headers()
 					return
@@ -502,7 +626,22 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			callback()
 			self.wfile.write(b"OK")
 
-		def stream_opus_file(self, track: TrackClass) -> None:
+		def stream_opus_file(self, track: TrackClass, source_path: str | None = None) -> None:
+			self.stream_transcoded_file(track, source_path)
+
+		def stream_transcoded_file(
+			self,
+			track: TrackClass,
+			source_path: str | None = None,
+			*,
+			lossless: bool = False,
+		) -> None:
+			if track.is_network and source_path is None:
+				self.send_error(404)
+				return
+			if track.is_cue and track.length <= 0:
+				self.send_error(422)
+				return
 			ffmpeg_path = tauon.get_ffmpeg()
 			if ffmpeg_path is None:
 				self.send_response(503)
@@ -513,16 +652,14 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			command = [str(ffmpeg_path), "-v", "error"]
 			if track.start_time:
 				command.extend(["-ss", str(track.start_time)])
-				if track.length > 0:
-					command.extend(["-t", str(track.length)])
-			command.extend([
-				"-i", track.fullpath,
-				"-vn",
-				"-c:a", "libopus",
-				"-b:a", "84k",
-				"-f", "ogg",
-				"-",
-			])
+			command.extend(["-i", source_path if source_path is not None else track.fullpath])
+			if (track.is_cue or track.start_time) and track.length > 0:
+				command.extend(["-t", str(track.length)])
+			command.append("-vn")
+			if lossless:
+				command.extend(["-c:a", "flac", "-f", "flac", "-"])
+			else:
+				command.extend(["-c:a", "libopus", "-b:a", "84k", "-f", "ogg", "-"])
 
 			try:
 				encoder = subprocess.Popen(
@@ -532,7 +669,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					stderr=subprocess.DEVNULL,
 				)
 			except OSError:
-				logging.exception("Failed to start ffmpeg for /api1/fileopus")
+				logging.exception("Failed to start ffmpeg for API audio transcode")
 				self.send_response(500)
 				self.end_headers()
 				self.wfile.write(b"Transcode start failed")
@@ -545,8 +682,11 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				return
 
 			self.send_response(200)
-			self.send_header("Content-type", "audio/ogg")
-			self.send_header("Content-Disposition", 'attachment; filename="track.opus"')
+			self.send_header("Content-type", "audio/flac" if lossless else "audio/ogg")
+			self.send_header(
+				"Content-Disposition",
+				'attachment; filename="track.flac"' if lossless else 'attachment; filename="track.opus"',
+			)
 			self.send_header("Connection", "close")
 			self.end_headers()
 			self.close_connection = True
@@ -616,7 +756,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			data["album_id"] = album_id
 			data["has_lyrics"] = track.lyrics != ""
 			data["track_number"] = str(track.track_number).lstrip("0")
-			data["can_download"] = not track.is_cue and not track.is_network
+			data["can_download"] = not track.is_cue or track.length > 0
 
 			return data
 
@@ -750,10 +890,19 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 				if param.isdigit() and int(param) in pctl.master_library:
 					track = pctl.master_library[int(param)]
-					if not track.fullpath or not os.path.isfile(track.fullpath):
+					if track.is_network:
+						transcode = (
+							(lambda path: self.stream_transcoded_file(track, path, lossless=True))
+							if track.is_cue
+							else None
+						)
+						send_network_audio(track, tauon, self, current_only=False, transcode=transcode)
+					elif not track.fullpath or not os.path.isfile(track.fullpath):
 						self.send_response(404)
 						self.end_headers()
 						self.wfile.write(b"File unavailable")
+					elif track.is_cue:
+						self.stream_transcoded_file(track, lossless=True)
 					else:
 						send_file(track.fullpath, audio_mime_type(track.file_ext), self)
 				else:
@@ -768,7 +917,15 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 				if param.isdigit() and int(param) in pctl.master_library:
 					track = pctl.master_library[int(param)]
-					if not track.fullpath or not os.path.isfile(track.fullpath):
+					if track.is_network:
+						send_network_audio(
+							track,
+							tauon,
+							self,
+							current_only=False,
+							transcode=lambda path: self.stream_opus_file(track, path),
+						)
+					elif not track.fullpath or not os.path.isfile(track.fullpath):
 						self.send_response(404)
 						self.end_headers()
 						self.wfile.write(b"File unavailable")
