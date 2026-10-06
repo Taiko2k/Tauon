@@ -218,6 +218,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
+from tauon.t_modules.t_locale import get_translation_languages  # noqa: E402
 from tauon.t_modules.t_lyrics import (  # noqa: E402
 	genius,
 	get_lrclib_challenge,
@@ -55031,11 +55032,7 @@ def main(holder: Holder) -> None:
 		prefs.linux_font_bold = "Noto Sans Bold"
 		save_prefs(bag)
 
-	# Auto detect lang
-	lang: list[str] | None = None
-	if prefs.ui_lang != "auto" or prefs.ui_lang == "":
-		# Force set lang
-		lang = [prefs.ui_lang]
+	lang = get_translation_languages(prefs.ui_lang)
 
 	f = gettext.find("tauon", localedir=str(locale_directory), languages=lang)
 	if f:
@@ -55044,7 +55041,7 @@ def main(holder: Holder) -> None:
 		builtins._ = translation.gettext
 
 		logging.info(f"Translation file for '{lang}' loaded")
-	elif lang:
+	elif lang and "C" not in lang:
 		logging.error(f"No translation file available for '{lang}'")
 
 	# ----
