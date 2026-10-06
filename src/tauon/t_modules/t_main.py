@@ -2448,6 +2448,7 @@ class PlayerCtl:
 		self.default_playlist: list[int] = []
 		self.queue_step: int = self.bag.playing_in_queue
 		self.playing_time: float = 0
+		self.playback_speed_supported: bool = False
 		self.last_real_position: float = 0
 		self.playlist_playing_position: int = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
@@ -3490,6 +3491,15 @@ class PlayerCtl:
 
 		if notify:
 			self.refresh_now_playing()
+
+	@property
+	def playback_speed(self) -> float:
+		return self.prefs.playback_speed
+
+	def set_playback_speed(self, value: float) -> None:
+		if math.isfinite(value):
+			self.prefs.playback_speed = round(max(0.1, min(3.0, value)), 2)
+			self.tauon.gui.request_frame()
 
 	def clear_ab_repeat(self, update_gui: bool = True) -> None:
 		self.ab_repeat_a = -1.0
@@ -5715,6 +5725,8 @@ class MenuItem:
 		"inc_minus",       # 17
 		"inc_plus",        # 18
 		"check_test",      # 19
+		"slider_get",
+		"slider_set",
 	]
 	def __init__(
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
@@ -5749,6 +5761,8 @@ class MenuItem:
 		# before the label (accent-filled when on, faint outline when off)
 		# instead of the legacy "✓ " text prefix. See Menu.draw_check_box.
 		self.check_test = check_test
+		self.slider_get: Callable[[], float] | None = None
+		self.slider_set: Callable[[float], None] | None = None
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -5824,6 +5838,7 @@ class Menu:
 		# the same click; reset on the next button-down event.
 		self.click_dismissed: bool = False
 		self.clicked: bool = False
+		self.slider_held: MenuItem | None = None
 		self.pos: list[float] = [0, 0]
 		self.rescale()
 
@@ -5945,6 +5960,13 @@ class Menu:
 		self.subs[sub_menu_index].append(item)
 		self._widths_dirty = True
 
+	def add_speed_slider(self, pctl: PlayerCtl) -> None:
+		item = MenuItem("", lambda: None, no_exit=True,
+			disable_test=lambda: not pctl.playback_speed_supported or self.tauon.chrome_mode)
+		item.slider_get = lambda: pctl.playback_speed
+		item.slider_set = pctl.set_playback_speed
+		self.add(item)
+
 	def br(self) -> None:
 		self.items.append(None)
 		self._widths_dirty = True
@@ -6005,6 +6027,9 @@ class Menu:
 			right = 22 * scale if item.is_sub_menu else 9 * scale
 			if item.incrementor:
 				right = 2 * self.h + 32 * scale
+			elif item.slider_get is not None:
+				left = 12 * scale
+				right = 180 * scale
 			elif item.hint is not None:
 				right += self.ddt.get_text_w(item.hint, self.font) + 4 * scale
 			main_width = max(main_width, left + text_width(item) + right)
@@ -6168,6 +6193,45 @@ class Menu:
 
 		return minus_x
 
+	def draw_speed_slider(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float) -> None:
+		ddt = self.render_ddt
+		scale = self.gui.scale
+		slider_x = round(x_run + 60 * scale)
+		slider_w = max(1, round(x_run + self.w - 12 * scale) - slider_x)
+		minimum = 0.1
+		maximum = 3.0
+		curvature = 3.0
+		centre_y = round(y_run + self.h / 2)
+		hit_rect = (slider_x - round(3 * scale), y_run, slider_w + round(6 * scale), self.h)
+		disabled = bool(self.is_item_disabled(item))
+		pointer = self.pointer
+		if not self.inp.mouse_down or disabled:
+			self.slider_held = None
+		if not disabled and self.clicked and coll_point(pointer, hit_rect):
+			self.slider_held = item
+		if self.slider_held is item and pointer[0] > -100000:
+			portion = max(0.0, min(1.0, (pointer[0] - slider_x) / max(1, slider_w)))
+			distance = abs(2 * portion - 1) ** curvature
+			value = minimum ** distance if portion <= 0.5 else maximum ** distance
+			item.slider_set(value)
+			self.can_be_spring_clicked = False
+			self.gui.request_frame()
+		value = item.slider_get()
+		limit = minimum if value <= 1.0 else maximum
+		distance = (math.log(value) / math.log(limit)) ** (1 / curvature)
+		fraction = (1 - distance) / 2 if value <= 1.0 else (1 + distance) / 2
+		colour = self.colours.menu_text_disabled if disabled else self.colours.menu_text
+		track_colour = ColourRGBA(colour.r, colour.g, colour.b, 65)
+		thickness = max(1, round(2 * scale))
+		ddt.rect((slider_x, centre_y, slider_w, thickness), track_colour)
+		ddt.rect((slider_x, centre_y, round(slider_w * fraction), thickness), colour)
+		ddt.rect((slider_x + round(slider_w / 2), centre_y - round(4 * scale), thickness, round(9 * scale)), track_colour)
+		grip_w = max(2, round(4 * scale))
+		ddt.rect((round(slider_x + slider_w * fraction - grip_w / 2), centre_y - round(5 * scale), grip_w, round(11 * scale)), colour)
+		ddt.text((x_run + round(12 * scale), y_run + ytoff), f"{value:.2f}×", colour, self.font, bg=bg)  # noqa: RUF001
+		if coll_point(pointer, (x_run, y_run, self.w, self.h)) or self.slider_held is item:
+			self.clicked = False
+
 	def render(self) -> None:
 		tauon   = self.tauon
 		gui     = self.gui
@@ -6272,7 +6336,7 @@ class Menu:
 					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
-					if self.items[i].incrementor:
+					if self.items[i].incrementor or self.items[i].slider_get is not None or self.slider_held is not None:
 						pass  # stepper buttons handled after the label; label/row click is inert
 					elif self.items[i].is_sub_menu is False:
 						if self.clicked or (springing and not self.inp.right_down and not self.inp.mouse_down ):
@@ -6326,7 +6390,9 @@ class Menu:
 					self.sub_arrow.asset.render(x_run + self.w - 13 * gui.scale, y_run + 7 * gui.scale, colour, renderer=self.render_renderer)
 
 				# Render the items label (narrowed to clear the stepper for incrementors)
-				if self.items[i].incrementor:
+				if self.items[i].slider_get is not None:
+					self.draw_speed_slider(self.items[i], x_run, y_run, bg, ytoff)
+				elif self.items[i].incrementor:
 					left_bound = self.draw_incrementor(self.items[i], x_run, y_run, bg, ytoff, self.w)
 					label_max_w = max(1, int(left_bound - (x_run + x) - 6 * gui.scale))
 					# Swallow any click on this row so the menu stays open: the label
@@ -6339,7 +6405,8 @@ class Menu:
 					if self.items[i].hint is not None:
 						right_space += self.ddt.get_text_w(self.items[i].hint, self.font) + 4 * gui.scale
 					label_max_w = self.w - (x + right_space)
-				ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
+				if self.items[i].slider_get is None:
+					ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 
 				# Render the items hint
 				if self.items[i].hint is not None and not self.items[i].incrementor:
@@ -6416,6 +6483,7 @@ class Menu:
 		Menu.switch = self.id
 		self.sub_active = -1
 		self.popup_window = None
+		self.slider_held = None
 		self.rescale()
 		self.update_widths()
 
@@ -51390,6 +51458,7 @@ def save_prefs(bag: Bag) -> None:
 	# cf.update_value("audio-backend", prefs.backend)
 	cf.update_value("use-pipewire", prefs.pipewire)
 	cf.update_value("seek-interval", prefs.seek_interval)
+	cf.update_value("playback-speed", prefs.playback_speed)
 	cf.update_value("pause-fade-time", prefs.pause_fade_time)
 	cf.update_value("cross-fade-time", prefs.cross_fade_time)
 	cf.update_value("device-buffer-ms", prefs.device_buffer)
@@ -51578,6 +51647,12 @@ def load_prefs(bag: Bag) -> None:
 	prefs.seek_interval = cf.sync_add(
 		"int", "seek-interval", prefs.seek_interval,
 		"In s. Interval to seek when using keyboard shortcut. Default is 15.")
+	prefs.playback_speed = cf.sync_add(
+		"float", "playback-speed", 1.0,
+		"Playback speed and pitch multiplier. Min: 0.1, Max: 3.0, Default: 1.0.")
+	if not math.isfinite(prefs.playback_speed):
+		prefs.playback_speed = 1.0
+	prefs.playback_speed = round(max(0.1, min(3.0, prefs.playback_speed)), 2)
 	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
 	prefs.pause_fade_time = max(prefs.pause_fade_time, 100)
@@ -56542,6 +56617,7 @@ def main(holder: Holder) -> None:
 	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
 	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
 	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
+	extra_menu.add_speed_slider(pctl)
 
 	extra_menu.br()
 

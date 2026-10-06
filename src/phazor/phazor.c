@@ -219,6 +219,13 @@ float out_buff[2048 * 2];
 int position_count = 0;
 int current_length_count = 0;
 
+float playback_speed = 1.0f;
+SRC_STATE *speed_src = NULL;
+bool speed_engaged = false;
+bool speed_tail = false;
+bool speed_eof = false;
+uint16_t speed_mask = 0;
+
 int sample_rate_out = 44100;
 int sample_rate_src = 0;
 int src_channels = 2;
@@ -885,6 +892,10 @@ void buff_reset() {
 	low = 0;
 	high = 0;
 	watermark = high_mark;
+	if (speed_src != NULL) src_reset(speed_src);
+	speed_engaged = false;
+	speed_tail = false;
+	speed_eof = false;
 }
 
 // Fill of whichever buffer is actually feeding the device. Direct DSD has its
@@ -1878,7 +1889,7 @@ int dsd_direct_supported() {
 static int dsd_direct_wanted() {
 	// Once a device has refused a DSD stream, stop offering it. Turning the
 	// preference off and on again clears this, as does restarting.
-	if (!config_dsd_direct || !dsd_direct_supported() || dsd_runtime_disabled) return 0;
+	if (!config_dsd_direct || !dsd_direct_supported() || dsd_runtime_disabled || playback_speed != 1.0f) return 0;
 	#ifdef PIPE
 		// The sink has to actually accept DSD. PipeWire will otherwise fixate
 		// the format on our side and then never open the device, which plays
@@ -1943,7 +1954,7 @@ void dsd_buff_reset() {
 }
 
 int pending_output_fill() {
-	return dsd_active ? dsd_buff_fill() : get_buff_fill();
+	return dsd_active ? dsd_buff_fill() : get_buff_fill() + (speed_tail ? 1 : 0);
 }
 
 // Read a big endian 64 bit chunk length, as used by DSDIFF
@@ -2930,7 +2941,7 @@ static void rg_compressor_update_coefficients(int sample_rate) {
 	rg_compressor_coeff_sample_rate = sample_rate;
 }
 
-static inline void rg_apply_live_correction(float *frame) {
+static inline void rg_update_boundary() {
 	if (rg_output_boundary_pending && low == rg_byte) {
 		rg_output_base = rg_output_pending_base;
 		rg_output_correction = rg_output_pending_correction;
@@ -2938,6 +2949,9 @@ static inline void rg_apply_live_correction(float *frame) {
 		rg_output_correction_ramp_remaining = 0;
 		rg_output_boundary_pending = false;
 	}
+}
+
+static inline void rg_apply_live_correction(float *frame) {
 
 	if (rg_output_correction_ramp_remaining > 0) {
 		// Complete live setting changes in 10 ms without introducing a click.
@@ -3199,6 +3213,66 @@ int get_dsd_audio(int max_bytes, void *dest, int interleave, int bitorder_lsb) {
 	return written;
 }
 
+static bool read_playback_frame(float *frame, uint16_t *mask) {
+	if (playback_speed != 1.0f && speed_src != NULL) speed_engaged = true;
+	while (get_buff_fill() > 0 || (speed_engaged && speed_tail)) {
+		int available = speed_eof ? 0 : get_buff_fill();
+		float input[PCM_SPEAKERS] = {0};
+		if (available > 0) {
+			if (reset_set && reset_set_byte == low) {
+				reset_set = false;
+				position_count = reset_set_value;
+			}
+			rg_update_boundary();
+			for (int c = 0; c < PCM_SPEAKERS; c++) input[c] = pcm_buffer[c][low];
+			speed_mask = pcm_mask[low];
+		}
+		if (!speed_engaged) {
+			memcpy(frame, input, sizeof(input));
+			*mask = speed_mask;
+			low++;
+			buff_cycle();
+			position_count++;
+			return true;
+		}
+		// The ring is already at the device rate; this ratio only changes speed.
+		SRC_DATA transfer = {
+			.data_in = input, .data_out = frame,
+			.input_frames = available > 0 ? 1 : 0, .output_frames = 1,
+			.src_ratio = 1.0 / playback_speed,
+			.end_of_input = speed_eof || (mode == ENDING && available <= 1),
+		};
+		if (src_process(speed_src, &transfer) != 0) {
+			speed_tail = false;
+			return false;
+		}
+		if (transfer.end_of_input && transfer.input_frames_used == transfer.input_frames) speed_eof = true;
+		if (transfer.input_frames_used > 0) {
+			low++;
+			buff_cycle();
+			position_count++;
+			speed_tail = true;
+		}
+		if (transfer.output_frames_gen > 0) {
+			*mask = speed_mask;
+			return true;
+		}
+		if (transfer.input_frames_used == 0) {
+			if (speed_eof) {
+				// A late gapless queue may arrive while the old filter tail drains.
+				src_reset(speed_src);
+				speed_eof = false;
+				speed_tail = false;
+				speed_engaged = playback_speed != 1.0f;
+				if (get_buff_fill() > 0) continue;
+			}
+			if (mode == ENDING) speed_tail = false;
+			return false;
+		}
+	}
+	return false;
+}
+
 int get_audio(int max_frames, float* buff) {
 		if (max_frames <= 0) return 0;
 		int b = 0;
@@ -3253,11 +3327,11 @@ int get_audio(int max_frames, float* buff) {
 			//pthread_mutex_unlock(&buffer_mutex);
 		}
 
-		if (mode == PAUSED || (mode == PLAYING && get_buff_fill() == 0)) {
+		if (mode == PAUSED || (mode == PLAYING && pending_output_fill() == 0)) {
 
 		}
 		// Process decoded audio data and send out
-		else if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && get_buff_fill() > 0 && buffering == 0) {
+		else if ((mode == PLAYING || mode == RAMP_DOWN || mode == ENDING) && pending_output_fill() > 0 && buffering == 0) {
 
 			//pthread_mutex_lock(&buffer_mutex);
 			if (eq_enabled && current_sample_rate > 0 && (eq_dirty || eq_coeff_sample_rate != current_sample_rate)) {
@@ -3272,7 +3346,7 @@ int get_audio(int max_frames, float* buff) {
 			//log_msg(LOG_INFO, "pa: Buffer is at %d", buff_filled);
 
 			// Fill the out buffer...
-			while (get_buff_fill() > 0) {
+			while (pending_output_fill() > 0) {
 
 
 				// Truncate data if gate is closed anyway
@@ -3284,12 +3358,9 @@ int get_audio(int max_frames, float* buff) {
 //					break;
 //				}
 
-				if (reset_set && reset_set_byte == low) {
-					//log_msg(LOG_INFO, "pa: Reset position counter");
-					reset_set = false;
-					position_count = reset_set_value;
-				}
-
+				float frame[PCM_SPEAKERS];
+				uint16_t mask;
+				if (!read_playback_frame(frame, &mask)) break;
 
 				// Ramp control ---
 				if (mode == RAMP_DOWN) {
@@ -3319,15 +3390,13 @@ int get_audio(int max_frames, float* buff) {
 					}
 				}
 
-				float frame[PCM_SPEAKERS];
-				for (int c = 0; c < PCM_SPEAKERS; c++) frame[c] = pcm_buffer[c][low];
 				rg_apply_live_correction(frame);
 				eq_process_frame(frame);
 				if (eq_enabled && eq_active && !rg_compressor_enabled) {
 					for (int c = 0; c < PCM_SPEAKERS; c++) frame[c] *= eq_headroom_gain;
 				}
 				float analysis[2];
-				pcm_mixer_process(&analysis_mixer, frame, pcm_mask[low], analysis);
+				pcm_mixer_process(&analysis_mixer, frame, mask, analysis);
 				if (fabsf(analysis[0]) > peak_roll_l) peak_roll_l = fabsf(analysis[0]);
 				if (fabsf(analysis[1]) > peak_roll_r) peak_roll_r = fabsf(analysis[1]);
 				if (vis_side_fill + 2 < VIS_SIDE_MAX) {
@@ -3335,18 +3404,13 @@ int get_audio(int max_frames, float* buff) {
 					vis_side_buffer[vis_side_fill++] = analysis[1];
 				}
 				float out[PCM_MAX_CHANNELS];
-				pcm_mixer_process(&output_mixer, frame, pcm_mask[low], out);
+				pcm_mixer_process(&output_mixer, frame, mask, out);
 				float final_vol = powf(gate * volume_on, config_volume_power);
 				for (int c = 0; c < channels; c++) out[c] *= final_vol;
 				rg_compressor_process(out, channels);
 				limiter_process(out, channels);
 				memcpy(buff + b * channels, out, channels * sizeof(float));
 				b++;
-
-				low += 1;
-				buff_cycle();
-
-				position_count++;
 
 				if (b >= max_frames) break; // Buffer is now full
 			}
@@ -5535,6 +5599,19 @@ void *main_loop(void *thread_id) {
 
 		}
 
+		// Speed adjustment requires PCM, including when a DSD track is paused.
+		if (dsd_active && playback_speed != 1.0f && command == NONE
+				&& (mode == PLAYING || mode == ENDING || mode == PAUSED)) {
+			bool paused = mode == PAUSED;
+			int resume_ms = get_position_ms();
+			strcpy(load_target_file, loaded_target_file);
+			load_target_net = loaded_target_net;
+			stop_decoder();
+			load_target_seek = resume_ms;
+			if (load_next() != 0) mode = STOPPED;
+			else mode = paused ? PAUSED : PLAYING;
+		}
+
 		// Refill the buffer. Held off while a loaded track waits for its
 		// transition cutover, the buffer still holds the previous track then.
 		if (mode == PLAYING && codec != FEED && !load_prepared) {
@@ -5586,6 +5663,7 @@ void *main_loop(void *thread_id) {
 	mpg123_delete(mh);
 	src_delete(src);
 	src_delete(pcm_src);
+	speed_src = src_delete(speed_src);
 	free(rbuf);
 	free(cbuf);
 	kiss_fftr_free(ffta);
@@ -5879,6 +5957,23 @@ EXPORT int get_position_ms() {
 	if (command != START && command != LOAD && !reset_set && current_sample_rate > 0) {
 		return (int) ((position_count / (float) current_sample_rate) * 1000.0);
 	} else return 0;
+}
+
+EXPORT int set_playback_speed(float speed) {
+	if (!isfinite(speed) || speed < 0.1f || speed > 3.0f) return 0;
+	pthread_mutex_lock(&buffer_mutex);
+	if (speed != 1.0f && speed_src == NULL) {
+		int result = 0;
+		speed_src = src_new(SRC_SINC_FASTEST, PCM_SPEAKERS, &result);
+		if (speed_src == NULL) {
+			pthread_mutex_unlock(&buffer_mutex);
+			return 0;
+		}
+	}
+	playback_speed = speed;
+	if (speed_src != NULL) src_set_ratio(speed_src, 1.0 / speed);
+	pthread_mutex_unlock(&buffer_mutex);
+	return 1;
 }
 
 EXPORT void set_position_ms(int ms) {

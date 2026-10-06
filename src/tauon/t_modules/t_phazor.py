@@ -1216,6 +1216,7 @@ def player4(tauon: Tauon) -> None:
 			add_time = 0
 
 		pctl.total_playtime += add_time
+		position_time = add_time * applied_speed
 
 		# Wait / speed up, if we are out of sync
 		if p_sync_timer.get() > 1:
@@ -1225,21 +1226,17 @@ def player4(tauon: Tauon) -> None:
 				if 5 > diff > 0.11:  # in a CUE file real will be different that playing time
 					# This assumes the first track in a CUE is > 5s
 					if real_position < pctl.playing_time:
-						add_time -= 5
-						add_time = max(add_time, 0)
+						position_time = 0
 						p_sync_timer.force_set(2)  # wait for real to catch up again next clock
 					else:
-						add_time += 0.1
+						position_time += 0.1
 				pctl.last_real_position = real_position  # we still want to move on if playback stalled
 			p_sync_timer.set()
 
-		pctl.playing_time += add_time
+		pctl.playing_time += position_time
 		pctl.decode_time = pctl.playing_time
 
-		if pctl.playing_time < 3 and pctl.a_time < 3:
-			pctl.a_time = pctl.playing_time
-		else:
-			pctl.a_time += add_time
+		pctl.a_time += add_time
 
 		tauon.lfm_scrobbler.update(add_time)
 
@@ -1287,6 +1284,22 @@ def player4(tauon: Tauon) -> None:
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
 	aud.init()
+	set_speed = getattr(aud, "set_playback_speed", None)
+	pctl.playback_speed_supported = set_speed is not None
+	applied_speed = 1.0
+	if set_speed is not None:
+		set_speed.argtypes = (ctypes.c_float,)
+		set_speed.restype = ctypes.c_int
+		set_speed(1.0)
+
+	def apply_playback_speed() -> None:
+		nonlocal applied_speed
+		wanted = 1.0 if tauon.chrome_mode else pctl.playback_speed
+		if set_speed is not None and wanted != applied_speed:
+			if set_speed(wanted):
+				applied_speed = wanted
+			else:
+				pctl.set_playback_speed(applied_speed)
 
 	aud.get_device.restype = ctypes.c_char_p
 
@@ -1422,6 +1435,7 @@ def player4(tauon: Tauon) -> None:
 			break
 
 		# Level meter
+		apply_playback_speed()
 		run_levels()
 
 		# PHAzOR latches a flag if a device turned down a direct DSD stream. It
@@ -1805,12 +1819,14 @@ def player4(tauon: Tauon) -> None:
 				):
 					logging.info("Transition gapless")
 
-					r_timer = Timer()
-					r_timer.set()
+					transition_timer = Timer()
+					transition_time = 0.0
 
 					if loaded_track and loaded_track.file_ext.lower() in tauon.formats.GME:
 						# GME formats dont have a physical end so we don't do gapless
-						while r_timer.get() <= remain - prefs.device_buffer / 1000:
+						while transition_time <= remain - prefs.device_buffer / 1000 * applied_speed:
+							apply_playback_speed()
+							transition_time += transition_timer.hit() * applied_speed
 							if pctl.commit:
 								track(end=False)
 							time.sleep(0.016)
@@ -1828,10 +1844,13 @@ def player4(tauon: Tauon) -> None:
 					cont = False
 					check_timer = Timer()
 					check_timer.set()
-					r_timer_saved = 0.0
+					transition_timer.set()
 					while True:
+						apply_playback_speed()
+						elapsed = transition_timer.hit()
 						if tauon.player4_state != PlayerState.PAUSED:
-							if r_timer.get() > remain - prefs.device_buffer / 1000:
+							transition_time += elapsed * applied_speed
+							if transition_time > remain - prefs.device_buffer / 1000 * applied_speed:
 								break
 						if pctl.commit and tauon.player4_state == PlayerState.PLAYING:
 							track(end=False)
@@ -1861,14 +1880,12 @@ def player4(tauon: Tauon) -> None:
 							tauon.player4_state = PlayerState.PAUSED
 							pctl.playerCommand = ""
 							aud.pause()
-							r_timer_saved = r_timer.get()
 						if pctl.playerCommandReady and pctl.playerCommand == "pauseoff":
 							pctl.playerCommandReady = False
 							tauon.player4_state = PlayerState.PLAYING
 							pctl.playerCommand = ""
 							aud.resume()
 							player_timer.set()
-							r_timer.force_set(r_timer_saved)
 						if pctl.playerCommandReady and pctl.playerCommand == "volume":
 							aud.ramp_volume(int(pctl.player_volume), 750)
 							pctl.playerCommandReady = False
@@ -2191,7 +2208,7 @@ def player4(tauon: Tauon) -> None:
 						speed = fade_time / (5 / 100)
 
 					aud.ramp_volume(0, int(speed))
-					pctl.playing_time += (fade_time + 100) / 1000
+					pctl.playing_time += (fade_time + 100) / 1000 * applied_speed
 					time.sleep((fade_time + 100) / 1000)
 				aud.pause()
 				tauon.player4_state = PlayerState.PAUSED
@@ -2241,7 +2258,7 @@ def player4(tauon: Tauon) -> None:
 				# run_vis() runs once per iteration at the top of the loop now.
 
 				add_time = player_timer.hit()
-				pctl.playing_time += add_time
+				pctl.playing_time += add_time * applied_speed
 				pctl.decode_time = pctl.playing_time
 
 				buffering = aud.is_buffering()

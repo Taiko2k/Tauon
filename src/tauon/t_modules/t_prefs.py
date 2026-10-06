@@ -40,6 +40,7 @@ class Prefs:
 	pause_fade_time:          int = 400
 	change_volume_fade_time:  int = 400
 	cross_fade_time:          int = 700
+	playback_speed:         float = 1.0
 	volume_wheel_increment:   int = 2
 	rename_folder_template:   str = "<albumartist> - <album>"
 	rename_tracks_template:   str = "<tn>. <artist> - <title>.<ext>"
