@@ -84,7 +84,7 @@ from ctypes import (
 	c_void_p,
 	pointer,
 )
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
 
@@ -114,6 +114,15 @@ from tauon.t_modules.t_config import Config  # noqa: E402
 from tauon.t_modules.t_db_migrate import (  # noqa: E402
 	database_migrate,
 	migrate_star_store_71,
+)
+from tauon.t_modules.t_db_state import (  # noqa: E402
+	DATABASE_LOCK,
+	allocate_track_id,
+	backup_state_before_repair,
+	database_write,
+	snapshot_database,
+	state_save,
+	validate_and_repair_database,
 )
 from tauon.t_modules.t_custom import (  # noqa: E402
 	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
@@ -2807,6 +2816,7 @@ class PlayerCtl:
 					break
 				on += 1
 
+	@database_write
 	def move_radio_playlist(self, source: int, dest: int) -> None:
 		if dest > source:
 			dest += 1
@@ -2819,6 +2829,7 @@ class PlayerCtl:
 		except Exception:
 			logging.exception("Playlist move error")
 
+	@database_write
 	def move_playlist(self, source: int, dest: int) -> None:
 		if dest > source:
 			dest += 1
@@ -2837,6 +2848,7 @@ class PlayerCtl:
 		except Exception:
 			logging.exception("Playlist move error")
 
+	@database_write
 	def delete_playlist(self, index: int, force: bool = False, check_lock: bool = False) -> None:
 		if self.gui.radio_view:
 			stations = self.radio_playlists[index].stations[:]
@@ -2971,6 +2983,7 @@ class PlayerCtl:
 	def pl_to_id(self, pl: int) -> int:
 		return self.multi_playlist[pl].uuid_int
 
+	@database_write
 	def notify_database_changed(self) -> None:
 		self.db_inc += 1
 		self.tauon.bg_save()
@@ -3706,6 +3719,7 @@ class PlayerCtl:
 
 			self.tauon.album_art_gen.display(target, (0, 0), (50, 50), theme_only=True)
 
+	@database_write
 	def jump(self, index: int, pl_position: int | None = None, jump: bool = True) -> None:
 		self.lfm_scrobbler.start_queue()
 		if self.stop_mode == StopMode.TRACK:  # Disable auto stop track
@@ -3743,6 +3757,7 @@ class PlayerCtl:
 
 		self.gui.request_tracklist_redraw()
 
+	@database_write
 	def back(self) -> None:
 
 		play = True
@@ -3933,6 +3948,7 @@ class PlayerCtl:
 			if self.mpris is not None:
 				self.mpris.seek_do(self.playing_time)
 
+	@database_write
 	def play(self, update_gui: bool = True) -> None:
 		# Unpause if paused
 		if self.playing_state == PlayingState.PAUSED:
@@ -3966,6 +3982,7 @@ class PlayerCtl:
 		if update_gui:
 			self.render_playlist()
 
+	@database_write
 	def purge_track(self, track_id: int, fast: bool = False) -> None:
 		"""Remove a track from the database"""
 		# Remove from all playlists
@@ -4232,7 +4249,7 @@ class PlayerCtl:
 		force: bool = False, play: bool = True, dry: bool = False,
 	) -> int | None:
 		queue = self.queue_box
-		with queue.auto_queue_lock:
+		with DATABASE_LOCK, queue.auto_queue_lock:
 			advancing = queue.auto_queue_advancing
 			if not dry:
 				queue.update_auto_queue(advanced=advancing)
@@ -7452,6 +7469,7 @@ class Tauon:
 		self.loaderCommand:                   int = LoaderCommand.NONE
 		self.loaderCommandReady:             bool = False
 		self.cm_clean_db:                    bool = False
+		self.state_save_generation:           int = 0
 		self.worker_save_state:              bool = False
 		self.whicher                              = whicher
 		self.load_orders:         list[LoadClass] = []
@@ -8709,13 +8727,12 @@ class Tauon:
 					# Or... does the file exist? Then import it
 					elif os.path.isfile(line):
 						nt = TrackClass()
-						nt.index = self.pctl.master_count
+						nt.index = allocate_track_id(self.pctl)
 						set_path(nt, line)
 						nt = self.tag_scan(nt)
-						self.pctl.master_library[self.pctl.master_count] = nt
-						playlist.append(self.pctl.master_count)
+						self.pctl.master_library[nt.index] = nt
+						playlist.append(nt.index)
 						location_dict[line] = nt
-						self.pctl.master_count += 1
 						found_file += 1
 					# Last resort, guess based on title
 					elif line_title in titles:
@@ -8969,7 +8986,7 @@ class Tauon:
 
 			if "location" in track or "title" in track:
 				nt = TrackClass()
-				nt.index = self.pctl.master_count
+				nt.index = allocate_track_id(self.pctl)
 				nt.found = False
 
 				if "location" in track:
@@ -8991,11 +9008,10 @@ class Tauon:
 				if nt.found:
 					nt = self.tag_scan(nt)
 
-				self.pctl.master_library[self.pctl.master_count] = nt
-				playlist.append(self.pctl.master_count)
+				self.pctl.master_library[nt.index] = nt
+				playlist.append(nt.index)
 				if nt.fullpath:
-					location_dict[nt.fullpath] = self.pctl.master_count
-				self.pctl.master_count += 1
+					location_dict[nt.fullpath] = nt.index
 				if nt.found:
 					continue
 
@@ -10865,6 +10881,7 @@ class Tauon:
 		#	 self.reload_albums(quiet=True)
 		#	 self.combo_pl_render.prep()
 
+	@database_write
 	def clear_playlist(self, index: int) -> None:
 		if self.pl_is_locked(index):
 			self.show_message(_("Playlist is locked to prevent accidental erasure"))
@@ -12363,6 +12380,7 @@ class Tauon:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	@database_write
 	def remove_folder(self, index: int) -> None:
 		for b in range(len(self.pctl.default_playlist) - 1, -1, -1):
 			r_folder = self.pctl.master_library[index].parent_folder_name
@@ -12419,6 +12437,7 @@ class Tauon:
 		#logging.info(folder)
 		self.queue_transcode([folder])
 
+	@database_write
 	def transfer(self, index: int, args: list[int]) -> None:
 		old_cargo = copy.deepcopy(self.pctl.cargo)
 
@@ -12768,6 +12787,7 @@ class Tauon:
 				self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
 			self.queue_timer_set()
 
+	@database_write
 	def add_selected_to_queue_multi(self) -> None:
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
@@ -12786,6 +12806,7 @@ class Tauon:
 		elif self.pctl.force_queue:
 			self.gui.toast_queue_object = self.pctl.force_queue[-1]
 
+	@database_write
 	def split_queue_album(self, id: int) -> int | None:
 		item = self.pctl.force_queue[0]
 
@@ -13719,6 +13740,7 @@ class Tauon:
 	def sort_dec(self, h: int) -> None:
 		self.sort_ass(h, True)
 
+	@database_write
 	def sort_ass(self, h: int, invert: bool = False, custom_list: list[int] | None = None, custom_name: str = "") -> None:
 		if custom_list is None:
 			if self.pl_is_locked(self.pctl.active_playlist_viewing):
@@ -16240,7 +16262,9 @@ class Tauon:
 	def clean_db_show_test(self, _: int) -> bool:
 		return self.gui.suggest_clean_db
 
+	@database_write
 	def clean_db_fast(self) -> None:
+		validate_and_repair_database(self.pctl)
 		keys = set(self.pctl.master_library.keys())
 		for pl in self.pctl.multi_playlist:
 			keys -= set(pl.playlist_ids)
@@ -17552,6 +17576,7 @@ class Tauon:
 	def forget_pl_import_folder(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].last_folder = []
 
+	@database_write
 	def remove_duplicates(self, pl: int) -> None:
 		playlist = []
 
@@ -18539,7 +18564,7 @@ class Tauon:
 				nt.cue_sheet = ""
 				nt.is_embed_cue = True
 
-				nt.index = self.pctl.master_count
+				nt.index = allocate_track_id(self.pctl)
 				# nt.fullpath = filepath.replace('\\', '/')
 				# nt.filename = filename
 				# nt.parent_folder_path = os.path.dirname(filepath.replace('\\', '/'))
@@ -18566,13 +18591,10 @@ class Tauon:
 				if TN == 1:
 					nt.size = os.path.getsize(nt.fullpath)
 
-				self.pctl.master_library[self.pctl.master_count] = nt
+				self.pctl.master_library[nt.index] = nt
 
-				cued.append(self.pctl.master_count)
-				# loaded_paths_cache[filepath.replace('\\', '/')] = self.pctl.master_count
-				# self.added.append(self.pctl.master_count)
+				cued.append(nt.index)
 
-				self.pctl.master_count += 1
 				LENGTH = 0
 				PERFORMER = ""
 				TITLE = ""
@@ -20093,6 +20115,7 @@ class Tauon:
 		signal.signal(signum, signal.SIG_IGN) # ignore additional signals
 		self.exit(reason="SIGINT received")
 
+	@state_save
 	def save_state(self) -> None:
 		gui   = self.gui
 		pctl  = self.pctl
@@ -20115,19 +20138,12 @@ class Tauon:
 		view_prefs["break-enable"] = prefs.break_enable
 		view_prefs["append-date"] = prefs.append_date
 
-		tauonplaylist_jar = []
-		radioplaylist_jar = []
-		tauonqueueitem_jar = []
-		trackclass_jar = []
-		for v in pctl.multi_playlist:
-			tauonplaylist_jar.append(v.__dict__)
-		for v in pctl.radio_playlists:
-			radioplaylist_jar.append(v.__dict__)
-		with self.queue_box.auto_queue_lock:
-			view_prefs["auto-queue"] = self.queue_box.auto_queue_state()
-			tauonqueueitem_jar.extend(asdict(v) for v in pctl.force_queue)
-		for v in pctl.master_library.values():
-			trackclass_jar.append({k: getattr(v, k) for k in v.__slots__})
+		db_snapshot, auto_queue = snapshot_database(pctl, self.queue_box)
+		view_prefs["auto-queue"] = auto_queue
+		tauonplaylist_jar = db_snapshot[5]
+		radioplaylist_jar = db_snapshot[165]
+		tauonqueueitem_jar = db_snapshot[90]
+		trackclass_jar = db_snapshot[162]
 
 		# Columns header-bar config is per custom-slot (stored in
 		# custom_layouts.json). Persist the PRESET columns to state.p — while a
@@ -20345,12 +20361,16 @@ class Tauon:
 			prefs.feux_panel_pod1_w,  # 199
 		]
 
+		for slot, value in db_snapshot.items():
+			save[slot] = value
+		save[18] = copy.deepcopy(view_prefs)
+
 		try:
+			state_bytes = pickle.dumps(save, protocol=pickle.HIGHEST_PROTOCOL)
 			with atomic_save(self.user_directory / "state.p.backup") as file:
-				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
-			# if not pctl.running:
+				file.write(state_bytes)
 			with atomic_save(self.user_directory / "state.p") as file:
-				pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+				file.write(state_bytes)
 
 			old_position = self.old_window_position
 			if not prefs.save_window_position:
@@ -20541,6 +20561,7 @@ class Tauon:
 	#
 	#	 return line.rstrip(" ") + self.gui.trunk_end
 
+	@database_write
 	def sort_track_2(self, pl: int, custom_list: list[int] | None = None) -> None:
 		current_folder = ""
 		current_album = ""
@@ -20588,6 +20609,7 @@ class Tauon:
 	#	track = self.pctl.master_library[index]
 	#	return track.filename
 
+	@database_write
 	def sort_path_pl(self, pl: int, custom_list: list[int] | None = None) -> None:
 		target = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
@@ -21880,7 +21902,9 @@ class Tauon:
 		self.pctl.playerCommandReady = True
 
 	def bg_save(self) -> None:
-		self.worker_save_state = True
+		with DATABASE_LOCK:
+			self.state_save_generation += 1
+			self.worker_save_state = True
 		self.thread_manager.ready("worker")
 
 	def exit(self, reason: str) -> None:
@@ -22024,13 +22048,9 @@ class PlexService:
 					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
 					continue
 
-				id = self.pctl.master_count
-				replace_existing = False
-
-				e = existing.get(track.key)
-				if e is not None:
-					id = e
-					replace_existing = True
+				id = existing.get(track.key)
+				if id is None:
+					id = allocate_track_id(self.pctl)
 
 				title = track.title
 				track_artist = track.grandparentTitle
@@ -22059,9 +22079,6 @@ class PlexService:
 				nt.date = str(year)
 
 				self.pctl.master_library[id] = nt
-
-				if not replace_existing:
-					self.pctl.master_count += 1
 
 				playlist.append(nt.index)
 
@@ -22144,13 +22161,10 @@ class TauService:
 
 		playlist = []
 		for item in at:
-			replace_existing = True
-
 			tid = item["id"]
 			id = exist.get(str(tid))
 			if id is None:
-				id = self.pctl.master_count
-				replace_existing = False
+				id = allocate_track_id(self.pctl)
 
 			nt = TrackClass()
 			nt.index = id
@@ -22173,8 +22187,6 @@ class TauService:
 			nt.file_ext = "TAU"
 			self.pctl.master_library[id] = nt
 
-			if not replace_existing:
-				self.pctl.master_count += 1
 			playlist.append(nt.index)
 
 		if return_list:
@@ -42930,6 +42942,7 @@ class QueueBox:
 				"playing": self.auto_queue_playing,
 			}
 
+	@database_write
 	def toggle_auto_queue(self) -> None:
 		with self.auto_queue_lock:
 			self.prefs.auto_queue ^= True
@@ -42940,7 +42953,7 @@ class QueueBox:
 	def update_auto_queue(self, *, advanced: bool = False) -> None:
 		if not self.prefs.auto_queue:
 			return
-		with self.auto_queue_lock:
+		with DATABASE_LOCK, self.auto_queue_lock:
 			self._update_auto_queue(advanced=advanced)
 
 	def _update_auto_queue(self, *, advanced: bool = False) -> None:
@@ -43127,6 +43140,7 @@ class QueueBox:
 					return child, item
 		return None, None
 
+	@database_write
 	def toggle_album(self, uuid_int: int) -> None:
 		item, parent = self.find_item(uuid_int)
 		if item is None or parent is not None or item.type != QueueType.ALBUM:
@@ -43141,6 +43155,7 @@ class QueueBox:
 		self.dragging = None
 		self.gui.request_tracklist_redraw()
 
+	@database_write
 	def remove_item(self, uuid_int: int | None) -> None:
 		item, parent = self.find_item(uuid_int)
 		if item is None:
@@ -43153,6 +43168,7 @@ class QueueBox:
 				self.pctl.force_queue.remove(parent)
 		self.gui.request_tracklist_redraw()
 
+	@database_write
 	def move_item(self, uuid_int: int, target_id: int | None, *, album_id: int | None = None) -> None:
 		item, parent = self.find_item(uuid_int)
 		target, target_parent = self.find_item(target_id)
@@ -43296,6 +43312,7 @@ class QueueBox:
 					playlist_ids=copy.deepcopy(playlist),
 					hide_title=False))
 
+	@database_write
 	def drop_tracks_insert(self, insert_position: int, *, album_id: int | None = None) -> None:
 		if not self.gui.shift_selection:
 			return
@@ -43342,12 +43359,14 @@ class QueueBox:
 				self.pctl.force_queue.insert(
 					insert_position, queue_item_gen(self.pctl.default_playlist[position], position, playlist_id))
 
+	@database_write
 	def clear_queue_crop(self) -> None:
 		item = self.find_item(self.right_click_id)[0]
 		self.tauon.clear_queue()
 		if item is not None:
 			self.pctl.force_queue.append(item)
 
+	@database_write
 	def play_now(self) -> None:
 		queue_item, parent = self.find_item(self.right_click_id)
 		if queue_item is None:
@@ -52831,8 +52850,7 @@ def worker1(tauon: Tauon) -> None:
 						nt = c
 					else:
 						nt = TrackClass()
-						nt.index = pctl.master_count
-						pctl.master_count += 1
+						nt.index = allocate_track_id(pctl)
 
 					nt.fullpath = file_path
 					nt.filename = file_name
@@ -53169,13 +53187,16 @@ def worker1(tauon: Tauon) -> None:
 
 		nt = TrackClass()
 
-		nt.index = pctl.master_count
+		nt.index = allocate_track_id(pctl)
 		set_path(nt, path)
+		imported_track_id = None
 
 		def commit_track(nt: TrackClass) -> None:
-			pctl.master_library[pctl.master_count] = nt
-			tauon.added.append(pctl.master_count)
-			loaded_paths_cache[nt.fullpath] = pctl.master_count
+			nonlocal imported_track_id
+			pctl.master_library[nt.index] = nt
+			tauon.added.append(nt.index)
+			loaded_paths_cache[nt.fullpath] = nt.index
+			imported_track_id = nt.index
 
 			if prefs.auto_sort or force_scan:
 				tauon.tag_scan(nt)
@@ -53183,12 +53204,13 @@ def worker1(tauon: Tauon) -> None:
 				tauon.after_scan.append(nt)
 				tauon.thread_manager.ready("worker")
 
-			pctl.master_count += 1
-
 		# nt = tauon.tag_scan(nt)
 		if nt.cue_sheet:
 			tauon.tag_scan(nt)
+			added_start = len(tauon.added)
 			tauon.cue_scan(nt.cue_sheet, nt)
+			if len(tauon.added) > added_start:
+				imported_track_id = tauon.added[added_start]
 			del nt
 		elif nt.file_ext.lower() in bag.formats.GME and gme:
 			emu = ctypes.c_void_p()
@@ -53198,7 +53220,7 @@ def worker1(tauon: Tauon) -> None:
 				for i in range(n):
 					nt = TrackClass()
 					set_path(nt, path)
-					nt.index = pctl.master_count
+					nt.index = allocate_track_id(pctl)
 					nt.subtrack = i
 					commit_track(nt)
 
@@ -53207,9 +53229,11 @@ def worker1(tauon: Tauon) -> None:
 			commit_track(nt)
 
 		# bm.get("fill entry")
-		if gui.auto_play_import:
-			pctl.jump(pctl.master_count - 1)
-			gui.auto_play_import = False
+		if gui.auto_play_import and imported_track_id is not None:
+			with DATABASE_LOCK:
+				if imported_track_id in pctl.master_library:
+					pctl.jump(imported_track_id)
+					gui.auto_play_import = False
 		return None
 
 	def pre_get(direc: str) -> None:
@@ -53435,9 +53459,12 @@ def worker1(tauon: Tauon) -> None:
 				not tauon.lastfm.scanning_friends and \
 				not tauon.move_in_progress and \
 				(gui.lowered or not window_is_focused(tauon.t_window) or not gui.mouse_in_window):
+			with DATABASE_LOCK:
+				generation = tauon.state_save_generation
 			tauon.save_state()
 			bag.cue_list.clear()
-			tauon.worker_save_state = False
+			with DATABASE_LOCK:
+				tauon.worker_save_state = generation != tauon.state_save_generation
 
 		for i, upload in enumerate(tauon.lrclib_uploads):
 			if upload_to_lrclib( upload ):
@@ -54265,7 +54292,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 79
+	latest_db_version: float = 80
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -54490,6 +54517,7 @@ def main(holder: Holder) -> None:
 	# Legacy TrackClass.misc dicts pulled from pre-v79 saves, keyed by track
 	# index. Distributed into the new __slots__ fields by the v79 migration.
 	legacy_track_misc: dict[int, dict] = {}
+	state_loaded = False
 	for t in range(2):
 		#	 os.path.getsize(user_directory / "state.p") < 100
 		try:
@@ -54523,6 +54551,10 @@ def main(holder: Holder) -> None:
 				# prefs.ui_scale = 1.3
 				# gui.__init__()
 
+			# A backup load must not inherit a partially loaded primary library.
+			bag.master_library = {}
+			bag.p_force_queue = []
+			legacy_track_misc.clear()
 			if len(save) > 0 and save[0] is not None:
 				bag.master_library = save[0]
 				# try: # TODO(Taiko): remove me before release!
@@ -54961,13 +54993,20 @@ def main(holder: Holder) -> None:
 				prefs.feux_panel_pod1_w = save[199]
 
 			del save
+			state_loaded = True
 			break
 
 		except IndexError:
 			logging.exception("Index error")
-			break
+			continue
 		except Exception:
 			logging.exception("Failed to load save file")
+
+	if not state_loaded and (state_path1.is_file() or state_path2.is_file()):
+		logging.critical("Neither state file could be loaded; refusing to repair or overwrite partial state")
+		sys.exit(42)
+	if 0 < db_version < 80:
+		backup_state_before_repair(user_directory)
 
 	core_timer = Timer()
 	core_timer.set()

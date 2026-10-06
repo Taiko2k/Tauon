@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
+from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, Timer
 
 if TYPE_CHECKING:
@@ -566,15 +567,13 @@ class Jellyfin:
 		fav_status: dict[TrackClass, bool] = {}
 		for parent, items in grouped_items:
 			for track in items:
-				track_id = self.pctl.master_count  # id here is tauons track_id for the track
-				existing_track = existing.get(track.get("Id"))
-				replace_existing = existing_track is not None
+				track_id = existing.get(track.get("Id"))
 				# logging.info(track.items())
-				if replace_existing:
-					track_id = existing_track
+				if track_id is not None:
 					nt = self.pctl.get_track(track_id)
 				else:
 					nt = self.tauon.TrackClass()
+					track_id = allocate_track_id(self.pctl)
 				nt.index = track_id  # this is tauons track id
 				try:
 					nt.fullpath = track.get("MediaSources")[0]["Path"]
@@ -639,8 +638,6 @@ class Jellyfin:
 					logging.exception("Jelly exception get container")
 
 				self.pctl.master_library[track_id] = nt
-				if not replace_existing:
-					self.pctl.master_count += 1
 				playlist.append(nt.index)
 
 				# Sync favorite
