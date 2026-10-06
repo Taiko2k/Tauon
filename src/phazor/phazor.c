@@ -298,6 +298,22 @@ int config_min_buffer = 30000;
 int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
 int config_force_stereo = 0;
 int config_dsd_direct = 0;  // Send DSD to the device untouched instead of decoding it to PCM
+int config_pre_roll_ms = 0;
+int64_t pre_roll_remaining = 0;  // Output frames, or bytes per channel for DSD
+bool pre_roll_waiting_format = false;
+
+// Called with buffer_mutex held, after the output rate has been selected.
+static void arm_pre_roll(int rate) {
+	pre_roll_remaining = (int64_t) rate * config_pre_roll_ms / 1000;
+}
+
+#ifdef PIPE
+static void pre_roll_wait_for_format() {
+	pthread_mutex_lock(&buffer_mutex);
+	pre_roll_waiting_format = config_pre_roll_ms > 0;
+	pthread_mutex_unlock(&buffer_mutex);
+}
+#endif
 
 #define EQ_BAND_COUNT 10
 #define EQ_AUTO_HEADROOM_MARGIN_DB 1.0f
@@ -3184,6 +3200,18 @@ int get_dsd_audio(int max_bytes, void *dest, int interleave, int bitorder_lsb) {
 
 	int channels = dsd_info.channels > 0 ? dsd_info.channels : 2;
 	int frame = group * channels;  // bytes emitted per group of source bytes
+	if ((mode == PLAYING || mode == ENDING) && (pre_roll_waiting_format || pre_roll_remaining > 0)) {
+		int bytes = max_bytes;
+		if (!pre_roll_waiting_format) {
+			int64_t groups = (pre_roll_remaining + group - 1) / group;
+			if (groups < max_bytes / frame) bytes = (int) groups * frame;
+			pre_roll_remaining -= bytes / channels;
+			if (pre_roll_remaining < 0) pre_roll_remaining = 0;
+		}
+		memset(dest, 0x69, bytes);
+		pthread_mutex_unlock(&buffer_mutex);
+		return bytes;
+	}
 	int available = dsd_buff_fill();
 	int want_groups = max_bytes / frame;
 	int have_groups = available / group;
@@ -3280,6 +3308,23 @@ int get_audio(int max_frames, float* buff) {
 		pthread_mutex_lock(&buffer_mutex);
 		int channels = output_mixer.channels;
 		memset(buff, 0, max_frames * channels * sizeof(float));
+		if (mode == RAMP_DOWN && (pre_roll_waiting_format || pre_roll_remaining > 0)) {
+			gate = 0;
+			pthread_mutex_unlock(&buffer_mutex);
+			return max_frames;
+		}
+		if ((mode == PLAYING || mode == ENDING) && (pre_roll_waiting_format || pre_roll_remaining > 0)) {
+			if (pre_roll_waiting_format) {
+				pthread_mutex_unlock(&buffer_mutex);
+				return max_frames;
+			}
+			b = pre_roll_remaining < max_frames ? (int) pre_roll_remaining : max_frames;
+			pre_roll_remaining -= b;
+			if (b == max_frames) {
+				pthread_mutex_unlock(&buffer_mutex);
+				return max_frames;
+			}
+		}
 
 		if (buffering == 1 && get_buff_fill() > config_min_buffer) {
 			buffering = 0;
@@ -3337,8 +3382,6 @@ int get_audio(int max_frames, float* buff) {
 			if (eq_enabled && current_sample_rate > 0 && (eq_dirty || eq_coeff_sample_rate != current_sample_rate)) {
 				eq_rebuild_coefficients(current_sample_rate);
 			}
-
-			b = 0;
 
 			peak_roll_l = 0;
 			peak_roll_r = 0;
@@ -3525,6 +3568,7 @@ int get_audio(int max_frames, float* buff) {
 		}
 		sample_rate_out = rate;
 		current_sample_rate = rate;
+		arm_pre_roll(rate);
 		pthread_mutex_unlock(&buffer_mutex);
 	}
 
@@ -3554,6 +3598,10 @@ int get_audio(int max_frames, float* buff) {
 			pipe_dsd_interleave = dsd.interleave;
 			pipe_dsd_lsb = (dsd.bitorder == SPA_PARAM_BITORDER_lsb) ? 1 : 0;
 			pipe_dsd_streaming = 1;
+			pthread_mutex_lock(&buffer_mutex);
+			if (pre_roll_waiting_format) arm_pre_roll(dsd.rate);
+			pre_roll_waiting_format = false;
+			pthread_mutex_unlock(&buffer_mutex);
 			// The DSD rate is in bytes per second, which is what we already
 			// clock the decoder at, so there is nothing to re-rate here
 			log_msg(LOG_INFO, "ph: PipeWire negotiated DSD, %u B/s, %u ch, interleave %d, %s first",
@@ -3588,6 +3636,10 @@ int get_audio(int max_frames, float* buff) {
 			}
 			pipe_apply_output_rate(info.rate);
 		}
+		pthread_mutex_lock(&buffer_mutex);
+		if (pre_roll_waiting_format) arm_pre_roll(info.rate);
+		pre_roll_waiting_format = false;
+		pthread_mutex_unlock(&buffer_mutex);
 	}
 
 	static const struct pw_stream_events stream_events = {
@@ -4155,6 +4207,7 @@ void connect_pulse() {
 
 		// pipe_update used since it has additional guards in case the stream is ERROR but still connected
 		// meanwhile, pipe_connect only accepts an unconnected one
+		pre_roll_wait_for_format();
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 	#endif
 
@@ -4171,7 +4224,12 @@ void connect_pulse() {
 		buff_reset();
 	}
 
+	pthread_mutex_lock(&buffer_mutex);
 	current_sample_rate = sample_rate_out;
+	#ifdef MINI
+		arm_pre_roll(current_sample_rate);
+	#endif
+	pthread_mutex_unlock(&buffer_mutex);
 
 	pulse_connected = true;
 
@@ -4865,6 +4923,8 @@ void end() {
 	mode = STOPPED;
 	command = NONE;
 	buff_reset();
+	pre_roll_remaining = 0;
+	pre_roll_waiting_format = false;
 	buffering = 0;
 	pthread_mutex_unlock(&buffer_mutex);
 }
@@ -4983,6 +5043,7 @@ void pump_decode() {
 			pipe_set_samplerate = sample_rate_src;
 			pipe_apply_output_rate(sample_rate_src);
 		}
+		pre_roll_wait_for_format();
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 		return;
 	}
@@ -5036,6 +5097,7 @@ void pump_decode() {
 		// The buffer is empty here, so move both audio generation and position
 		// timing to the new rate. on_param_changed corrects both if negotiation
 		// settles on a different rate.
+		pre_roll_wait_for_format();
 		pipe_apply_output_rate(sample_rate_src);
 		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
 	}
@@ -5792,7 +5854,7 @@ EXPORT int pause() {
 	// into ENDING long before it is actually over.
 	if (out_thread_running && dsd_active && (mode == PLAYING || mode == ENDING)) {
 		command = PAUSE;
-	} else if (out_thread_running && (mode == PLAYING || mode == RAMP_DOWN)) {
+	} else if (out_thread_running && (mode == PLAYING || mode == ENDING || mode == RAMP_DOWN)) {
 		mode = RAMP_DOWN;
 		command = PAUSE;
 	}
@@ -6076,6 +6138,25 @@ EXPORT void config_set_fade_duration(int ms) {
 	if (ms < 200) ms = 200;
 	if (ms > 2000) ms = 2000;
 	config_fade_duration = ms;
+}
+
+EXPORT void config_set_pre_roll(int ms) {
+	if (ms < 0) ms = 0;
+	if (ms > 10000) ms = 10000;
+	pthread_mutex_lock(&buffer_mutex);
+	config_pre_roll_ms = ms;
+	if (ms == 0) {
+		pre_roll_remaining = 0;
+		pre_roll_waiting_format = false;
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+EXPORT int is_pre_roll() {
+	pthread_mutex_lock(&buffer_mutex);
+	int active = pre_roll_remaining > 0 || pre_roll_waiting_format;
+	pthread_mutex_unlock(&buffer_mutex);
+	return active;
 }
 
 EXPORT void config_set_dev_name(char *device) {

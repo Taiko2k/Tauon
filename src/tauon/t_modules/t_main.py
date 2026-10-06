@@ -31779,7 +31779,7 @@ class Over:
 		column_gap = round(12 * gui.scale)
 		left_w = max(round(270 * gui.scale), min(round(w * 0.48), w - round(240 * gui.scale)))
 		right_w = w - left_w - column_gap
-		row1_h = round(500 * gui.scale)
+		row1_h = round(610 * gui.scale)
 		row2_h = round(355 * gui.scale)
 		if not draw:
 			return row1_h + row2_h + column_gap
@@ -31832,6 +31832,31 @@ class Over:
 			self.pctl.playerCommand = "reload"
 			self.pctl.playerCommandReady = True
 		inner_y += row_h + row_gap
+
+		old_pre_roll = (prefs.use_pre_roll, prefs.pre_roll_time)
+		prefs.use_pre_roll = self.settings_switch_row(
+			(inner_x, inner_y, inner_w, tall_row_h),
+			prefs.use_pre_roll,
+			_("Pre-roll silence"),
+			_("Wait for DAC resynchronization."),
+			accent=accent,
+		)
+		inner_y += tall_row_h + row_gap
+		prefs.pre_roll_time = round(self.draw_settings_range_slider(
+			(inner_x, inner_y, inner_w, round(46 * gui.scale)),
+			_("Pre-roll duration"),
+			prefs.pre_roll_time,
+			100,
+			10000,
+			100,
+			accent=accent,
+			formatter=lambda value: f"{value / 1000:.1f} s",
+			disabled=not prefs.use_pre_roll,
+		))
+		if old_pre_roll != (prefs.use_pre_roll, prefs.pre_roll_time):
+			self.pctl.playerCommand = "reload"
+			self.pctl.playerCommandReady = True
+		inner_y += round(52 * gui.scale)
 
 		old_force_stereo = prefs.force_stereo_output
 		prefs.force_stereo_output = self.settings_switch_row(
@@ -51481,6 +51506,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("playback-speed", prefs.playback_speed)
 	cf.update_value("pause-fade-time", prefs.pause_fade_time)
 	cf.update_value("cross-fade-time", prefs.cross_fade_time)
+	cf.update_value("use-pre-roll", prefs.use_pre_roll)
+	cf.update_value("pre-roll-time", prefs.pre_roll_time)
 	cf.update_value("device-buffer-ms", prefs.device_buffer)
 	cf.update_value("output-samplerate", prefs.samplerate)
 	cf.update_value("resample-quality", prefs.resample)
@@ -51681,6 +51708,13 @@ def load_prefs(bag: Bag) -> None:
 	prefs.cross_fade_time = cf.sync_add(
 		"int", "cross-fade-time", prefs.cross_fade_time,
 		"In ms. Min: 200, Max: 2000, Default: 700. Applies to track change crossfades. End of track is always gapless.")
+	prefs.use_pre_roll = cf.sync_add(
+		"bool", "use-pre-roll", prefs.use_pre_roll,
+		"Play silence when opening output or changing sample rate to allow the DAC to resynchronize.")
+	prefs.pre_roll_time = cf.sync_add(
+		"int", "pre-roll-time", prefs.pre_roll_time,
+		"Pre-roll silence in milliseconds. Min: 100, Max: 10000, Default: 1500.")
+	prefs.pre_roll_time = max(100, min(10000, prefs.pre_roll_time))
 
 	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
 	#prefs.samplerate = cf.sync_add(

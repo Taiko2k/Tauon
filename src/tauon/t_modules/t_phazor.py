@@ -1090,6 +1090,8 @@ def player4(tauon: Tauon) -> None:
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
 		aud.config_set_fade_duration(prefs.cross_fade_time)
+		if hasattr(aud, "config_set_pre_roll"):
+			aud.config_set_pre_roll(prefs.pre_roll_time if prefs.use_pre_roll else 0)
 		st = prefs.phazor_device_selected.encode()
 		aud.config_set_dev_name(st)
 		if hasattr(aud, "config_set_force_stereo"):
@@ -1214,12 +1216,16 @@ def player4(tauon: Tauon) -> None:
 		# player_timer was still hit above, so the gap isn't counted later.
 		if loaded_track_streamed and aud.is_buffering():
 			add_time = 0
+		pre_roll_status = getattr(aud, "is_pre_roll", None)
+		pre_rolling = pre_roll_status is not None and pre_roll_status()
+		if pre_rolling:
+			add_time = 0
 
 		pctl.total_playtime += add_time
 		position_time = add_time * applied_speed
 
 		# Wait / speed up, if we are out of sync
-		if p_sync_timer.get() > 1:
+		if not pre_rolling and p_sync_timer.get() > 1:
 			real_position = aud.get_position_ms() / 1000
 			if real_position and pctl.playing_time and real_position != pctl.last_real_position:
 				diff = abs(real_position - pctl.playing_time)

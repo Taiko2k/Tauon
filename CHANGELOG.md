@@ -5,10 +5,13 @@ Changelog
 ### v12.2.0
 
  - Added activity overview button
- - Added queue album group expantion
+ - Added queue album group expansion
  - Added auto queue feature
  - Added Jellyfin lyrics support
  - Added playback speed adjustment
+ - Added pre-roll silence option
+ - Fixed format support for Chromecast
+ - Fixed a possible db corruption state
 
 ### v12.1.0
 
