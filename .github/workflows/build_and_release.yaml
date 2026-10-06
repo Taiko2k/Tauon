@@ -256,6 +256,9 @@ jobs:
       - name: brew update
         run: brew untap aws/tap && brew update
 
+      - name: Force install openssl@3 to prevent a bug with current images
+        run: brew install --overwrite openssl@3
+
       - name: Install brew dependencies
         run: |
           brew install \
