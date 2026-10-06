@@ -10,6 +10,7 @@ Changelog
  - Added Jellyfin lyrics support
  - Added playback speed adjustment
  - Added pre-roll silence option
+ - Added setting to disable radio scrobble
  - Fixed format support for Chromecast
  - Fixed a possible db corruption state
 

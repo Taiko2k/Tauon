@@ -5533,6 +5533,8 @@ class LastScrob:
 		"""
 		prefs = self.prefs
 		ext = track_object.file_ext
+		if ext == "RADIO":
+			return prefs.scrobble_radios
 		if ext == "JELY":
 			return prefs.scrobble_jellyfin
 		if ext == "TIDAL":
@@ -32228,7 +32230,7 @@ class Over:
 			account_subtitle = prefs.last_fm_username or _("Account not connected.")
 			card1_h = round(252 * gui.scale) if prefs.last_fm_token is None else round(216 * gui.scale)
 			card2_h = round(200 * gui.scale)
-			card3_h = round(146 * gui.scale)
+			card3_h = round(182 * gui.scale)
 			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
 			if not draw:
 				return total_h
@@ -32341,11 +32343,18 @@ class Over:
 				_("Show threshold marker"),
 				accent=accent,
 			)
+			inner_y += row_h + row_gap
+			prefs.scrobble_radios = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.scrobble_radios,
+				_("Scrobble Radios"),
+				accent=accent,
+			)
 			return total_h
 
 		if view == 2:
 			card1_h = round(210 * gui.scale)
-			card2_h = round(152 * gui.scale)
+			card2_h = round(188 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -32397,6 +32406,13 @@ class Over:
 				(inner_x, inner_y, inner_w, row_h),
 				self.tauon.toggle_scrobble_mark,
 				_("Show threshold marker"),
+				accent=accent,
+			)
+			inner_y += row_h + row_gap
+			prefs.scrobble_radios = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.scrobble_radios,
+				_("Scrobble Radios"),
 				accent=accent,
 			)
 			return total_h
@@ -32627,7 +32643,7 @@ class Over:
 			return total_h
 
 		if view == 9:
-			card1_h = round(158 * gui.scale)
+			card1_h = round(194 * gui.scale)
 			card2_h = round(170 * gui.scale)
 			card3_h = round(158 * gui.scale)
 			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
@@ -32676,6 +32692,13 @@ class Over:
 				(inner_x, inner_y, inner_w, row_h),
 				self.tauon.toggle_scrobble_mark,
 				_("Show threshold marker"),
+				accent=accent,
+			)
+			inner_y += row_h + row_gap
+			prefs.scrobble_radios = self.settings_switch_row(
+				(inner_x, inner_y, inner_w, row_h),
+				prefs.scrobble_radios,
+				_("Scrobble Radios"),
 				accent=accent,
 			)
 
@@ -51489,6 +51512,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
+	cf.update_value("scrobble-radios", prefs.scrobble_radios)
 	cf.update_value("scrobble-jellyfin", prefs.scrobble_jellyfin)
 	cf.update_value("scrobble-tidal", prefs.scrobble_tidal)
 	cf.update_value("scrobble-subsonic", prefs.scrobble_subsonic)
@@ -52133,6 +52157,7 @@ def load_prefs(bag: Bag) -> None:
 
 	cf.br()
 	cf.add_text("[scrobbling]")
+	prefs.scrobble_radios = cf.sync_add("bool", "scrobble-radios", prefs.scrobble_radios)
 	cf.add_comment(
 		"Allow Tauon to scrobble tracks played from a streaming service. Disable for "
 		"services that already scrobble on their own to avoid double scrobbles.")

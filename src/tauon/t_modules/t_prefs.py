@@ -401,6 +401,7 @@ class Prefs:
 	maloja_key = ""
 
 	scrobble_hold: bool = False
+	scrobble_radios: bool = True
 
 	# Allow Tauon to scrobble tracks played from a given streaming service.
 	# Useful to disable when the service scrobbles to Last.fm/ListenBrainz on its own.
