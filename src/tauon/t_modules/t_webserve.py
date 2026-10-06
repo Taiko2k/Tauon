@@ -32,6 +32,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_cast_audio import audio_mime_type
 from tauon.t_modules.t_enums import Backend, PlayingState, StopMode
 from tauon.t_modules.t_extra import Timer
 
@@ -631,6 +632,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				not path.startswith("/api1/pic/medium/")
 				and not path.startswith("/api1/file/")
 				and not path.startswith("/api1/fileopus")
+				and not path.startswith("/api1/cast/")
 			):
 				self.send_response(404)
 				self.end_headers()
@@ -727,6 +729,19 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				self.end_headers()
 				self.wfile.write(b"OK")
 
+			elif path.startswith("/api1/cast/"):
+				param = path[11:]
+				chrome = tauon.chrome
+				cache = chrome.audio_cache if chrome else None
+				cast_file = cache.get(int(param)) if cache and param.isdigit() else None
+				if cast_file and cast_file.is_file():
+					play_timer.hit()
+					send_file(str(cast_file), "audio/flac", self)
+				else:
+					self.send_response(404)
+					self.end_headers()
+					self.wfile.write(b"Cast file unavailable")
+
 			elif path.startswith("/api1/file/"):
 				param = path[11:]
 
@@ -740,14 +755,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 						self.end_headers()
 						self.wfile.write(b"File unavailable")
 					else:
-						mime = "audio/mpeg"
-						if track.file_ext == "FLAC":
-							mime = "audio/flac"
-						if track.file_ext in {"OGG", "OPUS", "OGA"}:
-							mime = "audio/ogg"
-						if track.file_ext == "M4A":
-							mime = "audio/mp4"
-						send_file(track.fullpath, mime, self)
+						send_file(track.fullpath, audio_mime_type(track.file_ext), self)
 				else:
 					self.send_response(404)
 					self.end_headers()

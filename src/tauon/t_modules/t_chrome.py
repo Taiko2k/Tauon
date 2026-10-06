@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import socket
+import subprocess
 import threading
 from typing import TYPE_CHECKING
 from uuid import UUID
@@ -10,6 +11,7 @@ import pychromecast
 import zeroconf
 from pychromecast.controllers.media import BaseMediaPlayer, MediaController, MediaStatus
 
+from tauon.t_modules.t_cast_audio import CastAudioCache, audio_mime_type, native_cast_mime_type
 from tauon.t_modules.t_extra import shooter
 
 if TYPE_CHECKING:
@@ -60,6 +62,7 @@ class Chrome:
 		self.ip: str = ""
 		self.browser: CastBrowser | None = None
 		self.media_controller: StyledMediaController | None = None
+		self.audio_cache = CastAudioCache()
 
 	def discover_services(self, timeout: float = DISCOVERY_TIMEOUT) -> list[tuple[str, str]]:
 		zconf = zeroconf.Zeroconf()
@@ -132,6 +135,7 @@ class Chrome:
 		self.cast = None
 		self.browser = None
 		self.media_controller = None
+		self.audio_cache = CastAudioCache()
 
 		if cast and media_controller:
 			try:
@@ -244,14 +248,37 @@ class Chrome:
 		}
 
 		if url is None:
-			url = f"http://{self.ip}:7814/api1/file/{track_id}"
+			mime = native_cast_mime_type(tr)
+			if mime is None:
+				cache = self.audio_cache
+				controller = self.media_controller
+				try:
+					cache.prepare(tr, self.tauon.get_ffmpeg())
+				except FileNotFoundError:
+					logging.exception("File or FFmpeg unavailable for Chromecast conversion")
+					self.tauon.show_message(
+						_("Unable to cast this audio format"),
+						_("Check that the file and FFmpeg are available."), mode="error",
+					)
+					return False
+				except (OSError, subprocess.SubprocessError):
+					logging.exception("Failed to convert audio for Chromecast")
+					self.tauon.show_message(_("Unable to convert audio for Chromecast"), mode="error")
+					return False
+				if controller is not self.media_controller or cache is not self.audio_cache:
+					return False
+				url = f"http://{self.ip}:7814/api1/cast/{track_id}"
+				mime = "audio/flac"
+			else:
+				url = f"http://{self.ip}:7814/api1/file/{track_id}"
 		else:
+			mime = self._mime_type(tr.file_ext)
 			url = url.replace("localhost", self.ip)
 			url = url.replace("127.0.0.1", self.ip)
 
 		try:
 			self.media_controller.play_media(
-				url, self._mime_type(tr.file_ext), media_info=m, metadata=d, current_time=t, enqueue=enqueue
+				url, mime, media_info=m, metadata=d, current_time=t, enqueue=enqueue
 			)
 		except Exception:
 			logging.exception("Failed to start Chromecast media")
@@ -260,13 +287,7 @@ class Chrome:
 
 	@staticmethod
 	def _mime_type(file_ext: str) -> str:
-		return {
-			"FLAC": "audio/flac",
-			"OGG": "audio/ogg",
-			"OPUS": "audio/ogg",
-			"OGA": "audio/ogg",
-			"M4A": "audio/mp4",
-		}.get(file_ext.upper(), "audio/mpeg")
+		return audio_mime_type(file_ext)
 
 	def stop(self) -> None:
 		if self.media_controller is None:
