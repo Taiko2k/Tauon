@@ -13,6 +13,7 @@ Changelog
  - Added setting to disable radio scrobble
  - Fixed format support for Chromecast
  - Fixed a possible db corruption state
+ - Filed filepath copy when no metadata
 
 ### v12.1.0
 

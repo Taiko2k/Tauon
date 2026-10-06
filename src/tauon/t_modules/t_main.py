@@ -14017,18 +14017,17 @@ class Tauon:
 		self.prefs.mini_mode_mode = MiniModeMode.SIGNAL
 		self.set_mini_mode()
 
-	def copy_bb_metadata(self) -> str | None:
+	def copy_bb_metadata(self) -> None:
 		tr = self.pctl.playing_object()
 		if tr is None:
-			return None
-		if not tr.title and not tr.artist and self.pctl.playing_state == PlayingState.URL_STREAM:
-			return self.pctl.tag_meta
-		text = f"{tr.artist} - {tr.title}".strip(" -")
+			return
+		text = " - ".join(filter(None, (tr.artist, tr.title)))
+		if not text:
+			text = self.pctl.tag_meta if self.pctl.playing_state == PlayingState.URL_STREAM else tr.filename
 		if text:
 			copy_to_clipboard(text)
 		else:
 			self.show_message(_("No metadata available to copy"))
-		return None
 
 	def stop(self) -> None:
 		self.pctl.stop()
@@ -35280,7 +35279,7 @@ class BottomBarType1:
 			if inp.mouse_click and pctl.playing_state != PlayingState.URL_STREAM:
 				pctl.show_current()
 
-			if pctl.playing_ready() and not gui.fullscreen:
+			if (pctl.playing_ready() or pctl.playing_state == PlayingState.URL_STREAM) and not gui.fullscreen:
 				if inp.right_click:
 					tauon.mode_menu.activate()
 
