@@ -8,6 +8,7 @@ Changelog
  - Added queue album group expantion
  - Added auto queue feature
  - Added Jellyfin lyrics support
+ - Added playback speed adjustment
 
 ### v12.1.0
 
