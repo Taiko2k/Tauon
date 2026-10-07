@@ -978,26 +978,13 @@ class TransEditBox:
 		label = _("All selected files") if index is None else self.session.documents[index].path.name
 		rect = (x, y, width, round(28 * scale))
 		self.scope_anchor = rect
-		self.fields.add(rect)
-		self.ddt.bordered_rect(
-			rect, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
-		)
-		self.ddt.text(
-			(x + round(9 * scale), y + round(4 * scale)),
-			label,
-			self.input_colour,
-			12,
-			max_w=width - round(36 * scale),
-			bg=alpha_blend(self.colours.box_thumb_background, self.colours.box_background),
-		)
-		self.ddt.text(
-			(x + width - round(22 * scale), y + round(4 * scale)),
-			"▾",
-			self.label_colour,
-			12,
-			bg=alpha_blend(self.colours.box_thumb_background, self.colours.box_background),
-		)
-		if self.input_enabled and self.inp.mouse_click and self.coll(rect):
+		if self.draw.dropdown(
+			label, x, y, w=width, h=rect[3], font=12, align_left=True,
+			expanded=self.scope_open, enabled=self.input_enabled or self.scope_open,
+			press=self.input_enabled and self.inp.mouse_click,
+			text_colour=self.input_colour, text_highlight_colour=self.input_colour,
+			background_colour=self.colours.box_thumb_background, border_colour=self.colours.box_text_border,
+		):
 			self.scope_open = not self.scope_open
 			self.scope_filter.clear()
 			self.scope_query = ""
@@ -1693,12 +1680,15 @@ class TransEditBox:
 			if self.art_type is None
 			else _(ARTWORK_TYPES.get(self.art_type, "Other"))
 		)
-		if self.draw.button(
-			target_label + " ▾",
+		art_open = self.art_menu is not None and self.art_menu.active
+		if self.draw.dropdown(
+			target_label,
 			ax,
 			y + round(19 * scale),
 			w=art_width,
 			h=round(23 * scale),
+			expanded=art_open,
+			enabled=self.input_enabled or art_open,
 			press=self.input_enabled and self.inp.mouse_click,
 		):
 			self.open_artwork(ax + art_width, y + round(44 * scale))
@@ -1846,7 +1836,8 @@ class TransEditBox:
 		add_x = x + width - add_width
 		self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11, bg=self.colours.box_background)
 		add_y = y + round(18 * scale)
-		preset_space = round(80 * scale)
+		preset_space = max(round(80 * scale), self.ddt.get_text_w(_("Presets"), 212) + round(36 * scale))
+		preset_space = min(preset_space, max(round(80 * scale), add_width - round(90 * scale)))
 		preset_gap = round(4 * scale)
 		rect = (add_x, add_y, add_width - round(49 * scale) - preset_space - preset_gap, round(23 * scale))
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
@@ -1859,12 +1850,15 @@ class TransEditBox:
 			active=self.input_enabled and self.key_active,
 			width=rect[2] - round(6 * scale),
 		)
-		if self.draw.button(
-			_("Presets") + " ▾",
+		presets_open = self.presets_menu is not None and self.presets_menu.active
+		if self.draw.dropdown(
+			_("Presets"),
 			x + width - preset_space,
 			add_y,
 			w=preset_space,
 			h=round(23 * scale),
+			expanded=presets_open,
+			enabled=self.input_enabled or presets_open,
 			press=self.input_enabled and self.inp.mouse_click,
 		):
 			self.open_presets(x + width, add_y + round(26 * scale))
@@ -2169,12 +2163,14 @@ class TransEditBox:
 			self.inp.level_2_right_click = False
 			self.inp.mouse_wheel = 0
 		self._tabs(body_x, y + round(61 * scale), body_width - round(90 * scale))
-		if not self.lookup_running and self.draw.button(
-			_("Tools") + " ▾",
+		if not self.lookup_running and self.draw.dropdown(
+			_("Tools"),
 			x + width - round(96 * scale),
 			y + round(64 * scale),
 			w=round(80 * scale),
 			h=round(26 * scale),
+			expanded=menu_open,
+			enabled=self.input_enabled or menu_open,
 		):
 			self.open_tools(x + width - round(16 * scale), y + round(95 * scale))
 		self._scope_selector(body_x, body_y - round(34 * scale), body_width - round(175 * scale), body_height)

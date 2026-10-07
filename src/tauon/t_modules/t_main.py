@@ -22314,6 +22314,53 @@ class Drawing:
 		self.colours: ColoursClass    = tauon.colours
 		self.star_store: StarStore = pctl.star_store
 
+	def dropdown_arrow(self, rect: tuple[int, int, int, int], colour: ColourRGBA, *, expanded: bool = False, disclosure: bool = False) -> None:
+		"""Render a theme-coloured SVG chevron, centred in its hit area."""
+		direction = ("down" if expanded else "right") if disclosure else ("up" if expanded else "down")
+		bag = self.tauon.bag
+		icon = asset_loader(bag, bag.loaded_asset_dc, f"dropdown-{direction}.png", True)
+		icon.render(round(rect[0] + (rect[2] - icon.w) / 2), round(rect[1] + (rect[3] - icon.h) / 2), colour, renderer=self.ddt.renderer)
+
+	def dropdown(
+		self, text: str, x: int, y: int, *, w: int | None = None, h: int | None = None, font: int = 212,
+		expanded: bool = False, enabled: bool = True, press: bool | None = None, align_left: bool = False,
+		text_colour: ColourRGBA | None = None, text_highlight_colour: ColourRGBA | None = None,
+		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None,
+		border_colour: ColourRGBA | None = None,
+	) -> bool:
+		"""Draw a dropdown trigger; its caller owns the menu and selection."""
+		scale = self.gui.scale
+		padding = round(8 * scale)
+		arrow_w = round(20 * scale)
+		if w is None:
+			w = self.ddt.get_text_w(text, font) + padding * 2 + arrow_w
+		if h is None:
+			h = self.ddt.get_text_w(text, font, True) + round(6 * scale)
+		rect = (x, y, w, h)
+		self.fields.add(rect)
+		hover = enabled and self.coll(rect)
+		active = hover or expanded
+		fill = background_colour if background_colour is not None else self.colours.box_button_background
+		ink = text_colour if text_colour is not None else self.colours.box_button_text
+		if active:
+			fill = background_highlight_colour if background_highlight_colour is not None else self.colours.box_button_background_highlight
+			ink = text_highlight_colour if text_highlight_colour is not None else self.colours.box_button_text_highlight
+		background = alpha_blend(fill, self.colours.box_background)
+		if not enabled:
+			ink = alpha_blend(alpha_mod(ink, 120), background)
+		if border_colour is None:
+			self.ddt.rect(rect, fill)
+		else:
+			self.ddt.bordered_rect(rect, fill, border_colour, max(1, round(scale)))
+		label_w = max(0, w - padding * 2 - arrow_w)
+		if label_w:
+			label_x = x + padding
+			if not align_left:
+				label_x += max(0, (label_w - self.ddt.get_text_w(text, font)) // 2)
+			self.ddt.text((label_x, y + h / 2 - 9 * scale), text, ink, font, max_w=label_w, bg=background)
+		self.dropdown_arrow((x + w - padding - arrow_w, y, arrow_w, h), ink, expanded=expanded)
+		return bool(hover and (self.inp.mouse_click if press is None else press))
+
 	def button(
 		self, text: str, x: int, y: int, w: int | None = None, h: int | None = None, font: int = 212, text_highlight_colour: ColourRGBA | None = None, text_colour: ColourRGBA | None = None,
 		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None, press: bool | None = None, tooltip: str = "", text_y_offset: int = 0) -> bool:
@@ -33142,6 +33189,7 @@ class Over:
 			self.fields.add(row_rect)
 
 			subcolors_are_identical = True
+			dropdown_rect = None
 			if len(attr) > 1: # THEME_EDITOR_COMPONENTS is currently set up for a STATIC visible_rows value. if this value ever changes, get smarter.
 				compare_color = self.theme_editor_component_colour(attr[0], current_colour)
 				for color in attr:
@@ -33150,15 +33198,14 @@ class Over:
 					compare_color = component_colour
 
 				dropdown_rect = (list_rect[0] + row_w - row_h, row_y, row_h, row_h)
-				# ddt.bordered_rect(dropdown_rect, row_fill, row_border, round(1 * gui.scale))
-				ddt.text(
-					(dropdown_rect[0]+ round(10*gui.scale),dropdown_rect[1]+round(4*gui.scale)),
-					"🞃" if self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] else "🞂",
-					colours.box_button_text, 12, bg=row_fill
-					)
+				component_index = THEME_EDITOR_COMPONENTS.index((label, attr))
 				if self.coll(dropdown_rect) and self.click:
-					self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))] = not self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
-				dropped_down = self.theme_editor_dropdown_expansions[THEME_EDITOR_COMPONENTS.index((label,attr))]
+					self.theme_editor_dropdown_expansions[component_index] = not self.theme_editor_dropdown_expansions[component_index]
+				dropped_down = self.theme_editor_dropdown_expansions[component_index]
+				self.tauon.draw.dropdown_arrow(
+					dropdown_rect, colours.box_button_text_highlight if hover else colours.box_button_text,
+					expanded=dropped_down, disclosure=True,
+				)
 				if dropped_down:
 
 					for color in attr:
@@ -33196,7 +33243,7 @@ class Over:
 
 
 
-			if hover and self.click and ("dropdown_rect" in locals() and not self.coll(dropdown_rect)):
+			if hover and self.click and (dropdown_rect is None or not self.coll(dropdown_rect)):
 				self.theme_editor_selected_attr = attr[0]
 				self.theme_editor_selected_attrs = attr
 				self.theme_editor_drag_target = None
@@ -33209,7 +33256,7 @@ class Over:
 				ddt.rect_s(swatch_rect, self.settings_overlay(row_border, 40), round(1 * gui.scale))
 			else:
 				ddt.text((swatch_rect[0] + round(1*gui.scale), row_rect[1] + round(7 * gui.scale)), "~", colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 20, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
-			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale))
+			ddt.text((swatch_rect[0] + swatch_rect[2] + round(8 * gui.scale), row_rect[1] + round(4 * gui.scale)), _(label), colours.box_text if active else colours.box_button_text_highlight if hover else colours.box_button_text, 12, bg=row_fill, max_w=row_rect[2] - round(44 * gui.scale) - (row_h if dropdown_rect is not None else 0))
 			row_y += row_step
 
 		right_inner_x = right_rect[0] + pad
