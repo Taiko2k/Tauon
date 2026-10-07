@@ -168,6 +168,23 @@ ALIASES = {
 }
 LYRIC_NAMES = {"lyrics", "unsyncedlyrics", "syncedlyrics"}
 ART_NAMES = {"metadata_block_picture", "coverart", "coverartmime", "cover art (front)", "cover art (back)", "covr"}
+ARTWORK_TYPES = {0: "Other", 3: "Front cover", 4: "Back cover", 5: "Leaflet", 6: "Media", 8: "Artist"}
+
+
+@dataclass(frozen=True)
+class EmbeddedArtwork:
+	data: bytes
+	picture_type: int
+	description: str = ""
+	key: str = ""
+	index: int = 0
+
+
+@dataclass(frozen=True)
+class ArtworkChange:
+	data: bytes | None
+	picture_type: int | None = 3
+	index: int | None = None
 
 
 @dataclass(frozen=True)
@@ -178,6 +195,8 @@ class TagEntry:
 	editable: bool = True
 	lyrics: bool = False
 	value_index: int | None = None
+	value_match: str | None = None
+	value_occurrence: int = 0
 
 
 def file_stamp(path: Path) -> tuple[int, int, int, int]:
@@ -782,7 +801,138 @@ class TagDocument:
 		result.extend(base64.b64decode(value) for value in self.tags.get("coverart", []))
 		return result
 
-	def set_artwork(self, data: bytes | None) -> None:
+	def artwork_items(self) -> list[EmbeddedArtwork]:
+		if self.family == "ID3":
+			return [
+				EmbeddedArtwork(frame.data, int(frame.type), frame.desc, frame.HashKey)
+				for frame in self.tags.getall("APIC")
+			]
+		if self.family == "MP4":
+			return [
+				EmbeddedArtwork(bytes(data), 3, key="covr", index=index)
+				for index, data in enumerate(self.tags.get("covr", []))
+			]
+		if isinstance(self.audio, FLAC):
+			return [
+				EmbeddedArtwork(picture.data, picture.type, picture.desc, index=index)
+				for index, picture in enumerate(self.audio.pictures)
+			]
+		if self.family == "APE":
+			return [
+				EmbeddedArtwork(
+					bytes(value).split(b"\x00", 1)[1],
+					3 if key.lower() == "cover art (front)" else 4 if key.lower() == "cover art (back)" else 0,
+					key=key,
+				)
+				for key, value in self.tags.items()
+				if key.lower().startswith("cover art") and isinstance(value, APEBinaryValue) and b"\x00" in bytes(value)
+			]
+		items = []
+		for index, value in enumerate(self.tags.get("metadata_block_picture", [])):
+			picture = Picture(base64.b64decode(value))
+			items.append(EmbeddedArtwork(picture.data, picture.type, picture.desc, "metadata_block_picture", index))
+		items.extend(
+			EmbeddedArtwork(base64.b64decode(value), 3, key="coverart", index=index)
+			for index, value in enumerate(self.tags.get("coverart", []))
+		)
+		return items
+
+	def set_artwork(self, data: bytes | None, *, picture_type: int | None = None, index: int | None = None) -> None:
+		if picture_type is None and index is None:
+			self._replace_all_artwork(data)
+			return
+		items = self.artwork_items()
+		if index is not None:
+			if not 0 <= index < len(items):
+				raise ValueError("The selected embedded image no longer exists.")
+			selected = items[index]
+			picture_type = selected.picture_type
+		else:
+			selected = next((item for item in items if item.picture_type == picture_type), None)
+		if self.family == "MP4" and picture_type != 3:
+			raise ValueError("MP4 artwork has no picture types; select an existing image or Front cover.")
+		if self.family == "APE" and selected is None and picture_type not in (3, 4):
+			raise ValueError("New APE artwork supports Front cover and Back cover.")
+		picture = None
+		if data is not None:
+			with Image.open(io.BytesIO(data)) as image:
+				if image.format not in ("JPEG", "PNG"):
+					raise ValueError("Embedded artwork must be a JPEG or PNG image.")
+				picture = Picture()
+				picture.data, picture.type = data, picture_type
+				picture.mime, picture.width, picture.height = Image.MIME[image.format], image.width, image.height
+				picture.depth = 32 if image.mode == "RGBA" else 24
+				picture.desc = selected.description if selected else ""
+				image.verify()
+		if self.family == "ID3":
+			if selected and picture is None:
+				self.tags.pop(selected.key)
+			if picture:
+				description = selected.description if selected else ARTWORK_TYPES.get(picture_type, "Cover")
+				while selected is None and "APIC:" + description in self.tags:
+					description += " (new)"
+				self.tags.add(APIC(encoding=1, mime=picture.mime, type=picture_type, desc=description, data=data))
+		elif self.family == "MP4":
+			covers = list(self.tags.get("covr", []))
+			cover = (
+				[
+					MP4Cover(
+						data, imageformat=MP4Cover.FORMAT_PNG if picture.mime == "image/png" else MP4Cover.FORMAT_JPEG
+					)
+				]
+				if picture
+				else []
+			)
+			if selected:
+				covers[selected.index : selected.index + 1] = cover
+			else:
+				covers.extend(cover)
+			if covers:
+				self.tags["covr"] = covers
+			else:
+				self.tags.pop("covr", None)
+		elif self.family == "APE":
+			key = selected.key if selected else "Cover Art (Front)" if picture_type == 3 else "Cover Art (Back)"
+			if selected and picture is None:
+				self.tags.pop(key)
+			if picture:
+				filename = b"cover.png" if picture.mime == "image/png" else b"cover.jpg"
+				self.tags[key] = APEBinaryValue(filename + b"\x00" + data)
+		elif isinstance(self.audio, FLAC):
+			pictures = list(self.audio.pictures)
+			if selected:
+				pictures[selected.index : selected.index + 1] = [picture] if picture else []
+			elif picture:
+				pictures.append(picture)
+			self.audio.clear_pictures()
+			for item in pictures:
+				self.audio.add_picture(item)
+		else:
+			if selected:
+				values = list(self.tags[selected.key])
+				if selected.key == "metadata_block_picture" and picture:
+					values[selected.index] = base64.b64encode(picture.write()).decode("ascii")
+					picture = None
+				else:
+					del values[selected.index]
+					if selected.key == "coverart":
+						mimes = list(self.tags.get("coverartmime", []))
+						if len(mimes) == len(values) + 1:
+							del mimes[selected.index]
+							if mimes:
+								self.tags["coverartmime"] = mimes
+				if values:
+					self.tags[selected.key] = values
+				else:
+					self.tags.pop(selected.key)
+					if selected.key == "coverart":
+						self.tags.pop("coverartmime", None)
+			if picture:
+				values = list(self.tags.get("metadata_block_picture", []))
+				values.append(base64.b64encode(picture.write()).decode("ascii"))
+				self.tags["metadata_block_picture"] = values
+
+	def _replace_all_artwork(self, data: bytes | None) -> None:
 		mime, width, height = "", 0, 0
 		if data is not None:
 			with Image.open(io.BytesIO(data)) as image:
@@ -927,10 +1077,11 @@ class TagChanges:
 	art_changed: bool = False
 	art_data: bytes | None = None
 	id3_upgrade: bool = False
+	artwork: list[ArtworkChange] = field(default_factory=list)
 
 	@property
 	def changed(self) -> bool:
-		return bool(self.main or self.entries or self.art_changed or self.id3_upgrade)
+		return bool(self.main or self.entries or self.art_changed or self.artwork or self.id3_upgrade)
 
 
 class ScopedChanges(MutableMapping[str, str]):
@@ -1031,12 +1182,14 @@ class TagEditSession:
 
 	@property
 	def art_changed(self) -> bool:
-		return any(self.pending[doc.path].art_changed for doc in self.scope_documents)
+		return any(self.pending[doc.path].art_changed or self.pending[doc.path].artwork for doc in self.scope_documents)
 
 	@art_changed.setter
 	def art_changed(self, value: bool) -> None:
 		for doc in self.scope_documents:
 			self.pending[doc.path].art_changed = value
+			if not value:
+				self.pending[doc.path].artwork.clear()
 
 	@property
 	def art_data(self) -> bytes | None:
@@ -1086,21 +1239,12 @@ class TagEditSession:
 				native = candidate.key_for(key) if main else candidate.portable_key(key)
 			except ValueError:
 				continue
-			artist = next((name for name in ("artist", "albumartist") if native in candidate.main_keys(name)), None)
 			restored = set(candidate.main_keys(key)) if main else {native}
-			related = (
-				{"musicbrainzartistid", "artistcredit"}
-				if artist == "artist"
-				else {"musicbrainzalbumartistid", "albumartistcredit"}
-				if artist == "albumartist"
-				else set()
-			)
 			for name in list(changes.main):
 				if native in candidate.main_keys(name):
 					del changes.main[name]
 			for name in list(changes.entries):
-				metadata = re.sub(r"[^a-z]", "", name.rsplit(":", 1)[-1].lower())
-				if candidate.portable_key(name) in restored or metadata in related:
+				if candidate.portable_key(name) in restored:
 					del changes.entries[name]
 
 	def effective_document(self, doc: TagDocument) -> TagDocument:
@@ -1131,6 +1275,8 @@ class TagEditSession:
 			doc.set_entry(key, value)
 		if changes.art_changed:
 			doc.set_artwork(changes.art_data)
+		for edit in changes.artwork:
+			doc.set_artwork(edit.data, picture_type=edit.picture_type, index=edit.index)
 		if changes.id3_upgrade:
 			doc.upgrade_id3()
 
@@ -1164,6 +1310,8 @@ class TagEditSession:
 			raise ValueError("Unknown value editing action.")
 		updates = {}
 		for original in self.scope_documents:
+			if slots is not None and original.path not in slots:
+				continue
 			doc = self.effective_document(original)
 			native = doc.key_for(key) if main else doc.portable_key(key)
 			current = doc.text_values(native) if native in doc.tags else []
@@ -1188,20 +1336,6 @@ class TagEditSession:
 			if result == current:
 				continue
 			update = TagChanges(main={key: result}) if main else TagChanges(entries={key: result})
-			artist_field = (
-				key if main else next((name for name in ("artist", "albumartist") if native == doc.key_for(name)), None)
-			)
-			if artist_field in ("artist", "albumartist"):
-				# Artist identifiers and formatted credits belong to the original artist list.
-				names = (
-					{"musicbrainzartistid", "artistcredit"}
-					if artist_field == "artist"
-					else {"musicbrainzalbumartistid", "albumartistcredit"}
-				)
-				for tagged in doc.tags.keys():
-					name = re.sub(r"[^a-z]", "", tagged.rsplit(":", 1)[-1].lower())
-					if name in names:
-						update.entries[tagged] = ""
 			updates[original.path] = update
 		return updates
 
@@ -1237,11 +1371,13 @@ class TagEditSession:
 				continue
 			values = [entry.value if entry else "" for entry in present]
 			value = values[0] if all(value == values[0] for value in values) else "<Multiple values>"
-			result.append(
-				TagEntry(
-					key, value, sample.kind, all(entry is None or entry.editable for entry in present), sample.lyrics
-				)
-			)
+			editable = all(entry is None or entry.editable for entry in present)
+			try:
+				for doc in documents:
+					doc.portable_key(key)
+			except ValueError:
+				editable = False
+			result.append(TagEntry(key, value, sample.kind, editable, sample.lyrics))
 		return result
 
 	def validate(
@@ -1292,11 +1428,20 @@ class TagEditSession:
 			pending.entries.update(update.entries)
 			if update.art_changed:
 				pending.art_changed, pending.art_data = True, update.art_data
+				pending.artwork.clear()
+			pending.artwork.extend(update.artwork)
 			pending.id3_upgrade |= update.id3_upgrade
 			doc = next(doc for doc in self.documents if doc.path == path)
 			self._apply(copy.deepcopy(doc), pending)
 			merged[path] = pending
 		self.pending.update(merged)
+
+	def stage_artwork(self, data: bytes | None, *, picture_type: int | None = 3, index: int | None = None) -> None:
+		if index is not None and len(self.scope_documents) != 1:
+			raise ValueError("Select a single file to target an individual image.")
+		self.stage_tracks(
+			{doc.path: TagChanges(artwork=[ArtworkChange(data, picture_type, index)]) for doc in self.scope_documents}
+		)
 
 	def fix_mojibake(
 		self, encoding: str | None = None, encodings: tuple[str, ...] = MOJIBAKE_ENCODINGS

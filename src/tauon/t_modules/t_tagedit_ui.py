@@ -26,7 +26,7 @@ from tauon.t_modules.t_musicbrainz_lookup import (
 	MusicBrainzLookupError,
 	stage_album,
 )
-from tauon.t_modules.t_tagedit import MAIN_FIELDS, VALUE_FIELDS, TagChanges, TagEditSession, TagEntry
+from tauon.t_modules.t_tagedit import ARTWORK_TYPES, MAIN_FIELDS, VALUE_FIELDS, TagChanges, TagEditSession, TagEntry
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Menu, Tauon, TrackClass
@@ -63,6 +63,9 @@ class TransEditBox:
 		self.session: TagEditSession | None = None
 		self.tracks = []
 		self.boxes = {field: (TagTextBox(tauon) if field in VALUE_FIELDS else TextBox2(tauon)) for field in MAIN_FIELDS}
+		self.auto_slashes = getattr(getattr(tauon, "prefs", None), "tag_editor_auto_slashes", True)
+		for field in VALUE_FIELDS:
+			self.boxes[field].auto_slash_conversion = self.auto_slashes
 		self.loading = False
 		self.load_cancel = threading.Event()
 		self.load_lock = threading.Lock()
@@ -90,12 +93,19 @@ class TransEditBox:
 		self.art_rect = (0, 0, 0, 0)
 		self.art_count = 0
 		self.art_mixed = False
+		self.art_type: int | None = 3
+		self.art_index: int | None = None
+		self.art_menu = None
 		self.write_result: tuple[int, str | None] | None = None
 		self.scope_open = False
 		self.tools_menu = None
 		self.presets_menu = None
 		self.undo_icon = None
-		self.scope_page = 0
+		self.scope_scroll = 0.0
+		self.scope_query = ""
+		self.scope_dragging = False
+		self.scope_drag_offset = 0.0
+		self.wheel_pending = 0.0
 		self.scope_filter = TextBox2(tauon)
 		self.scope_anchor = (0, 0, 0, 0)
 		self.notice = ""
@@ -134,8 +144,12 @@ class TransEditBox:
 		self.lookup_album = 0
 		self.lookup_scroll = 0
 		self.scope_open = False
+		self.scope_dragging = False
+		self.wheel_pending = 0.0
 		self._close_tools()
 		self._close_presets()
+		self._close_menu(self.art_menu)
+		self.art_type, self.art_index = 3, None
 		self.notice = ""
 		positions = sorted(set(self.gui.shift_selection))
 		if not positions and self.pctl.selected_ready():
@@ -268,10 +282,104 @@ class TransEditBox:
 		self._load_art()
 
 	def _load_art(self) -> None:
-		art = [self.session.effective_document(doc).artwork() for doc in self.session.scope_documents]
-		self.art_count = len(art[0])
+		documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
+		items = [doc.artwork_items() for doc in documents]
+		if self.art_index is not None and (len(items) != 1 or self.art_index >= len(items[0])):
+			self.art_index = None
+		families = {doc.family for doc in documents}
+		if (
+			self.art_index is None
+			and self.art_type is not None
+			and (("MP4" in families and self.art_type != 3) or ("APE" in families and self.art_type not in (3, 4)))
+		):
+			self.art_type = 3
+		art = [
+			[
+				item.data
+				for index, item in enumerate(pictures)
+				if (
+					index == self.art_index
+					if self.art_index is not None
+					else self.art_type is None or item.picture_type == self.art_type
+				)
+			]
+			for pictures in items
+		]
+		self.art_count = len(items[0])
 		self.art_mixed = any(value != art[0] for value in art)
 		self._preview(art[0][0] if art[0] else None)
+
+	def select_artwork(self, picture_type: int | None, index: int | None = None) -> None:
+		self._close_menu(self.art_menu)
+		self.art_type, self.art_index = picture_type, index
+		self._load_art()
+		self.gui.request_frame()
+
+	def open_artwork(self, x: int, y: int) -> None:
+		from tauon.t_modules.t_main import Menu, MenuItem  # noqa: PLC0415
+
+		if self.art_menu is not None and self.art_menu.active:
+			self._close_menu(self.art_menu)
+			return
+		self.scope_open = False
+		self._close_tools()
+		self._close_presets()
+		if self.art_menu is None:
+			self.art_menu = Menu(self.tauon, 220)
+		self.art_menu.items.clear()
+		documents = self.session.scope_documents
+		families = {doc.family for doc in documents}
+		artwork = [self.session.effective_document(doc).artwork_items() for doc in documents]
+		present_types = {item.picture_type for pictures in artwork for item in pictures}
+		labels = (
+			(3, _("Front cover")),
+			(4, _("Back cover")),
+			(5, _("Leaflet")),
+			(6, _("Media")),
+			(8, _("Artist")),
+			(0, _("Other")),
+		)
+		for picture_type, label in labels:
+			if ("MP4" in families and picture_type != 3) or ("APE" in families and picture_type not in (3, 4)):
+				continue
+			self.art_menu.add(
+				MenuItem(
+					label,
+					partial(self.select_artwork, picture_type),
+					check_test=lambda value=picture_type: self.art_type == value and self.art_index is None,
+					check_secondary_test=lambda value=picture_type: value in present_types,
+				)
+			)
+		if len(documents) == 1:
+			for index, item in enumerate(artwork[0]):
+				label = _("Image {N}: {T}").format(N=index + 1, T=_(ARTWORK_TYPES.get(item.picture_type, "Other")))
+				self.art_menu.add(
+					MenuItem(
+						label,
+						partial(self.select_artwork, item.picture_type, index),
+						check_test=lambda value=index: self.art_index == value,
+						check_secondary_test=lambda: True,
+					)
+				)
+		self.art_menu.add(
+			MenuItem(
+				_("All images"),
+				partial(self.select_artwork, None),
+				check_test=lambda: self.art_type is None and self.art_index is None,
+				check_secondary_test=lambda: bool(present_types),
+			)
+		)
+		self._activate_menu(self.art_menu, x, y)
+
+	def remove_artwork(self) -> None:
+		try:
+			self.session.stage_artwork(None, picture_type=self.art_type, index=self.art_index)
+			self.art_index = None
+			self._load_art()
+			self.gui.request_frame()
+		except Exception as error:
+			logging.exception("Could not change embedded artwork")
+			self.show_message(_("Could not change embedded artwork"), str(error), mode="error")
 
 	def _preview(self, data: bytes | None) -> None:
 		self.preview.destruct()
@@ -296,6 +404,7 @@ class TransEditBox:
 			or self.scope_open
 			or (self.tools_menu is not None and self.tools_menu.active)
 			or (self.presets_menu is not None and self.presets_menu.active)
+			or (self.art_menu is not None and self.art_menu.active)
 			or not self.coll(self.art_rect)
 		):
 			return True
@@ -305,12 +414,17 @@ class TransEditBox:
 				output = io.BytesIO()
 				image.convert("RGBA" if "A" in image.getbands() else "RGB").save(output, "PNG")
 			data = output.getvalue()
-			self.session.validate({}, {}, True, data)
-			self.session.art_changed = True
-			self.session.art_data = data
-			self._preview(data)
-			self.art_count = 1
-			self.art_mixed = False
+			legacy_image = False
+			if self.art_index is not None:
+				doc = self.session.effective_document(self.session.scope_documents[0])
+				legacy_image = doc.artwork_items()[self.art_index].key == "coverart"
+			self.session.stage_artwork(data, picture_type=self.art_type, index=self.art_index)
+			if legacy_image:
+				doc = self.session.effective_document(self.session.scope_documents[0])
+				self.art_index = max(
+					index for index, item in enumerate(doc.artwork_items()) if item.key == "metadata_block_picture"
+				)
+			self._load_art()
 			self.gui.request_frame()
 		except Exception as error:
 			logging.exception("Tag editor operation failed")
@@ -348,11 +462,6 @@ class TransEditBox:
 				self.row_value_slots = {
 					path: (index, bool(self.row_box.text)) for path, (index, _present) in self.row_value_slots.items()
 				}
-			if any(
-				change.entries and ("artist" in change.main or "albumartist" in change.main)
-				for change in updates.values()
-			):
-				self.notice = _("Artist identifiers and credits cleared after changing names.")
 			self.field_baseline = {field: box.text for field, box in self.boxes.items()}
 			self.effective = {field: self.session.common_main(field) for field in MAIN_FIELDS}
 			self.value_lists = {field: self.session.common_values(field, main=True) for field in VALUE_FIELDS}
@@ -367,26 +476,26 @@ class TransEditBox:
 		return self.row_key is not None and self.row_box.text != self.row_expected
 
 	def _select_row(self, entry: TagEntry) -> None:
-		if (
-			self.tab == 1
-			and self.row_key == entry.key
-			and self._row_dirty()
-			and not self.row_box.text
-			and self.row_value_index is not None
-			and entry.value_index is not None
-			and 0 <= self.row_value_index < entry.value_index
-		):
-			entry = replace(entry, value_index=entry.value_index - 1)
+		same_row = self._row_selected(entry)
+		if self._row_dirty() and not same_row and self.row_key == entry.key and entry.value_match is not None:
+			selected = next((row for row in self._misc_rows() if self._row_selected(row)), None)
+			if (
+				selected is not None
+				and selected.value_match == entry.value_match
+				and selected.value_occurrence < entry.value_occurrence
+			):
+				entry = replace(entry, value_occurrence=entry.value_occurrence - 1)
 		if not self._flush_fields():
 			return
-		self._load_row(entry)
+		if not same_row:
+			self._load_row(entry)
 
 	def _load_row(self, entry: TagEntry) -> None:
 		self.row_key = entry.key
 		self.row_value_index = entry.value_index
 		self.row_value_slots = None
-		self.row_values = self.session.common_values(entry.key)
-		self.row_is_list = entry.kind in ("text", "JSON text values") or entry.lyrics
+		self.row_values = self.session.common_values(entry.key) if entry.editable else []
+		self.row_is_list = entry.editable and (entry.kind in ("text", "JSON text values") or entry.lyrics)
 		self.row_original = entry.value
 		if self.row_is_list and all(
 			self.session.effective_document(doc).supports_multiple_values(
@@ -400,11 +509,19 @@ class TransEditBox:
 			for original in self.session.scope_documents:
 				doc = self.session.effective_document(original)
 				items = doc.text_values(doc.portable_key(entry.key)) or []
-				index = len(items) if self.row_value_index == -1 else self.row_value_index
-				present = index < len(items)
+				if self.row_value_index == -1:
+					index, present = len(items), False
+				elif entry.value_match is not None:
+					matches = [index for index, value in enumerate(items) if value == entry.value_match]
+					if entry.value_occurrence >= len(matches):
+						continue
+					index, present = matches[entry.value_occurrence], True
+				else:
+					index = self.row_value_index
+					present = index < len(items)
 				self.row_value_slots[doc.path] = (min(index, len(items)), present)
 				values.append(items[index] if present else "")
-			self.row_original = values[0] if all(value == values[0] for value in values) else "<Multiple values>"
+			self.row_original = values[0] if values and all(value == values[0] for value in values) else ""
 			self.row_expected = "" if self.row_original == "<Multiple values>" else self.row_original
 			self.row_box.set_text(self.row_expected)
 			self.row_scroll = 0
@@ -447,10 +564,27 @@ class TransEditBox:
 			else:
 				if appending and entry.key == self.row_key and not any(lists):
 					continue
-				for index in range(max(1, *map(len, lists))):
-					values = [items[index] if index < len(items) else "" for items in lists]
-					value = values[0] if all(item == values[0] for item in values) else _("Different values")
-					rows.append(TagEntry(entry.key, value, entry.kind, lyrics=entry.lyrics, value_index=index))
+				identities = {}
+				for items in lists:
+					counts = {}
+					for value in items:
+						occurrence = counts.get(value, 0)
+						counts[value] = occurrence + 1
+						identities[value, occurrence] = None
+				for index, (value, occurrence) in enumerate(identities):
+					rows.append(
+						TagEntry(
+							entry.key,
+							value,
+							entry.kind,
+							lyrics=entry.lyrics,
+							value_index=index,
+							value_match=value,
+							value_occurrence=occurrence,
+						)
+					)
+				if not identities:
+					rows.append(entry)
 				continue
 			rows.append(entry)
 		if appending:
@@ -498,6 +632,25 @@ class TransEditBox:
 	def _entry_edited(self, key: str) -> bool:
 		return (self.row_key == key and self._row_dirty()) or self.session.field_edited(key)
 
+	def _row_selected(self, entry: TagEntry) -> bool:
+		if entry.key != self.row_key:
+			return False
+		if self.row_value_slots is None or self.row_value_index == -1 or entry.value_match is None:
+			return entry.value_index == self.row_value_index
+		for original in self.session.scope_documents:
+			if original.path not in self.row_value_slots:
+				continue
+			index, present = self.row_value_slots[original.path]
+			if not present:
+				continue
+			doc = self.session.effective_document(original)
+			values = doc.text_values(doc.portable_key(entry.key)) or []
+			if index < len(values):
+				return entry.value_match == values[index] and entry.value_occurrence == values[:index].count(
+					values[index]
+				)
+		return False
+
 	def _changes_pending(self) -> bool:
 		return (
 			self.session.changed
@@ -518,7 +671,8 @@ class TransEditBox:
 				self.boxes[key].set_text(self.field_baseline[key])
 			self.field_baseline[key] = self.boxes[key].text
 		elif self.row_key == key:
-			entry = next((row for row in self.session.entries(None) if row.key == key), None)
+			self.row_key = None
+			entry = next((row for row in self._misc_rows() if row.key == key), None)
 			if entry is None:
 				self.row_key = None
 			else:
@@ -598,6 +752,7 @@ class TransEditBox:
 			self.session = TagEditSession([track.fullpath for track in self.tracks])
 			self.session.selected_document = selected
 			self.lookup_results = None
+			self.art_index = None
 			self._load_fields()
 			self.row_key = None
 		except Exception as error:
@@ -687,6 +842,7 @@ class TransEditBox:
 		from tauon.t_modules.t_main import Menu, MenuItem  # noqa: PLC0415
 
 		self._close_tools()
+		self._close_menu(self.art_menu)
 		self.scope_open = False
 		if self.presets_menu is None:
 			self.presets_menu = Menu(self.tauon, 180)
@@ -744,11 +900,29 @@ class TransEditBox:
 
 		self.scope_open = False
 		self._close_presets()
+		self._close_menu(self.art_menu)
 		if self.tools_menu is None:
 			self.tools_menu = Menu(self.tauon, 200)
 			self.tools_menu.add(MenuItem(_("Upgrade ID3 tags to v2.4"), self.upgrade_id3))
 			self.tools_menu.add(MenuItem(_("Fix Mojibake"), self.fix_mojibake))
+			self.tools_menu.add(
+				MenuItem(
+					_("Automatically split slashes"),
+					self.toggle_auto_slashes,
+					check_test=lambda: self.auto_slashes,
+				)
+			)
 		self._activate_menu(self.tools_menu, x, y)
+
+	def toggle_auto_slashes(self) -> None:
+		self.auto_slashes = not self.auto_slashes
+		for field in VALUE_FIELDS:
+			box = self.boxes[field]
+			box.normalize_input()
+			box.auto_slash_conversion = self.auto_slashes
+		if hasattr(self.tauon, "prefs"):
+			self.tauon.prefs.tag_editor_auto_slashes = self.auto_slashes
+		self.gui.request_frame()
 
 	def _activate_menu(self, menu: Menu, x: int, y: int) -> None:
 		if menu.active:
@@ -782,7 +956,9 @@ class TransEditBox:
 		if not self._flush_fields():
 			return
 		self.session.selected_document = index
+		self.art_index = None
 		self.scope_open = False
+		self.scope_dragging = False
 		self.row_key = None
 		self.row_page = 0
 		self._load_fields()
@@ -804,7 +980,9 @@ class TransEditBox:
 		if self.input_enabled and self.inp.mouse_click and self.coll(rect):
 			self.scope_open = not self.scope_open
 			self.scope_filter.clear()
-			self.scope_page = 0
+			self.scope_query = ""
+			self.scope_scroll = float(index + 1) if index is not None else 0.0
+			self.scope_dragging = False
 			self.inp.mouse_click = False
 
 	def _scope_popover(self, x: int, y: int, width: int, height: int) -> None:
@@ -813,10 +991,11 @@ class TransEditBox:
 		pw = min(width - round(32 * scale), max(aw, round(340 * scale)))
 		px = min(ax, x + width - pw - round(16 * scale))
 		py = ay + ah + round(4 * scale)
-		ph = min(round(330 * scale), y + height - round(56 * scale) - py)
+		ph = min(round(330 * scale), y + height - round(8 * scale) - py)
 		rect = (px, py, pw, ph)
 		if self.inp.mouse_click and not self.coll(rect):
 			self.scope_open = False
+			self.scope_dragging = False
 			self.inp.mouse_click = False
 			return
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_border, max(1, round(scale)))
@@ -837,17 +1016,66 @@ class TransEditBox:
 			px + round(12 * scale), py + round(30 * scale), self.input_colour, active=True, width=pw - round(24 * scale)
 		)
 		query = self.scope_filter.text.casefold()
-		options = [(None, _("All selected files"), _("Apply edits to the full selection"))] + [
-			(index, doc.path.name, self.session.effective_document(doc).main_value("title") or str(doc.path.parent))
-			for index, doc in enumerate(self.session.documents)
-			if query in doc.path.name.casefold() or query in doc.main_value("title").casefold()
-		]
-		page_size = max(1, int((ph / scale - 85) // 44))
-		pages = max(1, (len(options) + page_size - 1) // page_size)
-		self.scope_page = min(self.scope_page, pages - 1)
-		ry = py + round(57 * scale)
-		for position, name, subtitle in options[self.scope_page * page_size : (self.scope_page + 1) * page_size]:
-			row = (px + round(5 * scale), ry, pw - round(10 * scale), round(43 * scale))
+		if query != self.scope_query:
+			self.scope_scroll = 0.0
+			self.scope_query = query
+			self.scope_dragging = False
+		options = [(None, _("All selected files"), _("Apply edits to the full selection"))]
+		for index, original in enumerate(self.session.documents):
+			doc = self.session.effective_document(original)
+			title = doc.main_value("title")
+			if query in doc.path.name.casefold() or query in title.casefold():
+				options.append((index, doc.path.name, title or str(doc.path.parent)))
+		list_y = py + round(57 * scale)
+		list_height = max(1, ph - round(63 * scale))
+		row_height = min(round(44 * scale), list_height)
+		visible = max(1, list_height // row_height)
+		maximum = max(0, len(options) - visible)
+		wheel = getattr(self.inp, "mouse_wheel", 0)
+		if wheel and self.coll(rect):
+			self.scope_scroll -= wheel * 3
+			self.inp.mouse_wheel = 0
+			self.gui.request_frame()
+		self.scope_scroll = max(0.0, min(maximum, self.scope_scroll))
+		row_width = pw - round(10 * scale)
+		if maximum:
+			track = (px + pw - round(14 * scale), list_y, round(9 * scale), visible * row_height)
+			thumb_height = min(track[3], max(round(20 * scale), round(track[3] * visible / len(options))))
+			travel = track[3] - thumb_height
+			thumb_y = list_y + round(travel * self.scope_scroll / maximum)
+			grabbed = self.inp.mouse_click and self.coll(track)
+			if grabbed:
+				self.scope_dragging = True
+				pointer_y = self.inp.mouse_position[1]
+				self.scope_drag_offset = (
+					pointer_y - thumb_y if thumb_y <= pointer_y < thumb_y + thumb_height else thumb_height / 2
+				)
+				self.inp.mouse_click = False
+			if self.scope_dragging:
+				if grabbed or getattr(self.inp, "mouse_down", False):
+					ratio = (self.inp.mouse_position[1] - list_y - self.scope_drag_offset) / max(1, travel)
+					self.scope_scroll = max(0.0, min(1.0, ratio)) * maximum
+					self.gui.request_frame()
+				else:
+					self.scope_dragging = False
+			self.fields.add(track)
+			self.ddt.rect(track, self.colours.box_thumb_background)
+			self.ddt.rect(
+				(
+					track[0] + round(2 * scale),
+					list_y + round(travel * self.scope_scroll / maximum),
+					round(5 * scale),
+					thumb_height,
+				),
+				self.label_colour,
+			)
+			row_width -= round(15 * scale)
+		else:
+			self.scope_dragging = False
+		ry = list_y
+		start = int(self.scope_scroll)
+		for position, name, subtitle in options[start : start + visible]:
+			row = (px + round(5 * scale), ry, row_width, row_height - round(scale))
 			self.fields.add(row)
 			if self.coll(row) or position == self.session.selected_document:
 				self.ddt.rect(row, self.colours.box_button_background_highlight)
@@ -862,27 +1090,24 @@ class TransEditBox:
 				name,
 				self.input_colour,
 				12,
-				max_w=pw - round(65 * scale),
+				max_w=row_width - round(55 * scale),
 			)
 			self.ddt.text(
 				(px + round(35 * scale), ry + round(23 * scale)),
 				subtitle,
 				self.label_colour,
 				11,
-				max_w=pw - round(48 * scale),
+				max_w=row_width - round(38 * scale),
 			)
 			if position is not None and self.session.pending[self.session.documents[position].path].changed:
-				self.ddt.text((px + pw - round(20 * scale), ry + round(4 * scale)), "•", self.colours.level_green, 12)
+				self.ddt.text(
+					(row[0] + row_width - round(15 * scale), ry + round(4 * scale)), "•", self.colours.level_green, 12
+				)
 			if self.inp.mouse_click and self.coll(row):
 				self.select_track(position)
 				self.inp.mouse_click = False
 				return
-			ry += round(44 * scale)
-		if pages > 1:
-			if self.draw.button("<", px + pw - round(82 * scale), py + ph - round(26 * scale)):
-				self.scope_page = max(0, self.scope_page - 1)
-			if self.draw.button(">", px + pw - round(30 * scale), py + ph - round(26 * scale)):
-				self.scope_page = min(pages - 1, self.scope_page + 1)
+			ry += row_height
 		self.inp.mouse_click = False
 
 	def _cancel_lookup(self) -> None:
@@ -1389,8 +1614,25 @@ class TransEditBox:
 				self._rollback_field("rating", main=True)
 		ax = x + left_width + round(16 * scale)
 		self.ddt.text((ax, y), _("Embedded album art"), self.label_colour, 11)
-		art_height = max(round(30 * scale), min(round(160 * scale), height - round(110 * scale)))
-		self.art_rect = (ax, y + round(20 * scale), art_width, art_height)
+		target_label = (
+			_("Image {N}").format(N=self.art_index + 1)
+			if self.art_index is not None
+			else _("All images")
+			if self.art_type is None
+			else _(ARTWORK_TYPES.get(self.art_type, "Other"))
+		)
+		if self.draw.button(
+			target_label + " ▾",
+			ax,
+			y + round(19 * scale),
+			w=art_width,
+			h=round(23 * scale),
+			press=self.input_enabled and self.inp.mouse_click,
+		):
+			self.open_artwork(ax + art_width, y + round(44 * scale))
+			self.inp.mouse_click = False
+		art_height = max(round(30 * scale), min(round(160 * scale), height - round(140 * scale)))
+		self.art_rect = (ax, y + round(48 * scale), art_width, art_height)
 		self.fields.add(self.art_rect)
 		background = (
 			self.colours.box_button_background_highlight
@@ -1435,18 +1677,14 @@ class TransEditBox:
 			)
 		art_button_y = self.art_rect[1] + art_height + round((44 if height >= round(150 * scale) else 5) * scale)
 		if self.draw.button(
-			_("Remove all art"),
+			_("Remove all art") if self.art_type is None and self.art_index is None else _("Remove image"),
 			ax,
 			art_button_y,
 			w=art_width - round(27 * scale),
 			h=round(23 * scale),
-			tooltip=_("Artwork changes replace or remove every embedded image in the chosen track scope."),
+			tooltip=_("Change the selected image or the first image of the selected type in each active file."),
 		):
-			self.session.art_changed = True
-			self.session.art_data = None
-			self.art_count = 0
-			self.art_mixed = False
-			self._preview(None)
+			self.remove_artwork()
 		if self.session.art_changed and art_button_y + round(29 * scale) < self.editor_bottom - round(65 * scale):
 			self.ddt.text((ax, art_button_y + round(29 * scale)), _("Artwork changed"), self.colours.level_green, 11)
 		if self.session.art_changed:
@@ -1454,6 +1692,7 @@ class TransEditBox:
 			if self._rollback_button(ax + art_width - round(23 * scale), art_button_y):
 				self.session.art_changed = False
 				self.session.art_data = None
+				self.art_index = None
 				self._load_art()
 				self.inp.mouse_click = False
 
@@ -1468,11 +1707,7 @@ class TransEditBox:
 		pages = max(1, (len(rows) + page_size - 1) // page_size)
 		if self.row_focus_new:
 			self.row_page = next(
-				(
-					index // page_size
-					for index, entry in enumerate(rows)
-					if entry.key == self.row_key and entry.value_index == self.row_value_index
-				),
+				(index // page_size for index, entry in enumerate(rows) if self._row_selected(entry)),
 				self.row_page,
 			)
 			self.row_focus_new = False
@@ -1486,7 +1721,7 @@ class TransEditBox:
 		for entry in rows[self.row_page * page_size : (self.row_page + 1) * page_size]:
 			rect = (x, y, width, row_height - round(scale))
 			self.fields.add(rect)
-			if self.row_key == entry.key and (self.row_value_index == entry.value_index):
+			if self._row_selected(entry):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
 			self.ddt.text(
 				(x + round(3 * scale), y + round(2 * scale)),
@@ -1571,11 +1806,15 @@ class TransEditBox:
 			)
 			return
 		entry = next(
-			(row for row in rows if row.key == self.row_key and (row.value_index == self.row_value_index)),
+			(row for row in rows if self._row_selected(row)),
 			TagEntry(self.row_key, ""),
 		)
 		if not compact:
 			kind = _("Text value") if self.row_is_list else entry.kind
+			if self.row_value_slots is not None and len(self.row_value_slots) < len(self.session.scope_documents):
+				kind += " · " + _("{N}/{T} files").format(
+					N=len(self.row_value_slots), T=len(self.session.scope_documents)
+				)
 			self.ddt.text((x, y), self.row_key + " · " + kind, self.label_colour, 11, max_w=width)
 			y += round(20 * scale)
 		if not entry.editable:
@@ -1678,6 +1917,7 @@ class TransEditBox:
 		self.preview.destruct()
 		self._close_tools()
 		self._close_presets()
+		self._close_menu(self.art_menu)
 
 	def _accept_lookup_results(self, result: LookupResult | None) -> None:
 		previous = self.lookup_results
@@ -1697,7 +1937,26 @@ class TransEditBox:
 			self.lookup_scroll = 0
 			self.lookup_dragging = False
 
+	def capture_wheel(self) -> None:
+		if self.active:
+			wheel = getattr(self.inp, "mouse_wheel", 0)
+			if wheel:
+				self.wheel_pending += wheel
+				self.gui.request_frame()
+			self.inp.mouse_wheel = 0
+			self.inp.mouse_wheel_precise = False
+
 	def render(self) -> None:
+		if not self.active:
+			return
+		self.inp.mouse_wheel = getattr(self.inp, "mouse_wheel", 0) + self.wheel_pending
+		self.wheel_pending = 0.0
+		try:
+			self._render()
+		finally:
+			self.inp.mouse_wheel = 0
+
+	def _render(self) -> None:
 		if not self.active:
 			return
 		if self.loading:
@@ -1767,20 +2026,26 @@ class TransEditBox:
 			return
 		menu_open = self.tools_menu is not None and self.tools_menu.active
 		presets_open = self.presets_menu is not None and self.presets_menu.active
+		art_open = self.art_menu is not None and self.art_menu.active
 		if self.inp.key_esc_press and not message_open:
 			self.inp.key_esc_press = False
 			if menu_open:
 				self._close_tools()
 			elif presets_open:
 				self._close_presets()
+			elif art_open:
+				self._close_menu(self.art_menu)
 			elif self.lookup_open:
 				self._close_lookup()
 			elif self.scope_open:
 				self.scope_open = False
+				self.scope_dragging = False
 			else:
 				self._close()
 			return
-		self.input_enabled = not (message_open or menu_open or presets_open or self.scope_open or self.lookup_open)
+		self.input_enabled = not (
+			message_open or menu_open or presets_open or art_open or self.scope_open or self.lookup_open
+		)
 		click = self.inp.mouse_click
 		right_click = getattr(self.inp, "right_click", False)
 		level_right_click = getattr(self.inp, "level_2_right_click", False)
@@ -1825,7 +2090,11 @@ class TransEditBox:
 		):
 			self.write()
 		if self.draw.button(
-			_("Close"), x + width - round(100 * scale), footer_y, w=round(84 * scale), h=round(32 * scale)
+			_("Discard") if self._changes_pending() else _("Close"),
+			x + width - round(100 * scale),
+			footer_y,
+			w=round(84 * scale),
+			h=round(32 * scale),
 		):
 			self._close()
 		self._tag_badges(body_x, footer_y + round(7 * scale), width - button_space - round(32 * scale))

@@ -5749,6 +5749,7 @@ class MenuItem:
 		"inc_minus",       # 17
 		"inc_plus",        # 18
 		"check_test",      # 19
+		"check_secondary_test",
 		"slider_get",
 		"slider_set",
 	]
@@ -5756,6 +5757,7 @@ class MenuItem:
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
 		pass_ref_deco: bool = False, disable_test: Callable[..., bool] | None = None, set_ref: object | None = None, is_sub_menu: bool = False, args=None, sub_menu_number: int | None = None, sub_menu_width: int = 0,
 		check_test: Callable[[], bool | None] | None = None,
+		check_secondary_test: Callable[[], bool] | None = None,
 	) -> None:
 		self.title: str = title
 		self.is_sub_menu: bool = is_sub_menu
@@ -5785,6 +5787,7 @@ class MenuItem:
 		# before the label (accent-filled when on, faint outline when off)
 		# instead of the legacy "✓ " text prefix. See Menu.draw_check_box.
 		self.check_test = check_test
+		self.check_secondary_test = check_secondary_test
 		self.slider_get: Callable[[], float] | None = None
 		self.slider_set: Callable[[float], None] | None = None
 
@@ -6095,7 +6098,8 @@ class Menu:
 	def draw_check_box(self, item: MenuItem, x: float, y: float) -> float:
 		"""Draw the toggle/radio state box for an item with check_test at the
 		label position: a small square filled with the theme's toggle accent
-		when on, a faint outline when off (dimmed when the item is disabled).
+		when on, grey for an optional secondary state, or a faint empty outline
+		when off (dimmed when the item is disabled).
 		Returns the width the label should shift right to clear it.
 		"""
 		gui = self.gui
@@ -6105,8 +6109,9 @@ class Menu:
 		bx = round(x)
 		by = round(y + (self.h - s) / 2)
 		disabled = bool(self.is_item_disabled(item))
-		if item.check_test():
-			c = colours.toggle_box_on
+		checked = item.check_test()
+		if checked or (item.check_secondary_test is not None and item.check_secondary_test()):
+			c = colours.toggle_box_on if checked else ColourRGBA(96, 96, 96, 255)
 			if disabled:
 				c = colours.menu_text_disabled
 			ddt.rect((bx, by, s, s), ColourRGBA(c.r, c.g, c.b, 150 if disabled else 255))
@@ -23453,6 +23458,9 @@ class TextBox2:
 			return None
 		return ""
 
+	def normalize_input(self) -> None:
+		"""Allow specialized text boxes to normalize input before measuring it."""
+
 	def draw(
 			self, x: int, y: int, colour: ColourRGBA, active: bool = True, secret: bool = False, font: int = 13, width: int = 0, click: bool = False, selection_height: int = 18, big: bool = False, headroom: int = 0) -> None:
 		# Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
@@ -23633,6 +23641,7 @@ class TextBox2:
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
+			self.normalize_input()
 			width -= round(15 * self.gui.scale)
 			t_len = self.ddt.get_text_w(self.text, font)
 			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
@@ -51180,6 +51189,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
 
 	cf.update_value("acoustid-api-key", prefs.acoustid_api_key)
+	cf.update_value("tag-editor-auto-slashes", prefs.tag_editor_auto_slashes)
 
 	cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
 	cf.update_value("back-restarts", prefs.back_restarts)
@@ -51435,6 +51445,9 @@ def load_prefs(bag: Bag) -> None:
 	cf.br()
 	cf.add_text("[tag-editor]")
 	prefs.acoustid_api_key = cf.sync_add("string", "acoustid-api-key", prefs.acoustid_api_key, "AcoustID application API key override; blank uses Tauon's bundled key.")
+	prefs.tag_editor_auto_slashes = cf.sync_add(
+		"bool", "tag-editor-auto-slashes", prefs.tag_editor_auto_slashes,
+		"Convert slashes with an adjacent space into value separators when typing or pasting in the tag editor.")
 	prefs.save_synced_to_lrc = cf.sync_add(
 		"bool", "use_lrc_instead", prefs.save_synced_to_lrc,
 		"Save synced lyrics to separate .LRC files.")
@@ -55975,8 +55988,8 @@ def main(holder: Holder) -> None:
 	# selection_menu.br()
 
 	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
-	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
 	folder_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon))
+	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
 	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
@@ -55990,8 +56003,8 @@ def main(holder: Holder) -> None:
 
 	selection_menu.add(MenuItem(_("Add to queue"), tauon.add_selected_to_queue_multi, tauon.selection_queue_deco))
 	selection_menu.br()
-	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
 	selection_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon))
+	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
 
 	selection_menu.br()
 	folder_menu.br()
@@ -59344,6 +59357,7 @@ def main(holder: Holder) -> None:
 				gui.delay_frame(0.02)
 				inp.k_input = True
 
+		tauon.trans_edit_box.capture_wheel()
 		tauon.duplicate_import_box.handle_input()
 
 		radio_directory_search_active = gui.radio_view and radiobox.tab == 1 and not radiobox.active
