@@ -81,9 +81,6 @@ class Prefs:
 	playlist_row_height: int = 22
 
 	acoustid_api_key: str = ""
-	tag_editor_name:   str = ""
-	tag_editor_target: str = ""
-	tag_editor_path:   str = ""
 	save_synced_to_lrc: bool = True
 	allow_overwrite_synced_with_static: bool = False
 

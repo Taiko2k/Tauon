@@ -473,8 +473,9 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 	track.genre = get_text("\xa9gen")
 	if "\xa9lyr" in tags:
 		track.lyrics = get_text("\xa9lyr")
-	for key in ("----:com.apple.iTunes:ORIGINALDATE", "----:com.apple.iTunes:originaldate", "----:com.apple.iTunes:ORIGINALYEAR"):
-		if key in tags:
+	for name in ("----:com.apple.itunes:originaldate", "----:com.apple.itunes:originalyear"):
+		key = next((native for native in tags if native.lower() == name), None)
+		if key is not None:
 			process_odat(track, get_bytes(key).decode("utf-8"))
 			break
 	for key in ("----:com.apple.iTunes:FMPS_RATING", "----:com.apple.iTunes:fmps_rating"):

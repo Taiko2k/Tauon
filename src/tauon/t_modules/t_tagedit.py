@@ -16,16 +16,17 @@ import os
 import re
 import shutil
 import tempfile
-from collections.abc import Iterator, MutableMapping
+from collections.abc import Callable, Iterator, MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass, field
 from pathlib import Path
 
 import mutagen
 from mutagen._vorbis import VCommentDict
-from mutagen.apev2 import APEBinaryValue, APETextValue, APEv2
+from mutagen.apev2 import APEBinaryValue, APENoHeaderError, APETextValue, APEv2
 from mutagen.flac import FLAC, Picture
-from mutagen.id3 import APIC, ID3, SYLT, TXXX, UFID, USLT, Frames, TextFrame, UrlFrame
+from mutagen.id3 import APIC, ID3, POPM, SYLT, TCON, TXXX, UFID, USLT, Frames, TextFrame, UrlFrame
+from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from PIL import Image
 
@@ -44,6 +45,7 @@ MAIN_FIELDS = (
 	"rating",
 )
 VALUE_FIELDS = {"title", "album", "artist", "albumartist", "genre"}
+POPM_LEVELS = (0, 1, 64, 128, 196, 255)
 ID3_KEYS = dict(
 	zip(
 		MAIN_FIELDS,
@@ -70,10 +72,15 @@ MP4_KEYS = dict(
 	)
 )
 APE_KEYS = {
+	"title": "Title",
+	"album": "Album",
+	"artist": "Artist",
 	"albumartist": "Album Artist",
 	"date": "Year",
+	"originaldate": "Originaldate",
 	"tracknumber": "Track",
 	"discnumber": "Disc",
+	"genre": "Genre",
 	"rating": "FMPS_RATING",
 }
 COMMON_ID3_KEYS = {
@@ -133,6 +140,7 @@ class TagEntry:
 	kind: str = "text"
 	editable: bool = True
 	lyrics: bool = False
+	value_index: int | None = None
 
 
 def file_stamp(path: Path) -> tuple[int, int, int, int]:
@@ -202,6 +210,13 @@ class TagDocument:
 		if self.audio is None:
 			raise ValueError(f"Unsupported audio file: {self.path.name}")
 		had_tags = self.audio.tags is not None
+		if isinstance(self.audio, MP3):
+			try:
+				APEv2(self.path)
+			except APENoHeaderError:
+				pass
+			else:
+				raise ValueError("APEv2 tags on MP3 files require an external editor; library rescanning uses ID3.")
 		if not had_tags:
 			self.audio.add_tags()
 		self.tags = self.audio.tags
@@ -244,10 +259,15 @@ class TagDocument:
 			return key
 		if self.family == "MP4":
 			key = MP4_KEYS.get(field, COMMON_MP4_KEYS.get(field, "----:com.apple.iTunes:" + field))
+			if field == "originaldate":
+				for candidate in (key, "----:com.apple.iTunes:ORIGINALYEAR"):
+					for native in self.tags.keys():
+						if native.lower() == candidate.lower():
+							return native
 			return next((native for native in self.tags.keys() if native.lower() == key.lower()), key)
 		if self.family == "APE":
 			candidates = (
-				("originaldate", "originalyear") if field == "originaldate" else (APE_KEYS.get(field, field), field)
+				("Originaldate", "Originalyear") if field == "originaldate" else (APE_KEYS.get(field, field), field)
 			)
 		else:
 			candidates = {
@@ -260,10 +280,39 @@ class TagDocument:
 				return next(native for native in self.tags.keys() if native.lower() == key.lower())
 		return candidates[0]
 
+	def main_keys(self, field: str) -> list[str]:
+		"""Include existing aliases owned by a Main field so clearing cannot revive them."""
+		key = self.key_for(field)
+		aliases = {key.lower()}
+		if field == "originaldate" and self.family != "ID3":
+			aliases.update(
+				{"----:com.apple.itunes:originaldate", "----:com.apple.itunes:originalyear"}
+				if self.family == "MP4"
+				else {"originaldate", "originalyear"}
+			)
+		elif field == "albumartist" and self.family in ("APE", "Vorbis"):
+			aliases.update(("albumartist", "album artist"))
+		elif field == "date" and self.family == "APE":
+			aliases.update(("year", "date"))
+		elif field in ("date", "originaldate") and self.family == "ID3":
+			aliases.update(("TYER", "TDRC", "TDAT", "TIME") if field == "date" else ("TORY", "TDOR"))
+			aliases = {native.lower() for native in aliases}
+		elif field in ("tracknumber", "discnumber") and self.family == "Vorbis":
+			aliases.update(("tracktotal", "totaltracks") if field == "tracknumber" else ("disctotal", "totaldiscs"))
+		return list(dict.fromkeys([key, *(native for native in self.tags.keys() if native.lower() in aliases)]))
+
 	def resolve_key(self, key: str) -> str:
 		key = key.strip()
 		if not key:
 			raise ValueError("A tag key is required.")
+		if key in self.tags:
+			return next(
+				native
+				for native in self.tags.keys()
+				if native == key or (self.family in ("APE", "Vorbis") and native.lower() == key.lower())
+			)
+		if self.family in ("APE", "Vorbis") and key.lower() == "originalyear":
+			return "Originalyear" if self.family == "APE" else "originalyear"
 		name = ALIASES.get(key.lower(), key.lower())
 		if name in MAIN_FIELDS or name in COMMON_ID3_KEYS or name in COMMON_MP4_KEYS:
 			return self.key_for(name)
@@ -284,16 +333,15 @@ class TagDocument:
 			)
 		return key
 
+	def is_lyric_key(self, key: str) -> bool:
+		if self.family == "ID3":
+			return key[:4] in ("USLT", "SYLT") or (key.startswith("TXXX:") and key[5:].lower() in LYRIC_NAMES)
+		return key.lower() in LYRIC_NAMES or key == "©lyr" or key.lower().endswith(":syncedlyrics")
+
 	def entries(self) -> dict[str, TagEntry]:
 		entries = {}
 		for key, value in self.tags.items():
-			lyrics = (
-				key[:4] in ("USLT", "SYLT")
-				if self.family == "ID3"
-				else key.lower() in LYRIC_NAMES or key == "©lyr" or key.lower().endswith(":syncedlyrics")
-			)
-			if self.family == "ID3" and key.startswith("TXXX:") and key[5:].lower() in LYRIC_NAMES:
-				lyrics = True
+			lyrics = self.is_lyric_key(key)
 			kind, editable = "text", True
 			if key.lower() in ART_NAMES or key.startswith("APIC:"):
 				text, kind, editable = "Embedded artwork (use Main)", "artwork", False
@@ -307,6 +355,8 @@ class TagDocument:
 				text = value.data.decode("ascii")
 			elif isinstance(value, USLT):
 				text = value.text
+			elif isinstance(value, TCON):
+				text = "\n".join(value.genres)
 			elif isinstance(value, TextFrame):
 				text = "\n".join(map(str, value.text))
 			elif self.family == "ID3" and key.startswith("COMM:"):
@@ -359,6 +409,8 @@ class TagDocument:
 	def text_values(self, key: str) -> list[str] | None:
 		"""Read editable text as separate values, retaining embedded line breaks."""
 		value = self.tags.get(key)
+		if value is None:
+			return None
 		if isinstance(value, UFID) and value.owner == "http://musicbrainz.org":
 			try:
 				return [value.data.decode("ascii")]
@@ -370,6 +422,8 @@ class TagDocument:
 			return [decode_sylt(value)] if value.format == 2 else None
 		if isinstance(value, USLT):
 			return [value.text]
+		if isinstance(value, TCON):
+			return value.genres
 		if isinstance(value, TextFrame):
 			return list(map(str, value.text))
 		if self.family == "ID3" and key.startswith("COMM:"):
@@ -389,13 +443,22 @@ class TagDocument:
 				return None
 		return None
 
+	def supports_multiple_values(self, key: str) -> bool:
+		return not (
+			self.family == "ID3"
+			and (key[:4] in ("USLT", "SYLT", "UFID") or (key[:4] in Frames and issubclass(Frames[key[:4]], UrlFrame)))
+		)
+
 	def main_value(self, field: str) -> str:
 		entry = self.entries().get(self.key_for(field))
 		if entry is None:
 			if field == "rating" and self.family == "ID3":
 				frames = self.tags.getall("POPM")
 				if frames:
-					return str(round(frames[0].rating / 255 * 10))
+					rating = frames[0].rating
+					for score, limit in enumerate(POPM_LEVELS):
+						if rating <= limit:
+							return str(score * 2)
 			return ""
 		if self.family == "MP4" and field in ("tracknumber", "discnumber"):
 			number, total = self.tags[entry.key][0]
@@ -443,7 +506,8 @@ class TagDocument:
 		if isinstance(text, list):
 			if field not in ("title", "album", "artist", "albumartist", "genre"):
 				raise ValueError(f"{field} requires a single value.")
-			self.set_entry(key, text)
+			for native in self.main_keys(field):
+				self._set_native_entry(native, text)
 			return
 		if field in ("tracknumber", "discnumber") and text:
 			if not re.fullmatch(r"\d+(?:/\d+)?", text) or any(int(item) > 65535 for item in text.split("/")):
@@ -455,7 +519,7 @@ class TagDocument:
 		if self.family == "Vorbis" and field in ("tracknumber", "discnumber"):
 			total_keys = ("tracktotal", "totaltracks") if field == "tracknumber" else ("disctotal", "totaldiscs")
 			parts = text.split("/", 1)
-			self.set_entry(key, parts[0])
+			self._set_native_entry(key, parts[0])
 			for total_key in total_keys:
 				if total_key in self.tags:
 					del self.tags[total_key]
@@ -469,21 +533,51 @@ class TagDocument:
 			if self.family == "ID3" and self.id3_version == 3 and len(text) != 4:
 				raise ValueError("ID3v2.3 year fields require YYYY; existing full dates are preserved unless edited.")
 		if field == "rating":
+			popm_rating = 0
 			if text:
 				rating = int(text)
 				if not 0 <= rating <= 10:
 					raise ValueError("Rating must be between 0 and 10.")
 				text = f"{rating / 10:.2f}" if rating else ""
+				popm_rating = POPM_LEVELS[(rating + 1) // 2]
 			if self.family == "ID3":
-				for frame in self.tags.getall("POPM"):
+				frames = self.tags.getall("POPM")
+				if text and not frames:
+					self.tags.add(POPM(email="tauonmusicbox", rating=popm_rating, count=0))
+				for frame in frames:
 					if not text:
 						del self.tags[frame.HashKey]
 					else:
-						frame.rating = round(float(text) * 255)
-		self.set_entry(key, text.replace("; ", "\n") if field in ("artist", "albumartist", "genre") else text)
+						frame.rating = popm_rating
+		if self.family == "ID3" and field in ("date", "originaldate"):
+			obsolete = ("TYER", "TDRC", "TDAT", "TIME") if field == "date" else ("TORY", "TDOR")
+			for native in obsolete:
+				if native != key:
+					self.tags.pop(native, None)
+		keys = self.main_keys(field)
+		if field == "originaldate" and self.family != "ID3":
+			if text and key.lower().endswith("originalyear") and len(text) > 4:
+				keys.insert(
+					0,
+					MP4_KEYS[field]
+					if self.family == "MP4"
+					else "Originaldate"
+					if self.family == "APE"
+					else "originaldate",
+				)
+			if text and self.family == "APE" and not any(native.lower() == "originalyear" for native in keys):
+				keys.append("Originalyear")
+			for native in keys:
+				self._set_native_entry(native, text[:4] if native.lower().endswith("originalyear") else text)
+			return
+		text = text.replace("; ", "\n") if field in ("artist", "albumartist", "genre") else text
+		for native in keys:
+			self._set_native_entry(native, text)
 
 	def set_entry(self, key: str, text: str | list[str]) -> None:
-		key = self.portable_key(key)
+		self._set_native_entry(self.portable_key(key), text)
+
+	def _set_native_entry(self, key: str, text: str | list[str]) -> None:
 		entry = self.entries().get(key)
 		if entry and not entry.editable:
 			raise ValueError(f"{key} is binary or structured and cannot be edited as text.")
@@ -502,12 +596,7 @@ class TagDocument:
 				return
 		explicit_values = isinstance(text, list)
 		values = list(text) if explicit_values else text.splitlines() or [text]
-		if (
-			self.family == "ID3"
-			and explicit_values
-			and len(values) > 1
-			and (key[:4] in ("USLT", "SYLT", "UFID") or (key[:4] in Frames and issubclass(Frames[key[:4]], UrlFrame)))
-		):
+		if explicit_values and len(values) > 1 and not self.supports_multiple_values(key):
 			raise ValueError(
 				f"{key} stores a single value; use distinct frame descriptions/languages for additional entries."
 			)
@@ -803,8 +892,16 @@ class ScopedChanges(MutableMapping[str, str]):
 
 
 class TagEditSession:
-	def __init__(self, paths: list[str]) -> None:
-		self.documents = list({doc.path: doc for doc in (TagDocument(path) for path in paths)}.values())
+	def __init__(self, paths: list[str], *, progress: Callable[[int, int, Path], None] | None = None) -> None:
+		documents = {}
+		for index, path in enumerate(paths):
+			if progress is not None:
+				progress(index, len(paths), Path(path))
+			doc = TagDocument(path)
+			documents[doc.path] = doc
+			if progress is not None:
+				progress(index + 1, len(paths), doc.path)
+		self.documents = list(documents.values())
 		self.pending = {doc.path: TagChanges() for doc in self.documents}
 		self.selected_document: int | None = None
 		self._effective_cache: dict[Path, tuple[TagChanges, TagDocument]] = {}
@@ -854,7 +951,7 @@ class TagEditSession:
 		return any(changes.changed for changes in self.pending.values())
 
 	def field_edited(self, key: str, *, main: bool = False) -> bool:
-		"""Include native-key edits and differing pending values across the scope."""
+		"""Compare effective field values with each file's original values."""
 		for doc in self.scope_documents:
 			changes = self.pending[doc.path]
 			if not changes.main and not changes.entries:
@@ -862,11 +959,18 @@ class TagEditSession:
 			candidate = self.effective_document(doc)
 			try:
 				native = candidate.key_for(key) if main else candidate.portable_key(key)
+				original_key = doc.key_for(key) if main else doc.portable_key(key)
 			except ValueError:
 				continue
-			if any(candidate.key_for(name) == native for name in changes.main) or any(
-				candidate.portable_key(name) == native for name in changes.entries
-			):
+			if main and key not in VALUE_FIELDS:
+				if candidate.main_value(key) != doc.main_value(key):
+					return True
+				continue
+			before, after = doc.text_values(original_key), candidate.text_values(native)
+			if before is not None or after is not None:
+				if (before or []) != (after or []):
+					return True
+			elif doc.tags.get(original_key) != candidate.tags.get(native):
 				return True
 		return False
 
@@ -881,7 +985,8 @@ class TagEditSession:
 				native = candidate.key_for(key) if main else candidate.portable_key(key)
 			except ValueError:
 				continue
-			artist = next((name for name in ("artist", "albumartist") if candidate.key_for(name) == native), None)
+			artist = next((name for name in ("artist", "albumartist") if native in candidate.main_keys(name)), None)
+			restored = set(candidate.main_keys(key)) if main else {native}
 			related = (
 				{"musicbrainzartistid", "artistcredit"}
 				if artist == "artist"
@@ -890,11 +995,11 @@ class TagEditSession:
 				else set()
 			)
 			for name in list(changes.main):
-				if candidate.key_for(name) == native:
+				if native in candidate.main_keys(name):
 					del changes.main[name]
 			for name in list(changes.entries):
 				metadata = re.sub(r"[^a-z]", "", name.rsplit(":", 1)[-1].lower())
-				if candidate.portable_key(name) == native or metadata in related:
+				if candidate.portable_key(name) in restored or metadata in related:
 					del changes.entries[name]
 
 	def effective_document(self, doc: TagDocument) -> TagDocument:
@@ -943,8 +1048,15 @@ class TagEditSession:
 		return copy.deepcopy(values[0]) if values and all(value == values[0] for value in values) else None
 
 	def value_changes(
-		self, key: str, values: list[str], *, main: bool = False, mode: str = "replace"
+		self,
+		key: str,
+		values: list[str],
+		*,
+		main: bool = False,
+		mode: str = "replace",
+		slots: dict[Path, tuple[int, bool]] | None = None,
 	) -> dict[Path, TagChanges]:
+		"""Build edits; slots optionally identify each file's (index, existing-value flag)."""
 		if mode not in ("replace", "append", "remove"):
 			raise ValueError("Unknown value editing action.")
 		updates = {}
@@ -961,6 +1073,15 @@ class TagEditSession:
 				if mode == "append"
 				else [value for value in current if value not in values]
 			)
+			if slots is not None:
+				if mode != "replace" or len(values) > 1:
+					raise ValueError("Individual entries require one replacement value.")
+				index, present = slots[original.path]
+				if index < 0:
+					raise ValueError("Value index must not be negative.")
+				result = list(current)
+				index = min(index, len(result))
+				result[index : index + int(present)] = values
 			if result == current:
 				continue
 			update = TagChanges(main={key: result}) if main else TagChanges(entries={key: result})
@@ -1000,7 +1121,7 @@ class TagEditSession:
 		maps = [doc.entries() for doc in documents]
 		keys = set().union(*(mapping.keys() for mapping in maps))
 		if include_changes:
-			keys.update(key for doc in documents for key in self.pending[doc.path].entries)
+			keys.update(doc.portable_key(key) for doc in documents for key in self.pending[doc.path].entries)
 		if lyrics:
 			keys.update(key for doc in documents for key in doc.lyric_defaults())
 		main_keys = {doc.key_for(field) for doc in documents for field in MAIN_FIELDS}

@@ -8,7 +8,7 @@ import copy
 import io
 import logging
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -30,11 +30,7 @@ from tauon.t_modules.t_tagedit import MAIN_FIELDS, VALUE_FIELDS, TagChanges, Tag
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
-
-@dataclass
-class ValueItem:
-	text: str
-	original: str | None = None
+CONTROL_GREY = ColourRGBA(170, 170, 170, 255)
 
 
 @dataclass(frozen=True)
@@ -48,6 +44,7 @@ class LookupComparison:
 class TransEditBox:
 	def __init__(self, tauon: Tauon) -> None:
 		from tauon.t_modules.t_main import MultiLineTextBox, TextBox2, readable_text_colour  # noqa: PLC0415
+		from tauon.t_modules.t_tag_textbox import TagTextBox  # noqa: PLC0415
 
 		self.tauon = tauon
 		self.gui = tauon.gui
@@ -64,13 +61,23 @@ class TransEditBox:
 		self.active = False
 		self.session: TagEditSession | None = None
 		self.tracks = []
-		self.boxes = {field: TextBox2(tauon) for field in MAIN_FIELDS}
+		self.boxes = {field: (TagTextBox(tauon) if field in VALUE_FIELDS else TextBox2(tauon)) for field in MAIN_FIELDS}
+		self.loading = False
+		self.load_cancel = threading.Event()
+		self.load_lock = threading.Lock()
+		self.load_result: tuple[TagEditSession | None, str | None] | None = None
+		self.load_done = 0
+		self.load_file = ""
+		self.load_thread: threading.Thread | None = None
 		self.original: dict[str, str | None] = {}
 		self.active_field = 0
 		self.main_page = 0
 		self.tab = 0
 		self.row_page = 0
 		self.row_key: str | None = None
+		self.row_value_index: int | None = None
+		self.row_value_slots: dict[Path, tuple[int, bool]] | None = None
+		self.row_focus_new = False
 		self.row_original = ""
 		self.row_expected = ""
 		self.row_box = MultiLineTextBox(tauon)
@@ -89,16 +96,6 @@ class TransEditBox:
 		self.scope_page = 0
 		self.scope_filter = TextBox2(tauon)
 		self.scope_anchor = (0, 0, 0, 0)
-		self.values_key: str | None = None
-		self.values_main = False
-		self.values_anchor: tuple[int, int, int, int] | None = None
-		self.value_items: list[ValueItem] = []
-		self.value_initial: list[str] | None = None
-		self.value_mode = "replace"
-		self.value_index = 0
-		self.value_page = 0
-		self.value_box = MultiLineTextBox(tauon)
-		self.value_scroll = 0
 		self.notice = ""
 		self.input_enabled = True
 		self.row_values: list[str] | None = None
@@ -123,6 +120,12 @@ class TransEditBox:
 		if self.gui.write_tag_in_progress:
 			return
 		self._cancel_lookup()
+		with self.load_lock:
+			self.load_cancel.set()
+			self.load_result = None
+		self.active = False
+		self.loading = False
+		self.gui.box_over = False
 		self.lookup_results = None
 		self.lookup_error = ""
 		self.lookup_open = False
@@ -130,7 +133,6 @@ class TransEditBox:
 		self.lookup_scroll = 0
 		self.scope_open = False
 		self._close_tools()
-		self.values_key = None
 		self.notice = ""
 		positions = sorted(set(self.gui.shift_selection))
 		if not positions and self.pctl.selected_ready():
@@ -145,18 +147,18 @@ class TransEditBox:
 		)
 		if not self.tracks:
 			return
-		self.active = False
 		if any(track.is_network or track.is_cue or track.is_embed_cue for track in self.tracks):
 			self.show_message(_("Only local audio files without CUE subtracks can be edited."), mode="error")
 			return
-		try:
-			session = TagEditSession([track.fullpath for track in self.tracks])
-			self.session = session
-			self._load_fields()
-		except Exception as error:
-			logging.exception("Tag editor operation failed")
-			self.show_message(_("Cannot open tag editor"), str(error), mode="error")
-			return
+		self.session = None
+		self.loading = True
+		self.load_cancel = threading.Event()
+		cancel = self.load_cancel
+		paths = [track.fullpath for track in self.tracks]
+		with self.load_lock:
+			self.load_result = None
+			self.load_done = 0
+			self.load_file = ""
 		self.tab = 0
 		self.active_field = 0
 		self.main_page = 0
@@ -166,7 +168,77 @@ class TransEditBox:
 		self.key_active = False
 		self.active = True
 		self.gui.box_over = True
+		self.gui.side_drag = False
+		self.gui.cursor_want = 0
 		self.gui.request_frame()
+
+		def progress(done: int, _total: int, path: Path) -> None:
+			with self.load_lock:
+				if cancel.is_set() or self.load_cancel is not cancel:
+					raise InterruptedError
+				self.load_done, self.load_file = done, path.name
+			self.gui.request_frame()
+
+		def read_tags() -> None:
+			result, error = None, None
+			try:
+				result = TagEditSession(paths, progress=progress)
+			except InterruptedError:
+				return
+			except Exception as failure:
+				logging.exception("Could not read tags for editor")
+				error = str(failure)
+			with self.load_lock:
+				if not cancel.is_set() and self.load_cancel is cancel:
+					self.load_result = (result, error)
+					self.gui.request_frame()
+
+		self.load_thread = threading.Thread(target=read_tags, name="tauon-tag-read", daemon=True)
+		self.load_thread.start()
+
+	def _finish_loading(self) -> None:
+		with self.load_lock:
+			completed, self.load_result = self.load_result, None
+		if completed is None:
+			return
+		self.session, error = completed
+		self.loading = False
+		if error is not None:
+			self._close()
+			self.show_message(_("Cannot open tag editor"), error, mode="error")
+			return
+		try:
+			self._load_fields()
+		except Exception as failure:
+			logging.exception("Could not prepare tag editor")
+			self._close()
+			self.show_message(_("Cannot open tag editor"), str(failure), mode="error")
+
+	def _loading_screen(self, x: int, y: int, width: int) -> None:
+		scale = self.gui.scale
+		with self.load_lock:
+			done, filename = self.load_done, self.load_file
+		total = len(self.tracks)
+		self.ddt.text((x, y), _("Reading tags… {N}/{T}").format(N=done, T=total), self.input_colour, 13, max_w=width)
+		self.ddt.text((x, y + round(25 * scale)), filename, self.label_colour, 11, max_w=width)
+		bar = (x, y + round(55 * scale), width, round(14 * scale))
+		self.ddt.bordered_rect(
+			bar, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
+		)
+		inset = round(2 * scale)
+		self.ddt.rect(
+			(bar[0] + inset, bar[1] + inset, round((width - 2 * inset) * done / max(1, total)), bar[3] - 2 * inset),
+			CONTROL_GREY,
+		)
+		if self.inp.key_esc_press or self.draw.button(
+			_("Close"),
+			x + width - round(84 * scale),
+			self.editor_bottom - round(54 * scale),
+			w=round(84 * scale),
+			h=round(32 * scale),
+		):
+			self.inp.key_esc_press = False
+			self._close()
 
 	def _scan(self, track: TrackClass) -> TrackClass:
 		from tauon.t_modules.t_main import TrackClass  # noqa: PLC0415
@@ -183,9 +255,12 @@ class TransEditBox:
 		self.original = {field: self.session.common_main(field, False) for field in MAIN_FIELDS}
 		self.effective = {field: self.session.common_main(field) for field in MAIN_FIELDS}
 		self.value_lists = {field: self.session.common_values(field, main=True) for field in VALUE_FIELDS}
-		self.field_baseline = {field: self.effective[field] or "" for field in MAIN_FIELDS}
 		for field, box in self.boxes.items():
-			box.set_text(self.effective[field] or "")
+			if field in VALUE_FIELDS:
+				box.set_values(self.value_lists[field] or [])
+			else:
+				box.set_text(self.effective[field] or "")
+		self.field_baseline = {field: box.text for field, box in self.boxes.items()}
 		self._load_art()
 
 	def _load_art(self) -> None:
@@ -213,7 +288,7 @@ class TransEditBox:
 			or self.lookup_running
 			or self.lookup_open
 			or self.tab != 0
-			or self.values_key is not None
+			or self.loading
 			or self.scope_open
 			or (self.tools_menu is not None and self.tools_menu.active)
 			or not self.coll(self.art_rect)
@@ -238,13 +313,15 @@ class TransEditBox:
 		return True
 
 	def _flush_fields(self) -> bool:
+		if self.loading or self.session is None:
+			return False
 		updates = {}
 		try:
 			for field, box in self.boxes.items():
 				if box.text == self.field_baseline[field]:
 					continue
 				if field in VALUE_FIELDS:
-					changes = self.session.value_changes(field, [box.text] if box.text else [], main=True)
+					changes = self.session.value_changes(field, box.values(), main=True)
 				else:
 					changes = {doc.path: TagChanges(main={field: box.text}) for doc in self.session.scope_documents}
 				for path, change in changes.items():
@@ -254,12 +331,18 @@ class TransEditBox:
 			if self._row_dirty():
 				value = [self.row_box.text] if self.row_box.text else []
 				if self.row_is_list:
-					for path, change in self.session.value_changes(self.row_key, value).items():
+					for path, change in self.session.value_changes(
+						self.row_key, value, slots=self.row_value_slots
+					).items():
 						updates.setdefault(path, TagChanges()).entries.update(change.entries)
 				else:
 					for doc in self.session.scope_documents:
 						updates.setdefault(doc.path, TagChanges()).entries[self.row_key] = self.row_box.text
 			self.session.stage_tracks(updates)
+			if self._row_dirty() and self.row_value_slots is not None:
+				self.row_value_slots = {
+					path: (index, bool(self.row_box.text)) for path, (index, _present) in self.row_value_slots.items()
+				}
 			if any(
 				change.entries and ("artist" in change.main or "albumartist" in change.main)
 				for change in updates.values()
@@ -279,15 +362,49 @@ class TransEditBox:
 		return self.row_key is not None and self.row_box.text != self.row_expected
 
 	def _select_row(self, entry: TagEntry) -> None:
+		if (
+			self.tab in (1, 2)
+			and self.row_key == entry.key
+			and self._row_dirty()
+			and not self.row_box.text
+			and self.row_value_index is not None
+			and entry.value_index is not None
+			and 0 <= self.row_value_index < entry.value_index
+		):
+			entry = replace(entry, value_index=entry.value_index - 1)
 		if not self._flush_fields():
 			return
 		self._load_row(entry)
 
 	def _load_row(self, entry: TagEntry) -> None:
 		self.row_key = entry.key
+		self.row_value_index = entry.value_index
+		self.row_value_slots = None
 		self.row_values = self.session.common_values(entry.key)
 		self.row_is_list = entry.kind in ("text", "JSON text values") or entry.lyrics
 		self.row_original = entry.value
+		if self.row_is_list and all(
+			self.session.effective_document(doc).supports_multiple_values(
+				self.session.effective_document(doc).portable_key(entry.key)
+			)
+			for doc in self.session.scope_documents
+		):
+			self.row_value_index = entry.value_index if entry.value_index is not None else 0
+			values = []
+			self.row_value_slots = {}
+			for original in self.session.scope_documents:
+				doc = self.session.effective_document(original)
+				items = doc.text_values(doc.portable_key(entry.key)) or []
+				index = len(items) if self.row_value_index == -1 else self.row_value_index
+				present = index < len(items)
+				self.row_value_slots[doc.path] = (min(index, len(items)), present)
+				values.append(items[index] if present else "")
+			self.row_original = values[0] if all(value == values[0] for value in values) else "<Multiple values>"
+			self.row_expected = "" if self.row_original == "<Multiple values>" else self.row_original
+			self.row_box.set_text(self.row_expected)
+			self.row_scroll = 0
+			self.key_active = False
+			return
 		self.row_expected = (
 			(self.row_values[0] if self.row_values else "")
 			if self.row_is_list
@@ -299,37 +416,89 @@ class TransEditBox:
 		self.row_scroll = 0
 		self.key_active = False
 
+	def _misc_rows(self, lyrics: bool = False) -> list[TagEntry]:
+		rows = []
+		documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
+		appending = self.row_key is not None and self.row_value_index == -1 and self.row_value_slots is not None
+		for entry in self.session.entries(lyrics):
+			if (
+				not entry.editable
+				or entry.kind not in ("text", "JSON text values")
+				or any(not doc.supports_multiple_values(doc.portable_key(entry.key)) for doc in documents)
+			):
+				rows.append(entry)
+				continue
+			lists = []
+			for doc in documents:
+				native = doc.portable_key(entry.key)
+				items = doc.text_values(native) if native in doc.tags else []
+				if items is None:
+					break
+				if appending and entry.key == self.row_key:
+					index, present = self.row_value_slots[doc.path]
+					if present:
+						del items[index : index + 1]
+				lists.append(items)
+			else:
+				if appending and entry.key == self.row_key and not any(lists):
+					continue
+				for index in range(max(1, *map(len, lists))):
+					values = [items[index] if index < len(items) else "" for items in lists]
+					value = values[0] if all(item == values[0] for item in values) else _("Different values")
+					rows.append(TagEntry(entry.key, value, entry.kind, lyrics=lyrics, value_index=index))
+				continue
+			rows.append(entry)
+		if appending:
+			rows.append(TagEntry(self.row_key, self.row_box.text or _("New value"), lyrics=lyrics, value_index=-1))
+			rows.sort(key=lambda row: row.key)
+		return rows
+
+	def _add_misc_key(self, key: str) -> None:
+		if not self._flush_fields():
+			return
+		try:
+			documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
+			if self.tab == 2 and any(not doc.is_lyric_key(doc.portable_key(key)) for doc in documents):
+				self.show_message(
+					_("Cannot add tag value"), _("This key is not a lyric tag. Add it in Misc."), mode="error"
+				)
+				return
+			keys = {doc.portable_key(key) for doc in documents}
+			entry = next(
+				(row for row in self.session.entries(self.tab == 2) if row.key in keys),
+				TagEntry(documents[0].portable_key(key), "", lyrics=self.tab == 2),
+			)
+			if not entry.editable or entry.kind not in ("text", "JSON text values"):
+				self._load_row(entry)
+				self.notice = _("This tag has a structured value; edit it as a whole.")
+			elif any(not doc.supports_multiple_values(doc.portable_key(key)) for doc in documents):
+				self._load_row(entry)
+				self.notice = _("This tag stores one value; use a distinct description or language for another entry.")
+			else:
+				self._load_row(TagEntry(entry.key, "", lyrics=self.tab == 2, value_index=-1))
+			self.new_key.clear()
+			self.row_focus_new = True
+			self.gui.request_frame()
+		except Exception as error:
+			logging.exception("Could not add tag value")
+			self.show_message(_("Cannot add tag value"), str(error), mode="error")
+
 	def _field_edited(self, field: str) -> bool:
-		return (
-			self.boxes[field].text != self.field_baseline[field]
-			or self.session.field_edited(field, main=True)
-			or (self.values_main and self.values_key == field and self._values_dirty())
-		)
+		box = self.boxes[field]
+		if box.text == self.field_baseline[field]:
+			return self.session.field_edited(field, main=True)
+		if field in VALUE_FIELDS:
+			values = box.values()
+			return any((doc.text_values(doc.key_for(field)) or []) != values for doc in self.session.scope_documents)
+		return any(doc.main_value(field) != box.text for doc in self.session.scope_documents)
 
 	def _entry_edited(self, key: str) -> bool:
-		return (
-			(self.row_key == key and self._row_dirty())
-			or self.session.field_edited(key)
-			or (not self.values_main and self.values_key == key and self._values_dirty())
-		)
-
-	def _values_dirty(self) -> bool:
-		if self.values_key is None:
-			return False
-		values = [
-			self.value_box.text if index == self.value_index else item.text
-			for index, item in enumerate(self.value_items)
-			if (self.value_box.text if index == self.value_index else item.text) or item.original == ""
-		]
-		if self.value_mode != "replace":
-			return bool(values)
-		return values != self.value_initial and (self.value_initial is not None or bool(values) or self.value_clear)
+		return (self.row_key == key and self._row_dirty()) or self.session.field_edited(key)
 
 	def _changes_pending(self) -> bool:
 		return (
 			self.session.changed
 			or self._row_dirty()
-			or self._values_dirty()
 			or any(box.text != self.field_baseline[field] for field, box in self.boxes.items())
 		)
 
@@ -339,9 +508,12 @@ class TransEditBox:
 			self.original[key] = self.session.common_main(key, False)
 			self.effective[key] = self.session.common_main(key)
 			self.field_baseline[key] = self.effective[key] or ""
-			self.boxes[key].set_text(self.field_baseline[key])
 			if key in VALUE_FIELDS:
 				self.value_lists[key] = self.session.common_values(key, main=True)
+				self.boxes[key].set_values(self.value_lists[key] or [])
+			else:
+				self.boxes[key].set_text(self.field_baseline[key])
+			self.field_baseline[key] = self.boxes[key].text
 		elif self.row_key == key:
 			entry = next((row for row in self.session.entries(self.tab == 2) if row.key == key), None)
 			if entry is None:
@@ -358,6 +530,7 @@ class TransEditBox:
 		if self.undo_icon is None:
 			self.undo_icon = asset_loader(self.tauon.bag, self.tauon.bag.loaded_asset_dc, "tag-undo.png", True)
 		length = round(23 * self.gui.scale)
+		colour = self.readable_colour(CONTROL_GREY, self.colours.box_background)
 		hit = self.draw.button(
 			"",
 			x,
@@ -365,14 +538,14 @@ class TransEditBox:
 			w=length,
 			h=length,
 			font=14,
-			text_colour=self.colours.level_green,
+			text_colour=colour,
 			press=(self.input_enabled if enabled is None else enabled) and self.inp.mouse_click,
 			tooltip=_("Restore each file's original value in the current track scope."),
 		)
 		self.undo_icon.render(
 			x + (length - self.undo_icon.w) / 2,
 			y + (length - self.undo_icon.h) / 2,
-			self.readable_colour(self.colours.level_green, self.colours.box_background),
+			colour,
 		)
 		return hit
 
@@ -391,8 +564,6 @@ class TransEditBox:
 		if self.gui.write_tag_in_progress or self.lookup_running:
 			return
 		if not self._flush_fields():
-			return
-		if self.values_key is not None and not self._finish_values():
 			return
 		if not self.session.changed:
 			self.show_message(_("No tag changes to save."), mode="info")
@@ -511,7 +682,7 @@ class TransEditBox:
 
 		self.scope_open = False
 		if self.tools_menu is None:
-			self.tools_menu = Menu(self.tauon, 310)
+			self.tools_menu = Menu(self.tauon, 200)
 			self.tools_menu.add(MenuItem(_("Upgrade ID3 tags to v2.4"), self.upgrade_id3))
 			self.tools_menu.add(MenuItem(_("Fix Mojibake (auto)"), self.fix_mojibake))
 		menu = self.tools_menu
@@ -1034,63 +1205,53 @@ class TransEditBox:
 		scale = self.gui.scale
 		index = MAIN_FIELDS.index(field)
 		box = self.boxes[field]
-		values = self.value_lists.get(field, [])
 		self.ddt.text((x, y), label, self.label_colour, 11, max_w=width)
 		y += round(16 * scale)
-		value_width = round(30 * scale) if field in VALUE_FIELDS else 0
-		rect = (x, y, width - value_width, round(23 * scale))
-		rollback_width = round(27 * scale) if self._field_edited(field) else 0
+		rect = (x, y, width, round(23 * scale))
 		self.fields.add(rect)
-		if self.input_enabled and self.inp.mouse_click and self.coll(rect):
-			self.active_field = index
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
-		if values is not None and len(values) > 1:
+		control_width = 0
+		if self._field_edited(field):
+			control_width += round(25 * scale)
+			if self._rollback_button(x + width - round((49 if field in VALUE_FIELDS else 23) * scale), y):
+				self._rollback_field(field, main=True)
+		if field in VALUE_FIELDS:
+			control_width += round(24 * scale)
+			if self.draw.button(
+				"/",
+				x + width - round(24 * scale),
+				y + round(2 * scale),
+				w=round(21 * scale),
+				h=round(19 * scale),
+				font=14,
+				text_colour=self.readable_colour(CONTROL_GREY, self.colours.box_background),
+				press=self.input_enabled and self.inp.mouse_click,
+				tooltip=_("Insert a separator to add another value to this tag."),
+			):
+				self.active_field = index
+				box.insert_separator()
+				self.inp.mouse_click = False
+				self.gui.request_frame()
+		if self.input_enabled and self.inp.mouse_click and self.coll((x, y, width - control_width, rect[3])):
+			self.active_field = index
+		box.draw(
+			x + round(4 * scale),
+			y + round(4 * scale),
+			self.input_colour,
+			active=self.input_enabled and self.active_field == index,
+			width=width - round(8 * scale) - control_width,
+		)
+		mixed = self.value_lists[field] is None if field in VALUE_FIELDS else self.effective[field] is None
+		if not box.text and mixed:
 			self.ddt.text(
 				(x + round(5 * scale), y + round(4 * scale)),
-				" / ".join(values),
-				self.input_colour,
+				_("Different values"),
+				self.label_colour,
 				12,
-				max_w=rect[2] - round(10 * scale) - rollback_width,
+				max_w=width - round(10 * scale) - control_width,
 			)
-		else:
-			box.draw(
-				x + round(4 * scale),
-				y + round(4 * scale),
-				self.input_colour,
-				active=self.input_enabled and self.active_field == index,
-				width=rect[2] - round(8 * scale) - rollback_width,
-			)
-			if not box.text and self.effective[field] is None:
-				self.ddt.text(
-					(x + round(5 * scale), y + round(4 * scale)),
-					_("Different values"),
-					self.label_colour,
-					12,
-					max_w=rect[2] - round(10 * scale) - rollback_width,
-				)
 		if self._field_edited(field):
 			self._edited_outline(rect)
-			if self._rollback_button(x + rect[2] - round(23 * scale), y):
-				self._rollback_field(field, main=True)
-		if field in VALUE_FIELDS and self.draw.button(
-			"+1",
-			x + rect[2] + round(4 * scale),
-			y + round(2 * scale),
-			w=value_width - round(4 * scale),
-			h=round(19 * scale),
-			font=11,
-			tooltip=_("Edit multiple values for this tag."),
-		):
-			self._open_values(
-				field,
-				main=True,
-				anchor=(
-					x + rect[2] + round(4 * scale),
-					y + round(2 * scale),
-					value_width - round(4 * scale),
-					round(19 * scale),
-				),
-			)
 
 	def _main(self, x: int, y: int, width: int, height: int) -> None:
 		scale = self.gui.scale
@@ -1155,14 +1316,6 @@ class TransEditBox:
 			self.label_colour,
 			11,
 		)
-		if self.draw.button(
-			_("Clear"),
-			x + left_width - round(75 * scale),
-			ry,
-			w=round(48 * scale),
-			h=round(24 * scale),
-		):
-			self.boxes["rating"].set_text("")
 		if self._field_edited("rating"):
 			self._edited_outline((x, ry, left_width, round(24 * scale)))
 			if self._rollback_button(x + left_width - round(23 * scale), ry):
@@ -1191,7 +1344,7 @@ class TransEditBox:
 			)
 		else:
 			self.ddt.text(
-				(ax + round(10 * scale), self.art_rect[1] + art_height / 2 - 7 * scale),
+				(ax + art_width / 2, self.art_rect[1] + art_height / 2 - 7 * scale, 2),
 				_("No embedded art"),
 				self.label_colour,
 				11,
@@ -1240,13 +1393,23 @@ class TransEditBox:
 	def _table(self, x: int, y: int, width: int, height: int) -> None:
 		scale = self.gui.scale
 		lyrics = self.tab == 2
-		rows = self.session.entries(lyrics)
+		rows = self._misc_rows(lyrics)
 		compact = height < round(180 * scale)
-		reserved_height = 100 if compact else (170 if lyrics else 220)
+		reserved_height = 100 if compact else 220
 		page_size = max(1, min(6, int(height / scale - reserved_height) // 24))
 		if len(rows) > page_size:
 			page_size = max(1, min(6, int(height / scale - reserved_height - 26) // 24))
 		pages = max(1, (len(rows) + page_size - 1) // page_size)
+		if self.row_focus_new:
+			self.row_page = next(
+				(
+					index // page_size
+					for index, entry in enumerate(rows)
+					if entry.key == self.row_key and entry.value_index == self.row_value_index
+				),
+				self.row_page,
+			)
+			self.row_focus_new = False
 		self.row_page = min(self.row_page, pages - 1)
 		self.ddt.text((x, y), _("Native key"), self.label_colour, 11)
 		self.ddt.text((x + width * 0.45, y), _("Value / type"), self.label_colour, 11)
@@ -1257,7 +1420,7 @@ class TransEditBox:
 		for entry in rows[self.row_page * page_size : (self.row_page + 1) * page_size]:
 			rect = (x, y, width, row_height - round(scale))
 			self.fields.add(rect)
-			if self.row_key == entry.key:
+			if self.row_key == entry.key and (self.row_value_index == entry.value_index):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
 			self.ddt.text(
 				(x + round(3 * scale), y + round(2 * scale)),
@@ -1294,32 +1457,26 @@ class TransEditBox:
 			y += round((23 if compact else 26) * scale)
 		y += round(6 * scale)
 		add_width = min(round((210 if compact else 260) * scale), round(width * 0.48))
-		values_y = y
-		if not lyrics:
-			add_x = x + width - add_width
-			self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11)
-			add_y = y + round(18 * scale)
-			rect = (add_x, add_y, add_width - round(49 * scale), round(23 * scale))
-			self.ddt.bordered_rect(
-				rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale))
-			)
-			if self.inp.mouse_click and self.coll(rect):
-				self.key_active = True
-			self.new_key.draw(
-				add_x + round(3 * scale),
-				add_y + round(4 * scale),
-				self.input_colour,
-				active=self.input_enabled and self.key_active,
-				width=rect[2] - round(6 * scale),
-			)
-			if self.draw.button(
-				_("Add"), x + width - round(44 * scale), add_y, w=round(44 * scale), h=round(23 * scale)
-			):
-				key = self.new_key.text.strip()
-				if key:
-					self._select_row(TagEntry(key, ""))
-			if not compact:
-				y = add_y + round(33 * scale)
+		add_x = x + width - add_width
+		self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11)
+		add_y = y + round(18 * scale)
+		rect = (add_x, add_y, add_width - round(49 * scale), round(23 * scale))
+		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
+		if self.inp.mouse_click and self.coll(rect):
+			self.key_active = True
+		self.new_key.draw(
+			add_x + round(3 * scale),
+			add_y + round(4 * scale),
+			self.input_colour,
+			active=self.input_enabled and self.key_active,
+			width=rect[2] - round(6 * scale),
+		)
+		if self.draw.button(_("Add"), x + width - round(44 * scale), add_y, w=round(44 * scale), h=round(23 * scale)):
+			key = self.new_key.text.strip()
+			if key:
+				self._add_misc_key(key)
+		if not compact:
+			y = add_y + round(33 * scale)
 		if self.row_key is None and lyrics and rows:
 			self._select_row(rows[0])
 		if self.row_key is None:
@@ -1328,12 +1485,15 @@ class TransEditBox:
 				_("Select a tag to edit; add custom text by name."),
 				self.label_colour,
 				11,
-				max_w=width - add_width - round(12 * scale) if compact and not lyrics else width,
+				max_w=width - add_width - round(12 * scale) if compact else width,
 			)
 			return
-		entry = next((row for row in rows if row.key == self.row_key), TagEntry(self.row_key, ""))
+		entry = next(
+			(row for row in rows if row.key == self.row_key and (row.value_index == self.row_value_index)),
+			TagEntry(self.row_key, ""),
+		)
 		if not compact:
-			kind = _("Text values") if self.row_is_list else entry.kind
+			kind = _("Text value") if self.row_is_list else entry.kind
 			self.ddt.text((x, y), self.row_key + " · " + kind, self.label_colour, 11, max_w=width)
 			y += round(20 * scale)
 		if not entry.editable:
@@ -1345,42 +1505,19 @@ class TransEditBox:
 		box_height = max(round(21 * scale), bottom - y - round(27 * scale))
 		box_width = width
 		if compact:
-			if not lyrics:
-				box_width -= add_width + round(12 * scale)
-			if self.row_is_list:
-				box_width -= round(30 * scale)
+			box_width -= add_width + round(12 * scale)
 		rect = (x, y, box_width, box_height)
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
 		if self.inp.mouse_click and self.coll(rect):
 			self.key_active = False
-		if self.row_is_list:
-			values = self.row_values
-			value_x = x + box_width + round(4 * scale) if compact else x + width - round(26 * scale)
-			value_y = (values_y if compact else y - round(22 * scale)) + round(2 * scale)
-			if self.draw.button(
-				"+1",
-				value_x,
-				value_y,
-				w=round(26 * scale),
-				h=round(19 * scale),
-				font=11,
-				tooltip=_("Edit multiple values for this tag."),
-			):
-				self._open_values(self.row_key, anchor=(value_x, value_y, round(26 * scale), round(19 * scale)))
-			if (values is None and self.row_original == "<Multiple values>") or (
-				values is not None and len(values) > 1
-			):
-				self.ddt.text(
-					(x + round(8 * scale), y + round(10 * scale)),
-					_("Different values across files; use +1 to edit the lists.")
-					if values is None
-					else " / ".join(values),
-					self.input_colour,
-					12,
-					max_w=box_width - round(16 * scale),
-				)
-				self._row_edit_controls(rect)
-				return
+		if self.row_original == "<Multiple values>" and not self.row_box.text:
+			self.ddt.text(
+				(x + round(8 * scale), y + round(4 * scale)),
+				_("Different values; editing replaces this entry in each file."),
+				self.label_colour,
+				11,
+				max_w=box_width - round(16 * scale),
+			)
 		self.row_scroll += self.row_box.draw(
 			x + round(4 * scale),
 			y + round(4 * scale),
@@ -1400,219 +1537,6 @@ class TransEditBox:
 			height = rect[3]
 			if self._rollback_button(x, y + height + round(4 * self.gui.scale)):
 				self._rollback_field(self.row_key)
-
-	def _open_values(self, key: str, *, main: bool = False, anchor: tuple[int, int, int, int] | None = None) -> None:
-		if not self._flush_fields():
-			return
-		self.scope_open = False
-		self.values_key, self.values_main = key, main
-		self.values_anchor = anchor
-		self._load_values()
-		self.inp.mouse_click = False
-
-	def _load_values(self) -> None:
-		self.value_initial = self.session.common_values(self.values_key, main=self.values_main)
-		self.value_clear = False
-		self.value_items = [ValueItem(value, value) for value in self.value_initial or []]
-		self.value_drafts = {}
-		self.value_mode = "replace"
-		self.value_index = 0
-		self.value_page = 0
-		self.value_box.set_text(self.value_items[0].text if self.value_items else "")
-		self.value_scroll = 0
-
-	def _value_flush(self) -> None:
-		if self.value_items:
-			self.value_items[self.value_index].text = self.value_box.text
-
-	def _value_select(self, index: int) -> None:
-		self._value_flush()
-		self.value_index = index
-		self.value_box.set_text(self.value_items[index].text if self.value_items else "")
-		self.value_scroll = 0
-
-	def _value_action(self, mode: str) -> None:
-		self._value_flush()
-		self.value_drafts[self.value_mode] = copy.deepcopy(self.value_items)
-		self.value_mode = mode
-		self.value_items = copy.deepcopy(self.value_drafts.get(mode, []))
-		self.value_index = 0
-		self.value_page = 0
-		self.value_box.set_text(self.value_items[0].text if self.value_items else "")
-		self.value_scroll = 0
-
-	def _finish_values(self, *, cancel: bool = False) -> bool:
-		if self.values_key is None:
-			return True
-		if not cancel:
-			self._value_flush()
-			values = [item.text for item in self.value_items if item.text or item.original == ""]
-			try:
-				if self.value_mode != "replace" or (
-					values != self.value_initial and (self.value_initial is not None or values or self.value_clear)
-				):
-					self.session.edit_values(self.values_key, values, main=self.values_main, mode=self.value_mode)
-					if self.values_main and self.values_key in ("artist", "albumartist"):
-						self.notice = _("Artist identifiers and credits cleared after changing names.")
-				self._load_fields()
-				if self.row_key is not None:
-					row = next(
-						(entry for entry in self.session.entries(self.tab == 2) if entry.key == self.row_key),
-						TagEntry(self.row_key, ""),
-					)
-					self._select_row(row)
-			except Exception as error:
-				logging.exception("Could not edit tag values")
-				self.show_message(_("Invalid tag values"), str(error), mode="error")
-				return False
-		self.values_key = None
-		return True
-
-	def _value_popover(self, x: int, y: int, width: int, height: int) -> None:
-		scale = self.gui.scale
-		margin = round(12 * scale)
-		pw, ph = min(round(460 * scale), width - 2 * margin), min(round(410 * scale), height - 2 * margin)
-		px, py = x + (width - pw) // 2, y + (height - ph) // 2
-		if self.values_anchor is not None:
-			ax, ay, aw, ah = self.values_anchor
-			px = max(x + margin, min(ax + aw - pw, x + width - margin - pw))
-			py = ay + ah + round(4 * scale)
-			if py + ph > y + height - margin and ay - ph - round(4 * scale) >= y + margin:
-				py = ay - ph - round(4 * scale)
-			py = max(y + margin, min(py, y + height - margin - ph))
-		if self.inp.mouse_click and not self.coll((px, py, pw, ph)):
-			self.inp.mouse_click = False
-			self._finish_values()
-			return
-		self.ddt.bordered_rect(
-			(px, py, pw, ph), self.colours.box_background, self.colours.box_border, max(1, round(scale))
-		)
-		pad = round(12 * scale)
-		self.ddt.text((px + pad, py + round(10 * scale)), _("Edit values"), self.title_colour, 14)
-		keys = dict.fromkeys(
-			(
-				self.session.effective_document(doc).key_for(self.values_key)
-				if self.values_main
-				else doc.portable_key(self.values_key)
-			)
-			for doc in self.session.scope_documents
-		)
-		self.ddt.text((px + pad, py + round(34 * scale)), " · ".join(keys), self.label_colour, 11, max_w=pw - 2 * pad)
-		for index, (mode, label) in enumerate(
-			(("replace", _("Replace")), ("append", _("Append")), ("remove", _("Remove matches")))
-		):
-			if self.draw.button(
-				("• " if mode == self.value_mode else "") + label,
-				px + pad + round(index * 117 * scale),
-				py + round(56 * scale),
-				w=round(112 * scale),
-				h=round(24 * scale),
-			):
-				self._value_action(mode)
-		hint = {
-			"replace": _("Set this list for every file in the current scope."),
-			"append": _("Add these values after each file's existing values."),
-			"remove": _("Delete every exact match; keep all other values."),
-		}[self.value_mode]
-		self.ddt.text((px + pad, py + round(85 * scale)), hint, self.label_colour, 11, max_w=pw - 2 * pad)
-		page_size = max(1, min(5, int(ph / scale - 244) // 28))
-		pages = max(1, (len(self.value_items) + page_size - 1) // page_size)
-		self.value_page = min(self.value_page, pages - 1)
-		ry = py + round(108 * scale)
-		for index in range(self.value_page * page_size, min(len(self.value_items), (self.value_page + 1) * page_size)):
-			item = self.value_items[index]
-			row = (px + pad, ry, pw - 2 * pad - round(40 * scale), round(26 * scale))
-			self.fields.add(row)
-			if self.coll(row) or index == self.value_index:
-				self.ddt.rect(row, self.colours.box_button_background_highlight)
-			self.ddt.text(
-				(row[0] + round(5 * scale), ry + round(3 * scale)),
-				f"{index + 1}. " + (item.text.replace("\n", " ↵ ") or _("Empty value")),
-				self.input_colour,
-				12,
-				max_w=row[2] - round(10 * scale),
-			)
-			if self.inp.mouse_click and self.coll(row):
-				self._value_select(index)
-				self.inp.mouse_click = False
-			ry += round(28 * scale)
-		if not self.value_items:
-			self.ddt.text(
-				(px + pad, ry + round(4 * scale)),
-				_("Add a value; an empty list removes this tag.")
-				if self.value_mode == "replace"
-				else _("Add values to append or remove from each file."),
-				self.label_colour,
-				11,
-				max_w=pw - 2 * pad,
-			)
-		if pages > 1:
-			if self.draw.button("↑", px + pw - round(38 * scale), py + round(108 * scale)):
-				self.value_page = max(0, self.value_page - 1)
-			if self.draw.button("↓", px + pw - round(38 * scale), py + round(138 * scale)):
-				self.value_page = min(pages - 1, self.value_page + 1)
-		control_y = py + round((112 + page_size * 28) * scale)
-		if self.draw.button(_("Add value"), px + pad, control_y, h=round(24 * scale)):
-			self._value_flush()
-			self.value_items.append(ValueItem(""))
-			self.value_index = len(self.value_items) - 1
-			self.value_page = self.value_index // page_size
-			self.value_box.set_text("")
-		if self.draw.button(
-			_("Clear tag"), px + pad + round(310 * scale), control_y, w=round(85 * scale), h=round(24 * scale)
-		):
-			self._value_action("replace")
-			self.value_items = []
-			self.value_clear = True
-			self.value_box.set_text("")
-		if self.value_items:
-			if self.draw.button(_("Remove value"), px + pad + round(100 * scale), control_y, h=round(24 * scale)):
-				self.value_items.pop(self.value_index)
-				self.value_index = min(self.value_index, max(0, len(self.value_items) - 1))
-				self.value_box.set_text(self.value_items[self.value_index].text if self.value_items else "")
-			for direction, label, offset in ((-1, "↑", 230), (1, "↓", 265)):
-				if self.draw.button(label, px + pad + round(offset * scale), control_y, h=round(24 * scale)):
-					self._value_flush()
-					target = self.value_index + direction
-					if 0 <= target < len(self.value_items):
-						self.value_items[target], self.value_items[self.value_index] = (
-							self.value_items[self.value_index],
-							self.value_items[target],
-						)
-						self.value_index = target
-						self.value_page = target // page_size
-		footer_y = py + ph - round(42 * scale)
-		edited = self._values_dirty() or self.session.field_edited(self.values_key, main=self.values_main)
-		if self.value_items:
-			box_y = control_y + round(29 * scale)
-			rect = (px + pad, box_y, pw - 2 * pad, footer_y - box_y - round(8 * scale))
-			self.ddt.bordered_rect(
-				rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale))
-			)
-			self.value_scroll += self.value_box.draw(
-				px + pad + round(4 * scale),
-				box_y + round(4 * scale),
-				self.input_colour,
-				active=True,
-				width=rect[2] - round(8 * scale),
-				height=rect[3] - round(4 * scale),
-				scroll=self.value_scroll,
-				bounded=True,
-			)
-			edited = self._values_dirty() or self.session.field_edited(self.values_key, main=self.values_main)
-			if edited:
-				self._edited_outline(rect)
-		if edited and self._rollback_button(px + pad, footer_y, enabled=True):
-			self._rollback_field(self.values_key, main=self.values_main)
-			self._load_values()
-		if self.draw.button(
-			_("Done"), px + pw - round(180 * scale), footer_y, w=round(78 * scale), h=round(30 * scale)
-		):
-			self._finish_values()
-		if self.draw.button(
-			_("Cancel"), px + pw - round(90 * scale), footer_y, w=round(78 * scale), h=round(30 * scale)
-		):
-			self._finish_values(cancel=True)
 
 	def _tabs(self, x: int, y: int, width: int) -> None:
 		scale = self.gui.scale
@@ -1663,6 +1587,10 @@ class TransEditBox:
 			width -= advance
 
 	def _close(self) -> None:
+		with self.load_lock:
+			self.load_cancel.set()
+			self.load_result = None
+		self.loading = False
 		self.active = False
 		self.gui.box_over = False
 		self._close_lookup()
@@ -1690,6 +1618,10 @@ class TransEditBox:
 	def render(self) -> None:
 		if not self.active:
 			return
+		if self.loading:
+			self._finish_loading()
+			if not self.active:
+				return
 		with self.lookup_lock:
 			update, completed = self.lookup_update, self.lookup_result
 			self.lookup_update = None
@@ -1736,13 +1668,18 @@ class TransEditBox:
 		body_width, body_height = width - round(32 * scale), height - round(199 * scale)
 		title = _("Tag editor")
 		self.ddt.text((body_x, y + round(18 * scale)), title, self.title_colour, 215)
+		file_count = len(self.tracks) if self.loading else len(self.session.scope_documents)
+		file_label = _("{N} active file") if file_count == 1 else _("{N} active files")
 		self.ddt.text(
-			(body_x + self.ddt.get_text_w(title, 215) + round(16 * scale), y + round(23 * scale)),
-			_("{N} active file(s)").format(N=len(self.session.scope_documents)),
+			(body_x + body_width, y + round(20 * scale), 1),
+			file_label.format(N=file_count),
 			self.label_colour,
 			11,
-			max_w=width - round(200 * scale),
+			max_w=body_width - self.ddt.get_text_w(title, 215) - round(16 * scale),
 		)
+		if self.loading:
+			self._loading_screen(body_x, body_y, body_width)
+			return
 		if self.gui.write_tag_in_progress:
 			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13)
 			return
@@ -1753,14 +1690,12 @@ class TransEditBox:
 				self._close_tools()
 			elif self.lookup_open:
 				self._close_lookup()
-			elif self.values_key is not None:
-				self._finish_values(cancel=True)
 			elif self.scope_open:
 				self.scope_open = False
 			else:
 				self._close()
 			return
-		self.input_enabled = not (menu_open or self.scope_open or self.lookup_open or self.values_key is not None)
+		self.input_enabled = not (menu_open or self.scope_open or self.lookup_open)
 		click = self.inp.mouse_click
 		right_click = getattr(self.inp, "right_click", False)
 		level_right_click = getattr(self.inp, "level_2_right_click", False)
@@ -1841,9 +1776,7 @@ class TransEditBox:
 			self.inp.right_click = right_click
 			self.inp.level_2_right_click = level_right_click
 			self.inp.mouse_wheel = wheel
-		if self.values_key is not None:
-			self._value_popover(x, y, width, height)
-		elif self.scope_open:
+		if self.scope_open:
 			self._scope_popover(x, y, width, height)
 		elif self.lookup_open:
 			self._lookup_popover(x, y, width, height)
