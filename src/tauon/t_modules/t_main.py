@@ -22216,7 +22216,7 @@ class Drawing:
 
 	def button(
 		self, text: str, x: int, y: int, w: int | None = None, h: int | None = None, font: int = 212, text_highlight_colour: ColourRGBA | None = None, text_colour: ColourRGBA | None = None,
-		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None, press: bool | None = None, tooltip: str = "") -> bool:
+		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None, press: bool | None = None, tooltip: str = "", text_y_offset: int = 0) -> bool:
 		"""PSA for anyone making a new button function: use fields.add(rect) to make the gui
 		refresh when you pan the mouse over it
 		"""
@@ -22238,7 +22238,7 @@ class Drawing:
 			background_highlight_colour = self.colours.box_button_background_highlight
 
 		click = False
-		text_y = rect[1] + rect[3] / 2 - 9 * self.gui.scale
+		text_y = rect[1] + rect[3] / 2 - 9 * self.gui.scale + round(text_y_offset * self.gui.scale)
 
 		if press is None:
 			press = self.inp.mouse_click

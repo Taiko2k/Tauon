@@ -9,6 +9,7 @@ import io
 import logging
 import threading
 from dataclasses import dataclass, replace
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,7 +29,7 @@ from tauon.t_modules.t_musicbrainz_lookup import (
 from tauon.t_modules.t_tagedit import MAIN_FIELDS, VALUE_FIELDS, TagChanges, TagEditSession, TagEntry
 
 if TYPE_CHECKING:
-	from tauon.t_modules.t_main import Tauon, TrackClass
+	from tauon.t_modules.t_main import Menu, Tauon, TrackClass
 
 CONTROL_GREY = ColourRGBA(170, 170, 170, 255)
 
@@ -92,6 +93,7 @@ class TransEditBox:
 		self.write_result: tuple[int, str | None] | None = None
 		self.scope_open = False
 		self.tools_menu = None
+		self.presets_menu = None
 		self.undo_icon = None
 		self.scope_page = 0
 		self.scope_filter = TextBox2(tauon)
@@ -133,6 +135,7 @@ class TransEditBox:
 		self.lookup_scroll = 0
 		self.scope_open = False
 		self._close_tools()
+		self._close_presets()
 		self.notice = ""
 		positions = sorted(set(self.gui.shift_selection))
 		if not positions and self.pctl.selected_ready():
@@ -291,6 +294,7 @@ class TransEditBox:
 			or self.loading
 			or self.scope_open
 			or (self.tools_menu is not None and self.tools_menu.active)
+			or (self.presets_menu is not None and self.presets_menu.active)
 			or not self.coll(self.art_rect)
 		):
 			return True
@@ -363,7 +367,7 @@ class TransEditBox:
 
 	def _select_row(self, entry: TagEntry) -> None:
 		if (
-			self.tab in (1, 2)
+			self.tab == 1
 			and self.row_key == entry.key
 			and self._row_dirty()
 			and not self.row_box.text
@@ -416,7 +420,7 @@ class TransEditBox:
 		self.row_scroll = 0
 		self.key_active = False
 
-	def _misc_rows(self, lyrics: bool = False) -> list[TagEntry]:
+	def _misc_rows(self, lyrics: bool | None = None) -> list[TagEntry]:
 		rows = []
 		documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
 		appending = self.row_key is not None and self.row_value_index == -1 and self.row_value_slots is not None
@@ -445,11 +449,12 @@ class TransEditBox:
 				for index in range(max(1, *map(len, lists))):
 					values = [items[index] if index < len(items) else "" for items in lists]
 					value = values[0] if all(item == values[0] for item in values) else _("Different values")
-					rows.append(TagEntry(entry.key, value, entry.kind, lyrics=lyrics, value_index=index))
+					rows.append(TagEntry(entry.key, value, entry.kind, lyrics=entry.lyrics, value_index=index))
 				continue
 			rows.append(entry)
 		if appending:
-			rows.append(TagEntry(self.row_key, self.row_box.text or _("New value"), lyrics=lyrics, value_index=-1))
+			is_lyric = documents[0].is_lyric_key(documents[0].portable_key(self.row_key))
+			rows.append(TagEntry(self.row_key, self.row_box.text or _("New value"), lyrics=is_lyric, value_index=-1))
 			rows.sort(key=lambda row: row.key)
 		return rows
 
@@ -458,16 +463,13 @@ class TransEditBox:
 			return
 		try:
 			documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
-			if self.tab == 2 and any(not doc.is_lyric_key(doc.portable_key(key)) for doc in documents):
-				self.show_message(
-					_("Cannot add tag value"), _("This key is not a lyric tag. Add it in Misc."), mode="error"
-				)
-				return
 			keys = {doc.portable_key(key) for doc in documents}
+			is_lyric = documents[0].is_lyric_key(documents[0].portable_key(key))
 			entry = next(
-				(row for row in self.session.entries(self.tab == 2) if row.key in keys),
-				TagEntry(documents[0].portable_key(key), "", lyrics=self.tab == 2),
+				(row for row in self.session.entries(None) if row.key in keys),
+				TagEntry(documents[0].portable_key(key), "", lyrics=is_lyric),
 			)
+			entry = replace(entry, key=documents[0].portable_key(key))
 			if not entry.editable or entry.kind not in ("text", "JSON text values"):
 				self._load_row(entry)
 				self.notice = _("This tag has a structured value; edit it as a whole.")
@@ -475,7 +477,7 @@ class TransEditBox:
 				self._load_row(entry)
 				self.notice = _("This tag stores one value; use a distinct description or language for another entry.")
 			else:
-				self._load_row(TagEntry(entry.key, "", lyrics=self.tab == 2, value_index=-1))
+				self._load_row(TagEntry(entry.key, "", lyrics=is_lyric, value_index=-1))
 			self.new_key.clear()
 			self.row_focus_new = True
 			self.gui.request_frame()
@@ -515,7 +517,7 @@ class TransEditBox:
 				self.boxes[key].set_text(self.field_baseline[key])
 			self.field_baseline[key] = self.boxes[key].text
 		elif self.row_key == key:
-			entry = next((row for row in self.session.entries(self.tab == 2) if row.key == key), None)
+			entry = next((row for row in self.session.entries(None) if row.key == key), None)
 			if entry is None:
 				self.row_key = None
 			else:
@@ -670,24 +672,90 @@ class TransEditBox:
 			self.show_message(_("Could not fix Mojibake"), str(error), mode="error")
 
 	def _close_tools(self) -> None:
-		if self.tools_menu is None:
+		self._close_menu(self.tools_menu)
+
+	def _close_presets(self) -> None:
+		self._close_menu(self.presets_menu)
+
+	@staticmethod
+	def _close_menu(menu: Menu | None) -> None:
+		if menu is None:
 			return
 		from tauon.t_modules.t_main import Menu  # noqa: PLC0415
 
-		self.tools_menu.active = False
+		menu.active = False
 		Menu.active = any(menu.active for menu in Menu.instances)
+
+	def open_presets(self, x: int, y: int) -> None:
+		from tauon.t_modules.t_main import Menu, MenuItem  # noqa: PLC0415
+
+		self._close_tools()
+		self.scope_open = False
+		if self.presets_menu is None:
+			self.presets_menu = Menu(self.tauon, 180)
+			for label, field in (
+				(_("Unsynced lyrics"), "unsyncedlyrics"),
+				(_("Synced lyrics"), "syncedlyrics"),
+				(_("Comment"), "comment"),
+				(_("BPM"), "bpm"),
+				(_("Copyright"), "copyright"),
+				(_("ISRC"), "isrc"),
+				(_("Language"), "language"),
+				(_("Grouping"), "grouping"),
+				(_("Subtitle"), "subtitle"),
+			):
+				self.presets_menu.add(MenuItem(label, partial(self.add_preset, field)))
+			for index, (title, fields) in enumerate(
+				(
+					(
+						_("Credits"),
+						(
+							(_("Original artist"), "originalartist"),
+							(_("Conductor"), "conductor"),
+							(_("Remixer"), "remixer"),
+							(_("Lyricist"), "lyricist"),
+							(_("Encoded by"), "encodedby"),
+						),
+					),
+					(
+						_("Sort order"),
+						(
+							(_("Artist"), "artistsort"),
+							(_("Album"), "albumsort"),
+							(_("Title"), "titlesort"),
+						),
+					),
+				)
+			):
+				self.presets_menu.add_sub(title, 180)
+				for label, field in fields:
+					self.presets_menu.add_to_sub(index, MenuItem(label, partial(self.add_preset, field)))
+		self._activate_menu(self.presets_menu, x, y)
+
+	def add_preset(self, field: str) -> None:
+		self._close_presets()
+		doc = self.session.effective_document(self.session.scope_documents[0])
+		key = (
+			doc.lyric_defaults()[field == "syncedlyrics"]
+			if field in ("unsyncedlyrics", "syncedlyrics")
+			else doc.key_for(field)
+		)
+		self._add_misc_key(key)
 
 	def open_tools(self, x: int, y: int) -> None:
 		from tauon.t_modules.t_main import Menu, MenuItem  # noqa: PLC0415
 
 		self.scope_open = False
+		self._close_presets()
 		if self.tools_menu is None:
 			self.tools_menu = Menu(self.tauon, 200)
 			self.tools_menu.add(MenuItem(_("Upgrade ID3 tags to v2.4"), self.upgrade_id3))
 			self.tools_menu.add(MenuItem(_("Fix Mojibake (auto)"), self.fix_mojibake))
-		menu = self.tools_menu
+		self._activate_menu(self.tools_menu, x, y)
+
+	def _activate_menu(self, menu: Menu, x: int, y: int) -> None:
 		if menu.active:
-			self._close_tools()
+			self._close_menu(menu)
 			return
 		menu.rescale()
 		menu.update_widths()
@@ -840,6 +908,7 @@ class TransEditBox:
 		self.lookup_dragging = False
 		self.scope_open = False
 		self._close_tools()
+		self._close_presets()
 		self.lookup_progress = (
 			_("Loading album tracks…")
 			if preview is not None
@@ -1224,6 +1293,7 @@ class TransEditBox:
 				w=round(21 * scale),
 				h=round(19 * scale),
 				font=14,
+				text_y_offset=1,
 				text_colour=self.readable_colour(CONTROL_GREY, self.colours.box_background),
 				press=self.input_enabled and self.inp.mouse_click,
 				tooltip=_("Insert a separator to add another value to this tag."),
@@ -1267,27 +1337,27 @@ class TransEditBox:
 			_("Track number / total"),
 			_("Disc number / total"),
 			_("Genre"),
+			_("Label"),
+			_("Composer"),
 		)
+		groups = ((0,), (1,), (2,), (3,), (4, 5), (6, 7), (8,), (9, 10))
 		if self.input_enabled and self.inp.key_tab_press:
 			direction = -1 if self.inp.key_shift_down or self.inp.key_shiftr_down else 1
-			self.active_field = (self.active_field + direction) % 9
+			self.active_field = (self.active_field + direction) % len(labels)
 			self.inp.key_tab_press = False
-			self.main_page = next(
-				index
-				for index, group in enumerate(((0,), (1,), (2,), (3,), (4, 5), (6, 7), (8,)))
-				if self.active_field in group
-			)
-		groups = ((0,), (1,), (2,), (3,), (4, 5), (6, 7), (8,))
-		rows_per_page = max(1, min(7, (height - round(64 * scale)) // round(42 * scale)))
-		self.main_page = min(self.main_page, 7 - rows_per_page)
+			self.main_page = next(index for index, group in enumerate(groups) if self.active_field in group)
+		row_height = round(42 * scale)
+		rows_per_page = max(1, min(len(groups), (height - round(40 * scale)) // row_height))
+		if rows_per_page < len(groups):
+			rows_per_page = max(1, (height - round(64 * scale)) // row_height)
+		self.main_page = min(self.main_page, len(groups) - rows_per_page)
 		field_y = y
-		if rows_per_page < 7:
+		if rows_per_page < len(groups):
 			if self.draw.button("↑", x + left_width - round(55 * scale), field_y):
 				self.main_page = max(0, self.main_page - rows_per_page)
 			if self.draw.button("↓", x + left_width - round(25 * scale), field_y):
-				self.main_page = min(7 - rows_per_page, self.main_page + rows_per_page)
+				self.main_page = min(len(groups) - rows_per_page, self.main_page + rows_per_page)
 			field_y += round(25 * scale)
-		row_height = round(42 * scale)
 		for row, indices in enumerate(groups[self.main_page : self.main_page + rows_per_page]):
 			for column, index in enumerate(indices):
 				field_width = left_width if len(indices) == 1 else left_width // 2 - round(5 * scale)
@@ -1392,8 +1462,7 @@ class TransEditBox:
 
 	def _table(self, x: int, y: int, width: int, height: int) -> None:
 		scale = self.gui.scale
-		lyrics = self.tab == 2
-		rows = self._misc_rows(lyrics)
+		rows = self._misc_rows()
 		compact = height < round(180 * scale)
 		reserved_height = 100 if compact else 220
 		page_size = max(1, min(6, int(height / scale - reserved_height) // 24))
@@ -1460,7 +1529,9 @@ class TransEditBox:
 		add_x = x + width - add_width
 		self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11)
 		add_y = y + round(18 * scale)
-		rect = (add_x, add_y, add_width - round(49 * scale), round(23 * scale))
+		preset_space = round(80 * scale)
+		preset_gap = round(4 * scale)
+		rect = (add_x, add_y, add_width - round(49 * scale) - preset_space - preset_gap, round(23 * scale))
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
 		if self.inp.mouse_click and self.coll(rect):
 			self.key_active = True
@@ -1471,14 +1542,28 @@ class TransEditBox:
 			active=self.input_enabled and self.key_active,
 			width=rect[2] - round(6 * scale),
 		)
-		if self.draw.button(_("Add"), x + width - round(44 * scale), add_y, w=round(44 * scale), h=round(23 * scale)):
+		if self.draw.button(
+			_("Presets") + " ▾",
+			x + width - preset_space,
+			add_y,
+			w=preset_space,
+			h=round(23 * scale),
+			press=self.input_enabled and self.inp.mouse_click,
+		):
+			self.open_presets(x + width, add_y + round(26 * scale))
+			self.inp.mouse_click = False
+		if self.draw.button(
+			_("Add"),
+			x + width - round(44 * scale) - preset_space - preset_gap,
+			add_y,
+			w=round(44 * scale),
+			h=round(23 * scale),
+		):
 			key = self.new_key.text.strip()
 			if key:
 				self._add_misc_key(key)
 		if not compact:
 			y = add_y + round(33 * scale)
-		if self.row_key is None and lyrics and rows:
-			self._select_row(rows[0])
 		if self.row_key is None:
 			self.ddt.text(
 				(x, y),
@@ -1540,9 +1625,9 @@ class TransEditBox:
 
 	def _tabs(self, x: int, y: int, width: int) -> None:
 		scale = self.gui.scale
-		tab_width = min(round(94 * scale), width // 3)
+		tab_width = min(round(94 * scale), width // 2)
 		self.ddt.rect((x, y + round(32 * scale), width, max(1, round(scale))), self.colours.box_text_border)
-		for index, label in enumerate((_("Main"), _("Misc"), _("Lyrics"))):
+		for index, label in enumerate((_("Main"), _("Misc"))):
 			rect = (x + index * tab_width, y, tab_width, round(32 * scale))
 			self.fields.add(rect)
 			if self.tab == index or self.coll(rect):
@@ -1595,6 +1680,7 @@ class TransEditBox:
 		self._close_lookup()
 		self.preview.destruct()
 		self._close_tools()
+		self._close_presets()
 
 	def _accept_lookup_results(self, result: LookupResult | None) -> None:
 		previous = self.lookup_results
@@ -1683,10 +1769,13 @@ class TransEditBox:
 			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13)
 			return
 		menu_open = self.tools_menu is not None and self.tools_menu.active
+		presets_open = self.presets_menu is not None and self.presets_menu.active
 		if self.inp.key_esc_press:
 			self.inp.key_esc_press = False
 			if menu_open:
 				self._close_tools()
+			elif presets_open:
+				self._close_presets()
 			elif self.lookup_open:
 				self._close_lookup()
 			elif self.scope_open:
@@ -1694,7 +1783,7 @@ class TransEditBox:
 			else:
 				self._close()
 			return
-		self.input_enabled = not (menu_open or self.scope_open or self.lookup_open)
+		self.input_enabled = not (menu_open or presets_open or self.scope_open or self.lookup_open)
 		click = self.inp.mouse_click
 		right_click = getattr(self.inp, "right_click", False)
 		level_right_click = getattr(self.inp, "level_2_right_click", False)

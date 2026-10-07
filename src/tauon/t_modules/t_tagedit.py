@@ -42,14 +42,16 @@ MAIN_FIELDS = (
 	"tracknumber",
 	"discnumber",
 	"genre",
+	"label",
+	"composer",
 	"rating",
 )
-VALUE_FIELDS = {"title", "album", "artist", "albumartist", "genre"}
+VALUE_FIELDS = {"title", "album", "artist", "albumartist", "genre", "label", "composer"}
 POPM_LEVELS = (0, 1, 64, 128, 196, 255)
 ID3_KEYS = dict(
 	zip(
 		MAIN_FIELDS,
-		("TIT2", "TALB", "TPE1", "TPE2", "TDRC", "TDOR", "TRCK", "TPOS", "TCON", "TXXX:FMPS_RATING"),
+		("TIT2", "TALB", "TPE1", "TPE2", "TDRC", "TDOR", "TRCK", "TPOS", "TCON", "TPUB", "TCOM", "TXXX:FMPS_RATING"),
 		strict=True,
 	)
 )
@@ -66,6 +68,8 @@ MP4_KEYS = dict(
 			"trkn",
 			"disk",
 			"©gen",
+			"----:com.apple.iTunes:LABEL",
+			"©wrt",
 			"----:com.apple.iTunes:FMPS_RATING",
 		),
 		strict=True,
@@ -81,6 +85,8 @@ APE_KEYS = {
 	"tracknumber": "Track",
 	"discnumber": "Disc",
 	"genre": "Genre",
+	"label": "Label",
+	"composer": "Composer",
 	"rating": "FMPS_RATING",
 }
 COMMON_ID3_KEYS = {
@@ -91,10 +97,10 @@ COMMON_ID3_KEYS = {
 	"isrc": "TSRC",
 	"language": "TLAN",
 	"conductor": "TPE3",
+	"originalartist": "TOPE",
 	"remixer": "TPE4",
 	"lyricist": "TEXT",
 	"encodedby": "TENC",
-	"organization": "TPUB",
 	"artistsort": "TSOP",
 	"albumsort": "TSOA",
 	"titlesort": "TSOT",
@@ -111,6 +117,32 @@ COMMON_MP4_KEYS = {
 	"grouping": "©grp",
 	"bpm": "tmpo",
 	"compilation": "cpil",
+	"isrc": "----:com.apple.iTunes:ISRC",
+	"language": "----:com.apple.iTunes:LANGUAGE",
+	"conductor": "----:com.apple.iTunes:CONDUCTOR",
+	"originalartist": "----:com.apple.iTunes:ORIGINALARTIST",
+	"remixer": "----:com.apple.iTunes:REMIXER",
+	"lyricist": "----:com.apple.iTunes:LYRICIST",
+	"encodedby": "©too",
+	"subtitle": "----:com.apple.iTunes:SUBTITLE",
+}
+COMMON_APE_KEYS = {
+	"comment": "Comment",
+	"bpm": "BPM",
+	"copyright": "Copyright",
+	"isrc": "ISRC",
+	"language": "Language",
+	"conductor": "Conductor",
+	"originalartist": "Original Artist",
+	"remixer": "MixArtist",
+	"lyricist": "Lyricist",
+	"encodedby": "EncodedBy",
+	"artistsort": "Artistsort",
+	"albumsort": "Albumsort",
+	"titlesort": "Titlesort",
+	"grouping": "Grouping",
+	"subtitle": "Subtitle",
+	"compilation": "Compilation",
 }
 MP4_TEXT_KEYS = {"aART", "sonm", "soal", "soar", "soaa", "soco", "desc", "ldes", "cprt"}
 ALIASES = {
@@ -120,6 +152,7 @@ ALIASES = {
 	"disc": "discnumber",
 	"disk": "discnumber",
 	"album artist": "albumartist",
+	"original artist": "originalartist",
 	"comment": "comment",
 	"composer": "composer",
 	"original year": "originaldate",
@@ -127,7 +160,9 @@ ALIASES = {
 	"disc number": "discnumber",
 	"disk number": "discnumber",
 	"album_artist": "albumartist",
-	"publisher": "organization",
+	"publisher": "label",
+	"organization": "label",
+	"record label": "label",
 }
 LYRIC_NAMES = {"lyrics", "unsyncedlyrics", "syncedlyrics"}
 ART_NAMES = {"metadata_block_picture", "coverart", "coverartmime", "cover art (front)", "cover art (back)", "covr"}
@@ -267,13 +302,16 @@ class TagDocument:
 			return next((native for native in self.tags.keys() if native.lower() == key.lower()), key)
 		if self.family == "APE":
 			candidates = (
-				("Originaldate", "Originalyear") if field == "originaldate" else (APE_KEYS.get(field, field), field)
+				("Originaldate", "Originalyear")
+				if field == "originaldate"
+				else (APE_KEYS.get(field, COMMON_APE_KEYS.get(field, field)), field)
 			)
 		else:
 			candidates = {
 				"rating": ("fmps_rating",),
 				"originaldate": ("originaldate", "originalyear"),
 				"albumartist": ("albumartist", "album artist"),
+				"label": ("label", "organization", "publisher"),
 			}.get(field, (field,))
 		for key in candidates:
 			if key in self.tags:
@@ -292,6 +330,8 @@ class TagDocument:
 			)
 		elif field == "albumartist" and self.family in ("APE", "Vorbis"):
 			aliases.update(("albumartist", "album artist"))
+		elif field == "label" and self.family == "Vorbis":
+			aliases.update(("label", "organization", "publisher"))
 		elif field == "date" and self.family == "APE":
 			aliases.update(("year", "date"))
 		elif field in ("date", "originaldate") and self.family == "ID3":
@@ -489,6 +529,10 @@ class TagDocument:
 			return key if self.family == "ID3" and key.startswith("SYLT:") else self.lyric_defaults()[1]
 		if key.lower() == "lyrics" and self.family in ("ID3", "MP4"):
 			return self.lyric_defaults()[0]
+		for mapping in (ID3_KEYS, MP4_KEYS, COMMON_ID3_KEYS, COMMON_MP4_KEYS, COMMON_APE_KEYS):
+			for name, native in mapping.items():
+				if key == native and name not in ("date", "originaldate", "rating", "tracknumber", "discnumber"):
+					return self.key_for(name)
 		if key.startswith("TXXX:") and self.family != "ID3":
 			return self.resolve_key(key[5:])
 		if key.startswith("----:") and self.family != "MP4":
@@ -504,7 +548,7 @@ class TagDocument:
 	def set_main(self, field: str, text: str | list[str]) -> None:
 		key = self.key_for(field)
 		if isinstance(text, list):
-			if field not in ("title", "album", "artist", "albumartist", "genre"):
+			if field not in VALUE_FIELDS:
 				raise ValueError(f"{field} requires a single value.")
 			for native in self.main_keys(field):
 				self._set_native_entry(native, text)
@@ -1116,7 +1160,7 @@ class TagEditSession:
 		self.stage_tracks(updates)
 		return len(updates), sum(doc.family != "ID3" for doc in self.scope_documents)
 
-	def entries(self, lyrics: bool, include_changes: bool = True) -> list[TagEntry]:
+	def entries(self, lyrics: bool | None, include_changes: bool = True) -> list[TagEntry]:
 		documents = [self.effective_document(doc) if include_changes else doc for doc in self.scope_documents]
 		maps = [doc.entries() for doc in documents]
 		keys = set().union(*(mapping.keys() for mapping in maps))
@@ -1130,12 +1174,14 @@ class TagEditSession:
 			present = [mapping.get(key) for mapping in maps]
 			is_lyric = key in {native_key for doc in documents for native_key in doc.lyric_defaults()}
 			sample = next((entry for entry in present if entry is not None), TagEntry(key, "", lyrics=is_lyric))
-			if sample.lyrics != lyrics or (not lyrics and key in main_keys):
+			if (lyrics is not None and sample.lyrics != lyrics) or (not sample.lyrics and key in main_keys):
 				continue
 			values = [entry.value if entry else "" for entry in present]
 			value = values[0] if all(value == values[0] for value in values) else "<Multiple values>"
 			result.append(
-				TagEntry(key, value, sample.kind, all(entry is None or entry.editable for entry in present), lyrics)
+				TagEntry(
+					key, value, sample.kind, all(entry is None or entry.editable for entry in present), sample.lyrics
+				)
 			)
 		return result
 
@@ -1159,7 +1205,7 @@ class TagEditSession:
 		for doc in self.scope_documents:
 			value = text
 			candidate = self.effective_document(doc)
-			if name in ("title", "album", "artist", "albumartist", "genre") and text == candidate.main_value(name):
+			if name in VALUE_FIELDS and text == candidate.main_value(name):
 				native = candidate.tags.get(candidate.key_for(name))
 				if isinstance(native, TextFrame):
 					value = list(map(str, native.text))
@@ -1226,9 +1272,7 @@ class TagEditSession:
 						del pending.entries[staged_key]
 				if key in main_keys:
 					name = main_keys[key]
-					pending.main[name] = (
-						fixed if name in ("title", "album", "artist", "albumartist", "genre") else fixed[0]
-					)
+					pending.main[name] = fixed if name in VALUE_FIELDS else fixed[0]
 				else:
 					pending.entries[key] = fixed
 				changed = True
