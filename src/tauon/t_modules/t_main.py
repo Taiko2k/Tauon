@@ -17128,6 +17128,24 @@ class Tauon:
 
 				playlist = self.gen_folder_top_rating(0, custom_list=playlist)
 
+			elif cm.startswith(("rata>", "rata<", "rata=")):
+				try:
+					value = float(cm[5:]) * 2
+				except ValueError:
+					logging.exception("Invalid album rating filter")
+					errors = True
+				else:
+					temp = []
+					for item in playlist:
+						rating = self.album_star_store.get_rating(self.pctl.get_track(item))
+						if (
+							(cm[4] == ">" and rating > value)
+							or (cm[4] == "<" and rating < value)
+							or (cm[4] == "=" and rating == value)
+						):
+							temp.append(item)
+					playlist = temp
+
 			elif cm == "rat>":
 				def rat_key(track_id: int) -> int:
 					return self.star_store.get_rating(track_id)
@@ -40506,6 +40524,9 @@ class RenamePlaylistBox:
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "rat>3.5", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Track rating 0-5: >, <, ="), hint_colour, hint_font)
+			yy += round(12 * self.gui.scale)
+			self.ddt.text((xx, yy), "rata>3.5", code_colour, code_font)
+			self.ddt.text((xx2, yy), _("Album rating 0-5: >, <, ="), hint_colour, hint_font)
 			yy += round(12 * self.gui.scale)
 			self.ddt.text((xx, yy), "m>date", code_colour, code_font)
 			self.ddt.text((xx2, yy), _("Last Modified (YYYY-MM-DD): >, <"), hint_colour, hint_font)
