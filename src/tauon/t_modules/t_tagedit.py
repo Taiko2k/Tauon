@@ -9,12 +9,14 @@ from __future__ import annotations
 
 import base64
 import copy
+import ctypes
 import datetime
 import io
 import json
 import os
 import re
 import shutil
+import sys
 import tempfile
 from collections.abc import Callable, Iterator, MutableMapping
 from contextlib import suppress
@@ -25,7 +27,7 @@ import mutagen
 from mutagen._vorbis import VCommentDict
 from mutagen.apev2 import APEBinaryValue, APENoHeaderError, APETextValue, APEv2
 from mutagen.flac import FLAC, Picture
-from mutagen.id3 import APIC, ID3, POPM, SYLT, TCON, TXXX, UFID, USLT, Frames, TextFrame, UrlFrame
+from mutagen.id3 import APIC, ID3, POPM, SYLT, TCON, TXXX, UFID, USLT, Frames, TextFrame, TimeStampTextFrame, UrlFrame
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from PIL import Image
@@ -181,6 +183,19 @@ class TagEntry:
 def file_stamp(path: Path) -> tuple[int, int, int, int]:
 	stat = path.stat()
 	return stat.st_mtime_ns, stat.st_ctime_ns, stat.st_size, stat.st_ino
+
+
+def copy_tag_file(source: Path, destination: Path) -> None:
+	"""Preserve file metadata, including macOS extended attributes and ACLs."""
+	shutil.copy2(source, destination)
+	if sys.platform == "darwin":
+		copyfile = ctypes.CDLL("/usr/lib/libSystem.B.dylib", use_errno=True).copyfile
+		copyfile.argtypes = (ctypes.c_char_p, ctypes.c_char_p, ctypes.c_void_p, ctypes.c_uint32)
+		copyfile.restype = ctypes.c_int
+		# COPYFILE_METADATA = COPYFILE_ACL | COPYFILE_STAT | COPYFILE_XATTR.
+		if copyfile(os.fsencode(source), os.fsencode(destination), None, 7) != 0:
+			error = ctypes.get_errno()
+			raise OSError(error, os.strerror(error), str(source))
 
 
 def decode_sylt(frame: SYLT) -> str:
@@ -345,6 +360,8 @@ class TagDocument:
 		key = key.strip()
 		if not key:
 			raise ValueError("A tag key is required.")
+		if "\x00" in key:
+			raise ValueError("Tag keys cannot contain NUL characters.")
 		if key in self.tags:
 			return next(
 				native
@@ -392,7 +409,10 @@ class TagDocument:
 					value.format == 2,
 				)
 			elif isinstance(value, UFID) and value.owner == "http://musicbrainz.org":
-				text = value.data.decode("ascii")
+				try:
+					text = value.data.decode("ascii")
+				except UnicodeError:
+					text, kind, editable = "Undecodable identifier data", "binary", False
 			elif isinstance(value, USLT):
 				text = value.text
 			elif isinstance(value, TCON):
@@ -416,10 +436,9 @@ class TagDocument:
 					text = "\n".join(item.decode("utf-8") for item in value)
 				except UnicodeError:
 					text, kind, editable = "Undecodable freeform data", "binary", False
-			elif (
-				self.family == "MP4"
-				and isinstance(value, list)
-				and all(isinstance(item, (int, bool, tuple)) for item in value)
+			elif self.family == "MP4" and (
+				isinstance(value, bool)
+				or (isinstance(value, list) and all(isinstance(item, (int, bool, tuple)) for item in value))
 			):
 				text, kind = json.dumps(value), "JSON numbers / booleans"
 			else:
@@ -640,6 +659,8 @@ class TagDocument:
 				return
 		explicit_values = isinstance(text, list)
 		values = list(text) if explicit_values else text.splitlines() or [text]
+		if any("\x00" in value for value in values):
+			raise ValueError("Tag text cannot contain NUL characters; use separate values instead.")
 		if explicit_values and len(values) > 1 and not self.supports_multiple_values(key):
 			raise ValueError(
 				f"{key} stores a single value; use distinct frame descriptions/languages for additional entries."
@@ -677,6 +698,17 @@ class TagDocument:
 				raise ValueError(f"Unsupported ID3 frame: {key}. Use TXXX:name for custom text.")
 			if frame.HashKey != key:
 				raise ValueError(f"Use the full native key: {frame.HashKey}")
+			if isinstance(frame, TimeStampTextFrame):
+				for value, stamp in zip(values, frame.text, strict=True):
+					normalized = value.replace("T", " ")
+					if str(stamp) != normalized or not re.fullmatch(
+						r"[0-9]{4}(?:-[0-9]{2}(?:-[0-9]{2}(?: [0-9]{2}(?::[0-9]{2}(?::[0-9]{2})?)?)?)?)?",
+						normalized,
+					):
+						raise ValueError(f"{key} requires YYYY-MM-DD HH:MM:SS or a shorter valid timestamp.")
+					parts = list(map(int, re.split(r"[- :]", normalized)))
+					defaults = [1, 1, 1, 0, 0, 0]
+					datetime.datetime(*(parts + defaults[len(parts) :]))  # noqa: DTZ001
 			self.tags.add(frame)
 		elif self.family == "MP4":
 			if key.startswith("----:"):
@@ -689,6 +721,11 @@ class TagDocument:
 			elif entry and entry.kind == "JSON numbers / booleans":
 				parsed = json.loads(text)
 				old = self.tags[key]
+				if isinstance(old, bool):
+					if not isinstance(parsed, bool):
+						raise TypeError(f"{key} requires true or false.")
+					self.tags[key] = parsed
+					return
 				if (
 					not isinstance(parsed, list)
 					or not parsed
@@ -710,7 +747,7 @@ class TagDocument:
 			elif key == "cpil":
 				if text.lower() not in ("true", "false"):
 					raise ValueError("Compilation must be true or false.")
-				self.tags[key] = [text.lower() == "true"]
+				self.tags[key] = text.lower() == "true"
 			elif key.startswith("©") or key in MP4_TEXT_KEYS:
 				self.tags[key] = [text] if key == "©lyr" and not explicit_values else values
 			else:
@@ -793,10 +830,28 @@ class TagDocument:
 					self.tags["metadata_block_picture"] = [base64.b64encode(picture.write()).decode("ascii")]
 
 	def save(self) -> None:
+		self.ensure_safe_offsets()
 		if self.family == "ID3":
 			self.audio.save(v2_version=self.id3_version, v23_sep=None)
 		else:
 			self.audio.save()
+
+	def ensure_safe_offsets(self) -> None:
+		if self.family != "ID3":
+			return
+
+		def check(tags: ID3) -> None:
+			for frame in tags.values():
+				if frame.FrameID == "ASPI" or (
+					frame.FrameID == "CHAP" and (frame.start_offset != 0xFFFFFFFF or frame.end_offset != 0xFFFFFFFF)
+				):
+					raise ValueError(
+						f"Cannot safely preserve ID3 byte offsets in {self.path.name}. Use an external editor."
+					)
+				if hasattr(frame, "sub_frames"):
+					check(frame.sub_frames)
+
+		check(self.tags)
 
 	def upgrade_id3(self) -> None:
 		if self.family != "ID3":
@@ -861,6 +916,8 @@ class TagDocument:
 	def ensure_unchanged(self) -> None:
 		if file_stamp(self.path) != self.stamp:
 			raise ValueError(f"File changed since opening the editor: {self.path.name}. Reopen to load current tags.")
+		if self.path.stat().st_nlink > 1:
+			raise ValueError(f"Cannot safely replace a file with hard links: {self.path.name}. Use an external editor.")
 
 
 @dataclass
@@ -1060,6 +1117,8 @@ class TagEditSession:
 
 	@staticmethod
 	def _apply(doc: TagDocument, changes: TagChanges) -> None:
+		if changes.changed:
+			doc.ensure_safe_offsets()
 		if changes.changed and doc.legacy_opaque:
 			raise ValueError(
 				f"Cannot safely upgrade opaque ID3v2.2 frames in {doc.path.name}. Use an external tag editor."
@@ -1290,6 +1349,7 @@ class TagEditSession:
 		documents = [doc for doc in self.documents if self.pending[doc.path].changed]
 		for doc in documents:
 			self.effective_document(doc)
+			doc.ensure_unchanged()
 		prepared: list[tuple[TagDocument, Path, Path]] = []
 		committed = []
 		retained = set()
@@ -1310,8 +1370,8 @@ class TagEditSession:
 				os.close(backup_fd)
 				staged, backup = Path(staged_name), Path(backup_name)
 				prepared.append((doc, staged, backup))
-				shutil.copy2(doc.path, staged)
-				shutil.copy2(doc.path, backup)
+				copy_tag_file(doc.path, staged)
+				copy_tag_file(doc.path, backup)
 				candidate = TagDocument(staged)
 				self._apply(candidate, self.pending[doc.path])
 				candidate.save()
@@ -1319,10 +1379,14 @@ class TagEditSession:
 			for doc, staged, backup in prepared:
 				doc.ensure_unchanged()
 				staged.replace(doc.path)
-				committed.append((doc, backup))
+				committed.append((doc, backup, None))
+				committed[-1] = (doc, backup, file_stamp(doc.path))
 		except Exception as error:
-			for doc, backup in reversed(committed):
+			for doc, backup, stamp in reversed(committed):
 				try:
+					if stamp is None or file_stamp(doc.path) != stamp:
+						retained.add(backup)
+						continue
 					backup.replace(doc.path)
 				except OSError:
 					retained.add(backup)
