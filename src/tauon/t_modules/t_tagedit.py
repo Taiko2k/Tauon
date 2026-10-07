@@ -26,12 +26,25 @@ from pathlib import Path
 import mutagen
 from mutagen._vorbis import VCommentDict
 from mutagen.apev2 import APEBinaryValue, APENoHeaderError, APETextValue, APEv2
+from mutagen.asf import ASF, ASFByteArrayAttribute, ASFDWordAttribute, ASFUnicodeAttribute
 from mutagen.flac import FLAC, Picture
 from mutagen.id3 import APIC, ID3, POPM, SYLT, TCON, TXXX, UFID, USLT, Frames, TextFrame, TimeStampTextFrame, UrlFrame
 from mutagen.mp3 import MP3
 from mutagen.mp4 import MP4, MP4Cover, MP4FreeForm
 from PIL import Image
 
+from tauon.t_modules.t_asf import (
+	ASF_ALIASES,
+	ASF_KEYS,
+	ASF_RATING_LEVELS,
+	AsfPicture,
+	asf_field_key,
+	asf_field_values,
+	asf_key,
+	asf_pictures,
+	asf_rating,
+	asf_text_values,
+)
 from tauon.t_modules.t_extra import j_chars
 
 MAIN_FIELDS = (
@@ -167,7 +180,15 @@ ALIASES = {
 	"record label": "label",
 }
 LYRIC_NAMES = {"lyrics", "unsyncedlyrics", "syncedlyrics"}
-ART_NAMES = {"metadata_block_picture", "coverart", "coverartmime", "cover art (front)", "cover art (back)", "covr"}
+ART_NAMES = {
+	"metadata_block_picture",
+	"coverart",
+	"coverartmime",
+	"cover art (front)",
+	"cover art (back)",
+	"covr",
+	"wm/picture",
+}
 ARTWORK_TYPES = {0: "Other", 3: "Front cover", 4: "Back cover", 5: "Leaflet", 6: "Media", 8: "Artist"}
 
 
@@ -308,6 +329,9 @@ class TagDocument:
 		elif isinstance(self.audio, MP4):
 			self.family = "MP4"
 			self.label = "MP4 / iTunes"
+		elif isinstance(self.audio, ASF):
+			self.family = "ASF"
+			self.label = "ASF / Windows Media"
 		elif isinstance(self.tags, VCommentDict):
 			self.family = "Vorbis"
 			self.label = "Vorbis comments" + (" / FLAC pictures" if isinstance(self.audio, FLAC) else "")
@@ -319,6 +343,8 @@ class TagDocument:
 			raise ValueError(f"File changed while reading: {self.path.name}")
 
 	def key_for(self, field: str) -> str:
+		if self.family == "ASF":
+			return asf_field_key(self.tags, field)
 		if self.family == "ID3":
 			if self.id3_version == 3 and field in ("date", "originaldate"):
 				return {"date": "TYER", "originaldate": "TORY"}[field]
@@ -356,7 +382,9 @@ class TagDocument:
 		"""Include existing aliases owned by a Main field so clearing cannot revive them."""
 		key = self.key_for(field)
 		aliases = {key.lower()}
-		if field == "originaldate" and self.family != "ID3":
+		if self.family == "ASF":
+			aliases.update(native.lower() for native in ASF_ALIASES.get(field, ()))
+		elif field == "originaldate" and self.family != "ID3":
 			aliases.update(
 				{"----:com.apple.itunes:originaldate", "----:com.apple.itunes:originalyear"}
 				if self.family == "MP4"
@@ -387,6 +415,10 @@ class TagDocument:
 				for native in self.tags.keys()
 				if native == key or (self.family in ("APE", "Vorbis") and native.lower() == key.lower())
 			)
+		if self.family == "ASF":
+			native = asf_key(self.tags, key)
+			if native in self.tags:
+				return native
 		if self.family in ("APE", "Vorbis") and key.lower() == "originalyear":
 			return "Originalyear" if self.family == "APE" else "originalyear"
 		name = ALIASES.get(key.lower(), key.lower())
@@ -412,6 +444,8 @@ class TagDocument:
 	def is_lyric_key(self, key: str) -> bool:
 		if self.family == "ID3":
 			return key[:4] in ("USLT", "SYLT") or (key.startswith("TXXX:") and key[5:].lower() in LYRIC_NAMES)
+		if self.family == "ASF" and key.lower() in ("wm/lyrics", "wm/lyrics_synchronised"):
+			return True
 		return key.lower() in LYRIC_NAMES or key == "©lyr" or key.lower().endswith(":syncedlyrics")
 
 	def entries(self) -> dict[str, TagEntry]:
@@ -421,6 +455,26 @@ class TagDocument:
 			kind, editable = "text", True
 			if key.lower() in ART_NAMES or key.startswith("APIC:"):
 				text, kind, editable = "Embedded artwork (use Main)", "artwork", False
+			elif self.family == "ASF":
+				values = asf_text_values(self.tags, key)
+				if values is not None:
+					text = "\n".join(values)
+					if (
+						not lyrics
+						and key not in {self.key_for(name) for name in MAIN_FIELDS}
+						and any(not item or "\n" in item or "\r" in item for item in values)
+					):
+						text, kind = json.dumps(values, ensure_ascii=False), "JSON text values"
+				elif (
+					value
+					and all(isinstance(item.value, (int, bool)) for item in value)
+					and len({type(item) for item in value}) == 1
+				):
+					text, kind = json.dumps([item.value for item in value]), "JSON numbers / booleans"
+				else:
+					text, kind, editable = f"{len(value)} ASF attributes", "binary / structured", False
+				if any(item.language not in (None, 0) or item.stream not in (None, 0) for item in value):
+					kind, editable = "language / stream attributes", False
 			elif isinstance(value, SYLT):
 				text = decode_sylt(value)
 				kind, editable = (
@@ -486,6 +540,8 @@ class TagDocument:
 
 	def text_values(self, key: str) -> list[str] | None:
 		"""Read editable text as separate values, retaining embedded line breaks."""
+		if self.family == "ASF":
+			return asf_text_values(self.tags, key)
 		value = self.tags.get(key)
 		if value is None:
 			return None
@@ -528,6 +584,17 @@ class TagDocument:
 		)
 
 	def main_value(self, field: str) -> str:
+		if self.family == "ASF":
+			if field == "rating":
+				rating = asf_rating(self.tags)
+				return str(round(rating * 10)) if rating is not None else ""
+			values = asf_field_values(self.tags, field)
+			if field == "tracknumber" and self.key_for(field).lower() == "wm/track" and values:
+				try:
+					return str(int(values[0]) + 1)
+				except ValueError:
+					return ""
+			return "; ".join(values)
 		entry = self.entries().get(self.key_for(field))
 		if entry is None:
 			if field == "rating" and self.family == "ID3":
@@ -554,20 +621,22 @@ class TagDocument:
 		return entry.value.replace("\n", "; ")
 
 	def lyric_defaults(self) -> tuple[str, str]:
-		keys = {"ID3": ("USLT::eng", "SYLT::eng"), "MP4": ("©lyr", "----:com.apple.iTunes:SYNCEDLYRICS")}.get(
-			self.family, ("unsyncedlyrics", "syncedlyrics")
-		)
+		keys = {
+			"ID3": ("USLT::eng", "SYLT::eng"),
+			"MP4": ("©lyr", "----:com.apple.iTunes:SYNCEDLYRICS"),
+			"ASF": ("WM/Lyrics", "syncedlyrics"),
+		}.get(self.family, ("unsyncedlyrics", "syncedlyrics"))
 		return tuple(self.resolve_key(key) for key in keys)
 
 	def portable_key(self, key: str) -> str:
 		"""Map shared text conventions when a selection contains multiple formats."""
-		if key.startswith("USLT:") or key == "©lyr" or key.lower() == "unsyncedlyrics":
+		if key.startswith("USLT:") or key == "©lyr" or key.lower() in ("unsyncedlyrics", "wm/lyrics"):
 			return key if self.family == "ID3" and key.startswith("USLT:") else self.lyric_defaults()[0]
 		if key.startswith("SYLT:") or key.lower() in ("syncedlyrics", "----:com.apple.itunes:syncedlyrics"):
 			return key if self.family == "ID3" and key.startswith("SYLT:") else self.lyric_defaults()[1]
 		if key.lower() == "lyrics" and self.family in ("ID3", "MP4"):
 			return self.lyric_defaults()[0]
-		for mapping in (ID3_KEYS, MP4_KEYS, COMMON_ID3_KEYS, COMMON_MP4_KEYS, COMMON_APE_KEYS):
+		for mapping in (ID3_KEYS, MP4_KEYS, COMMON_ID3_KEYS, COMMON_MP4_KEYS, COMMON_APE_KEYS, ASF_KEYS):
 			for name, native in mapping.items():
 				if key == native and name not in ("date", "originaldate", "rating", "tracknumber", "discnumber"):
 					return self.key_for(name)
@@ -622,6 +691,17 @@ class TagDocument:
 					raise ValueError("Rating must be between 0 and 10.")
 				text = f"{rating / 10:.2f}" if rating else ""
 				popm_rating = POPM_LEVELS[(rating + 1) // 2]
+			if self.family == "ASF":
+				fmps_key = asf_key(self.tags, "FMPS_RATING")
+				self._set_native_entry(fmps_key, text)
+				wm_key = asf_key(self.tags, "WM/SharedUserRating")
+				if text:
+					if wm_key not in self.tags:
+						self.tags[wm_key] = [ASFDWordAttribute(0)]
+					self._set_native_entry(wm_key, str(ASF_RATING_LEVELS[(rating + 1) // 2]))
+				else:
+					self._set_native_entry(wm_key, "")
+				return
 			if self.family == "ID3":
 				frames = self.tags.getall("POPM")
 				if text and not frames:
@@ -631,6 +711,30 @@ class TagDocument:
 						del self.tags[frame.HashKey]
 					else:
 						frame.rating = popm_rating
+		if self.family == "ASF" and field in ("tracknumber", "discnumber", "originaldate"):
+			keys = self.main_keys(field)
+			key = asf_key(self.tags, ASF_KEYS[field])
+			if key not in keys:
+				keys.insert(0, key)
+			for native in keys:
+				value = text
+				if native.lower() == "wm/track":
+					value = str(max(0, int(text.split("/", 1)[0]) - 1)) if text else ""
+				elif native.lower() == "wm/originalreleaseyear":
+					value = text[:4]
+				if (
+					"/" in value
+					and self.tags.get(native)
+					and all(isinstance(item.value, int) for item in self.tags[native])
+				):
+					if any(
+						item.language not in (None, 0) or item.stream not in (None, 0) for item in self.tags[native]
+					):
+						raise ValueError(f"{native} contains language or stream attributes and cannot be edited.")
+					self.tags[native] = [ASFUnicodeAttribute(value)]
+				else:
+					self._set_native_entry(native, value)
+			return
 		if self.family == "ID3" and field in ("date", "originaldate"):
 			obsolete = ("TYER", "TDRC", "TDAT", "TIME") if field == "date" else ("TORY", "TDOR")
 			for native in obsolete:
@@ -771,6 +875,8 @@ class TagDocument:
 				self.tags[key] = [text] if key == "©lyr" and not explicit_values else values
 			else:
 				raise ValueError(f"Unsupported MP4 atom: {key}. Use ----:com.apple.iTunes:name for custom text.")
+		elif self.family == "ASF":
+			self._set_asf_entry(key, text, values)
 		elif self.family == "APE":
 			if (
 				not 2 <= len(key) <= 255
@@ -784,7 +890,30 @@ class TagDocument:
 				raise ValueError("Vorbis keys require printable ASCII characters other than '='.")
 			self.tags[key] = [text] if key.lower() in LYRIC_NAMES and not explicit_values else values
 
+	def _set_asf_entry(self, key: str, text: str, values: list[str]) -> None:
+		original = self.tags.get(key, [])
+		if original and not all(isinstance(item, ASFUnicodeAttribute) for item in original):
+			parsed = json.loads(text)
+			parsed = parsed if isinstance(parsed, list) else [parsed]
+			if not parsed or not all(type(value) is type(original[0].value) for value in parsed):
+				raise ValueError(f"{key} requires values of type {type(original[0].value).__name__}.")
+			values = parsed
+		elif self.is_lyric_key(key):
+			values = [text]
+		attributes = []
+		for index, value in enumerate(values):
+			attribute = copy.copy(original[min(index, len(original) - 1)]) if original else ASFUnicodeAttribute(value)
+			if isinstance(value, int) and not isinstance(value, bool):
+				bits = {3: 32, 4: 64, 5: 16}[attribute.TYPE]
+				if not 0 <= value < 1 << bits:
+					raise ValueError(f"{key} requires an unsigned {bits}-bit integer.")
+			attribute.value = value
+			attributes.append(attribute)
+		self.tags[key] = attributes
+
 	def artwork(self) -> list[bytes]:
+		if self.family == "ASF":
+			return [picture.data for index, picture in asf_pictures(self.tags)]
 		if self.family == "ID3":
 			return [frame.data for frame in self.tags.getall("APIC")]
 		if self.family == "MP4":
@@ -802,6 +931,13 @@ class TagDocument:
 		return result
 
 	def artwork_items(self) -> list[EmbeddedArtwork]:
+		if self.family == "ASF":
+			return [
+				EmbeddedArtwork(
+					picture.data, picture.picture_type, picture.description, asf_key(self.tags, "WM/Picture"), index
+				)
+				for index, picture in asf_pictures(self.tags)
+			]
 		if self.family == "ID3":
 			return [
 				EmbeddedArtwork(frame.data, int(frame.type), frame.desc, frame.HashKey)
@@ -891,6 +1027,22 @@ class TagDocument:
 				self.tags["covr"] = covers
 			else:
 				self.tags.pop("covr", None)
+		elif self.family == "ASF":
+			key = asf_key(self.tags, "WM/Picture")
+			values = list(self.tags.get(key, []))
+			if picture:
+				attribute = copy.copy(values[selected.index]) if selected else ASFByteArrayAttribute(b"")
+				attribute.value = AsfPicture(data, picture_type, picture.mime, picture.desc).to_bytes()
+				if selected:
+					values[selected.index] = attribute
+				else:
+					values.append(attribute)
+			elif selected:
+				del values[selected.index]
+			if values:
+				self.tags[key] = values
+			else:
+				self.tags.pop(key, None)
 		elif self.family == "APE":
 			key = selected.key if selected else "Cover Art (Front)" if picture_type == 3 else "Cover Art (Back)"
 			if selected and picture is None:
@@ -940,7 +1092,12 @@ class TagDocument:
 					raise ValueError("Embedded artwork must be a JPEG or PNG image.")
 				mime, width, height = Image.MIME[image.format], image.width, image.height
 				image.verify()
-		if self.family == "ID3":
+		if self.family == "ASF":
+			key = asf_key(self.tags, "WM/Picture")
+			self.tags.pop(key, None)
+			if data is not None:
+				self.tags[key] = [ASFByteArrayAttribute(AsfPicture(data, mime=mime).to_bytes())]
+		elif self.family == "ID3":
 			self.tags.delall("APIC")
 			if data is not None:
 				self.tags.add(APIC(encoding=1, mime=mime, type=3, desc="Cover", data=data))

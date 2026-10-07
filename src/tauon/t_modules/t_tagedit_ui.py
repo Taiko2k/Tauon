@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 from PIL import Image
 
 from tauon.t_modules.t_draw import QuickThumbnail
-from tauon.t_modules.t_extra import ColourRGBA, shooter
+from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, shooter
 from tauon.t_modules.t_lookup_cache import LookupCache
 from tauon.t_modules.t_musicbrainz_lookup import (
 	LOOKUP_LIMIT,
@@ -236,8 +236,17 @@ class TransEditBox:
 		with self.load_lock:
 			done, filename = self.load_done, self.load_file
 		total = len(self.tracks)
-		self.ddt.text((x, y), _("Reading tags… {N}/{T}").format(N=done, T=total), self.input_colour, 13, max_w=width)
-		self.ddt.text((x, y + round(25 * scale)), filename, self.label_colour, 11, max_w=width)
+		self.ddt.text(
+			(x, y),
+			_("Reading tags… {N}/{T}").format(N=done, T=total),
+			self.input_colour,
+			13,
+			max_w=width,
+			bg=self.colours.box_background,
+		)
+		self.ddt.text(
+			(x, y + round(25 * scale)), filename, self.label_colour, 11, max_w=width, bg=self.colours.box_background
+		)
 		bar = (x, y + round(55 * scale), width, round(14 * scale))
 		self.ddt.bordered_rect(
 			bar, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
@@ -974,9 +983,20 @@ class TransEditBox:
 			rect, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
 		)
 		self.ddt.text(
-			(x + round(9 * scale), y + round(4 * scale)), label, self.input_colour, 12, max_w=width - round(36 * scale)
+			(x + round(9 * scale), y + round(4 * scale)),
+			label,
+			self.input_colour,
+			12,
+			max_w=width - round(36 * scale),
+			bg=alpha_blend(self.colours.box_thumb_background, self.colours.box_background),
 		)
-		self.ddt.text((x + width - round(22 * scale), y + round(4 * scale)), "▾", self.label_colour, 12)
+		self.ddt.text(
+			(x + width - round(22 * scale), y + round(4 * scale)),
+			"▾",
+			self.label_colour,
+			12,
+			bg=alpha_blend(self.colours.box_thumb_background, self.colours.box_background),
+		)
 		if self.input_enabled and self.inp.mouse_click and self.coll(rect):
 			self.scope_open = not self.scope_open
 			self.scope_filter.clear()
@@ -999,11 +1019,18 @@ class TransEditBox:
 			self.inp.mouse_click = False
 			return
 		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_border, max(1, round(scale)))
-		self.ddt.text((px + round(12 * scale), py + round(8 * scale)), _("Choose tracks"), self.title_colour, 12)
+		self.ddt.text(
+			(px + round(12 * scale), py + round(8 * scale)),
+			_("Choose tracks"),
+			self.title_colour,
+			12,
+			bg=self.colours.box_background,
+		)
 		filter_rect = (px + round(9 * scale), py + round(29 * scale), pw - round(18 * scale), round(23 * scale))
 		self.ddt.bordered_rect(
 			filter_rect, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
 		)
+		filter_background = alpha_blend(self.colours.box_thumb_background, self.colours.box_background)
 		if not self.scope_filter.text:
 			self.ddt.text(
 				(px + round(16 * scale), py + round(33 * scale)),
@@ -1011,10 +1038,20 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=pw - round(32 * scale),
+				bg=filter_background,
 			)
-		self.scope_filter.draw(
-			px + round(12 * scale), py + round(30 * scale), self.input_colour, active=True, width=pw - round(24 * scale)
-		)
+		previous_background = self.ddt.text_background_colour
+		self.ddt.text_background_colour = filter_background
+		try:
+			self.scope_filter.draw(
+				px + round(12 * scale),
+				py + round(30 * scale),
+				self.input_colour,
+				active=True,
+				width=pw - round(24 * scale),
+			)
+		finally:
+			self.ddt.text_background_colour = previous_background
 		query = self.scope_filter.text.casefold()
 		if query != self.scope_query:
 			self.scope_scroll = 0.0
@@ -1077,13 +1114,16 @@ class TransEditBox:
 		for position, name, subtitle in options[start : start + visible]:
 			row = (px + round(5 * scale), ry, row_width, row_height - round(scale))
 			self.fields.add(row)
+			background = self.colours.box_background
 			if self.coll(row) or position == self.session.selected_document:
 				self.ddt.rect(row, self.colours.box_button_background_highlight)
+				background = alpha_blend(self.colours.box_button_background_highlight, background)
 			self.ddt.text(
 				(px + round(12 * scale), ry + round(3 * scale)),
 				"✓" if position == self.session.selected_document else "",
 				self.input_colour,
 				12,
+				bg=background,
 			)
 			self.ddt.text(
 				(px + round(35 * scale), ry + round(3 * scale)),
@@ -1091,6 +1131,7 @@ class TransEditBox:
 				self.input_colour,
 				12,
 				max_w=row_width - round(55 * scale),
+				bg=background,
 			)
 			self.ddt.text(
 				(px + round(35 * scale), ry + round(23 * scale)),
@@ -1098,10 +1139,15 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=row_width - round(38 * scale),
+				bg=background,
 			)
 			if position is not None and self.session.pending[self.session.documents[position].path].changed:
 				self.ddt.text(
-					(row[0] + row_width - round(15 * scale), ry + round(4 * scale)), "•", self.colours.level_green, 12
+					(row[0] + row_width - round(15 * scale), ry + round(4 * scale)),
+					"•",
+					self.colours.level_green,
+					12,
+					bg=background,
 				)
 			if self.inp.mouse_click and self.coll(row):
 				self.select_track(position)
@@ -1276,13 +1322,19 @@ class TransEditBox:
 		)
 		pad = round(14 * scale)
 		self.ddt.text(
-			(px + pad, py + round(12 * scale)), _("MusicBrainz Lookup"), self.title_colour, 14, max_w=pw - 2 * pad
+			(px + pad, py + round(12 * scale)),
+			_("MusicBrainz Lookup"),
+			self.title_colour,
+			14,
+			max_w=pw - 2 * pad,
+			bg=self.colours.box_background,
 		)
 		self.ddt.text(
 			(px + pad, py + round(33 * scale)),
 			_("{N} selected file(s)").format(N=len(self.session.documents)),
 			self.label_colour,
 			11,
+			bg=self.colours.box_background,
 		)
 		footer_y = py + ph - round(40 * scale)
 		results = self.lookup_results
@@ -1292,7 +1344,12 @@ class TransEditBox:
 		if results and results.warnings and not self.lookup_running and not self.lookup_error:
 			status = results.warnings[0]
 		self.ddt.text(
-			(px + pad, py + round(49 * scale)), status, self.label_colour, 11, max_w=pw - 2 * pad - round(46 * scale)
+			(px + pad, py + round(49 * scale)),
+			status,
+			self.label_colour,
+			11,
+			max_w=pw - 2 * pad - round(46 * scale),
+			bg=self.colours.box_background,
 		)
 		if self.lookup_running:
 			bar = (px + pad, py + round(68 * scale), pw - 2 * pad, round(12 * scale))
@@ -1310,6 +1367,7 @@ class TransEditBox:
 				f"{round(fraction * 100)}%",
 				self.label_colour,
 				11,
+				bg=self.colours.box_background,
 			)
 		content_y = py + round(88 * scale)
 		albums = results.albums[:LOOKUP_LIMIT] if results else []
@@ -1326,6 +1384,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=pw - 2 * pad,
+				bg=self.colours.box_background,
 			)
 			content_y += round(22 * scale)
 		content_y += round(8 * scale)
@@ -1366,8 +1425,10 @@ class TransEditBox:
 			ry = y + index * row_height
 			rect = (x, ry, width, row_height)
 			self.fields.add(rect)
+			background = self.colours.box_background
 			if index == self.lookup_album or self.coll(rect):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
+				background = alpha_blend(self.colours.box_button_background_highlight, background)
 			if index == self.lookup_album:
 				self.ddt.rect(
 					(x, ry + round(2 * scale), round(3 * scale), row_height - round(4 * scale)),
@@ -1395,6 +1456,7 @@ class TransEditBox:
 				self.input_colour,
 				11,
 				max_w=width * 0.6 - round(12 * scale),
+				bg=background,
 			)
 			self.ddt.text(
 				(x + width * 0.6, ry + round(2 * scale)),
@@ -1402,6 +1464,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=width * 0.4 - round(4 * scale),
+				bg=background,
 			)
 
 	def _lookup_table(self, x: int, y: int, width: int, height: int) -> None:
@@ -1452,7 +1515,9 @@ class TransEditBox:
 		columns = (0, number_width, number_width + artist_width)
 		widths = (number_width, artist_width, half - number_width - artist_width)
 		for side, label in ((x, _("Before")), (x + half + arrow_width, _("After"))):
-			self.ddt.text((side + round(3 * scale), y), label, self.label_colour, 11, max_w=half)
+			self.ddt.text(
+				(side + round(3 * scale), y), label, self.label_colour, 11, max_w=half, bg=self.colours.box_background
+			)
 			for offset, cell_width, heading in zip(columns, widths, ("#", _("Artist"), _("Title")), strict=True):
 				self.ddt.text(
 					(side + offset + round(3 * scale), y + round(16 * scale)),
@@ -1460,12 +1525,15 @@ class TransEditBox:
 					self.label_colour,
 					10,
 					max_w=cell_width - round(6 * scale),
+					bg=self.colours.box_background,
 				)
 		self.ddt.rect((x, y_rows - round(scale), width, max(1, round(scale))), self.colours.box_text_border)
 		for index, row in enumerate(rows[self.lookup_scroll : self.lookup_scroll + visible]):
 			ry = y_rows + index * row_height
+			background = self.colours.box_background
 			if index % 2 == 0:
 				self.ddt.rect((x, ry, width, row_height), self.colours.box_button_background_highlight)
+				background = alpha_blend(self.colours.box_button_background_highlight, background)
 			colour = (
 				self.input_colour
 				if row.matched
@@ -1481,6 +1549,7 @@ class TransEditBox:
 				colour,
 				11,
 				max_w=arrow_width - round(4 * scale),
+				bg=background,
 			)
 			for side, values in ((x, row.before), (x + half + arrow_width, row.after)):
 				for offset, cell_width, value in zip(columns, widths, values, strict=True):
@@ -1490,13 +1559,14 @@ class TransEditBox:
 						self.input_colour if side == x else colour,
 						11,
 						max_w=cell_width - round(6 * scale),
+						bg=background,
 					)
 
 	def _input(self, field: str, label: str, x: int, y: int, width: int) -> None:
 		scale = self.gui.scale
 		index = MAIN_FIELDS.index(field)
 		box = self.boxes[field]
-		self.ddt.text((x, y), label, self.label_colour, 11, max_w=width)
+		self.ddt.text((x, y), label, self.label_colour, 11, max_w=width, bg=self.colours.box_background)
 		y += round(16 * scale)
 		rect = (x, y, width, round(23 * scale))
 		self.fields.add(rect)
@@ -1541,6 +1611,7 @@ class TransEditBox:
 				self.label_colour,
 				12,
 				max_w=width - round(10 * scale) - control_width,
+				bg=self.colours.box_background,
 			)
 		if self._field_edited(field):
 			self._edited_outline(rect)
@@ -1591,7 +1662,7 @@ class TransEditBox:
 					field_width,
 				)
 		ry = field_y + rows_per_page * row_height + round(5 * scale)
-		self.ddt.text((x, ry), _("Track rating"), self.label_colour, 11)
+		self.ddt.text((x, ry), _("Track rating"), self.label_colour, 11, bg=self.colours.box_background)
 		value = self.boxes["rating"].text
 		score = int(value or "0")
 		self.tauon.draw_rating_widget(
@@ -1607,13 +1678,14 @@ class TransEditBox:
 			_("Mixed") if self.effective["rating"] is None and not value else f"{score}/10",
 			self.label_colour,
 			11,
+			bg=self.colours.box_background,
 		)
 		if self._field_edited("rating"):
 			self._edited_outline((x, ry, left_width, round(24 * scale)))
 			if self._rollback_button(x + left_width - round(23 * scale), ry):
 				self._rollback_field("rating", main=True)
 		ax = x + left_width + round(16 * scale)
-		self.ddt.text((ax, y), _("Embedded album art"), self.label_colour, 11)
+		self.ddt.text((ax, y), _("Embedded album art"), self.label_colour, 11, bg=self.colours.box_background)
 		target_label = (
 			_("Image {N}").format(N=self.art_index + 1)
 			if self.art_index is not None
@@ -1657,6 +1729,7 @@ class TransEditBox:
 				_("No embedded art"),
 				self.label_colour,
 				11,
+				bg=alpha_blend(background, self.colours.box_background),
 			)
 		for offset, text in enumerate(
 			(
@@ -1674,6 +1747,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=art_width,
+				bg=self.colours.box_background,
 			)
 		art_button_y = self.art_rect[1] + art_height + round((44 if height >= round(150 * scale) else 5) * scale)
 		if self.draw.button(
@@ -1686,7 +1760,13 @@ class TransEditBox:
 		):
 			self.remove_artwork()
 		if self.session.art_changed and art_button_y + round(29 * scale) < self.editor_bottom - round(65 * scale):
-			self.ddt.text((ax, art_button_y + round(29 * scale)), _("Artwork changed"), self.colours.level_green, 11)
+			self.ddt.text(
+				(ax, art_button_y + round(29 * scale)),
+				_("Artwork changed"),
+				self.colours.level_green,
+				11,
+				bg=self.colours.box_background,
+			)
 		if self.session.art_changed:
 			self._edited_outline(self.art_rect)
 			if self._rollback_button(ax + art_width - round(23 * scale), art_button_y):
@@ -1712,8 +1792,8 @@ class TransEditBox:
 			)
 			self.row_focus_new = False
 		self.row_page = min(self.row_page, pages - 1)
-		self.ddt.text((x, y), _("Native key"), self.label_colour, 11)
-		self.ddt.text((x + width * 0.45, y), _("Value / type"), self.label_colour, 11)
+		self.ddt.text((x, y), _("Native key"), self.label_colour, 11, bg=self.colours.box_background)
+		self.ddt.text((x + width * 0.45, y), _("Value / type"), self.label_colour, 11, bg=self.colours.box_background)
 		y += round((18 if compact else 20) * scale)
 		list_y = y
 		row_height = round((22 if compact else 24) * scale)
@@ -1721,14 +1801,17 @@ class TransEditBox:
 		for entry in rows[self.row_page * page_size : (self.row_page + 1) * page_size]:
 			rect = (x, y, width, row_height - round(scale))
 			self.fields.add(rect)
+			background = self.colours.box_background
 			if self._row_selected(entry):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
+				background = alpha_blend(self.colours.box_button_background_highlight, background)
 			self.ddt.text(
 				(x + round(3 * scale), y + round(2 * scale)),
 				("✓ " if self._entry_edited(entry.key) else "") + entry.key,
 				self.input_colour,
 				11,
 				max_w=width * 0.43,
+				bg=background,
 			)
 			self.ddt.text(
 				(x + width * 0.45, y + round(2 * scale)),
@@ -1736,6 +1819,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=width * 0.54,
+				bg=background,
 			)
 			if self._entry_edited(entry.key):
 				self._edited_outline(rect)
@@ -1752,6 +1836,7 @@ class TransEditBox:
 				f"{self.row_page + 1}/{pages}",
 				self.label_colour,
 				11,
+				bg=self.colours.box_background,
 			)
 			if self.draw.button(">", x + width - round(23 * scale), y, w=round(23 * scale), h=button_height):
 				self.row_page = min(pages - 1, self.row_page + 1)
@@ -1759,7 +1844,7 @@ class TransEditBox:
 		y += round(6 * scale)
 		add_width = min(round((210 if compact else 260) * scale), round(width * 0.48))
 		add_x = x + width - add_width
-		self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11)
+		self.ddt.text((add_x, y), _("Add key"), self.label_colour, 11, bg=self.colours.box_background)
 		add_y = y + round(18 * scale)
 		preset_space = round(80 * scale)
 		preset_gap = round(4 * scale)
@@ -1803,6 +1888,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=width - add_width - round(12 * scale) if compact else width,
+				bg=self.colours.box_background,
 			)
 			return
 		entry = next(
@@ -1815,12 +1901,27 @@ class TransEditBox:
 				kind += " · " + _("{N}/{T} files").format(
 					N=len(self.row_value_slots), T=len(self.session.scope_documents)
 				)
-			self.ddt.text((x, y), self.row_key + " · " + kind, self.label_colour, 11, max_w=width)
+			self.ddt.text(
+				(x, y), self.row_key + " · " + kind, self.label_colour, 11, max_w=width, bg=self.colours.box_background
+			)
 			y += round(20 * scale)
 		if not entry.editable:
-			self.ddt.text((x, y), _("Binary or structured tag: preserved without modification."), self.label_colour, 11)
+			self.ddt.text(
+				(x, y),
+				_("Binary or structured tag: preserved without modification."),
+				self.label_colour,
+				11,
+				bg=self.colours.box_background,
+			)
 			if not compact:
-				self.ddt.text((x, y + round(24 * scale)), entry.value, self.input_colour, 11, max_w=width)
+				self.ddt.text(
+					(x, y + round(24 * scale)),
+					entry.value,
+					self.input_colour,
+					11,
+					max_w=width,
+					bg=self.colours.box_background,
+				)
 			return
 		bottom = self.editor_bottom - round(65 * scale)
 		box_height = max(round(21 * scale), bottom - y - round(27 * scale))
@@ -1838,6 +1939,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=box_width - round(16 * scale),
+				bg=self.colours.box_background,
 			)
 		self.row_scroll += self.row_box.draw(
 			x + round(4 * scale),
@@ -1866,8 +1968,10 @@ class TransEditBox:
 		for index, label in enumerate((_("Main"), _("Misc"))):
 			rect = (x + index * tab_width, y, tab_width, round(32 * scale))
 			self.fields.add(rect)
+			background = self.colours.box_background
 			if self.tab == index or self.coll(rect):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
+				background = alpha_blend(self.colours.box_button_background_highlight, background)
 			if self.tab == index:
 				self.ddt.rect(
 					(rect[0], y + round(30 * scale), tab_width, max(2, round(2 * scale))), self.colours.level_green
@@ -1878,6 +1982,7 @@ class TransEditBox:
 				self.input_colour if self.tab == index else self.label_colour,
 				12,
 				max_w=tab_width - round(18 * scale),
+				bg=background,
 			)
 			if self.input_enabled and self.inp.mouse_click and self.coll(rect):
 				if not self._flush_fields():
@@ -1901,8 +2006,15 @@ class TransEditBox:
 			available = max(0, width)
 			if available <= 0:
 				break
-			self.ddt.text((x, y), label, self.readable_colour(colour, self.colours.box_background), 11, max_w=available)
-			advance = self.ddt.get_text_w(label, 11) + round(14 * scale)
+			self.ddt.text(
+				(x, y),
+				label,
+				self.readable_colour(colour, self.colours.box_background),
+				211,
+				max_w=available,
+				bg=self.colours.box_background,
+			)
+			advance = self.ddt.get_text_w(label, 211) + round(14 * scale)
 			x += advance
 			width -= advance
 
@@ -2008,7 +2120,7 @@ class TransEditBox:
 		body_x, body_y = x + round(16 * scale), y + round(140 * scale)
 		body_width, body_height = width - round(32 * scale), height - round(199 * scale)
 		title = _("Tag editor")
-		self.ddt.text((body_x, y + round(18 * scale)), title, self.title_colour, 215)
+		self.ddt.text((body_x, y + round(18 * scale)), title, self.title_colour, 215, bg=self.colours.box_background)
 		file_count = len(self.tracks) if self.loading else len(self.session.scope_documents)
 		file_label = _("{N} active file") if file_count == 1 else _("{N} active files")
 		self.ddt.text(
@@ -2017,12 +2129,13 @@ class TransEditBox:
 			self.label_colour,
 			11,
 			max_w=body_width - self.ddt.get_text_w(title, 215) - round(16 * scale),
+			bg=self.colours.box_background,
 		)
 		if self.loading:
 			self._loading_screen(body_x, body_y, body_width)
 			return
 		if self.gui.write_tag_in_progress:
-			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13)
+			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13, bg=self.colours.box_background)
 			return
 		menu_open = self.tools_menu is not None and self.tools_menu.active
 		presets_open = self.presets_menu is not None and self.presets_menu.active
@@ -2116,6 +2229,7 @@ class TransEditBox:
 				self.colours.level_green,
 				11,
 				max_w=pending_width,
+				bg=self.colours.box_background,
 			)
 		if notice and body_width > pending_width:
 			self.ddt.text(
@@ -2124,6 +2238,7 @@ class TransEditBox:
 				self.label_colour,
 				11,
 				max_w=body_width - pending_width,
+				bg=self.colours.box_background,
 			)
 		if not self.input_enabled:
 			self.inp.mouse_click = click

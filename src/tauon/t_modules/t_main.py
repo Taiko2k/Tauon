@@ -92,6 +92,7 @@ import certifi
 import musicbrainzngs
 import mutagen
 import mutagen.apev2
+import mutagen.asf
 import mutagen.flac
 import mutagen.id3
 import mutagen.mp4
@@ -244,6 +245,7 @@ from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
+from tauon.t_modules.t_asf import asf_pictures  # noqa: E402
 from tauon.t_modules.t_tagscan import (  # noqa: E402
 	Ape,
 	Flac,
@@ -19382,24 +19384,27 @@ class Tauon:
 				with Wav(nt.fullpath) as audio:
 					try:
 						audio.read()
-
-						nt.samplerate = audio.sample_rate
-						nt.length = audio.length
-						nt.title = audio.title
-						nt.artist = audio.artist
-						nt.album = audio.album
-						nt.track_number = audio.track_number
-
 					except Exception:
-						logging.exception("Failed saving WAV file as a Track, will try again differently")
+						logging.exception("Failed reading WAV RIFF metadata, falling back to Mutagen")
 						audio = mutagen.File(nt.fullpath)
 						nt.samplerate = audio.info.sample_rate
 						nt.bitrate = audio.info.bitrate // 1000
 						nt.length = audio.info.length
-						nt.size = os.path.getsize(nt.fullpath)
-					audio = mutagen.File(nt.fullpath)
-					if audio.tags:
+						nt.bit_depth = audio.info.bits_per_sample
 						TrackFile.read_mutagen_tags(audio.tags, nt)
+					else:
+						nt.samplerate = audio.sample_rate
+						nt.bitrate = audio.bit_rate
+						nt.bit_depth = audio.bit_depth
+						nt.length = audio.length
+						for field in (
+							"title", "artist", "album", "album_artist", "composer", "genre", "date", "comment",
+							"track_number", "track_total", "disc_number", "disc_total", "lyrics", "POPM",
+						):
+							setattr(nt, field, getattr(audio, field))
+						nt.synced = audio.synced_lyrics
+						copy_trackfile_metadata(nt, audio)
+					nt.size = os.path.getsize(nt.fullpath)
 			elif nt.file_ext in ("OPUS", "OGG", "OGA"):
 				#logging.info("get opus")
 				with Opus(nt.fullpath) as audio:
@@ -24562,6 +24567,20 @@ class AlbumArt:
 
 			if pic is not None and len(pic) < 30:
 				pic = None
+		elif track.file_ext in ("WAV", "WMA", "ASF"):
+			try:
+				audio = mutagen.File(filepath)
+				tags = getattr(audio, "tags", None)
+				if isinstance(tags, mutagen.id3.ID3):
+					frames = tags.getall("APIC")
+					frames.sort(key=lambda frame: frame.type != 3)
+					pic = next((frame.data for frame in frames if len(frame.data) > 30), None)
+				elif isinstance(tags, mutagen.asf.ASFTags):
+					pictures = [picture for index, picture in asf_pictures(tags)]
+					pictures.sort(key=lambda picture: picture.picture_type != 3)
+					pic = next((picture.data for picture in pictures if len(picture.data) > 30), None)
+			except Exception:
+				logging.exception("Failed to get embedded art from %s", filepath)
 		elif track.file_ext == "FLAC":
 			with Flac(filepath) as tag:
 				tag.read(True)
