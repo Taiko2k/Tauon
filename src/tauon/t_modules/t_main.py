@@ -22315,7 +22315,7 @@ class Drawing:
 		self.star_store: StarStore = pctl.star_store
 
 	def dropdown_arrow(self, rect: tuple[int, int, int, int], colour: ColourRGBA, *, expanded: bool = False, disclosure: bool = False) -> None:
-		"""Render a theme-coloured SVG chevron, centred in its hit area."""
+		"""Render a theme-coloured SVG triangle, centred in its hit area."""
 		direction = ("down" if expanded else "right") if disclosure else ("up" if expanded else "down")
 		bag = self.tauon.bag
 		icon = asset_loader(bag, bag.loaded_asset_dc, f"dropdown-{direction}.png", True)
@@ -51956,10 +51956,12 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	svg_directory          = bag.dirs.svg_directory
 	prefs = bag.prefs
 
-	# Include the source icon count so adding an svg invalidates the cache
-	# (the version alone misses icons added between releases / in dev).
-	svg_count = len([f for f in os.listdir(svg_directory) if f.endswith(".svg")])
-	key = f"{tauon.n_version},{scale_want},{svg_count}"
+	# Invalidate rendered icons when SVG sources are added, edited or removed.
+	svg_digest = hashlib.sha256()
+	for icon_path in sorted(svg_directory.glob("*.svg")):
+		svg_digest.update(icon_path.name.encode("utf-8"))
+		svg_digest.update(icon_path.read_bytes())
+	key = f"{tauon.n_version},{scale_want},{svg_digest.hexdigest()}"
 	keyfile = scaled_asset_directory / "key"
 	render = True
 
