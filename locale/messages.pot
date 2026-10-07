@@ -6531,3 +6531,56 @@ msgstr ""
 msgid "Failed to load TIDAL login, please try log in again"
 msgstr ""
 
+
+#: src/tauon/t_modules/t_custom.py:2740 src/tauon/t_modules/t_custom.py:3203
+#: src/tauon/t_modules/t_custom.py:3684
+msgid "Albumflow"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:133 src/tauon/t_modules/t_custom.py:3686
+msgid "Art Box"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2113 src/tauon/t_modules/t_custom.py:3699
+msgid "Artist Info"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2419 src/tauon/t_modules/t_custom.py:3680
+msgid "Gallery: Classic"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2572 src/tauon/t_modules/t_custom.py:3682
+msgid "Gallery: Compact"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:1143 src/tauon/t_modules/t_custom.py:3712
+msgid "Header Bar"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2164 src/tauon/t_modules/t_custom.py:3695
+msgid "Lyrics Box"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:1173 src/tauon/t_modules/t_custom.py:3707
+msgid "Playback Panel"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2041 src/tauon/t_modules/t_custom.py:3709
+msgid "Playback panel: Feux"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2081 src/tauon/t_modules/t_custom.py:3687
+msgid "Playlist List"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2303 src/tauon/t_modules/t_custom.py:3698
+msgid "Track: Details"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2140 src/tauon/t_modules/t_custom.py:3696
+msgid "Track: Titles"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2151 src/tauon/t_modules/t_custom.py:3697
+msgid "Track: Titles (Centred)"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:2213 src/tauon/t_modules/t_custom.py:3678
+msgid "Tracklist"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:268 src/tauon/t_modules/t_custom.py:3703
+msgid "Visualiser: Bars"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:167 src/tauon/t_modules/t_custom.py:3701
+msgid "Visualiser: Milkdrop"
+msgstr ""
+#: src/tauon/t_modules/t_custom.py:3705 src/tauon/t_modules/t_custom.py:435
+msgid "Visualiser: Spectrogram"
+msgstr ""
