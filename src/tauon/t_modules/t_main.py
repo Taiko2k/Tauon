@@ -2154,7 +2154,7 @@ class TrackClass:
 		"index", "subtrack", "fullpath", "filename", "parent_folder_path", "parent_folder_name",
 		"file_ext", "size", "modified_time",
 		"is_network", "url_key", "art_url_key",
-		"artist", "album_artist", "title", "composer", "length", "bitrate", "samplerate", "bit_depth",
+		"artist", "album_artist", "title", "composer", "label", "length", "bitrate", "samplerate", "bit_depth",
 		"album", "date", "track_number", "track_total", "start_time", "is_cue", "is_embed_cue",
 		"cue_sheet", "genre", "found", "skips", "comment", "disc_number", "disc_total", "lyrics", "synced",
 		"lfm_friend_likes", "lfm_scrobbles",
@@ -2184,6 +2184,7 @@ class TrackClass:
 		self.album_artist: str = ""
 		self.title:        str = ""
 		self.composer:     str = ""
+		self.label:        str = ""
 		self.length:     float = 0
 		self.bitrate:      int = 0
 		self.samplerate:   int = 0
@@ -2239,7 +2240,7 @@ class TrackClass:
 # they barely dedup, so interning them would just waste effort.
 _INTERN_FIELDS = (
 	"parent_folder_path", "parent_folder_name", "file_ext",
-	"artist", "album_artist", "album", "artist_sort", "composer",
+	"artist", "album_artist", "album", "artist_sort", "composer", "label",
 	"genre", "date", "codec", "container",
 	"track_number", "track_total", "disc_number", "disc_total",
 )
@@ -2265,7 +2266,7 @@ def intern_track_strings(tr: TrackClass) -> None:
 # TrackClass. TrackFile mirrors these by name, so import copies them straight
 # across instead of remapping a "misc" dict.
 _TRACKFILE_METADATA_FIELDS = (
-	"artists", "album_artists", "artist_sort", "genres",
+	"artists", "album_artists", "artist_sort", "genres", "label",
 	"musicbrainz_artistids", "musicbrainz_recordingid", "musicbrainz_trackid",
 	"musicbrainz_albumid", "musicbrainz_releasegroupid",
 	"replaygain_track_gain", "replaygain_track_peak",
@@ -7210,6 +7211,7 @@ class Tauon:
 			"Album Art",
 			"Title",
 			"Composer",
+			"Label",
 			"Time",
 			"Date",
 			"Genre",
@@ -7231,8 +7233,8 @@ class Tauon:
 		self.device: str                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
 		self.search_dia_string_cache: dict[int, str] = {}
-		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
-		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str]] = {}
+		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
+		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str, str]] = {}
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
@@ -13467,6 +13469,7 @@ class Tauon:
 			[_("Filepath"), "Filepath", self.sa_file],
 			[_("Scrobble Count"), "S", self.sa_scrobbles],
 			[_("Composer"), "Composer", self.sa_composer],
+			[_("Label"), "Label", self.sa_label],
 			[_("Disc Number"), "Disc", self.sa_disc],
 			[_("Has Lyrics"), "Lyrics", self.sa_lyrics],
 			[_("Is CUE Sheet"), "CUE", self.sa_cue],
@@ -13558,6 +13561,12 @@ class Tauon:
 	def sa_composer(self) -> None:
 		if not self.sa_try_uncheck("Composer"):
 			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Composer", 220, False])
+		self.gui.update_layout = True
+		self.sa_regen_menu()
+
+	def sa_label(self) -> None:
+		if not self.sa_try_uncheck("Label"):
+			self.gui.pl_st.insert(self.set_menu.reference + 1, ["Label", 220, False])
 		self.gui.update_layout = True
 		self.sa_regen_menu()
 
@@ -13706,6 +13715,9 @@ class Tauon:
 	def key_composer(self, index: int) -> str:
 		return self.pctl.master_library[index].composer.lower()
 
+	def key_label(self, index: int) -> str:
+		return self.pctl.master_library[index].label.lower()
+
 	def key_comment(self, index: int) -> str:
 		return self.pctl.master_library[index].comment
 
@@ -13784,6 +13796,8 @@ class Tauon:
 			key = self.key_album
 		if name == "Composer":
 			key = self.key_composer
+		if name == "Label":
+			key = self.key_label
 		if name == "Time":
 			key = self.key_duration
 		if name == "Date":
@@ -16522,6 +16536,7 @@ class Tauon:
 		genres = {}
 		metas = {}
 		composers = {}
+		labels = {}
 		years = {}
 		tracks = set()
 
@@ -16547,6 +16562,13 @@ class Tauon:
 			o_text = o_text[9:]
 			composer_mode = True
 
+		label_mode = False
+		if o_text.startswith("label "):
+			o_text = o_text[6:]
+			label_mode = True
+			if not o_text.strip():
+				return []
+
 		year_mode = False
 		if o_text.startswith("year "):
 			o_text = o_text[5:]
@@ -16569,6 +16591,11 @@ class Tauon:
 				if track in searched:
 					continue
 				searched.add(track)
+
+				# Rebuild persisted search strings once for tracks with label metadata.
+				if track not in search_field_cache and master_library[track].label:
+					search_string_cache.pop(track, None)
+					search_dia_string_cache.pop(track, None)
 
 				if cn_mode:
 					s_text = o_text
@@ -16600,6 +16627,7 @@ class Tauon:
 					artist = t.artist.lower().replace("-", "")
 					album_artist = t.album_artist.lower().replace("-", "")
 					composer = t.composer.lower().replace("-", "")
+					label = t.label.lower().replace("-", "")
 					date = t.date.lower().replace("-", "")
 					album = t.album.lower().replace("-", "")
 					genre = t.genre.lower().replace("-", "")
@@ -16623,13 +16651,14 @@ class Tauon:
 						stem_search,
 						stem_raw,
 						lyrics,
+						label,
 					)
 				else:
-					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, lyrics = fields
+					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, lyrics, label = fields
 
 				if cache_string is None:
 					if not dia_mode:
-						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics + label
 
 					if cn_mode:
 						cache_string = search_string_cache.get(track)
@@ -16654,6 +16683,7 @@ class Tauon:
 						d_filename = unidecode(filename)
 						d_sartist = unidecode(sartist)
 						d_lyrics = unidecode(lyrics)
+						d_label = unidecode(label)
 						search_dia_field_cache[track] = (
 							d_title,
 							d_artist,
@@ -16663,9 +16693,10 @@ class Tauon:
 							d_filename,
 							d_sartist,
 							d_lyrics,
+							d_label,
 						)
 					else:
-						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_lyrics = dia_fields
+						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_lyrics, d_label = dia_fields
 
 					title = d_title
 					artist = d_artist
@@ -16675,9 +16706,10 @@ class Tauon:
 					filename = d_filename
 					sartist = d_sartist
 					lyrics = d_lyrics
+					label = d_label
 
 					if cache_string is None:
-						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics + label
 
 				if len(s_text) > 2 and s_text in stem_search:
 					if stem_raw in metas:
@@ -16717,6 +16749,13 @@ class Tauon:
 						temp_results.append([6, t.composer, track, playlist.uuid_int, 0])
 						composers[t.composer] = 2
 
+				if label and search_magic_local(s_text, label):
+					if t.label in labels:
+						labels[t.label] += 2
+					else:
+						temp_results.append([10, t.label, track, playlist.uuid_int, 0])
+						labels[t.label] = 2
+
 				if s_text in date:
 					year = get_year_from_string_local(date)
 					if year:
@@ -16726,7 +16765,7 @@ class Tauon:
 							temp_results.append([7, year, track, playlist.uuid_int, 0])
 							years[year] = 1000
 
-				if search_magic_local(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist):
+				if search_magic_local(s_text, title + " " + artist + " " + filename + " " + album + " " + sartist + " " + album_artist + " " + label):
 					if t.artists:
 						for a in t.artists:
 							a_lower = a.lower()
@@ -16845,6 +16884,11 @@ class Tauon:
 				if temp_results[i][0] != 6:
 					del temp_results[i]
 
+		elif label_mode:
+			for i in reversed(range(len(temp_results))):
+				if temp_results[i][0] != 10:
+					del temp_results[i]
+
 		elif year_mode:
 			for i in reversed(range(len(temp_results))):
 				if temp_results[i][0] != 7:
@@ -16865,10 +16909,14 @@ class Tauon:
 				temp_results[i][4] = composers[item[1]]
 			if item[0] == 7:
 				temp_results[i][4] = years[item[1]]
+			if item[0] == 10:
+				temp_results[i][4] = labels[item[1]]
 			# 8 is playlists
 
 		temp_results[:] = [item for item in temp_results if item is not None]
 		results = sorted(temp_results, key=lambda x: x[4], reverse=True)
+		if label_mode:
+			return results
 
 		i = 0
 		for playlist in multi_playlist:
@@ -17440,6 +17488,29 @@ class Tauon:
 					continue
 
 				playlist += self.search_over.click_genre(found_name, get_list=True, search_lists=selections)
+
+			# SEARCH LABEL
+			elif cm.startswith(('lb"', 'lb="')):
+				if not selections:
+					selections.extend(
+						plist.playlist_ids for plist in self.pctl.multi_playlist
+						if is_source_type(self.pctl.gen_codes.get(plist.uuid_int))
+					)
+				label_search = quote.lower().replace("-", "")
+				matched_labels = set()
+				for result in get_search_results("label " + quote):
+					if result[0] != 10 or not isinstance(result[1], str):
+						continue
+					name = result[1].lower().replace("-", "")
+					if label_search.isascii():
+						name = unidecode(name)
+					if cm.startswith('lb="') and name != label_search:
+						continue
+					matched_labels.add(result[1].lower())
+				playlist.extend(
+					track_id for selection in selections for track_id in selection
+					if self.pctl.master_library[track_id].label.lower() in matched_labels
+				)
 
 			# SEARCH ARTIST
 			elif cm.startswith("a\"") and len(cm) > 3 and cm != "auto":
@@ -19212,6 +19283,7 @@ class Tauon:
 			for _mk in _MISC_TO_FIELD.values():
 				setattr(nt, _mk, None)
 			nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
+			nt.label = ""
 
 			if nt.file_ext.lower() in self.formats.GME and self.gme:
 				emu = ctypes.c_void_p()
@@ -26621,6 +26693,28 @@ class SearchOverlay:
 		self.inp.key_return_press = False
 		return None
 
+	def click_label(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
+		if search_lists is None:
+			search_lists = [pl.playlist_ids for pl in self.pctl.multi_playlist]
+		label_name = name.lower()
+		playlist = list(
+			dict.fromkeys(
+				track_id for tracks in search_lists for track_id in tracks
+				if self.pctl.master_library[track_id].label.lower() == label_name
+			)
+		)
+		if get_list:
+			return playlist
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(
+			title=_("Label: ") + name,
+			playlist_ids=playlist,
+			hide_title=False))
+		if self.gui.combo_mode:
+			self.tauon.exit_combo()
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
+		self.inp.key_return_press = False
+		return None
+
 	def click_meta(self, name: str, get_list: bool = False, search_lists: list[list[int]] | None = None) -> list[int] | None:
 		if search_lists is None:
 			search_lists = []
@@ -26755,6 +26849,9 @@ class SearchOverlay:
 			case 6:
 				if isinstance(item[1], str):
 					return self.click_composer(item[1], get_list=True) or []
+			case 10:
+				if isinstance(item[1], str):
+					return self.click_label(item[1], get_list=True) or []
 			case 7:
 				if isinstance(item[1], str):
 					return self.click_year(item[1], get_list=True) or []
@@ -27110,6 +27207,7 @@ class SearchOverlay:
 					7: "Year",
 					8: "Playlist",
 					9: "Lyrics",
+					10: _("Label"),
 				}
 				type_colours = {
 					0:  ColourRGBA(250, 140, 190, 255),  # Artist
@@ -27121,6 +27219,7 @@ class SearchOverlay:
 					7:  ColourRGBA(250, 50,  140, 255),   # Year
 					8:  ColourRGBA(100, 210, 250, 255),  # Playlist
 					9:  ColourRGBA(250, 220, 190, 255),  # Track from lyrics
+					10: ColourRGBA(170, 210, 250, 255),  # Label
 				}
 				if n not in names:
 					name = "NYI"
@@ -27147,7 +27246,7 @@ class SearchOverlay:
 						self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
 				# Type text
-				if n in (0, 3, 5, 6, 7, 8, 9):
+				if n in (0, 3, 5, 6, 7, 8, 9, 10):
 					self.ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
 
 				# Thumbnail
@@ -27158,7 +27257,7 @@ class SearchOverlay:
 					if fade != 1:
 						self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(0, 0, 0, 70))
 				# Result text
-				if n in (0, 5, 6, 7, 8):  # Bold
+				if n in (0, 5, 6, 7, 8, 10):  # Bold
 					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
 				if n in (3,):  # Genre
 					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
@@ -27281,7 +27380,7 @@ class SearchOverlay:
 						self.toast_playlist_add(len(tracks))
 				elif show:
 					match n:
-						case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 9:
+						case 0 | 1 | 2 | 3 | 5 | 6 | 7 | 9 | 10:
 							self.pctl.show_current(index=item[2], playing=False)
 
 						case 8:
@@ -27302,6 +27401,8 @@ class SearchOverlay:
 							self.click_meta(item[1])
 						case 6:
 							self.click_composer(item[1])
+						case 10:
+							self.click_label(item[1])
 						case 7:
 							self.click_year(item[1])
 						case 8:
@@ -37077,6 +37178,8 @@ class StandardPlaylist:
 			return text
 		if name == "Composer":
 			return n_track.composer
+		if name == "Label":
+			return n_track.label
 		if name == "Comment":
 			return n_track.comment.replace("\n", " ").replace("\r", " ")
 		if name == "S":
@@ -38264,8 +38367,8 @@ class StandardPlaylist:
 							norm_colour = colour
 							if this_line_playing is True:
 								colour = colours.artist_playing
-						elif item[0] == "Composer":
-							text = n_track.composer
+						elif item[0] in ("Composer", "Label"):
+							text = n_track.composer if item[0] == "Composer" else n_track.label
 							colour = colours.index_text
 							norm_colour = colour
 							if this_line_playing is True:

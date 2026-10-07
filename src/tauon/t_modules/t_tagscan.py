@@ -255,6 +255,8 @@ class TrackFile:
 		self.lyrics        = "" # Wav does not need this
 		self.synced_lyrics = ""
 		self.composer      = "" # Wav does not need this
+		self.label         = ""
+		self._label_values: dict[str, list[str]] = {}
 
 		# Extended metadata, named to mirror the matching TrackClass fields so
 		# the importer can copy them straight across without a conversion table.
@@ -311,6 +313,12 @@ class TrackFile:
 			self.file.close()
 		self.file = None
 
+	def set_vorbis_label(self, key: str, value: bytes) -> None:
+		self._label_values.setdefault(key, []).append(value.decode("utf-8"))
+		self.label = "; ".join(
+			next(self._label_values[name] for name in ("label", "organization", "publisher") if name in self._label_values)
+		)
+
 	def set_vorbis_lyrics(self, key: str, value: bytes) -> None:
 		lyrics = value.decode("utf-8")
 		if key == "unsyncedlyrics":
@@ -341,6 +349,7 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 	natural_get("TALB", "album")
 	natural_get("TDRC", "date")
 	natural_get("TCOM", "composer")
+	track.label = "; ".join(str(value) for frame in tags.getall("TPUB") for value in frame.text)
 	natural_get("COMM", "comment")
 	process_odat(track, natural_get("TDOR"))
 
@@ -468,6 +477,8 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 	track.artist = get_text("\xa9ART")
 	track.album_artist = get_text("aART")
 	track.composer = get_text("\xa9wrt")
+	label_key = next((native for native in tags if native.lower() == "----:com.apple.itunes:label"), None)
+	track.label = "; ".join(value.decode("utf-8") for value in tags[label_key]) if label_key is not None else ""
 	track.date = get_text("\xa9day")
 	track.comment = get_text("\xa9cmt")
 	track.genre = get_text("\xa9gen")
@@ -635,6 +646,8 @@ class Flac(TrackFile):
 						self.replaygain_album_gain = parse_r128_gain(b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
+					elif a in ("label", "organization", "publisher"):
+						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
 						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
@@ -921,6 +934,8 @@ class Opus(TrackFile):
 						self.set_vorbis_lyrics(a, b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
+					elif a in ("label", "organization", "publisher"):
+						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
 						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
@@ -981,7 +996,6 @@ class Ape(TrackFile):
 		super().__init__()
 		self.filepath: str = file
 		self.found_tag: bool = False
-		self.label: str = ""
 
 	def read(self) -> None:
 		odat = ""
@@ -1113,7 +1127,7 @@ class Ape(TrackFile):
 					if len(album_artists) > 1:
 						self.album_artists = album_artists
 				elif key == "label":
-					self.label = value
+					self.label = value.replace("\x00", "; ")
 				elif key == "lyrics":
 					self.lyrics = value
 				elif key == "unsyncedlyrics":

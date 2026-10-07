@@ -12,6 +12,7 @@ Changelog
  - Added playback speed adjustment
  - Added pre-roll silence option
  - Added setting to disable radio scrobble
+ - Added label to columns mode
  - Fixed various outbound streaming issues
  - Fixed format support for Chromecast
  - Fixed a possible db corruption state
