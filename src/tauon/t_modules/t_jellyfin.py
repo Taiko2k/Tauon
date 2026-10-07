@@ -506,7 +506,8 @@ class Jellyfin:
 					params={
 						"userId": self.userId,
 						"fields": ["Genres", "DateCreated", "MediaSources", "People"],
-						"enableImages": False,
+						"enableImages": True,
+						"enableImageTypes": ["Primary"],
 						"includeItemTypes": ["Audio", "Playlist"],
 						"recursive": True,
 						# Pages must come back in a stable order, otherwise items
@@ -589,14 +590,20 @@ class Jellyfin:
 
 				nt.is_network = True
 				nt.url_key = track.get("Id")
-				nt.art_url_key = None
-				if track.get("AlbumPrimaryImageTag", False):
+				previous_art_key = nt.art_url_key
+				has_embedded_image = any(
+					stream.get("Type") == "EmbeddedImage"
+					for source in track.get("MediaSources") or []
+					for stream in source.get("MediaStreams") or []
+				)
+				if (track.get("ImageTags") or {}).get("Primary") or has_embedded_image:
+					nt.art_url_key = nt.url_key
+				elif track.get("AlbumPrimaryImageTag"):
 					nt.art_url_key = track.get("AlbumId")
 				else:
-					for source in track.get("MediaSources"):
-						if any(stream.get("Type") == "EmbeddedImage" for stream in source.get("MediaStreams", [])):
-							nt.art_url_key = nt.url_key
-				# logging.debug(f"Found EmbeddedImage in MediaStreams.")
+					nt.art_url_key = None
+				if nt.art_url_key != previous_art_key:
+					self.tauon.album_art_gen.source_cache.pop(nt.index, None)
 
 				artists = track.get("Artists", [])
 				nt.artist = "; ".join(artists)

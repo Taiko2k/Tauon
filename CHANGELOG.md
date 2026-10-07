@@ -15,7 +15,8 @@ Changelog
  - Fixed various outbound streaming issues
  - Fixed format support for Chromecast
  - Fixed a possible db corruption state
- - Filed filepath copy when no metadata
+ - Fixed filepath copy when no metadata
+ - Fixed per track Jellyfin artwork
 
 ### v12.1.0
 
