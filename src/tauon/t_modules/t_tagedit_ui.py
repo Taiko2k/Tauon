@@ -233,12 +233,13 @@ class TransEditBox:
 			(bar[0] + inset, bar[1] + inset, round((width - 2 * inset) * done / max(1, total)), bar[3] - 2 * inset),
 			CONTROL_GREY,
 		)
-		if self.inp.key_esc_press or self.draw.button(
+		if (not self.gui.message_box and self.inp.key_esc_press) or self.draw.button(
 			_("Close"),
 			x + width - round(84 * scale),
 			self.editor_bottom - round(54 * scale),
 			w=round(84 * scale),
 			h=round(32 * scale),
+			press=not self.gui.message_box and self.inp.mouse_click,
 		):
 			self.inp.key_esc_press = False
 			self._close()
@@ -646,24 +647,20 @@ class TransEditBox:
 		self.gui.request_tracklist_redraw()
 		self.gui.album_artist_dict.clear()
 
-	def fix_mojibake(self, encoding: str | None = None) -> None:
+	def fix_mojibake(self) -> None:
+		self._close_tools()
 		if self.gui.write_tag_in_progress or self.lookup_running or not self._flush_fields():
 			return
 		try:
-			fields, files, undetected = self.session.fix_mojibake(encoding)
+			fields, files, undetected = self.session.fix_mojibake()
 			if not fields:
-				self.show_message(
-					_("Autodetect failed; choose an encoding in Tools.")
-					if encoding is None
-					else _("No text needed fixing."),
-					mode="info",
-				)
+				self.show_message(_("No text could be repaired automatically."), mode="info")
 				return
 			self._load_fields()
 			self.row_key = None
 			self.row_page = 0
 			message = _("{N} fields fixed in {F} files; review before writing tags.").format(N=fields, F=files)
-			if encoding is None and undetected:
+			if undetected:
 				message += " " + _("Encoding not detected for {N} files.").format(N=undetected)
 			self.show_message(message, mode="info")
 			self.gui.request_frame()
@@ -750,7 +747,7 @@ class TransEditBox:
 		if self.tools_menu is None:
 			self.tools_menu = Menu(self.tauon, 200)
 			self.tools_menu.add(MenuItem(_("Upgrade ID3 tags to v2.4"), self.upgrade_id3))
-			self.tools_menu.add(MenuItem(_("Fix Mojibake (auto)"), self.fix_mojibake))
+			self.tools_menu.add(MenuItem(_("Fix Mojibake"), self.fix_mojibake))
 		self._activate_menu(self.tools_menu, x, y)
 
 	def _activate_menu(self, menu: Menu, x: int, y: int) -> None:
@@ -1730,11 +1727,11 @@ class TransEditBox:
 						self.show_message(_("Could not load album tracks"), album.preview_error, mode="error")
 		if self.write_result is not None:
 			self._finish_write()
-		if self.gui.message_box:
-			return
-		if self.gui.level_2_click:
-			self.inp.mouse_click = True
-		self.gui.level_2_click = False
+		message_open = self.gui.message_box
+		if not message_open:
+			if self.gui.level_2_click:
+				self.inp.mouse_click = True
+			self.gui.level_2_click = False
 		self.label_colour = self.readable_colour(self.colours.box_text_label, self.colours.box_background)
 		self.input_colour = self.readable_colour(self.colours.box_input_text, self.colours.box_background)
 		self.title_colour = self.readable_colour(self.colours.box_title_text, self.colours.box_background, 5.4)
@@ -1770,7 +1767,7 @@ class TransEditBox:
 			return
 		menu_open = self.tools_menu is not None and self.tools_menu.active
 		presets_open = self.presets_menu is not None and self.presets_menu.active
-		if self.inp.key_esc_press:
+		if self.inp.key_esc_press and not message_open:
 			self.inp.key_esc_press = False
 			if menu_open:
 				self._close_tools()
@@ -1783,7 +1780,7 @@ class TransEditBox:
 			else:
 				self._close()
 			return
-		self.input_enabled = not (menu_open or presets_open or self.scope_open or self.lookup_open)
+		self.input_enabled = not (message_open or menu_open or presets_open or self.scope_open or self.lookup_open)
 		click = self.inp.mouse_click
 		right_click = getattr(self.inp, "right_click", False)
 		level_right_click = getattr(self.inp, "level_2_right_click", False)
@@ -1864,6 +1861,8 @@ class TransEditBox:
 			self.inp.right_click = right_click
 			self.inp.level_2_right_click = level_right_click
 			self.inp.mouse_wheel = wheel
+		if message_open:
+			return
 		if self.scope_open:
 			self._scope_popover(x, y, width, height)
 		elif self.lookup_open:
