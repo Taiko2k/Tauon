@@ -21,7 +21,7 @@ else:
 a = Analysis(
 	[str(REPO_ROOT / "src/tauon/__main__.py")],
 	pathex=[],
-	binaries=[],
+	binaries=[(f"{lib_path}/libchromaprint.so.1", ".")],
 	datas=[
 		(certifi.where(), "certifi"),
 		(f"{lib_path}/gtk-3.0/modules/libcolorreload-gtk-module.so", "lib/gtk-3.0/modules"),

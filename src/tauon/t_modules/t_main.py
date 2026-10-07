@@ -137,6 +137,8 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
+from tauon.t_modules.t_tagedit_ui import TransEditBox  # noqa: E402
+from tauon.t_modules.t_musicbrainz_lookup import musicbrainz_call  # noqa: E402
 from tauon.t_modules.t_room import DreamRoom  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
 	Backend,
@@ -10499,7 +10501,7 @@ class Tauon:
 				if not artist:
 					artist = tr.artist
 
-				s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
+				s = musicbrainz_call(musicbrainzngs.search_release_groups, tr.album, artist=artist, limit=1)
 
 				album_id = s["release-group-list"][0]["id"]
 				artist_id = s["release-group-list"][0]["artist-credit"][0]["artist"]["id"]
@@ -12887,7 +12889,7 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Rename Tracks…"))
 
 	def activate_trans_editor(self) -> None:
-		self.trans_edit_box.active = True
+		self.trans_edit_box.activate()
 
 	def delete_folder(self, index: int, force: bool = False) -> None:
 		track = self.pctl.master_library[index]
@@ -14152,7 +14154,7 @@ class Tauon:
 
 		if not release_group_id:
 			try:
-				s = musicbrainzngs.search_release_groups(tr.album, artist=artist, limit=1)
+				s = musicbrainz_call(musicbrainzngs.search_release_groups, tr.album, artist=artist, limit=1)
 				release_group_id = s["release-group-list"][0]["id"]
 				tr.musicbrainz_releasegroupid = release_group_id
 			except Exception:
@@ -14162,7 +14164,7 @@ class Tauon:
 
 		if not release_id:
 			try:
-				s = musicbrainzngs.search_releases(tr.album, artist=artist, limit=1)
+				s = musicbrainz_call(musicbrainzngs.search_releases, tr.album, artist=artist, limit=1)
 				release_id = s["release-list"][0]["id"]
 				tr.musicbrainz_albumid = release_id
 			except Exception:
@@ -18189,20 +18191,28 @@ class Tauon:
 		album: bool = False,
 		allow_input: bool = True,
 		hint_only: bool = False,
+		*,
+		rating: int | None = None,
+		on_change: Callable[[int], None] | None = None,
 	) -> None:
-		rat = self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
+		isolated = on_change is not None
+		rat = (rating or 0) if isolated else self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
 		display_rat = 0 if hint_only else rat
 
 		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(24 * self.gui.scale))
 		boundary = 3 * self.gui.scale
-		tracklist_top = self.gui.playlist_top + boundary
-		tracklist_bottom = self.window_size[1] - self.gui.panelBY - boundary
-		input_in_bounds = tracklist_top < self.inp.mouse_position[1] <= tracklist_bottom
+		input_in_bounds = isolated or (
+			self.gui.playlist_top + boundary < self.inp.mouse_position[1] <= self.window_size[1] - self.gui.panelBY - boundary
+		)
 		if allow_input and input_in_bounds:
-			self.gui.heart_fields.append(rect)
+			if isolated:
+				self.fields.add(rect)
+			else:
+				self.gui.heart_fields.append(rect)
 
-		if allow_input and input_in_bounds and self.coll(rect) and (self.inp.mouse_click or (self.is_level_zero() and not self.inp.quick_drag)):
-			self.gui.request_tracklist_redraw()
+		if allow_input and input_in_bounds and self.coll(rect) and (self.inp.mouse_click or ((isolated or self.is_level_zero()) and not getattr(self.inp, "quick_drag", False))):
+			if not isolated:
+				self.gui.request_tracklist_redraw()
 			pp = self.inp.mouse_position[0] - x
 
 			if pp < 5 * self.gui.scale:
@@ -18214,7 +18224,9 @@ class Tauon:
 
 			if self.inp.mouse_click:
 				rat = min(rat, 10)
-				if album:
+				if isolated:
+					on_change(int(rat))
+				elif album:
 					self.album_star_store.set_rating(n_track, rat)
 				else:
 					self.star_store.set_rating(n_track.index, rat, write=True)
@@ -18224,12 +18236,13 @@ class Tauon:
 		bg = ColourRGBA(255, 255, 255, 17)
 		fg = self.colours.grey(210)
 
-		if self.gui.tracklist_bg_is_light:
+		light = Menu.background_is_light(self.colours.box_background) if isolated else self.gui.tracklist_bg_is_light
+		if light:
 			bg = ColourRGBA(0, 0, 0, 25)
 			fg = self.colours.grey(70)
 
 		playtime_stars = 0
-		if self.prefs.rating_playtime_stars and not album and (hint_only or display_rat == 0):
+		if not isolated and self.prefs.rating_playtime_stars and not album and (hint_only or display_rat == 0):
 			playtime_stars = star_count3(self.star_store.get(n_track.index), n_track.length)
 			if self.gui.tracklist_bg_is_light:
 				fg2 = alpha_blend(ColourRGBA(0, 0, 0, 70), self.ddt.text_background_colour)
@@ -19520,6 +19533,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.disc_number = audio.disc_number
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					nt.track_total = audio.track_total
 					nt.disc_total = audio.disc_total
 					nt.comment = audio.comment
@@ -19544,6 +19558,7 @@ class Tauon:
 					nt.album_artist = audio.album_artist
 					nt.disc_number = audio.disc_number
 					nt.lyrics = audio.lyrics
+					nt.synced = audio.synced_lyrics
 					if nt.length > 0:
 						nt.bitrate = int(nt.size / nt.length * 8 / 1024)
 					nt.track_total = audio.track_total
@@ -22816,8 +22831,15 @@ class MultiLineTextBox:
 		self.lines: list[str] = []
 		self.text_height: int = 0
 		self.visible_lines: list[str] = [] # lines as they are displayed with text wrapping
-		self.line_counts: dict[int, int] = {} # get from cursor position to line number
-		self.line_ys: list[int] = 0
+		self.line_counts: dict[int, tuple[int, bool]] = {}
+		self.line_ys: list[int] = []
+		self.line_heights: list[int] = []
+		self.content_height = 0
+		self.text_origin = 0
+		self.normal_text_offset = 0
+		self.render_text_offset = 0
+		self.layout_key = None
+		self.canvas_size = (0, 0)
 		self.cursor_position: int = 0
 		self.selection: int = 0
 		self.offset: int = 0
@@ -22838,43 +22860,54 @@ class MultiLineTextBox:
 			width = round(2000*gui.scale)
 		if height == 0:
 			height = round(20000*gui.scale)
+		width, height = max(1, round(width)), max(1, round(height))
 		try:
 			sdl3.SDL_DestroyTexture(self.text_box_canvas)
 		except AttributeError:
 			pass # just means we're creating it 4 the first time
 		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
-		self.text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, width, height)
 		self.text_box_canvas = sdl3.SDL_CreateTexture(
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
 		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 		self.x = x
 		self.y = y
+		self.canvas_size = (width, height)
 
 
 	def map_lines(self, width: int) -> None:
-		"""this function has been lightly Sloptimized™"""
+		"""Use the same wrapping and line metrics as the text renderer."""
 		self.line_ys = []
+		self.line_heights = []
 		self.visible_lines = []
 		self.line_counts = {}
-		throwaway, self.text_height = self.ddt.get_text_wh(_("?"), self.font, 200)
+		self._suffix_cache_id = None
 		count = len(self.text)
 		last_count = None
-		for i, line in enumerate(self.ddt.get_wrapped_lines(self.text, self.font, width)):
+		for i, (line, line_y, line_height) in enumerate(self.ddt.get_wrapped_layout(self.text, self.font, max(1, width - 12))):
 			count -= len(line)
 			self.visible_lines.append(line)
-			self.line_ys.append(i * self.text_height)
+			self.line_ys.append(line_y)
+			self.line_heights.append(line_height)
 			self.line_counts[count] = (i,True)
-			if last_count:
+			if last_count is not None:
 				# we have to track which lines start with a newline character vs which are from text wrapping
 				# so that we can correctly place the text cursor at the start or end of every line
-				self.line_counts[last_count] = (self.line_counts[last_count][0], line.startswith('\n'))
+				self.line_counts[last_count] = (self.line_counts[last_count][0], line.startswith(("\n", "\r", "\u2028", "\u2029")))
 			last_count = count
+		self.text_height = self.line_heights[0]
+		self.content_height = self.line_ys[-1] + self.line_heights[-1]
+		self.render_text_offset = self.ddt.get_y_offset(self.text or "?", self.font, width, True)
+		self.normal_text_offset = min(0, self.ddt.get_y_offset("?", self.font, width, True))
+		self.layout_key = self._layout_state(width)
 		self.known_scale = self.gui.scale
 		self.known_window_size = tuple(self.gui.window_size)
 
+	def _layout_state(self, width: int) -> tuple:
+		return self.text, self.font, width, self.gui.scale, self.ddt.f_dict.get(self.font)
+
 
 	def which_line_by_y(self, y_position: int) -> int:
-		return min(len(self.line_ys)-1, round(y_position/self.text_height))
+		return max(0, next((i - 1 for i, line_y in enumerate(self.line_ys) if line_y > y_position), len(self.line_ys) - 1))
 
 
 	def which_line_by_char(self, char: int) -> int:
@@ -22892,7 +22925,7 @@ class MultiLineTextBox:
 
 
 	def _get_suffix_lengths(self) -> list[int]:
-		"""this function is 100% Genuine Slop™"""
+		"""Cache each visual line's distance from the end of the text."""
 		key_id = id(self.visible_lines)
 		if getattr(self, '_suffix_cache_id', None) != key_id:
 			lengths = [0] * (len(self.visible_lines) + 1)
@@ -22905,7 +22938,7 @@ class MultiLineTextBox:
 		return self._suffix_lengths
 
 	def partial_line_from_char(self, char: int) -> str:
-		"""this function has been Sloptimized™"""
+		"""Return the text preceding a caret within its visual line."""
 		line = self.which_line_by_char(char)
 		try:
 			line_text = self.visible_lines[line]
@@ -22918,17 +22951,15 @@ class MultiLineTextBox:
 		suffix_after = self._get_suffix_lengths()[line + 1] if line + 1 < len(self.visible_lines) + 1 else 0
 		r = char - suffix_after
 		cut = len(line_text) - r
-		if line_text.startswith("\n"):
-			return line_text[1:cut]
-		return line_text[:cut]
+		return line_text[:cut].lstrip("\r\n\u2028\u2029")
 
 
 	def set_cursor_from_click(self, scroll: int, selection: bool, in_pos: tuple[int,int] | None = None) -> None:
-		"""this function has been Sloptimized™"""
+		"""Locate a caret from viewport coordinates and the rendered line metrics."""
 		if in_pos is None:
 			in_pos = self.inp.mouse_position
 
-		line = self.which_line_by_y(in_pos[1] - self.y + scroll - 0.25 * self.text_height)
+		line = self.which_line_by_y(in_pos[1] - self.y + scroll)
 		temp_total = sum(len(tally) for tally in self.visible_lines[line+1:])
 
 		try:
@@ -22942,7 +22973,7 @@ class MultiLineTextBox:
 				return
 			else:
 				logging.error(e)
-		meas = text.lstrip('\n')
+		meas = text.lstrip('\r\n\u2028\u2029')
 
 		x_in_line = in_pos[0] - self.x
 
@@ -22969,166 +23000,62 @@ class MultiLineTextBox:
 			pos = self.cursor_position
 		line = self.which_line_by_char(pos)
 
-		if pos == 0:
-			width = self.ddt.get_text_w(self.text.split('\n')[-1], self.font)
-		else:
-			width = self.ddt.get_text_w(self.partial_line_from_char(pos), self.font)
-		return width,line*self.text_height
+		width = self.ddt.get_text_w(self.partial_line_from_char(pos), self.font)
+		return width, self.line_ys[line]
 
 
 	def switch_lines(self, scroll: int, up: bool) -> None:
-		"""up and down arrow keys"""
+		"""Move vertically while preserving the preferred horizontal position."""
 		pos = self.pixel_position_from_cursor_position()
 		if self.temp_x_pos is not None:
 			pos = self.temp_x_pos, pos[1]
 		else:
 			self.temp_x_pos = pos[0]
-		# this is relative
-		if up:
-			offset = -self.text_height
-		else:
-			offset = self.text_height
-		pos = pos[0] + self.x, pos[1] - scroll + self.y + offset
+		line = self.which_line_by_char(self.cursor_position)
+		target = max(0, min(len(self.line_ys) - 1, line + (-1 if up else 1)))
+		pos = pos[0] + self.x, self.y + self.line_ys[target] + self.line_heights[target] / 2 - scroll
 		self.set_cursor_from_click(scroll, False, pos)
 
 
-	def selection_highlight_inbetweens(self, start_line: int, end_line: int, scroll: int) -> tuple[list[tuple[str, int]], tuple[int, int], str]:
-		"""this function has been Sloptimized™. Returns:
-		- a list of text lines paired with their displayed y-values
-		- x and y position of the final partially-highlighted line
-		- the text from that line that's actually highlighted"""
-		test = start_line - end_line
-		if -1 < test < 1:
-			return None
-
-		highlight_color = ColourRGBA(40, 120, 180, 255)
-
-		if test in (-1, 1):
-			temp = self.partial_line_from_char(min(self.selection, self.cursor_position))
-			y = (min(start_line, end_line) + 1) * self.text_height - scroll
-			return [], (0, y), temp
-
-		start = min(start_line, end_line)
-		end = max(start_line, end_line)
-
-		full_lines = []  # (text, y) pairs — each drawn/cached independently
-		for i, line in enumerate(self.visible_lines[start+1:end]):
-			stripped = line.lstrip('\n')
-			x = self.ddt.get_text_w(stripped, self.font)
-			y = (start + i + 1) * self.text_height - scroll
-			self.ddt.rect((0, y - 0.25*self.text_height, x, self.text_height), highlight_color)
-			full_lines.append((stripped, y))
-
-		temp = self.partial_line_from_char(min(self.selection, self.cursor_position))
-		partial_y = (start + 1 + len(full_lines)) * self.text_height - scroll
-
-		return full_lines, (0, partial_y), temp
-
-
-	def draw_selection_highlight(self, scroll: int, font: int, text_color: ColourRGBA, width: int) -> None:
-		"""this function has been Sloptimized™"""
-		highlight_color = ColourRGBA(40, 120, 180, 255)
-		rect1 = self.pixel_position_from_cursor_position()
-		rect2 = self.pixel_position_from_cursor_position(True)
-		if rect1[1] == rect2[1]:
-			self.ddt.rect(
-				(rect1[0], rect1[1] - scroll - 0.25*self.text_height, rect2[0]-rect1[0], self.text_height),
-				highlight_color
-			)
-			point1 = max(self.selection, self.cursor_position)
-			point2 = min(self.selection, self.cursor_position)
-			if point2 == 0:
-				hl_text = self.text[-point1:]
-			else:
-				hl_text = self.text[-point1:-point2]
-			xx = min(rect1[0], rect2[0])
-			self.ddt.text(
-				(xx, rect1[1] - scroll),
-				hl_text,
-				text_color,
-				self.font,
-				bg=highlight_color,
-			)
-		else:
-			if rect1[1] > rect2[1]: # cursor is lower in text than selection:
-				cursor_line = self.which_line_by_char(self.cursor_position)
-				if self.cursor_position == 0:
-					cursor_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
-				else:
-					cursor_width = self.ddt.get_text_w(self.partial_line_from_char(self.cursor_position), font)
+	def draw_selection_highlight(self, scroll: int) -> None:
+		"""Paint selection backgrounds using the rendered line bounds."""
+		start = len(self.text) - max(self.selection, self.cursor_position)
+		end = len(self.text) - min(self.selection, self.cursor_position)
+		position = 0
+		for index, raw_line in enumerate(self.visible_lines):
+			line = raw_line.lstrip("\r\n\u2028\u2029")
+			line_start = position + len(raw_line) - len(line)
+			line_end = position + len(raw_line)
+			left, right = max(start, line_start), min(end, line_end)
+			separator_selected = position < line_start and start < line_start and end > position
+			if left < right or separator_selected:
+				if right <= left:
+					left = right = line_start
+				x = self.ddt.get_text_w(line[:left - line_start], self.font)
+				last_x = self.ddt.get_text_w(line[:right - line_start], self.font)
 				self.ddt.rect(
-					(0, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					highlight_color
+					(x, self.line_ys[index] - scroll, max(last_x - x, round(3 * self.gui.scale)), self.line_heights[index]),
+					ColourRGBA(40, 120, 180, 255),
 				)
-				select_line = self.which_line_by_char(self.selection)
-				txt = self.partial_line_from_char(self.selection)
-				partial_line_text = self.visible_lines[select_line].lstrip('\n')[len(txt):]
-				select_start = self.ddt.get_text_w(txt, font)
-				select_width = self.ddt.get_text_w(self.visible_lines[select_line].lstrip('\n'), font) - select_start
-				self.ddt.rect(
-					(select_start, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					highlight_color
-				)
-				self.ddt.text(
-					(select_start, rect2[1] - scroll),
-					partial_line_text,
-					text_color,
-					self.font,
-					bg=highlight_color,
-				)
-			else:
-				select_line = self.which_line_by_char(self.selection)
-				if self.selection == 0:
-					select_width = self.ddt.get_text_w(self.text.split('\n')[-1], font)
-				else:
-					select_width = self.ddt.get_text_w(self.partial_line_from_char(self.selection), font)
-				self.ddt.rect(
-					(0, rect2[1] - scroll - 0.25*self.text_height, select_width, self.text_height),
-					highlight_color
-				)
-				cursor_line = self.which_line_by_char(self.cursor_position)
-				txt = self.partial_line_from_char(self.cursor_position)
-				partial_line_text = self.visible_lines[cursor_line].lstrip('\n')[len(txt):]
-				cursor_start = self.ddt.get_text_w(txt, font)
-				cursor_width = self.ddt.get_text_w(self.visible_lines[cursor_line].lstrip('\n'), font) - cursor_start
-				self.ddt.rect(
-					(cursor_start, rect1[1] - scroll - 0.25*self.text_height, cursor_width, self.text_height),
-					highlight_color
-				)
-				self.ddt.text(
-					(cursor_start, rect1[1] - scroll),
-					partial_line_text,
-					text_color,
-					self.font,
-					bg=highlight_color,
-				)
-			# Sloptacular™:
-			highlight_info = self.selection_highlight_inbetweens(select_line, cursor_line, scroll)
-			if highlight_info is not None:
-				full_lines, partial_pos, partial_text = highlight_info
-
-				for line_text, y in full_lines:
-					self.ddt.text((0, y), line_text, text_color, self.font, bg=highlight_color)
-
-				self.ddt.text(partial_pos, partial_text, text_color, self.font, bg=highlight_color)
+			position = line_end
 
 
 	def get_scroll_output(self, scroll: int, headroom: int, height: int, autoscroll: bool) -> int:
-		"""Allows us to change scroll position by holding arrow keys, typing offscreen, highlighting while moving mouse offscreen"""
-		scroll_output = 0
+		"""Return the adjustment needed to keep the caret or drag inside the viewport."""
+		viewport_y = self.y - headroom
 		if self.down_lock:
-			if self.inp.mouse_position[1] < self.y:
-				return 0- (self.y - self.inp.mouse_position[1])
-			elif self.inp.mouse_position[1] > self.y+height:
-				return (self.inp.mouse_position[1] - self.y-height)
+			if self.inp.mouse_position[1] < viewport_y:
+				return self.inp.mouse_position[1] - viewport_y
+			if self.inp.mouse_position[1] > viewport_y + height:
+				return self.inp.mouse_position[1] - viewport_y - height
 		if autoscroll:
-			test_y = self.pixel_position_from_cursor_position()[1] - scroll
-			scroll_output = 0
-			if test_y < -headroom + self.text_height: # scroll up
-				scroll_output = test_y + headroom - self.text_height
-			elif test_y > height-headroom - self.text_height: # scroll down
-				scroll_output = test_y -height+headroom + self.text_height
-			return scroll_output
+			line = self.which_line_by_char(self.cursor_position)
+			top = self.line_ys[line] + headroom - scroll
+			bottom = top + self.line_heights[line]
+			if top < 0:
+				return round(top)
+			if bottom > height:
+				return round(bottom - height)
 		return 0
 
 
@@ -23146,6 +23073,9 @@ class MultiLineTextBox:
 
 	def set_text(self, text: str) -> None:
 		self.text = text
+		self.layout_key = None
+		self.temp_x_pos = None
+		self.down_lock = False
 		if self.cursor_position > len(text):
 			self.cursor_position = 0
 			self.selection = 0
@@ -23154,8 +23084,7 @@ class MultiLineTextBox:
 
 	def clear(self) -> None:
 		self.text = ""
-		#self.cursor_position = 0
-		self.selection = self.cursor_position
+		self.cursor_position = self.selection = 0
 
 	def highlight_all(self) -> None:
 		self.selection = len(self.text)
@@ -23186,24 +23115,27 @@ class MultiLineTextBox:
 
 
 	def draw(
-			self, x: int, y: int, colour: ColourRGBA, active: bool = True, font: int = 13,
+			self, x: float, y: float, colour: ColourRGBA, active: bool = True, font: int = 13,
 			width: int = 0, height: int = 0, click: bool = False, selection_height: int = 18, big: bool = False,
-			headroom: int = 0, scroll: int = 0) -> int:
-		"""Flynn addition: headroom is a hacky way of dealing with bug where larger text will get shaved down from the top
-		this function is not very well optimized but i've spent so long on text logic i don't care anymore
-		if someone is writing a novel in their unsynced lyrics then they will have problems which i will fix. until then this is what u get
-		(the fix will be drawing the text in pieces so we can cache it better)"""
-
-		try:
-			self.text_box_canvas_rect.x
-		except AttributeError:
-			self.initialize(x,y,width,height)
-			self.font = font
-		if self.text_height == 0 or list(self.known_window_size) != self.gui.window_size \
-		or self.known_scale != self.gui.scale:
-			self.initialize(x,y,width,height)
-			self.font = font
+			headroom: int = 0, scroll: int = 0, *, bounded: bool = False) -> int:
+		"""Draw a wrapped editor and return a scroll adjustment, not an absolute position."""
+		canvas_size = (max(1, round(width or 2000 * self.gui.scale)), max(1, round(height or 20000 * self.gui.scale)))
+		if self.canvas_size != canvas_size:
+			self.initialize(x, y, width, height)
+		self.font = font
+		self.cursor_position = max(0, min(len(self.text), self.cursor_position))
+		self.selection = max(0, min(len(self.text), self.selection))
+		if self.text_height == 0 or self.layout_key != self._layout_state(width):
 			self.map_lines(width)
+		self.x = x
+		normal_offset = self.normal_text_offset
+		self.y = y - normal_offset
+		self.text_origin = headroom - normal_offset
+		self.offset = 0
+		original_scroll = scroll
+		if bounded and self.coll((x, y - headroom, width, height)) and self.inp.mouse_wheel:
+			scroll -= round(self.inp.mouse_wheel * self.text_height * 3)
+			self.inp.mouse_wheel = 0
 
 		autoscroll = False
 		# A little bit messy
@@ -23230,12 +23162,11 @@ class MultiLineTextBox:
 			self.gui.request_frame()  # TODO(Taiko): more elegant fix
 
 		rect = (x - 3, y - 2 - headroom, width - 3, height)
-		select_rect = (x - 20 * self.gui.scale, y - 2 - headroom, width + 20 * self.gui.scale, height + 21 * self.gui.scale)
 
 		self.fields.add(rect)
 
 		# Activate Menu
-		if self.coll(rect) and (self.inp.right_click or self.inp.level_2_right_click):
+		if active and self.coll(rect) and (self.inp.right_click or self.inp.level_2_right_click):
 			self.tauon.field_menu.activate(self)
 
 		if width > 0 and active:
@@ -23282,7 +23213,7 @@ class MultiLineTextBox:
 			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
 					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
 				self.text):
-				while g() not in (" ", "\n"):
+				while g() is not None and g() not in (" ", "\n"):
 					d()
 				while g() in (" ", "\n") and g() is not None:
 					d()
@@ -23356,6 +23287,9 @@ class MultiLineTextBox:
 					if self.cursor_position < len(self.text):
 						self.cursor_position += 1
 
+			if self.layout_key != self._layout_state(width):
+				self.map_lines(width)
+
 			# up and down to switch lines
 			if self.inp.key_up_press:
 				autoscroll = True
@@ -23373,11 +23307,7 @@ class MultiLineTextBox:
 
 			if self.paste_text:
 				autoscroll = True
-				if "http://" in self.text and "http://" in self.paste_text:
-					self.text = ""
-
-				self.paste_text = self.paste_text.rstrip(" ").lstrip(" ")
-				self.paste_text = self.paste_text.replace("\n", " ").replace("\r", "")
+				self.paste_text = self.paste_text.replace("\r\n", "\n").replace("\r", "\n")
 
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.paste_text + self.text[len(
@@ -23414,7 +23344,7 @@ class MultiLineTextBox:
 			if self.inp.key_del and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
 				self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position > 0:
 				autoscroll = True
-				while g2() not in (" ", "\n"):
+				while g2() is not None and g2() not in (" ", "\n"):
 					d2()
 				while g2() in (" ", "\n") and g2() is not None:
 					d2()
@@ -23450,107 +23380,75 @@ class MultiLineTextBox:
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			# width -= round(15 * self.gui.scale)
-			t_len, t_wid = self.ddt.get_text_wh(self.text, font, width, True)
-			if active and self.gui.editline and self.gui.editline != self.inp.input_text:
-				t_len += self.ddt.get_text_w(self.gui.editline, font)
-			if not click and not self.down_lock:
-				cursor_x = self.ddt.get_text_w(self.partial_line_from_char(self.cursor_position), font) #self.text[:len(self.text) - self.cursor_position]
-				margin = round(15 * self.gui.scale)
-				max_offset = max(t_len - width, 0)
-				if self.cursor_position == len(self.text):
-					self.offset = 0
-				elif self.cursor_position == 0:
-					self.offset = max_offset
-				elif cursor_x < self.offset + margin:
-					self.offset = max(cursor_x - margin, 0)
-				elif cursor_x > self.offset + width:
-					self.offset = min(cursor_x - width, max_offset)
-				else:
-					self.offset = min(max(self.offset, 0), max_offset)
+			if self.layout_key != self._layout_state(width):
+				self.map_lines(width)
+			if bounded:
+				scroll = max(0, min(scroll, max(0, self.text_origin + self.content_height - height)))
 
-			x -= self.offset
-
-			if self.coll(select_rect):  # self.coll((x - 15, y, width + 16, selection_height + 1)):
-				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
-				if click:
-					if self.inp.mouse_position[1] < self.y -headroom -scroll + 1 and not self.down_lock:
-						self.cursor_position = len(self.text)
-					else:
-						self.set_cursor_from_click(scroll, False)
-					self.down_lock = True
-
+			if click and self.coll(rect):
+				self.set_cursor_from_click(scroll, False)
+				self.selection = self.cursor_position
+				self.down_lock = True
 			if self.inp.mouse_up:
 				self.down_lock = False
 			if self.down_lock:
-				text = self.text
-				if self.inp.mouse_position[1] < self.y -headroom -scroll + 1:
-					self.selection = len(self.text)
-				else:
-					self.set_cursor_from_click(scroll, True)
-
-			text = self.text
-			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
-
-			# draw the blinking text cursor
-			space, line = self.pixel_position_from_cursor_position()
-			if TextBox.cursor and self.selection == self.cursor_position:
-				self.ddt.rect((0 + space, line  + headroom-scroll - 0.2*self.text_height, 1 * self.gui.scale, 0.8*self.text_height), colour)
-
-			if click:
-				self.selection = self.cursor_position
-
-			if self.selection != self.cursor_position:
-				# text is selected
-				self.draw_selection_highlight(scroll - headroom, font, colour, width)
+				self.set_cursor_from_click(scroll, True)
 		else:
-			# width -= round(15 * self.gui.scale)
-			text = self.text
-			t_len, t_wid = self.ddt.get_text_wh(text, font, max_x=width)
-			self.ddt.text((0, headroom-scroll, 4, width, 40000), text, colour, self.font, max_w=width)
-			self.offset = 0
+			self.down_lock = False
 			if self.coll(rect) and not self.tauon.field_menu.active:
 				self.gui.cursor_want = 2
 
-		if active:
-			tw, th = self.ddt.get_text_wh(self.text, font, max_x=width)
+		scroll += self.get_scroll_output(scroll, self.text_origin, height, autoscroll)
+		if bounded:
+			scroll = max(0, min(scroll, max(0, self.text_origin + self.content_height - height)))
+
+		self.y = y - self.normal_text_offset
+		self.text_origin = headroom - self.normal_text_offset
+		text_offset = self.render_text_offset
+		anchor_y = self.text_origin + text_offset - scroll
+		if active and self.selection != self.cursor_position:
+			self.draw_selection_highlight(scroll - self.text_origin)
+		self.ddt.text(
+			(0, anchor_y, 4, max(1, width - 12), 40000), self.text, colour, font,
+			max_w=width, bg=ColourRGBA(0, 0, 0, 0)
+		)
+
+		if active and width > 0:
+			space, line_y = self.pixel_position_from_cursor_position()
+			line = self.which_line_by_char(self.cursor_position)
+			line_height = self.line_heights[line]
+			caret_y = self.text_origin + line_y - scroll
+			if TextBox.cursor and self.selection == self.cursor_position:
+				self.ddt.rect((space, caret_y, max(1, round(self.gui.scale)), line_height), colour)
+
 			if self.gui.editline not in ("", self.inp.input_text):
-				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom-scroll), self.gui.editline, ColourRGBA(240, 230, 230, 255), font, max_w=width)
-				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
+				composition_x = space + round(4 * self.gui.scale)
+				composition_y = caret_y + self.ddt.get_y_offset(self.gui.editline, font, width)
+				composition_width = self.ddt.text(
+					(composition_x, composition_y), self.gui.editline, ColourRGBA(240, 230, 230, 255), font,
+					max_w=max(1, width - composition_x), bg=ColourRGBA(0, 0, 0, 0)
+				)
+				self.ddt.rect(
+					(composition_x, caret_y + line_height - 1, composition_width, max(1, round(self.gui.scale))),
+					ColourRGBA(245, 245, 245, 255)
+				)
 
 			pixel_to_logical = self.tauon.pixel_to_logical
-			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
+			input_area = sdl3.SDL_Rect(
+				pixel_to_logical(x), pixel_to_logical(self.y + line_y - scroll),
+				pixel_to_logical(width), pixel_to_logical(line_height)
+			)
+			sdl3.SDL_SetTextInputArea(self.t_window, input_area, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
-
-		self.text_box_canvas_hide_rect.x = 0
-		self.text_box_canvas_hide_rect.y = 0
-
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
-
-		self.text_box_canvas_hide_rect.w = round(self.offset)
-		if height != 0:
-			self.text_box_canvas_hide_rect.h = height
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
-
-		self.text_box_canvas_hide_rect.w = round(t_len)
-		self.text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * self.gui.scale))
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_hide_rect)
-
 		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
-
 		self.text_box_canvas_rect.x = round(x)
 		self.text_box_canvas_rect.y = round(y) - headroom
-
 		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
-
-		if autoscroll:
-			self.map_lines(width)
-		return self.get_scroll_output(scroll, headroom, height, autoscroll)
+		if scroll != original_scroll:
+			self.gui.request_frame()
+		return round(scroll - original_scroll)
 
 
 class TextBox2:
@@ -24878,7 +24776,7 @@ class AlbumArt:
 
 		# Get artist MBID
 		try:
-			s = musicbrainzngs.search_artists(artist, limit=1)
+			s = musicbrainz_call(musicbrainzngs.search_artists, artist, limit=1)
 			artist_id = s["artist-list"][0]["id"]
 		except Exception:
 			logging.exception(f"Failed to find artist MBID for: {artist}")
@@ -26433,240 +26331,6 @@ class RenameTrackBox:
 					_("{N} / {T} filenames were written.")
 					.format(N=str(total_todo), T=str(len(r_todo))), mode="done")
 			self.pctl.notify_database_changed()
-
-class TransEditBox:
-
-	def __init__(self, tauon: Tauon) -> None:
-		self.tauon             = tauon
-		self.gui               = tauon.gui
-		self.ddt               = tauon.ddt
-		self.inp               = tauon.inp
-		self.coll              = tauon.coll
-		self.draw              = tauon.draw
-		self.pctl              = tauon.pctl
-		self.fields            = tauon.fields
-		self.colours           = tauon.colours
-		self.star_store        = tauon.star_store
-		self.window_size       = tauon.window_size
-		self.show_message      = tauon.show_message
-		self.edit_title        = tauon.edit_title
-		self.edit_album        = tauon.edit_album
-		self.edit_artist       = tauon.edit_artist
-		self.edit_album_artist = tauon.edit_album_artist
-		self.active = False
-		self.active_field = 1
-		self.selected = []
-		self.playlist = -1
-
-	def render(self) -> None:
-		if not self.active:
-			return
-
-		if self.gui.level_2_click:
-			self.inp.mouse_click = True
-		self.gui.level_2_click = False
-
-		w = 500 * self.gui.scale
-		h = 255 * self.gui.scale
-		x = int(self.window_size[0] / 2) - int(w / 2)
-		y = int(self.window_size[1] / 2) - int(h / 2)
-
-		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
-		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
-		self.ddt.text_background_colour = self.colours.box_background
-		title_colour = readable_text_colour(self.colours.box_title_text, self.colours.box_background, 5.4)
-		label_colour = readable_text_colour(self.colours.box_text_label, self.colours.box_background)
-		input_colour = readable_text_colour(self.colours.box_input_text, self.colours.box_background)
-		warning_colour = readable_text_colour(ColourRGBA(245, 90, 90, 255), self.colours.box_background)
-
-		if self.inp.key_esc_press or ((self.inp.mouse_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll((x, y, w, h))):
-			self.active = False
-
-		select = list(set(self.gui.shift_selection))
-		if not select and self.pctl.selected_ready():
-			select = [self.pctl.selected_in_playlist]
-
-		titles        = [self.pctl.get_track(self.pctl.default_playlist[s]).title for s in select]
-		artists       = [self.pctl.get_track(self.pctl.default_playlist[s]).artist for s in select]
-		albums        = [self.pctl.get_track(self.pctl.default_playlist[s]).album for s in select]
-		album_artists = [self.pctl.get_track(self.pctl.default_playlist[s]).album_artist for s in select]
-
-		#logging.info(select)
-		if select != self.selected or self.pctl.active_playlist_viewing != self.playlist:
-			#logging.info("reset")
-			self.selected = select
-			self.playlist = self.pctl.active_playlist_viewing
-			self.edit_album.clear()
-			self.edit_artist.clear()
-			self.edit_title.clear()
-			self.edit_album_artist.clear()
-
-			if len(select) == 0:
-				return
-
-			tr = self.pctl.get_track(self.pctl.default_playlist[select[0]])
-			self.edit_title.set_text(tr.title)
-
-			if check_equal(artists):
-				self.edit_artist.set_text(artists[0])
-
-			if check_equal(albums):
-				self.edit_album.set_text(albums[0])
-
-			if check_equal(album_artists):
-				self.edit_album_artist.set_text(album_artists[0])
-
-		x += round(20 * self.gui.scale)
-		y += round(18 * self.gui.scale)
-
-		self.ddt.text((x, y), _("Simple tag editor"), title_colour, 215)
-
-		if self.draw.button(_("?"), x + 440 * self.gui.scale, y):
-			self.show_message(
-				_("Press Enter in each field to apply its changes to local database."),
-				_("When done, press WRITE TAGS to save to tags in actual files. (Optional but recommended)"),
-				mode="info")
-
-		y += round(24 * self.gui.scale)
-		self.ddt.text((x, y), _("Number of tracks selected: {N}").format(N=len(select)), title_colour, 313)
-
-		y += round(24 * self.gui.scale)
-
-		if self.inp.key_tab_press:
-			if self.inp.key_shift_down or self.inp.key_shiftr_down:
-				self.active_field -= 1
-			else:
-				self.active_field += 1
-
-		if self.active_field < 0:
-			self.active_field = 3
-		if self.active_field == 4:
-			self.active_field = 0
-			if len(select) > 1:
-				self.active_field = 1
-
-		def field_edit(x: int, y: int, label: str, field_number: int, names: list[str], text_box: TextBox2) -> bool:
-			changed = False
-			self.ddt.text((x, y), label, label_colour, 11)
-			y += round(16 * self.gui.scale)
-			rect1 = (x, y, round(370 * self.gui.scale), round(17 * self.gui.scale))
-			self.fields.add(rect1)
-			if (self.coll(rect1) and self.inp.mouse_click) or (self.inp.key_tab_press and self.active_field == field_number):
-				self.active_field = field_number
-			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
-			tc = input_colour
-			if names and check_equal(names) and text_box.text == names[0]:
-				h, l, s = rgb_to_hls(tc.r, tc.g, tc.b)
-				l *= 0.7
-				tc = hls_to_rgb(h, l, s)
-			else:
-				changed = True
-			if not (names and check_equal(names)) and not text_box.text:
-				changed = False
-				self.ddt.text((x + round(2 * self.gui.scale), y), _("<Multiple selected>"), label_colour, 12)
-			text_box.draw(x + round(3 * self.gui.scale), y, tc, self.active_field == field_number, width=370 * self.gui.scale)
-			if changed:
-				self.ddt.text((x + 377 * self.gui.scale, y - 1 * self.gui.scale), "⮨", title_colour, 214)
-			return changed
-
-		changed = False
-		if len(select) == 1:
-			changed |= field_edit(x, y, _("Track title"), 0, titles, self.edit_title)
-		y += round(40 * self.gui.scale)
-		changed |= field_edit(x, y, _("Album name"), 1, albums, self.edit_album)
-		y += round(40 * self.gui.scale)
-		changed |= field_edit(x, y, _("Artist name"), 2, artists, self.edit_artist)
-		y += round(40 * self.gui.scale)
-		changed |= field_edit(x, y, _("Album-artist name"), 3, album_artists, self.edit_album_artist)
-
-		y += round(40 * self.gui.scale)
-		for s in select:
-			tr = self.pctl.get_track(self.pctl.default_playlist[s])
-			if tr.is_network:
-				self.ddt.text((x, y), _("Editing network tracks is not recommended!"), warning_colour, 312)
-
-		if self.inp.key_return_press:
-			self.gui.request_tracklist_redraw()
-			if self.active_field == 0 and len(select) == 1:
-				for s in select:
-					tr = self.pctl.get_track(self.pctl.default_playlist[s])
-					star = self.star_store.full_get(tr.index)
-					self.star_store.remove(tr.index)
-					tr.title = self.edit_title.text
-					self.star_store.merge(tr.index, star)
-
-			if self.active_field == 1:
-				for s in select:
-					tr = self.pctl.get_track(self.pctl.default_playlist[s])
-					tr.album = self.edit_album.text
-			if self.active_field == 2:
-				for s in select:
-					tr = self.pctl.get_track(self.pctl.default_playlist[s])
-					star = self.star_store.full_get(tr.index)
-					self.star_store.remove(tr.index)
-					tr.artist = self.edit_artist.text
-					self.star_store.merge(tr.index, star)
-			if self.active_field == 3:
-				for s in select:
-					tr = self.pctl.get_track(self.pctl.default_playlist[s])
-					tr.album_artist = self.edit_album_artist.text
-			self.tauon.bg_save()
-
-		ww = self.ddt.get_text_w(_("WRITE TAGS"), 212) + round(48 * self.gui.scale)
-		if self.gui.write_tag_in_progress:
-			text = f"{self.gui.tag_write_count}/{len(select)}"
-		text = _("WRITE TAGS")
-		if self.draw.button(text, (x + w) - ww, y - (0) * self.gui.scale):
-			if changed:
-				self.show_message(_("Press enter on fields to apply your changes first!"))
-				return
-
-			if self.gui.write_tag_in_progress:
-				return
-
-			def write_tag_go() -> None:
-				for s in select:
-					tr = self.pctl.get_track(self.pctl.default_playlist[s])
-
-					if tr.is_network:
-						self.show_message(_("Writing to a network track is not applicable!"), mode="error")
-						self.gui.write_tag_in_progress = True
-						return
-					if tr.is_cue:
-						self.show_message(_("Cannot write CUE sheet types!"), mode="error")
-						self.gui.write_tag_in_progress = True
-						return
-
-					muta = mutagen.File(tr.fullpath, easy=True)
-
-					def write_tag(track: TrackClass, muta, field_name_tauon, field_name_muta) -> int:
-						item = muta.get(field_name_muta)
-						if item and len(item) > 1:
-							self.show_message(_("Cannot handle multi-field! Please use external tag editor"), mode="error")
-							return 0
-						if not getattr(tr, field_name_tauon):  # Want delete tag field
-							if item:
-								del muta[field_name_muta]
-						else:
-							muta[field_name_muta] = getattr(tr, field_name_tauon)
-						return 1
-
-					write_tag(tr, muta, "artist", "artist")
-					write_tag(tr, muta, "album", "album")
-					write_tag(tr, muta, "title", "title")
-					write_tag(tr, muta, "album_artist", "albumartist")
-
-					muta.save()
-					self.gui.tag_write_count += 1
-					self.gui.request_frame()
-				self.tauon.bg_save()
-				if not self.gui.message_box:
-					self.show_message(_("{N} files rewritten").format(N=self.gui.tag_write_count), mode="done")
-				self.gui.write_tag_in_progress = False
-			if not self.gui.write_tag_in_progress:
-				self.gui.tag_write_count = 0
-				self.gui.write_tag_in_progress = True
-				shooter(write_tag_go)
 
 class SubLyricsBox:
 
@@ -51553,6 +51217,7 @@ def save_prefs(bag: Bag) -> None:
 
 	cf.update_value("separate-multi-genre", prefs.sep_genre_multi)
 
+	cf.update_value("acoustid-api-key", prefs.acoustid_api_key)
 	cf.update_value("tag-editor-name", prefs.tag_editor_name)
 	cf.update_value("tag-editor-target", prefs.tag_editor_target)
 
@@ -51809,6 +51474,7 @@ def load_prefs(bag: Bag) -> None:
 
 	cf.br()
 	cf.add_text("[tag-editor]")
+	prefs.acoustid_api_key = cf.sync_add("string", "acoustid-api-key", prefs.acoustid_api_key, "AcoustID application API key override; blank uses Tauon's bundled key.")
 	if bag.windows:
 		prefs.tag_editor_name = cf.sync_add("string", "tag-editor-name", "Picard", "Name to display in UI.")
 		prefs.tag_editor_target = cf.sync_add(
@@ -56297,6 +55963,7 @@ def main(holder: Holder) -> None:
 
 	track_menu.add(MenuItem(_("Show in Gallery"), tauon.menu_show_in_gal, pass_ref=True, show_test=tauon.test_show))
 
+	track_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor))
 	track_menu.add_sub(_("Meta…"), 160)
 
 	track_menu.br()
@@ -56318,8 +55985,6 @@ def main(holder: Holder) -> None:
 	gui.rename_tracks_icon.xoff = 1
 	track_menu.add_to_sub(0, MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, tauon.rename_tracks_deco, pass_ref=True,
 		pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
-
-	track_menu.add_to_sub(0, MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
 
 	gui.mod_folder_icon.colour = ColourRGBA(229, 98, 98, 255)
 	track_menu.add_to_sub(0, MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
@@ -56363,10 +56028,6 @@ def main(holder: Holder) -> None:
 		pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
 	folder_tree_menu.add(MenuItem(_("Rename Tracks…"), tauon.rename_track_box.activate, pass_ref=True, pass_ref_deco=True, icon=gui.rename_tracks_icon, disable_test=tauon.rename_track_box.disable_test))
 
-	if not tauon.snap_mode:
-		folder_menu.add(MenuItem(_("Edit with"), tauon.launch_editor_selection, pass_ref=True,
-			pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
-
 	folder_tree_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
 	folder_tree_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 
@@ -56378,7 +56039,7 @@ def main(holder: Holder) -> None:
 
 	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
 	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.menu_reload_metadata, pass_ref=True))
-	folder_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
+	folder_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor))
 	folder_menu.add(MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 	folder_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 	gallery_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
@@ -56393,8 +56054,9 @@ def main(holder: Holder) -> None:
 	selection_menu.add(MenuItem(_("Add to queue"), tauon.add_selected_to_queue_multi, tauon.selection_queue_deco))
 	selection_menu.br()
 	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
-	selection_menu.add(MenuItem(_("Edit fields…"), tauon.activate_trans_editor))
-	selection_menu.add(MenuItem(_("Edit with "), tauon.launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
+	selection_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor))
+	selection_menu.add_sub(_("Meta…"), 160)
+	selection_menu.add_to_sub(0, MenuItem(_("Edit with "), tauon.launch_editor_selection, pass_ref=True, pass_ref_deco=True, icon=edit_icon, render_func=tauon.edit_deco, disable_test=tauon.launch_editor_selection_disable_test))
 
 	selection_menu.br()
 	folder_menu.br()
@@ -58914,7 +58576,8 @@ def main(holder: Holder) -> None:
 					tauon.drop_import_action = action
 					for line in link.split("\n"):
 						target = str(urllib.parse.unquote(line)).replace("file:///", "/")
-						tauon.drop_file(target)
+						if not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
+							tauon.drop_file(target)
 					if action.complete:
 						tauon.drop_import_action = None
 			elif event.type == sdl3.SDL_EVENT_DROP_BEGIN:
@@ -58945,7 +58608,7 @@ def main(holder: Holder) -> None:
 					.replace("\r", "")
 				)
 				# logging.info(target)
-				if not tauon.radiobox.accept_custom_image_drop(target):
+				if not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
 					tauon.drop_file(target)
 
 			elif event.type == sdl3.SDL_EVENT_QUIT:

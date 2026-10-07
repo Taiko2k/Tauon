@@ -360,6 +360,13 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 			"unavailable" in track.lyrics or ".com" in track.lyrics or "www." in track.lyrics
 		):
 			track.lyrics = ""
+	frames = tags.getall("SYLT")
+	for frame in frames:
+		if frame.format == 2:
+			track.synced = "\n".join(
+				f"[{stamp // 60000:02d}:{stamp % 60000 / 1000:06.3f}]{text}" for text, stamp in frame.text
+			)
+			break
 
 	frames = tags.getall("TPE1")
 	if frames:
@@ -429,8 +436,12 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 			logging.exception("Tag Scan: Read ReplayGain ID3 error")
 			logging.debug(track.fullpath)
 
-		if item.desc == "FMPS_RATING":
+		if item.desc.lower() == "fmps_rating":
 			track.FMPS_Rating = float(item.text[0])
+		elif item.desc.lower() == "syncedlyrics" and not track.synced:
+			track.synced = "\n".join(item.text)
+		elif item.desc.lower() in ("lyrics", "unsyncedlyrics") and not track.lyrics:
+			track.lyrics = "\n".join(item.text)
 
 
 def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
@@ -462,6 +473,16 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 	track.genre = get_text("\xa9gen")
 	if "\xa9lyr" in tags:
 		track.lyrics = get_text("\xa9lyr")
+	for key in ("----:com.apple.iTunes:ORIGINALDATE", "----:com.apple.iTunes:originaldate", "----:com.apple.iTunes:ORIGINALYEAR"):
+		if key in tags:
+			process_odat(track, get_bytes(key).decode("utf-8"))
+			break
+	for key in ("----:com.apple.iTunes:FMPS_RATING", "----:com.apple.iTunes:fmps_rating"):
+		if key in tags:
+			track.FMPS_Rating = float(get_bytes(key).decode("utf-8"))
+			break
+	if "----:com.apple.iTunes:SYNCEDLYRICS" in tags:
+		track.synced = get_bytes("----:com.apple.iTunes:SYNCEDLYRICS").decode("utf-8")
 
 	track.track_total = ""
 	track.track_number = ""
@@ -962,6 +983,7 @@ class Ape(TrackFile):
 		self.label: str = ""
 
 	def read(self) -> None:
+		odat = ""
 		if not self.file:
 			self.file = Path(self.filepath).open("rb")
 		a = self.file
@@ -1024,7 +1046,7 @@ class Ape(TrackFile):
 
 				# Collect every character until we reach null terminator
 				name = b""
-				for i in range(100):
+				for i in range(256):
 					ch = a.read(1)
 					if ch == b"\x00":
 						break
@@ -1046,9 +1068,15 @@ class Ape(TrackFile):
 				if key == "title":
 					self.title = value
 				elif key == "artist":
-					self.artist = value
+					artists = value.split("\x00")
+					self.artist = "; ".join(artists)
+					if len(artists) > 1:
+						self.artists = artists
 				elif key == "genre":
-					self.genre = value
+					genres = value.split("\x00")
+					self.genre = "; ".join(genres)
+					if len(genres) > 1:
+						self.genres = genres
 				elif key == "discnumber":
 					self.disc_number = value
 				elif key == "disc":
@@ -1070,6 +1098,8 @@ class Ape(TrackFile):
 
 				elif key == "year":
 					self.date = value
+				elif key in ("originaldate", "originalyear"):
+					odat = value
 				elif key == "album":
 					self.album = value
 				elif key == "artist":
@@ -1077,11 +1107,20 @@ class Ape(TrackFile):
 				elif key == "composer":
 					self.composer = value
 				elif key in ("album artist", "albumartist"):
-					self.album_artist = value
+					album_artists = value.split("\x00")
+					self.album_artist = album_artists[0]
+					if len(album_artists) > 1:
+						self.album_artists = album_artists
 				elif key == "label":
 					self.label = value
 				elif key == "lyrics":
 					self.lyrics = value
+				elif key == "unsyncedlyrics":
+					self.lyrics = value
+				elif key == "syncedlyrics":
+					self.synced_lyrics = value
+				elif key == "fmps_rating":
+					self.FMPS_Rating = float(value)
 				elif key == "replaygain_track_gain":
 					self.replaygain_track_gain = parse_replaygain_db(value)
 				elif key == "replaygain_track_peak":
@@ -1114,6 +1153,7 @@ class Ape(TrackFile):
 					self.has_picture = True
 					# logging.info(value)
 
+		process_odat(self, odat)
 		# Back to start of file to see if we can find sample rate and duration information
 		a.seek(0)
 

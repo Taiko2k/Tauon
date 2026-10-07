@@ -80,6 +80,7 @@ class Prefs:
 	playlist_font_size:  int = 15
 	playlist_row_height: int = 22
 
+	acoustid_api_key: str = ""
 	tag_editor_name:   str = ""
 	tag_editor_target: str = ""
 	tag_editor_path:   str = ""

@@ -41,6 +41,7 @@ jobs:
             libdbus-1-dev \
             libjxl-dev \
             libflac-dev \
+            libchromaprint-dev \
             libgme-dev \
             libmpg123-dev \
             libopenmpt-dev \
@@ -153,6 +154,7 @@ jobs:
             libdbus-1-dev \
             libjxl-dev \
             libflac-dev \
+            libchromaprint-dev \
             libgme-dev \
             libmpg123-dev \
             libopenmpt-dev \
@@ -271,6 +273,7 @@ jobs:
             jpeg-xl \
             libsamplerate \
             ffmpeg \
+            chromaprint \
             librsvg \
             opusfile \
             libopenmpt \
