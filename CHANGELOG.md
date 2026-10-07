@@ -4,6 +4,7 @@ Changelog
 
 ### v12.2.0
 
+ - Added advanced tag editor
  - Added activity overview button
  - Added queue album group expansion
  - Added auto queue feature
