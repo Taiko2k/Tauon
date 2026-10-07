@@ -1600,8 +1600,6 @@ class FeuxBar:
 		if track is not None:
 			title = track.title or track.filename
 			line2 = track.artist or track.album or ""
-			if track.album and track.artist:
-				line2 = track.artist + "  ·  " + track.album
 
 		title_colour = self._fg(
 			self._tint(colours.bar_title_text, text_x, mid, panel, boost=0.6), backdrop, 4.5)
@@ -1612,7 +1610,21 @@ class FeuxBar:
 		if title:
 			ddt.text((text_x, mid - self._s(16)), title, title_colour, 213, max_w=text_w)
 		if line2:
-			ddt.text((text_x, mid + self._s(2)), line2, sub_colour, 12, max_w=text_w)
+			text_y = mid + self._s(2)
+			if track is not None and track.artist and track.album:
+				artist_w = ddt.get_text_w(track.artist, 12)
+				gap = max(0, ddt.get_text_w("  ", 12) - self._s(1))
+				ddt.text((text_x, text_y), track.artist, sub_colour, 12, max_w=text_w)
+				separator_x = artist_w + gap
+				if separator_x < text_w:
+					ddt.text((text_x + separator_x, text_y), "·", sub_colour, 12,
+						max_w=text_w - separator_x)
+				album_x = separator_x + ddt.get_text_w("·", 12) + gap
+				if album_x < text_w:
+					ddt.text((text_x + album_x, text_y), track.album, sub_colour, 12,
+						max_w=text_w - album_x)
+			else:
+				ddt.text((text_x, text_y), line2, sub_colour, 12, max_w=text_w)
 
 		# Click-through to the playing track, like the standard bar's title.
 		left = art_x if show_art else 0

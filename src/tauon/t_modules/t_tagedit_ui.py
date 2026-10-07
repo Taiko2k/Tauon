@@ -1569,15 +1569,14 @@ class TransEditBox:
 
 	def _tag_badges(self, x: int, y: int, width: int) -> None:
 		scale = self.gui.scale
-		for family, label in dict.fromkeys(
-			(doc.family, self.session.effective_document(doc).label) for doc in self.session.scope_documents
-		):
-			colour = {
-				"ID3": ColourRGBA(105, 165, 245, 255),
-				"APE": ColourRGBA(235, 169, 80, 255),
-				"MP4": ColourRGBA(191, 133, 231, 255),
-				"Vorbis": ColourRGBA(103, 200, 148, 255),
-			}[family]
+		badges = dict.fromkeys(
+			(self.session.effective_document(doc).label, doc.path.suffix[1:].upper())
+			for doc in self.session.scope_documents
+		)
+		for label, extension in badges:
+			colour = self.tauon.formats.colours.get(extension, ColourRGBA(130, 130, 130, 255))
+			if sum(name == label for name, ext in badges) > 1:
+				label += " · " + extension
 			available = max(0, width)
 			if available <= 0:
 				break
