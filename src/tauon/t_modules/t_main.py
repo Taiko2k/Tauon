@@ -3988,6 +3988,20 @@ class PlayerCtl:
 		if update_gui:
 			self.render_playlist()
 
+	def queue_priority_position(self) -> int:
+		"""Queue priority feature: manual additions precede the trailing automatic items."""
+		position = len(self.force_queue)
+		while position:
+			item = self.force_queue[position - 1]
+			if not item.auto_queued or any(not track.auto_queued for track in item.tracks or []):
+				break
+			position -= 1
+		return position
+
+	@database_write
+	def add_to_queue(self, item: TauonQueueItem) -> None:
+		self.force_queue.insert(self.queue_priority_position(), item)
+
 	@database_write
 	def purge_track(self, track_id: int, fast: bool = False) -> None:
 		"""Remove a track from the database"""
@@ -9610,7 +9624,7 @@ class Tauon:
 				partway = 1
 
 		queue_object = queue_item_gen(track_id, position, playlist_id, QueueType.ALBUM, partway)
-		self.pctl.force_queue.append(queue_object)
+		self.pctl.add_to_queue(queue_object)
 		self.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
@@ -12778,7 +12792,7 @@ class Tauon:
 		shoot_love.start()
 
 	def add_to_queue(self, ref: MenuTrackRef) -> None:
-		self.pctl.force_queue.append(queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
+		self.pctl.add_to_queue(queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
 		self.queue_timer_set()
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
@@ -12795,7 +12809,7 @@ class Tauon:
 			)
 			self.queue_timer_set()
 		else:
-			self.pctl.force_queue.append(
+			self.pctl.add_to_queue(
 				queue_item_gen(self.pctl.default_playlist[self.pctl.selected_in_playlist],
 				self.pctl.selected_in_playlist,
 				self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
@@ -12806,7 +12820,7 @@ class Tauon:
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
 		for index in self.gui.shift_selection:
-			self.pctl.force_queue.append(
+			self.pctl.add_to_queue(
 				queue_item_gen(self.pctl.default_playlist[index],
 				index,
 				self.pctl.pl_to_id(self.pctl.active_playlist_viewing)))
@@ -12818,7 +12832,7 @@ class Tauon:
 		if queue_object:
 			self.gui.toast_queue_object = queue_object
 		elif self.pctl.force_queue:
-			self.gui.toast_queue_object = self.pctl.force_queue[-1]
+			self.gui.toast_queue_object = self.pctl.force_queue[self.pctl.queue_priority_position() - 1]
 
 	@database_write
 	def split_queue_album(self, id: int) -> int | None:
@@ -26885,7 +26899,7 @@ class SearchOverlay:
 			return
 
 		queue_object = queue_item_gen(track_id, playlist.index(track_id), playlist_id)
-		self.pctl.force_queue.append(queue_object)
+		self.pctl.add_to_queue(queue_object)
 		self.tauon.queue_timer_set(queue_object=queue_object)
 		if self.prefs.stop_end_queue:
 			self.pctl.stop_mode = StopMode.OFF
@@ -37735,7 +37749,7 @@ class StandardPlaylist:
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
 								while i < len(pctl.default_playlist) and parent == pctl.get_track(
 										pctl.default_playlist[i]).parent_folder_path:
-									pctl.force_queue.append(queue_item_gen(pctl.default_playlist[i], i, pctl.pl_to_id(
+									pctl.add_to_queue(queue_item_gen(pctl.default_playlist[i], i, pctl.pl_to_id(
 										pctl.active_playlist_viewing)))
 									i += 1
 								self.tauon.queue_timer_set(plural=True)
@@ -37884,7 +37898,7 @@ class StandardPlaylist:
 
 			# Add to queue on middle click
 			if self.inp.middle_click and line_hit:
-				pctl.force_queue.append(
+				pctl.add_to_queue(
 					queue_item_gen(track_id,
 					track_position, pctl.pl_to_id(pctl.active_playlist_viewing)))
 				pctl.selected_in_playlist = track_position
@@ -57178,7 +57192,7 @@ def main(holder: Holder) -> None:
 										# Add to queue ungrouped
 										album = tauon.get_album_info(tauon.album_dex[album_on])[1]
 										for item in album:
-											pctl.force_queue.append(
+											pctl.add_to_queue(
 												queue_item_gen(
 													pctl.default_playlist[item],
 													item,
