@@ -27832,18 +27832,15 @@ class PresetDownloadBox:
 				self.cancel()
 
 class NagBox:
-	SPLASH_VERSION = "12.0.0"
+	SPLASH_VERSION = "13.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
-		("Enhanced auto theme (Colourise mode)", False),
-		("New optional playback panel design!", False),
-		("Revamped radio player", False),
-		("New Album Flow widget", False),
-		("New Tab Switcher widget", False),
-		("New spectrogram styles: Ion and Flux", False),
-		("Many small theming fixes", False),
+		("New upgraded Tag Editor", False),
+		("Queued albums can now be expanded", False),
+		("Added auto-queue feature", False),
+		("Many long standing feature gaps fixed", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -27881,8 +27878,8 @@ class NagBox:
 		self.tauon.show_message(_("Yay! Thank you!! 🎉 ✨"), mode="done")
 
 	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
-		top = ColourRGBA(112, 197, 240, 255)
-		bottom = ColourRGBA(248, 222, 88, 255)
+		top = ColourRGBA(255, 158, 94, 255)
+		bottom = ColourRGBA(240, 64, 64, 255)
 		steps = max(1, round(h / max(self.gui.scale, 1)))
 		for step in range(steps):
 			ratio = step / max(steps - 1, 1)
@@ -27926,11 +27923,11 @@ class NagBox:
 		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
-		version_text = "Tauon v12"
+		version_text = "Tauon v13"
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("The best version of Tauon yet!"),
+			_("Too many fixes to list, but here are the big ones"),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,

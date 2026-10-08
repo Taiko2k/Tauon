@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 from PIL import Image
 
 from tauon.t_modules.t_draw import QuickThumbnail
-from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, shooter
+from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, rgb_add_hls, shooter
 from tauon.t_modules.t_lookup_cache import LookupCache
 from tauon.t_modules.t_musicbrainz_lookup import (
 	LOOKUP_LIMIT,
@@ -1310,7 +1310,7 @@ class TransEditBox:
 		pad = round(14 * scale)
 		self.ddt.text(
 			(px + pad, py + round(12 * scale)),
-			_("MusicBrainz Lookup"),
+			_("MusicBrainz Scan"),
 			self.title_colour,
 			14,
 			max_w=pw - 2 * pad,
@@ -2105,6 +2105,20 @@ class TransEditBox:
 		height = min(round(590 * scale), self.window_size[1] - round(24 * scale))
 		x = (self.window_size[0] - width) // 2
 		y = (self.window_size[1] - height) // 2
+		menu_open = self.tools_menu is not None and self.tools_menu.active
+		presets_open = self.presets_menu is not None and self.presets_menu.active
+		art_open = self.art_menu is not None and self.art_menu.active
+		if (
+			not message_open
+			and not self.gui.write_tag_in_progress
+			and not (menu_open or presets_open or art_open or self.scope_open or self.lookup_open)
+			and self.inp.mouse_click
+			and not self.coll((x, y, width, height))
+		):
+			self.inp.mouse_click = False
+			if self.loading or not self._changes_pending():
+				self._close()
+				return
 		self.editor_bottom = y + height
 		self.ddt.bordered_rect(
 			(x, y, width, height), self.colours.box_background, self.colours.box_border, max(1, round(scale))
@@ -2131,9 +2145,6 @@ class TransEditBox:
 		if self.gui.write_tag_in_progress:
 			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13, bg=self.colours.box_background)
 			return
-		menu_open = self.tools_menu is not None and self.tools_menu.active
-		presets_open = self.presets_menu is not None and self.presets_menu.active
-		art_open = self.art_menu is not None and self.art_menu.active
 		if self.inp.key_esc_press and not message_open:
 			self.inp.key_esc_press = False
 			if menu_open:
@@ -2147,7 +2158,7 @@ class TransEditBox:
 			elif self.scope_open:
 				self.scope_open = False
 				self.scope_dragging = False
-			else:
+			elif not self._changes_pending():
 				self._close()
 			return
 		self.input_enabled = not (
@@ -2175,7 +2186,7 @@ class TransEditBox:
 			self.open_tools(x + width - round(16 * scale), y + round(95 * scale))
 		self._scope_selector(body_x, body_y - round(34 * scale), body_width - round(175 * scale), body_height)
 		if not self.lookup_running and self.draw.button(
-			_("MusicBrainz Lookup"),
+			_("MusicBrainz Scan"),
 			x + width - round(180 * scale),
 			body_y - round(34 * scale),
 			w=round(164 * scale),
@@ -2218,12 +2229,12 @@ class TransEditBox:
 		pending_width = 0
 		if self._changes_pending():
 			pending = _("Changes pending")
-			pending_width = min(body_width, self.ddt.get_text_w(pending, 11) + round(16 * scale))
+			pending_width = min(body_width, self.ddt.get_text_w(pending, 311) + round(16 * scale))
 			self.ddt.text(
-				(body_x + body_width - pending_width, y + height - round(18 * scale)),
+				(x + width - round(100 * scale) + round(84 * scale), y + height - round(18 * scale), 1),
 				pending,
-				self.colours.level_green,
-				11,
+				rgb_add_hls(self.colours.level_green, l=0.10),
+				311,
 				max_w=pending_width,
 				bg=self.colours.box_background,
 			)

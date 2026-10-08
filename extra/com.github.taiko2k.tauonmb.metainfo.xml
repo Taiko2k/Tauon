@@ -97,6 +97,27 @@
 
   <releases>
 
+    <release version="13.0.0" date="2026-10-08">
+      <description>
+        <ul>
+          <li>Added advanced tag editor</li>
+          <li>Added activity overview button</li>
+          <li>Added queue album group expansion</li>
+          <li>Added auto queue feature</li>
+          <li>Added Jellyfin lyrics support</li>
+          <li>Added playback speed adjustment</li>
+          <li>Added pre-roll silence option</li>
+          <li>Added setting to disable radio scrobble</li>
+          <li>Added label to columns mode</li>
+          <li>Fixed various outbound streaming issues</li>
+          <li>Fixed format support for Chromecast</li>
+          <li>Fixed a possible db corruption state</li>
+          <li>Fixed filepath copy when no metadata</li>
+          <li>Fixed per track Jellyfin artwork</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="12.1.0" date="2026-09-17">
       <description>
         <ul>

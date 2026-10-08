@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v12.2.0
+### v13.0.0
 
  - Added advanced tag editor
  - Added activity overview button
