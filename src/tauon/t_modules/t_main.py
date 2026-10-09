@@ -33987,6 +33987,10 @@ class TopPanel:
 
 		x_start = x
 
+		# Trailing new playlist button after the tabs
+		show_add = gui.radio_view or (prefs.tabs_on_top and not prefs.shuffle_lock)
+		add_w = round(26 * gui.scale) if show_add else 0
+
 		if tauon.playlist_box.drag and not gui.radio_view:
 			if self.inp.mouse_up:
 				if self.inp.mouse_up_position[0] > gui.playlist_left and self.inp.mouse_up_position[1] > gui.panelY:
@@ -34018,7 +34022,7 @@ class TopPanel:
 						continue
 					ready_tabs.append(i)
 				self.prime_tab = min(self.prime_tab, len(pctl.multi_playlist) - 1)
-			max_w = status_right - status_reserve - x
+			max_w = status_right - status_reserve - x - add_w
 
 			left_tabs: list[int] = []
 			right_tabs: list[int] = []
@@ -34419,6 +34423,35 @@ class TopPanel:
 		if prefs.tabs_on_top and right_overflow:
 			x += 24 * gui.scale
 			self.tabs_right_x += 24 * gui.scale
+
+		if show_add:
+			arect = (round(x), y, add_w, round(self.height))
+			self.fields.add(arect)
+			ahit = self.coll(arect) and not tauon.playlist_box.drag and not inp.quick_drag
+			if ahit and inp.mouse_click:
+				inp.mouse_click = False
+				tauon.new_playlist()
+				gui.request_frame()
+			# Dimmer than the corner buttons
+			acol = colours.corner_button_active if ahit else colours.corner_button
+			acol = alpha_mod(acol, round(acol.a * 0.6))
+			acx = arect[0] + arect[2] // 2
+			acy = arect[1] + arect[3] // 2
+			acol = tauon.style_overlay.tint_from_background(acol, acx, acy, 0.2, colours.top_panel_background)
+			size = round(10 * gui.scale)
+			thick = max(2, round(2 * gui.scale))
+			hx, hy = acx - size // 2, acy - thick // 2
+			vx, vy = acx - thick // 2, acy - size // 2
+			ddt.rect((hx, hy, size, thick), acol)
+			# Vertical bar skips the crossing so the translucent colour doesn't double up
+			ddt.rect((vx, vy, thick, hy - vy), acol)
+			ddt.rect((vx, hy + thick, thick, vy + size - hy - thick), acol)
+			if ahit:
+				ox, oy = inp.view_offset
+				tauon.tool_tip.test(
+					arect[0] + ox, arect[1] + arect[3] + 4 * gui.scale + oy,
+					_("New Radio List") if gui.radio_view else _("New Playlist"))
+			x += add_w
 
 		# -------------
 		# Other input
