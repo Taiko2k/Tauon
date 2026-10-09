@@ -9,7 +9,10 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import sdl3
+
 from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, alpha_mod
+from tauon.t_modules.t_menu_disc import bake, smoothstep, texture_from_pixels
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
@@ -34,14 +37,54 @@ class Activity:
 	overall_count: str = ""
 
 
+SPINNER_PX = 14
+SPINNER_IN = 0.72  # inner radius of the ring, as a fraction of its outer radius
+SPINNER_RPS = 1.1  # turns per second
+
+
+def shade_spinner(x: float, y: float) -> tuple[float, float, float, float]:
+	"""A comet ring: a faint track with a bright, round-capped head at the top
+	and a tail fading back anticlockwise, so it leads when turned clockwise."""
+	r = math.hypot(x, y)
+	mid, half = (1 + SPINNER_IN) / 2, (1 - SPINNER_IN) / 2
+	cap = math.hypot(x, y + mid) <= half
+	if not (SPINNER_IN <= r <= 1 or cap):
+		return (0, 0, 0, 0.0)
+	# 0 just clockwise of the top, rising to 1 at the head
+	t = ((math.atan2(y, x) + math.pi / 2) / math.tau) % 1
+	a = 1.0 if cap else 0.16 + 0.84 * smoothstep(0.25, 1.0, t) ** 1.6
+	return (255, 255, 255, a)
+
+
 def fraction(done: float, total: float) -> float | None:
 	return min(1.0, max(0.0, done / total)) if total > 0 else None
+
+
+class Countdown:
+	"""Progress through a queue that is drained from the front: remembers the
+	largest size seen since the queue was last empty, so the work done is
+	peak - remaining. Fed every snapshot, even while its row is hidden."""
+
+	def __init__(self) -> None:
+		self.peak = 0
+
+	def progress(self, remaining: int) -> float | None:
+		if remaining <= 0:
+			self.peak = 0
+			return None
+		self.peak = max(self.peak, remaining)
+		return fraction(self.peak - remaining, self.peak)
+
+
+scan_countdown = Countdown()
+rescan_countdown = Countdown()
 
 
 def collect_activities(tauon: Tauon) -> list[Activity]:
 	"""Take a fresh snapshot; independent operations must not mask one another."""
 	gui, pctl = tauon.gui, tauon.pctl
 	green = ColourRGBA(100, 200, 100, 255)
+	amber = ColourRGBA(245, 170, 50, 255)
 	purple = ColourRGBA(173, 119, 219, 255)
 	rows = []
 	# These older operations share counters. Don't attribute another job's count.
@@ -59,10 +102,13 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 		detail = _("{N} tracks imported").format(N=count) if count is not None else ""
 		if gui.im_cancel:
 			detail = _("Stopping import…")
-		rows.append(Activity("import", title, green, detail, cancel=not gui.im_cancel))
-	if tauon.after_scan:
+		rows.append(Activity("import", title, amber, detail, cancel=not gui.im_cancel))
+	# Imported tracks are tag scanned alongside the import; show that as its own
+	# step once the import is done, with progress counted from the queue's peak
+	scan_progress = scan_countdown.progress(len(tauon.after_scan))
+	if tauon.after_scan and not pctl.loading_in_progress:
 		rows.append(Activity("scan", _("Scanning Tags…"), green,
-			_("{N} remaining").format(N=len(tauon.after_scan))))
+			_("{N} remaining").format(N=len(tauon.after_scan)), progress=scan_progress))
 	if tauon.playlist_autoscan:
 		rows.append(Activity("playlists", _("Auto-importing playlists…"), green))
 	if tauon.move_in_progress:
@@ -70,9 +116,10 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 	if tauon.cm_clean_db:
 		progress = fraction(count, gui.to_get) if count is not None else None
 		rows.append(Activity("database", _("Cleaning database"), green, progress=progress))
+	rescan_progress = rescan_countdown.progress(len(tauon.to_scan))
 	if tauon.to_scan:
 		rows.append(Activity("rescan", _("Rescanning Tags…"), green,
-			_("{N} remaining").format(N=len(tauon.to_scan))))
+			_("{N} remaining").format(N=len(tauon.to_scan)), progress=rescan_progress))
 	for key, service, title, colour in (
 		("plex", tauon.plex, _("Accessing PLEX library…"), ColourRGBA(229, 160, 13, 255)),
 		("subsonic", tauon.subsonic, _("Accessing AIRSONIC library…"), ColourRGBA(58, 194, 224, 255)),
@@ -139,6 +186,8 @@ class ActivityPopover:
 		self.panel_rect = (0, 0, 0, 0)
 		self.cancel_rects: list[tuple[str, tuple[int, int, int, int]]] = []
 		self.button_drawn = False
+		self.spinner = None
+		self.spinner_size = 0
 
 	def refresh(self) -> None:
 		self.rows = collect_activities(self.tauon)
@@ -232,30 +281,33 @@ class ActivityPopover:
 			self.open = not self.open
 			self.consume_pointer()
 			gui.request_frame()
-		phase = time.monotonic() * 6 % 12
-		cx, cy = x + 12 * scale, y + 9 * scale
-		for index in range(12):
-			angle = index * math.tau / 12 - math.pi / 2
-			age = (phase - index) % 12
-			# A fading trail and a short fade-in light each stationary spoke in turn.
-			brightness = max(0.0, 1 - age / 8, age - 11)
-			ink = alpha_blend(alpha_mod(colour, round(55 + 200 * brightness)), bg)
-			for offset in range(max(2, round(2 * scale))):
-				perp_x = -math.sin(angle) * offset
-				perp_y = math.cos(angle) * offset
-				ddt.line(cx + math.cos(angle) * 4.5 * scale + perp_x,
-					cy + math.sin(angle) * 4.5 * scale + perp_y,
-					cx + math.cos(angle) * 8.5 * scale + perp_x,
-					cy + math.sin(angle) * 8.5 * scale + perp_y, ink)
+		self.draw_spinner(x + 12 * scale, y + 9 * scale, colour)
 		if len(self.rows) > 1:
 			ddt.text((x + 24 * scale, y + scale), str(len(self.rows)), colour, 311, bg=bg)
 		self.animate()
 		return width
 
+	def draw_spinner(self, cx: float, cy: float, colour: ColourRGBA) -> None:
+		"""The comet ring, baked once per size and turned on the GPU."""
+		renderer = self.tauon.renderer
+		size = round(SPINNER_PX * self.tauon.gui.scale)
+		if size != self.spinner_size or not self.spinner:
+			if self.spinner:
+				sdl3.SDL_DestroyTexture(self.spinner)
+			self.spinner = texture_from_pixels(renderer, bake(shade_spinner, size), size, size)
+			self.spinner_size = size
+		if not self.spinner:
+			return
+		sdl3.SDL_SetTextureColorMod(self.spinner, colour.r, colour.g, colour.b)
+		sdl3.SDL_SetTextureAlphaMod(self.spinner, colour.a)
+		angle = time.monotonic() * SPINNER_RPS * 360 % 360
+		dst = sdl3.SDL_FRect(round(cx - size / 2), round(cy - size / 2), size, size)
+		sdl3.SDL_RenderTextureRotated(renderer, self.spinner, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
+
 	def row_height(self, row: Activity) -> int:
 		if row.key in ("transcode", "sync"):
-			return 108
-		return 30 + (16 if row.detail else 0) + (13 if row.busy else 0)
+			return 110
+		return 30 + (16 if row.detail else 0) + (14 if row.busy else 0)
 
 	def draw_bar(self, x: int, y: int, width: int, colour: ColourRGBA,
 			*, progress: float | None, active: float = 0) -> None:
@@ -331,16 +383,16 @@ class ActivityPopover:
 				ddt.text((x + pad, top), label, muted, 311, bg=bg)
 				if row.progress is not None:
 					ddt.text((x + pad + bar_width, top, 1), f"{round(row.progress * 100)}%", muted, 311, bg=bg)
-				top += round(16 * scale)
+				top += round(17 * scale)
 				self.draw_bar(x + pad, top, bar_width, colour, progress=row.progress)
 				top += round(14 * scale)
 				label = _("Current folder") if row.key == "sync" else _("Current album")
 				count = row.folder_count if row.key == "sync" else row.album_count
 				ddt.text((x + pad, top), label, muted, 311, bg=bg)
 				ddt.text((x + pad + bar_width, top, 1), count, muted, 311, bg=bg)
-				top += round(16 * scale)
+				top += round(17 * scale)
 				progress = row.folder_progress if row.key == "sync" else row.album_progress
 				self.draw_bar(x + pad, top, bar_width, colour, progress=progress, active=row.album_active)
 			elif row.busy:
-				self.draw_bar(x + pad, top, bar_width, colour, progress=row.progress)
+				self.draw_bar(x + pad, top + round(scale), bar_width, colour, progress=row.progress)
 			y += round(self.row_height(row) * scale)

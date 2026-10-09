@@ -275,6 +275,19 @@ def bake(shader: Callable[[float, float], Pixel], w: int, h: int | None = None,
 # Motion
 # ---------------------------------------------------------------------------
 
+def texture_from_pixels(renderer, pixels: bytes, w: int, h: int):
+	"""Upload bake() output as a linearly filtered, alpha-blended texture."""
+	buffer = ctypes.create_string_buffer(pixels)
+	surface = sdl3.SDL_CreateSurfaceFrom(
+		w, h, sdl3.SDL_PIXELFORMAT_ARGB8888, ctypes.cast(buffer, ctypes.c_void_p), w * 4)
+	texture = sdl3.SDL_CreateTextureFromSurface(renderer, surface)
+	sdl3.SDL_DestroySurface(surface)
+	if texture:
+		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+	return texture
+
+
 def ease_out_cubic(t: float) -> float:
 	t = clamp(t)
 	return 1 - (1 - t) ** 3
@@ -377,15 +390,7 @@ class MenuDisc:
 	# -- Textures -----------------------------------------------------------
 
 	def texture(self, pixels: bytes, w: int, h: int):
-		buffer = ctypes.create_string_buffer(pixels)
-		surface = sdl3.SDL_CreateSurfaceFrom(
-			w, h, sdl3.SDL_PIXELFORMAT_ARGB8888, ctypes.cast(buffer, ctypes.c_void_p), w * 4)
-		texture = sdl3.SDL_CreateTextureFromSurface(self.tauon.renderer, surface)
-		sdl3.SDL_DestroySurface(surface)
-		if texture:
-			sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
-			sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
-		return texture
+		return texture_from_pixels(self.tauon.renderer, pixels, w, h)
 
 	def destroy(self) -> None:
 		for texture in (self.rim, self.hub, self.core_mono, self.core_colour, self.ripple, *self.fx.values()):
