@@ -34327,7 +34327,7 @@ class TopPanel:
 			# edge is kept for drag and drop indicators), clear of the window border
 			if not gui.radio_view and i == pctl.active_playlist_playing and \
 					pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
-				ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 120))
+				ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 80))
 
 			# Draw tab text
 			text = tab.name if gui.radio_view else tab.title
