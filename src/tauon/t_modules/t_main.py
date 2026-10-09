@@ -27858,7 +27858,9 @@ class NagBox:
 		("New upgraded Tag Editor", False),
 		("Queued albums can now be expanded", False),
 		("Added auto-queue feature", False),
-		("Many long standing feature gaps fixed", False),
+		("New main menu button", False),
+		("Fixes to outbound streaming formats", False),
+		("And more!", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -27945,7 +27947,7 @@ class NagBox:
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Too many fixes to list, but here are the big ones"),
+			_("STABLE?! That's for horses."),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,

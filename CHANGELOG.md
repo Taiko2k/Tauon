@@ -4,6 +4,7 @@ Changelog
 
 ### v13.0.0
 
+ - Added new main menu icon + animation
  - Added advanced tag editor
  - Added activity overview button
  - Added queue album group expansion
