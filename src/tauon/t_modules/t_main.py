@@ -109,6 +109,7 @@ builtins._ = lambda x: x
 
 from tauon.t_modules import t_topchart  # noqa: E402
 from tauon.t_modules.t_activity import ActivityPopover  # noqa: E402
+from tauon.t_modules.t_menu_disc import MenuDisc  # noqa: E402
 from tauon.t_modules.t_art_anim import AnimatedArt, fits_texture_budget, frame_at, read_animation  # noqa: E402
 from tauon.t_modules.t_art_theme import apply_art_theme, apply_original_art_theme  # noqa: E402
 from tauon.t_modules.t_config import Config  # noqa: E402
@@ -792,7 +793,7 @@ class GuiVar:
 
 		self.vis = 0  # visualiser mode actual
 		self.vis_want = 2  # visualiser mode setting
-		self.spec: list[float] | None = None
+		self.spec: list[float] = [0] * 24  # silent until PHAZOR fills it, so the vis box still draws
 		self.s_spec = [0] * 24
 		self.s4_spec = [0] * 45
 		self.update_spec = 0
@@ -8049,7 +8050,8 @@ class Tauon:
 				# no Header Bar there is no tab strip, and drag_zone_start_x
 				# holds a stale value from whenever one last rendered, so the
 				# whole band is grip.
-				if gui.top_panel_in_widget and x < bx + self.top_panel.drag_zone_start_x:
+				if gui.top_panel_in_widget and (
+						x < bx + self.top_panel.drag_zone_start_x or self.top_panel.over_controls(x, y)):
 					return sdl3.SDL_HITTEST_NORMAL
 				for hole in self.custom.grip_holes():
 					if coll_point((x, y), hole):
@@ -8057,6 +8059,8 @@ class Tauon:
 				return sdl3.SDL_HITTEST_DRAGGABLE
 
 		elif y < gui.panelY:
+			if self.top_panel.over_controls(x, y):
+				return sdl3.SDL_HITTEST_NORMAL
 			if gui.top_bar_mode2:
 				if y < gui.panelY - gui.panelY2:
 					if prefs.left_window_control and x < 100 * gui.scale:
@@ -33683,10 +33687,6 @@ class TopPanel:
 		self.tab_text_y_offset = 7 * self.gui.scale
 		self.tab_spacing = 0
 
-		self.ini_menu_space = 17 * self.gui.scale  # 17
-		self.menu_space = 17 * self.gui.scale
-		self.click_buffer = 4 * self.gui.scale
-
 		self.tabs_right_x = 0  # computed for drag and drop code elsewhere (hacky)
 		self.tabs_left_x = 1
 
@@ -33699,6 +33699,9 @@ class TopPanel:
 		self.tab_text_spaces: list[int] = []
 		self.index_playing = -1
 		self.drag_zone_start_x = 300 * self.gui.scale
+		# Window-space rect of the right-hand status + menu cluster; kept out of
+		# the window drag grip and the empty-bar context menu.
+		self.controls_rect: tuple[int, int, int, int] = (0, 0, 0, 0)
 
 		bag                   = tauon.bag
 		self.exit_button      = asset_loader(bag, bag.loaded_asset_dc, "ex.png", True)
@@ -33718,6 +33721,10 @@ class TopPanel:
 
 		self.adds: list[list[int | Timer]] = []
 		self.activity = ActivityPopover(tauon, readable_text_colour)
+		# Re-run on rescale: free the previous size's textures
+		if hasattr(self, "menu_disc"):
+			self.menu_disc.destroy()
+		self.menu_disc = MenuDisc(tauon)
 
 	def left_overflow_switch_playlist(self, pl: int) -> None:
 		self.prime_side = 0
@@ -33728,6 +33735,9 @@ class TopPanel:
 		self.prime_side = 1
 		self.prime_tab = pl
 		self.pctl.switch_playlist(pl)
+
+	def over_controls(self, x: float, y: float) -> bool:
+		return coll_point((x, y), self.controls_rect)
 
 	def render(self) -> None:
 		tauon       = self.tauon
@@ -33812,9 +33822,39 @@ class TopPanel:
 					wwx += 33
 				wwx = round(wwx * gui.scale)
 
-		# The panel button sits in the second corner slot; the layout/edit-menu
-		# button (below) takes the first, matching its position in custom mode.
-		rect = (wwx + 44 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
+		# Corner slots, left to right: main menu, layout/edit menu, panel toggle.
+		# Custom mode keeps the menu; the layout engine draws the layout button
+		# in the second slot and the panel toggle is hidden.
+		slot = round(35 * gui.scale)
+
+		# MENU -----------------------------
+		mrect = (round(wwx + 9 * gui.scale), round(yy + 3 * gui.scale), round(34 * gui.scale), round(25 * gui.scale))
+		self.fields.add(mrect)
+		mhit = self.coll(mrect)
+		if mhit and (inp.mouse_click or inp.right_click):
+			inp.mouse_click = False
+			inp.right_click = False
+			if tauon.x_menu.active:
+				tauon.x_menu.active = False
+			elif not tauon.x_menu.click_dismissed:
+				# click_dismissed: this same click already closed the menu's
+				# popup window (event loop) — don't instantly reopen it.
+				tauon.x_menu.activate(position=(mrect[0], gui.panelY))
+				self.menu_disc.trigger()
+		idle = tauon.style_overlay.tint_from_background(
+			colours.corner_button, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
+			colours.top_panel_background)
+		hot = tauon.style_overlay.tint_from_background(
+			colours.corner_button_active, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
+			colours.top_panel_background)
+		self.menu_disc.render(
+			mrect, (tauon.x_menu.active or mhit) and not tauon.tab_menu.active, tauon.x_menu.active, idle, hot,
+			(0, 0, window_size[0], gui.panelY), not colours.lm)
+		if mhit and not tauon.x_menu.active:
+			ox, oy = inp.view_offset
+			tauon.tool_tip.test(mrect[0] + ox, mrect[1] + mrect[3] + 4 * gui.scale + oy, _("Menu"))
+
+		rect = (wwx + 77 * gui.scale, yy + 4 * gui.scale, 34 * gui.scale, 25 * gui.scale)
 		self.fields.add(rect)
 
 		if self.coll(rect) and not prefs.shuffle_lock and not gui.custom_mode:
@@ -33839,7 +33879,7 @@ class TopPanel:
 
 			if inp.right_click:
 				# prefs.artist_list ^= True
-				self.tauon.lsp_menu.activate(position=(5 * gui.scale, gui.panelY))
+				self.tauon.lsp_menu.activate(position=(rect[0], gui.panelY))
 				self.tauon.update_layout_do()
 
 		colour = colours.corner_button  # [230, 230, 230, 255]
@@ -33851,33 +33891,30 @@ class TopPanel:
 			if self.coll(rect):
 				colour = colours.corner_button_active
 		colour = self.tauon.style_overlay.tint_from_background(
-			colour, wwx + 60 * gui.scale, yy + 16 * gui.scale, 0.2,
+			colour, wwx + 93 * gui.scale, yy + 16 * gui.scale, 0.2,
 			colours.bottom_panel_colour)
 
 		if not prefs.shuffle_lock and not gui.custom_mode:
-			# The panel button hides in custom mode (the layout/edit button below
-			# keeps the first slot there, drawn by the layout engine).
 			if gui.combo_mode:
-				self.return_icon.render(wwx + 49 * gui.scale, yy + 8 * gui.scale, colour)
+				self.return_icon.render(wwx + 82 * gui.scale, yy + 8 * gui.scale, colour)
 			elif prefs.left_panel_mode == "artist list":
-				self.artist_list_icon.render(wwx + 48 * gui.scale, yy + 8 * gui.scale, colour)
+				self.artist_list_icon.render(wwx + 81 * gui.scale, yy + 8 * gui.scale, colour)
 			elif prefs.left_panel_mode == "folder view":
-				self.folder_list_icon.render(wwx + 49 * gui.scale, yy + 8 * gui.scale, colour)
+				self.folder_list_icon.render(wwx + 82 * gui.scale, yy + 8 * gui.scale, colour)
 			else:
-				self.playlist_icon.render(wwx + 48 * gui.scale, yy + 8 * gui.scale, colour)
+				self.playlist_icon.render(wwx + 81 * gui.scale, yy + 8 * gui.scale, colour)
 
 		if not prefs.shuffle_lock and not gui.custom_mode:
-			# Corner layout/edit-menu button, in the first slot (before the panel
-			# button). Same dim styling; active colour while its menu is open;
-			# opens the layout menu.
-			lrect = (wwx + 9 * gui.scale, yy + 3 * gui.scale, 34 * gui.scale, 25 * gui.scale)
+			# Layout/edit-menu button. Same dim styling; active colour while its
+			# menu is open.
+			lrect = (wwx + 42 * gui.scale, yy + 3 * gui.scale, 34 * gui.scale, 25 * gui.scale)
 			self.fields.add(lrect)
 			if self.coll(lrect) and inp.mouse_click and not self.tauon.layout_menu.click_dismissed:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
 			lcol = colours.corner_button_active if self.tauon.layout_menu.active or self.coll(lrect) else colours.corner_button
 			lcol = self.tauon.style_overlay.tint_from_background(
-				lcol, wwx + 20 * gui.scale, yy + 16 * gui.scale, 0.2,
+				lcol, wwx + 53 * gui.scale, yy + 16 * gui.scale, 0.2,
 				colours.bottom_panel_colour)
 			gw = round(18 * gui.scale)
 			gh = round(13 * gui.scale)
@@ -33885,11 +33922,6 @@ class TopPanel:
 				ddt, gui.scale,
 				lrect[0] + round((lrect[2] - gw) / 2), lrect[1] + round((lrect[3] - gh) / 2),
 				gw, gh, lcol)
-
-		# if prefs.artist_list:
-		#     self.artist_list_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
-		# else:
-		#     self.playlist_icon.render(13 * gui.scale, yy + 8 * gui.scale, colour)
 
 		if tauon.playlist_box.drag:
 			self.inp.drag_mode = False
@@ -33906,28 +33938,28 @@ class TopPanel:
 				le = ddt.get_text_w(pctl.multi_playlist[i].title, self.tab_text_font)
 				self.tab_text_spaces.append(le)
 
+		# Tab strip starts after the occupied corner slots (the base spacing
+		# covers the first, the menu; the slots after it sit 2px tighter)
 		x = self.start_space_left + wwx
-		if not prefs.shuffle_lock and not gui.custom_mode:
-			# The corner holds two buttons (layout/edit menu, then the panel
-			# button); start the tab strip after the second slot.
-			x += round(35 * gui.scale)
+		if gui.custom_mode:
+			x += slot - round(2 * gui.scale)
+		elif not prefs.shuffle_lock:
+			x += slot * 2 - round(2 * gui.scale)
 		y = yy  # self.ty
 
-		# Calculate position for playing text and text
-		offset = 15 * gui.scale
-		if tauon.draw_border and not prefs.left_window_control:
-			offset += 61 * gui.scale
-			if self.draw_max_button:
-				offset += 61 * gui.scale
-		if gui.turbo:
-			offset += 90 * gui.scale
-			if gui.vis == 3:
-				offset += 57 * gui.scale
+		# Status indicators hold a fixed slot at the right end, inset past the
+		# window controls and any top-bar visualiser so they never move with
+		# the tabs.
+		right_inset = gui.offset_extra
 		if gui.top_bar_mode2:
-			offset = 0
-
-		p_text_len = 180 * gui.scale
-		right_space_es = p_text_len + offset
+			right_inset = gui.panelY + 1  # album art fills that corner
+		elif gui.vis in (1, 2):
+			right_inset += round(90 * gui.scale)
+		elif gui.vis == 3:
+			right_inset += gui.spec2_w + round(10 * gui.scale)
+		status_right = round(max(x, window_size[0] - right_inset - 9 * gui.scale))
+		# Room for the status indicators and a window grip
+		status_reserve = round(120 * gui.scale)
 
 		x_start = x
 
@@ -33962,7 +33994,7 @@ class TopPanel:
 						continue
 					ready_tabs.append(i)
 				self.prime_tab = min(self.prime_tab, len(pctl.multi_playlist) - 1)
-			max_w = window_size[0] - (x + right_space_es + round(34 * gui.scale))
+			max_w = status_right - status_reserve - x
 
 			left_tabs: list[int] = []
 			right_tabs: list[int] = []
@@ -34258,9 +34290,6 @@ class TopPanel:
 			if i not in show_tabs:
 				continue
 
-			# if window_size[0] - x - (self.tab_text_spaces[i] + self.tab_extra_width) < right_space_es:
-			#     break
-
 			shown.append(i)
 
 			tab_width = self.tab_text_spaces[i] + self.tab_extra_width
@@ -34270,7 +34299,6 @@ class TopPanel:
 			f_rect = [x, y + 1, tab_width - 1, self.height - 1]
 			self.fields.add(f_rect)
 			tab_hit = self.coll(f_rect)
-			playing_hint = False
 			active = False
 
 			# Determine tab background colour
@@ -34281,9 +34309,6 @@ class TopPanel:
 				elif (
 						tauon.tab_menu.active is True and tauon.tab_menu.reference == i) or (tauon.tab_menu.active is False and tab_hit and not tauon.playlist_box.drag):
 					bg = colours.tab_highlight
-				elif i == pctl.active_playlist_playing:
-					bg = colours.tab_background
-					playing_hint = True
 				else:
 					bg = colours.tab_background
 			elif pctl.radio_playlist_viewing == i:
@@ -34294,11 +34319,15 @@ class TopPanel:
 
 			# Draw tab background
 			ddt.rect(rect, bg)
-			if playing_hint:
-				ddt.rect(rect, ColourRGBA(255, 255, 255, 7))
 
 			# Determine text colour
 			fg = colours.tab_text_active if active else colours.tab_text
+
+			# Mark the tab playback is coming from along its top edge (the bottom
+			# edge is kept for drag and drop indicators), clear of the window border
+			if not gui.radio_view and i == pctl.active_playlist_playing and \
+					pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
+				ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 120))
 
 			# Draw tab text
 			text = tab.name if gui.radio_view else tab.title
@@ -34396,59 +34425,28 @@ class TopPanel:
 					tauon.toast_mode_timer.force_set(10)
 					gui.mode_toast_text = ""
 		# ---------
-		# Menu Bar
+		# Right-hand status indicators
 
-		x += self.ini_menu_space
-		y += 7 * gui.scale
+		# Window drag grip: the free run between the tabs and the status slot
+		self.drag_zone_start_x = x + round(5 * gui.scale)
+		y = yy + round(7 * gui.scale)
 		ddt.text_background_colour = colours.top_panel_background
 
-		# MENU -----------------------------
-
-		word = _("MENU")
-		word_length = ddt.get_text_w(word, 212)
-		rect = [x - self.click_buffer, yy + self.ty + 1, word_length + self.click_buffer * 2, self.height - 1]
-		hit = self.coll(rect)
-		self.fields.add(rect)
-
-		if (tauon.x_menu.active or hit) and not tauon.tab_menu.active:
-			bg = colours.status_text_over
-		else:
-			bg = colours.status_text_normal
-		bg = tauon.style_overlay.tint_from_background(
-			bg, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
-		ddt.text((x, y), word, bg, 212)
-
-		if hit and inp.mouse_click:
-			if tauon.x_menu.active:
-				tauon.x_menu.active = False
-			elif not tauon.x_menu.click_dismissed:
-				# click_dismissed: this same click already closed the menu's
-				# popup window (event loop) — don't instantly reopen it.
-				xx = x
-				if x > window_size[0] - (210 * gui.scale):
-					xx = window_size[0] - round(210 * gui.scale)
-				# View Switcher no longer pops out here (layouts live in the
-				# corner layout menu now); menu sits 7px further left.
-				tauon.x_menu.activate(position=(xx + round(5 * gui.scale), gui.panelY))
-
-		# if True:
-		#     border = round(3 * gui.scale)
-		#     border_colour = colours.grey(30)
-		#     rect = (5 * gui.scale, gui.panelY, round(90 * gui.scale), round(25 * gui.scale))
-		#
+		# Right-aligned in their slot, growing leftwards
+		sx = status_right
+		sx -= self.activity.render_button(sx, y, align_right=True)
 
 		dl = len(tauon.dl_mon.ready)
 		watching = len(tauon.dl_mon.watching)
 
 		if (dl > 0 or watching > 0) and tauon.core_timer.get() > 2 and prefs.auto_extract and prefs.monitor_downloads:
-			x += 52 * gui.scale
-			rect = (x - 5 * gui.scale, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
+			sx -= round(30 * gui.scale)
+			rect = (sx, y - 2 * gui.scale, 30 * gui.scale, 23 * gui.scale)
+			ix = sx + round(5 * gui.scale)
 			self.fields.add(rect)
 
 			if self.coll(rect):
 				colour = colours.corner_button_active
-				# if colours.lm:
-				# colour = ColourRGBA(40, 40, 40, 255)
 				if (dl > 0 or watching > 0) and inp.right_click:
 					tauon.dl_menu.activate(position=(inp.mouse_position[0], gui.panelY))
 				if dl > 0:
@@ -34483,35 +34481,29 @@ class TopPanel:
 							logging.debug("Position changed by track import")
 							gui.request_frame()
 				else:
-					colour = colours.corner_button  # ColourRGBA(60, 60, 60, 255)
-					# if colours.lm:
-					# 	colour = ColourRGBA(180, 180, 180, 255)
+					colour = colours.corner_button
 					if inp.mouse_click:
 						inp.mouse_click = False
-						self.show_message(
+						tauon.show_message(
 							_("It looks like something is being downloaded…"), _("Let's check back later…"), mode="info")
 
-
 			else:
-				colour = colours.corner_button  # ColourRGBA(60, 60, 60, 255)
-				if colours.lm:
-					# colour = ColourRGBA(180, 180, 180, 255)
-					if tauon.dl_mon.ready:
-						colour = colours.corner_button_active  # ColourRGBA(60, 60, 60, 255)
+				colour = colours.corner_button
+				if colours.lm and tauon.dl_mon.ready:
+					colour = colours.corner_button_active
 
 			colour = tauon.style_overlay.tint_from_background(
-				colour, x, y + 8 * gui.scale, 0.2, colours.top_panel_background)
-			self.dl_button.render(x, y + 1 * gui.scale, colour)
+				colour, ix, y + 8 * gui.scale, 0.2, colours.top_panel_background)
+			self.dl_button.render(ix, y + 1 * gui.scale, colour)
 			if dl > 0:
-				ddt.text((x + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pulse_colour, 209)  # ColourRGBA(244, 223, 66, 255)
-				# ColourRGBA(166, 244, 179, 255)
+				ddt.text((ix + 18 * gui.scale, y - 4 * gui.scale), str(dl), colours.pulse_colour, 209)
 
-		# LAYOUT --------------------------------
-		x += self.menu_space + word_length
+		ox, oy = inp.view_offset
+		self.controls_rect = (
+			round(sx + ox), round(yy + oy), round(status_right - sx), round(self.height))
 
-		activity_width = self.activity.render_button(x, y)
-		self.drag_zone_start_x = x + activity_width + (5 if activity_width else -5) * gui.scale
-
+		# Menu click effects, drawn over everything near the disc
+		self.menu_disc.render_fx()
 
 		if colours.lm:
 			colours.tb_line = colours.grey(200)
@@ -60680,6 +60672,7 @@ def main(holder: Holder) -> None:
 						and tauon.top_panel.tabs_right_x < inp.mouse_position[0]
 						and inp.mouse_position[1] < gui.panelY
 						and inp.mouse_position[0] < window_size[0] - gui.offset_extra
+						and not tauon.top_panel.over_controls(*inp.mouse_position)
 					):
 						tauon.window_menu.activate(None, (inp.mouse_position[0], 30 * gui.scale))
 
@@ -60689,6 +60682,7 @@ def main(holder: Holder) -> None:
 						and inp.mouse_position[1] < gui.panelY
 						and inp.mouse_position[0] > tauon.top_panel.tabs_right_x
 						and inp.mouse_position[0] < window_size[0] - gui.offset_extra
+						and not tauon.top_panel.over_controls(*inp.mouse_position)
 					):
 						tauon.do_minimize_button()
 
@@ -62936,7 +62930,7 @@ def main(holder: Holder) -> None:
 				showcase.render_vis(True)
 				# gui.level_update = False
 
-			if gui.vis == 2 and gui.spec is not None and vis_show:
+			if gui.vis == 2 and vis_show:
 				# Standard spectrum visualiser
 				gui.spec1_rec.x = round(vis_right - gui.offset_extra - 90 * gui.scale)
 				gui.spec1_rec.y = vis_top + gui.spec_y

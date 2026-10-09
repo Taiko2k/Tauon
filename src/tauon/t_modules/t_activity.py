@@ -205,7 +205,8 @@ class ActivityPopover:
 	def animate(self) -> None:
 		self.tauon.gui.delay_frame(self.tauon.frame_pace())
 
-	def render_button(self, x: float, y: float) -> int:
+	def render_button(self, x: float, y: float, align_right: bool = False) -> int:
+		"""Draw the activity button at x, or ending at x when align_right. Returns its width."""
 		self.refresh()
 		if not self.rows:
 			return 0
@@ -213,6 +214,8 @@ class ActivityPopover:
 		gui, inp, ddt = tauon.gui, tauon.inp, tauon.ddt
 		scale = gui.scale
 		width = round((36 if len(self.rows) > 1 else 24) * scale)
+		if align_right:
+			x -= width
 		rect = (round(x), round(y - 3 * scale), width, round(24 * scale))
 		ox, oy = inp.view_offset
 		self.button_rect = (rect[0] + ox, rect[1] + oy, rect[2], rect[3])

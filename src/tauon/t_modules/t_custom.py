@@ -6073,7 +6073,8 @@ class CustomLayout:
 		ax = ay = 0.0
 		hdr = self.top_panel_rect()
 		if hdr is not None:
-			ax, ay = hdr[0], hdr[1]
+			# The Header Bar's menu button holds the first slot
+			ax, ay = hdr[0] + 33 * scale, hdr[1]
 		yy = gui.panelY - gui.panelY2
 		return (round(ax + wwx + 9 * scale), round(ay + yy + 3 * scale),
 			round(34 * scale), round(25 * scale))
