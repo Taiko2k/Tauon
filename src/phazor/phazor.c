@@ -6325,6 +6325,18 @@ EXPORT int get_output_format(int *output_rate, int *device_side_rate) {
 	#endif
 }
 
+// Name of the API miniaudio outputs through, such as "PulseAudio" or "Core Audio";
+// empty when miniaudio is not in use
+EXPORT void get_output_backend(char *name, int name_len) {
+	if (name == NULL || name_len <= 0) return;
+	name[0] = 0;
+	#ifdef MINI
+		if (context_allocated == 1) {
+			snprintf(name, name_len, "%s", ma_get_backend_name(context.backend));
+		}
+	#endif
+}
+
 EXPORT void config_set_always_ffmpeg(int n) {
 	config_always_ffmpeg = n;
 }

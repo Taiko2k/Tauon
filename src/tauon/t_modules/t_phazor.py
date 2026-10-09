@@ -1117,10 +1117,14 @@ def player4(tauon: Tauon) -> None:
 			)
 		)
 
-	def set_replaygain_status(gain_db: float | None, multiplier: float, has_gain_tag: bool) -> None:
+	def set_replaygain_status(gain_db: float | None, multiplier: float, source: str = "") -> None:
 		pctl.active_replaygain = gain_db if gain_db is not None and math.isfinite(gain_db) else 0
 		pctl.active_replaygain_gain_db = 20 * math.log10(multiplier) if multiplier > 0 else 0
-		pctl.replaygain_applied = has_gain_tag or prefs.replay_preamp != 0
+		pctl.replaygain_applied = bool(source) or prefs.replay_preamp != 0
+		pctl.replaygain_source = source
+		# The peak tag caps the gain when compression is not allowed
+		pctl.replaygain_peak_limited = (
+			pctl.active_replaygain_gain_db < pctl.active_replaygain + prefs.replay_preamp - 0.005)
 
 	def calc_rg(track: TrackClass | None, *, update_status: bool = True) -> float:
 		allow_compression = output_compressor_wanted()
@@ -1132,11 +1136,12 @@ def player4(tauon: Tauon) -> None:
 				allow_compression=allow_compression,
 			)
 			if update_status:
-				set_replaygain_status(None, multiplier, False)
+				set_replaygain_status(None, multiplier)
 			return multiplier
 
 		g: float | None = None
 		p: float | None = None
+		source = ""
 
 		tg = track.replaygain_track_gain
 		tp = track.replaygain_track_peak
@@ -1146,17 +1151,17 @@ def player4(tauon: Tauon) -> None:
 		if prefs.replay_gain == 3 and tg is not None and ag is not None:
 			gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
 			if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
-				g, p = tg, tp
+				g, p, source = tg, tp, "track"
 			else:
-				g, p = ag, ap
+				g, p, source = ag, ap, "album"
 		elif (prefs.replay_gain == 1 and tg is not None) or (
 			prefs.replay_gain == 2 and ag is None and tg is not None
 		):
-			g, p = tg, tp
+			g, p, source = tg, tp, "track"
 		elif ag is not None:
-			g, p = ag, ap
+			g, p, source = ag, ap, "album"
 		elif tg is not None:
-			g, p = tg, tp
+			g, p, source = tg, tp, "track"
 
 		if g is None or not math.isfinite(g):
 			logging.debug("No usable ReplayGain tag detected")
@@ -1167,7 +1172,7 @@ def player4(tauon: Tauon) -> None:
 				allow_compression=allow_compression,
 			)
 			if update_status:
-				set_replaygain_status(None, multiplier, False)
+				set_replaygain_status(None, multiplier)
 			return multiplier
 
 		logging.debug("Detected ReplayGain")
@@ -1183,7 +1188,7 @@ def player4(tauon: Tauon) -> None:
 		if p is not None and (not math.isfinite(p) or p <= 0):
 			logging.warning("Ignoring invalid ReplayGain peak: %s", p)
 		if update_status:
-			set_replaygain_status(g, multiplier, True)
+			set_replaygain_status(g, multiplier, source)
 		return multiplier
 
 	def set_config(set_device: bool = False) -> None:

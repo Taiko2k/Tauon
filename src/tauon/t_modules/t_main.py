@@ -2517,6 +2517,8 @@ class PlayerCtl:
 		self.active_replaygain: float = 0
 		self.active_replaygain_gain_db: float = 0
 		self.replaygain_applied: bool = False
+		self.replaygain_source: str = ""  # "track" or "album" when a gain tag was used
+		self.replaygain_peak_limited: bool = False
 		self.output_compression_enabled: bool = False
 		self.output_compression_active: bool = False
 		self.output_compression_reduction_db: float = 0
@@ -12555,7 +12557,7 @@ class Tauon:
 	def audio_info_rect(self) -> tuple[int, int, int, int]:
 		scale = self.gui.scale
 		w = min(round(600 * scale), self.window_size[0] - round(20 * scale))
-		h = round((58 + ChannelStatusView.ROWS_HEIGHT + 30) * scale)
+		h = round((52 + ChannelStatusView.ROWS_HEIGHT + 26 + ChannelStatusView.GAIN_HEIGHT + 4) * scale)
 		return round(self.window_size[0] / 2 - w / 2), round(self.window_size[1] / 2 - h / 2), w, h
 
 	def menu_paste(self, ref: MenuTrackRef) -> None:
@@ -43980,6 +43982,7 @@ class ChannelStatusView:
 	"""
 
 	ROWS_HEIGHT = 76  # unscaled height of draw()
+	GAIN_HEIGHT = 48  # unscaled height of draw_gain()
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -44000,6 +44003,7 @@ class ChannelStatusView:
 		self.source_float = False
 		self.output_rate = 0
 		self.device_rate = 0
+		self.output_backend = ""
 		self.via_ffmpeg = False
 		self.via_pipewire = False
 		# The live bitrate is shown as its average over each half second
@@ -44061,6 +44065,10 @@ class ChannelStatusView:
 			self.via_pipewire = bool(aud.get_output_format(ctypes.byref(c_out_rate), ctypes.byref(c_device_rate)))
 			self.output_rate = c_out_rate.value
 			self.device_rate = c_device_rate.value
+		if hasattr(aud, "get_output_backend"):
+			c_backend = ctypes.create_string_buffer(32)
+			aud.get_output_backend(c_backend, 32)
+			self.output_backend = c_backend.value.decode(errors="replace")
 
 	@staticmethod
 	def overlay_palette() -> ChannelStatusPalette:
@@ -44173,7 +44181,7 @@ class ChannelStatusView:
 			text += " (FFmpeg)" if self.via_ffmpeg else " (PHAzOR)"
 		if self.device_rate > 0 and self.device_rate != self.output_rate:
 			text += f" → {self.rate_text(self.device_rate)}"
-			text += " (PipeWire)" if self.via_pipewire else " (miniaudio)"
+			text += " (PipeWire)" if self.via_pipewire else f" ({self.output_backend or 'miniaudio'})"
 		return text
 
 	def draw(self, x: int, y: int, w: int, palette: ChannelStatusPalette) -> None:
@@ -44270,6 +44278,132 @@ class ChannelStatusView:
 			self.ddt.rect((round(x), round(y + 5 * gui.scale), size, size), state[1])
 			lw = self.ddt.text((x + 11 * gui.scale, y), label, palette.label, 311, bg=palette.background) or 0
 			x += lw + 20 * gui.scale
+
+	@staticmethod
+	def db_text(db: float, places: int = 2) -> str:
+		if abs(db) < 0.005:
+			return "0 dB"
+		return f"{db:+.{places}f} dB".replace("-", "−")
+
+	def draw_gain(self, x: int, y: int, w: int, palette: ChannelStatusPalette) -> None:
+		"""Draw the ReplayGain row and its breakdown, GAIN_HEIGHT tall, in the same columns as draw()"""
+		gui = self.gui
+		ddt = self.ddt
+		pctl = self.tauon.pctl
+		prefs = self.tauon.prefs
+		label_w = round(56 * gui.scale)
+		info_w = round(160 * gui.scale)
+		gap = round(3 * gui.scale)
+		chip_h = round(18 * gui.scale)
+		text_y = round(1 * gui.scale)
+		area_x = round(x + 10 * gui.scale + label_w)
+		area_w = round(w - 20 * gui.scale - label_w - info_w)
+		columns = len(PCM_SPEAKER_NAMES)
+		chip_w = (area_w - gap * (columns - 1)) // columns
+		label_x = x + 10 * gui.scale
+		info_x = round(x + w - 10 * gui.scale)
+		bg = palette.background
+
+		playing = pctl.playing_state != PlayingState.STOPPED
+		applied = pctl.replaygain_applied and playing
+		gain_db = pctl.active_replaygain_gain_db if applied else 0.0
+		source = pctl.replaygain_source if playing else ""
+		mode = prefs.replay_gain
+
+		# Green when a tag is applied, blue for pre-amp alone, amber when the
+		# mode found no tag to use
+		state: tuple[ColourRGBA, ColourRGBA] | None = None
+		if not playing:
+			status = _("IDLE")
+		elif source == "album":
+			status, state = _("ALBUM"), palette.output
+		elif source == "track":
+			status, state = _("TRACK"), palette.output
+		elif mode != 0:
+			status, state = _("NO TAG"), palette.folded
+		elif prefs.replay_preamp != 0:
+			status, state = _("PRE-AMP"), palette.direct
+		else:
+			status = _("OFF")
+
+		row_y = round(y + 8 * gui.scale)
+		ddt.text((label_x, row_y + text_y), _("Gain"), palette.label, 311, bg=bg)
+
+		status_w = max(chip_w * 2 + gap, ddt.get_text_w(status, 311) + round(12 * gui.scale))
+		status_bg = palette.track if state is None else state[0]
+		ddt.rect((area_x, row_y, status_w, chip_h), status_bg)
+		ddt.text(
+			(area_x + status_w // 2, row_y + text_y, 2), status, palette.dim if state is None else palette.lit, 311,
+			bg=status_bg)
+
+		# Meter centred on 0 dB: the applied gain is filled from the centre, and
+		# any gain the peak tag held back is shown beyond it in red. While the
+		# output compressor is reducing, the reduction is cut back from the
+		# applied gain in amber, and the marker sits on the gain that results.
+		meter_x = area_x + status_w + gap
+		meter_w = area_x + area_w - meter_x
+		span = 15.0
+		centre = meter_x + meter_w // 2
+
+		def meter_pos(db: float) -> int:
+			return round(centre + meter_w / 2 * min(max(db / span, -1.0), 1.0))
+
+		reduction_db = min(pctl.output_compression_reduction_db, 0.0)
+		compressing = playing and pctl.output_compression_active and reduction_db < -0.05
+		marker_w = max(round(2 * gui.scale), 1)
+
+		def draw_marker(pos: int, colour: ColourRGBA) -> None:
+			ddt.rect((pos - marker_w if pos > centre else pos, row_y, marker_w, chip_h), colour)
+
+		ddt.rect((meter_x, row_y, meter_w, chip_h), palette.track)
+		end = meter_pos(gain_db)
+		if state is not None:
+			if pctl.replaygain_peak_limited:
+				requested = meter_pos(pctl.active_replaygain + prefs.replay_preamp)
+				ddt.rect((min(end, requested), row_y, abs(requested - end), chip_h), palette.dropped[0])
+			if end != centre:
+				ddt.rect((min(centre, end), row_y, abs(end - centre), chip_h), state[0])
+				if not compressing:
+					draw_marker(end, state[1])
+		if compressing:
+			# The compressor also guards EQ boost, so this can show with ReplayGain off
+			result = meter_pos(gain_db + reduction_db)
+			ddt.rect((result, row_y, max(end - result, 1), chip_h), palette.folded[0])
+			draw_marker(result, palette.folded[1])
+		tick_h = round(4 * gui.scale)
+		for db in (-12, -6, 6, 12):
+			ddt.rect((meter_pos(db), row_y + chip_h - tick_h, 1, tick_h), palette.dim)
+		ddt.rect((centre, row_y, 1, chip_h), palette.dim)
+
+		ddt.text(
+			(info_x, row_y + text_y, 1), self.db_text(gain_db), palette.lit if applied else palette.dim, 311, bg=bg)
+
+		# Breakdown of where the gain came from
+		mode_names = {0: _("Off"), 1: _("Tracks"), 2: _("Album"), 3: _("Auto")}
+		parts: list[tuple[str, ColourRGBA]] = [
+			(_("Mode") + ": " + mode_names.get(mode, "?"), palette.label)]
+		if source:
+			tag_name = _("Album gain") if source == "album" else _("Track gain")
+			parts.append((f"{tag_name} {self.db_text(pctl.active_replaygain)}", palette.label))
+		if prefs.replay_preamp != 0:
+			parts.append((_("Pre-amp") + " " + self.db_text(prefs.replay_preamp, 0), palette.label))
+		if playing and pctl.replaygain_peak_limited:
+			parts.append((_("Limited by peak"), palette.dropped[1]))
+		if compressing:
+			parts.append((_("Compressing") + " " + self.db_text(reduction_db, 1), palette.folded[1]))
+		elif playing and pctl.output_compression_enabled:
+			parts.append((_("Compressor ready"), palette.label))
+
+		line_x = area_x
+		line_y = round(row_y + chip_h + 6 * gui.scale)
+		dot_w = ddt.get_text_w("·", 311)
+		for i, (text, colour) in enumerate(parts):
+			if i:
+				ddt.text((line_x + round(7 * gui.scale), line_y), "·", palette.dim, 311, bg=bg)
+				line_x += dot_w + round(14 * gui.scale)
+			line_x += ddt.text((line_x, line_y), text, colour, 311, max_w=info_x - line_x, bg=bg) or 0
+			if line_x >= info_x:
+				break
 
 
 class ArtistInfoBox:
@@ -61636,7 +61770,6 @@ def main(holder: Holder) -> None:
 						or inp.right_click
 						or inp.key_esc_press
 						or inp.backspace_press
-						or not tauon.channel_status.available()
 					):
 						gui.audio_info_box = False
 						inp.key_return_press = False
@@ -61681,9 +61814,20 @@ def main(holder: Holder) -> None:
 								(x + 18 * gui.scale, y + 34 * gui.scale), line, colours.box_sub_text, 312,
 								max_w=w - 36 * gui.scale)
 
-						tauon.channel_status.draw(x + 8 * gui.scale, y + 50 * gui.scale, w - 16 * gui.scale, palette)
-						tauon.channel_status.draw_legend(
-							x + 18 * gui.scale, y + (52 + ChannelStatusView.ROWS_HEIGHT) * gui.scale, palette)
+						if tauon.channel_status.available():
+							tauon.channel_status.draw(x + 8 * gui.scale, y + 50 * gui.scale, w - 16 * gui.scale, palette)
+							tauon.channel_status.draw_legend(
+								x + 18 * gui.scale, y + (52 + ChannelStatusView.ROWS_HEIGHT) * gui.scale, palette)
+						else:
+							ddt.text(
+								(x + w // 2, y + round((50 + ChannelStatusView.ROWS_HEIGHT / 2) * gui.scale), 2),
+								_("Channel status needs a newer build of PHAzOR"), palette.label, 312, bg=palette.background)
+
+						gain_y = y + round((52 + ChannelStatusView.ROWS_HEIGHT + 26) * gui.scale)
+						ddt.rect(
+							(x + round(18 * gui.scale), gain_y - round(2 * gui.scale), w - round(36 * gui.scale), 1),
+							palette.track)
+						tauon.channel_status.draw_gain(x + 8 * gui.scale, gain_y, w - 16 * gui.scale, palette)
 
 						if pctl.playing_state == PlayingState.PLAYING:
 							gui.delay_frame(0.05)
