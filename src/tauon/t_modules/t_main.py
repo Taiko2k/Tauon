@@ -27876,6 +27876,7 @@ class NagBox:
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
+		("Added MULTICHANNEL SURROUND SOUND support", False),
 		("New upgraded Tag Editor", False),
 		("Queued albums can now be expanded", False),
 		("Added auto-queue feature", False),
