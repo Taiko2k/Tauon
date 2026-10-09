@@ -99,6 +99,7 @@ import mutagen.mp4
 import mutagen.oggopus
 import mutagen.oggvorbis
 import requests
+import cairo
 import sdl3
 from bs4 import BeautifulSoup
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
@@ -251,6 +252,13 @@ from tauon.t_modules.t_phazor import (  # noqa: E402
 	phazor_exists,
 	player4,
 )
+from tauon.t_modules.t_playlist_folders import (  # noqa: E402
+	FOLDER_COLOURS,
+	FolderRow,
+	PlaylistFolder,
+	PlaylistFolders,
+)
+from tauon.t_modules.t_playlist_folders import MAX_DEPTH as PLAYLIST_FOLDER_MAX_DEPTH  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
@@ -1163,6 +1171,7 @@ class GuiVar:
 
 		self.saved_prime_tab = 0
 		self.saved_prime_direction = 0
+		self.saved_playlist_folders: list | None = None
 
 		self.stop_sync: bool = False
 		self.sync_progress = ""
@@ -2501,6 +2510,7 @@ class PlayerCtl:
 		# self.album_shuffle_id = ""
 		self.last_playing_time: float = 0
 		self.multi_playlist: list[TauonPlaylist] = self.bag.multi_playlist
+		self.playlist_folders = PlaylistFolders()
 		self.active_playlist_viewing: int = self.bag.active_playlist_viewing  # the playlist index that is being viewed
 		self.active_playlist_playing: int = self.bag.active_playlist_playing  # the playlist index that is playing from
 		self.force_queue: list[TauonQueueItem] = self.bag.p_force_queue
@@ -2814,7 +2824,7 @@ class PlayerCtl:
 					on = le - 1
 				if on == p:
 					break
-				if self.multi_playlist[on].hidden is False or not self.prefs.tabs_on_top or (
+				if self.pl_shown_on_top(on) or not self.prefs.tabs_on_top or (
 						self.gui.lsp and self.prefs.left_panel_mode == "playlist"):
 					self.switch_playlist(on)
 					break
@@ -2830,7 +2840,7 @@ class PlayerCtl:
 					on = 0
 				if on == p:
 					break
-				if self.multi_playlist[on].hidden is False or not self.prefs.tabs_on_top or (
+				if self.pl_shown_on_top(on) or not self.prefs.tabs_on_top or (
 						self.gui.lsp and self.prefs.left_panel_mode == "playlist"):
 					self.switch_playlist(on)
 					break
@@ -3002,6 +3012,41 @@ class PlayerCtl:
 
 	def pl_to_id(self, pl: int) -> int:
 		return self.multi_playlist[pl].uuid_int
+
+	def sync_playlist_folders(self) -> None:
+		"""Fold outside changes to multi_playlist into the folder tree."""
+		order = [pl.uuid_int for pl in self.multi_playlist]
+		if self.playlist_folders.in_sync(order):
+			return
+		with DATABASE_LOCK:
+			self.playlist_folders.sync(order)
+
+	@database_write
+	def apply_playlist_folders(self) -> None:
+		"""Reorder multi_playlist to follow the folder tree."""
+		order = self.playlist_folders.playlist_order()
+		by_id = {pl.uuid_int: pl for pl in self.multi_playlist}
+		if len(by_id) != len(self.multi_playlist) or set(order) != set(by_id):
+			return
+		if order != list(by_id):
+			playing = self.multi_playlist[self.active_playlist_playing] if 0 <= self.active_playlist_playing < len(self.multi_playlist) else None
+			viewing = self.multi_playlist[self.active_playlist_viewing]
+			top_panel = self.tauon.top_panel
+			prime = self.multi_playlist[top_panel.prime_tab] if 0 <= top_panel.prime_tab < len(self.multi_playlist) else None
+
+			self.multi_playlist[:] = [by_id[u] for u in order]
+
+			if playing is not None:
+				self.active_playlist_playing = self.multi_playlist.index(playing)
+			self.active_playlist_viewing = self.multi_playlist.index(viewing)
+			if prime is not None:
+				top_panel.prime_tab = self.multi_playlist.index(prime)
+		self.playlist_folders.mark_synced()
+
+	def pl_shown_on_top(self, index: int) -> bool:
+		"""True if a playlist has a tab in the top panel, alone or in a pinned folder."""
+		pl = self.multi_playlist[index]
+		return not pl.hidden or self.playlist_folders.pinned_folder_of(pl.uuid_int) is not None
 
 	@database_write
 	def notify_database_changed(self) -> None:
@@ -4685,7 +4730,7 @@ class PlayerCtl:
 								continue
 
 							# Skip a playlist if hidden
-							if self.multi_playlist[k].hidden and self.prefs.tabs_on_top:
+							if not self.pl_shown_on_top(k) and self.prefs.tabs_on_top:
 								continue
 
 							# Set found playlist as playing the first track
@@ -7380,6 +7425,8 @@ class Tauon:
 		self.selection_menu: Menu        = Menu(self, 200, show_icons=False)
 		self.folder_menu: Menu           = Menu(self, 193, show_icons=True)
 		self.extra_tab_menu: Menu        = Menu(self, 155, show_icons=True)
+		self.playlist_folder_menu: Menu  = Menu(self, 175, show_icons=True)
+		self.folder_tab_menu: Menu       = Menu(self, 190)
 
 		# Lazily created popup windows for context menus (see draw_popup_menus /
 		# t_window): the main column and the active submenu each get their own.
@@ -17994,6 +18041,142 @@ class Tauon:
 			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Pin"))
 		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Unpin"))
 
+	def new_playlist_folder(self, parent_id: int | None = None) -> None:
+		folders = self.pctl.playlist_folders
+		self.pctl.sync_playlist_folders()
+		parent = folders.get_folder(parent_id) if parent_id is not None else None
+		folder = folders.new_folder(_("New Folder"), parent)
+		if folder is None:
+			return
+		if parent is not None:
+			parent.collapsed = False
+		else:
+			self.playlist_box.place_new(folder)
+		self.rename_playlist_folder(folder.uuid_int)
+
+	def menu_new_playlist(self) -> None:
+		"""New playlist from the list menu, placed where a gutter menu was opened."""
+		pl = self.new_playlist()
+		if pl is None or self.playlist_box.insert_gap is None:
+			return
+		self.pctl.sync_playlist_folders()
+		self.playlist_box.place_new(self.pctl.multi_playlist[pl].uuid_int)
+
+	def new_playlist_in_folder(self, folder_id: int) -> None:
+		folders = self.pctl.playlist_folders
+		folder = folders.get_folder(folder_id)
+		pl = self.new_playlist()
+		if folder is None or pl is None:
+			return
+		self.pctl.sync_playlist_folders()
+		if folders.move(self.pctl.multi_playlist[pl].uuid_int, folder):
+			folder.collapsed = False
+			self.pctl.apply_playlist_folders()
+
+	def new_playlist_subfolder_disable(self, folder_id: int) -> bool:
+		folders = self.pctl.playlist_folders
+		folder = folders.get_folder(folder_id)
+		return folder is None or folders.level(folder) >= PLAYLIST_FOLDER_MAX_DEPTH
+
+	def rename_playlist_folder(self, folder_id: int) -> None:
+		folder = self.pctl.playlist_folders.get_folder(folder_id)
+		if folder is None:
+			return
+
+		def done(text: str) -> None:
+			folder.title = text
+
+		box = self.rename_playlist_box
+		box.edit_generator = False
+		box.done_callback = done
+		box.x = self.inp.mouse_position[0]
+		box.y = min(self.inp.mouse_position[1], round(350 * self.gui.scale))
+		if box.y < self.gui.panelY:
+			box.y = self.gui.panelY + round(10 * self.gui.scale)
+		self.rename_text_area.set_text(folder.title)
+		self.rename_text_area.highlight_all()
+		self.gui.rename_playlist_box = True
+
+	def toggle_playlist_folder_pin(self, folder_id: int) -> None:
+		folder = self.pctl.playlist_folders.get_folder(folder_id)
+		if folder is not None:
+			folder.pinned ^= True
+
+	def playlist_folder_pin_deco(self, folder_id: int) -> Decorator:
+		folder = self.pctl.playlist_folders.get_folder(folder_id)
+		text = _("Unpin from Top Panel") if folder is not None and folder.pinned else _("Pin to Top Panel")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
+
+	def set_playlist_folder_colour(self, folder_id: int, colour: int) -> None:
+		folder = self.pctl.playlist_folders.get_folder(folder_id)
+		if folder is not None:
+			folder.colour = colour
+
+	def playlist_folder_colour_is(self, colour: int) -> bool:
+		folder = self.pctl.playlist_folders.get_folder(self.playlist_folder_menu.reference)
+		return folder is not None and folder.colour % len(FOLDER_COLOURS) == colour
+
+	def delete_playlist_folder(self, folder_id: int) -> None:
+		folders = self.pctl.playlist_folders
+		folder = folders.get_folder(folder_id)
+		if folder is None:
+			return
+		folders.delete_folder(folder)
+		self.pctl.apply_playlist_folders()
+
+	def playlist_in_folder_test(self, pl: int) -> bool:
+		if self.gui.radio_view or not 0 <= pl < len(self.pctl.multi_playlist):
+			return False
+		return self.pctl.playlist_folders.parent_of(self.pctl.multi_playlist[pl].uuid_int) is not None
+
+	def remove_playlist_from_folder(self, pl: int) -> None:
+		"""Move a playlist up out of its folder, to just after the folder."""
+		folders = self.pctl.playlist_folders
+		self.pctl.sync_playlist_folders()
+		uuid_int = self.pctl.multi_playlist[pl].uuid_int
+		parent = folders.parent_of(uuid_int)
+		if parent is not None and folders.move_beside(uuid_int, parent, after=True):
+			self.pctl.apply_playlist_folders()
+
+	def switch_to_playlist_id(self, pl_id: int) -> None:
+		pl = self.pctl.id_to_pl(pl_id)
+		if pl is not None:
+			self.top_panel.prime_tab = pl
+			self.pctl.switch_playlist(pl)
+
+	def switch_to_playlist_id_sub(self, _ref: object, pl_id: int) -> None:
+		self.switch_to_playlist_id(pl_id)
+
+	def open_folder_tab_menu(self, folder: PlaylistFolder, position: tuple[float, float]) -> None:
+		"""Drop down a pinned folder's playlists from its top panel tab."""
+		folders = self.pctl.playlist_folders
+		menu = self.folder_tab_menu
+		menu.items.clear()
+		menu.subs.clear()
+		menu.sub_number = 0
+		menu._widths_dirty = True
+
+		def title(pl_id: int) -> str:
+			pl = self.pctl.id_to_pl(pl_id)
+			return self.pctl.multi_playlist[pl].title if pl is not None else ""
+
+		for entry in folder.children:
+			if isinstance(entry, int):
+				menu.add(MenuItem(title(entry), self.switch_to_playlist_id, pass_ref=True, set_ref=entry))
+				continue
+			menu.add_sub(entry.title, 190)
+			sub = menu.sub_number - 1
+			for inner in folders.subtree_playlists(entry):
+				# Deeper playlists are prefixed with the folders leading to them
+				path = [f.title for f in folders.ancestors(inner) if folders.contains(entry, f)]
+				label = " › ".join([*path, title(inner)])
+				menu.add_to_sub(sub, MenuItem(label, self.switch_to_playlist_id_sub, args=inner))
+			if not entry.children:
+				menu.add_to_sub(sub, MenuItem(_("Empty"), self.switch_to_playlist_id_sub, disable_test=lambda: True))
+		if not folder.children:
+			menu.add(MenuItem(_("Empty"), self.switch_to_playlist_id, disable_test=lambda: True))
+		menu.activate(folder.uuid_int, position)
+
 	def pl_lock_deco(self, pl: int) -> Decorator:
 		if self.pctl.multi_playlist[pl].locked is True:
 			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Unlock"))
@@ -20136,6 +20319,8 @@ class Tauon:
 		view_prefs["append-date"] = prefs.append_date
 
 		db_snapshot, auto_queue = snapshot_database(pctl, self.queue_box)
+		with DATABASE_LOCK:
+			playlist_folders = pctl.playlist_folders.to_saved()
 		view_prefs["auto-queue"] = auto_queue
 		tauonplaylist_jar = db_snapshot[5]
 		radioplaylist_jar = db_snapshot[165]
@@ -20356,6 +20541,7 @@ class Tauon:
 			prefs.feux_panel,  # 197
 			prefs.feux_panel_art,  # 198
 			prefs.feux_panel_pod1_w,  # 199
+			playlist_folders,  # 200
 		]
 
 		for slot, value in db_snapshot.items():
@@ -27882,7 +28068,7 @@ class NagBox:
 		("New upgraded Tag Editor", False),
 		("Queued albums can now be expanded", False),
 		("Added auto-queue feature", False),
-		("New main menu button", False),
+		("Added playlist folders", False),
 		("Fixes to outbound streaming formats", False),
 		("And more!", False),
 	)
@@ -33719,6 +33905,8 @@ class TopPanel:
 		self.prime_tab = self.gui.saved_prime_tab
 		self.prime_side = self.gui.saved_prime_direction  # 0=left, 1=right
 		self.shown_tabs = []
+		# Sort keys of pinned folder tabs among playlist indexes, by folder uuid
+		self.folder_keys: dict[int, float] = {}
 
 		# ---
 		self.space_left = 0
@@ -33764,6 +33952,131 @@ class TopPanel:
 
 	def over_controls(self, x: float, y: float) -> bool:
 		return coll_point((x, y), self.controls_rect)
+
+	def overflow_switch_folder(self, folder_id: int) -> None:
+		folder = self.pctl.playlist_folders.get_folder(folder_id)
+		if folder is not None and (pl := self.tab_prime(folder)) is not None:
+			self.left_overflow_switch_playlist(pl)
+
+	def playlist_tab_items(self) -> list[int | PlaylistFolder]:
+		"""Playlist tabs in order, with pinned folders standing in for their contents.
+
+		Also fills folder_keys so folders sort among playlist indexes: a folder
+		sits just before the first playlist at or after its place in the list."""
+		pctl = self.pctl
+		pctl.sync_playlist_folders()
+		folders = pctl.playlist_folders
+		index_of = {pl.uuid_int: i for i, pl in enumerate(pctl.multi_playlist)}
+		items: list[int | PlaylistFolder] = []
+		for n, entry in enumerate(folders.top_items(lambda u: pctl.multi_playlist[index_of[u]].hidden)):
+			if isinstance(entry, int):
+				items.append(index_of[entry])
+				continue
+			anchor = folders.first_playlist_from(entry)
+			position = index_of[anchor] if anchor is not None else len(pctl.multi_playlist)
+			self.folder_keys[entry.uuid_int] = position - 0.5 + n * 1e-6
+			items.append(entry)
+		return items
+
+	def tab_key(self, item: int | PlaylistFolder) -> float:
+		if isinstance(item, PlaylistFolder):
+			return self.folder_keys[item.uuid_int]
+		return item
+
+	def tab_item_of(self, pl: int) -> int | PlaylistFolder:
+		"""The tab that shows a playlist: itself, or a pinned folder holding it."""
+		if self.gui.radio_view or not 0 <= pl < len(self.pctl.multi_playlist):
+			return pl
+		folder = self.pctl.playlist_folders.pinned_folder_of(self.pctl.multi_playlist[pl].uuid_int)
+		return pl if folder is None else folder
+
+	def tab_prime(self, item: int | PlaylistFolder) -> int | None:
+		"""Playlist index to centre the tab strip on for a tab."""
+		if not isinstance(item, PlaylistFolder):
+			return item
+		inside = self.pctl.playlist_folders.subtree_playlists(item)
+		return self.pctl.id_to_pl(inside[0]) if inside else None
+
+	def folder_tab_text(self, folder: PlaylistFolder) -> str:
+		"""A folder tab names the playlist open from it."""
+		viewing = self.pctl.multi_playlist[self.pctl.active_playlist_viewing]
+		if self.pctl.playlist_folders.pinned_folder_of(viewing.uuid_int) is folder:
+			return f"{folder.title} › {viewing.title}"
+		return folder.title
+
+	def tab_w(self, item: int | PlaylistFolder) -> int:
+		if isinstance(item, PlaylistFolder):
+			text_w = self.ddt.get_text_w(self.folder_tab_text(item), self.tab_text_font)
+			return text_w + self.tab_extra_width + round(12 * self.gui.scale)
+		return self.tab_text_spaces[item] + self.tab_extra_width
+
+	def folder_tab_input(self, folder: PlaylistFolder, x: float, y: float, tab_width: float) -> None:
+		tauon = self.tauon
+		inp = self.inp
+		f_rect = [x, y + 1, tab_width - 1, self.height - 1]
+		if not self.coll(f_rect):
+			return
+
+		if inp.mouse_click and not tauon.playlist_box.drag:
+			inp.mouse_click = False
+			if not tauon.folder_tab_menu.click_dismissed:
+				tauon.open_folder_tab_menu(folder, (x, y + self.height))
+		elif inp.right_click:
+			tauon.playlist_folder_menu.activate(folder.uuid_int)
+
+		# Drop a dragged playlist into the folder
+		if inp.mouse_up and tauon.playlist_box.drag and coll_point(inp.mouse_up_position, f_rect):
+			pl = tauon.playlist_box.drag_on
+			if 0 <= pl < len(self.pctl.multi_playlist):
+				self.pctl.sync_playlist_folders()
+				if self.pctl.playlist_folders.move(self.pctl.multi_playlist[pl].uuid_int, folder):
+					self.pctl.apply_playlist_folders()
+			tauon.playlist_box.drag = False
+			self.gui.request_frame()
+
+	def draw_folder_tab(self, folder: PlaylistFolder, x: float, y: float, tab_width: float) -> None:
+		tauon = self.tauon
+		pctl = self.pctl
+		gui = self.gui
+		colours = self.colours
+
+		rect = [x, y, tab_width, self.height]
+		f_rect = [x, y + 1, tab_width - 1, self.height - 1]
+		self.fields.add(f_rect)
+		tab_hit = self.coll(f_rect)
+
+		inside = pctl.playlist_folders.subtree_playlists(folder)
+		active = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int in inside
+		menu_open = any(
+			menu.active and menu.reference == folder.uuid_int
+			for menu in (tauon.folder_tab_menu, tauon.playlist_folder_menu))
+
+		if active:
+			bg = colours.tab_background_active
+		elif menu_open or (tab_hit and not tauon.playlist_box.drag):
+			bg = colours.tab_highlight
+		else:
+			bg = colours.tab_background
+		self.ddt.rect(rect, bg)
+		fg = colours.tab_text_active if active else colours.tab_text
+
+		bar_highlight_size = round(2 * gui.scale)
+		if 0 <= pctl.active_playlist_playing < len(pctl.multi_playlist) and \
+				pctl.multi_playlist[pctl.active_playlist_playing].uuid_int in inside and \
+				pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
+			self.ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 80))
+
+		text = self.folder_tab_text(folder)
+		chevron_w = round(12 * gui.scale)
+		tauon.playlist_box.draw_chevron(
+			x + self.tab_text_start_space + round(4 * gui.scale), y + self.height / 2, 90,
+			tauon.playlist_box.folder_colour(folder))
+		self.ddt.text(
+			(x + self.tab_text_start_space + chevron_w, y + self.tab_text_y_offset), text, fg, self.tab_text_font, bg=bg)
+
+		# Dragged playlist would go into the folder
+		if tab_hit and tauon.playlist_box.drag and self.inp.mouse_down:
+			self.ddt.rect((x, y + self.height - bar_highlight_size, tab_width, bar_highlight_size), ColourRGBA(80, 160, 200, 255))
 
 	def render(self) -> None:
 		tauon       = self.tauon
@@ -33949,7 +34262,7 @@ class TopPanel:
 				lrect[0] + round((lrect[2] - gw) / 2), lrect[1] + round((lrect[3] - gh) / 2),
 				gw, gh, lcol)
 
-		if tauon.playlist_box.drag:
+		if tauon.playlist_box.drag or tauon.playlist_box.drag_folder is not None:
 			self.inp.drag_mode = False
 
 		# Need to test length
@@ -34006,60 +34319,63 @@ class TopPanel:
 							pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 					gui.request_frame()
 			gui.update_on_drag = True
+		if tauon.playlist_box.drag_folder is not None:
+			gui.update_on_drag = True
 
 		# List all tabs eligible to be shown
 		#logging.info("-------------")
-		ready_tabs: list[int] = []
-		show_tabs: list[int] = []
+		# Tabs are playlist indexes, or folders pinned in place of their playlists
+		ready_tabs: list[int | PlaylistFolder] = []
+		show_tabs: list[int | PlaylistFolder] = []
+		self.folder_keys = {}
 
 		if prefs.tabs_on_top or gui.radio_view:
 			if gui.radio_view:
 				for i, tab in enumerate(pctl.radio_playlists):
 					ready_tabs.append(i)
 				self.prime_tab = min(self.prime_tab, len(pctl.radio_playlists) - 1)
+				prime_item = self.prime_tab
 			else:
-				for i, tab in enumerate(pctl.multi_playlist):
-					# Skip if hide flag is set
-					if tab.hidden:
-						continue
-					ready_tabs.append(i)
+				ready_tabs = self.playlist_tab_items()
 				self.prime_tab = min(self.prime_tab, len(pctl.multi_playlist) - 1)
+				prime_item = self.tab_item_of(self.prime_tab)
+			prime_key = self.tab_key(prime_item) if prime_item in ready_tabs else self.prime_tab
 			max_w = status_right - status_reserve - x - add_w
 
-			left_tabs: list[int] = []
-			right_tabs: list[int] = []
+			left_tabs: list[int | PlaylistFolder] = []
+			right_tabs: list[int | PlaylistFolder] = []
 			if prefs.shuffle_lock:
 				for p in ready_tabs:
 					left_tabs.append(p)
 
 			else:
 				for p in ready_tabs:
-					if p < self.prime_tab:
+					if self.tab_key(p) < prime_key:
 						left_tabs.append(p)
 
 				for p in ready_tabs:
-					if p > self.prime_tab:
+					if self.tab_key(p) > prime_key:
 						right_tabs.append(p)
 				left_tabs.reverse()
 
 			run = max_w
 
-			if self.prime_tab in ready_tabs:
-				size = self.tab_text_spaces[self.prime_tab] + self.tab_extra_width
+			if prime_item in ready_tabs:
+				size = self.tab_w(prime_item)
 				if size < run:
-					show_tabs.append(self.prime_tab)
+					show_tabs.append(prime_item)
 					run -= size
 
 			if self.prime_side == 0:
 				for tab in right_tabs:
-					size = self.tab_text_spaces[tab] + self.tab_extra_width
+					size = self.tab_w(tab)
 					if size < run:
 						show_tabs.append(tab)
 						run -= size
 					else:
 						break
 				for tab in left_tabs:
-					size = self.tab_text_spaces[tab] + self.tab_extra_width
+					size = self.tab_w(tab)
 					if size < run:
 						show_tabs.insert(0, tab)
 						run -= size
@@ -34067,14 +34383,14 @@ class TopPanel:
 						break
 			else:
 				for tab in left_tabs:
-					size = self.tab_text_spaces[tab] + self.tab_extra_width
+					size = self.tab_w(tab)
 					if size < run:
 						show_tabs.insert(0, tab)
 						run -= size
 					else:
 						break
 				for tab in right_tabs:
-					size = self.tab_text_spaces[tab] + self.tab_extra_width
+					size = self.tab_w(tab)
 					if size < run:
 						show_tabs.append(tab)
 						run -= size
@@ -34104,6 +34420,9 @@ class TopPanel:
 							self.overflow_menu.add(
 								MenuItem(pctl.radio_playlists[tab].name, self.left_overflow_switch_playlist,
 								pass_ref=True, set_ref=tab))
+						elif isinstance(tab, PlaylistFolder):
+							self.overflow_menu.add(
+								MenuItem(tab.title, self.overflow_switch_folder, pass_ref=True, set_ref=tab.uuid_int))
 						else:
 							self.overflow_menu.add(
 								MenuItem(pctl.multi_playlist[tab].title, self.left_overflow_switch_playlist,
@@ -34127,6 +34446,9 @@ class TopPanel:
 							self.overflow_menu.add(
 								MenuItem(
 									pctl.radio_playlists[tab].name, self.left_overflow_switch_playlist, pass_ref=True, set_ref=tab))
+						elif isinstance(tab, PlaylistFolder):
+							self.overflow_menu.add(
+								MenuItem(tab.title, self.overflow_switch_folder, pass_ref=True, set_ref=tab.uuid_int))
 						else:
 							self.overflow_menu.add(
 								MenuItem(
@@ -34141,28 +34463,28 @@ class TopPanel:
 						self.prime_side = 1
 					self.prime_tab = pctl.radio_playlist_viewing
 					gui.request_frame()
-			elif not self.inp.mouse_down and pctl.active_playlist_viewing not in show_tabs and pctl.active_playlist_viewing in ready_tabs:
-				if pctl.active_playlist_viewing < self.prime_tab:
+			elif not self.inp.mouse_down and (active_item := self.tab_item_of(pctl.active_playlist_viewing)) not in show_tabs and active_item in ready_tabs:
+				if self.tab_key(active_item) < prime_key:
 					self.prime_side = 0
-				elif pctl.active_playlist_viewing > self.prime_tab:
+				elif self.tab_key(active_item) > prime_key:
 					self.prime_side = 1
 				self.prime_tab = pctl.active_playlist_viewing
 				gui.request_frame()
 
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] > xx and inp.mouse_position[1] < gui.panelY:
 				gui.request_frame()
-				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and right_overflow:
+				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and right_overflow and self.tab_prime(right_overflow[0]) is not None:
 					self.drag_slide_timer.set()
 					self.prime_side = 1
-					self.prime_tab = right_overflow[0]
+					self.prime_tab = self.tab_prime(right_overflow[0])
 				if self.drag_slide_timer.get() > 1:
 					self.drag_slide_timer.set()
 			if tauon.playlist_box.drag and self.inp.mouse_position[0] < x and inp.mouse_position[1] < gui.panelY:
 				gui.request_frame()
-				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and left_overflow:
+				if 0.5 < self.drag_slide_timer.get() < 1 and show_tabs and left_overflow and self.tab_prime(left_overflow[0]) is not None:
 					self.drag_slide_timer.set()
 					self.prime_side = 0
-					self.prime_tab = left_overflow[0]
+					self.prime_tab = self.tab_prime(left_overflow[0])
 				if self.drag_slide_timer.get() > 1:
 					self.drag_slide_timer.set()
 
@@ -34170,16 +34492,17 @@ class TopPanel:
 		target = pctl.multi_playlist
 		if gui.radio_view:
 			target = pctl.radio_playlists
-		for i, tab in enumerate(target):
-			if not gui.radio_view:
-				if not prefs.tabs_on_top or prefs.shuffle_lock:
-					break
-
-				if len(pctl.multi_playlist) != len(self.tab_text_spaces):
-					break
-
-			if i not in show_tabs:
+		tabs_active = gui.radio_view or (
+			prefs.tabs_on_top and not prefs.shuffle_lock and len(pctl.multi_playlist) == len(self.tab_text_spaces))
+		for i in show_tabs if tabs_active else []:
+			if isinstance(i, PlaylistFolder):
+				tab_width = self.tab_w(i)
+				self.tabs_right_x = x + tab_width
+				self.folder_tab_input(i, x, y, tab_width)
+				x += tab_width + self.tab_spacing
 				continue
+
+			tab = target[i]
 
 			# Determine the tab width
 			tab_width = self.tab_text_spaces[i] + self.tab_extra_width
@@ -34283,7 +34606,7 @@ class TopPanel:
 				if tauon.playlist_box.drag_source == 1:
 					pctl.multi_playlist[tauon.playlist_box.drag_on].hidden = False
 
-				pctl.move_playlist(tauon.playlist_box.drag_on, i)
+				pctl.move_playlist(tauon.playlist_box.drag_on, len(pctl.multi_playlist) - 1)
 			tauon.playlist_box.drag = False
 
 		# Need to test length again
@@ -34305,22 +34628,17 @@ class TopPanel:
 
 		# TAB DRAWING
 		shown = []
-		for i, tab in enumerate(target):
-
-			if not gui.radio_view:
-				if not prefs.tabs_on_top or prefs.shuffle_lock:
-					break
-
-				if len(pctl.multi_playlist) != len(self.tab_text_spaces):
-					break
-
-			# if tab.hidden is True:
-			#     continue
-
-			if i not in show_tabs:
+		tabs_active = gui.radio_view or (
+			prefs.tabs_on_top and not prefs.shuffle_lock and len(pctl.multi_playlist) == len(self.tab_text_spaces))
+		for i in show_tabs if tabs_active else []:
+			shown.append(i)
+			if isinstance(i, PlaylistFolder):
+				tab_width = self.tab_w(i)
+				self.draw_folder_tab(i, x, y, tab_width)
+				x += tab_width + self.tab_spacing
 				continue
 
-			shown.append(i)
+			tab = target[i]
 
 			tab_width = self.tab_text_spaces[i] + self.tab_extra_width
 			rect = [x, y, tab_width, self.height]
@@ -34465,6 +34783,7 @@ class TopPanel:
 			if not gui.custom_mode:
 				self.inp.quick_drag = False
 			tauon.playlist_box.drag = False
+			tauon.playlist_box.drag_folder = None
 			tauon.radio_view.drag = None
 
 		# Scroll anywhere on panel to cycle playlist
@@ -40917,6 +41236,23 @@ class PlaylistBox:
 		self.drag = False
 		self.drag_source = 0
 		self.drag_on = -1
+		# Folder being dragged in the list
+		self.drag_folder: PlaylistFolder | None = None
+		# Row index and drop zone under the pointer while dragging
+		self.drop_hint: tuple[int, str] | None = None
+		# Collapsed folder held over while dragging, opened after a moment
+		self.spring_folder: PlaylistFolder | None = None
+		self.spring_timer = Timer()
+		# Folder chevron texture as (pixel size, texture), and each folder's
+		# current chevron angle while it turns between collapsed and open
+		self._chevron: tuple[int, sdl3.LP_SDL_Texture] | None = None
+		self.chevron_angles: dict[int, float] = {}
+		self.chevron_time = time.monotonic()
+		self.chevron_dt = 0.0
+		# Row gap a gutter menu was opened at, and the entry below that gap
+		# (None for the end of the list); new playlists and folders go there
+		self.insert_gap: int | None = None
+		self.insert_before: int | PlaylistFolder | None = None
 
 		self.adds = []
 
@@ -40935,6 +41271,263 @@ class PlaylistBox:
 		self.text_offset = 2 * self.gui.scale
 		self.recalc()
 
+	def folder_colour(self, folder: PlaylistFolder, alpha: int = 255) -> ColourRGBA:
+		r, g, b = FOLDER_COLOURS[folder.colour % len(FOLDER_COLOURS)]
+		return ColourRGBA(r, g, b, alpha)
+
+	def bar_step(self) -> int:
+		return round(5 * self.gui.scale)
+
+	def depth_x(self, tab_start: float, depth: int) -> float:
+		"""Left edge of the colour bar for a nesting depth."""
+		return tab_start + round(2 * self.gui.scale) + depth * self.bar_step()
+
+	def depth_text_start(self, depth: int) -> float:
+		"""Text inset for a row; the first bar fits in the normal margin."""
+		return 10 * self.gui.scale + max(0, depth - 1) * self.bar_step()
+
+	def dragged_entry(self) -> int | PlaylistFolder | None:
+		if self.drag_folder is not None:
+			return self.drag_folder
+		if self.drag and 0 <= self.drag_on < len(self.pctl.multi_playlist):
+			return self.pctl.multi_playlist[self.drag_on].uuid_int
+		return None
+
+	def drop_zone(self, row: FolderRow, yy: float) -> str:
+		"""Where a drop on a row would go: before or after it, or into a folder."""
+		my = self.inp.mouse_position[1]
+		top = yy - round(1 * self.gui.scale)
+		if isinstance(row.entry, PlaylistFolder):
+			edge = self.tab_h / 4
+			if my < top + edge:
+				return "before"
+			if my > top + self.tab_h - edge:
+				return "first" if not row.entry.collapsed and row.entry.children else "after"
+			return "into"
+		return "before" if my < top + self.tab_h / 2 else "after"
+
+	def drop_allowed(self, entry: int | PlaylistFolder, target: int | PlaylistFolder, zone: str) -> bool:
+		folders = self.pctl.playlist_folders
+		if entry is target or entry == target:
+			return False
+		parent = target if zone in ("into", "first") else folders.parent_of(target)
+		return folders.can_place(entry, parent)
+
+	def drop(self, entry: int | PlaylistFolder, target: int | PlaylistFolder, zone: str) -> None:
+		folders = self.pctl.playlist_folders
+		if not self.drop_allowed(entry, target, zone):
+			return
+		if zone == "into":
+			moved = folders.move(entry, target)
+		elif zone == "first":
+			moved = folders.move(entry, target, 0)
+		else:
+			moved = folders.move_beside(entry, target, after=zone == "after")
+		if moved:
+			self.pctl.apply_playlist_folders()
+
+	def place_new(self, entry: int | PlaylistFolder) -> None:
+		"""Move a new playlist or folder to the gap a gutter menu was opened at."""
+		if self.insert_gap is None:
+			return
+		folders = self.pctl.playlist_folders
+		before = self.insert_before
+		try:
+			if before is None:
+				moved = folders.move(entry, None)
+			else:
+				moved = folders.move_beside(entry, before, after=False)
+				# A folder with no room at that depth goes before the nearest folder that has room
+				ref = folders.parent_of(before)
+				while not moved and ref is not None:
+					moved = folders.move_beside(entry, ref, after=False)
+					ref = folders.parent_of(ref)
+		except LookupError:
+			moved = False
+		if moved:
+			self.pctl.apply_playlist_folders()
+
+	def drop_to_end(self, entry: int | PlaylistFolder) -> None:
+		if self.pctl.playlist_folders.move(entry, None):
+			self.pctl.apply_playlist_folders()
+
+	def draw_depth_bars(self, row: FolderRow, yy: float, tab_start: float) -> None:
+		w = max(1, round(2 * self.gui.scale))
+		for k, folder in enumerate(row.ancestors):
+			self.ddt.rect(
+				(self.depth_x(tab_start, k), yy - round(1 * self.gui.scale), w, self.tab_h + self.gap),
+				self.folder_colour(folder, 190))
+
+	def chevron_texture(self, size: int) -> sdl3.LP_SDL_Texture:
+		"""White right-pointing triangle, anti-aliased and centred in a square."""
+		if self._chevron is not None:
+			if self._chevron[0] == size:
+				return self._chevron[1]
+			sdl3.SDL_DestroyTexture(self._chevron[1])
+
+		surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+		context = cairo.Context(surface)
+		# Balanced around the centre so turning it reads as a rotation in place
+		context.move_to(size * 0.30, size * 0.20)
+		context.line_to(size * 0.78, size * 0.50)
+		context.line_to(size * 0.30, size * 0.80)
+		context.close_path()
+		context.set_line_join(cairo.LINE_JOIN_ROUND)
+		context.set_line_width(size * 0.08)
+		context.set_source_rgba(1, 1, 1, 1)
+		context.fill_preserve()
+		context.stroke()
+		surface.flush()
+
+		# Undo cairo's premultiplied alpha; the shape is white throughout
+		data = bytearray(surface.get_data())
+		pixels = len(data) // 4
+		data[0::4] = b"\xff" * pixels
+		data[1::4] = b"\xff" * pixels
+		data[2::4] = b"\xff" * pixels
+		buffer = ctypes.create_string_buffer(bytes(data))
+		sdl_surface = sdl3.SDL_CreateSurfaceFrom(
+			size, size, sdl3.SDL_PIXELFORMAT_ARGB8888, ctypes.cast(buffer, c_void_p), surface.get_stride())
+		texture = sdl3.SDL_CreateTextureFromSurface(self.ddt.renderer, sdl_surface)
+		sdl3.SDL_DestroySurface(sdl_surface)
+		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+		self._chevron = (size, texture)
+		return texture
+
+	def draw_chevron(self, cx: float, cy: float, angle: float, colour: ColourRGBA) -> None:
+		"""Draw the folder chevron centred on a point; 0 points right, 90 down."""
+		size = max(6, round(10 * self.gui.scale))
+		texture = self.chevron_texture(size)
+		sdl3.SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b)
+		sdl3.SDL_SetTextureAlphaMod(texture, colour.a)
+		dst = sdl3.SDL_FRect(round(cx - size / 2), round(cy - size / 2), size, size)
+		sdl3.SDL_RenderTextureRotated(self.ddt.renderer, texture, None, dst, ctypes.c_double(angle), None, sdl3.SDL_FLIP_NONE)
+
+	def chevron_angle(self, folder: PlaylistFolder) -> float:
+		"""Folder chevron angle, turning towards its collapsed or open position."""
+		target = 0.0 if folder.collapsed else 90.0
+		angle = self.chevron_angles.get(folder.uuid_int, target)
+		if angle != target:
+			step = 90 * self.chevron_dt / 0.12
+			angle = min(angle + step, target) if angle < target else max(angle - step, target)
+			self.gui.request_frame()
+		self.chevron_angles[folder.uuid_int] = angle
+		return angle
+
+	def draw_drop_hint(self, row: FolderRow, zone: str, yy: float, tab_start: float, tab_width: float) -> None:
+		colour = ColourRGBA(80, 160, 200, 255)
+		top = yy - round(1 * self.gui.scale)
+		if zone == "into":
+			self.ddt.rect((tab_start, top, tab_width, self.tab_h), alpha_mod(colour, 45))
+			self.ddt.rect((tab_start + tab_width - self.indicate_w, top, self.indicate_w, self.tab_h), colour)
+			return
+		depth = row.depth + (1 if zone == "first" else 0)
+		lx = self.depth_x(tab_start, depth) if depth else tab_start
+		w = tab_start + tab_width - lx
+		if zone == "before":
+			self.ddt.rect((lx, yy - self.indicate_w, w, self.indicate_w), colour)
+		else:
+			self.ddt.rect((lx, yy + (self.tab_h - self.indicate_w), w, self.indicate_w), colour)
+
+	def folder_row_input(
+		self, folder: PlaylistFolder, zone: str, dragged: int | PlaylistFolder | None, drag_moved: bool,
+		rect: tuple[float, float, float, float],
+	) -> None:
+		tauon = self.tauon
+		gui = self.gui
+
+		if self.inp.right_click:
+			tauon.playlist_folder_menu.activate(folder.uuid_int, self.inp.mouse_position)
+
+		# Press and release can land in the same frame, so take the press first
+		if self.inp.mouse_click:
+			self.drag_folder = folder
+			gui.set_drag_source()
+
+		if self.inp.mouse_up and coll_point(self.inp.mouse_up_position, rect):
+			if self.drag_folder is folder and point_proximity_test(
+					gui.drag_source_position, self.inp.mouse_up_position, 10 * gui.scale):
+				folder.collapsed ^= True
+			elif dragged is not None and drag_moved:
+				if self.drag and self.drag_source == 0 and self.prefs.drag_to_unpin:
+					self.pctl.multi_playlist[self.drag_on].hidden = True
+				self.drop(dragged, folder, zone)
+			gui.request_frame()
+
+		# Open a collapsed folder held over while dragging
+		dragging = (dragged is not None and drag_moved) or self.inp.quick_drag
+		if dragging and folder.collapsed and zone == "into":
+			if self.spring_folder is not folder:
+				self.spring_folder = folder
+				self.spring_timer.set()
+			elif self.spring_timer.get() > 0.6:
+				folder.collapsed = False
+			gui.request_frame()
+
+	def draw_folder_row(
+		self, row: FolderRow, yy: float, tab_start: float, tab_width: float, light_mode: bool,
+		tab_title_colour: ColourRGBA, indicate_w: int,
+	) -> None:
+		gui = self.gui
+		pctl = self.pctl
+		folder = row.entry
+		folders = pctl.playlist_folders
+		menu = self.tauon.playlist_folder_menu
+
+		bg = ColourRGBA(0, 0, 0, 0)
+		if self.prefs.transparent_mode:
+			bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.09, 0)
+			bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+
+		inside = folders.subtree_playlists(folder)
+		viewing_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
+		playing_id = None
+		if 0 <= pctl.active_playlist_playing < len(pctl.multi_playlist):
+			playing_id = pctl.multi_playlist[pctl.active_playlist_playing].uuid_int
+
+		# Stand in for the open playlist while it's hidden in the folder
+		if (folder.collapsed and viewing_id in inside) or (menu.active and menu.reference == folder.uuid_int):
+			bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.06, 0)
+			if light_mode:
+				bg = ColourRGBA(0, 0, 0, 25)
+			if self.prefs.transparent_mode:
+				bg = rgb_add_hls(self.colours.playlist_box_background, 0, 0.03, 0)
+				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
+
+		real_bg = alpha_blend(bg, self.colours.playlist_box_background)
+		self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
+
+		# Chevron sits between the row's left edge (past any colour bars) and the title
+		text_x = tab_start + self.depth_text_start(row.depth) + round(12 * gui.scale)
+		left = tab_start
+		if row.depth:
+			left = self.depth_x(tab_start, row.depth - 1) + max(1, round(2 * gui.scale))
+		self.draw_chevron(
+			(left + text_x) / 2, yy - round(1 * gui.scale) + self.tab_h / 2,
+			self.chevron_angle(folder), self.folder_colour(folder))
+
+		right_space = 15 * gui.scale
+		if folder.collapsed:
+			count = str(len(inside))
+			count_colour = alpha_mod(ensure_contrast(tab_title_colour, real_bg), 110)
+			self.ddt.text((tab_start + tab_width - 8 * gui.scale, yy + self.text_offset, 1), count, count_colour, 211, bg=real_bg)
+			right_space += self.ddt.get_text_w(count, 211)
+
+		if folder.pinned and self.prefs.tabs_on_top:
+			cl = ColourRGBA(0, 0, 0, 40) if light_mode else ColourRGBA(255, 255, 255, 25)
+			self.lock_icon.render(tab_start + tab_width - self.lock_icon.w, yy, cl)
+
+		self.ddt.text(
+			(text_x, yy + self.text_offset), folder.title, ensure_contrast(tab_title_colour, real_bg), 211,
+			max_w=tab_start + tab_width - text_x - right_space, bg=real_bg)
+
+		if folder.collapsed and playing_id in inside:
+			indicator_colour = self.colours.title_playing
+			if self.colours.lm:
+				indicator_colour = self.colours.seek_bar_fill
+			self.ddt.rect((tab_start - 2 * gui.scale, yy - round(1 * gui.scale), indicate_w, self.tab_h), indicator_colour)
+
 	def draw(self, x: int, y: int, w: int, h: int) -> None:
 		tauon = self.tauon
 		ddt   = self.ddt
@@ -40945,13 +41538,22 @@ class PlaylistBox:
 		self.ddt.rect((x, y, w, h), self.colours.playlist_box_background)
 		self.ddt.text_background_colour = self.colours.playlist_box_background
 
+		pctl.sync_playlist_folders()
+		rows = pctl.playlist_folders.rows()
+		index_of = {pl.uuid_int: i for i, pl in enumerate(pctl.multi_playlist)}
+
+		# Frame time for chevron turns, capped so a turn after idle still animates
+		now = time.monotonic()
+		self.chevron_dt = min(now - self.chevron_time, 1 / 30)
+		self.chevron_time = now
+
 		row_step = self.gap + self.tab_h
 		top_pad = 5 * gui.scale
 		max_tabs = max(0, int((h - top_pad + self.gap) // max(row_step, 1)))
-		scroll_needed = len(pctl.multi_playlist) > max_tabs
+		scroll_needed = len(rows) > max_tabs
 		bottom_pad = 12 * gui.scale if scroll_needed else 0
 		visible_scroll_rows = max(0, ((h - top_pad - bottom_pad - self.tab_h) / max(row_step, 1)) + 1)
-		max_scroll = max(len(pctl.multi_playlist) - visible_scroll_rows, 0)
+		max_scroll = max(len(rows) - visible_scroll_rows, 0)
 
 		tab_title_colour = self.colours.tab_text
 
@@ -41013,12 +41615,13 @@ class PlaylistBox:
 
 		draw_pin_indicator = False  # self.prefs.tabs_on_top
 
-		# if not gui.album_tab_mode:
-		# 	if self.inp.key_left_press or self.inp.key_right_press:
-		# 		if pctl.active_playlist_viewing < self.scroll_on:
-		# 			self.scroll_on = pctl.active_playlist_viewing
-		# 		elif pctl.active_playlist_viewing + 1 > self.scroll_on + max_tabs:
-		# 			self.scroll_on = (pctl.active_playlist_viewing - max_tabs) + 1
+		dragged = self.dragged_entry()
+		drag_moved = dragged is not None and not point_proximity_test(
+			gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale)
+		self.drop_hint = None
+		spring_hover = False
+		if self.drag_folder is not None:
+			gui.update_on_drag = True
 
 		# Process inputs
 		delete_pl = None
@@ -41026,20 +41629,46 @@ class PlaylistBox:
 		scroll_start = int(self.scroll_on)
 		scroll_offset = (self.scroll_on - scroll_start) * max(row_step, 1)
 		yy = y + top_pad - scroll_offset
-		for i, pl in enumerate(pctl.multi_playlist):
+
+		# Right-click in the gutter left of the rows opens the list menu, with
+		# new playlists and folders going to the nearest gap between rows
+		if self.insert_gap is not None and not tauon.extra_tab_menu.active:
+			self.insert_gap = None
+			self.insert_before = None
+		gutter = clipped_to_box((x, y, tab_start - x, h))
+		gutter_menu = gutter is not None and self.inp.right_click and self.coll(gutter)
+		if gutter_menu:
+			gap = round((self.inp.mouse_position[1] - yy) / max(row_step, 1)) + scroll_start
+			self.insert_gap = max(0, min(gap, len(rows)))
+			self.insert_before = rows[self.insert_gap].entry if self.insert_gap < len(rows) else None
+			tauon.extra_tab_menu.activate(pctl.active_playlist_viewing)
+		for r, row in enumerate(rows):
 
 			if tab_on >= visible_tab_limit:
 				break
-			if i < scroll_start:
+			if r < scroll_start:
 				continue
-
-			# if not pl.hidden and i in tabs_on_top:
-			# 	continue
 
 			tab_on += 1
 			tab_hit_rect = clipped_to_box((tab_start, yy - 1, tab_width, (self.tab_h + 1)))
+			hit = tab_hit_rect is not None and self.coll(tab_hit_rect)
+			zone = self.drop_zone(row, yy) if hit else ""
+			if hit and drag_moved and self.drop_allowed(dragged, row.entry, zone):
+				self.drop_hint = (r, zone)
 
-			if tab_hit_rect is not None and self.coll(tab_hit_rect):
+			if isinstance(row.entry, PlaylistFolder):
+				if hit:
+					self.folder_row_input(row.entry, zone, dragged, drag_moved, tab_hit_rect)
+					spring_hover = row.entry is self.spring_folder
+				yy += self.tab_h + self.gap
+				continue
+
+			i = index_of.get(row.entry)
+			if i is None:
+				yy += self.tab_h + self.gap
+				continue
+
+			if hit:
 				if self.inp.right_click:
 					if gui.radio_view:
 						tauon.radio_tab_menu.activate(i, self.inp.mouse_position)
@@ -41052,17 +41681,17 @@ class PlaylistBox:
 					# delete_playlist(i)
 					# break
 
-				if self.inp.mouse_up and self.drag and coll_point(self.inp.mouse_up_position, tab_hit_rect):
+				if self.inp.mouse_up and dragged is not None and coll_point(self.inp.mouse_up_position, tab_hit_rect):
 					# If drag from top bar to side panel, make hidden
-					if self.drag_source == 0 and self.prefs.drag_to_unpin:
+					if self.drag and self.drag_source == 0 and self.prefs.drag_to_unpin:
 						pctl.multi_playlist[self.drag_on].hidden = True
 
 					# Move playlist tab
-					if i != self.drag_on and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale):
-						if self.inp.key_shift_down:
+					if drag_moved and dragged != row.entry:
+						if self.drag and self.inp.key_shift_down:
 							tauon.combine_playlists(self.drag_on, i)
 						else:
-							pctl.move_playlist(self.drag_on, i)
+							self.drop(dragged, row.entry, zone)
 
 					gui.request_frame()
 
@@ -41095,25 +41724,41 @@ class PlaylistBox:
 			# Toggle hidden flag on click
 			pin_hit_rect = clipped_to_box((tab_start + 5 * gui.scale, yy + 3 * gui.scale, 25 * gui.scale, 26 * gui.scale))
 			if draw_pin_indicator and self.inp.mouse_click and pin_hit_rect is not None and self.coll(pin_hit_rect):
-				pl.hidden ^= True
+				pctl.multi_playlist[i].hidden ^= True
 
 			yy += self.tab_h + self.gap
+
+		if not spring_hover:
+			self.spring_folder = None
 
 		# Draw tabs
 		# delete_pl = None
 		tab_on = 0
+		bar_rows: list[tuple[FolderRow, float]] = []
 		yy = y + top_pad - scroll_offset
-		for i, pl in enumerate(pctl.multi_playlist):
+		for r, row in enumerate(rows):
 
 			# if yy + self.tab_h > y + h:
 			#     break
 			if tab_on >= visible_tab_limit:
 				break
-			if i < scroll_start:
+			if r < scroll_start:
 				continue
 
 			tab_on += 1
+			if row.depth:
+				bar_rows.append((row, yy))
 
+			i = None if isinstance(row.entry, PlaylistFolder) else index_of.get(row.entry)
+			if i is None:
+				if isinstance(row.entry, PlaylistFolder):
+					self.draw_folder_row(row, yy, tab_start, tab_width, light_mode, tab_title_colour, indicate_w)
+					if self.drop_hint is not None and self.drop_hint[0] == r:
+						self.draw_drop_hint(row, self.drop_hint[1], yy, tab_start, tab_width)
+				yy += self.tab_h + self.gap
+				continue
+
+			pl = pctl.multi_playlist[i]
 			name = pl.title
 			hidden = pl.hidden
 
@@ -41154,7 +41799,7 @@ class PlaylistBox:
 			self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
 
 			# Draw title text
-			text_start = 10 * gui.scale
+			text_start = self.depth_text_start(row.depth)
 			if draw_pin_indicator:
 				# text_start = 40 * gui.scale
 				text_start = 32 * gui.scale
@@ -41199,23 +41844,21 @@ class PlaylistBox:
 				if (self.inp.quick_drag or gui.ext_drop_mode) and self.tauon.pl_is_mut(i):
 					ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), ColourRGBA(80, 200, 180, 255))
 
-				# Draw indicators for moving tab
-				if self.drag and i != self.drag_on and not point_proximity_test(
-					gui.drag_source_position, self.inp.mouse_position, 10 * gui.scale):
-					if self.inp.key_shift_down:
-						ddt.rect(
-							(tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
-							ColourRGBA(80, 160, 200, 255))
-					elif i < self.drag_on:
-						ddt.rect((tab_start, yy - self.indicate_w, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
-					else:
-						ddt.rect((tab_start, yy + (self.tab_h - self.indicate_w), tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
-
 			elif self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				for item in gui.shift_selection:
 					if len(pctl.default_playlist) > item and pctl.default_playlist[item] in pl.playlist_ids:
 						ddt.rect((tab_start + tab_width - self.indicate_w, yy, self.indicate_w, self.tab_h), ColourRGBA(190, 170, 20, 255))
 						break
+
+			# Draw indicators for moving tab
+			if self.drop_hint is not None and self.drop_hint[0] == r:
+				if self.drag and self.inp.key_shift_down:
+					ddt.rect(
+						(tab_start + tab_width - 4 * gui.scale, yy, self.indicate_w, self.tab_h),
+						ColourRGBA(80, 160, 200, 255))
+				else:
+					self.draw_drop_hint(row, self.drop_hint[1], yy, tab_start, tab_width)
+
 			# Drag red line highlight if playlist is generator playlist
 			if self.inp.quick_drag and not point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15 * gui.scale):
 				if not self.tauon.pl_is_mut(i):
@@ -41242,6 +41885,19 @@ class PlaylistBox:
 
 			yy += self.tab_h + self.gap
 
+		# Folder colour bars go over the row backgrounds
+		for row, row_y in bar_rows:
+			self.draw_depth_bars(row, row_y, tab_start)
+
+		# Mark where a gutter menu would add a playlist or folder
+		if self.insert_gap is not None and tauon.extra_tab_menu.active:
+			gap_y = y + top_pad - scroll_offset + (self.insert_gap - scroll_start) * row_step
+			gap_y -= round(1 * gui.scale) + self.gap / 2 + self.indicate_w / 2
+			depth = rows[self.insert_gap].depth if self.insert_gap < len(rows) else 0
+			lx = self.depth_x(tab_start, depth) if depth else tab_start
+			if y <= gap_y <= y + h:
+				ddt.rect((lx, round(gap_y), tab_start + tab_width - lx, self.indicate_w), ColourRGBA(80, 160, 200, 255))
+
 		if delete_pl is not None:
 			# delete_playlist(delete_pl)
 			self.pctl.delete_playlist_ask(delete_pl)
@@ -41259,7 +41915,8 @@ class PlaylistBox:
 				if self.inp.mouse_up:
 					self.tauon.drop_tracks_to_new_playlist(gui.shift_selection)
 
-			if self.inp.right_click:
+			if self.inp.right_click and not gutter_menu:
+				self.insert_gap = None
 				self.tauon.extra_tab_menu.activate(pctl.active_playlist_viewing)
 
 			# Move tab to end playlist if dragged past end
@@ -41275,13 +41932,22 @@ class PlaylistBox:
 						if self.drag_source == 0 and self.prefs.drag_to_unpin:
 							pctl.multi_playlist[self.drag_on].hidden = True
 
-						pctl.move_playlist(self.drag_on, i)
+						self.drop_to_end(dragged)
 						gui.request_frame()
 						self.drag = False
 				elif self.inp.key_ctrl_down:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(255, 190, 0, 255))
 				else:
 					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
+			elif self.drag_folder is not None and drag_moved:
+				if self.inp.mouse_up:
+					self.drop_to_end(self.drag_folder)
+					gui.request_frame()
+				else:
+					ddt.rect((tab_start, yy, tab_width, self.indicate_w), ColourRGBA(80, 160, 200, 255))
+
+		if self.inp.mouse_up:
+			self.drag_folder = None
 
 @dataclass
 class ArtistListSaveState:
@@ -55254,6 +55920,8 @@ def main(holder: Holder) -> None:
 				prefs.feux_panel_art = save[198]
 			if len(save) > 199 and save[199] is not None:
 				prefs.feux_panel_pod1_w = save[199]
+			if len(save) > 200 and save[200] is not None:
+				gui.saved_playlist_folders = save[200]
 
 			del save
 			state_loaded = True
@@ -55582,6 +56250,8 @@ def main(holder: Holder) -> None:
 	else:
 		pctl.multi_playlist = [tauon.pl_gen(notify=False)]
 		pctl.default_playlist = pctl.multi_playlist[0].playlist_ids
+	pctl.playlist_folders.load(gui.saved_playlist_folders)
+	gui.saved_playlist_folders = None
 	notify_database_changed = pctl.notify_database_changed
 
 	lastfm = tauon.lastfm
@@ -56338,6 +57008,7 @@ def main(holder: Holder) -> None:
 
 	tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 	tab_menu.add(MenuItem(_("Pin"), tauon.pin_playlist_toggle, tauon.pl_pin_deco, pass_ref=True, pass_ref_deco=True))
+	tab_menu.add(MenuItem(_("Remove from Folder"), tauon.remove_playlist_from_folder, pass_ref=True, show_test=tauon.playlist_in_folder_test))
 
 	tauon.radio_tab_menu.add(MenuItem(_("Rename"), tauon.rename_playlist, pass_ref=True, hint="Ctrl+R"))
 
@@ -56371,7 +57042,24 @@ def main(holder: Holder) -> None:
 
 	tab_menu.br()
 
-	extra_tab_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, icon=gui.add_icon))
+	extra_tab_menu.add(MenuItem(_("New Playlist"), tauon.menu_new_playlist, icon=gui.add_icon))
+	extra_tab_menu.add(MenuItem(_("New Folder"), tauon.new_playlist_folder, icon=gui.folder_icon))
+
+	playlist_folder_menu = tauon.playlist_folder_menu
+	playlist_folder_menu.add(MenuItem(_("Rename"), tauon.rename_playlist_folder, pass_ref=True))
+	playlist_folder_menu.add(MenuItem(_("Pin to Top Panel"), tauon.toggle_playlist_folder_pin, tauon.playlist_folder_pin_deco, pass_ref=True, pass_ref_deco=True))
+	playlist_folder_menu.add_sub(_("Colour…"), 120)
+	for colour, colour_name in enumerate((
+		_("Blue"), _("Orange"), _("Green"), _("Pink"), _("Yellow"), _("Cyan"), _("Purple"), _("Red"),
+	)):
+		playlist_folder_menu.add_to_sub(0, MenuItem(
+			colour_name, tauon.set_playlist_folder_colour, args=colour,
+			check_test=lambda colour=colour: tauon.playlist_folder_colour_is(colour)))
+	playlist_folder_menu.add(MenuItem(_("New Subfolder"), tauon.new_playlist_folder, pass_ref=True,
+		disable_test=tauon.new_playlist_subfolder_disable, pass_ref_deco=True, icon=gui.folder_icon))
+	playlist_folder_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist_in_folder, pass_ref=True, icon=gui.add_icon))
+	playlist_folder_menu.br()
+	playlist_folder_menu.add(MenuItem(_("Delete Folder"), tauon.delete_playlist_folder, pass_ref=True, icon=gui.delete_icon))
 
 	tab_menu.add(MenuItem(_("Upload"),
 		tauon.upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=tauon.jellyfin_show_test))
@@ -63340,7 +64028,7 @@ def main(holder: Holder) -> None:
 
 			# Drag pl tab next to cursor
 			if (
-				(tauon.playlist_box.drag)
+				(tauon.playlist_box.drag or tauon.playlist_box.drag_folder is not None)
 				and inp.mouse_down
 				and not point_proximity_test(gui.drag_source_position, inp.mouse_position, 10 * gui.scale)
 			):

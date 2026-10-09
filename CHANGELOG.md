@@ -4,6 +4,7 @@ Changelog
 
 ### v13.0.0
 
+ - Added playlist folders
  - Added new main menu icon + animation
  - Added advanced tag editor
  - Added audio info box
