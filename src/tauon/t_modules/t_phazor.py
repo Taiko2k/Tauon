@@ -30,6 +30,7 @@ import hashlib
 import importlib.machinery
 import math
 import os.path
+import re
 import shutil
 import subprocess
 import sysconfig
@@ -56,6 +57,43 @@ if TYPE_CHECKING:
 # Containers that can be handed to the device as raw DSD instead of being
 # decoded to PCM. Only checked when the direct DSD preference is on.
 DSD_FORMATS = {"dsf", "dff"}
+
+# PHAzOR pcm_speaker order, shared with get_channel_status()
+PCM_SPEAKER_NAMES = ("FL", "FR", "FC", "LFE", "RL", "RR", "SL", "SR", "RC")
+PCM_MONO = 10
+PCM_LFE = 3
+
+
+def pcm_mask(*speakers: str) -> int:
+	return sum(1 << PCM_SPEAKER_NAMES.index(s) for s in speakers)
+
+
+# FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
+# limited to these and downmixes anything else to the closest one.
+PCM_LAYOUTS = {
+	"stereo": pcm_mask("FL", "FR"),
+	"2.1": pcm_mask("FL", "FR", "LFE"),
+	"3.0": pcm_mask("FL", "FR", "FC"),
+	"3.0(back)": pcm_mask("FL", "FR", "RC"),
+	"4.0": pcm_mask("FL", "FR", "FC", "RC"),
+	"quad": pcm_mask("FL", "FR", "RL", "RR"),
+	"quad(side)": pcm_mask("FL", "FR", "SL", "SR"),
+	"3.1": pcm_mask("FL", "FR", "FC", "LFE"),
+	"5.0": pcm_mask("FL", "FR", "FC", "RL", "RR"),
+	"5.0(side)": pcm_mask("FL", "FR", "FC", "SL", "SR"),
+	"4.1": pcm_mask("FL", "FR", "FC", "LFE", "RC"),
+	"5.1": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR"),
+	"5.1(side)": pcm_mask("FL", "FR", "FC", "LFE", "SL", "SR"),
+	"6.0": pcm_mask("FL", "FR", "FC", "RC", "SL", "SR"),
+	"hexagonal": pcm_mask("FL", "FR", "FC", "RL", "RR", "RC"),
+	"6.1": pcm_mask("FL", "FR", "FC", "LFE", "RC", "SL", "SR"),
+	"6.1(back)": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR", "RC"),
+	"7.0": pcm_mask("FL", "FR", "FC", "RL", "RR", "SL", "SR"),
+	"7.1": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR", "SL", "SR"),
+	"octagonal": pcm_mask("FL", "FR", "FC", "RL", "RR", "RC", "SL", "SR"),
+}
+PCM_LAYOUT_NAMES = {mask: name for name, mask in PCM_LAYOUTS.items()}
+FFMPEG_LAYOUT_FILTER = "aformat=channel_layouts=" + "|".join(["mono", *PCM_LAYOUTS])
 
 
 class FFRun:
@@ -85,23 +123,84 @@ class FFRun:
 			self.tauon.test_ffmpeg()
 			return 1
 		path = str(ffmpeg_path)
-		cmd = [path]
-		cmd += ["-loglevel", "quiet"]
+		cmd = [path, "-hide_banner", "-nostats", "-loglevel", "info"]
 		if start_ms > 0:
 			cmd += ["-ss", f"{start_ms}ms"]
 		# float32 out: PHAzOR's mixing buffers are float, so this avoids a quantisation
-		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact
-		cmd += ["-i", uri.decode(), "-acodec", "pcm_f32le", "-f", "f32le", "-ac", "2", "-ar", f"{samplerate}", "-"]
+		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact.
+		# WAV carries the channel layout FFmpeg settles on.
+		cmd += [
+			"-i", uri.decode(), "-af", FFMPEG_LAYOUT_FILTER,
+			"-acodec", "pcm_f32le", "-f", "wav", "-ar", f"{samplerate}", "-"]
 		startupinfo = None
 		if sys.platform == "win32":
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		try:
-			self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+			self.decoder = subprocess.Popen(
+				cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=startupinfo)
 		except Exception:
 			logging.exception("Failed to start FFmpeg")
 			return 1
+		threading.Thread(target=self.watch_log, args=(self.decoder,), daemon=True).start()
 		return 0
+
+	@staticmethod
+	def parse_stream(details: str) -> tuple[str, str, int, int, bool]:
+		"""Codec, layout, rate, bit depth and float from an FFmpeg stream description.
+
+		For example "flac, 44100 Hz, 5.1, s32 (24 bit)". The depth is 0 where it
+		says nothing about the source, as with the float output of a lossy decoder.
+		"""
+		parts = [p.strip() for p in details.split(",")]
+		codec = parts[0].split(" ")[0]
+		hz = next((i for i, p in enumerate(parts) if p.endswith(" Hz")), None)
+		if hz is None:
+			return codec, "", 0, 0, False
+		rate = int(parts[hz][:-3]) if parts[hz][:-3].isdigit() else 0
+		layout = parts[hz + 1] if hz + 1 < len(parts) else ""
+		sample_format = parts[hz + 2] if hz + 2 < len(parts) else ""
+		bits = 0
+		is_float = False
+		match = re.search(r"\((\d+) bit\)", sample_format)
+		name = sample_format.split(" ")[0].rstrip("p")
+		if codec.startswith("dsd"):
+			bits = 1
+		elif match:
+			bits = int(match.group(1))
+		elif re.fullmatch(r"[su]\d+", name):
+			bits = int(name[1:])
+		elif name in ("flt", "dbl") and (codec.startswith("pcm_") or codec == "wavpack"):
+			bits = 32 if name == "flt" else 64
+			is_float = True
+		return codec, layout, rate, bits, is_float
+
+	def watch_log(self, decoder: subprocess.Popen) -> None:
+		"""Report the source's format from FFmpeg's log, and keep draining it"""
+		inputs: dict[int, tuple[str, str, int, int, bool]] = {}
+		mapping = False
+		reported = False
+		try:
+			for raw in decoder.stderr:
+				if reported:
+					continue
+				line = raw.decode(errors="replace").strip()
+				if line.startswith("Stream mapping:"):
+					mapping = True
+					continue
+				if not mapping:
+					# Stream #0:1(eng): Audio: truehd, 48000 Hz, 7.1, s32 (24 bit)
+					match = re.match(r"Stream #0:(\d+)[^:]*: Audio: (.*)", line)
+					if match:
+						inputs[int(match.group(1))] = self.parse_stream(match.group(2))
+					continue
+				match = re.match(r"Stream #0:(\d+) -> #0:0", line)
+				if match and int(match.group(1)) in inputs and self.decoder is decoder:
+					codec, layout, rate, bits, is_float = inputs[int(match.group(1))]
+					self.tauon.aud.set_source_format(codec.encode(), layout.encode(), rate, bits, int(is_float))
+					reported = True
+		except (OSError, ValueError):
+			pass
 
 	def read(self, buffer: int, maximum: int) -> int:
 		if self.decoder:

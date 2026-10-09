@@ -6,6 +6,7 @@ Changelog
 
  - Added new main menu icon + animation
  - Added advanced tag editor
+ - Added multichannel surround support
  - Added activity overview button
  - Added queue album group expansion
  - Added auto queue feature

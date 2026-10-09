@@ -233,7 +233,14 @@ int src_channels = 2;
 pcm_mixer output_mixer = {.channels = 2, .map = {PCM_FL, PCM_FR}, .source_mask = -1};
 pcm_mixer analysis_mixer = {.channels = 2, .map = {PCM_FL, PCM_FR}, .source_mask = -1};
 
+// Channel diagnostics: the layout last played and peaks since the last read.
+uint16_t playing_mask = PCM_STEREO_MASK;
+float source_peaks[PCM_SPEAKERS];
+float output_peaks[PCM_MAX_CHANNELS];
+
 int current_sample_rate = 0;
+// Rate the device side runs at: the PipeWire graph, or miniaudio's internal rate
+int device_rate = 0;
 int want_sample_rate = 0;
 int sample_change_byte = 0;
 
@@ -861,7 +868,11 @@ int flac_got_rate = 0;
 	}
 
 	static void on_core_error(void *data, uint32_t id, int seq, int res, const char *message) {
-		log_msg(LOG_ERROR,
+		// A request on a node that was removed while it was in flight, such as
+		// a format query on a sink that just went away. Its probe is already
+		// released by registry_event_remove_global.
+		int level = res == -ENOENT ? LOG_DEBUG : LOG_ERROR;
+		log_msg(level,
 			"PipeWire core error: id=%u res=%d (%s) msg=%s",
 			id, res, spa_strerror(res), message ? message : "(null)");
 
@@ -1728,7 +1739,7 @@ int pcm_next_channels = 0;
 uint16_t pcm_next_mask = 0;
 
 static bool pcm_decoder() {
-	return codec == FLAC || codec == VORBIS || codec == OPUS;
+	return codec == FLAC || codec == VORBIS || codec == OPUS || codec == FFMPEG;
 }
 
 static void pcm_reset_decode() {
@@ -2248,7 +2259,77 @@ Music_Emu* emu;
 
 FILE *ffm;
 char exe_string[4096];
-char ffm_buffer[4096];  // float32 stereo, so this is the same frame count the 16 bit path used
+// FFmpeg sends float32 WAV so the layout it settled on arrives with the
+// audio. Bytes past the last whole frame wait here for the next read.
+char ffm_buffer[32768];
+int ffm_fill = 0;
+bool ffm_header_done = false;
+int ffm_channels = 2;
+int ffm_rate = 0;
+int ffm_map[PCM_MAX_CHANNELS];
+
+// Codec and layout FFmpeg found in the source, before any downmix
+char ffm_source_codec[32] = "";
+char ffm_source_layout[32] = "";
+int ffm_source_rate = 0;
+int ffm_source_bits = 0;  // 0 when not meaningful, such as a lossy codec
+bool ffm_source_float = false;
+
+static uint16_t ffm_le16(const unsigned char *p) {
+	return (uint16_t) (p[0] | (p[1] << 8));
+}
+
+static bool ffm_parse_fmt(const unsigned char *f, uint32_t size) {
+	if (size < 16) return false;
+	int tag = ffm_le16(f);
+	int channels = ffm_le16(f + 2);
+	uint32_t mask = 0;
+	if (tag == 0xFFFE && size >= 40) {
+		mask = dsd_le32(f + 20);
+		tag = ffm_le16(f + 24);
+	}
+	if (tag != 3 || ffm_le16(f + 14) != 32 || channels < 1 || channels > PCM_MAX_CHANNELS) return false;
+
+	// WAVEFORMATEXTENSIBLE speaker bits, lowest first, as PHAzOR speakers
+	static const int bits[] = {PCM_FL, PCM_FR, PCM_FC, PCM_LFE, PCM_RL, PCM_RR,
+		PCM_UNKNOWN, PCM_UNKNOWN, PCM_RC, PCM_SL, PCM_SR};
+	int map[PCM_MAX_CHANNELS];
+	int count = 0;
+	if (channels > 1 && mask != 0) {
+		for (uint32_t b = 0; b < 32 && count < channels; b++) {
+			if (!(mask & (1u << b))) continue;
+			map[count++] = b < sizeof(bits) / sizeof(*bits) ? bits[b] : PCM_UNKNOWN;
+		}
+	}
+	if (count == channels) memcpy(ffm_map, map, sizeof(map));
+	else memcpy(ffm_map, pcm_flac_layout[channels], sizeof(ffm_map));
+	if (!pcm_valid_layout(channels, ffm_map)) return false;
+	ffm_channels = channels;
+	ffm_rate = (int) dsd_le32(f + 4);
+	return ffm_rate > 0;
+}
+
+// Returns the header length once the data chunk is reached, 0 while more
+// bytes are needed, or -1 if FFmpeg sent something unusable. Streamed WAV
+// has no real RIFF or data sizes, so only chunk headers before data are used.
+static int ffm_parse_header(const unsigned char *d, int n) {
+	if (n < 12) return 0;
+	if (memcmp(d, "RIFF", 4) != 0 || memcmp(d + 8, "WAVE", 4) != 0) return -1;
+	int pos = 12;
+	bool have_fmt = false;
+	while (pos + 8 <= n) {
+		if (memcmp(d + pos, "data", 4) == 0) return have_fmt ? pos + 8 : -1;
+		uint32_t size = dsd_le32(d + pos + 4);
+		if (size > sizeof(ffm_buffer)) return -1;
+		if (pos + 8 + (int) size > n) return 0;
+		if (memcmp(d + pos, "fmt ", 4) == 0) {
+			if (!ffm_parse_fmt(d + pos + 8, size)) return -1;
+			have_fmt = true;
+		}
+		pos += 8 + (int) size + (int) (size & 1);
+	}
+	return 0;
+}
 
 int (*ff_start)(char*, int, int);
 int (*ff_read)(char*, int);
@@ -2256,6 +2337,15 @@ void (*ff_close)();
 void (*on_device_unavailable)();
 
 void start_ffmpeg(char uri[], int start_ms) {
+	// Every start, seeks included, begins a new WAV stream
+	ffm_fill = 0;
+	ffm_header_done = false;
+	pthread_mutex_lock(&buffer_mutex);
+	ffm_source_codec[0] = ffm_source_layout[0] = '\0';
+	ffm_source_rate = ffm_source_bits = 0;
+	ffm_source_float = false;
+	pthread_mutex_unlock(&buffer_mutex);
+
 	int status = 0;
 	if (ff_start != NULL) status = ff_start(uri, start_ms, sample_rate_out);
 	else {
@@ -2663,64 +2753,6 @@ static inline float f32le_to_float(const unsigned char *p) {
 	return convert.f;
 }
 
-static inline float clamp_unit(float v) {
-	if (v > 1.0f) return 1.0f;
-	if (v < -1.0f) return -1.0f;
-	return v;
-}
-
-void read_to_buffer_charf32_resample(char src[], int n_bytes) {
-
-	int i = 0;
-	int f = 0;
-
-	// Convert little endian float32 bytes to float
-	while (i < n_bytes) {
-		re_in[f * 2] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
-		if (src_channels == 1) {
-			re_in[(f * 2) + 1] = re_in[f * 2];
-			i += 4;
-		} else {
-			re_in[(f * 2) + 1] = clamp_unit(f32le_to_float((const unsigned char *) src + i + 4));
-			i += 8;
-		}
-
-		f++;
-	}
-
-	resample_to_buffer(f);
-
-}
-
-
-void read_to_buffer_charf32(char src[], int n_bytes) {
-
-	if (sample_rate_src != sample_rate_out) {
-		read_to_buffer_charf32_resample(src, n_bytes);
-		return;
-	}
-
-	int i = 0;
-	if (src_channels == 1) {
-		while (i < n_bytes) {
-			bfl[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
-			bfr[high] = bfl[high];
-			fade_fx();
-			high++;
-			i += 4;
-		}
-	} else {
-		while (i < n_bytes) {
-			bfl[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i));
-			bfr[high] = clamp_unit(f32le_to_float((const unsigned char *) src + i + 4));
-			fade_fx();
-			high++;
-			i += 8;
-		}
-	}
-	buff_cycle();
-}
-
 void read_to_buffer_s16int_resample(int16_t src[], int n_samples) {
 
 	int i = 0;
@@ -2779,6 +2811,9 @@ void read_to_buffer_s16int(int16_t src[], int n_samples) {
 
 // FLAC related ---------------------------------------------------------------
 
+bool flac_skipping = false;
+uint64_t flac_skip_until = 0;
+
 FLAC__StreamDecoderWriteStatus
 f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[],
 		void *client_data) {
@@ -2825,16 +2860,29 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 		pthread_mutex_unlock(&buffer_mutex);
 		return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 	}
+	// A linear seek discards everything before its target
+	int skip = 0;
+	if (flac_skipping) {
+		uint64_t first = frame->header.number_type == FLAC__FRAME_NUMBER_TYPE_SAMPLE_NUMBER
+			? frame->header.number.sample_number
+			: (uint64_t) frame->header.number.frame_number * frame->header.blocksize;
+		if (first + frame->header.blocksize <= flac_skip_until) {
+			pthread_mutex_unlock(&buffer_mutex);
+			return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
+		}
+		if (flac_skip_until > first) skip = (int) (flac_skip_until - first);
+		flac_skipping = false;
+	}
 	const double divisor = ldexp(1.0, depth - 1);
-	int frames = frame->header.blocksize;
+	int frames = frame->header.blocksize - skip;
 	memset(pcm_in, 0, frames * PCM_SPEAKERS * sizeof(float));
 	for (int i = 0; i < frames; i++) {
 		if (channels == 1) {
-			pcm_in[i * PCM_SPEAKERS + PCM_FL] = buffer[0][i] / divisor;
-			pcm_in[i * PCM_SPEAKERS + PCM_FR] = buffer[0][i] / divisor;
+			pcm_in[i * PCM_SPEAKERS + PCM_FL] = buffer[0][i + skip] / divisor;
+			pcm_in[i * PCM_SPEAKERS + PCM_FR] = buffer[0][i + skip] / divisor;
 		} else {
 			for (int c = 0; c < channels; c++) {
-				pcm_in[i * PCM_SPEAKERS + pcm_flac_layout[channels][c]] = buffer[c][i] / divisor;
+				pcm_in[i * PCM_SPEAKERS + pcm_flac_layout[channels][c]] = buffer[c][i + skip] / divisor;
 			}
 		}
 	}
@@ -2851,9 +2899,12 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 	return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 }
 
+int flac_bits = 0;
+
 void f_meta(const FLAC__StreamDecoder *decoder, const FLAC__StreamMetadata *metadata, void *client_data) {
 	if (metadata->type != FLAC__METADATA_TYPE_STREAMINFO) return;
 	sample_rate_src = metadata->data.stream_info.sample_rate;
+	flac_bits = metadata->data.stream_info.bits_per_sample;
 	src_channels = metadata->data.stream_info.channels;
 	current_length_count = metadata->data.stream_info.total_samples;
 	pcm_source_mask = pcm_layout_mask(src_channels);
@@ -2867,6 +2918,25 @@ void f_err(const FLAC__StreamDecoder *decoder, FLAC__StreamDecoderErrorStatus st
 
 FLAC__StreamDecoder *dec;
 FLAC__StreamDecoderInitStatus status;
+bool flac_seek_warned = false;
+
+// libFLAC's seek gives up on some damaged files, such as one whose header
+// claims more audio than it holds. Fall back to decoding forward from the
+// start, with f_write discarding everything before the target.
+static void flac_seek(uint64_t target) {
+	if (FLAC__stream_decoder_seek_absolute(dec, target)) return;
+	if (!flac_seek_warned) {
+		log_msg(LOG_WARNING, "pa: FLAC seek failed, decoding forward to the position instead. The file may be damaged");
+		flac_seek_warned = true;
+	}
+	if (!FLAC__stream_decoder_reset(dec)) return;
+	flac_skip_until = target;
+	flac_skipping = target > 0;
+	while (flac_skipping && FLAC__stream_decoder_get_state(dec) < FLAC__STREAM_DECODER_END_OF_STREAM
+			&& FLAC__stream_decoder_process_single(dec)) {}
+	if (flac_skipping) log_msg(LOG_WARNING, "pa: FLAC seek position is past the end of the decodable audio");
+	flac_skipping = false;
+}
 
 // -----------------------------------------------------------------------------------
 
@@ -3404,6 +3474,8 @@ int get_audio(int max_frames, float* buff) {
 				float frame[PCM_SPEAKERS];
 				uint16_t mask;
 				if (!read_playback_frame(frame, &mask)) break;
+				playing_mask = mask;
+				for (int c = 0; c < PCM_SPEAKERS; c++) source_peaks[c] = fmaxf(source_peaks[c], fabsf(frame[c]));
 
 				// Ramp control ---
 				if (mode == RAMP_DOWN) {
@@ -3452,6 +3524,7 @@ int get_audio(int max_frames, float* buff) {
 				for (int c = 0; c < channels; c++) out[c] *= final_vol;
 				rg_compressor_process(out, channels);
 				limiter_process(out, channels);
+				for (int c = 0; c < channels; c++) output_peaks[c] = fmaxf(output_peaks[c], fabsf(out[c]));
 				memcpy(buff + b * channels, out, channels * sizeof(float));
 				b++;
 
@@ -3485,6 +3558,11 @@ int get_audio(int max_frames, float* buff) {
 
 		if ((buffer = pw_stream_dequeue_buffer(global_stream)) == NULL)
 			return;
+
+		struct pw_time time;
+		if (pw_stream_get_time_n(global_stream, &time, sizeof(time)) == 0 && time.rate.num == 1 && time.rate.denom > 0) {
+			device_rate = (int) time.rate.denom;
+		}
 
 		buf = buffer->buffer;
 		data = &buf->datas[0];
@@ -3812,7 +3890,7 @@ void decode_seek(int abs_ms, int sample_rate) {
 	switch (codec) {
 		case FLAC:
 			pcm_reset_decode();
-			FLAC__stream_decoder_seek_absolute(dec, (int) sample_rate * (abs_ms / 1000.0));
+			flac_seek((uint64_t) sample_rate * abs_ms / 1000);
 			break;
 		case OPUS:
 			pcm_reset_decode();
@@ -3851,6 +3929,7 @@ void decode_seek(int abs_ms, int sample_rate) {
 			mpg123_seek(mh, (int) sample_rate * (abs_ms / 1000.0), SEEK_SET);
 			break;
 		case FFMPEG:
+			pcm_reset_decode();
 			stop_ffmpeg();
 			start_ffmpeg(loaded_target_file, abs_ms);
 			break;
@@ -4147,6 +4226,12 @@ void connect_pulse() {
 		if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
 		config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
 		config.playback.channels = config_force_stereo ? 2 : 0;
+		#if defined(MA_HAS_PULSEAUDIO) && MA_VERSION_MINOR == 11 && MA_VERSION_REVISION >= 22
+			// The stream is opened with a PulseAudio standard map rather than the
+			// sink's own. The ALSA family names real surround positions where the
+			// default AIFF one has none.
+			config.pulse.channelMap = MA_PA_CHANNEL_MAP_ALSA;
+		#endif
 		config.sampleRate        = set_samplerate;           // Set to 0 to use the device's native sample rate.
 		config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
 		config.notificationCallback = notification_callback;
@@ -4194,6 +4279,7 @@ void connect_pulse() {
 		log_msg(LOG_INFO, "ph: Connected using %d channels, samplerate %uhz", channels, device.sampleRate);
 
 		sample_rate_out = device.sampleRate;
+		device_rate = (int) device.playback.internalSampleRate;
 		mini_requested_rate = sample_rate_src;
 	#endif
 
@@ -4750,6 +4836,7 @@ int load_next_inner() {
 
 			break;
 		case FLAC:
+			flac_seek_warned = false;
 			if (FLAC__stream_decoder_init_stream(
 					dec,
 					&bs_flac_read,
@@ -5176,7 +5263,7 @@ void pump_decode() {
 				pthread_mutex_unlock(&buffer_mutex);
 				src_reset(pcm_src);
 				// Seeking invokes f_write for the remainder of the target block.
-				FLAC__stream_decoder_seek_absolute(dec, (uint64_t) sample_rate_src * seek_ms / 1000);
+				flac_seek((uint64_t) sample_rate_src * seek_ms / 1000);
 			}
 		} else decoder_eos();
 
@@ -5312,24 +5399,53 @@ void pump_decode() {
 
 	} else if (codec == FFMPEG) {
 
+		// Read about 1024 frames at a time; a read blocks until it is full
+		int want = ffm_header_done ? 1024 * ffm_channels * 4 : 4096;
+		if (want > (int) sizeof(ffm_buffer) - ffm_fill) want = (int) sizeof(ffm_buffer) - ffm_fill;
 		int b = 0;
-		if (ff_read != NULL) b = ff_read(ffm_buffer, sizeof(ffm_buffer));
+		if (ff_read != NULL) b = ff_read(ffm_buffer + ffm_fill, want);
 		else {
 			log_msg(LOG_WARNING, "pa: FFmpeg read callback is NULL");
 			decoder_eos();
 			return;
 		}
+		if (b < 0) b = 0;
+		ffm_fill += b;
 
-		// FFmpeg is asked for stereo float32, so 8 bytes per frame
-		if (b % 8 != 0) {
-			log_msg(LOG_WARNING, "pa: Uneven data");
-			decoder_eos();
-			return;
+		if (!ffm_header_done) {
+			int used = ffm_parse_header((const unsigned char *) ffm_buffer, ffm_fill);
+			if (used < 0 || (used == 0 && (b == 0 || ffm_fill == (int) sizeof(ffm_buffer)))) {
+				log_msg(LOG_ERROR, "pa: FFmpeg did not send a usable WAV header");
+				decoder_eos();
+				return;
+			}
+			if (used == 0) return;
+			ffm_fill -= used;
+			memmove(ffm_buffer, ffm_buffer + used, ffm_fill);
+			ffm_header_done = true;
 		}
 
-		pthread_mutex_lock(&buffer_mutex);
-		read_to_buffer_charf32(ffm_buffer, b);
-		pthread_mutex_unlock(&buffer_mutex);
+		int frame_bytes = ffm_channels * 4;
+		int frames = ffm_fill / frame_bytes;
+		if (frames > 0) {
+			pthread_mutex_lock(&buffer_mutex);
+			memset(pcm_in, 0, frames * PCM_SPEAKERS * sizeof(float));
+			for (int f = 0; f < frames; f++) {
+				for (int c = 0; c < ffm_channels; c++) {
+					const unsigned char *p = (const unsigned char *) ffm_buffer + (f * ffm_channels + c) * 4;
+					pcm_store_sample(f, c, ffm_map, f32le_to_float(p));
+				}
+			}
+			bool ok = pcm_queue_block(frames, ffm_rate, ffm_channels, ffm_map);
+			pthread_mutex_unlock(&buffer_mutex);
+			ffm_fill -= frames * frame_bytes;
+			memmove(ffm_buffer, ffm_buffer + frames * frame_bytes, ffm_fill);
+			if (!ok) {
+				pcm_reset_decode();
+				mode = ENDING;
+				return;
+			}
+		}
 		if (b == 0) {
 			log_msg(LOG_INFO, "pa: FFmpeg has finished");
 			decoder_eos();
@@ -5655,7 +5771,7 @@ void *main_loop(void *thread_id) {
 			} else if (mode == PAUSED || (mode == RAMP_DOWN && ramp_settled)) {
 				seek_pcm(seek_request_ms, mode == PAUSED);
 			} else if (mode != RAMP_DOWN) {
-				log_msg(LOG_CRITICAL, "pa: Cannot seek in the current playback state");
+				log_msg(LOG_WARNING, "pa: Seek ignored, playback has stopped");
 				command = NONE;
 			}
 
@@ -6078,6 +6194,89 @@ EXPORT void config_set_force_stereo(int enabled) {
 
 EXPORT int get_output_channels() {
 	return output_mixer.channels;
+}
+
+// Fills the playing speaker mask, the decoder's channel count, the output
+// speaker map (pcm_speaker values) and peaks since the previous call, which
+// are then reset. Arrays must hold PCM_SPEAKERS and PCM_MAX_CHANNELS entries.
+// Returns the output channel count.
+EXPORT int get_channel_status(int *source_mask, int *source_channels, int *output_map,
+		float *source_peak, float *output_peak) {
+	pthread_mutex_lock(&buffer_mutex);
+	int channels = output_mixer.channels;
+	*source_mask = playing_mask;
+	*source_channels = src_channels;
+	memcpy(output_map, output_mixer.map, channels * sizeof(int));
+	memcpy(source_peak, source_peaks, sizeof(source_peaks));
+	memcpy(output_peak, output_peaks, channels * sizeof(float));
+	memset(source_peaks, 0, sizeof(source_peaks));
+	memset(output_peaks, 0, sizeof(output_peaks));
+	pthread_mutex_unlock(&buffer_mutex);
+	return channels;
+}
+
+// The FFmpeg wrapper reports the source stream it opened, before any downmix
+// or resampling. bits is 0 when it does not apply, such as for a lossy codec.
+EXPORT void set_source_format(char *codec_name, char *layout, int rate, int bits, int is_float) {
+	pthread_mutex_lock(&buffer_mutex);
+	snprintf(ffm_source_codec, sizeof(ffm_source_codec), "%s", codec_name);
+	snprintf(ffm_source_layout, sizeof(ffm_source_layout), "%s", layout);
+	ffm_source_rate = rate;
+	ffm_source_bits = bits;
+	ffm_source_float = is_float != 0;
+	pthread_mutex_unlock(&buffer_mutex);
+}
+
+// Describes the loaded decoder's source: codec name and, for FFmpeg, the
+// original layout (empty when unknown), both in `size` byte buffers. Also the
+// source rate and bit depth (0 when unknown or not meaningful). Returns 1 when
+// FFmpeg decodes, and so resamples.
+EXPORT int get_source_format(char *codec_name, char *layout, int size, int *rate, int *bits, int *is_float) {
+	static const char *names[] = {
+		[FLAC] = "flac", [MPG] = "mp3", [VORBIS] = "vorbis", [OPUS] = "opus", [WAVE] = "wav",
+		[MPT] = "openmpt", [FEED] = "feed", [WAVPACK] = "wavpack", [GME] = "gme", [DSD_RAW] = "dsd",
+	};
+	pthread_mutex_lock(&buffer_mutex);
+	bool ffmpeg = codec == FFMPEG;
+	*is_float = 0;
+	*bits = 0;
+	*rate = sample_rate_src;
+	if (ffmpeg) {
+		snprintf(codec_name, size, "%s", ffm_source_codec);
+		snprintf(layout, size, "%s", ffm_source_layout);
+		*rate = ffm_source_rate;
+		*bits = ffm_source_bits;
+		*is_float = ffm_source_float;
+	} else {
+		const char *name = codec > UNKNOWN && codec < (int) (sizeof(names) / sizeof(*names)) ? names[codec] : NULL;
+		snprintf(codec_name, size, "%s", name ? name : "");
+		layout[0] = '\0';
+		if (codec == FLAC) *bits = flac_bits;
+		else if (codec == WAVE) *bits = wave_depth;
+		else if (codec == WAVPACK) {
+			*bits = wp_bit;
+			*is_float = wp_float;
+		} else if (codec == DSD_RAW) {
+			*bits = 1;
+			*rate = (int) dsd_info.rate;
+		}
+	}
+	pthread_mutex_unlock(&buffer_mutex);
+	return ffmpeg;
+}
+
+// The rate PHAzOR outputs at and the rate the device side runs at (0 until
+// known). Returns 1 when the device side is PipeWire, 0 for miniaudio.
+EXPORT int get_output_format(int *output_rate, int *device_side_rate) {
+	pthread_mutex_lock(&buffer_mutex);
+	*output_rate = current_sample_rate > 0 ? current_sample_rate : sample_rate_out;
+	*device_side_rate = device_rate;
+	pthread_mutex_unlock(&buffer_mutex);
+	#ifdef PIPE
+		return 1;
+	#else
+		return 0;
+	#endif
 }
 
 EXPORT void config_set_always_ffmpeg(int n) {
