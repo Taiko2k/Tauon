@@ -191,6 +191,7 @@ static volatile bool pw_running = false;
 
 float fade_buffer[PCM_SPEAKERS][BUFF_SIZE];
 uint16_t fade_mask[BUFF_SIZE];
+uint32_t fade_kbps[BUFF_SIZE];
 
 int16_t temp16l[BUFF_SIZE];
 int16_t temp16r[BUFF_SIZE];
@@ -894,6 +895,11 @@ int flac_got_rate = 0;
 
 float pcm_buffer[PCM_SPEAKERS][BUFF_SIZE];
 uint16_t pcm_mask[BUFF_SIZE];
+// Bitrate in kbps of the stream each frame was decoded from (0 when unknown).
+// It rides the ring so the value reported is the one being heard.
+uint32_t pcm_kbps[BUFF_SIZE];
+int decode_kbps = 0;
+int playing_kbps = 0;
 #define bfl pcm_buffer[PCM_FL]
 #define bfr pcm_buffer[PCM_FR]
 
@@ -1708,6 +1714,7 @@ static void fade_fx_frame(uint16_t mask) {
 		}
 	}
 	pcm_mask[high] = mask;
+	pcm_kbps[high] = decode_kbps;
 }
 
 void fade_fx() {
@@ -2813,6 +2820,9 @@ void read_to_buffer_s16int(int16_t src[], int n_samples) {
 
 bool flac_skipping = false;
 uint64_t flac_skip_until = 0;
+uint64_t flac_frames_decoded = 0;
+uint64_t flac_kbps_pos = 0;  // 0 restarts the measurement, such as after a seek
+uint64_t flac_kbps_frames = 0;
 
 FLAC__StreamDecoderWriteStatus
 f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC__int32 *const buffer[],
@@ -2860,6 +2870,8 @@ f_write(const FLAC__StreamDecoder *decoder, const FLAC__Frame *frame, const FLAC
 		pthread_mutex_unlock(&buffer_mutex);
 		return FLAC__STREAM_DECODER_WRITE_STATUS_CONTINUE;
 	}
+	flac_frames_decoded += frame->header.blocksize;
+
 	// A linear seek discards everything before its target
 	int skip = 0;
 	if (flac_skipping) {
@@ -2923,7 +2935,24 @@ bool flac_seek_warned = false;
 // libFLAC's seek gives up on some damaged files, such as one whose header
 // claims more audio than it holds. Fall back to decoding forward from the
 // start, with f_write discarding everything before the target.
+// The bitrate over about a quarter second of decoded audio
+static void flac_measure_kbps() {
+	FLAC__uint64 pos;
+	if (!FLAC__stream_decoder_get_decode_position(dec, &pos)) return;
+	if (flac_kbps_pos == 0 || pos < flac_kbps_pos) {
+		flac_kbps_pos = pos;
+		flac_kbps_frames = flac_frames_decoded;
+		return;
+	}
+	uint64_t frames = flac_frames_decoded - flac_kbps_frames;
+	if (sample_rate_src <= 0 || frames < (uint64_t) sample_rate_src / 4) return;
+	decode_kbps = (int) ((pos - flac_kbps_pos) * 8 * (uint64_t) sample_rate_src / (frames * 1000));
+	flac_kbps_pos = pos;
+	flac_kbps_frames = flac_frames_decoded;
+}
+
 static void flac_seek(uint64_t target) {
+	flac_kbps_pos = 0;
 	if (FLAC__stream_decoder_seek_absolute(dec, target)) return;
 	if (!flac_seek_warned) {
 		log_msg(LOG_WARNING, "pa: FLAC seek failed, decoding forward to the position instead. The file may be damaged");
@@ -3324,6 +3353,7 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 			rg_update_boundary();
 			for (int c = 0; c < PCM_SPEAKERS; c++) input[c] = pcm_buffer[c][low];
 			speed_mask = pcm_mask[low];
+			playing_kbps = (int) pcm_kbps[low];
 		}
 		if (!speed_engaged) {
 			memcpy(frame, input, sizeof(input));
@@ -3429,6 +3459,7 @@ int get_audio(int max_frames, float* buff) {
 				float cross_i = 1.0 - cross;
 				for (int c = 0; c < PCM_SPEAKERS; c++) pcm_buffer[c][high] = fade_buffer[c][fade_position] * cross_i;
 				pcm_mask[high] = fade_mask[fade_position];
+				pcm_kbps[high] = fade_kbps[fade_position];
 				fade_position++;
 				high++;
 				i++;
@@ -4344,6 +4375,7 @@ int load_next_inner() {
 	int e = 0;
 	int old_sample_rate = sample_rate_src;
 	src_channels = 2;
+	decode_kbps = 0;
 
 	bool is_net = loaded_target_net == 1 && loaded_target_file[0] == 'h';
 
@@ -4837,6 +4869,7 @@ int load_next_inner() {
 			break;
 		case FLAC:
 			flac_seek_warned = false;
+			flac_kbps_pos = 0;
 			if (FLAC__stream_decoder_init_stream(
 					dec,
 					&bs_flac_read,
@@ -5250,6 +5283,7 @@ void pump_decode() {
 
 				default:
 					FLAC__stream_decoder_process_single(dec);
+					flac_measure_kbps();
 
 			}
 
@@ -5282,6 +5316,8 @@ void pump_decode() {
 				}
 				int channels = head->channel_count;
 				const int *map = pcm_vorbis_layout[channels];
+				opus_int32 bitrate = op_bitrate_instant(opus_dec);
+				if (bitrate > 0) decode_kbps = bitrate / 1000;
 				pthread_mutex_lock(&buffer_mutex);
 				memset(pcm_in, 0, done * PCM_SPEAKERS * sizeof(float));
 				for (int f = 0; f < done; f++) {
@@ -5341,6 +5377,8 @@ void pump_decode() {
 				return;
 			}
 			const int *map = pcm_vorbis_layout[info->channels];
+			long bitrate = ov_bitrate_instant(&vf);
+			if (bitrate > 0) decode_kbps = (int) (bitrate / 1000);
 			pthread_mutex_lock(&buffer_mutex);
 			memset(pcm_in, 0, done * PCM_SPEAKERS * sizeof(float));
 			for (int f = 0; f < done; f++) {
@@ -5363,6 +5401,8 @@ void pump_decode() {
 			int samples;
 			int32_t buffer[4 * 1024 * 2];
 			samples = WavpackUnpackSamples(wpc, buffer, 1024);
+			double bitrate = WavpackGetInstantBitrate(wpc);
+			if (bitrate > 0) decode_kbps = (int) (bitrate / 1000);
 			if (samples == 0) {
 				// End of file or unrecoverable error
 				decoder_eos();
@@ -5384,6 +5424,8 @@ void pump_decode() {
 			size_t done;
 
 			mpg123_read(mh, parse_buffer, 2048 * 2, &done);
+			struct mpg123_frameinfo frame_info;
+			if (mpg123_info(mh, &frame_info) == MPG123_OK && frame_info.bitrate > 0) decode_kbps = frame_info.bitrate;
 
 			pthread_mutex_lock(&buffer_mutex);
 			read_to_buffer_char16(parse_buffer, done);
@@ -5688,6 +5730,7 @@ void *main_loop(void *thread_id) {
 							while (i < l) {
 								for (int c = 0; c < PCM_SPEAKERS; c++) fade_buffer[c][i] = pcm_buffer[c][p];
 								fade_mask[i] = pcm_mask[p];
+								fade_kbps[i] = pcm_kbps[p];
 								i++;
 								p++;
 								if (p >= watermark) {
@@ -6197,13 +6240,16 @@ EXPORT int get_output_channels() {
 }
 
 // Fills the playing speaker mask, the decoder's channel count, the output
-// speaker map (pcm_speaker values) and peaks since the previous call, which
-// are then reset. Arrays must hold PCM_SPEAKERS and PCM_MAX_CHANNELS entries.
-// Returns the output channel count.
+// speaker map (pcm_speaker values), peaks since the previous call (which are
+// then reset) and the bitrate of what is playing in kbps (0 when unknown).
+// Arrays must hold PCM_SPEAKERS and PCM_MAX_CHANNELS entries. Returns the
+// output channel count.
 EXPORT int get_channel_status(int *source_mask, int *source_channels, int *output_map,
-		float *source_peak, float *output_peak) {
+		float *source_peak, float *output_peak, int *bitrate) {
 	pthread_mutex_lock(&buffer_mutex);
 	int channels = output_mixer.channels;
+	// Direct DSD bypasses the ring and is a constant 1 bit per sample
+	*bitrate = dsd_active ? (int) ((uint64_t) dsd_info.rate * dsd_info.channels / 1000) : playing_kbps;
 	*source_mask = playing_mask;
 	*source_channels = src_channels;
 	memcpy(output_map, output_mixer.map, channels * sizeof(int));

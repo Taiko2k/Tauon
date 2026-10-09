@@ -608,9 +608,6 @@ class DConsole:
 	def __init__(self) -> None:
 		self.show: bool = False
 		self.fps_only: bool = False
-		# Decaying per-channel peaks for the channel status rows
-		self.source_levels: list[float] = [0.0] * len(PCM_SPEAKER_NAMES)
-		self.output_levels: list[float] = [0.0] * 8
 		self.fps = FPSCounter(window_size=20, min_update_interval=0.12, max_frame_time=0.5)
 		# The full console keeps its traditional inter-frame average above. The
 		# non-driving diagnostic instead counts frames in a wall-clock window, so
@@ -777,6 +774,7 @@ class GuiVar:
 		self.pl_rect = (2, 12, 10, 10)
 
 		self.track_box: bool = False
+		self.audio_info_box: bool = False
 		self.track_box_track_id: int = 0
 
 		self.move_on_title: bool = False
@@ -7550,6 +7548,7 @@ class Tauon:
 		self.copied_track: int | None = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		self.stream_feeder = None  # set by player4; exposes network download stats
+		self.channel_status:  ChannelStatusView = ChannelStatusView(self)
 		logging.debug(f"Loaded Phazor path at: {get_phazor_path(self.pctl)}")
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.cachement:              Cachement = Cachement(self)
@@ -12549,6 +12548,15 @@ class Tauon:
 
 	def activate_track_box(self, ref: MenuTrackRef) -> None:
 		self.show_track_box(ref.track_id)
+
+	def show_audio_info(self) -> None:
+		self.gui.audio_info_box = True
+
+	def audio_info_rect(self) -> tuple[int, int, int, int]:
+		scale = self.gui.scale
+		w = min(round(600 * scale), self.window_size[0] - round(20 * scale))
+		h = round((58 + ChannelStatusView.ROWS_HEIGHT + 30) * scale)
+		return round(self.window_size[0] / 2 - w / 2), round(self.window_size[1] / 2 - h / 2), w, h
 
 	def menu_paste(self, ref: MenuTrackRef) -> None:
 		self.paste(None, ref.track_id, ref.position)
@@ -43915,6 +43923,321 @@ class PictureRender:
 			sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.srect)
 			self.tauon.style_overlay.hole_punches.append(self.srect)
 
+@dataclass
+class ChannelStatusPalette:
+	background: ColourRGBA
+	track: ColourRGBA  # chip of a speaker that is not in use
+	label: ColourRGBA
+	dim: ColourRGBA
+	lit: ColourRGBA
+	# (chip background, level bar) per chip state
+	direct: tuple[ColourRGBA, ColourRGBA]
+	folded: tuple[ColourRGBA, ColourRGBA]
+	dropped: tuple[ColourRGBA, ColourRGBA]
+	output: tuple[ColourRGBA, ColourRGBA]
+
+
+class ChannelStatusView:
+	"""Source, output and sample rate status of the PHAzOR backend, one column per speaker.
+
+	Shared by the diagnostics overlay and the Audio Info box. PHAzOR resets its
+	peaks on every read, so it is polled at most once per frame and the levels
+	are kept here for both.
+	"""
+
+	ROWS_HEIGHT = 76  # unscaled height of draw()
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.gui = tauon.gui
+		self.ddt = tauon.ddt
+		self.source_levels: list[float] = [0.0] * len(PCM_SPEAKER_NAMES)
+		self.output_levels: list[float] = [0.0] * 8
+		self.last_poll = 0.0
+
+		self.source_mask = 0
+		self.source_channels = 0
+		self.output_map: list[int] = []
+		self.dsd_direct = False
+		self.codec = ""
+		self.source_layout = ""
+		self.source_rate = 0
+		self.source_bits = 0
+		self.source_float = False
+		self.output_rate = 0
+		self.device_rate = 0
+		self.via_ffmpeg = False
+		self.via_pipewire = False
+		# The live bitrate is shown as its average over each half second
+		self.live_kbps = 0
+		self.kbps_sum = 0
+		self.kbps_count = 0
+		self.kbps_timer = 0.0
+
+	def available(self) -> bool:
+		aud = self.tauon.aud
+		return aud is not None and hasattr(aud, "get_channel_status")
+
+	def poll(self) -> None:
+		now = time.monotonic()
+		if now - self.last_poll < 0.01:
+			return
+		self.last_poll = now
+		aud = self.tauon.aud
+		c_mask = ctypes.c_int(0)
+		c_src_channels = ctypes.c_int(0)
+		c_map = (ctypes.c_int * 8)()
+		c_src_peak = (ctypes.c_float * len(PCM_SPEAKER_NAMES))()
+		c_out_peak = (ctypes.c_float * 8)()
+		c_kbps = ctypes.c_int(0)
+		out_channels = aud.get_channel_status(
+			ctypes.byref(c_mask), ctypes.byref(c_src_channels), c_map, c_src_peak, c_out_peak, ctypes.byref(c_kbps))
+		if c_kbps.value > 0:
+			self.kbps_sum += c_kbps.value
+			self.kbps_count += 1
+		if now - self.kbps_timer >= 0.5:
+			self.live_kbps = round(self.kbps_sum / self.kbps_count) if self.kbps_count else 0
+			self.kbps_sum = self.kbps_count = 0
+			self.kbps_timer = now
+		self.source_mask = c_mask.value
+		self.source_channels = c_src_channels.value
+		self.output_map = list(c_map[:out_channels])
+		self.dsd_direct = hasattr(aud, "get_dsd_direct_active") and bool(aud.get_dsd_direct_active())
+		for i in range(len(self.source_levels)):
+			self.source_levels[i] = max(c_src_peak[i], self.source_levels[i] * 0.8)
+		for i in range(len(self.output_levels)):
+			self.output_levels[i] = max(c_out_peak[i] if i < out_channels else 0.0, self.output_levels[i] * 0.8)
+
+		if hasattr(aud, "get_source_format"):
+			c_codec = ctypes.create_string_buffer(32)
+			c_layout = ctypes.create_string_buffer(32)
+			c_rate = ctypes.c_int(0)
+			c_bits = ctypes.c_int(0)
+			c_float = ctypes.c_int(0)
+			self.via_ffmpeg = bool(aud.get_source_format(
+				c_codec, c_layout, 32, ctypes.byref(c_rate), ctypes.byref(c_bits), ctypes.byref(c_float)))
+			self.codec = c_codec.value.decode(errors="replace")
+			self.source_layout = c_layout.value.decode(errors="replace")
+			self.source_rate = c_rate.value
+			self.source_bits = c_bits.value
+			self.source_float = bool(c_float.value)
+		if hasattr(aud, "get_output_format"):
+			c_out_rate = ctypes.c_int(0)
+			c_device_rate = ctypes.c_int(0)
+			self.via_pipewire = bool(aud.get_output_format(ctypes.byref(c_out_rate), ctypes.byref(c_device_rate)))
+			self.output_rate = c_out_rate.value
+			self.device_rate = c_device_rate.value
+
+	@staticmethod
+	def overlay_palette() -> ChannelStatusPalette:
+		return ChannelStatusPalette(
+			background=ColourRGBA(5, 5, 5, 255),
+			track=ColourRGBA(38, 38, 44, 255),
+			label=ColourRGBA(140, 140, 150, 255),
+			dim=ColourRGBA(75, 75, 85, 255),
+			lit=ColourRGBA(215, 215, 225, 255),
+			direct=(ColourRGBA(28, 50, 92, 255), ColourRGBA(70, 140, 255, 255)),
+			folded=(ColourRGBA(84, 62, 20, 255), ColourRGBA(240, 180, 60, 255)),
+			dropped=(ColourRGBA(92, 30, 30, 255), ColourRGBA(255, 90, 90, 255)),
+			output=(ColourRGBA(22, 72, 44, 255), ColourRGBA(50, 210, 110, 255)),
+		)
+
+	def box_palette(self) -> ChannelStatusPalette:
+		"""Colours that follow the theme's info box"""
+		colours = self.tauon.colours
+		bg = colours.box_background
+
+		def state(colour: ColourRGBA) -> tuple[ColourRGBA, ColourRGBA]:
+			return alpha_blend(alpha_mod(colour, 70), bg), colour
+
+		return ChannelStatusPalette(
+			background=bg,
+			track=alpha_blend(alpha_mod(colours.box_sub_text, 22), bg),
+			label=colours.box_text_label,
+			dim=alpha_blend(alpha_mod(colours.box_sub_text, 110), bg),
+			lit=colours.box_title_text,
+			direct=state(ColourRGBA(70, 140, 255, 255)),
+			folded=state(ColourRGBA(240, 180, 60, 255)),
+			dropped=state(ColourRGBA(255, 90, 90, 255)),
+			output=state(ColourRGBA(50, 210, 110, 255)),
+		)
+
+	@staticmethod
+	def layout_name(mask: int) -> str:
+		return PCM_LAYOUT_NAMES.get(mask, f"{bin(mask).count('1')} ch")
+
+	@staticmethod
+	def rate_text(hz: int) -> str:
+		return f"{hz / 1000000:.3g} MHz" if hz >= 1000000 else f"{hz / 1000:g} kHz"
+
+	def source_text(self) -> str:
+		"""Codec and layout as decoded; FFmpeg also reports the original layout when it had to downmix"""
+		if self.dsd_direct:
+			return "DSD"
+		decoded = "mono" if self.source_channels == 1 else self.layout_name(self.source_mask)
+		text = decoded
+		if self.source_layout and self.source_layout != decoded:
+			text = f"{self.source_layout} → {decoded}"
+		return f"{self.codec} {text}" if self.codec else text
+
+	def source_rate_text(self) -> str:
+		text = self.rate_text(self.source_rate) if self.source_rate > 0 else ""
+		if self.source_bits == 1:
+			text += "  1 bit"
+		elif self.source_bits > 0:
+			text += f"  {self.source_bits} bit float" if self.source_float else f"  {self.source_bits} bit"
+		bitrate = self.bitrate_text()
+		if bitrate:
+			text += f"  {bitrate}"
+		return text.strip()
+
+	def format_badge(self) -> tuple[str, str]:
+		"""Label and Track Info colour key for the source codec, empty when nothing is loaded"""
+		codec = self.codec
+		if self.dsd_direct or codec.startswith("dsd"):
+			return "DSD", "DSF"
+		if codec in ("openmpt", "gme"):
+			# The module or chip type is the format
+			track = self.tauon.pctl.playing_object()
+			ext = track.file_ext if track is not None else ""
+			return ext, ext
+		if codec == "wav" or codec.startswith("pcm_"):
+			return "PCM", "PCM"
+		if codec.startswith("wma"):
+			return "WMA", "WMA"
+		badges = {
+			"mp3": ("MP3", "MP3"), "vorbis": ("VORBIS", "OGG"), "alac": ("ALAC", "M4A"),
+			"wavpack": ("WV", "WV"), "eac3": ("E-AC3", "E-AC3"),
+		}
+		if codec in badges:
+			return badges[codec]
+		return codec.upper(), codec.upper()
+
+	def bitrate_text(self) -> str:
+		"""The live bitrate of what is playing, else the track's average as Track Info shows it"""
+		pctl = self.tauon.pctl
+		if pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED) and self.live_kbps > 0:
+			return f"{self.live_kbps} kbps"
+		if pctl.playing_state == PlayingState.URL_STREAM:
+			bitrate = self.tauon.stream_proxy.s_bitrate
+			return f"{bitrate} kbps" if bitrate and bitrate.isnumeric() else ""
+		track = pctl.playing_object()
+		if track is None or pctl.playing_state == PlayingState.STOPPED or track.bitrate in (0, "", "0"):
+			return ""
+		# These are averaged over the file rather than read from the stream
+		approx = "≈" if track.file_ext in ("FLAC", "OPUS", "APE", "WV") else ""
+		return f"{approx}{track.bitrate} kbps"
+
+	def output_rate_text(self) -> str:
+		"""Each rate change on the way out, named after whoever resamples"""
+		if self.dsd_direct:
+			return "DSD direct"
+		if self.output_rate <= 0:
+			return ""
+		text = f"→ {self.rate_text(self.output_rate)}"
+		if self.source_rate > 0 and self.source_rate != self.output_rate:
+			text += " (FFmpeg)" if self.via_ffmpeg else " (PHAzOR)"
+		if self.device_rate > 0 and self.device_rate != self.output_rate:
+			text += f" → {self.rate_text(self.device_rate)}"
+			text += " (PipeWire)" if self.via_pipewire else " (miniaudio)"
+		return text
+
+	def draw(self, x: int, y: int, w: int, palette: ChannelStatusPalette) -> None:
+		"""Draw the Source, Output and Rate rows, ROWS_HEIGHT tall, on palette.background"""
+		self.poll()
+		gui = self.gui
+		ddt = self.ddt
+		label_w = round(56 * gui.scale)
+		info_w = round(160 * gui.scale)
+		gap = round(3 * gui.scale)
+		chip_h = round(18 * gui.scale)
+		level_h = max(round(3 * gui.scale), 1)
+		text_y = round(1 * gui.scale)
+		area_x = round(x + 10 * gui.scale + label_w)
+		area_w = round(w - 20 * gui.scale - label_w - info_w)
+		columns = len(PCM_SPEAKER_NAMES)
+		chip_w = (area_w - gap * (columns - 1)) // columns
+		label_x = x + 10 * gui.scale
+		info_x = round(x + w - 10 * gui.scale)
+		bg = palette.background
+
+		def draw_chip(cx: int, cy: int, cw: int, name: str, state: tuple[ColourRGBA, ColourRGBA] | None, peak: float) -> None:
+			chip_bg = palette.track if state is None else state[0]
+			ddt.rect((cx, cy, cw, chip_h), chip_bg)
+			if state is not None and peak > 0.000001:
+				fill = round(cw * min(max((20 * math.log10(peak) + 60) / 60, 0.0), 1.0))
+				if fill > 0:
+					ddt.rect((cx, cy + chip_h - level_h, fill, level_h), state[1])
+			ddt.text((cx + cw // 2, cy + text_y, 2), name, palette.dim if state is None else palette.lit, 311, bg=chip_bg)
+
+		out_set = 0
+		for speaker in self.output_map:
+			if speaker < len(PCM_SPEAKER_NAMES):
+				out_set |= 1 << speaker
+		mono_out = self.output_map == [PCM_MONO]
+
+		# Source row: blue lands on its own speaker, amber is folded into
+		# others, red is discarded (LFE)
+		row_y = round(y + 8 * gui.scale)
+		ddt.text((label_x, row_y + text_y), _("Source"), palette.label, 311, bg=bg)
+		if self.source_channels == 1 and not self.dsd_direct:
+			# Mono is carried on FL and FR; show it as the one channel it is
+			draw_chip(area_x, row_y, area_w, "MONO", palette.direct, max(self.source_levels[0], self.source_levels[1]))
+		else:
+			for i, name in enumerate(PCM_SPEAKER_NAMES):
+				state = None
+				if self.source_mask & (1 << i):
+					if out_set & (1 << i):
+						state = palette.direct
+					elif i == PCM_LFE and not mono_out:
+						state = palette.dropped
+					else:
+						state = palette.folded
+				draw_chip(area_x + i * (chip_w + gap), row_y, chip_w, name, state, self.source_levels[i])
+		ddt.text((info_x, row_y + text_y, 1), self.source_text(), palette.label, 311, bg=bg)
+
+		# Output row: the device's speakers in the same columns
+		row_y = round(row_y + chip_h + 6 * gui.scale)
+		ddt.text((label_x, row_y + text_y), _("Output"), palette.label, 311, bg=bg)
+		if mono_out:
+			draw_chip(area_x, row_y, area_w, "MONO", palette.output, self.output_levels[0])
+		else:
+			for i, name in enumerate(PCM_SPEAKER_NAMES):
+				state = None
+				peak = 0.0
+				if i in self.output_map:
+					state = palette.output
+					peak = self.output_levels[self.output_map.index(i)]
+				draw_chip(area_x + i * (chip_w + gap), row_y, chip_w, name, state, peak)
+		if self.dsd_direct:
+			out_info = "DSD direct"
+		elif mono_out:
+			out_info = "mono"
+		else:
+			out_info = self.layout_name(out_set)
+		ddt.text((info_x, row_y + text_y, 1), out_info, palette.label, 311, bg=bg)
+
+		# Rate row: source rate and depth, then what PHAzOR outputs at
+		row_y = round(row_y + chip_h + 6 * gui.scale)
+		ddt.text((label_x, row_y + text_y), _("Rate"), palette.label, 311, bg=bg)
+		ddt.text((area_x, row_y + text_y), self.source_rate_text(), palette.lit, 311, bg=bg)
+		ddt.text((info_x, row_y + text_y, 1), self.output_rate_text(), palette.label, 311, bg=bg)
+
+	def draw_legend(self, x: int, y: int, palette: ChannelStatusPalette) -> None:
+		"""Explain the chip colours, starting at x"""
+		gui = self.gui
+		size = round(7 * gui.scale)
+		for state, label in (
+			(palette.direct, _("Direct")),
+			(palette.folded, _("Mixed into others")),
+			(palette.dropped, _("Not played")),
+			(palette.output, _("Device speaker")),
+		):
+			self.ddt.rect((round(x), round(y + 5 * gui.scale), size, size), state[1])
+			lw = self.ddt.text((x + 11 * gui.scale, y), label, palette.label, 311, bg=palette.background) or 0
+			x += lw + 20 * gui.scale
+
+
 class ArtistInfoBox:
 
 	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
@@ -56369,6 +56692,7 @@ def main(holder: Holder) -> None:
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
 
+	extra_menu.add(MenuItem(_("Audio Info"), tauon.show_audio_info))
 	extra_menu.add_sub(_("Mini Mode"), 175)
 	extra_menu.add_to_sub(0, MenuItem(_("Tab"), tauon.set_mini_mode_D))
 	extra_menu.add_to_sub(0, MenuItem(_("Mini"), tauon.set_mini_mode_A1))
@@ -59790,6 +60114,10 @@ def main(holder: Holder) -> None:
 			else:
 				gui.level_2_click = False
 
+			if gui.audio_info_box and inp.mouse_click and tauon.coll(tauon.audio_info_rect()):
+				inp.mouse_click = False
+				gui.level_2_click = True
+
 			if gui.track_box and inp.mouse_click:
 				w = 540
 				h = 240
@@ -61268,6 +61596,64 @@ def main(holder: Holder) -> None:
 					if inp.mouse_click or inp.right_click or inp.mouse_wheel:
 						gui.preview_artist = ""
 
+				if gui.audio_info_box:
+					if (
+						inp.key_return_press
+						or inp.right_click
+						or inp.key_esc_press
+						or inp.backspace_press
+						or not tauon.channel_status.available()
+					):
+						gui.audio_info_box = False
+						inp.key_return_press = False
+
+					if gui.level_2_click:
+						inp.mouse_click = True
+					gui.level_2_click = False
+
+					x, y, w, h = tauon.audio_info_rect()
+					if inp.mouse_click and not tauon.coll((x, y, w, h)):
+						gui.audio_info_box = False
+					elif gui.audio_info_box:
+						ddt.rect_a(
+							(x - 3 * gui.scale, y - 3 * gui.scale),
+							(w + 6 * gui.scale, h + 6 * gui.scale),
+							colours.box_border,
+						)
+						ddt.rect_a((x, y), (w, h), colours.box_background)
+						ddt.text_background_colour = colours.box_background
+						palette = tauon.channel_status.box_palette()
+
+						ddt.text((x + 18 * gui.scale, y + 12 * gui.scale), _("Audio Info"), colours.box_title_text, 213)
+
+						# Format badge as in Track Info, but for the codec being decoded
+						badge, badge_key = tauon.channel_status.format_badge()
+						if badge:
+							badge_colour = tauon.formats.colours.get(badge_key, ColourRGBA(130, 130, 130, 255))
+							badge_w = max(round(38 * gui.scale), ddt.get_text_w(badge, 211) + round(8 * gui.scale))
+							badge_x = x + w - badge_w  # flush with the right edge, as in Track Info
+							ddt.rect((badge_x, y + round(16 * gui.scale), badge_w, round(12 * gui.scale)), badge_colour)
+							badge_text = alpha_blend(ColourRGBA(10, 10, 10, 235), badge_colour)
+							if colour_value(badge_colour) < 180:
+								badge_text = alpha_blend(ColourRGBA(200, 200, 200, 235), badge_colour)
+							ddt.text(
+								(badge_x + badge_w // 2, y + round(13 * gui.scale), 2), badge, badge_text, 211,
+								bg=badge_colour)
+						playing = pctl.playing_object()
+						if playing is not None and pctl.playing_state != PlayingState.STOPPED:
+							# Network tracks may have no file name
+							line = playing.filename or " - ".join(t for t in (playing.artist, playing.title) if t)
+							ddt.text(
+								(x + 18 * gui.scale, y + 34 * gui.scale), line, colours.box_sub_text, 312,
+								max_w=w - 36 * gui.scale)
+
+						tauon.channel_status.draw(x + 8 * gui.scale, y + 50 * gui.scale, w - 16 * gui.scale, palette)
+						tauon.channel_status.draw_legend(
+							x + 18 * gui.scale, y + (52 + ChannelStatusView.ROWS_HEIGHT) * gui.scale, palette)
+
+						if pctl.playing_state == PlayingState.PLAYING:
+							gui.delay_frame(0.05)
+
 				if gui.track_box:
 					if (
 						inp.key_return_press
@@ -62671,177 +63057,11 @@ def main(holder: Holder) -> None:
 
 				# Source and output channel status, one column per speaker
 				try:
-					c_aud = tauon.aud
-					if c_aud is not None and hasattr(c_aud, "get_channel_status"):
-						c_mask = ctypes.c_int(0)
-						c_src_channels = ctypes.c_int(0)
-						c_map = (ctypes.c_int * 8)()
-						c_src_peak = (ctypes.c_float * len(PCM_SPEAKER_NAMES))()
-						c_out_peak = (ctypes.c_float * 8)()
-						out_channels = c_aud.get_channel_status(
-							ctypes.byref(c_mask), ctypes.byref(c_src_channels), c_map, c_src_peak, c_out_peak)
-						out_map = list(c_map[:out_channels])
-						dsd_direct = hasattr(c_aud, "get_dsd_direct_active") and c_aud.get_dsd_direct_active()
-						c_codec = ctypes.create_string_buffer(32)
-						c_layout = ctypes.create_string_buffer(32)
-						c_src_rate = ctypes.c_int(0)
-						c_src_bits = ctypes.c_int(0)
-						c_src_float = ctypes.c_int(0)
-						c_out_rate = ctypes.c_int(0)
-						c_device_rate = ctypes.c_int(0)
-						via_ffmpeg = False
-						via_pipewire = False
-						if hasattr(c_aud, "get_source_format"):
-							via_ffmpeg = bool(c_aud.get_source_format(
-								c_codec, c_layout, 32, ctypes.byref(c_src_rate), ctypes.byref(c_src_bits),
-								ctypes.byref(c_src_float)))
-						if hasattr(c_aud, "get_output_format"):
-							via_pipewire = bool(c_aud.get_output_format(ctypes.byref(c_out_rate), ctypes.byref(c_device_rate)))
-
-						levels = tauon.console.source_levels
-						for i in range(len(levels)):
-							levels[i] = max(c_src_peak[i], levels[i] * 0.8)
-						out_levels = tauon.console.output_levels
-						for i in range(len(out_levels)):
-							out_levels[i] = max(c_out_peak[i] if i < out_channels else 0.0, out_levels[i] * 0.8)
-
-						colour_track = ColourRGBA(38, 38, 44, 255)
-						colour_text = ColourRGBA(140, 140, 150, 255)
-						colour_dim = ColourRGBA(75, 75, 85, 255)
-						colour_lit = ColourRGBA(215, 215, 225, 255)
-						text_bg = ColourRGBA(5, 5, 5, 255)
-						# (chip background, level bar) per state
-						chip_direct = (ColourRGBA(28, 50, 92, 255), ColourRGBA(70, 140, 255, 255))
-						chip_folded = (ColourRGBA(84, 62, 20, 255), ColourRGBA(240, 180, 60, 255))
-						chip_dropped = (ColourRGBA(92, 30, 30, 255), ColourRGBA(255, 90, 90, 255))
-						chip_output = (ColourRGBA(22, 72, 44, 255), ColourRGBA(50, 210, 110, 255))
-
+					if tauon.channel_status.available():
 						px = rect[0]
 						py = rect[1] + rect[3] + 6 * gui.scale + 66 * gui.scale + 6 * gui.scale
-						pw = rect[2]
-						ph = 76 * gui.scale
-						ddt.rect((px, py, pw, ph), ColourRGBA(0, 0, 0, 245))
-
-						label_w = round(56 * gui.scale)
-						info_w = round(160 * gui.scale)
-						gap = round(3 * gui.scale)
-						chip_h = round(18 * gui.scale)
-						level_h = max(round(3 * gui.scale), 1)
-						area_x = round(px + 10 * gui.scale + label_w)
-						area_w = round(pw - 20 * gui.scale - label_w - info_w)
-						columns = len(PCM_SPEAKER_NAMES)
-						chip_w = (area_w - gap * (columns - 1)) // columns
-						info_x = round(px + pw - 10 * gui.scale)
-
-						def level_fraction(peak: float) -> float:
-							if peak <= 0.000001:
-								return 0.0
-							return min(max((20 * math.log10(peak) + 60) / 60, 0.0), 1.0)
-
-						def draw_chip(x: int, y: int, w: int, name: str, state: tuple[ColourRGBA, ColourRGBA] | None, peak: float) -> None:
-							bg = colour_track if state is None else state[0]
-							ddt.rect((x, y, w, chip_h), bg)
-							if state is not None:
-								fill = round(w * level_fraction(peak))
-								if fill > 0:
-									ddt.rect((x, y + chip_h - level_h, fill, level_h), state[1])
-							ddt.text(
-								(x + w // 2, y + round(1 * gui.scale), 2), name,
-								colour_dim if state is None else colour_lit, 311, bg=bg)
-
-						def layout_name(mask: int) -> str:
-							return PCM_LAYOUT_NAMES.get(mask, f"{bin(mask).count('1')} ch")
-
-						out_set = 0
-						for speaker in out_map:
-							if speaker < len(PCM_SPEAKER_NAMES):
-								out_set |= 1 << speaker
-						mono_out = out_map == [PCM_MONO]
-
-						# Source row: blue lands on its own speaker, amber is
-						# folded into others, red is discarded (LFE)
-						row_y = round(py + 8 * gui.scale)
-						ddt.text((px + 10 * gui.scale, row_y + round(1 * gui.scale)), _("Source"), colour_text, 311, bg=text_bg)
-						src_mask = c_mask.value
-						if c_src_channels.value == 1 and not dsd_direct:
-							# Mono is carried on FL and FR; show it as the one channel it is
-							draw_chip(area_x, row_y, area_w, "MONO", chip_direct, max(levels[0], levels[1]))
-						else:
-							for i, name in enumerate(PCM_SPEAKER_NAMES):
-								state = None
-								if src_mask & (1 << i):
-									if out_set & (1 << i):
-										state = chip_direct
-									elif i == PCM_LFE and not mono_out:
-										state = chip_dropped
-									else:
-										state = chip_folded
-								draw_chip(area_x + i * (chip_w + gap), row_y, chip_w, name, state, levels[i])
-						# Codec and layout as decoded; FFmpeg also reports the
-						# original layout when it had to downmix
-						decoded = "mono" if c_src_channels.value == 1 else layout_name(src_mask)
-						source_layout = c_layout.value.decode(errors="replace")
-						if dsd_direct:
-							src_info = "DSD"
-						elif source_layout and source_layout != decoded:
-							src_info = f"{source_layout} → {decoded}"
-						else:
-							src_info = decoded
-						source_codec = c_codec.value.decode(errors="replace")
-						if source_codec and not dsd_direct:
-							src_info = f"{source_codec} {src_info}"
-						ddt.text((info_x, row_y + round(1 * gui.scale), 1), src_info, colour_text, 311, bg=text_bg)
-
-						# Output row: the device's speakers in the same columns
-						row_y = round(row_y + chip_h + 6 * gui.scale)
-						ddt.text((px + 10 * gui.scale, row_y + round(1 * gui.scale)), _("Output"), colour_text, 311, bg=text_bg)
-						if mono_out:
-							draw_chip(area_x, row_y, area_w, "MONO", chip_output, out_levels[0])
-						else:
-							for i, name in enumerate(PCM_SPEAKER_NAMES):
-								state = None
-								peak = 0.0
-								if i in out_map:
-									state = chip_output
-									peak = out_levels[out_map.index(i)]
-								draw_chip(area_x + i * (chip_w + gap), row_y, chip_w, name, state, peak)
-						if dsd_direct:
-							out_info = "DSD direct"
-						elif mono_out:
-							out_info = "mono"
-						else:
-							out_info = layout_name(out_set)
-						ddt.text((info_x, row_y + round(1 * gui.scale), 1), out_info, colour_text, 311, bg=text_bg)
-
-						# Rate row: source rate and depth, then what PHAzOR outputs at
-						def rate_text(hz: int) -> str:
-							return f"{hz / 1000000:.3g} MHz" if hz >= 1000000 else f"{hz / 1000:g} kHz"
-
-						row_y = round(row_y + chip_h + 6 * gui.scale)
-						ddt.text((px + 10 * gui.scale, row_y + round(1 * gui.scale)), _("Rate"), colour_text, 311, bg=text_bg)
-						src_rate = c_src_rate.value
-						src_bits = c_src_bits.value
-						rate_info = rate_text(src_rate) if src_rate > 0 else ""
-						if src_bits == 1:
-							rate_info += "  1 bit"
-						elif src_bits > 0:
-							rate_info += f"  {src_bits} bit float" if c_src_float.value else f"  {src_bits} bit"
-						ddt.text((area_x, row_y + round(1 * gui.scale)), rate_info.strip(), colour_lit, 311, bg=text_bg)
-						# Each rate change on the way out, named after whoever resamples
-						out_rate = c_out_rate.value
-						device_rate = c_device_rate.value
-						if dsd_direct:
-							out_rate_info = "DSD direct"
-						elif out_rate <= 0:
-							out_rate_info = ""
-						else:
-							out_rate_info = f"→ {rate_text(out_rate)}"
-							if src_rate > 0 and src_rate != out_rate:
-								out_rate_info += " (FFmpeg)" if via_ffmpeg else " (PHAzOR)"
-							if device_rate > 0 and device_rate != out_rate:
-								out_rate_info += f" → {rate_text(device_rate)}"
-								out_rate_info += " (PipeWire)" if via_pipewire else " (miniaudio)"
-						ddt.text((info_x, row_y + round(1 * gui.scale), 1), out_rate_info, colour_text, 311, bg=text_bg)
+						ddt.rect((px, py, rect[2], ChannelStatusView.ROWS_HEIGHT * gui.scale), ColourRGBA(0, 0, 0, 245))
+						tauon.channel_status.draw(px, py, rect[2], ChannelStatusView.overlay_palette())
 				except Exception:
 					logging.exception("Channel status failed")
 
