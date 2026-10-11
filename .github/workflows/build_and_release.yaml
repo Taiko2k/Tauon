@@ -17,7 +17,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
           cache: 'pip'
 
       - name: Install deps
@@ -130,7 +130,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
           cache: 'pip'
 
       - name: Install deps
@@ -280,7 +280,7 @@ jobs:
             wavpack \
             game-music-emu \
             create-dmg \
-            Python@3.14
+            Python@3.15
 
       - name: Remove aws-sam-cli as it makes pydantic core preinstalled in brew but we want to use pip's
         run: brew uninstall aws-sam-cli pydantic
