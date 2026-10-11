@@ -30,6 +30,7 @@ import hashlib
 import importlib.machinery
 import math
 import os.path
+import re
 import shutil
 import subprocess
 import sysconfig
@@ -56,6 +57,43 @@ if TYPE_CHECKING:
 # Containers that can be handed to the device as raw DSD instead of being
 # decoded to PCM. Only checked when the direct DSD preference is on.
 DSD_FORMATS = {"dsf", "dff"}
+
+# PHAzOR pcm_speaker order, shared with get_channel_status()
+PCM_SPEAKER_NAMES = ("FL", "FR", "FC", "LFE", "RL", "RR", "SL", "SR", "RC")
+PCM_MONO = 10
+PCM_LFE = 3
+
+
+def pcm_mask(*speakers: str) -> int:
+	return sum(1 << PCM_SPEAKER_NAMES.index(s) for s in speakers)
+
+
+# FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
+# limited to these and downmixes anything else to the closest one.
+PCM_LAYOUTS = {
+	"stereo": pcm_mask("FL", "FR"),
+	"2.1": pcm_mask("FL", "FR", "LFE"),
+	"3.0": pcm_mask("FL", "FR", "FC"),
+	"3.0(back)": pcm_mask("FL", "FR", "RC"),
+	"4.0": pcm_mask("FL", "FR", "FC", "RC"),
+	"quad": pcm_mask("FL", "FR", "RL", "RR"),
+	"quad(side)": pcm_mask("FL", "FR", "SL", "SR"),
+	"3.1": pcm_mask("FL", "FR", "FC", "LFE"),
+	"5.0": pcm_mask("FL", "FR", "FC", "RL", "RR"),
+	"5.0(side)": pcm_mask("FL", "FR", "FC", "SL", "SR"),
+	"4.1": pcm_mask("FL", "FR", "FC", "LFE", "RC"),
+	"5.1": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR"),
+	"5.1(side)": pcm_mask("FL", "FR", "FC", "LFE", "SL", "SR"),
+	"6.0": pcm_mask("FL", "FR", "FC", "RC", "SL", "SR"),
+	"hexagonal": pcm_mask("FL", "FR", "FC", "RL", "RR", "RC"),
+	"6.1": pcm_mask("FL", "FR", "FC", "LFE", "RC", "SL", "SR"),
+	"6.1(back)": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR", "RC"),
+	"7.0": pcm_mask("FL", "FR", "FC", "RL", "RR", "SL", "SR"),
+	"7.1": pcm_mask("FL", "FR", "FC", "LFE", "RL", "RR", "SL", "SR"),
+	"octagonal": pcm_mask("FL", "FR", "FC", "RL", "RR", "RC", "SL", "SR"),
+}
+PCM_LAYOUT_NAMES = {mask: name for name, mask in PCM_LAYOUTS.items()}
+FFMPEG_LAYOUT_FILTER = "aformat=channel_layouts=" + "|".join(["mono", *PCM_LAYOUTS])
 
 
 class FFRun:
@@ -85,23 +123,84 @@ class FFRun:
 			self.tauon.test_ffmpeg()
 			return 1
 		path = str(ffmpeg_path)
-		cmd = [path]
-		cmd += ["-loglevel", "quiet"]
+		cmd = [path, "-hide_banner", "-nostats", "-loglevel", "info"]
 		if start_ms > 0:
 			cmd += ["-ss", f"{start_ms}ms"]
 		# float32 out: PHAzOR's mixing buffers are float, so this avoids a quantisation
-		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact
-		cmd += ["-i", uri.decode(), "-acodec", "pcm_f32le", "-f", "f32le", "-ac", "2", "-ar", f"{samplerate}", "-"]
+		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact.
+		# WAV carries the channel layout FFmpeg settles on.
+		cmd += [
+			"-i", uri.decode(), "-af", FFMPEG_LAYOUT_FILTER,
+			"-acodec", "pcm_f32le", "-f", "wav", "-ar", f"{samplerate}", "-"]
 		startupinfo = None
 		if sys.platform == "win32":
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 		try:
-			self.decoder = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, startupinfo=startupinfo)
+			self.decoder = subprocess.Popen(
+				cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, startupinfo=startupinfo)
 		except Exception:
 			logging.exception("Failed to start FFmpeg")
 			return 1
+		threading.Thread(target=self.watch_log, args=(self.decoder,), daemon=True).start()
 		return 0
+
+	@staticmethod
+	def parse_stream(details: str) -> tuple[str, str, int, int, bool]:
+		"""Codec, layout, rate, bit depth and float from an FFmpeg stream description.
+
+		For example "flac, 44100 Hz, 5.1, s32 (24 bit)". The depth is 0 where it
+		says nothing about the source, as with the float output of a lossy decoder.
+		"""
+		parts = [p.strip() for p in details.split(",")]
+		codec = parts[0].split(" ")[0]
+		hz = next((i for i, p in enumerate(parts) if p.endswith(" Hz")), None)
+		if hz is None:
+			return codec, "", 0, 0, False
+		rate = int(parts[hz][:-3]) if parts[hz][:-3].isdigit() else 0
+		layout = parts[hz + 1] if hz + 1 < len(parts) else ""
+		sample_format = parts[hz + 2] if hz + 2 < len(parts) else ""
+		bits = 0
+		is_float = False
+		match = re.search(r"\((\d+) bit\)", sample_format)
+		name = sample_format.split(" ")[0].rstrip("p")
+		if codec.startswith("dsd"):
+			bits = 1
+		elif match:
+			bits = int(match.group(1))
+		elif re.fullmatch(r"[su]\d+", name):
+			bits = int(name[1:])
+		elif name in ("flt", "dbl") and (codec.startswith("pcm_") or codec == "wavpack"):
+			bits = 32 if name == "flt" else 64
+			is_float = True
+		return codec, layout, rate, bits, is_float
+
+	def watch_log(self, decoder: subprocess.Popen) -> None:
+		"""Report the source's format from FFmpeg's log, and keep draining it"""
+		inputs: dict[int, tuple[str, str, int, int, bool]] = {}
+		mapping = False
+		reported = False
+		try:
+			for raw in decoder.stderr:
+				if reported:
+					continue
+				line = raw.decode(errors="replace").strip()
+				if line.startswith("Stream mapping:"):
+					mapping = True
+					continue
+				if not mapping:
+					# Stream #0:1(eng): Audio: truehd, 48000 Hz, 7.1, s32 (24 bit)
+					match = re.match(r"Stream #0:(\d+)[^:]*: Audio: (.*)", line)
+					if match:
+						inputs[int(match.group(1))] = self.parse_stream(match.group(2))
+					continue
+				match = re.match(r"Stream #0:(\d+) -> #0:0", line)
+				if match and int(match.group(1)) in inputs and self.decoder is decoder:
+					codec, layout, rate, bits, is_float = inputs[int(match.group(1))]
+					self.tauon.aud.set_source_format(codec.encode(), layout.encode(), rate, bits, int(is_float))
+					reported = True
+		except (OSError, ValueError):
+			pass
 
 	def read(self, buffer: int, maximum: int) -> int:
 		if self.decoder:
@@ -1018,10 +1117,14 @@ def player4(tauon: Tauon) -> None:
 			)
 		)
 
-	def set_replaygain_status(gain_db: float | None, multiplier: float, has_gain_tag: bool) -> None:
+	def set_replaygain_status(gain_db: float | None, multiplier: float, source: str = "") -> None:
 		pctl.active_replaygain = gain_db if gain_db is not None and math.isfinite(gain_db) else 0
 		pctl.active_replaygain_gain_db = 20 * math.log10(multiplier) if multiplier > 0 else 0
-		pctl.replaygain_applied = has_gain_tag or prefs.replay_preamp != 0
+		pctl.replaygain_applied = bool(source) or prefs.replay_preamp != 0
+		pctl.replaygain_source = source
+		# The peak tag caps the gain when compression is not allowed
+		pctl.replaygain_peak_limited = (
+			pctl.active_replaygain_gain_db < pctl.active_replaygain + prefs.replay_preamp - 0.005)
 
 	def calc_rg(track: TrackClass | None, *, update_status: bool = True) -> float:
 		allow_compression = output_compressor_wanted()
@@ -1033,11 +1136,12 @@ def player4(tauon: Tauon) -> None:
 				allow_compression=allow_compression,
 			)
 			if update_status:
-				set_replaygain_status(None, multiplier, False)
+				set_replaygain_status(None, multiplier)
 			return multiplier
 
 		g: float | None = None
 		p: float | None = None
+		source = ""
 
 		tg = track.replaygain_track_gain
 		tp = track.replaygain_track_peak
@@ -1047,17 +1151,17 @@ def player4(tauon: Tauon) -> None:
 		if prefs.replay_gain == 3 and tg is not None and ag is not None:
 			gens = pctl.gen_codes.get(tauon.pl_to_id(pctl.active_playlist_playing))
 			if pctl.random_mode or (gens and ("st" in gens or "rt" in gens or "r" in gens)):
-				g, p = tg, tp
+				g, p, source = tg, tp, "track"
 			else:
-				g, p = ag, ap
+				g, p, source = ag, ap, "album"
 		elif (prefs.replay_gain == 1 and tg is not None) or (
 			prefs.replay_gain == 2 and ag is None and tg is not None
 		):
-			g, p = tg, tp
+			g, p, source = tg, tp, "track"
 		elif ag is not None:
-			g, p = ag, ap
+			g, p, source = ag, ap, "album"
 		elif tg is not None:
-			g, p = tg, tp
+			g, p, source = tg, tp, "track"
 
 		if g is None or not math.isfinite(g):
 			logging.debug("No usable ReplayGain tag detected")
@@ -1068,7 +1172,7 @@ def player4(tauon: Tauon) -> None:
 				allow_compression=allow_compression,
 			)
 			if update_status:
-				set_replaygain_status(None, multiplier, False)
+				set_replaygain_status(None, multiplier)
 			return multiplier
 
 		logging.debug("Detected ReplayGain")
@@ -1084,12 +1188,14 @@ def player4(tauon: Tauon) -> None:
 		if p is not None and (not math.isfinite(p) or p <= 0):
 			logging.warning("Ignoring invalid ReplayGain peak: %s", p)
 		if update_status:
-			set_replaygain_status(g, multiplier, True)
+			set_replaygain_status(g, multiplier, source)
 		return multiplier
 
 	def set_config(set_device: bool = False) -> None:
 		aud.config_set_dev_buffer(prefs.device_buffer)
 		aud.config_set_fade_duration(prefs.cross_fade_time)
+		if hasattr(aud, "config_set_pre_roll"):
+			aud.config_set_pre_roll(prefs.pre_roll_time if prefs.use_pre_roll else 0)
 		st = prefs.phazor_device_selected.encode()
 		aud.config_set_dev_name(st)
 		if hasattr(aud, "config_set_force_stereo"):
@@ -1214,32 +1320,33 @@ def player4(tauon: Tauon) -> None:
 		# player_timer was still hit above, so the gap isn't counted later.
 		if loaded_track_streamed and aud.is_buffering():
 			add_time = 0
+		pre_roll_status = getattr(aud, "is_pre_roll", None)
+		pre_rolling = pre_roll_status is not None and pre_roll_status()
+		if pre_rolling:
+			add_time = 0
 
 		pctl.total_playtime += add_time
+		position_time = add_time * applied_speed
 
 		# Wait / speed up, if we are out of sync
-		if p_sync_timer.get() > 1:
+		if not pre_rolling and p_sync_timer.get() > 1:
 			real_position = aud.get_position_ms() / 1000
 			if real_position and pctl.playing_time and real_position != pctl.last_real_position:
 				diff = abs(real_position - pctl.playing_time)
 				if 5 > diff > 0.11:  # in a CUE file real will be different that playing time
 					# This assumes the first track in a CUE is > 5s
 					if real_position < pctl.playing_time:
-						add_time -= 5
-						add_time = max(add_time, 0)
+						position_time = 0
 						p_sync_timer.force_set(2)  # wait for real to catch up again next clock
 					else:
-						add_time += 0.1
+						position_time += 0.1
 				pctl.last_real_position = real_position  # we still want to move on if playback stalled
 			p_sync_timer.set()
 
-		pctl.playing_time += add_time
+		pctl.playing_time += position_time
 		pctl.decode_time = pctl.playing_time
 
-		if pctl.playing_time < 3 and pctl.a_time < 3:
-			pctl.a_time = pctl.playing_time
-		else:
-			pctl.a_time += add_time
+		pctl.a_time += add_time
 
 		tauon.lfm_scrobbler.update(add_time)
 
@@ -1287,6 +1394,22 @@ def player4(tauon: Tauon) -> None:
 	aud.config_set_dev_name(prefs.phazor_device_selected.encode())
 
 	aud.init()
+	set_speed = getattr(aud, "set_playback_speed", None)
+	pctl.playback_speed_supported = set_speed is not None
+	applied_speed = 1.0
+	if set_speed is not None:
+		set_speed.argtypes = (ctypes.c_float,)
+		set_speed.restype = ctypes.c_int
+		set_speed(1.0)
+
+	def apply_playback_speed() -> None:
+		nonlocal applied_speed
+		wanted = 1.0 if tauon.chrome_mode else pctl.playback_speed
+		if set_speed is not None and wanted != applied_speed:
+			if set_speed(wanted):
+				applied_speed = wanted
+			else:
+				pctl.set_playback_speed(applied_speed)
 
 	aud.get_device.restype = ctypes.c_char_p
 
@@ -1422,6 +1545,7 @@ def player4(tauon: Tauon) -> None:
 			break
 
 		# Level meter
+		apply_playback_speed()
 		run_levels()
 
 		# PHAzOR latches a flag if a device turned down a direct DSD stream. It
@@ -1805,12 +1929,14 @@ def player4(tauon: Tauon) -> None:
 				):
 					logging.info("Transition gapless")
 
-					r_timer = Timer()
-					r_timer.set()
+					transition_timer = Timer()
+					transition_time = 0.0
 
 					if loaded_track and loaded_track.file_ext.lower() in tauon.formats.GME:
 						# GME formats dont have a physical end so we don't do gapless
-						while r_timer.get() <= remain - prefs.device_buffer / 1000:
+						while transition_time <= remain - prefs.device_buffer / 1000 * applied_speed:
+							apply_playback_speed()
+							transition_time += transition_timer.hit() * applied_speed
 							if pctl.commit:
 								track(end=False)
 							time.sleep(0.016)
@@ -1828,10 +1954,13 @@ def player4(tauon: Tauon) -> None:
 					cont = False
 					check_timer = Timer()
 					check_timer.set()
-					r_timer_saved = 0.0
+					transition_timer.set()
 					while True:
+						apply_playback_speed()
+						elapsed = transition_timer.hit()
 						if tauon.player4_state != PlayerState.PAUSED:
-							if r_timer.get() > remain - prefs.device_buffer / 1000:
+							transition_time += elapsed * applied_speed
+							if transition_time > remain - prefs.device_buffer / 1000 * applied_speed:
 								break
 						if pctl.commit and tauon.player4_state == PlayerState.PLAYING:
 							track(end=False)
@@ -1861,14 +1990,12 @@ def player4(tauon: Tauon) -> None:
 							tauon.player4_state = PlayerState.PAUSED
 							pctl.playerCommand = ""
 							aud.pause()
-							r_timer_saved = r_timer.get()
 						if pctl.playerCommandReady and pctl.playerCommand == "pauseoff":
 							pctl.playerCommandReady = False
 							tauon.player4_state = PlayerState.PLAYING
 							pctl.playerCommand = ""
 							aud.resume()
 							player_timer.set()
-							r_timer.force_set(r_timer_saved)
 						if pctl.playerCommandReady and pctl.playerCommand == "volume":
 							aud.ramp_volume(int(pctl.player_volume), 750)
 							pctl.playerCommandReady = False
@@ -2191,7 +2318,7 @@ def player4(tauon: Tauon) -> None:
 						speed = fade_time / (5 / 100)
 
 					aud.ramp_volume(0, int(speed))
-					pctl.playing_time += (fade_time + 100) / 1000
+					pctl.playing_time += (fade_time + 100) / 1000 * applied_speed
 					time.sleep((fade_time + 100) / 1000)
 				aud.pause()
 				tauon.player4_state = PlayerState.PAUSED
@@ -2241,7 +2368,7 @@ def player4(tauon: Tauon) -> None:
 				# run_vis() runs once per iteration at the top of the loop now.
 
 				add_time = player_timer.hit()
-				pctl.playing_time += add_time
+				pctl.playing_time += add_time * applied_speed
 				pctl.decode_time = pctl.playing_time
 
 				buffering = aud.is_buffering()

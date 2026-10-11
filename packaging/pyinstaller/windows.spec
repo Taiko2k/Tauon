@@ -31,6 +31,7 @@ a = Analysis(
 	[str(REPO_ROOT / "src/tauon/__main__.py")],
 	pathex=[],
 	binaries=[
+		(str(msys64_path / "mingw64" / "bin" / "libchromaprint.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libFLAC.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libgme.dll"), "."),
 		(str(msys64_path / "mingw64" / "bin" / "libmpg123-0.dll"), "."),

@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
+from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, Timer
 
 if TYPE_CHECKING:
@@ -132,14 +133,10 @@ class Jellyfin:
 			return ""
 
 		base_url = f"{self.server_url}/Audio/{stream_id}/stream"
-		# headers = {
-		# "Token": self.accessToken,
-		# "X-Application": "Tauon/1.0",
-		# "Authorization": self._get_jellyfin_auth(),
-		# }
 		params = {
 			"UserId": self.userId,
 			"static": "true",
+			"api_key": self.accessToken,
 		}
 
 		if self.prefs.network_stream_bitrate > 0:
@@ -509,7 +506,8 @@ class Jellyfin:
 					params={
 						"userId": self.userId,
 						"fields": ["Genres", "DateCreated", "MediaSources", "People"],
-						"enableImages": False,
+						"enableImages": True,
+						"enableImageTypes": ["Primary"],
 						"includeItemTypes": ["Audio", "Playlist"],
 						"recursive": True,
 						# Pages must come back in a stable order, otherwise items
@@ -566,15 +564,13 @@ class Jellyfin:
 		fav_status: dict[TrackClass, bool] = {}
 		for parent, items in grouped_items:
 			for track in items:
-				track_id = self.pctl.master_count  # id here is tauons track_id for the track
-				existing_track = existing.get(track.get("Id"))
-				replace_existing = existing_track is not None
+				track_id = existing.get(track.get("Id"))
 				# logging.info(track.items())
-				if replace_existing:
-					track_id = existing_track
+				if track_id is not None:
 					nt = self.pctl.get_track(track_id)
 				else:
 					nt = self.tauon.TrackClass()
+					track_id = allocate_track_id(self.pctl)
 				nt.index = track_id  # this is tauons track id
 				try:
 					nt.fullpath = track.get("MediaSources")[0]["Path"]
@@ -594,14 +590,20 @@ class Jellyfin:
 
 				nt.is_network = True
 				nt.url_key = track.get("Id")
-				nt.art_url_key = None
-				if track.get("AlbumPrimaryImageTag", False):
+				previous_art_key = nt.art_url_key
+				has_embedded_image = any(
+					stream.get("Type") == "EmbeddedImage"
+					for source in track.get("MediaSources") or []
+					for stream in source.get("MediaStreams") or []
+				)
+				if (track.get("ImageTags") or {}).get("Primary") or has_embedded_image:
+					nt.art_url_key = nt.url_key
+				elif track.get("AlbumPrimaryImageTag"):
 					nt.art_url_key = track.get("AlbumId")
 				else:
-					for source in track.get("MediaSources"):
-						if any(stream.get("Type") == "EmbeddedImage" for stream in source.get("MediaStreams", [])):
-							nt.art_url_key = nt.url_key
-				# logging.debug(f"Found EmbeddedImage in MediaStreams.")
+					nt.art_url_key = None
+				if nt.art_url_key != previous_art_key:
+					self.tauon.album_art_gen.source_cache.pop(nt.index, None)
 
 				artists = track.get("Artists", [])
 				nt.artist = "; ".join(artists)
@@ -639,8 +641,6 @@ class Jellyfin:
 					logging.exception("Jelly exception get container")
 
 				self.pctl.master_library[track_id] = nt
-				if not replace_existing:
-					self.pctl.master_count += 1
 				playlist.append(nt.index)
 
 				# Sync favorite

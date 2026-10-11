@@ -29,13 +29,15 @@ import logging
 import os
 import re
 import struct
-import wave
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import mutagen.asf
 import mutagen.id3
 import mutagen.mp4
+import mutagen.wave
 
+from tauon.t_modules.t_asf import asf_field_key, asf_field_values, asf_key, asf_rating
 from tauon.t_modules.t_extra import process_odat
 from tauon.t_modules.t_replaygain import parse_r128_gain, parse_replaygain_db
 
@@ -236,29 +238,32 @@ class TrackFile:
 	def __init__(self) -> None:
 		# fmt:off
 		self.file: BufferedReader | None = None
-		self.has_picture = False # Wav does not need this
+		self.has_picture = False
 
-		self.picture       = "" # Wav does not need this
+		self.picture       = ""
 		self.filepath      = ""
 		self.album_artist  = ""
 		self.artist        = ""
 		self.genre         = ""
-		self.date          = "" # Wav does not need this
-		self.comment       = "" # Wav does not need this
+		self.date          = ""
+		self.comment       = ""
 		self.album         = ""
 		self.track_number  = ""
-		self.track_total   = "" # Wav does not need this
+		self.track_total   = ""
 		self.title         = ""
-		self.encoder       = "" # Wav does not need this
-		self.disc_number   = "" # Wav does not need this
-		self.disc_total    = "" # Wav does not need this
-		self.lyrics        = "" # Wav does not need this
+		self.encoder       = ""
+		self.disc_number   = ""
+		self.disc_total    = ""
+		self.lyrics        = ""
 		self.synced_lyrics = ""
-		self.composer      = "" # Wav does not need this
+		self.synced = ""
+		self.POPM: int | None = None
+		self.composer      = ""
+		self.label         = ""
+		self._label_values: dict[str, list[str]] = {}
 
 		# Extended metadata, named to mirror the matching TrackClass fields so
 		# the importer can copy them straight across without a conversion table.
-		# Wav does not need these.
 		self.artists:                    list[str] | None = None
 		self.album_artists:              list[str] | None = None
 		self.artist_sort:                str | None = None
@@ -277,11 +282,11 @@ class TrackFile:
 
 		self.sample_rate = 48000 # OPUS files are always 48000
 		self.length = 0
-		self.bit_rate = 0  # Wav does not need this
-		self.bit_depth = 0 # Opus, M4a and Wav does not need this
+		self.bit_rate = 0
+		self.bit_depth = 0 # Opus and M4a do not need this
 
-		self.track_gain: float | None = None # Wav does not need this
-		self.album_gain: float | None = None # Wav does not need this
+		self.track_gain: float | None = None
+		self.album_gain: float | None = None
 		# fmt:on
 
 	def __enter__(self) -> Self:
@@ -298,6 +303,9 @@ class TrackFile:
 		if isinstance(tags, mutagen.id3.ID3):
 			read_id3_tags(tags, track)
 			return True
+		if isinstance(tags, mutagen.asf.ASFTags):
+			read_asf_tags(tags, track)
+			return True
 		return False
 
 	def __exit__(
@@ -310,6 +318,12 @@ class TrackFile:
 		if self.file:
 			self.file.close()
 		self.file = None
+
+	def set_vorbis_label(self, key: str, value: bytes) -> None:
+		self._label_values.setdefault(key, []).append(value.decode("utf-8"))
+		self.label = "; ".join(
+			next(self._label_values[name] for name in ("label", "organization", "publisher") if name in self._label_values)
+		)
 
 	def set_vorbis_lyrics(self, key: str, value: bytes) -> None:
 		lyrics = value.decode("utf-8")
@@ -325,8 +339,66 @@ class TrackFile:
 				self.lyrics = lyrics
 
 
-def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
+def read_asf_tags(tags: mutagen.asf.ASFTags, track: TrackClass) -> None:
+	"""Copy Windows Media attributes into a library track."""
+	for field, attr in (
+		("title", "title"),
+		("album", "album"),
+		("artist", "artist"),
+		("albumartist", "album_artist"),
+		("date", "date"),
+		("genre", "genre"),
+		("label", "label"),
+		("composer", "composer"),
+		("comment", "comment"),
+		("artistsort", "artist_sort"),
+	):
+		values = asf_field_values(tags, field)
+		setattr(track, attr, "; ".join(values))
+		if field in ("artist", "albumartist", "genre"):
+			list_attr = {"artist": "artists", "albumartist": "album_artists", "genre": "genres"}[field]
+			setattr(track, list_attr, values if len(values) > 1 else None)
+	process_odat(track, "; ".join(asf_field_values(tags, "originaldate")))
+	track.FMPS_Rating = asf_rating(tags)
+	for field, attr in (("tracknumber", "track"), ("discnumber", "disc")):
+		values = asf_field_values(tags, field)
+		value = values[0] if values else ""
+		if field == "tracknumber" and asf_field_key(tags, field).lower() == "wm/track" and value:
+			try:
+				value = str(int(value) + 1)
+			except ValueError:
+				value = ""
+		parts = value.split("/", 1)
+		setattr(track, attr + "_number", parts[0])
+		setattr(track, attr + "_total", parts[1] if len(parts) == 2 else "")
+	track.lyrics = "\n".join(asf_field_values(tags, "WM/Lyrics"))
+	track.synced = "\n".join(asf_field_values(tags, "syncedlyrics"))
+	for key, attr in (
+		("MusicBrainz/Track Id", "musicbrainz_recordingid"),
+		("MusicBrainz/Release Track Id", "musicbrainz_trackid"),
+		("MusicBrainz/Album Id", "musicbrainz_albumid"),
+		("MusicBrainz/Release Group Id", "musicbrainz_releasegroupid"),
+	):
+		values = asf_field_values(tags, key)
+		setattr(track, attr, values[0] if values else None)
+	track.musicbrainz_artistids = asf_field_values(tags, "MusicBrainz/Artist Id") or None
+	for key, attr in (
+		("replaygain_track_gain", "replaygain_track_gain"),
+		("replaygain_album_gain", "replaygain_album_gain"),
+		("replaygain_track_peak", "replaygain_track_peak"),
+		("replaygain_album_peak", "replaygain_album_peak"),
+	):
+		values = asf_field_values(tags, key)
+		try:
+			value = (parse_replaygain_db(values[0]) if key.endswith("gain") else float(values[0])) if values else None
+			setattr(track, attr, value)
+		except (TypeError, ValueError):
+			logging.warning("Invalid ASF ReplayGain value in %s", asf_key(tags, key))
+
+
+def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass | TrackFile) -> None:
 	"""Copy ID3 metadata into a library track."""
+
 	def natural_get(frame: str, attr: str | None = None) -> str:
 		frames = tags.getall(frame)
 		value = str(frames[0].text[0]) if frames and frames[0].text else ""
@@ -341,6 +413,7 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 	natural_get("TALB", "album")
 	natural_get("TDRC", "date")
 	natural_get("TCOM", "composer")
+	track.label = "; ".join(str(value) for frame in tags.getall("TPUB") for value in frame.text)
 	natural_get("COMM", "comment")
 	process_odat(track, natural_get("TDOR"))
 
@@ -360,6 +433,13 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 			"unavailable" in track.lyrics or ".com" in track.lyrics or "www." in track.lyrics
 		):
 			track.lyrics = ""
+	frames = tags.getall("SYLT")
+	for frame in frames:
+		if frame.format == 2:
+			track.synced = "\n".join(
+				f"[{stamp // 60000:02d}:{stamp % 60000 / 1000:06.3f}]{text}" for text, stamp in frame.text
+			)
+			break
 
 	frames = tags.getall("TPE1")
 	if frames:
@@ -367,6 +447,12 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 		if len(artists) > 1:
 			track.artists = artists
 			track.artist = "; ".join(artists)
+	frames = tags.getall("TPE2")
+	if frames:
+		album_artists = [value for frame in frames for value in frame.text]
+		if len(album_artists) > 1:
+			track.album_artists = album_artists
+			track.album_artist = "; ".join(album_artists)
 
 	frames = tags.getall("TCON")
 	if frames:
@@ -429,8 +515,12 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass) -> None:
 			logging.exception("Tag Scan: Read ReplayGain ID3 error")
 			logging.debug(track.fullpath)
 
-		if item.desc == "FMPS_RATING":
+		if item.desc.lower() == "fmps_rating":
 			track.FMPS_Rating = float(item.text[0])
+		elif item.desc.lower() == "syncedlyrics" and not track.synced:
+			track.synced = "\n".join(item.text)
+		elif item.desc.lower() in ("lyrics", "unsyncedlyrics") and not track.lyrics:
+			track.lyrics = "\n".join(item.text)
 
 
 def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
@@ -457,11 +547,24 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 	track.artist = get_text("\xa9ART")
 	track.album_artist = get_text("aART")
 	track.composer = get_text("\xa9wrt")
+	label_key = next((native for native in tags if native.lower() == "----:com.apple.itunes:label"), None)
+	track.label = "; ".join(value.decode("utf-8") for value in tags[label_key]) if label_key is not None else ""
 	track.date = get_text("\xa9day")
 	track.comment = get_text("\xa9cmt")
 	track.genre = get_text("\xa9gen")
 	if "\xa9lyr" in tags:
 		track.lyrics = get_text("\xa9lyr")
+	for name in ("----:com.apple.itunes:originaldate", "----:com.apple.itunes:originalyear"):
+		key = next((native for native in tags if native.lower() == name), None)
+		if key is not None:
+			process_odat(track, get_bytes(key).decode("utf-8"))
+			break
+	for key in ("----:com.apple.iTunes:FMPS_RATING", "----:com.apple.iTunes:fmps_rating"):
+		if key in tags:
+			track.FMPS_Rating = float(get_bytes(key).decode("utf-8"))
+			break
+	if "----:com.apple.iTunes:SYNCEDLYRICS" in tags:
+		track.synced = get_bytes("----:com.apple.iTunes:SYNCEDLYRICS").decode("utf-8")
 
 	track.track_total = ""
 	track.track_number = ""
@@ -613,6 +716,8 @@ class Flac(TrackFile):
 						self.replaygain_album_gain = parse_r128_gain(b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
+					elif a in ("label", "organization", "publisher"):
+						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
 						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
@@ -899,6 +1004,8 @@ class Opus(TrackFile):
 						self.set_vorbis_lyrics(a, b)
 					elif a == "composer":
 						self.composer = b.decode("utf-8")
+					elif a in ("label", "organization", "publisher"):
+						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
 						self.FMPS_Rating = float(b.decode("utf-8"))
 					elif a == "artistsort":
@@ -959,9 +1066,9 @@ class Ape(TrackFile):
 		super().__init__()
 		self.filepath: str = file
 		self.found_tag: bool = False
-		self.label: str = ""
 
 	def read(self) -> None:
+		odat = ""
 		if not self.file:
 			self.file = Path(self.filepath).open("rb")
 		a = self.file
@@ -1024,7 +1131,7 @@ class Ape(TrackFile):
 
 				# Collect every character until we reach null terminator
 				name = b""
-				for i in range(100):
+				for i in range(256):
 					ch = a.read(1)
 					if ch == b"\x00":
 						break
@@ -1046,9 +1153,15 @@ class Ape(TrackFile):
 				if key == "title":
 					self.title = value
 				elif key == "artist":
-					self.artist = value
+					artists = value.split("\x00")
+					self.artist = "; ".join(artists)
+					if len(artists) > 1:
+						self.artists = artists
 				elif key == "genre":
-					self.genre = value
+					genres = value.split("\x00")
+					self.genre = "; ".join(genres)
+					if len(genres) > 1:
+						self.genres = genres
 				elif key == "discnumber":
 					self.disc_number = value
 				elif key == "disc":
@@ -1070,6 +1183,8 @@ class Ape(TrackFile):
 
 				elif key == "year":
 					self.date = value
+				elif key in ("originaldate", "originalyear"):
+					odat = value
 				elif key == "album":
 					self.album = value
 				elif key == "artist":
@@ -1077,11 +1192,20 @@ class Ape(TrackFile):
 				elif key == "composer":
 					self.composer = value
 				elif key in ("album artist", "albumartist"):
-					self.album_artist = value
+					album_artists = value.split("\x00")
+					self.album_artist = album_artists[0]
+					if len(album_artists) > 1:
+						self.album_artists = album_artists
 				elif key == "label":
-					self.label = value
+					self.label = value.replace("\x00", "; ")
 				elif key == "lyrics":
 					self.lyrics = value
+				elif key == "unsyncedlyrics":
+					self.lyrics = value
+				elif key == "syncedlyrics":
+					self.synced_lyrics = value
+				elif key == "fmps_rating":
+					self.FMPS_Rating = float(value)
 				elif key == "replaygain_track_gain":
 					self.replaygain_track_gain = parse_replaygain_db(value)
 				elif key == "replaygain_track_peak":
@@ -1114,6 +1238,7 @@ class Ape(TrackFile):
 					self.has_picture = True
 					# logging.info(value)
 
+		process_odat(self, odat)
 		# Back to start of file to see if we can find sample rate and duration information
 		a.seek(0)
 
@@ -1276,9 +1401,27 @@ class Wav(TrackFile):
 					if remain % 2 == 1:
 						f.seek(1, io.SEEK_CUR)
 
-		with wave.open(self.filepath, "rb") as wav:
-			self.sample_rate = wav.getframerate()
-			self.length = wav.getnframes() / self.sample_rate
+		audio = mutagen.wave.WAVE(self.filepath)
+		self.sample_rate = audio.info.sample_rate
+		self.length = audio.info.length
+		self.bit_rate = audio.info.bitrate // 1000
+		self.bit_depth = audio.info.bits_per_sample
+		if audio.tags:
+			info = {
+				field: getattr(self, field)
+				for field, frame in (
+					("title", "TIT2"),
+					("artist", "TPE1"),
+					("album", "TALB"),
+					("genre", "TCON"),
+					("track_number", "TRCK"),
+				)
+				if not audio.tags.getall(frame)
+			}
+			read_id3_tags(audio.tags, self)
+			for field, value in info.items():
+				setattr(self, field, value)
+			self.synced_lyrics = self.synced
 
 
 genre_dict = {

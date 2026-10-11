@@ -2,8 +2,8 @@
 	name = "tauon-music-box"
 	# Should also be bumped in:
 	# * __main__.py
-	# * extra/com.github.taiko2k.tauonmb.appdata.xml for Flatpak
-	version = "12.1.0"
+	# * extra/com.github.taiko2k.tauonmb.metainfo.xml for Flatpak
+	version = "13.0.0"
 	description = "Tauon Music Box is a music player"
 	readme = "README.md"
 	license = "GPL-3.0-or-later"
@@ -40,7 +40,6 @@
 		"natsort",
 		"opencc ; sys_platform != 'win32'",
 		"opencc-python-reimplemented ; sys_platform == 'win32'",
-		#"picard", # - picard 2.12.3 requires charset-normalizer~=3.3.2, but you have charset-normalizer 3.4.0 which is incompatible.
 		"plexapi",
 		"pychromecast",
 		"setproctitle",

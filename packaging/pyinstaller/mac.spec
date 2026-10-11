@@ -16,6 +16,7 @@ block_cipher = None
 prefix = subprocess.run(["brew", "--prefix"], capture_output=True, text=True).stdout.strip()
 
 libs = [
+	"libchromaprint.1.dylib",
 	"libpangocairo-1.0.0.dylib",
 	"libharfbuzz.0.dylib",
 	"libgobject-2.0.0.dylib",

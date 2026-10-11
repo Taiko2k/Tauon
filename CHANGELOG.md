@@ -2,12 +2,26 @@
 Changelog
 ---------
 
-### v12.2.0
+### v13.0.0
 
+ - Added playlist folders
+ - Added new main menu icon + animation
+ - Added advanced tag editor
+ - Added audio info box
+ - Added multichannel surround support
  - Added activity overview button
- - Added queue album group expantion
+ - Added queue album group expansion
  - Added auto queue feature
  - Added Jellyfin lyrics support
+ - Added playback speed adjustment
+ - Added pre-roll silence option
+ - Added setting to disable radio scrobble
+ - Added label to columns mode
+ - Fixed various outbound streaming issues
+ - Fixed format support for Chromecast
+ - Fixed a possible db corruption state
+ - Fixed filepath copy when no metadata
+ - Fixed per track Jellyfin artwork
 
 ### v12.1.0
 

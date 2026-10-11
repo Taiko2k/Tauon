@@ -34,6 +34,7 @@ from typing import TYPE_CHECKING
 
 import requests
 
+from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord
 
 if TYPE_CHECKING:
@@ -936,18 +937,12 @@ class SubsonicService:
 
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
-				id = self.pctl.master_count
-
-				replace_existing = False
-				ex = existing.get(song_id)
-				if ex is not None:
-					id = ex
-					replace_existing = True
+				id = existing.get(song_id)
+				if id is None:
+					id = allocate_track_id(self.pctl)
 
 				nt.index = id
 				self.pctl.master_library[id] = nt
-				if not replace_existing:
-					self.pctl.master_count += 1
 
 				if nt.url_key in liked_tracks:
 					liked_track_ids.append(nt.index)

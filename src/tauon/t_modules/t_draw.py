@@ -356,6 +356,7 @@ class TDraw:
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
 		self.layout.set_width(max_x * 1000)
 		if wrap:
+			self.layout.set_wrap(Pango.WrapMode.WORD_CHAR)
 			self.layout.set_height(20000 * 1000)
 		else:
 			self.layout.set_height(0)
@@ -597,6 +598,8 @@ class TDraw:
 			layout = self.draw_layout
 			PangoCairo.update_layout(context, layout)
 			layout.set_auto_dir(False)
+			if wrap:
+				layout.set_wrap(Pango.WrapMode.WORD_CHAR)
 
 			if max_y is not None:
 				layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -781,14 +784,14 @@ class TDraw:
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
 
 	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
-		"""this function is 95% Genuine Slop™
-		imagines a beautiful world where the input text is wrapped and returns the separated lines as they would appear"""
-		if not text:
-			return []
+		"""Preserve paragraph separators while splitting rendered lines."""
+		return [line for line, line_y, line_height in self.get_wrapped_layout(text, font, max_x)]
 
+	def get_wrapped_layout(self, text: str, font: int, max_x: float) -> list[tuple[str, int, int]]:
+		"""Return rendered lines with their actual pixel positions and heights."""
 		if font not in self.f_dict:
 			logging.info(f"Font not loaded: {font!s}")
-			return [text]
+			return [(text, 0, max(1, round(18 * self.scale)))]
 
 		max_x += 12
 		max_x = round(max_x)
@@ -801,33 +804,22 @@ class TDraw:
 		layout.set_width(max_x * 1000)
 		layout.set_height(-1)
 
-		all_lines: list[str] = []
-
-		# Split on real newlines ourselves so Pango only ever wraps a single
-		# paragraph at a time — that way every line it returns is a soft wrap,
-		# and every boundary between paragraphs is unambiguously a real \n.
-		for paragraph in text.split("\n"):
-			if paragraph == "":
-				all_lines.append("\n")
-				continue
-
-			try:
-				layout.set_text(paragraph, -1)
-			except Exception:
-				logging.exception(f"Text error on text: {paragraph}")
-				paragraph = paragraph.encode(encoding="replace").decode()
-				layout.set_text(paragraph, -1)
-
-			encoded = paragraph.encode()
-			for i, line in enumerate(layout.get_lines_readonly()):
-				start = line.start_index
-				end = start + line.length
-				if i == 0 and all_lines:
-					all_lines.append('\n' + encoded[start:end].decode())
-				else:
-					all_lines.append(encoded[start:end].decode())
-
-		return all_lines
+		encoded = text.encode("utf-8", "replace")
+		layout.set_text(encoded.decode(), -1)
+		lines = []
+		previous_end = 0
+		iterator = layout.get_iter()
+		while True:
+			line = iterator.get_line_readonly()
+			end = line.start_index + line.length
+			logical = iterator.get_line_extents()[1]
+			top = round(logical.y / Pango.SCALE)
+			bottom = round((logical.y + logical.height) / Pango.SCALE)
+			lines.append((encoded[previous_end:end].decode(), top, max(1, bottom - top)))
+			previous_end = end
+			if not iterator.next_line():
+				break
+		return lines
 
 	def measure_and_locate(self, text: str, font: int, x_pixels: float, y_pixels: float = 0) -> tuple[float, int, bool]:
 		"""this function is 100% Genuine Slop™

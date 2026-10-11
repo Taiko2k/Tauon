@@ -9,6 +9,8 @@ import webbrowser
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_db_state import allocate_track_id
+
 allow_tidal = False
 try:
 	from tidalapi.media import Quality, Track
@@ -181,7 +183,7 @@ class Tidal:
 		if not nt:
 			new = True
 			nt = self.tauon.TrackClass()
-			nt.index = self.tauon.pctl.master_count
+			nt.index = allocate_track_id(self.tauon.pctl)
 
 		nt.is_network = True
 		nt.file_ext = "TIDAL"
@@ -204,7 +206,6 @@ class Tidal:
 			nt.art_url_key = track.album.image(dimensions=1280)
 
 		if new:
-			self.tauon.pctl.master_count += 1
 			self.tauon.pctl.master_library[nt.index] = nt
 
 		return nt

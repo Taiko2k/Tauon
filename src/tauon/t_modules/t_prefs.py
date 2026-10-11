@@ -16,9 +16,9 @@ class Prefs:
 	"""Used to hold any kind of settings"""
 
 	def __post_init__(self) -> None:
-		# Scale the built-in thin row-height default for fresh configs.
-		if self.playlist_row_height == 22:
-			self.playlist_row_height = round(22 * self.ui_scale)
+		# Scale the built-in row-height default (the "Thick default" preset) for fresh configs.
+		if self.playlist_row_height == 27:
+			self.playlist_row_height = round(27 * self.ui_scale)
 
 	# fmt:off
 	view_prefs:              dict[str, object]
@@ -40,6 +40,9 @@ class Prefs:
 	pause_fade_time:          int = 400
 	change_volume_fade_time:  int = 400
 	cross_fade_time:          int = 700
+	use_pre_roll:            bool = False
+	pre_roll_time:           int = 1500
+	playback_speed:         float = 1.0
 	volume_wheel_increment:   int = 2
 	rename_folder_template:   str = "<albumartist> - <album>"
 	rename_tracks_template:   str = "<tn>. <artist> - <title>.<ext>"
@@ -75,11 +78,10 @@ class Prefs:
 	gallery_scroll_wheel_px: int = 90
 
 	playlist_font_size:  int = 15
-	playlist_row_height: int = 22
+	playlist_row_height: int = 27
 
-	tag_editor_name:   str = ""
-	tag_editor_target: str = ""
-	tag_editor_path:   str = ""
+	acoustid_api_key: str = ""
+	tag_editor_auto_slashes: bool = True
 	save_synced_to_lrc: bool = True
 	allow_overwrite_synced_with_static: bool = False
 
@@ -398,6 +400,7 @@ class Prefs:
 	maloja_key = ""
 
 	scrobble_hold: bool = False
+	scrobble_radios: bool = True
 
 	# Allow Tauon to scrobble tracks played from a given streaming service.
 	# Useful to disable when the service scrobbles to Last.fm/ListenBrainz on its own.

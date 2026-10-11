@@ -70,6 +70,21 @@ static int pcm_find_speaker(const pcm_mixer *mixer, int speaker) {
 	return -1;
 }
 
+static int pcm_surround_partner(int speaker) {
+	if (speaker == PCM_RL) return PCM_SL;
+	if (speaker == PCM_RR) return PCM_SR;
+	if (speaker == PCM_SL) return PCM_RL;
+	if (speaker == PCM_SR) return PCM_RR;
+	return PCM_UNKNOWN;
+}
+
+// True when a back/side pair is both present and folded onto one speaker.
+static bool pcm_pair_shared(const pcm_mixer *mixer, uint16_t mask, int speaker) {
+	int partner = pcm_surround_partner(speaker);
+	if (partner == PCM_UNKNOWN || !(mask & (1u << partner))) return false;
+	return (pcm_find_speaker(mixer, speaker) >= 0) != (pcm_find_speaker(mixer, partner) >= 0);
+}
+
 static void pcm_mixer_build(pcm_mixer *mixer, uint16_t mask) {
 	memset(mixer->weights, 0, sizeof(mixer->weights));
 	int left = pcm_find_speaker(mixer, PCM_FL);
@@ -78,7 +93,9 @@ static void pcm_mixer_build(pcm_mixer *mixer, uint16_t mask) {
 		if (!(mask & (1u << s))) continue;
 		int dest = pcm_find_speaker(mixer, s);
 		if (dest >= 0) {
-			mixer->weights[dest][s] = 1.0f;
+			// A shared pair is power summed so it does not force the whole
+			// mix down by 6 dB to make headroom.
+			mixer->weights[dest][s] = pcm_pair_shared(mixer, mask, s) ? 0.70710678f : 1.0f;
 			continue;
 		}
 		// LFE is retained only when the device has an LFE speaker. Bass
@@ -88,14 +105,9 @@ static void pcm_mixer_build(pcm_mixer *mixer, uint16_t mask) {
 			mixer->weights[0][s] = (s == PCM_FL || s == PCM_FR) ? 0.5f : 0.70710678f;
 			continue;
 		}
-		int alternate = PCM_UNKNOWN;
-		if (s == PCM_RL) alternate = PCM_SL;
-		if (s == PCM_RR) alternate = PCM_SR;
-		if (s == PCM_SL) alternate = PCM_RL;
-		if (s == PCM_SR) alternate = PCM_RR;
-		dest = pcm_find_speaker(mixer, alternate);
+		dest = pcm_find_speaker(mixer, pcm_surround_partner(s));
 		if (dest >= 0) {
-			mixer->weights[dest][s] = 1.0f;
+			mixer->weights[dest][s] = pcm_pair_shared(mixer, mask, s) ? 0.70710678f : 1.0f;
 		} else if (s == PCM_RL || s == PCM_SL) {
 			if (left >= 0) mixer->weights[left][s] = 0.70710678f;
 		} else if (s == PCM_RR || s == PCM_SR) {

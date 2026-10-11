@@ -50,7 +50,7 @@ clean_venv_run() {
 	mkdir -p src/phazor/{kissfft,miniaudio}
 
 	_kissfftver=131.1.0
-	_miniaudiocommit=4a5b74bef029b3592c54b6048650ee5f972c1a48
+	_miniaudiocommit=9634bedb5b5a2ca38c1ee7108a9358a4e233f14d
 
 	[[ ! -e kissfft.tar.gz ]] && curl -L -o kissfft.tar.gz "https://github.com/mborgerding/kissfft/archive/refs/tags/${_kissfftver}.tar.gz"
 	[[ ! -e miniaudio.tar.gz ]] && curl -L -o miniaudio.tar.gz "https://github.com/mackron/miniaudio/archive/${_miniaudiocommit}.tar.gz"

@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
+from tauon.t_modules.t_db_state import database_write, validate_and_repair_database
 from tauon.t_modules.t_extra import RadioPlaylist, RadioStation, StarRecord, TauonPlaylist, TauonQueueItem, atomic_save
 
 if TYPE_CHECKING:
@@ -43,6 +44,7 @@ def migrate_star_store_71(tauon: Tauon) -> None:
 			pickle.dump(tauon.star_store.db, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+@database_write
 def database_migrate(
 	*,
 	tauon: Tauon,
@@ -283,5 +285,13 @@ def database_migrate(
 					field = _MISC_TO_FIELD.get(mk)
 					if field is not None:
 						setattr(track, field, mv)
+
+	if db_version <= 79:
+		logging.info("Updating database to version 80")
+		pctl = tauon.pctl
+		pctl.master_library = master_library
+		pctl.multi_playlist = multi_playlist
+		pctl.force_queue = p_force_queue
+		validate_and_repair_database(pctl)
 
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
