@@ -34,7 +34,7 @@ import threading
 import time
 import urllib.parse
 import zipfile
-from collections import deque
+from collections import Counter, deque
 from contextlib import contextmanager, suppress
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -173,6 +173,18 @@ class TauonPlaylist:
 	relative_export: bool = False
 	export_type: str = "xspf"
 	file_size: int = 0  # if this is different from last time we'll rescan it
+	pre_sort_ids: list[int] = field(default_factory=list)  # Order before the first column sort, empty when none
+
+
+def restore_track_order(saved: list[int], current: list[int]) -> list[int]:
+	"""Arrange current in saved's order; tracks absent from saved keep their order at the end."""
+	remaining = Counter(current)
+	order = []
+	for track_id in (*saved, *current):
+		if remaining[track_id] > 0:
+			order.append(track_id)
+			remaining[track_id] -= 1
+	return order
 
 
 def N_(m: str) -> str:  # noqa: N802 - N_() is the standard gettext no-op marker name

@@ -212,6 +212,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	point_distance,
 	point_proximity_test,
 	reduce_paths,
+	restore_track_order,
 	rgb_add_hls,
 	rgb_to_hls,
 	search_magic,
@@ -11279,6 +11280,37 @@ class Tauon:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	def pre_sort_restore_disabled(self, pl: int) -> bool:
+		return not self.pctl.multi_playlist[pl].pre_sort_ids or self.pl_is_locked(pl)
+
+	def view_pre_sort_restore_disabled(self) -> bool:
+		return self.pre_sort_restore_disabled(self.pctl.active_playlist_viewing)
+
+	def restore_view_pre_sort_order(self) -> None:
+		self.restore_pre_sort_order(self.pctl.active_playlist_viewing)
+
+	def clear_pre_sort(self, pl: int) -> None:
+		"""A manual reorder becomes the new custom order, so stop offering the old one."""
+		self.pctl.multi_playlist[pl].pre_sort_ids = []
+
+	@database_write
+	def restore_pre_sort_order(self, pl: int) -> None:
+		if self.pl_is_locked(pl):
+			self.show_message(_("Playlist is locked"))
+			return
+
+		playlist = self.pctl.multi_playlist[pl]
+		if not playlist.pre_sort_ids:
+			return
+		self.undo.bk_order(pl)
+		playlist.playlist_ids[:] = restore_track_order(playlist.pre_sort_ids, playlist.playlist_ids)
+		playlist.pre_sort_ids = []
+
+		self.reload_albums()
+		self.tree_view_box.clear_target_pl(pl)
+		self.gui.request_tracklist_redraw()
+		self.pctl.notify_database_changed()
+
 	def imported_sort(self, pl: int) -> None:
 		if self.pl_is_locked(pl):
 			self.show_message(_("Playlist is locked"))
@@ -13576,6 +13608,7 @@ class Tauon:
 
 		set_menu.add(MenuItem(_("Auto Resize"), self.auto_size_columns))
 		set_menu.add(MenuItem(_("Hide bar"), self.hide_set_bar))
+		set_menu.add(MenuItem(_("Restore Sorting"), self.restore_view_pre_sort_order, disable_test=self.view_pre_sort_restore_disabled))
 		# Magnet Mode: draw the next column's text immediately after this column's
 		# text (packed left, standard-layout style) instead of confining it to its
 		# own column. Only meaningful when there is a column to the right.
@@ -13932,6 +13965,11 @@ class Tauon:
 			if key is not None:
 				if ns:
 					key = natsort.natsort_keygen(key=key, alg=natsort.PATH|natsort.U|natsort.I)
+
+				self.undo.bk_order(self.pctl.active_playlist_viewing)
+				pl = self.pctl.multi_playlist[self.pctl.active_playlist_viewing]
+				if not pl.pre_sort_ids:
+					pl.pre_sort_ids = playlist[:]
 
 				playlist.sort(key=key, reverse=invert)
 
@@ -38346,6 +38384,7 @@ class StandardPlaylist:
 							pctl.selected_in_playlist = self.gui.shift_selection[0]
 							gui.request_tracklist_redraw()
 
+						tauon.clear_pre_sort(pctl.active_playlist_viewing)
 						tauon.reload_albums(True)
 						pctl.notify_database_changed()
 
@@ -49343,10 +49382,13 @@ class Undo:
 		self.pctl: PlayerCtl = tauon.pctl
 		self.star_store: StarStore = tauon.star_store
 		self.show_message = tauon.show_message
+		self.reload_albums = tauon.reload_albums
+		self.tree_view_box: TreeView = tauon.tree_view_box
 		self.e: list[
 			tuple[str, TrackClass, StarRecord | None, int, TrackClass, StarRecord | None, int] |
 			tuple[str, list[int]] |
-			tuple[str, int, list[tuple[int, int]]]
+			tuple[str, int, list[tuple[int, int]]] |
+			tuple[str, int, list[int], list[int]]
 			] = []
 
 	def undo(self) -> None:
@@ -49381,6 +49423,21 @@ class Undo:
 				if not self.pctl.playlist_view_position < i < self.pctl.playlist_view_position + self.gui.playlist_view_length:
 					self.pctl.playlist_view_position = i
 					logging.debug("Position changed by undo")
+		elif job[0] == "order":
+			_job, uid, ids, pre_sort_ids = job
+			for i, playlist in enumerate(self.pctl.multi_playlist):
+				if playlist.uuid_int == uid:
+					break
+			else:
+				logging.info("No matching playlist ID to restore order to")
+				return
+
+			self.pctl.switch_playlist(i)
+			playlist.playlist_ids[:] = restore_track_order(ids, playlist.playlist_ids)
+			playlist.pre_sort_ids = pre_sort_ids
+			self.reload_albums()
+			self.tree_view_box.clear_target_pl(i)
+			self.pctl.notify_database_changed()
 		elif job[0] == "ptt":
 			j, fr, fr_s, fr_scr, to, to_s, to_scr = job
 			self.star_store.insert(fr.index, fr_s)
@@ -49396,6 +49453,10 @@ class Undo:
 	def bk_tracks(self, pl_index: int, indis: list[tuple[int, int]]) -> None:
 		uid = self.pctl.multi_playlist[pl_index].uuid_int
 		self.e.append(("tracks", uid, indis))
+
+	def bk_order(self, pl_index: int) -> None:
+		playlist = self.pctl.multi_playlist[pl_index]
+		self.e.append(("order", playlist.uuid_int, playlist.playlist_ids[:], playlist.pre_sort_ids[:]))
 
 	def bk_playtime_transfer(self, fr: TrackClass, fr_s: StarRecord | None, fr_scr: int, to: TrackClass, to_s: StarRecord | None, to_scr: int) -> None:
 		self.e.append(("ptt", fr, fr_s, fr_scr, to, to_s, to_scr))
@@ -57079,6 +57140,7 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), tauon.year_sort, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), tauon.make_auto_sorting, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Restore Sorting"), tauon.restore_pre_sort_order, pass_ref=True, disable_test=tauon.pre_sort_restore_disabled, pass_ref_deco=True))
 
 	tab_menu.br()
 
@@ -58298,6 +58360,7 @@ def main(holder: Holder) -> None:
 
 									pctl.selected_in_playlist = gui.shift_selection[0]
 									gui.request_tracklist_redraw()
+									tauon.clear_pre_sort(pctl.active_playlist_viewing)
 									gui.playlist_hold = False
 
 									tauon.reload_albums(True)
