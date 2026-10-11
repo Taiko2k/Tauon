@@ -478,6 +478,8 @@ class Prefs:
 	# Cut Out: key blacks/greys in the visualiser to transparent so the album
 	# art drawn beneath shows through.
 	milk_cut_out: bool = False
+	# Visualiser opacity, 0.0 (invisible) to 1.0 (opaque). Set by the corner slider.
+	milk_opacity: float = 1.0
 	# Favorited Milkdrop presets, as full path strings.
 	milk_favorite_presets: list[str] = field(default_factory=list)
 

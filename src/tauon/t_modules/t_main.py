@@ -20547,6 +20547,7 @@ class Tauon:
 			prefs.feux_panel_art,  # 198
 			prefs.feux_panel_pod1_w,  # 199
 			playlist_folders,  # 200
+			prefs.milk_opacity,  # 201
 		]
 
 		for slot, value in db_snapshot.items():
@@ -47404,7 +47405,7 @@ class Milky:
 		# texture keeps the visualiser frozen on a still frame instead.
 		if not discard and self.tauon.pctl.playing_state == PlayingState.PAUSED \
 				and self.render_texture is not None and self.loaded_size == (w, h):
-			self._blit_still(srect)
+			self._blit(srect)
 			return
 
 		if self.projectm.own_gl_context:
@@ -47500,19 +47501,7 @@ class Milky:
 		glFlush()
 		glFinish()
 		if not discard:
-			if keyed:
-				# The shader writes straight (unmultiplied) colour with a
-				# luminance alpha; premultiplied "over" keeps the visualiser's
-				# own brightness while black fades to the album art beneath.
-				sdl3.SDL_SetTextureBlendMode(self.key_render_texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
-				sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
-			else:
-				if self.tauon.prefs.milk_cut_out:
-					# Shader unavailable: approximate the key in fixed function.
-					sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
-				else:
-					sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
-				sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+			self._blit(srect)
 		self.fps.tick()
 
 	def _ensure_cut_out_blend(self):
@@ -47529,28 +47518,38 @@ class Milky:
 				sdl3.SDL_BLENDOPERATION_ADD)
 		return self.cut_out_blend_mode
 
-	def _blit_still(self, srect) -> None:
-		"""Re-blit the last rendered visualiser frame (used while paused) without
-		asking projectM for a new one. Mirrors the blend selection of the two
-		render paths' blits so a paused frame looks identical to a live one."""
-		if self.projectm.own_gl_context:
-			# Readback path always blits render_texture (no shader key), flipped.
-			if self.tauon.prefs.milk_cut_out:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
-			else:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
-			sdl3.SDL_RenderTextureRotated(
-				self.renderer, self.render_texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
-			return
-		if self._last_keyed and self.key_render_texture is not None:
-			sdl3.SDL_SetTextureBlendMode(self.key_render_texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
-			sdl3.SDL_RenderTexture(self.renderer, self.key_render_texture, None, srect)
+	def _blit(self, srect) -> None:
+		"""Draw the latest visualiser frame. The single place that picks the texture,
+		blend mode and opacity, shared by live, paused and readback frames. Opacity is
+		applied here, at the copy to the screen, so projectM's own feedback texture
+		is never touched."""
+		opacity = round(255 * self.tauon.prefs.milk_opacity)
+		colour_mod = 255
+		keyed = self._last_keyed and self.key_render_texture is not None
+
+		if keyed:
+			# Cut Out shader copy. Its colour is added as-is over the destination, so a
+			# true fade has to scale the colour as well as the alpha.
+			texture = self.key_render_texture
+			blend = sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED
+			colour_mod = opacity
+		elif self.tauon.prefs.milk_cut_out:
+			# Shader unavailable: the fixed-function key has no alpha term, so opacity is ignored.
+			texture = self.render_texture
+			blend = self._ensure_cut_out_blend()
 		else:
-			if self.tauon.prefs.milk_cut_out:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
-			else:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
-			sdl3.SDL_RenderTexture(self.renderer, self.render_texture, None, srect)
+			texture = self.render_texture
+			# The frame's own alpha counts under BLEND (the opaque copy ignored it).
+			blend = sdl3.SDL_BLENDMODE_BLEND if opacity < 255 else sdl3.SDL_BLENDMODE_NONE
+
+		sdl3.SDL_SetTextureBlendMode(texture, blend)
+		sdl3.SDL_SetTextureColorMod(texture, colour_mod, colour_mod, colour_mod)
+		sdl3.SDL_SetTextureAlphaMod(texture, opacity)
+		if self.projectm.own_gl_context:
+			# Readback frames are bottom-up relative to SDL.
+			sdl3.SDL_RenderTextureRotated(self.renderer, texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
+		else:
+			sdl3.SDL_RenderTexture(self.renderer, texture, None, srect)
 
 	def render_readback(self, w, h, srect, discard: bool = False) -> None:
 		"""Dedicated-context path (macOS): projectM renders into an FBO in its
@@ -47610,13 +47609,7 @@ class Milky:
 			sdl3.SDL_UpdateTexture(
 				self.render_texture, None,
 				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
-			if self.tauon.prefs.milk_cut_out:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, self._ensure_cut_out_blend())
-			else:
-				sdl3.SDL_SetTextureBlendMode(self.render_texture, sdl3.SDL_BLENDMODE_NONE)
-			# GL frames are bottom-up relative to SDL
-			sdl3.SDL_RenderTextureRotated(
-				self.renderer, self.render_texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
+			self._blit(srect)
 		self.fps.tick()
 
 	# ------------------------------------------------- Cut Out key pass
@@ -47777,6 +47770,7 @@ class MilkFullscreen:
 		self.inp:   Input = tauon.inp
 		self.active: bool = False
 		self._entered_window_fullscreen: bool = False
+		self.milk_opacity_slider = MilkOpacitySlider(tauon)
 
 	def activate(self) -> None:
 		tauon = self.tauon
@@ -47808,9 +47802,19 @@ class MilkFullscreen:
 		if not self.active:
 			return
 		inp = self.inp
+		w, h = self.tauon.window_size
 		if inp.key_esc_press:
 			inp.key_esc_press = False
 			self.close()
+			return
+		# Opacity slider, top-right. It reads the raw pointer and writes
+		# prefs.milk_opacity; while it owns the pointer that click is consumed so
+		# it can't also load a random preset.
+		if self.milk_opacity_slider.update(
+			(inp.mouse_position[0], inp.mouse_position[1]), (0, 0, w, h),
+			inp.mouse_down, inp.mouse_click,
+		):
+			inp.mouse_click = False
 			return
 		if inp.right_click:
 			self.close()
@@ -47844,6 +47848,8 @@ class MilkFullscreen:
 
 		w = tauon.window_size[0]
 		h = tauon.window_size[1]
+		# Opacity slider, top-right of the full-window view.
+		view = (0, 0, w, h)
 		tauon.ddt.rect((0, 0, w, h), ColourRGBA(0, 0, 0, 255))
 		gui.main_art_box = (0, 0, w, h)  # Milky renders at this singleton rect
 
@@ -47854,8 +47860,77 @@ class MilkFullscreen:
 		elif 1 < pctl.a_time < 1.3:
 			tauon.milky.render(discard=True, fullscreen=True)
 
+		# Draw the slider on top of the visualiser while it is visible.
+		self.milk_opacity_slider.render(view)
+
 		if pctl.playing_state != PlayingState.PAUSED:
 			gui.request_frame()
+
+
+class MilkOpacitySlider:
+	"""Vertical visualiser-opacity control in the top-right corner of a view."""
+
+	LENGTH = 0.10
+	PAD_X = 0.05
+	PAD_Y = 0.05
+	MAX = 1.0
+	MIN = 0.05
+	CURVE = 2.0   # >1 → fine control near MAX
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon: Tauon = tauon
+		self.gui:  GuiVar = tauon.gui
+		self.ddt:   TDraw = tauon.ddt
+		self.dragging: bool = False
+		self.near: bool = False
+
+	@classmethod
+	def track(cls, view):
+		x, y, w, h = view
+		return x + w * (1 - cls.PAD_X), y + h * cls.PAD_Y, h * cls.LENGTH
+
+	@classmethod
+	def reveal_zone(cls, view):
+		x, y, w, h = view
+		return x + w * (1 - 2 * cls.PAD_X), y, w * 2 * cls.PAD_X, h * (2 * cls.PAD_Y + cls.LENGTH)
+
+	@classmethod
+	def value_at(cls, pointer_y, view):
+		_x, top, length = cls.track(view)
+		t = min(1.0, max(0.0, (pointer_y - top) / length))
+		return cls.MAX - (cls.MAX - cls.MIN) * t ** cls.CURVE
+
+	def update(self, pointer, view, mouse_down, clicked) -> bool:
+		inside = coll_point(pointer, self.reveal_zone(view))
+		if not mouse_down:
+			self.dragging = False
+		elif clicked and inside:
+			self.dragging = True
+		if self.dragging:
+			self.tauon.prefs.milk_opacity = self.value_at(pointer[1], view)
+
+		near = inside or self.dragging
+		if near != self.near or self.dragging:
+			self.gui.request_frame()
+		self.near = near
+		return near
+
+	def render(self, view) -> None:
+		if not self.near:
+			return
+		line_x, top, length = self.track(view)
+		scale = self.gui.scale
+		white = ColourRGBA(255, 255, 255, 255)
+
+		line_w = max(1, round(2 * scale))
+		self.ddt.rect((round(line_x - line_w / 2), round(top), line_w, round(length)), white)
+
+		grip_w = round(18 * scale)
+		grip_h = max(2, round(5 * scale))
+		o = min(self.MAX, max(self.MIN, self.tauon.prefs.milk_opacity))
+		pos = ((self.MAX - o) / (self.MAX - self.MIN)) ** (1.0 / self.CURVE)
+		grip_y = top + pos * length
+		self.ddt.rect((round(line_x - grip_w / 2), round(grip_y - grip_h / 2), grip_w, grip_h), white)
 
 
 class MilkPresetChooser:
@@ -56036,6 +56111,8 @@ def main(holder: Holder) -> None:
 				prefs.feux_panel_pod1_w = save[199]
 			if len(save) > 200 and save[200] is not None:
 				gui.saved_playlist_folders = save[200]
+			if len(save) > 201 and save[201] is not None:
+				prefs.milk_opacity = min(1.0, max(0.0, float(save[201])))
 
 			del save
 			state_loaded = True

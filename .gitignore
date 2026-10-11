@@ -18,6 +18,7 @@ build/
 *.bat
 *.tlb
 *.mo
+*.so
 prime/
 *.snap
 pygettext.py
