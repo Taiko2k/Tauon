@@ -7330,7 +7330,8 @@ class Tauon:
 		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
 		self.milk_choose:                       MilkPresetChooser = MilkPresetChooser(tauon=self)
-		self.search_text                          = self.search_over.search_text
+		self.milk_fullscreen:                   MilkFullscreen = MilkFullscreen(tauon=self)
+		self.search_text                         = self.search_over.search_text
 		self.sync_target:                         TextBox2 = TextBox2(tauon=self)
 		self.playlist_folder_box:                 TextBox2 = TextBox2(tauon=self)
 		self.edge_playlist2:                      EdgePulse2 = EdgePulse2(tauon=self)
@@ -9857,6 +9858,9 @@ class Tauon:
 
 	def open_milk_preset_chooser(self, _track_object: TrackClass) -> None:
 		self.milk_choose.activate()
+
+	def open_milk_fullscreen(self, _track_object: TrackClass) -> None:
+		self.milk_fullscreen.activate()
 
 	def open_preset_folder(self, _track_object: TrackClass) -> None:
 		target = self.user_directory / "presets"
@@ -15913,6 +15917,7 @@ class Tauon:
 			and not self.gui.rename_playlist_box \
 			and not self.search_over.active \
 			and not self.milk_choose.active \
+			and not self.milk_fullscreen.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active \
 			and not self.duplicate_import_box.active
@@ -46294,6 +46299,8 @@ class Milky:
 	def burn(self, target_track: TrackClass) -> None:
 		if not self.ready:
 			return
+		if self.tauon.milk_fullscreen.active:
+			return  # burn-in is sized to the art box, skip while the full-window view owns the visualiser
 		if not self.projectm.burn_texture_available:
 			return
 		if self.projectm.own_gl_context:
@@ -46325,13 +46332,19 @@ class Milky:
 		glFlush()
 		glFinish()
 
-	def render(self, discard: bool = False) -> None:
+	def render(self, discard: bool = False, fullscreen: bool = False) -> None:
 		if not milky_ready:
 			# PyOpenGL missing, no libprojectM, or non-OpenGL renderer. prefs.milk
 			# can still be set (stale config); rendering would NameError on the
 			# module-level GL imports.
 			return
 		if self.projectm.lib_error is True:
+			return
+
+		if self.tauon.milk_fullscreen.active and not fullscreen:
+			# The visualiser is a singleton: while the full-window view is up, the
+			# art box / widget callers must not render it at their own size, or the
+			# GL texture would be rebuilt every frame.
 			return
 
 		ddt = self.ddt
@@ -46731,6 +46744,107 @@ class Milky:
 				int(saved_viewport[2]),
 				int(saved_viewport[3]),
 			)
+
+
+class MilkFullscreen:
+	"""Full-window Milkdrop view (the MilkDrop menu's "Fullscreen").
+
+	Draws the singleton visualiser over the whole window and also puts the OS
+	window into fullscreen if it isn't already (restored on close). Left click
+	loads a random preset; Escape or right-click closes. Keyboard shortcuts
+	(play/pause, seek, volume, media keys) keep working; only the pointer is
+	muted so the UI underneath never reacts.
+
+	Milky.render()/burn() refuse to run for any other caller while this is
+	active, so the art box and Custom Layout widget can't fight over the
+	visualiser's texture.
+	"""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon: Tauon = tauon
+		self.gui:  GuiVar = tauon.gui
+		self.inp:   Input = tauon.inp
+		self.active: bool = False
+		self._entered_window_fullscreen: bool = False
+
+	def activate(self) -> None:
+		tauon = self.tauon
+		if self.active or self.gui.mode != GuiMode.MAIN:
+			return
+		if not tauon.prefs.milk or not tauon.milky.available:
+			return
+		self.active = True
+		if not self.gui.fullscreen:
+			self.gui.fullscreen = True
+			self._entered_window_fullscreen = True
+			sdl3.SDL_SetWindowFullscreenMode(tauon.t_window, None)
+			sdl3.SDL_SetWindowFullscreen(tauon.t_window, True)
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		if not self.active:
+			return
+		self.active = False
+		# Only undo the window fullscreen if we were the one who set it and it is
+		# still set (the Escape handler may already have left it).
+		if self._entered_window_fullscreen and self.gui.fullscreen:
+			self.gui.fullscreen = False
+			sdl3.SDL_SetWindowFullscreen(self.tauon.t_window, False)
+		self._entered_window_fullscreen = False
+		self.gui.request_frame()
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.inp
+		if inp.key_esc_press:
+			inp.key_esc_press = False
+			self.close()
+			return
+		if inp.right_click:
+			self.close()
+		elif inp.mouse_click:
+			self.tauon.milky.projectm.load_next = "random"
+			self.gui.request_frame()
+		# Mute the pointer so nothing underneath sees clicks or hover. This can run
+		# more than once per frame; the first pass consumes the click.
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		tauon = self.tauon
+		pctl = tauon.pctl
+		gui = self.gui
+		if not tauon.prefs.milk or pctl.playing_state not in (
+			PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED,
+		) or (self._entered_window_fullscreen and not gui.fullscreen):
+			# Visualiser off, playback stopped, or the window left fullscreen
+			# behind our back (F11, the Escape handler, the window manager):
+			# nothing to show, leave the view.
+			self.close()
+			return
+
+		w = tauon.window_size[0]
+		h = tauon.window_size[1]
+		tauon.ddt.rect((0, 0, w, h), ColourRGBA(0, 0, 0, 255))
+		gui.main_art_box = (0, 0, w, h)  # Milky renders at this singleton rect
+
+		# Same warm-up as the art box: nothing for the first moments of a track
+		# while projectM's buffer catches up to the new audio.
+		if pctl.a_time >= 1.3:
+			tauon.milky.render(fullscreen=True)
+		elif 1 < pctl.a_time < 1.3:
+			tauon.milky.render(discard=True, fullscreen=True)
+
+		if pctl.playing_state != PlayingState.PAUSED:
+			gui.request_frame()
 
 
 class MilkPresetChooser:
@@ -55939,6 +56053,7 @@ def main(holder: Holder) -> None:
 	milky_menu.add(MenuItem(_("Favorite This Preset"), tauon.toggle_milk_preset_favorite, pass_ref=True,
 		check_test=tauon.milk_preset_is_favorite))
 	milky_menu.add(MenuItem(_("Choose Preset"), tauon.open_milk_preset_chooser, pass_ref=True))
+	milky_menu.add(MenuItem(_("Fullscreen"), tauon.open_milk_fullscreen, pass_ref=True))
 	milky_menu.add(MenuItem(
 		_("Enable Wide Mode"),
 		tauon.toggle_showcase_wide_art,
@@ -59364,6 +59479,14 @@ def main(holder: Holder) -> None:
 				gui.request_frame()
 				run_frame = True
 
+		# Milkdrop fullscreen view: the visualiser animates every frame.
+		if tauon.milk_fullscreen.active:
+			if gui.mode != GuiMode.MAIN:
+				tauon.milk_fullscreen.close()
+			else:
+				gui.request_frame()
+				run_frame = True
+
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
 				tauon.cursor_blink_timer.set()
@@ -59895,6 +60018,9 @@ def main(holder: Holder) -> None:
 			# other consumer so clicks never leak through the overlay.
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			if tauon.milk_fullscreen.active:
+				tauon.milk_fullscreen.handle_input()
 
 			# Transfer click register to menus
 			if inp.mouse_click:
@@ -60466,6 +60592,9 @@ def main(holder: Holder) -> None:
 
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			if tauon.milk_fullscreen.active:
+				tauon.milk_fullscreen.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -62037,6 +62166,8 @@ def main(holder: Holder) -> None:
 				if radiobox.active:
 					radiobox.render()
 
+				tauon.milk_fullscreen.render()
+
 				tauon.milk_choose.render()
 
 				if gui.message_box:
@@ -62975,7 +63106,7 @@ def main(holder: Holder) -> None:
 		# gui.vis = 5
 		# gui.level_update = True
 
-		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active:
+		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active and not tauon.milk_fullscreen.active:
 			gui.level_update = False
 
 			sdl3.SDL_SetRenderTarget(renderer, None)

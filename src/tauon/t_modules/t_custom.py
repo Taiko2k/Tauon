@@ -4975,7 +4975,7 @@ class CustomLayout:
 		# mute the pointer themselves later in the frame. Stand down entirely so we
 		# don't neutralise the mouse first — otherwise they only ever see the muted
 		# position and hover tracking (e.g. the preset chooser's highlight) breaks.
-		if self.tauon.milk_choose.active or self.tauon.dream_room.active:
+		if self.tauon.milk_choose.active or self.tauon.milk_fullscreen.active or self.tauon.dream_room.active:
 			return
 
 		# While any menu or a message box (confirm dialog) is open, let those
