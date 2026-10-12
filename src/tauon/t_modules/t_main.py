@@ -56537,7 +56537,7 @@ def main(holder: Holder) -> None:
 		cl_menu.items[-1].render_func = _add_or_replace_label
 		for _spec in CL_WIDGET_SPECS:
 			cl_menu.add_to_sub(_cl_sub_add, MenuItem(
-				_spec.name, cm._menu_add_widget, args=_spec.kind,
+				_(_spec.name), cm._menu_add_widget, args=_spec.kind,
 				disable_test=(lambda k=_spec.kind: cm.kind_disabled(k))))
 
 		cl_menu.add(MenuItem(_("Remove"), cm._menu_remove_widget, show_test=cm._t_has_widget))
