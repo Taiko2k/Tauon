@@ -1,13 +1,11 @@
 name: Linter
 on:
   push:
-    # branches:
-    #   - '*'
-    #   - '!master'
+    paths-ignore:
+      - 'locale/**'
   pull_request:
-    # branches:
-    #   - '*'
-    #   - '!master'
+    paths-ignore:
+      - 'locale/**'
 
 jobs:
   Ruff:

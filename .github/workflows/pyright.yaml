@@ -1,6 +1,12 @@
 name: LSP Check
 
-on: [push, pull_request]
+on:
+  push:
+    paths-ignore:
+      - 'locale/**'
+  pull_request:
+    paths-ignore:
+      - 'locale/**'
 
 jobs:
   pyright:

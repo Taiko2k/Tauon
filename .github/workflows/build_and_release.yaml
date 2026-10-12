@@ -2,8 +2,11 @@ name: Build and release
 
 on:
   push:
+    paths-ignore:
+      - 'locale/**'
   pull_request:
-
+    paths-ignore:
+      - 'locale/**'
 jobs:
   build-linux-arm64:
     name: "Linux arm64"
