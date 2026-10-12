@@ -20556,6 +20556,7 @@ class Tauon:
 			prefs.feux_panel_art,  # 198
 			prefs.feux_panel_pod1_w,  # 199
 			playlist_folders,  # 200
+			prefs.show_lyrics_showcase,  # 201
 		]
 
 		for slot, value in db_snapshot.items():
@@ -55328,6 +55329,8 @@ def main(holder: Holder) -> None:
 				prefs.feux_panel_pod1_w = save[199]
 			if len(save) > 200 and save[200] is not None:
 				gui.saved_playlist_folders = save[200]
+			if len(save) > 201 and save[201] is not None:
+				prefs.show_lyrics_showcase = save[201]
 
 			del save
 			state_loaded = True
