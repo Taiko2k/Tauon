@@ -32170,7 +32170,7 @@ class Over:
 		rows.pointer(_("Gallery thumbnail size and titles"), _("Right-click the gallery"), "album grid covers bigger smaller")
 		rows.pointer(_("Tracklist columns, font size and row height"), _("Right-click a track › Layout"), "rows bigger smaller text")
 		rows.pointer(_("Track menu search links"), _("Right-click a track › Layout"), "wikipedia bandcamp genius sonemic")
-		rows.pointer(_("Tabs and top-panel visualiser"), _("Main menu › Top Panel Layout"), "spectrum meter")
+		rows.pointer(_("Tabs and top-panel visualiser"), _("Right-click the top panel"), "spectrum meter")
 		rows.pointer(_("Centred side panel and art zoom"), _("Right-click the side-panel art"), "cover milkdrop")
 		rows.pointer(_("Showcase visualiser and wide mode"), _("Right-click the showcase view"), "lyrics")
 
@@ -32677,7 +32677,7 @@ class Over:
 			rows.note(_("This folder doesn't exist."), colours.status_text_over)
 		prefs.autoscan_playlist_folder = rows.switch(
 			prefs.autoscan_playlist_folder, _("Auto-import playlists from this folder"),
-			_("Runs during \"Rescan All Folders\" only."))
+			_("Runs during Database… › \"Reload All Folders\" only."))
 
 	def settings_body_diagnostics(self, rows: SettingsRows) -> None:
 		tauon = self.tauon
@@ -52660,6 +52660,18 @@ def coll_overlap(l: list[int], r: list[int]) -> bool:
         r[1] < l[1] + l[3]
     )
 
+def collapse_doubled_lines(lines: list[str]) -> list[str]:
+	"""Undo doubled line breaks, where every other line is blank.
+
+	Older builds cached .lrc files with each line break doubled, and the
+	lyrics editor could save them back that way.
+	"""
+	if len(lines) < 3:
+		return lines
+	if all(not lines[i].strip() for i in range(1, len(lines), 2)) and any(line.strip() for line in lines[::2]):
+		return lines[::2]
+	return lines
+
 def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: bool = False) -> list[str] | bool | None:
 	"""Return list of strings if lyrics match LRC format, otherwise return None.
 	just_check returns True if current track.lyrics fit LRC format.
@@ -52670,7 +52682,11 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 	if not just_check:
 		if not reload and track.synced:
 			if lyrics_are_synced(track.synced):
-				return track.synced.splitlines()
+				raw = track.synced.splitlines()
+				lines = collapse_doubled_lines(raw)
+				if len(lines) != len(raw):
+					track.synced = "\n".join(lines)
+				return lines
 			logging.warning(
 				f"Synced lyrics for {track.filename} do not look like LRC. Reclassifying them as static lyrics."
 			)
@@ -52713,8 +52729,7 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 
 	if matched_file:
 		try:
-			with matched_file.open(encoding="utf-8") as f:
-				data = f.readlines()
+			data = collapse_doubled_lines(matched_file.read_text(encoding="utf-8").splitlines())
 		except Exception:
 			logging.exception("Read lyrics file error")
 			return None
