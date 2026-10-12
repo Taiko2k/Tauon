@@ -37812,6 +37812,8 @@ class StandardPlaylist:
 
 			if number >= render_rows:
 				break
+		# `number` is rebound by the draw loop below, so keep the row count for empty-space hit testing
+		rows_used = number
 		# ---------------------------------------------------------------------------------------
 
 		if align_tracklist_to_row:
@@ -38467,7 +38469,7 @@ class StandardPlaylist:
 		gui.playlist_current_visible_tracks = cv
 		gui.playlist_current_visible_tracks_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 
-		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * number - gui.playlist_scroll_pixels <
+		if (inp.right_click and gui.playlist_top + 5 * gui.scale + gui.playlist_row_height * rows_used - gui.playlist_scroll_pixels <
 				self.inp.mouse_position[1] < window_size[1] - 55 and width + left > self.inp.mouse_position[0] > gui.playlist_left + 15):
 			tauon.playlist_menu.activate()
 
