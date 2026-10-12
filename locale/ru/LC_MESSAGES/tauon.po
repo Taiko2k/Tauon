@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-10-11 21:57+0000\n"
-"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
+"PO-Revision-Date: 2026-10-12 11:26+0000\n"
+"Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -16,13 +16,12 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.10.1.dev0\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
-#, fuzzy
 msgid "Importing tracks"
-msgstr "Импортировать треки"
+msgstr "Импорт треков"
 
 #: src/tauon/t_modules/t_activity.py:99
 msgid "Importing XSPF playlist"
@@ -33,24 +32,20 @@ msgid "Extracting Archive…"
 msgstr "Извлечение архива…"
 
 #: src/tauon/t_modules/t_activity.py:102
-#, fuzzy
 msgid "{N} tracks imported"
-msgstr "{N} рейтинги импортированы"
+msgstr "{N} треков импортировано"
 
 #: src/tauon/t_modules/t_activity.py:104
-#, fuzzy
 msgid "Stopping import…"
-msgstr "Остановка…"
+msgstr "Остановка импорта…"
 
 #: src/tauon/t_modules/t_activity.py:110
-#, fuzzy
 msgid "Scanning Tags…"
-msgstr "Сканирование скробблов…"
+msgstr "Сканирование тегов…"
 
 #: src/tauon/t_modules/t_activity.py:111 src/tauon/t_modules/t_activity.py:122
-#, fuzzy
 msgid "{N} remaining"
-msgstr "{N} Оставшиеся папки"
+msgstr "осталось {N}"
 
 #: src/tauon/t_modules/t_activity.py:113
 msgid "Auto-importing playlists…"
@@ -61,14 +56,12 @@ msgid "File copy in progress…"
 msgstr "Копирование файла в процессе…"
 
 #: src/tauon/t_modules/t_activity.py:118
-#, fuzzy
 msgid "Cleaning database"
-msgstr "Чистая база данных!"
+msgstr "Очистка базы данных"
 
 #: src/tauon/t_modules/t_activity.py:121
-#, fuzzy
 msgid "Rescanning Tags…"
-msgstr "Повторное сканирование каталогов…"
+msgstr "Повторное сканирование тегов…"
 
 #: src/tauon/t_modules/t_activity.py:124
 msgid "Accessing PLEX library…"
@@ -83,14 +76,12 @@ msgid "Accessing JELLYFIN library…"
 msgstr "Доступ к библиотеке JELLYFIN…"
 
 #: src/tauon/t_modules/t_activity.py:131
-#, fuzzy
 msgid "{N} albums scanned"
-msgstr "{N} альбомов"
+msgstr "{N} альбомов просканировано"
 
 #: src/tauon/t_modules/t_activity.py:131
-#, fuzzy
 msgid "{N} tracks scanned"
-msgstr "{N} дорожек"
+msgstr "{N} треков просканировано"
 
 #: src/tauon/t_modules/t_activity.py:134
 msgid "Chromecast Mode"
@@ -98,26 +89,23 @@ msgstr "Режим Chromecast"
 
 #: src/tauon/t_modules/t_activity.py:138
 msgid "{done} / {total} files"
-msgstr ""
+msgstr "{done} / {total} файлов"
 
 #: src/tauon/t_modules/t_activity.py:140
-#, fuzzy
 msgid "Transcoding…"
-msgstr "Конвертирование"
+msgstr "Конвертирование…"
 
 #: src/tauon/t_modules/t_activity.py:140
-#, fuzzy
 msgid "Preparing…"
-msgstr "Поиск…"
+msgstr "Подготовка…"
 
 #: src/tauon/t_modules/t_activity.py:141
-#, fuzzy
 msgid "Syncing to device"
 msgstr "Синхронизация с устройством"
 
 #: src/tauon/t_modules/t_activity.py:143
 msgid "{done} / {total} folders"
-msgstr ""
+msgstr "{done} / {total} каталогов"
 
 #: src/tauon/t_modules/t_activity.py:149
 msgid "Stopping transcode…"
@@ -128,18 +116,16 @@ msgid "Transcoding"
 msgstr "Конвертирование"
 
 #: src/tauon/t_modules/t_activity.py:151
-#, fuzzy
 msgid "1 album remaining"
-msgstr "Оценки альбомов"
+msgstr "остался 1 альбом"
 
 #: src/tauon/t_modules/t_activity.py:151
-#, fuzzy
 msgid "{N} albums remaining"
-msgstr "{N} Оставшиеся папки"
+msgstr "осталось {N} альбомов"
 
 #: src/tauon/t_modules/t_activity.py:156
 msgid "{done} / {total} tracks"
-msgstr ""
+msgstr "{done} / {total} треков"
 
 #: src/tauon/t_modules/t_activity.py:158
 msgid "Uploading lyrics to LRCLIB…"
@@ -154,9 +140,8 @@ msgid "Scanning Scrobbles…"
 msgstr "Сканирование скробблов…"
 
 #: src/tauon/t_modules/t_activity.py:168
-#, fuzzy
 msgid "Buffering…"
-msgstr "Буферизация… "
+msgstr "Буферизация…"
 
 #: src/tauon/t_modules/t_activity.py:170 src/tauon/t_modules/t_main.py:32955
 msgid "Scrobbling"
@@ -176,41 +161,36 @@ msgid "Aborting Sync"
 msgstr "Отменить синхронизацию"
 
 #: src/tauon/t_modules/t_activity.py:279 src/tauon/t_modules/t_activity.py:352
-#, fuzzy
 msgid "Activity"
-msgstr "Активно"
+msgstr "Активность"
 
 #: src/tauon/t_modules/t_activity.py:354
-#, fuzzy
 msgid "{N} active"
-msgstr "Неактивно"
+msgstr "{N} активных"
 
 #: src/tauon/t_modules/t_activity.py:380
 msgid "Overall"
-msgstr ""
+msgstr "Общий"
 
 #: src/tauon/t_modules/t_activity.py:389
-#, fuzzy
 msgid "Current folder"
-msgstr "Целевая папка"
+msgstr "Текущий каталог"
 
 #: src/tauon/t_modules/t_activity.py:389
-#, fuzzy
 msgid "Current album"
-msgstr "Текущий плейлист"
+msgstr "Текущий альбом"
 
 #: src/tauon/t_modules/t_chrome.py:261
 msgid "Unable to cast this audio format"
-msgstr ""
+msgstr "Не удаётся транслировать этот аудиоформат"
 
 #: src/tauon/t_modules/t_chrome.py:262
-#, fuzzy
 msgid "Check that the file and FFmpeg are available."
-msgstr "Убедитесь, что исходный файл доступен, и повторите попытку."
+msgstr "Убедитесь, что файл и FFmpeg доступны."
 
 #: src/tauon/t_modules/t_chrome.py:267
 msgid "Unable to convert audio for Chromecast"
-msgstr ""
+msgstr "Не удаётся преобразовать звук для Chromecast"
 
 #: src/tauon/t_modules/t_custom.py:183
 msgid "MilkDrop is disabled"
@@ -769,11 +749,11 @@ msgstr "В этом макете нет панели воспроизведен�
 
 #: src/tauon/t_modules/t_main.py:9222
 msgid "Switch to Full Panel"
-msgstr ""
+msgstr "Переключить на полную панель"
 
 #: src/tauon/t_modules/t_main.py:9222 src/tauon/t_modules/t_main.py:57541
 msgid "Switch to Compact Panel"
-msgstr ""
+msgstr "Переключить на компактную панель"
 
 #: src/tauon/t_modules/t_main.py:9294 src/tauon/t_modules/t_main.py:56823
 msgid "A/B Repeat"
@@ -1238,9 +1218,8 @@ msgid "Cannot sync when in transcode inplace mode"
 msgstr "Синхронизация недоступна в режиме транскодирования на месте"
 
 #: src/tauon/t_modules/t_main.py:11435
-#, fuzzy
 msgid "Sync failed"
-msgstr "Синхронизированный"
+msgstr "Синхронизация не удалась"
 
 #: src/tauon/t_modules/t_main.py:11450
 msgid "No target folder selected"
@@ -1251,9 +1230,8 @@ msgid "Target folder could not be found"
 msgstr "Не удалось найти каталог"
 
 #: src/tauon/t_modules/t_main.py:11471 src/tauon/t_modules/t_main.py:11629
-#, fuzzy
 msgid "Sync canceled"
-msgstr "Синхронизация завершена"
+msgstr "Синхронизация отменена"
 
 #: src/tauon/t_modules/t_main.py:11491
 msgid "Deleting folders…"
@@ -1290,7 +1268,7 @@ msgstr "{N} Оставшиеся папки"
 
 #: src/tauon/t_modules/t_main.py:11632
 msgid "Sync finished with errors"
-msgstr ""
+msgstr "Синхронизация завершена с ошибками"
 
 #: src/tauon/t_modules/t_main.py:11634
 msgid "Sync completed"
@@ -1773,7 +1751,7 @@ msgstr "Счётчик скробблов"
 #: src/tauon/t_modules/t_main.py:13567 src/tauon/t_modules/t_main.py:27512
 #: src/tauon/t_modules/t_tagedit_ui.py:1620
 msgid "Label"
-msgstr ""
+msgstr "Метка"
 
 #: src/tauon/t_modules/t_main.py:13568
 msgid "Disc Number"
@@ -2025,23 +2003,20 @@ msgid "Unpin"
 msgstr "Открепить"
 
 #: src/tauon/t_modules/t_main.py:18048 src/tauon/t_modules/t_main.py:57046
-#, fuzzy
 msgid "New Folder"
-msgstr "Открыть каталог"
+msgstr "Создать каталог"
 
 #: src/tauon/t_modules/t_main.py:18107
 msgid "Unpin from Top Panel"
-msgstr ""
+msgstr "Открепить от верхней панели"
 
 #: src/tauon/t_modules/t_main.py:18107 src/tauon/t_modules/t_main.py:57050
-#, fuzzy
 msgid "Pin to Top Panel"
-msgstr "Вкладки на верхней панели"
+msgstr "Прикрепить к верхней панели"
 
 #: src/tauon/t_modules/t_main.py:18175 src/tauon/t_modules/t_main.py:18177
-#, fuzzy
 msgid "Empty"
-msgstr "Пустая вкладка"
+msgstr "Пусто"
 
 #: src/tauon/t_modules/t_main.py:18182
 msgid "Unlock"
@@ -2464,7 +2439,7 @@ msgstr "Композитор: "
 
 #: src/tauon/t_modules/t_main.py:27011
 msgid "Label: "
-msgstr ""
+msgstr "Метка: "
 
 #: src/tauon/t_modules/t_main.py:27080
 msgid "Genre: "
@@ -2519,27 +2494,24 @@ msgid "(Include multi-tag results)"
 msgstr "(Включить результаты с несколькими тегами)"
 
 #: src/tauon/t_modules/t_main.py:27902
-#, fuzzy
 msgid "Duplicate tracks found"
-msgstr "Дубликаты не найдены"
+msgstr "Найдены дубликаты треков"
 
 #: src/tauon/t_modules/t_main.py:27904
 msgid "This action would add a duplicate track."
-msgstr ""
+msgstr "Это действие добавит дубликат трека."
 
 #: src/tauon/t_modules/t_main.py:27905
 msgid "This action would add {N} duplicate tracks."
-msgstr ""
+msgstr "Это действие добавит {N} дубликатов треков."
 
 #: src/tauon/t_modules/t_main.py:27907
-#, fuzzy
 msgid "Add duplicates"
-msgstr "Дублировать"
+msgstr "Добавить дубликаты"
 
 #: src/tauon/t_modules/t_main.py:27908
-#, fuzzy
 msgid "Skip duplicates"
-msgstr "Дублировать"
+msgstr "Пропустить дубликаты"
 
 #: src/tauon/t_modules/t_main.py:28007 src/tauon/t_modules/t_main.py:28049
 msgid "Cancelling…"
@@ -2565,7 +2537,7 @@ msgstr "Ура! Спасибо!! 🎉 ✨"
 
 #: src/tauon/t_modules/t_main.py:28160
 msgid "STABLE?! That's for horses."
-msgstr ""
+msgstr "STABLE?! Это для лошадей."
 
 #: src/tauon/t_modules/t_main.py:28173
 msgid "Changelog Highlights"
@@ -2672,7 +2644,7 @@ msgstr "Устройство вывода звука"
 
 #: src/tauon/t_modules/t_main.py:28577
 msgid "Choose where Tauon sends playback."
-msgstr "Выберите, куда Tauon выводит звук."
+msgstr "Выберите, куда Tauon должен направлять звук."
 
 #: src/tauon/t_modules/t_main.py:28594
 msgid "No device selected"
@@ -2692,7 +2664,7 @@ msgstr "Пожалуйста, перезапустите Tauon, чтобы эт�
 
 #: src/tauon/t_modules/t_main.py:28736
 msgid "Audio stack"
-msgstr "Аудиостек"
+msgstr "Аудиосистема"
 
 #: src/tauon/t_modules/t_main.py:28741
 msgid "PulseAudio"
@@ -2777,7 +2749,7 @@ msgstr "Автоматически искать тексты"
 
 #: src/tauon/t_modules/t_main.py:30120
 msgid "Auto-search when lyrics enabled"
-msgstr "Искать автоматически, когда тексты включены"
+msgstr "Автопоиск при включённых текстах"
 
 #: src/tauon/t_modules/t_main.py:30130
 msgid "Scraping source"
@@ -2833,7 +2805,7 @@ msgstr "Быстрый доступ"
 
 #: src/tauon/t_modules/t_main.py:30222
 msgid "Open the files and folders Tauon uses."
-msgstr "Открыть файлы и папки, которые использует Tauon."
+msgstr "Открыть файлы и папки Tauon."
 
 #: src/tauon/t_modules/t_main.py:30226
 msgid "Open config file"
@@ -2875,7 +2847,7 @@ msgstr "Возобновлять при запуске"
 
 #: src/tauon/t_modules/t_main.py:30256
 msgid "Resume playback when Tauon starts."
-msgstr "Возобновлять воспроизведение при запуске Tauon."
+msgstr "Продолжать проигрывание при запуске Tauon."
 
 #: src/tauon/t_modules/t_main.py:30263
 msgid "Resume from suspend"
@@ -2883,7 +2855,7 @@ msgstr "Возобновить после пробуждения"
 
 #: src/tauon/t_modules/t_main.py:30264
 msgid "Resume playback after waking."
-msgstr "Возобновлять воспроизведение после пробуждения."
+msgstr "Продолжать проигрывание после пробуждения."
 
 #: src/tauon/t_modules/t_main.py:30273
 msgid "Record radio"
@@ -2891,7 +2863,7 @@ msgstr "Записывать радио"
 
 #: src/tauon/t_modules/t_main.py:30274
 msgid "Record internet radio and split tracks."
-msgstr "Записывать интернет-радио и разделять треки."
+msgstr "Записывать радио и разделять треки."
 
 #: src/tauon/t_modules/t_main.py:30279
 msgid ""
@@ -2986,7 +2958,7 @@ msgstr "Включить совместное прослушивание"
 
 #: src/tauon/t_modules/t_main.py:30377 src/tauon/t_modules/t_main.py:31056
 msgid "Start the web server for remote playback."
-msgstr "Запустить веб-сервер для удалённого воспроизведения."
+msgstr "Запуск веб-сервера для удалён. проигрывания."
 
 #: src/tauon/t_modules/t_main.py:30387 src/tauon/t_modules/t_main.py:31068
 msgid "Open Listen Along page"
@@ -3036,9 +3008,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Leave blank to export beside the playlist, or set a folder here."
-msgstr ""
-"Оставьте пустым, чтобы экспортировать рядом с плейлистом, или укажите папку "
-"здесь."
+msgstr "Пусто — экспорт рядом с плейлистом, или укажите папку."
 
 #: src/tauon/t_modules/t_main.py:30472
 msgid "Auto-import playlists from this folder"
@@ -3070,7 +3040,7 @@ msgstr "Включить режим отладки"
 
 #: src/tauon/t_modules/t_main.py:30518
 msgid "Toggle Console"
-msgstr "Переключить консоль"
+msgstr "Вкл./откл. консоль"
 
 #: src/tauon/t_modules/t_main.py:30650
 msgid "This will mark all tracks in local database as unloved!"
@@ -3346,16 +3316,15 @@ msgstr "Прозрачность окна"
 
 #: src/tauon/t_modules/t_main.py:31508
 msgid "Glass mode"
-msgstr ""
+msgstr "Режим стекла"
 
 #: src/tauon/t_modules/t_main.py:31514
 msgid "Adjust intensity"
-msgstr ""
+msgstr "Настроить интенсивность"
 
 #: src/tauon/t_modules/t_main.py:31528
-#, fuzzy
 msgid "Darken tracklist"
-msgstr "Треклист"
+msgstr "Затемнять список треков"
 
 #: src/tauon/t_modules/t_main.py:31557
 msgid "Window"
@@ -3363,7 +3332,7 @@ msgstr "Окно"
 
 #: src/tauon/t_modules/t_main.py:31558
 msgid "Notifications, on-screen controls, scrolling and scale."
-msgstr "Уведомления, экранное управление, прокрутка и масштаб."
+msgstr "Уведомления, управление, прокрутка и масштаб."
 
 #: src/tauon/t_modules/t_main.py:31561
 msgid "Emit track change notifications"
@@ -3375,7 +3344,7 @@ msgstr "Программная рамка окна"
 
 #: src/tauon/t_modules/t_main.py:31566
 msgid "Show playing in titlebar"
-msgstr "Показать воспроизводимую дорожку в заголовке"
+msgstr "Показать текущий трек в заголовке"
 
 #: src/tauon/t_modules/t_main.py:31570
 msgid "Rounded window corners"
@@ -3415,7 +3384,7 @@ msgstr "авто"
 
 #: src/tauon/t_modules/t_main.py:31664
 msgid "Auto scale"
-msgstr "Автоматическое масштабирование"
+msgstr "Автомасштабирование"
 
 #: src/tauon/t_modules/t_main.py:31668
 msgid "Tray"
@@ -3467,15 +3436,15 @@ msgstr "Поведение воспроизведения и кэширован�
 
 #: src/tauon/t_modules/t_main.py:31722
 msgid "Fade on pause and stop"
-msgstr "Затухание при паузе и остановке"
+msgstr "Затухать при паузе и остановке"
 
 #: src/tauon/t_modules/t_main.py:31724
 msgid "Fade on track jump"
-msgstr "Затухание при переходе между треками"
+msgstr "Затухать при переходе между треками"
 
 #: src/tauon/t_modules/t_main.py:31726
 msgid "Back restarts to beginning"
-msgstr "Затухание при возврате к началу"
+msgstr "Назад перезапускает с начала"
 
 #: src/tauon/t_modules/t_main.py:31728
 msgid "Cache local files"
@@ -3483,7 +3452,7 @@ msgstr "Кэшировать локальные файлы"
 
 #: src/tauon/t_modules/t_main.py:31731
 msgid "Use persistent network cache"
-msgstr "Использовать постоянный сетевой кэш"
+msgstr "Исп. постоянный сетевой кэш"
 
 #: src/tauon/t_modules/t_main.py:31738
 msgid "Wait for entire file"
@@ -3499,20 +3468,19 @@ msgstr "Избегать передискретизации"
 
 #: src/tauon/t_modules/t_main.py:31764
 msgid "Pre-roll silence"
-msgstr ""
+msgstr "Тишина перед воспроизведением"
 
 #: src/tauon/t_modules/t_main.py:31765
 msgid "Wait for DAC resynchronization."
-msgstr ""
+msgstr "Ожидание ресинхронизации ЦАП."
 
 #: src/tauon/t_modules/t_main.py:31771
-#, fuzzy
 msgid "Pre-roll duration"
-msgstr "Длительность плейлиста"
+msgstr "Длительность предварительного запуска"
 
 #: src/tauon/t_modules/t_main.py:31787
 msgid "Force stereo output"
-msgstr ""
+msgstr "Принудительный стереовыход"
 
 #: src/tauon/t_modules/t_main.py:31799
 msgid "Bypasses volume, EQ and ReplayGain."
@@ -3726,7 +3694,7 @@ msgstr "Учётная запись не подключена."
 
 #: src/tauon/t_modules/t_main.py:32165
 msgid "Scrobble playback and sync loves."
-msgstr "Скробблить воспроизведение и синхронизировать Love."
+msgstr "Скробблинг воспроизведения и синхронизация избранного."
 
 #: src/tauon/t_modules/t_main.py:32171 src/tauon/t_modules/t_main.py:32295
 #: src/tauon/t_modules/t_main.py:32608
@@ -3747,7 +3715,7 @@ msgstr "Использовать LibreFM"
 
 #: src/tauon/t_modules/t_main.py:32194
 msgid "Use Login, finish the browser step, then click Done."
-msgstr "Нажмите «Войти», завершите шаг в браузере, затем нажмите «Готово»."
+msgstr "Нажмите «Войти», завершите шаг в браузере, и затем «Готово»."
 
 #: src/tauon/t_modules/t_main.py:32196
 msgid "Finish authorisation in the browser, then click Done."
@@ -3817,9 +3785,8 @@ msgstr "Показать пороговый маркер"
 
 #: src/tauon/t_modules/t_main.py:32272 src/tauon/t_modules/t_main.py:32337
 #: src/tauon/t_modules/t_main.py:32623
-#, fuzzy
 msgid "Scrobble Radios"
-msgstr "Скробблы и избранное."
+msgstr "Скробблить радио"
 
 #: src/tauon/t_modules/t_main.py:32291
 msgid "Token saved."
@@ -3970,11 +3937,13 @@ msgstr "Отключите, если ваш сервер скробблит са
 
 #: src/tauon/t_modules/t_main.py:32553
 msgid "Don't refetch while editing generators"
-msgstr ""
+msgstr "Не повторять запрос при редактировании генераторов"
 
 #: src/tauon/t_modules/t_main.py:32554
 msgid "Reuse the last fetched library while you type a generator query."
 msgstr ""
+"Повторно использовать последнюю полученную библиотеку, пока вы вводите "
+"запрос генератора."
 
 #: src/tauon/t_modules/t_main.py:32588
 msgid "Connection looked successful but the API key was invalid."
@@ -4174,7 +4143,7 @@ msgstr "Библиотека"
 
 #: src/tauon/t_modules/t_main.py:33055
 msgid "Totals across the database."
-msgstr "Итоги по всей базе данных."
+msgstr "Сводка по всей базе данных."
 
 #: src/tauon/t_modules/t_main.py:33061
 msgid "Playtime"
@@ -4194,7 +4163,7 @@ msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:33150
 msgid "This program comes with absolutely no warranty."
-msgstr "Эта программа поставляется без какой-либо гарантии."
+msgstr "Программа поставляется без какой-либо гарантии."
 
 #: src/tauon/t_modules/t_main.py:33152
 msgid "Open website"
@@ -4264,7 +4233,7 @@ msgstr "ПЕРЕМИШАНИЕ АЛЬБОМОВ"
 
 #: src/tauon/t_modules/t_main.py:34194
 msgid "Menu"
-msgstr ""
+msgstr "Меню"
 
 #: src/tauon/t_modules/t_main.py:34866
 msgid "It looks like something is being downloaded…"
@@ -4518,13 +4487,12 @@ msgid "Track rating 0-5: >, <, ="
 msgstr "Рейтинг трека 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:41088
-#, fuzzy
 msgid "Album rating 0-5: >, <, ="
-msgstr "Рейтинг альбома: >, <"
+msgstr "Рейтинг альбома 0-5: >, <, ="
 
 #: src/tauon/t_modules/t_main.py:41091
 msgid "Last Modified (YYYY-MM-DD): >, <"
-msgstr ""
+msgstr "Последнее изменение (ГГГГ-ММ-ДД): >, <"
 
 #: src/tauon/t_modules/t_main.py:41094
 msgid "Loved tracks"
@@ -4711,9 +4679,8 @@ msgid "Auto-Stop Here"
 msgstr "Автостоп здесь"
 
 #: src/tauon/t_modules/t_main.py:43394
-#, fuzzy
 msgid "Auto Queue"
-msgstr "Добавить в очередь"
+msgstr "Автоочередь"
 
 #: src/tauon/t_modules/t_main.py:43395 src/tauon/t_modules/t_main.py:57576
 msgid "Clear Queue"
@@ -4740,9 +4707,8 @@ msgid "Auto-Stop"
 msgstr "Автоматическая остановка"
 
 #: src/tauon/t_modules/t_main.py:43903
-#, fuzzy
 msgid "Remove track from queue"
-msgstr "Убрать стек"
+msgstr "Убрать трек из очереди"
 
 #: src/tauon/t_modules/t_main.py:44140
 msgid "Queue is Empty"
@@ -4765,93 +4731,84 @@ msgid "{N} Tracks"
 msgstr "{N} Треки"
 
 #: src/tauon/t_modules/t_main.py:44890
-#, fuzzy
 msgid "Source"
-msgstr "Исходный код"
+msgstr "Источник"
 
 #: src/tauon/t_modules/t_main.py:44909
-#, fuzzy
 msgid "Output"
-msgstr "вывод"
+msgstr "Вывод"
 
 #: src/tauon/t_modules/t_main.py:44930
 msgid "Rate"
-msgstr ""
+msgstr "Частота"
 
 #: src/tauon/t_modules/t_main.py:44939
-#, fuzzy
 msgid "Direct"
-msgstr "Перенаправление"
+msgstr "Прямой"
 
 #: src/tauon/t_modules/t_main.py:44940
 msgid "Mixed into others"
-msgstr ""
+msgstr "Смешано с другими"
 
 #: src/tauon/t_modules/t_main.py:44941
-#, fuzzy
 msgid "Not played"
-msgstr "Пока нет"
+msgstr "Не воспроизводится"
 
 #: src/tauon/t_modules/t_main.py:44942
 msgid "Device speaker"
-msgstr ""
+msgstr "Динамик устройства"
 
 #: src/tauon/t_modules/t_main.py:44983
 msgid "IDLE"
-msgstr ""
+msgstr "ПРОСТОЙ"
 
 #: src/tauon/t_modules/t_main.py:44985
 msgid "ALBUM"
-msgstr ""
+msgstr "АЛЬБОМ"
 
 #: src/tauon/t_modules/t_main.py:44987
 msgid "TRACK"
-msgstr ""
+msgstr "ТРЕК"
 
 #: src/tauon/t_modules/t_main.py:44989
 msgid "NO TAG"
-msgstr ""
+msgstr "НЕТ ТЕГА"
 
 #: src/tauon/t_modules/t_main.py:44991
 msgid "PRE-AMP"
-msgstr ""
+msgstr "ПРЕДУСИЛИТЕЛЬ"
 
 #: src/tauon/t_modules/t_main.py:44993
 msgid "OFF"
-msgstr ""
+msgstr "ОТКЛ"
 
 #: src/tauon/t_modules/t_main.py:44996
 msgid "Gain"
-msgstr ""
+msgstr "Усиление"
 
 #: src/tauon/t_modules/t_main.py:45050
-#, fuzzy
 msgid "Mode"
-msgstr "Режим разработчика"
+msgstr "Режим"
 
 #: src/tauon/t_modules/t_main.py:45052
-#, fuzzy
 msgid "Album gain"
-msgstr "Оценки альбомов"
+msgstr "Усиление альбома"
 
 #: src/tauon/t_modules/t_main.py:45052
-#, fuzzy
 msgid "Track gain"
-msgstr "Оценки дорожек"
+msgstr "Усиление трека"
 
 #: src/tauon/t_modules/t_main.py:45057
 msgid "Limited by peak"
-msgstr ""
+msgstr "Ограничено пиком"
 
 #: src/tauon/t_modules/t_main.py:45059
-#, fuzzy
 msgid "Compressing"
 msgstr "Сжатие"
 
 #: src/tauon/t_modules/t_main.py:45061
-#, fuzzy
 msgid "Compressor ready"
-msgstr "Предустановки готовы"
+msgstr "Компрессор готов"
 
 #: src/tauon/t_modules/t_main.py:45112
 msgid "No artist name found"
@@ -5003,28 +4960,24 @@ msgid "No MilkDrop presets found"
 msgstr "Предустановки MilkDrop не найдены"
 
 #: src/tauon/t_modules/t_main.py:47937
-#, fuzzy
 msgid "Filter presets…"
-msgstr "Извлечение предустановок…"
+msgstr "Фильтровать предустановки…"
 
 #: src/tauon/t_modules/t_main.py:47966
 msgid "{count} of {total}"
-msgstr ""
+msgstr "{count} из {total}"
 
 #: src/tauon/t_modules/t_main.py:47990
-#, fuzzy
 msgid "No favorite presets yet"
-msgstr "Пока нет сохранённых станций"
+msgstr "Пока нет избранных предустановок"
 
 #: src/tauon/t_modules/t_main.py:47992
-#, fuzzy
 msgid "No matching favorite presets"
-msgstr "Подходящего исполнителя не найдено"
+msgstr "Нет подходящих избранных предустановок"
 
 #: src/tauon/t_modules/t_main.py:47994
-#, fuzzy
 msgid "No matching presets"
-msgstr "Нет подходящих станций"
+msgstr "Нет подходящих предустановок"
 
 #: src/tauon/t_modules/t_main.py:48194 src/tauon/t_modules/t_main.py:51916
 msgid "Playing"
@@ -6147,57 +6100,52 @@ msgid "Rename"
 msgstr "Переименовать"
 
 #: src/tauon/t_modules/t_main.py:57011
-#, fuzzy
 msgid "Remove from Folder"
-msgstr "Удалено из .lrc"
+msgstr "Удалить из каталога"
 
 #: src/tauon/t_modules/t_main.py:57051
-#, fuzzy
 msgid "Colour…"
-msgstr "Раскрасить"
+msgstr "Цвет…"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Blue"
-msgstr ""
+msgstr "Синий"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Orange"
-msgstr ""
+msgstr "Оранжевый"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Green"
-msgstr ""
+msgstr "Зелёный"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Pink"
-msgstr ""
+msgstr "Розовый"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Yellow"
-msgstr ""
+msgstr "Жёлтый"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Cyan"
-msgstr ""
+msgstr "Голубой"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Purple"
-msgstr ""
+msgstr "Фиолетовый"
 
 #: src/tauon/t_modules/t_main.py:57053
-#, fuzzy
 msgid "Red"
-msgstr "Готово"
+msgstr "Красный"
 
 #: src/tauon/t_modules/t_main.py:57058
-#, fuzzy
 msgid "New Subfolder"
-msgstr "Целевая папка"
+msgstr "Новый подкаталог"
 
 #: src/tauon/t_modules/t_main.py:57062
-#, fuzzy
 msgid "Delete Folder"
-msgstr "Удалить файлы"
+msgstr "Удалить каталог"
 
 #: src/tauon/t_modules/t_main.py:57067
 msgid "Regenerate"
@@ -6326,9 +6274,8 @@ msgstr "Показать в галерее"
 
 #: src/tauon/t_modules/t_main.py:57195 src/tauon/t_modules/t_main.py:57256
 #: src/tauon/t_modules/t_main.py:57271
-#, fuzzy
 msgid "Edit Tags…"
-msgstr "Править…"
+msgstr "Редактировать теги…"
 
 #: src/tauon/t_modules/t_main.py:57196
 msgid "Meta…"
@@ -6452,9 +6399,8 @@ msgid "Scroll bar on left"
 msgstr "Полоса прокрутки слева"
 
 #: src/tauon/t_modules/t_main.py:57399
-#, fuzzy
 msgid "Show full album art"
-msgstr "Показать полный альбом"
+msgstr "Показать полную обложку альбома"
 
 #: src/tauon/t_modules/t_main.py:57401
 msgid "Font size"
@@ -6661,9 +6607,8 @@ msgid "Copy Title to Clipboard"
 msgstr "Копировать заголовок в буфер обмена"
 
 #: src/tauon/t_modules/t_main.py:57551 src/tauon/t_modules/t_main.py:62482
-#, fuzzy
 msgid "Audio Info"
-msgstr "Аудио"
+msgstr "Сведения о звуке"
 
 #: src/tauon/t_modules/t_main.py:57552
 msgid "Mini Mode"
@@ -6787,7 +6732,7 @@ msgstr "Автосортировка пропущена, так как спис�
 
 #: src/tauon/t_modules/t_main.py:62512
 msgid "Channel status needs a newer build of PHAzOR"
-msgstr ""
+msgstr "Для состояния канала нужна более новая сборка PHAzOR"
 
 #: src/tauon/t_modules/t_main.py:62669 src/tauon/t_modules/t_main.py:62688
 #: src/tauon/t_modules/t_main.py:62708 src/tauon/t_modules/t_main.py:62731
@@ -6951,9 +6896,8 @@ msgstr "Обнаружено повреждение данных. Поток п�
 #: src/tauon/t_modules/t_subsonic.py:171 src/tauon/t_modules/t_subsonic.py:177
 #: src/tauon/t_modules/t_subsonic.py:183 src/tauon/t_modules/t_subsonic.py:191
 #: src/tauon/t_modules/t_subsonic.py:216
-#, fuzzy
 msgid "Error listing albums from Subsonic server"
-msgstr "Ошибка подключения к серверу Airsonic"
+msgstr "Ошибка получения списка альбомов с сервера Subsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:398
 msgid "Subsonic Error: "
@@ -6970,9 +6914,8 @@ msgid "Error reading Airsonic directory!"
 msgstr "Ошибка при чтении каталога Airsonic!"
 
 #: src/tauon/t_modules/t_subsonic.py:830
-#, fuzzy
 msgid "Some albums could not be read from the server"
-msgstr "Некоторые дорожки не удалось пересканировать"
+msgstr "Некоторые альбомы не удалось прочитать с сервера"
 
 #: src/tauon/t_modules/t_subsonic.py:976
 msgid "Airsonic Collection"
@@ -6980,106 +6923,101 @@ msgstr "Коллекция Airsonic"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:168
 msgid "Only local audio files without CUE subtracks can be edited."
-msgstr ""
+msgstr "Редактировать можно только локальные аудиофайлы без поддорожек CUE."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:225
 #: src/tauon/t_modules/t_tagedit_ui.py:232
-#, fuzzy
 msgid "Cannot open tag editor"
-msgstr "Простой редактор тегов"
+msgstr "Не удалось открыть редактор тегов"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:241
-#, fuzzy
 msgid "Reading tags… {N}/{T}"
-msgstr "Повторное сканирование тегов…  {N} осталось"
+msgstr "Чтение тегов… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:278
-#, fuzzy
 msgid "Could not read {file}"
-msgstr "Не удалось сохранить файл темы"
+msgstr "Не удалось прочитать {file}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:344
-#, fuzzy
 msgid "Front cover"
-msgstr "Размер шрифта"
+msgstr "Передняя обложка"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:345
 msgid "Back cover"
-msgstr ""
+msgstr "Задняя обложка"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:346
 msgid "Leaflet"
-msgstr ""
+msgstr "Вкладка"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:347
 msgid "Media"
-msgstr ""
+msgstr "Носитель"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:349
-#, fuzzy
 msgid "Other"
-msgstr "Прочее"
+msgstr "Другое"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:364
 msgid "Image {N}: {T}"
-msgstr ""
+msgstr "Изображение {N}: {T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:375
 #: src/tauon/t_modules/t_tagedit_ui.py:1679
 msgid "All images"
-msgstr ""
+msgstr "Все изображения"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:391
 msgid "Could not change embedded artwork"
-msgstr ""
+msgstr "Не удалось изменить встроенную обложку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:402
 msgid "Could not preview embedded artwork"
-msgstr ""
+msgstr "Не удалось показать встроенную обложку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:440
-#, fuzzy
 msgid "Could not use that artwork"
-msgstr "Не удалось использовать это изображение станции"
+msgstr "Не удалось использовать эту обложку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:481
 msgid "Invalid tag value"
-msgstr ""
+msgstr "Недопустимое значение тега"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:601
 msgid "New value"
-msgstr ""
+msgstr "Новое значение"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:619
 msgid "This tag has a structured value; edit it as a whole."
-msgstr ""
+msgstr "Этот тег имеет структурированное значение; редактируйте его целиком."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:622
 msgid ""
 "This tag stores one value; use a distinct description or language for "
 "another entry."
 msgstr ""
+"Этот тег хранит одно значение; для другой записи используйте отдельное "
+"описание или язык."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:630
 msgid "Cannot add tag value"
-msgstr ""
+msgstr "Не удалось добавить значение тега"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:709
 msgid "Restore each file's original value in the current track scope."
-msgstr ""
+msgstr "Восстановить исходное значение каждого файла в текущей области трека."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:735
 msgid "No tag changes to save."
-msgstr ""
+msgstr "Нет изменений тегов для сохранения."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:756
-#, fuzzy
 msgid "Could not write tags"
-msgstr "Не удалось записать текст песни в файл"
+msgstr "Не удалось записать теги"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:771
 msgid "Tags saved, but the library could not be refreshed"
-msgstr ""
+msgstr "Теги сохранены, но библиотеку не удалось обновить"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:773
 msgid "{N} files rewritten"
@@ -7087,409 +7025,374 @@ msgstr "{N} файлов перезаписано"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:821
 msgid "No text could be repaired automatically."
-msgstr ""
+msgstr "Не удалось автоматически исправить ни один текст."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:826
 msgid "{N} fields fixed in {F} files; review before writing tags."
-msgstr ""
+msgstr "Исправлено полей: {N} в файлах: {F}; проверьте перед записью тегов."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:828
 msgid "Encoding not detected for {N} files."
-msgstr ""
+msgstr "Кодировка не определена для {N} файлов."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:833
-#, fuzzy
 msgid "Could not fix Mojibake"
-msgstr "Исправить кракозябры"
+msgstr "Не удалось исправить кракозябры"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:859
-#, fuzzy
 msgid "Unsynced lyrics"
-msgstr "Показать синхронизированные тексты песен"
+msgstr "Несинхронизированный текст"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:860
-#, fuzzy
 msgid "Synced lyrics"
-msgstr "Показать синхронизированные тексты песен"
+msgstr "Синхронизированный текст"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:862
 msgid "BPM"
-msgstr ""
+msgstr "BPM"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:863
-#, fuzzy
 msgid "Copyright"
-msgstr "Копировать"
+msgstr "Авторские права"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:864
 msgid "ISRC"
-msgstr ""
+msgstr "ISRC"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:865
 msgid "Language"
-msgstr ""
+msgstr "Язык"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:866
-#, fuzzy
 msgid "Grouping"
-msgstr "Переключить группировку"
+msgstr "Группировка"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:867
-#, fuzzy
 msgid "Subtitle"
-msgstr "Показать названия"
+msgstr "Подзаголовок"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:875
-#, fuzzy
 msgid "Original artist"
-msgstr "Оригинал"
+msgstr "Исходный исполнитель"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:876
 msgid "Conductor"
-msgstr ""
+msgstr "Дирижёр"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:877
 msgid "Remixer"
-msgstr ""
+msgstr "Ремиксер"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:878
-#, fuzzy
 msgid "Lyricist"
-msgstr "Текст песни"
+msgstr "Автор текста"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:879
 msgid "Encoded by"
-msgstr ""
+msgstr "Кодировано"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:883
-#, fuzzy
 msgid "Sort order"
-msgstr "Сортировщики"
+msgstr "Порядок сортировки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:915
 msgid "Upgrade ID3 tags to v2.4"
-msgstr ""
+msgstr "Обновить теги ID3 до v2.4"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:919
-#, fuzzy
 msgid "Automatically split slashes"
-msgstr "Автоматическая перезагрузка при импорте"
+msgstr "Автоматически разделять слэши"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:956
 msgid ""
 "{N} ID3 files will upgrade to v2.4 on Write tags; {S} other formats kept."
 msgstr ""
+"Файлов ID3 будет обновлено до v2.4 при записи тегов: {N}; других форматов "
+"сохранено: {S}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:962
 msgid "Cannot safely upgrade these tags"
-msgstr ""
+msgstr "Нельзя безопасно обновить эти теги"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:978
 #: src/tauon/t_modules/t_tagedit_ui.py:1047
-#, fuzzy
 msgid "All selected files"
-msgstr "Удалить файлы"
+msgstr "Все выбранные файлы"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1011
-#, fuzzy
 msgid "Choose tracks"
-msgstr "Любимые треки"
+msgstr "Выбрать треки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1024
 msgid "Filter by filename or title"
-msgstr ""
+msgstr "Фильтр по имени файла или заголовку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1047
 msgid "Apply edits to the full selection"
-msgstr ""
+msgstr "Применить правки ко всему выделению"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1168
-#, fuzzy
 msgid "Loading album tracks…"
-msgstr "Загрузка стран…"
+msgstr "Загрузка треков альбома…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1170
-#, fuzzy
 msgid "Loading more editions…"
-msgstr "Загрузка списка артистов…"
+msgstr "Загрузка других изданий…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1170
-#, fuzzy
 msgid "Starting fingerprint scan…"
-msgstr "Получение данных друзей…"
+msgstr "Запуск сканирования отпечатков…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1229
 msgid "Unexpected lookup failure; check the application log."
-msgstr ""
+msgstr "Неожиданный сбой поиска; проверьте журнал приложения."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1249
 msgid "No selected files match this edition."
-msgstr ""
+msgstr "Ни один из выбранных файлов не соответствует этому изданию."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1249
 #: src/tauon/t_modules/t_tagedit_ui.py:1263
-#, fuzzy
 msgid "Could not apply this album"
-msgstr "Не удалось сохранить файл темы"
+msgstr "Не удалось применить этот альбом"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1260
-#, fuzzy
 msgid "{N} matched files loaded into the editor."
-msgstr "{N} совпадающих треков актуальны."
+msgstr "Совпавших файлов загружено в редактор: {N}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1281
-#, fuzzy
 msgid "Untitled"
-msgstr "Название"
+msgstr "Без названия"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1294
 msgid "Unmatched"
-msgstr ""
+msgstr "Без совпадений"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1294
 #: src/tauon/t_modules/t_tagedit_ui.py:1435
-#, fuzzy
 msgid "Loading tracks…"
-msgstr "Загрузка стран…"
+msgstr "Загрузка треков…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1313
 #: src/tauon/t_modules/t_tagedit_ui.py:2189
 msgid "MusicBrainz Scan"
-msgstr ""
+msgstr "Сканирование MusicBrainz"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1321
 msgid "{N} selected file(s)"
-msgstr ""
+msgstr "Выбрано файлов: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1329
 msgid "Select an album to compare tags."
-msgstr ""
+msgstr "Выберите альбом для сравнения тегов."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1370
-#, fuzzy
 msgid "No matching album editions found."
-msgstr "Подходящего исполнителя не найдено"
+msgstr "Подходящих изданий альбома не найдено."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1385
-#, fuzzy
 msgid "Retry tracks"
-msgstr "Повторить дорожку"
+msgstr "Повторить треки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1393
-#, fuzzy
 msgid "Use this album"
-msgstr "Отменить сохранение альбома Spotify"
+msgstr "Использовать этот альбом"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1433
 msgid "{N}/{T} matched"
-msgstr ""
+msgstr "совпало {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1435
-#, fuzzy
 msgid "Could not load tracks"
-msgstr "Не удалось очистить синхронизированный текст"
+msgstr "Не удалось загрузить треки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1504
 msgid "Before"
-msgstr ""
+msgstr "До"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1504
 msgid "After"
-msgstr ""
+msgstr "После"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1578
 msgid "Insert a separator to add another value to this tag."
-msgstr ""
+msgstr "Вставьте разделитель, чтобы добавить ещё одно значение в этот тег."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1597
 msgid "Different values"
-msgstr ""
+msgstr "Разные значения"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1611
 msgid "Track title"
 msgstr "Название трека"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1614
-#, fuzzy
 msgid "Album artist"
-msgstr "Артист альбома"
+msgstr "Исполнитель альбома"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1615
-#, fuzzy
 msgid "Year / date"
-msgstr "По последним годам"
+msgstr "Год / дата"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1616
 msgid "Original year / date"
-msgstr ""
+msgstr "Исходный год / дата"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1617
-#, fuzzy
 msgid "Track number / total"
-msgstr "Номер трека в альбоме"
+msgstr "Номер трека / всего"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1618
-#, fuzzy
 msgid "Disc number / total"
-msgstr "Номер диска"
+msgstr "Номер диска / всего"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1652
-#, fuzzy
 msgid "Track rating"
-msgstr "Оценки дорожек"
+msgstr "Рейтинг трека"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1665
 msgid "Mixed"
-msgstr ""
+msgstr "Смешанные"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1675
-#, fuzzy
 msgid "Embedded album art"
-msgstr "Нет встроенной обложки альбома."
+msgstr "Встроенная обложка альбома"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1677
 msgid "Image {N}"
-msgstr ""
+msgstr "Изображение {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1719
-#, fuzzy
 msgid "No embedded art"
-msgstr "Нет встроенной обложки альбома."
+msgstr "Нет встроенной обложки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1726
-#, fuzzy
 msgid "Drop an image to replace art"
-msgstr "Перетащите сюда изображение, чтобы заменить его"
+msgstr "Перетащите изображение, чтобы заменить обложку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
 msgid "Mixed artwork; first file shown"
-msgstr ""
+msgstr "Смешанные обложки; показан первый файл"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1729
-#, fuzzy
 msgid "{N} embedded image(s)"
-msgstr "Нет встроенной обложки альбома."
+msgstr "встроенных изображений: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1744
-#, fuzzy
 msgid "Remove all art"
-msgstr "Убрать максимальный квадрат"
+msgstr "Удалить всю обложку"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1749
 msgid ""
 "Change the selected image or the first image of the selected type in each "
 "active file."
 msgstr ""
+"Изменить выбранное изображение или первое изображение выбранного типа в "
+"каждом активном файле."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1755
-#, fuzzy
 msgid "Artwork changed"
-msgstr "Источники обложек."
+msgstr "Обложка изменена"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1785
 msgid "Native key"
-msgstr ""
+msgstr "Собственный ключ"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1786
 msgid "Value / type"
-msgstr ""
+msgstr "Значение / тип"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1837
-#, fuzzy
 msgid "Add key"
-msgstr "API-ключ"
+msgstr "Добавить ключ"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1839
 #: src/tauon/t_modules/t_tagedit_ui.py:1855
-#, fuzzy
 msgid "Presets"
-msgstr "Предустановки готовы"
+msgstr "Предустановки"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1867
-#, fuzzy
 msgid "Add"
-msgstr "Добавить…"
+msgstr "Добавить"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1881
 msgid "Select a tag to edit; add custom text by name."
-msgstr ""
+msgstr "Выберите тег для редактирования; добавьте свой текст по имени."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1893
-#, fuzzy
 msgid "Text value"
-msgstr "Базовая линия текста"
+msgstr "Текстовое значение"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1895
 msgid "{N}/{T} files"
-msgstr ""
+msgstr "{N}/{T} файлов"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1905
 msgid "Binary or structured tag: preserved without modification."
-msgstr ""
+msgstr "Бинарный или структурированный тег: сохранён без изменений."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1932
 msgid "Different values; editing replaces this entry in each file."
-msgstr ""
+msgstr "Разные значения; правка заменит эту запись в каждом файле."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1962
 msgid "Main"
-msgstr ""
+msgstr "Основное"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1962
-#, fuzzy
 msgid "Misc"
-msgstr "Разное…"
+msgstr "Разное"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2092
-#, fuzzy
 msgid "Could not load album tracks"
-msgstr "Не удалось очистить синхронизированный текст"
+msgstr "Не удалось загрузить треки альбома"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2130
-#, fuzzy
 msgid "Tag editor"
-msgstr "Простой редактор тегов"
+msgstr "Редактор тегов"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2133
 msgid "{N} active file"
-msgstr ""
+msgstr "{N} активный файл"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2133
 msgid "{N} active files"
-msgstr ""
+msgstr "{N} активных файлов"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2146
-#, fuzzy
 msgid "Writing tags…"
-msgstr "Загрузка изображения…"
+msgstr "Запись тегов…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2178
 msgid "Tools"
-msgstr ""
+msgstr "Инструменты"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2204
-#, fuzzy
 msgid "Write tags"
-msgstr "Записать"
+msgstr "Записать теги"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2209
 msgid ""
 "Save the fields and every pending file, including tracks outside this view."
 msgstr ""
+"Сохранить поля и все ожидающие файлы, включая треки за пределами этого "
+"представления."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2213
 msgid "Discard"
-msgstr "ОТМЕНИТЬ"
+msgstr "Отклонить"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2228
 msgid ""
 "Multiple ID3v2.3 values may not work in other players. Tools can upgrade to "
 "ID3v2.4."
 msgstr ""
+"Несколько значений ID3v2.3 могут не работать в других проигрывателях. "
+"Инструменты могут обновить до ID3v2.4."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2231
 msgid "Changes pending"
-msgstr ""
+msgstr "Есть несохранённые изменения"
 
 #: src/tauon/t_modules/t_tidal.py:46 src/tauon/t_modules/t_tidal.py:69
 msgid "Tidalapi package not loaded"
