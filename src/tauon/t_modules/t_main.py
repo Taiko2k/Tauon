@@ -21623,6 +21623,17 @@ class Tauon:
 		self.pctl.playerCommandReady = True
 		return None
 
+	def folder_drop_target(self, folder: PlaylistFolder) -> int:
+		"""Playlist that files dropped on a folder tab go into: the viewed one if inside, else the folder's first."""
+		inside = self.pctl.playlist_folders.subtree_playlists(folder)
+		if self.pctl.pl_to_id(self.pctl.active_playlist_viewing) in inside:
+			return self.pctl.active_playlist_viewing
+		for pl_id in inside:
+			pl = self.pctl.id_to_pl(pl_id)
+			if pl is not None:
+				return pl
+		return self.pctl.active_playlist_viewing
+
 	def drop_file(self, target: str) -> None:
 		"""Deprecated, move to individual UI components"""
 		i_x = self.inp.mouse_position[0]
@@ -21633,9 +21644,11 @@ class Tauon:
 		if i_y < self.gui.panelY and not self.gui.new_playlist_cooldown and self.gui.mode == GuiMode.MAIN:
 			x = self.top_panel.tabs_left_x
 			for tab in self.top_panel.shown_tabs:
-				wid = self.top_panel.tab_text_spaces[tab] + self.top_panel.tab_extra_width
+				wid = self.top_panel.tab_w(tab)
 
 				if x < i_x < x + wid:
+					if isinstance(tab, PlaylistFolder):
+						tab = self.folder_drop_target(tab)
 					self.gui.drop_playlist_target = tab
 					self.tab_pulse.pulse()
 					self.gui.request_frame()
@@ -21643,7 +21656,7 @@ class Tauon:
 					logging.info("Direct drop")
 					break
 
-				x += wid
+				x += wid + self.top_panel.tab_spacing
 			else:
 				logging.info("MISS")
 				if self.gui.new_playlist_cooldown:
@@ -33694,6 +33707,7 @@ class TopPanel:
 		# Tabs are playlist indexes, or folders pinned in place of their playlists
 		ready_tabs: list[int | PlaylistFolder] = []
 		show_tabs: list[int | PlaylistFolder] = []
+		self.shown_tabs = show_tabs
 		self.folder_keys = {}
 
 		if prefs.tabs_on_top or gui.radio_view:
@@ -33769,7 +33783,6 @@ class TopPanel:
 			#logging.info("---")
 			left_overflow = [x for x in left_tabs if x not in show_tabs]
 			right_overflow = [x for x in right_tabs if x not in show_tabs]
-			self.shown_tabs = show_tabs
 
 			if left_overflow:
 				hh = round(20 * gui.scale)
@@ -33867,6 +33880,10 @@ class TopPanel:
 				self.tabs_right_x = x + tab_width
 				self.folder_tab_input(i, x, y, tab_width)
 				x += tab_width + self.tab_spacing
+				continue
+
+			# An earlier tab's input may have removed playlists
+			if i >= len(target):
 				continue
 
 			tab = target[i]
@@ -34003,6 +34020,11 @@ class TopPanel:
 				tab_width = self.tab_w(i)
 				self.draw_folder_tab(i, x, y, tab_width)
 				x += tab_width + self.tab_spacing
+				continue
+
+			# Tab input may have deleted a playlist after show_tabs was built
+			if i >= len(target):
+				gui.request_frame()
 				continue
 
 			tab = target[i]
