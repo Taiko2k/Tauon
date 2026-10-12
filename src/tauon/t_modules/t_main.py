@@ -7743,7 +7743,7 @@ class Tauon:
 		open_entry = sdl3.SDL_InsertTrayEntryAt(
 			menu,
 			-1,
-			b"Open Tauon Music Box",
+			self.strings.menu_open_tauon.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not open_entry:
@@ -7763,7 +7763,7 @@ class Tauon:
 		playpause_entry = sdl3.SDL_InsertTrayEntryAt(
 			menu,
 			-1,
-			b"Play/Pause",
+			self.strings.menu_play_pause.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not playpause_entry:
@@ -7773,7 +7773,7 @@ class Tauon:
 		next_entry = sdl3.SDL_InsertTrayEntryAt(
 			menu,
 			-1,
-			b"Next Track",
+			self.strings.menu_next.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not next_entry:
@@ -7783,7 +7783,7 @@ class Tauon:
 		prev_entry = sdl3.SDL_InsertTrayEntryAt(
 			menu,
 			-1,
-			b"Previous Track",
+			self.strings.menu_previous.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not prev_entry:
@@ -7803,7 +7803,7 @@ class Tauon:
 		quit_entry = sdl3.SDL_InsertTrayEntryAt(
 			menu,
 			-1,
-			b"Quit",
+			self.strings.menu_quit.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not quit_entry:
