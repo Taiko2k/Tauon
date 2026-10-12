@@ -34,8 +34,10 @@ import ctypes
 import json
 import logging
 import math
+import threading
 import time
 from collections.abc import Iterator
+from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Callable
 
 import sdl3
@@ -4180,6 +4182,7 @@ class CustomLayout:
 		self.slots: list[Node | None] = [None]
 		self.slot_names: list[str | None] = [None]
 		self.active_slot = 0
+		self._pending_gallery_locates: SimpleQueue[tuple[Node, int, bool, bool]] = SimpleQueue()
 		# The unified layout order shared by the standard layouts and the custom
 		# slots: a permutation of PRESET_LAYOUTS plus one "slot:<index>" key per
 		# slot (see layout_items()). Kept normalised, persisted alongside the
@@ -5681,6 +5684,14 @@ class CustomLayout:
 		root = self.slots[self.active_slot]
 		if root is None:
 			return False
+		if threading.current_thread() is not threading.main_thread():
+			if not any(isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget) for lf in iter_visible_leaves(root)):
+				return False
+			# Gallery geometry is shared with widget rendering on the UI thread.
+			self._pending_gallery_locates.put((root, playlist_no, highlight, force))
+			gui.request_frame()
+			self.tauon.wake()
+			return True
 		tauon = self.tauon
 		handled = False
 		result = None
@@ -5747,6 +5758,15 @@ class CustomLayout:
 		gui.request_frame()
 		return True
 
+	def _process_gallery_locates(self, root: Node) -> None:
+		while True:
+			try:
+				requested_root, playlist_no, highlight, force = self._pending_gallery_locates.get_nowait()
+			except Empty:
+				return
+			if requested_root is root:
+				self.gallery_locate(playlist_no, highlight=highlight, force=force)
+
 	def kind_disabled(self, kind: str) -> bool:
 		"""Disable-test for an Add-widget item: True if the (single-instance)
 		widget already exists in the active layout."""
@@ -5810,6 +5830,7 @@ class CustomLayout:
 		if self._columns_owner != self.active_slot:
 			self._activate_columns(self.active_slot)
 		layout(root, 0, 0, ww, wh, gui.scale)
+		self._process_gallery_locates(root)
 
 		if gui.have_art_bg:
 			self._draw_art_bg_veil(root, ww, wh)
