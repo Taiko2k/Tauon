@@ -248,7 +248,7 @@ class Prefs:
 
 	transcode_inplace: bool = False
 
-	lyrics_enables: list[str] = field(default_factory=list)
+	lyrics_enables: list[str] = field(default_factory=lambda: ["LRCLIB"])
 
 	fatvap = "6b2a9499238ce6416783fc8129b8ac67"
 

@@ -34,8 +34,10 @@ import ctypes
 import json
 import logging
 import math
+import threading
 import time
 from collections.abc import Iterator
+from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Callable
 
 import sdl3
@@ -130,7 +132,7 @@ class ArtBoxWidget(Widget):
 	"""
 
 	kind = "art"
-	name = "Art Box"
+	name = N_("Art Box")
 	min_w = 32
 	min_h = 32
 	single_instance = True  # ArtBox writes singleton gui.main_art_box / milk state
@@ -164,7 +166,7 @@ class MilkDropWidget(Widget):
 	"""
 
 	kind = "milkdrop"
-	name = "Visualiser: Milkdrop"
+	name = N_("Visualiser: Milkdrop")
 	min_w = 64
 	min_h = 48
 	single_instance = True
@@ -265,7 +267,7 @@ class SticksVisWidget(Widget):
 	"""
 
 	kind = "vis_sticks"
-	name = "Visualiser: Bars"
+	name = N_("Visualiser: Bars")
 	min_w = 326  # gui.spec4_rec is a fixed 322x100 (scaled) strip
 	min_h = 60
 	single_instance = True
@@ -432,7 +434,7 @@ class SpectrogramWidget(Widget):
 	"""
 
 	kind = "vis_spectrogram"
-	name = "Visualiser: Spectrogram"
+	name = N_("Visualiser: Spectrogram")
 	min_w = 60
 	min_h = 40
 	single_instance = True
@@ -1140,7 +1142,7 @@ class TopPanelWidget(Widget):
 	"""
 
 	kind = "top_panel"
-	name = "Header Bar"
+	name = N_("Header Bar")
 	lock_v = True
 	fixed_h = 30
 	min_w = 80
@@ -1170,7 +1172,7 @@ class PlaybackPanelWidget(Widget):
 	"""
 
 	kind = "playback_panel"
-	name = "Playback Panel"
+	name = N_("Playback Panel")
 	lock_v = True
 	fixed_h = 51  # = panelBY at scale 1
 	min_w = 120
@@ -2050,7 +2052,7 @@ class PlaybackPanelFeuxWidget(Widget):
 	"""
 
 	kind = "playback_panel_feux"
-	name = "Playback panel: Feux"
+	name = N_("Playback panel: Feux")
 	lock_v = True
 	fixed_h = FeuxBar.PANEL_H  # starting height; the segment stays resizable
 	min_w = 260
@@ -2090,28 +2092,28 @@ class RectPanelWidget(Widget):
 
 class PlaylistListWidget(RectPanelWidget):
 	kind = "playlist_list"
-	name = "Playlist List"
+	name = N_("Playlist List")
 	panel_attr = "playlist_box"
 	panel_method = "draw"
 
 
 class QueueWidget(RectPanelWidget):
 	kind = "queue"
-	name = "Queue"
+	name = N_("Queue")
 	panel_attr = "queue_box"
 	panel_method = "draw"
 
 
 class ArtistListWidget(RectPanelWidget):
 	kind = "artist_list"
-	name = "Artist List"
+	name = N_("Artist List")
 	panel_attr = "artist_list_box"
 	panel_method = "render"
 
 
 class FolderNavWidget(RectPanelWidget):
 	kind = "folder_nav"
-	name = "Folder Navigator"
+	name = N_("Folder Navigator")
 	panel_attr = "tree_view_box"
 	panel_method = "render"
 
@@ -2122,7 +2124,7 @@ class ArtistInfoWidget(RectPanelWidget):
 	# bio-pref auto-shrink and the too-narrow auto-close) — the engine's min_w
 	# gate handles small segments instead.
 	kind = "artist_info"
-	name = "Artist Info"
+	name = N_("Artist Info")
 	min_w = 300
 	min_h = 60
 
@@ -2149,7 +2151,7 @@ class MetaWidget(Widget):
 class MetaCenterWidget(MetaWidget):
 	# The default side-panel metadata (prefs.side_panel_layout == 0).
 	kind = "meta_center"
-	name = "Track: Titles"
+	name = N_("Track: Titles")
 	meta_method = "draw"
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
@@ -2160,7 +2162,7 @@ class MetaCenterWidget(MetaWidget):
 class MetaCenteredWidget(MetaWidget):
 	# Centered track text (based on the side_panel_layout == 1 layout, no art).
 	kind = "meta_centered"
-	name = "Track: Titles (Centred)"
+	name = N_("Track: Titles (Centred)")
 	meta_method = "centered"
 
 
@@ -2173,7 +2175,7 @@ class LyricsWidget(MetaWidget):
 	"""
 
 	kind = "lyrics"
-	name = "Lyrics Box"
+	name = N_("Lyrics Box")
 	meta_method = "lyrics"
 	single_instance = True  # shared lyrics scroll state
 
@@ -2222,7 +2224,7 @@ class TracklistWidget(Widget):
 	"""
 
 	kind = "tracklist"
-	name = "Tracklist"
+	name = N_("Tracklist")
 	min_w = 120
 	min_h = 80
 	single_instance = True
@@ -2312,7 +2314,7 @@ class DetailsWidget(Widget):
 	"""
 
 	kind = "details"
-	name = "Track: Details"
+	name = N_("Track: Details")
 	min_w = 100
 	min_h = 40
 	offscreen = False
@@ -2428,7 +2430,7 @@ class GalleryWidget(Widget):
 	"""
 
 	kind = "gallery"
-	name = "Gallery: Classic"
+	name = N_("Gallery: Classic")
 	min_w = 100
 	min_h = 80
 	single_instance = True  # shared scroll/selection state (gui.album_scroll_px, gallery_scroll)
@@ -2581,7 +2583,7 @@ class GridGalleryWidget(GalleryWidget):
 	"""
 
 	kind = "gallery_grid"
-	name = "Gallery: Compact"
+	name = N_("Gallery: Compact")
 	min_w = 100
 	min_h = 80
 	single_instance = False
@@ -2749,7 +2751,7 @@ class _AlbumflowBase(GalleryWidget):
 	"""
 
 	kind = "albumflow"
-	name = "Albumflow"
+	name = N_("Albumflow")
 	min_w = 220
 	min_h = 160
 	single_instance = False
@@ -3212,7 +3214,7 @@ class AlbumflowWidget(_AlbumflowBase):
 	"""
 
 	kind = "albumflow"
-	name = "Albumflow"
+	name = N_("Albumflow")
 	menu_target: AlbumflowWidget | None = None
 	menu_tauon: Tauon | None = None
 
@@ -3687,41 +3689,41 @@ def _vis_spectrogram(spec: WidgetSpec) -> Widget:
 # Registry — the Add menu and (de)serialization are driven by this table. The
 # lock / single-instance defaults follow the agreed widget table.
 WIDGET_SPECS: list[WidgetSpec] = [
-	WidgetSpec("tracklist", "Tracklist", "Content", _tracklist, single_instance=True,
+	WidgetSpec("tracklist", N_("Tracklist"), "Content", _tracklist, single_instance=True,
 		colour=ColourRGBA(24, 24, 28, 255)),
-	WidgetSpec("gallery", "Gallery: Classic", "Content", _gallery, single_instance=True,
+	WidgetSpec("gallery", N_("Gallery: Classic"), "Content", _gallery, single_instance=True,
 		colour=ColourRGBA(26, 24, 30, 255)),
-	WidgetSpec("gallery_grid", "Gallery: Compact", "Content", _gallery_grid,
+	WidgetSpec("gallery_grid", N_("Gallery: Compact"), "Content", _gallery_grid,
 		colour=ColourRGBA(26, 24, 30, 255)),
-	WidgetSpec("albumflow", "Albumflow", "Content", _albumflow,
+	WidgetSpec("albumflow", N_("Albumflow"), "Content", _albumflow,
 		colour=ColourRGBA(22, 22, 28, 255)),
-	WidgetSpec("art", "Art Box", "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
-	WidgetSpec("playlist_list", "Playlist List", "Side Panels", _playlist_list, single_instance=True,
+	WidgetSpec("art", N_("Art Box"), "Content", _art, single_instance=True, colour=ColourRGBA(20, 20, 20, 255)),
+	WidgetSpec("playlist_list", N_("Playlist List"), "Side Panels", _playlist_list, single_instance=True,
 		colour=ColourRGBA(24, 26, 30, 255)),
-	WidgetSpec("folder_nav", "Folder Navigator", "Side Panels", _folder_nav, single_instance=True,
+	WidgetSpec("folder_nav", N_("Folder Navigator"), "Side Panels", _folder_nav, single_instance=True,
 		colour=ColourRGBA(24, 26, 28, 255)),
-	WidgetSpec("artist_list", "Artist List", "Side Panels", _artist_list, single_instance=True,
+	WidgetSpec("artist_list", N_("Artist List"), "Side Panels", _artist_list, single_instance=True,
 		colour=ColourRGBA(24, 28, 26, 255)),
-	WidgetSpec("queue", "Queue", "Side Panels", _queue, single_instance=True,
+	WidgetSpec("queue", N_("Queue"), "Side Panels", _queue, single_instance=True,
 		colour=ColourRGBA(28, 26, 24, 255)),
-	WidgetSpec("lyrics", "Lyrics Box", "Content", _lyrics, single_instance=True, colour=ColourRGBA(26, 26, 30, 255)),
-	WidgetSpec("meta_center", "Track: Titles", "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
-	WidgetSpec("meta_centered", "Track: Titles (Centred)", "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
-	WidgetSpec("details", "Track: Details", "Content", _details, colour=ColourRGBA(28, 30, 36, 255)),
-	WidgetSpec("artist_info", "Artist Info", "Content", _artist_info, single_instance=True,
+	WidgetSpec("lyrics", N_("Lyrics Box"), "Content", _lyrics, single_instance=True, colour=ColourRGBA(26, 26, 30, 255)),
+	WidgetSpec("meta_center", N_("Track: Titles"), "Content", _meta_center, colour=ColourRGBA(30, 30, 34, 255)),
+	WidgetSpec("meta_centered", N_("Track: Titles (Centred)"), "Content", _meta_centered, colour=ColourRGBA(30, 31, 35, 255)),
+	WidgetSpec("details", N_("Track: Details"), "Content", _details, colour=ColourRGBA(28, 30, 36, 255)),
+	WidgetSpec("artist_info", N_("Artist Info"), "Content", _artist_info, single_instance=True,
 		colour=ColourRGBA(30, 28, 34, 255)),
-	WidgetSpec("milkdrop", "Visualiser: Milkdrop", "Visualizers", _milkdrop,
+	WidgetSpec("milkdrop", N_("Visualiser: Milkdrop"), "Visualizers", _milkdrop,
 		single_instance=True, colour=ColourRGBA(18, 18, 28, 255)),
-	WidgetSpec("vis_sticks", "Visualiser: Bars", "Visualizers", _vis_sticks,
+	WidgetSpec("vis_sticks", N_("Visualiser: Bars"), "Visualizers", _vis_sticks,
 		single_instance=True, colour=ColourRGBA(16, 16, 22, 255)),
-	WidgetSpec("vis_spectrogram", "Visualiser: Spectrogram", "Visualizers", _vis_spectrogram,
+	WidgetSpec("vis_spectrogram", N_("Visualiser: Spectrogram"), "Visualizers", _vis_spectrogram,
 		single_instance=True, colour=ColourRGBA(12, 12, 16, 255)),
-	WidgetSpec("playback_panel", "Playback Panel", "Panels", _playback_panel,
+	WidgetSpec("playback_panel", N_("Playback Panel"), "Panels", _playback_panel,
 		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
-	WidgetSpec("playback_panel_feux", "Playback panel: Feux", "Panels", _playback_panel_feux,
+	WidgetSpec("playback_panel_feux", N_("Playback panel: Feux"), "Panels", _playback_panel_feux,
 		lock_v=True, fixed_h=FeuxBar.PANEL_H, single_instance=True,
 		colour=ColourRGBA(20, 20, 22, 255)),
-	WidgetSpec("top_panel", "Header Bar", "Panels", _top_panel,
+	WidgetSpec("top_panel", N_("Header Bar"), "Panels", _top_panel,
 		lock_v=True, fixed_h=30, single_instance=True,
 		colour=ColourRGBA(38, 38, 46, 255)),
 ]
@@ -4180,6 +4182,7 @@ class CustomLayout:
 		self.slots: list[Node | None] = [None]
 		self.slot_names: list[str | None] = [None]
 		self.active_slot = 0
+		self._pending_gallery_locates: SimpleQueue[tuple[Node, int, bool, bool]] = SimpleQueue()
 		# The unified layout order shared by the standard layouts and the custom
 		# slots: a permutation of PRESET_LAYOUTS plus one "slot:<index>" key per
 		# slot (see layout_items()). Kept normalised, persisted alongside the
@@ -5681,6 +5684,14 @@ class CustomLayout:
 		root = self.slots[self.active_slot]
 		if root is None:
 			return False
+		if threading.current_thread() is not threading.main_thread():
+			if not any(isinstance(lf, Leaf) and isinstance(lf.widget, GalleryWidget) for lf in iter_visible_leaves(root)):
+				return False
+			# Gallery geometry is shared with widget rendering on the UI thread.
+			self._pending_gallery_locates.put((root, playlist_no, highlight, force))
+			gui.request_frame()
+			self.tauon.wake()
+			return True
 		tauon = self.tauon
 		handled = False
 		result = None
@@ -5747,6 +5758,15 @@ class CustomLayout:
 		gui.request_frame()
 		return True
 
+	def _process_gallery_locates(self, root: Node) -> None:
+		while True:
+			try:
+				requested_root, playlist_no, highlight, force = self._pending_gallery_locates.get_nowait()
+			except Empty:
+				return
+			if requested_root is root:
+				self.gallery_locate(playlist_no, highlight=highlight, force=force)
+
 	def kind_disabled(self, kind: str) -> bool:
 		"""Disable-test for an Add-widget item: True if the (single-instance)
 		widget already exists in the active layout."""
@@ -5810,6 +5830,7 @@ class CustomLayout:
 		if self._columns_owner != self.active_slot:
 			self._activate_columns(self.active_slot)
 		layout(root, 0, 0, ww, wh, gui.scale)
+		self._process_gallery_locates(root)
 
 		if gui.have_art_bg:
 			self._draw_art_bg_veil(root, ww, wh)
@@ -5886,7 +5907,7 @@ class CustomLayout:
 		if node.tab_title:
 			return node.tab_title
 		names = [
-			leaf.widget.name
+			_(leaf.widget.name)
 			for leaf in iter_leaves(node)
 			if isinstance(leaf, Leaf) and leaf.widget is not None
 		]
@@ -6421,7 +6442,7 @@ class CustomLayout:
 				ddt.rect((tx, ty, b, th), edge)
 				ddt.rect((tx + tw - b, ty, b, th), edge)
 				ddt.rect((tx, ty, tw, th), ColourRGBA(120, 200, 255, 28))
-			name = self.widget_drag.widget.name if self.widget_drag.widget else ""
+			name = _(self.widget_drag.widget.name) if self.widget_drag.widget else ""
 			# Black backing rectangle behind the label, sized to the text (with a
 			# little padding), and the text background colour set to match so the
 			# glyph anti-aliasing blends cleanly against it.
@@ -6506,7 +6527,7 @@ class CustomLayout:
 			x, y, w, h = lf.rect
 			if w < 50 * scale or h < tag_h + pad * 2:
 				continue
-			name = lf.widget.name
+			name = _(lf.widget.name)
 			tag_w = min(ddt.get_text_w(name, 12) + round(12 * scale), round(w) - pad * 2)
 			xx = round(x) + pad
 			yy = round(y) + pad

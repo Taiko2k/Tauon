@@ -590,8 +590,7 @@ class MacMenuBar:
 
 	def open_about(self) -> None:
 		self.tauon.activate_info_box()
-		self.tauon.pref_box.tab_active = len(self.tauon.pref_box.tabs) - 1
-		self.tauon.pref_box.scroll = 0
+		self.tauon.pref_box.show_settings_section("system", "about")
 		self.tauon.gui.request_frame()
 		self.refresh_states()
 
