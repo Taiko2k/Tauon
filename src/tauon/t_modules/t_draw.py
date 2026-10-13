@@ -354,10 +354,10 @@ class TDraw:
 
 		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
-		self.layout.set_width(max_x * 1000)
+		self.layout.set_width(max_x * Pango.SCALE)
 		if wrap:
 			self.layout.set_wrap(Pango.WrapMode.WORD_CHAR)
-			self.layout.set_height(20000 * 1000)
+			self.layout.set_height(20000 * Pango.SCALE)
 		else:
 			self.layout.set_height(0)
 
@@ -378,9 +378,9 @@ class TDraw:
 		"""HACKY"""
 		self.layout.set_font_description(self._font_description(font))
 		self.layout.set_ellipsize(Pango.EllipsizeMode.END)
-		self.layout.set_width(max_x * 1000)
+		self.layout.set_width(max_x * Pango.SCALE)
 		if wrap:
-			self.layout.set_height(20000 * 1000)
+			self.layout.set_height(20000 * Pango.SCALE)
 		else:
 			self.layout.set_height(0)
 
@@ -452,7 +452,8 @@ class TDraw:
 
 		self.was_truncated = False
 
-		max_x += 12  # Hack
+		# Slack past max_x before ellipsizing; callers' widths are tuned to it.
+		max_x += 12
 		max_x = round(max_x)
 
 		alpha_bg = self.alpha_bg
@@ -603,17 +604,17 @@ class TDraw:
 
 			if max_y is not None:
 				layout.set_ellipsize(Pango.EllipsizeMode.END)
-				layout.set_width(max_x * 1000)
-				layout.set_height(max_y * 1000)
+				layout.set_width(max_x * Pango.SCALE)
+				layout.set_height(max_y * Pango.SCALE)
 			else:
 				layout.set_ellipsize(Pango.EllipsizeMode.END)
-				layout.set_width(max_x * 1000)
+				layout.set_width(max_x * Pango.SCALE)
 
 				extra = 0
 				if wrap:  # Compensate for height measurement being 1-2 lines too short. Pango bug?
 					extra = round(400000 * self.scale)
 
-				layout.set_height(h * 1000 + extra)
+				layout.set_height(h * Pango.SCALE + extra)
 
 			if not wrap and max_y is None:
 				layout.set_height(-1)
@@ -801,7 +802,7 @@ class TDraw:
 		layout.set_font_description(self._font_description(font))
 		layout.set_wrap(Pango.WrapMode.WORD_CHAR)
 		layout.set_ellipsize(Pango.EllipsizeMode.NONE)
-		layout.set_width(max_x * 1000)
+		layout.set_width(max_x * Pango.SCALE)
 		layout.set_height(-1)
 
 		encoded = text.encode("utf-8", "replace")

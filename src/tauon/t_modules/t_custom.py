@@ -14,11 +14,14 @@ Implemented here:
   Max children take up to the stack's cross extent (so their slot is square,
   yielding so siblings keep their minimum sizes), the rest split the remainder
   by ``weight``; the cross axis fills.
-* Edit mode: hover highlight, right-click context menu (Add stack / Add tabbed
-  switcher / Add widget / Remove / Remove Stack / Lock V/H/Aspect / Gutter /
-  Border / Load Template), edge-drag resizing with weight/pixel semantics and
-  resize cursors. Stacks can opt in to view-mode resizing ("Make Stack
-  Resizable"): their child boundaries stay draggable with edit mode off.
+* Edit mode: hover highlight with the cell's parent stack framed and a
+  breadcrumb strip, right-click context menu (Add widget / Insert Cell / Split
+  into Columns, Rows or Tabs / Remove Widget / Delete Cell / Remove Stack /
+  Lock V/H/Aspect / Gutter / Border / Load Template) whose hovered items
+  preview what they change, drag-and-drop to swap widgets or insert one beside
+  another, edge-drag resizing with weight/pixel semantics and resize cursors.
+  Stacks can opt in to view-mode resizing ("Make Stack Resizable"): their child
+  boundaries stay draggable with edit mode off.
 * Validation: single-instance widgets are gated. A row/column may be fully
   locked; leftover space along the axis stays background.
 * Offscreen render-to-rect compositing (shared ``gui.tracklist_texture`` scratch
@@ -4089,27 +4092,76 @@ def iter_visible_leaves(node: Node):
 		yield node
 
 
-def leaf_at(node: Node, px: float, py: float) -> Node | None:
+def cell_at(node: Node, px: float, py: float) -> Node | None:
+	"""The cell under the point for edit-mode targeting. Descends through each
+	child's full slot (gutter included), so a point in the gap between two
+	cells resolves to the nearer cell instead of the stack that contains both.
+	Only space no child owns (e.g. the leftover of a fully locked row) still
+	resolves to the stack. A tabbed switcher's selector strip resolves to its
+	active page."""
 	x, y, w, h = node.rect
 	if not (x <= px < x + w and y <= py < y + h):
 		return None
+	return _cell_in(node, px, py)
+
+
+def _cell_in(node: Node, px: float, py: float) -> Node:
 	if isinstance(node, Stack):
 		for c in node.children:
-			hit = leaf_at(c, px, py)
-			if hit is not None:
-				return hit
+			sx, sy, sw, sh = c.slot_rect
+			if sx <= px < sx + sw and sy <= py < sy + sh:
+				return _cell_in(c, px, py)
 		return node
 	if isinstance(node, TabStack):
 		child = node.active_child()
-		if child is not None:
-			hit = leaf_at(child, px, py)
-			if hit is not None:
-				return hit
-			# The selector strip and page gutter conceptually target the active
-			# page for edit-mode context actions (not the outer split stack).
-			return child
-		return node
+		if child is None:
+			return node
+		sx, sy, sw, sh = child.slot_rect
+		if sx <= px < sx + sw and sy <= py < sy + sh:
+			return _cell_in(child, px, py)
+		return child
 	return node
+
+
+def clone_tree(node: Node, mapping: dict[Node, Node]) -> Node:
+	"""Structural copy of a layout tree that shares the widget objects (no
+	widget is constructed). ``mapping`` receives original -> copy."""
+	if isinstance(node, Stack):
+		copy: Node = Stack(node.orient, [clone_tree(c, mapping) for c in node.children])
+		copy.resizable = node.resizable
+	elif isinstance(node, TabStack):
+		copy = TabStack([clone_tree(c, mapping) for c in node.children], node.active)
+	else:
+		copy = Leaf(None)
+		copy.widget = node.widget
+	copy._load_base(node._base_dict())
+	mapping[node] = copy
+	return copy
+
+
+def tree_signature(node: Node) -> tuple:
+	"""What a layout looks like, for telling whether an edit changes anything."""
+	base = (type(node).__name__, round(node.weight, 6), node.lock_v, node.lock_h,
+		node.fixed_w, node.fixed_h, node.square)
+	if isinstance(node, Stack):
+		return (*base, node.orient, tuple(tree_signature(c) for c in node.children))
+	if isinstance(node, TabStack):
+		return (*base, node.active, tuple(tree_signature(c) for c in node.children))
+	return (*base, id(node.widget))
+
+
+def ancestors(root: Node, target: Node) -> list[Stack | TabStack]:
+	"""Containers from the root down to ``target``'s immediate parent."""
+	chain: list[Stack | TabStack] = []
+	node = target
+	while True:
+		parent = find_parent(root, node)
+		if parent is None:
+			break
+		chain.append(parent)
+		node = parent
+	chain.reverse()
+	return chain
 
 
 def find_parent(root: Node, target: Node) -> Stack | TabStack | None:
@@ -4144,6 +4196,8 @@ CL_INSET_MAX = 64
 # cursor stay aligned — a mismatch makes the cursor stick or show where a drag
 # can't start.
 BOUNDARY_GRAB = 5
+# Widest an edge drop band may get (unscaled px); see _drop_zone.
+DROP_EDGE_MAX = 80
 # Height of a tabbed switcher's selector strip (unscaled px).
 TAB_BAR_HEIGHT = 24
 # Space between adjacent selectors (unscaled px).
@@ -4155,6 +4209,18 @@ DEFAULT_WIDGET_GUTTER = 3
 DEFAULT_WIDGET_BORDER = True
 # Shared by ordinary widget segments and tab-switcher chrome.
 SEGMENT_BORDER_COLOUR = ColourRGBA(60, 60, 68, 255)
+# Edit overlay colours: the focused cell's parent stack and its members, a
+# drop / insert / split location, the node a menu item would change, and a
+# node a menu item would delete.
+STACK_COLOUR = ColourRGBA(85, 205, 235, 220)
+DROP_COLOUR = ColourRGBA(120, 200, 255, 235)
+AFFECTED_COLOUR = ColourRGBA(255, 170, 70, 230)
+DANGER_COLOUR = ColourRGBA(235, 85, 85, 235)
+TAG_BACKGROUND = ColourRGBA(8, 8, 8, 255)
+# Separators the edit hint strip wraps its rows at when the window is narrow.
+HINT_SEP = "   ·   "
+CRUMB_SEP = "  ›  "
+HINT_BACKGROUND = ColourRGBA(16, 16, 20, 255)
 STACK_COUNTS = [2, 3, 4, 5]
 TEMPLATES = ["Blank", "Volcano", "Tracks + Gallery (Compact)"]
 # The standard (non-custom) layouts, in their default order. They share a
@@ -4234,6 +4300,10 @@ class CustomLayout:
 		# with the (TabStack, index) it was opened on.
 		self.tab_menu = None
 		self.tab_menu_target: tuple["TabStack", int] | None = None
+		# Edit-menu items whose target isn't simply the right-clicked cell, keyed
+		# by MenuItem: each returns (style, node, extra) for the overlay to
+		# highlight while the item is hovered (see _draw_menu_preview).
+		self.menu_previews: dict[object, Callable[[], tuple[str, Node | None, object] | None]] = {}
 
 	# -- templates / defaults -----------------------------------------------
 
@@ -4620,20 +4690,226 @@ class CustomLayout:
 	# -- tree actions (pure; unit-tested) -----------------------------------
 
 	def act_add_stack(self, target: Node, orient: str, count: int) -> None:
+		"""Split a cell into ``count`` rows or columns. The cell's current
+		content (widget, or a whole subtree) is kept as the first one."""
 		root = self.ensure_slot()
-		children: list[Node] = []
-		if isinstance(target, Leaf) and target.widget is not None:
-			# Keep the existing widget as the first cell.
-			keep = Leaf(target.widget)
-			keep._load_base(target.to_dict())
-			children.append(keep)
-		while len(children) < count:
-			children.append(self._empty())
-		new = Stack(orient, children)
-		# Inherit the target's sizing within its own parent.
-		new.weight = target.weight
-		self._replace(root, target, new)
+		empties: list[Node] = [self._empty() for _ in range(max(1, count - 1))]
+		self._wrap(root, target, orient, [target, *empties])
 		self.save_slots()
+
+	@staticmethod
+	def _flexible_on(node: Node, axis: str) -> bool:
+		return _fixed_on(node, axis, 1.0) is None and not node.square
+
+	def _wrap(self, root: Node, target: Node, orient: str, children: list[Node]) -> Stack:
+		"""Replace ``target`` with a new ``orient`` stack holding ``children``
+		(which include ``target``). The new stack takes over the target's place
+		in its parent: its weight, and — when the parent divides the other axis,
+		so the size is unaffected by the split — its pixel lock and Square Max.
+		Splitting a fixed-height bar into columns keeps the bar's height; a
+		same-axis split starts flexible so the new cells have room."""
+		parent = find_parent(root, target)
+		wrapper = Stack(orient, [])
+		wrapper.weight = target.weight
+		if isinstance(parent, Stack) and parent.orient != orient:
+			if parent.orient == "v":
+				wrapper.lock_v, wrapper.fixed_h = target.lock_v, target.fixed_h
+			else:
+				wrapper.lock_h, wrapper.fixed_w = target.lock_h, target.fixed_w
+			wrapper.square, target.square = target.square, False
+		# A tab page's label belongs to the page, which is now the wrapper.
+		wrapper.tab_title, target.tab_title = target.tab_title, ""
+		for c in children:
+			c.weight = 1.0
+		wrapper.children = children
+		if parent is None:
+			self.slots[self.active_slot] = wrapper
+		else:
+			parent.children[parent.children.index(target)] = wrapper
+		return wrapper
+
+	def _insert_beside(self, root: Node, target: Node, side: str, new: Node) -> None:
+		"""Place ``new`` on ``side`` ("l"/"r"/"t"/"b") of ``target``. When the
+		target's stack already runs along that axis the new cell joins it as one
+		more member with the average flexible share, so its space comes from
+		every flexible member in proportion rather than from the target alone
+		(which would look like the target had been split). Otherwise the target
+		is wrapped in a new stack. Existing nodes are only mutated by the wrap."""
+		orient = "h" if side in ("l", "r") else "v"
+		after = side in ("r", "b")
+		parent = find_parent(root, target)
+		if self._joins_stack(parent, orient):
+			flex = [c for c in parent.children if self._flexible_on(c, orient)]
+			new.weight = sum(c.weight for c in flex) / len(flex) if flex else 1.0
+			i = parent.children.index(target)
+			parent.children.insert(i + 1 if after else i, new)
+			return
+		self._wrap(root, target, orient, [target, new] if after else [new, target])
+
+	@staticmethod
+	def _joins_stack(parent: Node | None, orient: str) -> bool:
+		"""Whether an insert along ``orient`` adds a member to ``parent``."""
+		return isinstance(parent, Stack) and parent.orient == orient
+
+	def _insert_preview(self, root: Node, target: Node, side: str) -> tuple[tuple, list[tuple]]:
+		"""Where act_insert_cell would put the new cell, and where the cells it
+		takes space from would end up. A new member of the target's stack is
+		measured by laying out with a temporary empty cell in place; a wrap
+		splits the target's slot between the two."""
+		orient = "h" if side in ("l", "r") else "v"
+		parent = find_parent(root, target)
+		if self._joins_stack(parent, orient):
+			probe = self._empty()
+			self._insert_beside(root, target, side, probe)
+			x, y, w, h = root.slot_rect
+			try:
+				layout(root, x, y, w, h, self.gui.scale)
+				return probe.slot_rect, [c.slot_rect for c in parent.children if c is not probe]
+			finally:
+				parent.children.remove(probe)
+				layout(root, x, y, w, h, self.gui.scale)
+		x, y, w, h = target.slot_rect
+		halves = {
+			"l": ((x, y, w / 2, h), (x + w / 2, y, w / 2, h)),
+			"r": ((x + w / 2, y, w / 2, h), (x, y, w / 2, h)),
+			"t": ((x, y, w, h / 2), (x, y + h / 2, w, h / 2)),
+			"b": ((x, y + h / 2, w, h / 2), (x, y, w, h / 2)),
+		}[side]
+		return halves[0], [halves[1]]
+
+	def _detach(self, root: Node, target: Node) -> None:
+		"""Take ``target`` out of its stack; its space goes to the siblings. A
+		stack left with one child collapses into that child, which takes over
+		the stack's place (weight, lock, Square Max, tab label)."""
+		parent = find_parent(root, target)
+		if not isinstance(parent, Stack):
+			return
+		parent.children.remove(target)
+		if len(parent.children) != 1:
+			if not parent.children:
+				self._replace(root, parent, self._empty())
+			return
+		only = parent.children[0]
+		grand = find_parent(root, parent)
+		only.weight = parent.weight
+		if isinstance(grand, Stack):
+			if grand.orient == "v":
+				only.lock_v, only.fixed_h = parent.lock_v, parent.fixed_h
+			else:
+				only.lock_h, only.fixed_w = parent.lock_h, parent.fixed_w
+		only.square = parent.square
+		if parent.tab_title:
+			only.tab_title = parent.tab_title
+		only.gutter = max(only.gutter, parent.gutter)
+		self._replace(root, parent, only)
+
+	def can_delete_cell(self, target: Node | None) -> bool:
+		root = self.slots[self.active_slot]
+		if root is None or target is None:
+			return False
+		parent = find_parent(root, target)
+		if isinstance(parent, TabStack):
+			return len(parent.children) > 1
+		return isinstance(parent, Stack)
+
+	def act_delete_cell(self, target: Node) -> None:
+		"""Delete a cell outright (not just its widget): neighbours grow into
+		the space. Inside a tabbed switcher it removes that tab."""
+		root = self.ensure_slot()
+		parent = find_parent(root, target)
+		if isinstance(parent, TabStack):
+			self.act_remove_tab(parent, parent.children.index(target))
+			return
+		if not isinstance(parent, Stack):
+			return
+		self._detach(root, target)
+		self.save_slots()
+
+	def act_insert_cell(self, target: Node, side: str) -> None:
+		"""Add an empty cell next to ``target`` on ``side``."""
+		root = self.ensure_slot()
+		self._insert_beside(root, target, side, self._empty())
+		self.save_slots()
+
+	def act_move_widget(self, source: Leaf, target: Node, side: str) -> None:
+		"""Drag-and-drop onto an edge of ``target``: move the widget there."""
+		root = self.ensure_slot()
+		if source is target or source.widget is None:
+			return
+		self._move_widget(root, source, target, side)
+		self.save_slots()
+
+	def _move_widget(self, root: Node, source: Leaf, target: Node, side: str) -> None:
+		"""Move ``source``'s cell to ``side`` of ``target``. Within one stack
+		along that axis this is a plain reorder (sizes kept); elsewhere a new
+		cell is inserted beside the target and the source cell is deleted, or
+		left empty when it is a tab page. The cell count only grows when the
+		source is a tab page. Mutates the active slot's tree; no save."""
+		orient = "h" if side in ("l", "r") else "v"
+		after = side in ("r", "b")
+		parent = find_parent(root, target)
+		if isinstance(parent, Stack) and parent.orient == orient and find_parent(root, source) is parent:
+			parent.children.remove(source)
+			i = parent.children.index(target)
+			parent.children.insert(i + 1 if after else i, source)
+			return
+		moved = Leaf(source.widget)
+		moved._load_base(source._base_dict())
+		moved.tab_title = ""
+		self._insert_beside(root, target, side, moved)
+		source.widget = None
+		source.lock_v = source.lock_h = False
+		source.aspect = source.square = False
+		root = self.slots[self.active_slot]
+		if isinstance(find_parent(root, source), Stack):
+			self._detach(root, source)
+
+	def _simulate_move(self, root: Node, source: Leaf, target: Node, side: str) -> Node:
+		"""The tree as it would be after moving ``source`` to ``side`` of
+		``target``, built on a structural copy (sharing the widget objects) so
+		the drag preview shows the real outcome. Returns the copy's root."""
+		mapping: dict[Node, Node] = {}
+		copy = clone_tree(root, mapping)
+		self.slots[self.active_slot] = copy
+		try:
+			self._move_widget(copy, mapping[source], mapping[target], side)
+			return self.slots[self.active_slot]
+		finally:
+			self.slots[self.active_slot] = root
+
+	# -- tabbed switcher pages ----------------------------------------------
+
+	def act_add_tab(self, tabs: TabStack, after: int) -> None:
+		"""Insert an empty page after ``after`` and select it."""
+		page = self._empty()
+		i = max(0, min(after + 1, len(tabs.children)))
+		tabs.children.insert(i, page)
+		tabs.active = i
+		self.save_slots()
+		self.gui.update_layout = True
+		self.gui.request_frame()
+
+	def act_remove_tab(self, tabs: TabStack, index: int) -> None:
+		if len(tabs.children) <= 1 or not 0 <= index < len(tabs.children):
+			return
+		del tabs.children[index]
+		if tabs.active > index or tabs.active >= len(tabs.children):
+			tabs.active = max(0, tabs.active - 1)
+		self.save_slots()
+		self.gui.request_tracklist_redraw()
+		self.gui.update_layout = True
+		self.gui.request_frame()
+
+	def act_move_tab(self, tabs: TabStack, index: int, delta: int) -> None:
+		j = index + delta
+		if not (0 <= index < len(tabs.children) and 0 <= j < len(tabs.children)):
+			return
+		selected = tabs.children[tabs.active] if tabs.children else None
+		tabs.children[index], tabs.children[j] = tabs.children[j], tabs.children[index]
+		if selected is not None:
+			tabs.active = tabs.children.index(selected)
+		self.save_slots()
+		self.gui.request_frame()
 
 	def act_add_tab_stack(self, target: Node, count: int) -> None:
 		"""Replace a segment with a tabbed container, preserving its widget as
@@ -5010,11 +5286,7 @@ class CustomLayout:
 				Menu.active = False
 				if self._try_tab_input(inp):
 					return
-				root = self.ensure_slot()
-				layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
-				self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
-				if self.menu is not None:
-					self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
+				self._open_cell_menu(inp)
 				self._consume(inp)
 			return
 
@@ -5114,6 +5386,13 @@ class CustomLayout:
 			self._consume(inp)
 			return
 
+		# The window controls stay live: leave presses and releases over them
+		# unconsumed for the buttons, which the main loop draws after the layout.
+		if self.drag is None and self.widget_drag is None and self.tauon.draw_border and not inp.right_click:
+			x, y, w, h = self.window_controls_rect()
+			if x <= inp.mouse_position[0] < x + w and y <= inp.mouse_position[1] < y + h:
+				return
+
 		if self.drag is not None:
 			# Active edge-drag resize.
 			if inp.mouse_down:
@@ -5134,11 +5413,7 @@ class CustomLayout:
 
 		# Right-click opens the native context menu (not while dragging a widget).
 		if inp.right_click and self.widget_drag is None:
-			root = self.ensure_slot()
-			layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], gui.scale)
-			self.menu_target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
-			if self.menu is not None:
-				self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
+			self._open_cell_menu(inp)
 
 		self._consume(inp)
 
@@ -5170,21 +5445,74 @@ class CustomLayout:
 		self._consume(inp)
 		return True
 
+	def _open_cell_menu(self, inp) -> None:
+		"""Open the edit context menu on the cell under the pointer."""
+		root = self.ensure_slot()
+		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
+		self.menu_target = cell_at(root, inp.mouse_position[0], inp.mouse_position[1])
+		if self.menu is not None and self.menu_target is not None:
+			self.menu.activate(in_reference=None, position=[inp.mouse_position[0], inp.mouse_position[1]])
+
 	def _try_start_widget_drag(self, inp) -> None:
 		root = self.ensure_slot()
 		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
-		seg = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
+		seg = cell_at(root, inp.mouse_position[0], inp.mouse_position[1])
 		if isinstance(seg, Leaf) and seg.widget is not None:
 			self.widget_drag = seg
 			self.gui.request_frame()
+		elif isinstance(seg, Leaf):
+			# Clicking an empty cell is the obvious way to fill it.
+			self._open_cell_menu(inp)
+
+	def _drop_zone(self, target: Node, mx: float, my: float) -> str:
+		"""Where a widget dropped at (mx, my) on ``target`` goes: "c" (centre:
+		swap, or move into an empty cell) or an edge "l"/"r"/"t"/"b" (insert a
+		new cell on that side). Edge bands are a quarter of the cell, capped so
+		big cells keep a generous centre."""
+		x, y, w, h = target.rect
+		cap = DROP_EDGE_MAX * self.gui.scale
+		band_x = min(w * 0.25, cap)
+		band_y = min(h * 0.25, cap)
+		best, best_ratio = "c", 1.0
+		for side, dist, band in (
+				("l", mx - x, band_x), ("r", x + w - mx, band_x),
+				("t", my - y, band_y), ("b", y + h - my, band_y)):
+			if band <= 0:
+				continue
+			ratio = dist / band
+			if ratio < best_ratio:
+				best, best_ratio = side, ratio
+		return best
+
+	def _drop_target(self, root: Node, mx: float, my: float) -> tuple[Leaf, str] | None:
+		"""The cell and zone a widget drag would drop onto, or None. The zone
+		is "-" for an edge drop that would leave the layout as it is."""
+		target = cell_at(root, mx, my)
+		if not isinstance(target, Leaf):
+			return None
+		if target is self.widget_drag:
+			return None
+		zone = self._drop_zone(target, mx, my)
+		if zone != "c" and self._drop_is_noop(root, target, zone):
+			zone = "-"
+		return target, zone
+
+	def _drop_is_noop(self, root: Node, target: Leaf, zone: str) -> bool:
+		after = self._simulate_move(root, self.widget_drag, target, zone)
+		return tree_signature(after) == tree_signature(root)
 
 	def _finish_widget_drag(self, inp) -> None:
 		root = self.ensure_slot()
 		layout(root, 0, 0, self.tauon.window_size[0], self.tauon.window_size[1], self.gui.scale)
-		target = leaf_at(root, inp.mouse_position[0], inp.mouse_position[1])
-		if isinstance(target, Leaf) and target is not self.widget_drag:
-			self.act_swap(self.widget_drag, target)
+		drop = self._drop_target(root, inp.mouse_position[0], inp.mouse_position[1])
+		if drop is not None:
+			target, zone = drop
+			if zone == "c":
+				self.act_swap(self.widget_drag, target)
+			elif zone != "-":
+				self.act_move_widget(self.widget_drag, target, zone)
 		self.widget_drag = None
+		self.gui.update_layout = True
 		self.gui.request_frame()
 
 	def _consume(self, inp) -> None:
@@ -5415,6 +5743,148 @@ class CustomLayout:
 	def _menu_remove_widget(self) -> None:
 		if self.menu_target is not None:
 			self.act_remove_widget(self.menu_target)
+
+	def _menu_insert(self, ref, side) -> None:
+		if self.menu_target is not None:
+			self.act_insert_cell(self.menu_target, side)
+
+	def _menu_delete_cell(self) -> None:
+		target = self.menu_target
+		if target is None or not self.can_delete_cell(target):
+			return
+		root = self.ensure_slot()
+		parent = find_parent(root, target)
+		if isinstance(parent, TabStack) and self._has_widgets(target):
+			self._confirm_remove_tab(parent, parent.children.index(target))
+			return
+		if not isinstance(target, Leaf) and self._has_widgets(target):
+			self.tauon.gui.message_box_confirm_callback = self.act_delete_cell
+			self.tauon.gui.message_box_no_callback = None
+			self.tauon.gui.message_box_confirm_reference = (target,)
+			self.tauon.show_message(_("Delete these cells and the widgets in them?"), mode="confirm")
+			return
+		self.act_delete_cell(target)
+
+	@staticmethod
+	def _has_widgets(node: Node) -> bool:
+		return any(isinstance(lf, Leaf) and lf.widget is not None for lf in iter_leaves(node))
+
+	def _confirm_remove_tab(self, tabs: TabStack, index: int) -> None:
+		self.tauon.gui.message_box_confirm_callback = self.act_remove_tab
+		self.tauon.gui.message_box_no_callback = None
+		self.tauon.gui.message_box_confirm_reference = (tabs, index)
+		self.tauon.show_message(
+			_("Remove tab '%s' and everything on it?") % self._tab_title(tabs.children[index], index),
+			mode="confirm")
+
+	# Tab-strip menu (right-click a tab selector in edit mode).
+	def _menu_add_tab(self, ref=None) -> None:
+		if self.tab_menu_target is not None:
+			tabs, index = self.tab_menu_target
+			self.act_add_tab(tabs, index)
+
+	def _menu_remove_tab(self, ref=None) -> None:
+		if self.tab_menu_target is None:
+			return
+		tabs, index = self.tab_menu_target
+		if not 0 <= index < len(tabs.children) or len(tabs.children) <= 1:
+			return
+		if self._has_widgets(tabs.children[index]):
+			self._confirm_remove_tab(tabs, index)
+		else:
+			self.act_remove_tab(tabs, index)
+
+	def _menu_move_tab_left(self, ref=None) -> None:
+		if self.tab_menu_target is not None:
+			self.act_move_tab(*self.tab_menu_target, -1)
+
+	def _menu_move_tab_right(self, ref=None) -> None:
+		if self.tab_menu_target is not None:
+			self.act_move_tab(*self.tab_menu_target, 1)
+
+	def _t_tab_editable(self, ref=None) -> bool:
+		return self.gui.custom_edit and self.tab_menu_target is not None
+
+	def _t_tab_removable(self, ref=None) -> bool:
+		return self._t_tab_editable() and len(self.tab_menu_target[0].children) > 1
+
+	def _t_tab_can_move_left(self, ref=None) -> bool:
+		return self._t_tab_editable() and self.tab_menu_target[1] > 0
+
+	def _t_tab_can_move_right(self, ref=None) -> bool:
+		return self._t_tab_editable() and self.tab_menu_target[1] < len(self.tab_menu_target[0].children) - 1
+
+	def _t_can_delete_cell(self, ref=None) -> bool:
+		return self.can_delete_cell(self.menu_target)
+
+	def _t_has_parent(self, ref=None) -> bool:
+		root = self.slots[self.active_slot]
+		return root is not None and self.menu_target is not None and find_parent(root, self.menu_target) is not None
+
+	def remove_stack_label(self) -> str:
+		"""Label for Remove Stack naming what it removes."""
+		root = self.slots[self.active_slot]
+		parent = find_parent(root, self.menu_target) if root is not None and self.menu_target is not None else None
+		if parent is None:
+			return _("Remove Stack")
+		if parent is root:
+			return _("Remove Whole Layout…")
+		if isinstance(parent, TabStack):
+			return _("Remove Tabs (%d)") % len(parent.children)
+		if parent.orient == "h":
+			return _("Remove Columns (%d)") % len(parent.children)
+		return _("Remove Rows (%d)") % len(parent.children)
+
+	# -- hover previews for the edit menu (see menu_previews) --
+	def _pv_remove_stack(self):
+		root = self.slots[self.active_slot]
+		if root is None or self.menu_target is None:
+			return None
+		parent = find_parent(root, self.menu_target)
+		if parent is None:
+			return None
+		return ("danger", parent, _("Everything here is removed"))
+
+	def _pv_delete_cell(self):
+		if not self.can_delete_cell(self.menu_target):
+			return None
+		parent = find_parent(self.slots[self.active_slot], self.menu_target)
+		if isinstance(parent, TabStack):
+			return ("danger", self.menu_target, _("This tab is removed"))
+		return ("danger", self.menu_target, _("Neighbours grow into this space"))
+
+	def _pv_remove_widget(self):
+		if not self._t_has_widget():
+			return None
+		return ("danger", self.menu_target, _("Leaves an empty cell"))
+
+	def _pv_lock(self, axis: str):
+		node = self._resolved_lock_node(axis)
+		if node is None:
+			return None
+		if node is self.menu_target:
+			text = _("Height lock") if axis == "v" else _("Width lock")
+		else:
+			text = _("Height lock applies to this whole stack") if axis == "v" else _("Width lock applies to this whole stack")
+		return ("affected", node, text)
+
+	def _pv_resizable(self):
+		stack = self._resizable_stack_node()
+		if stack is None:
+			return None
+		return ("affected", stack, _("Edges inside here drag in view mode"))
+
+	def _pv_border(self):
+		node = self._border_node()
+		if node is None or node is self.menu_target:
+			return None
+		return ("affected", node, _("The tab switcher owns the border"))
+
+	def _pv_insert(self, side: str):
+		return ("insert", self.menu_target, side) if self.menu_target is not None else None
+
+	def _pv_split(self, orient: str, count: int):
+		return ("split", self.menu_target, (orient, count)) if self.menu_target is not None else None
 
 	def _menu_remove_stack(self) -> None:
 		if self.menu_target is not None:
@@ -6100,6 +6570,19 @@ class CustomLayout:
 		return (round(ax + wwx + 9 * scale), round(ay + yy + 3 * scale),
 			round(34 * scale), round(25 * scale))
 
+	def window_controls_rect(self) -> tuple[float, float, float, float]:
+		"""Hover / hit zone of the min, max and close buttons: on the Header Bar
+		widget when the layout has one, else along the window's top edge."""
+		gui = self.gui
+		scale = gui.scale
+		hdr = self.top_panel_rect()
+		if hdr is None:
+			left, right, top = 0.0, float(self.tauon.window_size[0]), 0.0
+		else:
+			left, right, top = hdr[0], hdr[0] + hdr[2], hdr[1]
+		x = left if self.tauon.prefs.left_window_control else right - 110 * scale
+		return (x, top + 2, 95 * scale, 45 * scale)
+
 	def grip_band(self) -> tuple[float, float, float, float]:
 		"""The strip the window drag grip occupies in custom mode.
 
@@ -6417,81 +6900,368 @@ class CustomLayout:
 		# fields under the cursor changes (see fields.test() in the main loop),
 		# so these must be added every render regardless of current hover state.
 		for lf in iter_visible_leaves(root):
+			self.tauon.fields.add(tuple(lf.slot_rect))
 			self.tauon.fields.add(tuple(lf.rect))
 		for _orient, brect, _stack, _idx in self._iter_boundaries(root, grab):
 			self.tauon.fields.add(brect)
 
+		self._draw_empty_cells(root)
 		self._draw_widget_labels(root)
 
 		menu_active = self.menu is not None and self.menu.active
 		mx, my = inp.mouse_position[0], inp.mouse_position[1]
 
 		if self.widget_drag is not None:
-			# Drag-to-swap feedback: dim the source, outline the target slot, and
-			# show the dragged widget's name by the cursor.
+			# Drag-to-move feedback: dim the source, show where it would land
+			# (centre = swap / move in, edge = insert a new cell on that side),
+			# and the dragged widget's name by the cursor.
 			gui.cursor_want = 3  # hand
-			sx, sy, sw, sh = self.widget_drag.rect
-			ddt.rect((sx, sy, sw, sh), ColourRGBA(170, 225, 90, 35))
-			target = leaf_at(root, mx, my)
-			if isinstance(target, Leaf) and target is not self.widget_drag:
-				tx, ty, tw, th = target.rect
-				b = round(2 * gui.scale)
-				edge = ColourRGBA(120, 200, 255, 235)
-				ddt.rect((tx, ty, tw, b), edge)
-				ddt.rect((tx, ty + th - b, tw, b), edge)
-				ddt.rect((tx, ty, b, th), edge)
-				ddt.rect((tx + tw - b, ty, b, th), edge)
-				ddt.rect((tx, ty, tw, th), ColourRGBA(120, 200, 255, 28))
+			ddt.rect(self.widget_drag.rect, ColourRGBA(170, 225, 90, 35))
+			drop = self._drop_target(root, mx, my)
 			name = _(self.widget_drag.widget.name) if self.widget_drag.widget else ""
-			# Black backing rectangle behind the label, sized to the text (with a
-			# little padding), and the text background colour set to match so the
-			# glyph anti-aliasing blends cleanly against it.
-			black = ColourRGBA(0, 0, 0, 255)
-			tx = round(mx + 20 * gui.scale)
-			ty = round(my - 20 * gui.scale)
-			pad = round(4 * gui.scale)
-			tw = ddt.get_text_w(name, 211)
-			th = ddt.get_text_w(name, 211, height=True)
-			ddt.rect((tx - pad, ty - pad, tw + pad * 2, th + pad * 2), black)
-			ddt.text_background_colour = black
-			ddt.text((tx, ty), name, ColourRGBA(235, 235, 235, 255), 211, bg=black)
+			if drop is None:
+				hint = _("Release over another cell, or an edge of one, to move %s") % name
+			else:
+				target, zone = drop
+				if zone == "c":
+					self._draw_stack_frame(root, target)
+					self._draw_frame(target.rect, DROP_COLOUR, 2)
+					ddt.rect(target.rect, alpha_mod(DROP_COLOUR, 28))
+				elif zone != "-":
+					self._draw_move_preview(root, target, zone)
+				hint = self._drop_hint(target, zone, name)
+			self._draw_cursor_tag(name, mx, my)
+			self._draw_hint_strip(root, drop[0] if drop else None, hint)
 			return
 
-		# While the menu is open, keep the right-clicked segment highlighted;
-		# otherwise track the segment under the cursor and show resize cursors.
+		if self.drag is not None:
+			# Hold the resize cursor while a drag is live, even when the pointer
+			# outruns the grab band between frames.
+			gui.cursor_want = 12 if self.drag["axis"] == "v" else 1
+			self._draw_boundary_line(self.drag["axis"], self.drag["stack"], self.drag["index"])
+			self._draw_hint_strip(root, self.drag["stack"],
+				self._resize_hint(self.drag["stack"], self.drag["index"]))
+			return
+
+		# While the menu is open keep the right-clicked cell in focus;
+		# otherwise follow the pointer.
+		hint = HINT_SEP.join((_("Right-click a cell to edit"), _("Drag a widget to move it"), _("Esc to finish")))
 		if menu_active:
 			seg = self.menu_target
+			hint = _("Hover a menu item to see what it changes")
 		else:
-			if self.drag is not None:
-				# Hold the resize cursor while a drag is live, even when the
-				# pointer outruns the grab band between frames.
-				gui.cursor_want = 12 if self.drag["axis"] == "v" else 1
-				# A boundary drag is in progress: mark the whole draggable region
-				# with the red line, not the green segment highlight.
-				self._draw_boundary_line(self.drag["axis"], self.drag["stack"], self.drag["index"])
-				return
 			hit = self._boundary_at(root, mx, my, grab)
 			if hit is not None:
 				# 12 = custom NS-resize cursor (see dispatch in main loop); 1 =
 				# EW-resize (cursor_shift). cursor_top_side (9) isn't an NS cursor
 				# on macOS/Linux, so we use our own.
 				gui.cursor_want = 12 if hit[0] == "v" else 1
-				# Over a draggable boundary: show a solid red line spanning the
-				# whole region that would resize, and suppress the green segment
-				# highlight so the drag affordance reads unambiguously.
+				# Over a draggable boundary: the red line marks the edge that
+				# would move, and the frame shows which stack it belongs to.
+				self._draw_stack_frame(root, hit[1].children[hit[2]])
 				self._draw_boundary_line(hit[0], hit[1], hit[2])
+				self._draw_hint_strip(root, hit[1], self._resize_hint(hit[1], hit[2]))
 				return
-			seg = leaf_at(root, mx, my)
+			seg = cell_at(root, mx, my)
 		if seg is not None:
-			# Yellow highlight on the hovered segment itself.
-			x, y, w, h = seg.rect
-			b = round(2 * gui.scale)
-			edge = ColourRGBA(170, 225, 90, 220)
-			ddt.rect((x, y, w, b), edge)
-			ddt.rect((x, y + h - b, w, b), edge)
-			ddt.rect((x, y, b, h), edge)
-			ddt.rect((x + w - b, y, b, h), edge)
-			ddt.rect((x, y, w, h), ColourRGBA(170, 225, 90, 18))
+			self._draw_stack_frame(root, seg)
+			# Lime highlight on the focused cell itself.
+			self._draw_frame(seg.rect, ColourRGBA(170, 225, 90, 220), 2)
+			ddt.rect(seg.rect, ColourRGBA(170, 225, 90, 18))
+		if menu_active:
+			self._draw_menu_preview()
+		self._draw_hint_strip(root, seg, hint)
+
+	# -- edit overlay pieces ------------------------------------------------
+
+	def _draw_frame(self, rect, colour: ColourRGBA, thickness: float) -> None:
+		ddt = self.ddt
+		x, y, w, h = (round(v) for v in rect)
+		b = max(1, round(thickness * self.gui.scale))
+		ddt.rect((x, y, w, b), colour)
+		ddt.rect((x, y + h - b, w, b), colour)
+		ddt.rect((x, y + b, b, h - b * 2), colour)
+		ddt.rect((x + w - b, y + b, b, h - b * 2), colour)
+
+	def _draw_dashed_frame(self, rect, colour: ColourRGBA) -> None:
+		ddt = self.ddt
+		scale = self.gui.scale
+		x, y, w, h = (round(v) for v in rect)
+		b = max(1, round(scale))
+		dash = round(6 * scale)
+		step = dash + round(4 * scale)
+		for i in range(x, x + w, step):
+			seg = min(dash, x + w - i)
+			ddt.rect((i, y, seg, b), colour)
+			ddt.rect((i, y + h - b, seg, b), colour)
+		for j in range(y, y + h, step):
+			seg = min(dash, y + h - j)
+			ddt.rect((x, j, b, seg), colour)
+			ddt.rect((x + w - b, j, b, seg), colour)
+
+	def _draw_tag(self, text: str, x: float, y: float, colour: ColourRGBA,
+			max_w: float | None = None) -> tuple[int, int]:
+		"""A small dark name tag (the widget-label style) with its top-left at
+		(x, y). Returns its size."""
+		ddt = self.ddt
+		scale = self.gui.scale
+		tag_h = round(18 * scale)
+		tag_w = ddt.get_text_w(text, 12) + round(12 * scale)
+		if max_w is not None:
+			tag_w = min(tag_w, round(max_w))
+		if tag_w <= round(12 * scale):
+			return 0, 0
+		xx, yy = round(x), round(y)
+		ddt.rect_a((xx, yy), (tag_w, tag_h), TAG_BACKGROUND)
+		ddt.text((xx + round(6 * scale), yy), text, colour, 12,
+			bg=TAG_BACKGROUND, max_w=tag_w - round(10 * scale))
+		return tag_w, tag_h
+
+	def _draw_empty_cells(self, root: Node) -> None:
+		"""Edit mode: mark every visible empty cell, which otherwise reads as
+		plain background."""
+		scale = self.gui.scale
+		outline = ColourRGBA(200, 200, 200, 70)
+		for lf in iter_visible_leaves(root):
+			if not isinstance(lf, Leaf) or lf.widget is not None:
+				continue
+			x, y, w, h = lf.rect
+			if w < 4 * scale or h < 4 * scale:
+				continue
+			self._draw_dashed_frame(lf.rect, outline)
+			text = _("Empty cell · click to add")
+			if self.ddt.get_text_w(text, 12) + 24 * scale > w:
+				text = _("Empty")
+			tag_w = self.ddt.get_text_w(text, 12) + round(12 * scale)
+			tag_h = round(18 * scale)
+			if tag_w + 8 * scale > w or tag_h + 8 * scale > h:
+				continue
+			self._draw_tag(text, x + (w - tag_w) / 2, y + (h - tag_h) / 2, ColourRGBA(170, 170, 170, 255))
+
+	def _container_label(self, node: Node) -> str:
+		if isinstance(node, TabStack):
+			return _("Tabs")
+		if isinstance(node, Stack):
+			return _("Columns") if node.orient == "h" else _("Rows")
+		if isinstance(node, Leaf) and node.widget is not None:
+			return _(node.widget.name)
+		return _("Empty cell")
+
+	def _draw_stack_frame(self, root: Node, cell: Node) -> None:
+		"""Show what the cell belongs to: its parent stack framed in cyan, the
+		other members outlined, and a legend naming the stack ("Columns · 3")."""
+		parent = find_parent(root, cell)
+		if parent is None:
+			return
+		ddt = self.ddt
+		scale = self.gui.scale
+		if isinstance(parent, Stack):
+			for sib in parent.children:
+				if sib is cell:
+					continue
+				ddt.rect(sib.rect, alpha_mod(STACK_COLOUR, 14))
+				self._draw_frame(sib.rect, alpha_mod(STACK_COLOUR, 130), 1)
+		self._draw_frame(parent.slot_rect, STACK_COLOUR, 2)
+		x, y, w, h = parent.slot_rect
+		legend = "%s · %d" % (self._container_label(parent), len(parent.children))
+		tag_w = ddt.get_text_w(legend, 12) + round(12 * scale)
+		pad = round(4 * scale)
+		self._draw_tag(legend, x + w - tag_w - pad, y + pad, STACK_COLOUR)
+
+	def _draw_insert_marker(self, root: Node, node: Node, side: str) -> None:
+		"""Preview an insert beside ``node``: the new cell filled where it will
+		appear, and the cells giving up space outlined at their new size."""
+		new, others = self._insert_preview(root, node, side)
+		for rect in others:
+			self._draw_frame(rect, alpha_mod(DROP_COLOUR, 150), 1)
+		self.ddt.rect(new, alpha_mod(DROP_COLOUR, 45))
+		self._draw_frame(new, DROP_COLOUR, 2)
+		x, y, w, h = new
+		text = _("New cell")
+		tag_w = self.ddt.get_text_w(text, 12) + round(12 * self.gui.scale)
+		tag_h = round(18 * self.gui.scale)
+		if tag_w < w and tag_h < h:
+			self._draw_tag(text, x + (w - tag_w) / 2, y + (h - tag_h) / 2, DROP_COLOUR)
+
+	def _draw_move_preview(self, root: Node, target: Leaf, side: str) -> None:
+		"""Show the layout as it will be after an edge drop: the current layout
+		dimmed, every resulting cell outlined and named on top, and the moved
+		widget's new cell highlighted."""
+		after = self._simulate_move(root, self.widget_drag, target, side)
+		layout(after, *root.slot_rect, self.gui.scale)
+		ddt = self.ddt
+		ddt.rect(root.slot_rect, ColourRGBA(0, 0, 0, 170))
+		moved = self.widget_drag.widget
+		for lf in iter_visible_leaves(after):
+			if not isinstance(lf, Leaf):
+				continue
+			landed = lf.widget is moved
+			colour = DROP_COLOUR if landed else ColourRGBA(200, 200, 200, 150)
+			ddt.rect(lf.rect, alpha_mod(DROP_COLOUR, 45) if landed else ColourRGBA(255, 255, 255, 10))
+			self._draw_frame(lf.rect, colour, 2 if landed else 1)
+			x, y, w, h = lf.rect
+			text = _(lf.widget.name) if lf.widget is not None else _("Empty")
+			tag_w = ddt.get_text_w(text, 12) + round(12 * self.gui.scale)
+			tag_h = round(18 * self.gui.scale)
+			if tag_w < w and tag_h < h:
+				self._draw_tag(text, x + (w - tag_w) / 2, y + (h - tag_h) / 2,
+					DROP_COLOUR if landed else ColourRGBA(200, 200, 200, 255))
+
+	def _draw_split_marker(self, node: Node, orient: str, count: int) -> None:
+		"""Preview a split into ``count`` rows/columns: divider lines over the cell."""
+		x, y, w, h = node.rect
+		t = max(1, round(2 * self.gui.scale))
+		self.ddt.rect(node.rect, alpha_mod(DROP_COLOUR, 24))
+		for i in range(1, count):
+			if orient == "h":
+				self.ddt.rect((round(x + w * i / count - t / 2), y, t, h), DROP_COLOUR)
+			else:
+				self.ddt.rect((x, round(y + h * i / count - t / 2), w, t), DROP_COLOUR)
+
+	def _draw_menu_preview(self) -> None:
+		"""Highlight what the hovered menu item would act on, which is often not
+		the right-clicked cell (Remove Stack, locks, resizable, tab borders)."""
+		item = self.menu.hover_item if self.menu is not None else None
+		fn = self.menu_previews.get(item) if item is not None else None
+		preview = fn() if fn is not None else None
+		if preview is None:
+			return
+		style, node, extra = preview
+		if node is None:
+			return
+		if style == "insert":
+			self._draw_insert_marker(self.slots[self.active_slot], node, extra)
+			return
+		if style == "split":
+			self._draw_split_marker(node, *extra)
+			return
+		colour = DANGER_COLOUR if style == "danger" else AFFECTED_COLOUR
+		rect = node.slot_rect
+		self.ddt.rect(rect, alpha_mod(colour, 45 if style == "danger" else 22))
+		self._draw_frame(rect, colour, 2)
+		if extra:
+			pad = round(4 * self.gui.scale)
+			self._draw_tag(extra, rect[0] + pad, rect[1] + rect[3] - round(22 * self.gui.scale), colour)
+
+	def _breadcrumb(self, root: Node, node: Node) -> str:
+		"""Path from the root to ``node``: "Rows 2/3 › Columns 1/2 › Art Box"."""
+		parts = []
+		chain = ancestors(root, node)
+		for i, container in enumerate(chain):
+			child = chain[i + 1] if i + 1 < len(chain) else node
+			index = container.children.index(child)
+			parts.append("%s %d/%d" % (self._container_label(container), index + 1, len(container.children)))
+		parts.append(self._container_label(node))
+		return CRUMB_SEP.join(parts)
+
+	def _size_note(self, root: Node, node: Node) -> str:
+		"""How ``node`` is sized along its parent stack's axis."""
+		parent = find_parent(root, node)
+		if not isinstance(parent, Stack):
+			return ""
+		scale = self.gui.scale
+		wide = parent.orient == "h"
+		length = round((node.slot_rect[2] if wide else node.slot_rect[3]) / scale)
+		if _fixed_on(node, parent.orient, scale) is not None:
+			note = (_("Fixed width: %d px") if wide else _("Fixed height: %d px")) % length
+		elif node.square:
+			note = _("Square Max: %d px") % length
+		else:
+			note = (_("Flexible width: %d px") if wide else _("Flexible height: %d px")) % length
+		if parent.resizable:
+			note += HINT_SEP + _("resizable in view mode")
+		return note
+
+	def _resize_hint(self, stack: Stack, index: int) -> str:
+		scale = self.gui.scale
+		axis = 2 if stack.orient == "h" else 3
+		a, b = stack.children[index], stack.children[index + 1]
+		return _("Drag to resize") + HINT_SEP + "%s %d px  |  %s %d px" % (
+			self._container_label(a), round(a.slot_rect[axis] / scale),
+			self._container_label(b), round(b.slot_rect[axis] / scale))
+
+	def _drop_hint(self, target: Leaf, zone: str, name: str) -> str:
+		other = self._container_label(target)
+		if zone == "-":
+			return _("%s is already there") % name
+		if zone == "c":
+			if target.widget is None:
+				return _("Release to move %s into this empty cell") % name
+			return _("Release to swap %s with %s") % (name, other)
+		text = {
+			"l": _("Release to move %s left of %s"),
+			"r": _("Release to move %s right of %s"),
+			"t": _("Release to move %s above %s"),
+			"b": _("Release to move %s below %s"),
+		}[zone]
+		return text % (name, other)
+
+	def _draw_cursor_tag(self, name: str, mx: float, my: float) -> None:
+		"""The dragged widget's name by the cursor."""
+		ddt = self.ddt
+		black = ColourRGBA(0, 0, 0, 255)
+		tx = round(mx + 20 * self.gui.scale)
+		ty = round(my - 20 * self.gui.scale)
+		pad = round(4 * self.gui.scale)
+		tw = ddt.get_text_w(name, 211)
+		th = ddt.get_text_w(name, 211, height=True)
+		ddt.rect((tx - pad, ty - pad, tw + pad * 2, th + pad * 2), black)
+		ddt.text_background_colour = black
+		ddt.text((tx, ty), name, ColourRGBA(235, 235, 235, 255), 211, bg=black)
+
+	def _wrap_at_separators(self, text: str, font: int, avail: float) -> list[str]:
+		"""Break a strip row into lines no wider than ``avail``, only at its
+		separators (so translated text of any length stays whole). A single
+		part wider than ``avail`` gets a line to itself and is ellipsized."""
+		if self.ddt.get_text_w(text, font) <= avail:
+			return [text]
+		sep = CRUMB_SEP if CRUMB_SEP in text else HINT_SEP
+		lines: list[str] = []
+		for part in text.split(sep):
+			if lines and self.ddt.get_text_w(lines[-1] + sep + part, font) <= avail:
+				lines[-1] += sep + part
+			else:
+				lines.append(part)
+		return lines
+
+	def _draw_hint_strip(self, root: Node, node: Node | None, hint: str) -> None:
+		"""Floating strip naming where the focused cell sits in the layout
+		(breadcrumb + how it is sized) with the next action. Sized to its text,
+		up to the window width; rows that don't fit wrap at their separators.
+		Bottom centre, moved to the top when the pointer is in the lower part
+		of the window."""
+		ddt = self.ddt
+		scale = self.gui.scale
+		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
+		rows: list[tuple[str, ColourRGBA, int]] = []
+		if node is not None:
+			rows.append((self._breadcrumb(root, node), ColourRGBA(225, 225, 225, 255), 211))
+			note = self._size_note(root, node)
+			if note:
+				rows.append((note, alpha_mod(STACK_COLOUR, 255), 12))
+		rows.append((hint, ColourRGBA(150, 150, 150, 255), 12))
+		pad_x = round(14 * scale)
+		pad_y = round(8 * scale)
+		line_h = round(20 * scale)
+		avail = ww - round(32 * scale) - pad_x * 2
+		lines = [
+			(line, colour, font, ddt.get_text_w(line, font))
+			for text, colour, font in rows
+			for line in self._wrap_at_separators(text, font, avail)
+		]
+		inner = min(avail, max(tw for *_rest, tw in lines))
+		w = inner + pad_x * 2
+		h = line_h * len(lines) + pad_y * 2
+		x = round((ww - w) / 2)
+		margin = round(16 * scale)
+		y = wh - h - margin
+		if self.tauon.inp.mouse_position[1] > wh * 0.6:
+			y = round(52 * scale)
+		ddt.rect((x, y, w, h), HINT_BACKGROUND)
+		self._draw_frame((x, y, w, h), ColourRGBA(255, 255, 255, 25), 1)
+		for i, (text, colour, font, _tw) in enumerate(lines):
+			ddt.text((x + pad_x, y + pad_y + i * line_h + round(2 * scale)), text, colour, font,
+				bg=HINT_BACKGROUND, max_w=inner)
 
 	def _draw_boundary_line(self, orient: str, stack: "Stack", index: int) -> None:
 		"""Solid red line over a resize boundary's hit zone, spanning the full

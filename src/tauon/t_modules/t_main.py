@@ -5966,6 +5966,12 @@ class Menu:
 		self.spring_loading_timer: Timer = Timer()
 		self.can_be_spring_clicked: bool = False
 
+		# The item under the pointer in the main column / active submenu during
+		# the last render pass (see hover_item).
+		self._hover_main: MenuItem | None = None
+		self._hover_sub: MenuItem | None = None
+		self._hover_seen: MenuItem | None = None
+
 		# When set (popup-menu mode), the menu draws into this SecondaryWindow's
 		# renderer/ddt instead of the main window, and self.pos is treated as
 		# local to that window. None means draw inline in the main window.
@@ -5980,6 +5986,14 @@ class Menu:
 		# or a submenu would otherwise spill outside the main window); False =>
 		# draw inline in the main window (the common case).
 		self.use_popup: bool = False
+
+	@property
+	def hover_item(self) -> MenuItem | None:
+		"""The item the pointer is over (main column or submenu), as of the last
+		render; None when the menu is closed or nothing is hovered."""
+		if not self.active:
+			return None
+		return self._hover_sub or self._hover_main
 
 	@property
 	def render_ddt(self) -> TDraw:
@@ -6378,6 +6392,7 @@ class Menu:
 				bounds = self.window_size
 
 			springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
+			self._hover_main = None
 
 			for i in range(len(self.items)):
 				#logging.info(self.items[i])
@@ -6436,6 +6451,7 @@ class Menu:
 				if coll_point(self.pointer, (x_run, y_run, self.w, self.h - 1)):
 					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
 					selected = True
+					self._hover_main = self.items[i]
 					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
@@ -6543,6 +6559,14 @@ class Menu:
 						sx = x_run - sub_w
 					sy = min(self.sub_y_position, bounds[1] - sub_h)
 					self.render_submenu(int(sx), int(max(0, sy)))
+
+			if self.sub_active == -1:
+				self._hover_sub = None
+			# Whatever draws a preview of the hovered item drew earlier this
+			# frame, so a change needs one more frame to show.
+			if self.hover_item is not self._hover_seen:
+				self._hover_seen = self.hover_item
+				gui.request_frame()
 
 			# Process Click Actions
 			if to_call is not None and not self.is_item_disabled(self.items[to_call]):
@@ -6689,6 +6713,7 @@ class Menu:
 				xoff = 24 * gui.scale
 				break
 
+		self._hover_sub = None
 		row = 0
 		for item in sub_items:
 			y = oy + row * self.h
@@ -6707,6 +6732,7 @@ class Menu:
 				ddt.rect_a((ox, y), (sub_w, self.h), colours.menu_highlight_background)
 				bg = alpha_blend(colours.menu_highlight_background, bg)
 				this_select = True
+				self._hover_sub = item
 
 				if item.incrementor:
 					pass  # stepper buttons handled after the label; label/row click is inert
@@ -43123,7 +43149,7 @@ class QueueBox:
 
 	def list_bounds(self, y: int, h: int) -> tuple[float, float]:
 		top = y + self.header_h
-		bottom = min(y + h, self.window_size[1] - self.gui.panelBY) - self.footer_h
+		bottom = y + h - self.footer_h
 		return top, max(top, bottom)
 
 	def clamp_scroll(self, y: int, h: int) -> None:
@@ -56159,56 +56185,77 @@ def main(holder: Holder) -> None:
 	# click in edit mode.
 	cm = tauon.custom
 	if cm.menu is None:
-		cl_menu = Menu(tauon, 155)
+		cl_menu = Menu(tauon, 175)
 		cm.menu = cl_menu
 
-		cl_menu.add_sub(_("Add Vertical Stack"), 60)
-		_cl_sub_v = cl_menu.sub_number - 1
-		for _n in CL_STACK_COUNTS:
-			cl_menu.add_to_sub(_cl_sub_v, MenuItem(str(_n), cm._menu_add_stack, args=("v", _n)))
+		def _cl_preview(item: MenuItem, fn: Callable[[], tuple | None]) -> MenuItem:
+			# Register what the overlay highlights while this item is hovered.
+			cm.menu_previews[item] = fn
+			return item
 
-		cl_menu.add_sub(_("Add Horizontal Stack"), 60)
-		_cl_sub_h = cl_menu.sub_number - 1
-		for _n in CL_STACK_COUNTS:
-			cl_menu.add_to_sub(_cl_sub_h, MenuItem(str(_n), cm._menu_add_stack, args=("h", _n)))
-
-		cl_menu.add_sub(_("Add Tabbed Switcher"), 60)
-		_cl_sub_tabs = cl_menu.sub_number - 1
-		for _n in CL_STACK_COUNTS:
-			cl_menu.add_to_sub(_cl_sub_tabs, MenuItem(str(_n), cm._menu_add_tabs, args=_n))
+		def _cl_label(fn: Callable[[], str]) -> Callable[[], Decorator]:
+			return lambda: Decorator(cl_menu.colours.menu_text, cl_menu.colours.menu_background, fn())
 
 		cl_menu.add_sub(_("Add…"), 180)
 		_cl_sub_add = cl_menu.sub_number - 1
 		# Label this submenu "Replace…" when the target segment already has a
 		# widget, "Add…" when it's an empty slot.
-		def _add_or_replace_label() -> Decorator:
-			text = _("Replace…") if cm._t_has_widget() else _("Add…")
-			return Decorator(cl_menu.colours.menu_text, cl_menu.colours.menu_background, text)
-		cl_menu.items[-1].render_func = _add_or_replace_label
+		cl_menu.items[-1].render_func = _cl_label(lambda: _("Replace…") if cm._t_has_widget() else _("Add…"))
 		for _spec in CL_WIDGET_SPECS:
 			cl_menu.add_to_sub(_cl_sub_add, MenuItem(
 				_(_spec.name), cm._menu_add_widget, args=_spec.kind,
 				disable_test=(lambda k=_spec.kind: cm.kind_disabled(k))))
 
-		cl_menu.add(MenuItem(_("Remove"), cm._menu_remove_widget, show_test=cm._t_has_widget))
-		cl_menu.add(MenuItem(_("Remove Stack"), cm._menu_remove_stack))
+		# . Menu entry: Custom Layout edit menu; submenu adds an empty cell beside the clicked one
+		cl_menu.add_sub(_("Insert Cell…"), 110)
+		_cl_sub_insert = cl_menu.sub_number - 1
+		for _side, _label in (("l", _("Left")), ("r", _("Right")), ("t", _("Above")), ("b", _("Below"))):
+			cl_menu.add_to_sub(_cl_sub_insert, _cl_preview(
+				MenuItem(_label, cm._menu_insert, args=_side),
+				lambda s=_side: cm._pv_insert(s)))
+
+		for _orient, _title in (("h", _("Split into Columns…")), ("v", _("Split into Rows…"))):
+			cl_menu.add_sub(_title, 60)
+			_cl_sub_split = cl_menu.sub_number - 1
+			for _n in CL_STACK_COUNTS:
+				cl_menu.add_to_sub(_cl_sub_split, _cl_preview(
+					MenuItem(str(_n), cm._menu_add_stack, args=(_orient, _n)),
+					lambda o=_orient, n=_n: cm._pv_split(o, n)))
+
+		cl_menu.add_sub(_("Split into Tabs…"), 60)
+		_cl_sub_tabs = cl_menu.sub_number - 1
+		for _n in CL_STACK_COUNTS:
+			cl_menu.add_to_sub(_cl_sub_tabs, MenuItem(str(_n), cm._menu_add_tabs, args=_n))
+
+		cl_menu.br()
+		cl_menu.add(_cl_preview(
+			MenuItem(_("Remove Widget"), cm._menu_remove_widget, show_test=cm._t_has_widget),
+			cm._pv_remove_widget))
+		# . Menu entry: Custom Layout edit menu; deletes the cell itself so its neighbours fill the space
+		cl_menu.add(_cl_preview(
+			MenuItem(_("Delete Cell"), cm._menu_delete_cell, show_test=cm._t_can_delete_cell),
+			cm._pv_delete_cell))
+		cl_menu.add(_cl_preview(
+			MenuItem(_("Remove Stack"), cm._menu_remove_stack, _cl_label(cm.remove_stack_label),
+				show_test=cm._t_has_parent),
+			cm._pv_remove_stack))
 		cl_menu.br()
 		cl_menu.add_sub(_("Layout…"), 175)
 		_cl_sub_layout = cl_menu.sub_number - 1
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Lock Vertical"), cm._menu_lock_v, show_test=cm._t_unlocked_v, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Unlock Vertical"), cm._menu_lock_v, show_test=cm._t_locked_v, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Lock Horizontal"), cm._menu_lock_h, show_test=cm._t_unlocked_h, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Unlock Horizontal"), cm._menu_lock_h, show_test=cm._t_locked_h, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Lock Vertical"), cm._menu_lock_v, show_test=cm._t_unlocked_v, no_exit=True), lambda: cm._pv_lock("v")))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Unlock Vertical"), cm._menu_lock_v, show_test=cm._t_locked_v, no_exit=True), lambda: cm._pv_lock("v")))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Lock Horizontal"), cm._menu_lock_h, show_test=cm._t_unlocked_h, no_exit=True), lambda: cm._pv_lock("h")))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Unlock Horizontal"), cm._menu_lock_h, show_test=cm._t_locked_h, no_exit=True), lambda: cm._pv_lock("h")))
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_off, no_exit=True))
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Inset Square"), cm._menu_lock_aspect, show_test=cm._t_aspect_on, no_exit=True))
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Square Max"), cm._menu_square_max, show_test=cm._t_square_off, no_exit=True))
 		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Square Max"), cm._menu_square_max, show_test=cm._t_square_on, no_exit=True))
 		cl_menu.add_incrementor_to_sub(_cl_sub_layout, _("Gutter"), cm._menu_gutter_value, cm._menu_gutter_minus, cm._menu_gutter_plus)
 		cl_menu.add_incrementor_to_sub(_cl_sub_layout, _("Padding"), cm._menu_padding_value, cm._menu_padding_minus, cm._menu_padding_plus)
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off, no_exit=True))
-		cl_menu.add_to_sub(_cl_sub_layout, MenuItem(_("Make Stack Not Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_on, no_exit=True))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Border"), cm._menu_border, show_test=cm._t_border_off, no_exit=True), cm._pv_border))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Remove Border"), cm._menu_border, show_test=cm._t_border_on, no_exit=True), cm._pv_border))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Make Stack Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_off, no_exit=True), cm._pv_resizable))
+		cl_menu.add_to_sub(_cl_sub_layout, _cl_preview(MenuItem(_("Make Stack Not Resizable"), cm._menu_stack_resizable, show_test=cm._t_stack_resizable_on, no_exit=True), cm._pv_resizable))
 		cl_menu.br()
 		cl_menu.add_sub(_("Load Template…"), 185)
 		_cl_sub_t = cl_menu.sub_number - 1
@@ -56229,6 +56276,10 @@ def main(holder: Holder) -> None:
 		cl_tab_menu.add(MenuItem(_("Rename Tab…"), cm._menu_rename_tab))
 		cl_tab_menu.add(MenuItem(_("Reset Tab Name"), cm._menu_reset_tab_name,
 			show_test=cm._t_tab_named))
+		cl_tab_menu.add(MenuItem(_("Add Tab"), cm._menu_add_tab, show_test=cm._t_tab_editable))
+		cl_tab_menu.add(MenuItem(_("Move Tab Left"), cm._menu_move_tab_left, show_test=cm._t_tab_can_move_left))
+		cl_tab_menu.add(MenuItem(_("Move Tab Right"), cm._menu_move_tab_right, show_test=cm._t_tab_can_move_right))
+		cl_tab_menu.add(MenuItem(_("Remove Tab"), cm._menu_remove_tab, show_test=cm._t_tab_removable))
 
 	# Corner layout menu: opened by the corner layout/edit button (drawn after
 	# the panel button by the TopPanel normally; by the custom engine while in
@@ -62644,15 +62695,11 @@ def main(holder: Holder) -> None:
 						hdr = tauon.custom.top_panel_rect()
 						if hdr is not None:
 							win_anchor = (hdr[0], hdr[0] + hdr[2], hdr[1])
-					if win_anchor is None:
+						tool_rect = list(tauon.custom.window_controls_rect())
+					else:
 						tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
 						if prefs.left_window_control:
 							tool_rect[0] = 0
-					else:
-						tool_rect = [win_anchor[1] - 110 * gui.scale, win_anchor[2] + 2,
-							95 * gui.scale, 45 * gui.scale]
-						if prefs.left_window_control:
-							tool_rect[0] = win_anchor[0]
 					tauon.fields.add(tool_rect)
 					# With a panel behind them the buttons are always shown.
 					# Without one they'd float over whatever is up there, so
