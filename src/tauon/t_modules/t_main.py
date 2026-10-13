@@ -3717,6 +3717,25 @@ class PlayerCtl:
 		self.update_change(update_gui)
 		self.deduct_shuffle(target.index)
 
+	def restore_play_state(self) -> None:
+		"""Restore the play state saved on exit when "Resume on restart" is enabled."""
+		state = self.prefs.reload_state
+		if not self.prefs.reload_play_state or not state or not self.track_queue:
+			self.prefs.reload_state = None
+			return
+		playing_state, position = state
+		if playing_state == PlayingState.PLAYING:
+			self.jump_time = position
+			self.play()
+		elif playing_state == PlayingState.PAUSED:
+			# The track isn't opened yet; unpausing from a stopped backend opens it at playing_time
+			self.playing_state = PlayingState.PAUSED
+			self.play_target(play=False)
+			self.jump_time = 0.0
+			self.playing_time = position
+			self.decode_time = position
+			self.refresh_now_playing()
+
 	def abort_gapless_transition(self, track: TrackClass, resume_time: float) -> None:
 		self.target_open = track.fullpath
 		self.target_object = track
@@ -57979,12 +57998,7 @@ def main(holder: Holder) -> None:
 	if gui.remember_library_mode:
 		tauon.toggle_library_mode()
 
-	if prefs.reload_play_state and prefs.reload_state and prefs.reload_state[0] == PlayingState.PLAYING:
-		pctl.jump_time = prefs.reload_state[1]
-		pctl.play()
-	elif not prefs.reload_play_state:
-		prefs.reload_state = None
-
+	pctl.restore_play_state()
 	pctl.refresh_now_playing()
 
 	prefs.theme = get_theme_number(dirs, prefs.theme_name)
