@@ -6,7 +6,10 @@ Changelog
 
  - Redesigned settings box
  - Added search to settings
+ - Added lyrics mode to mini modes
  - Added fullscreen milkdrop option
+ - Improved edit mode UI
+ - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
 
 ### v13.0.0

@@ -457,6 +457,7 @@ class Prefs:
 	artist_list_threshold = 4
 	allow_video_formats: bool = True
 	mini_mode_on_top: bool = True
+	mini_mode_lyrics: bool = False
 	tray_theme = "pink"
 
 	lastfm_pull_love: bool = False

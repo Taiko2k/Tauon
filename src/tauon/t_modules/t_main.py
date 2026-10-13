@@ -7269,6 +7269,10 @@ class Tauon:
 		self.mini_mode_restore_size: tuple[int, int] | None = None
 		self.mini_mode_wm_forced_floating: bool = False
 		self.mini_mode_wm_was_floating: bool = False
+		# Logical size of the mini mode layout, before the lyrics drawer is added
+		self.mini_mode_base_logical: tuple[int, int] = (350, 429)
+		# Window position after lifting it to fit the drawer, and how far it moved
+		self.mini_lyrics_lift: tuple[tuple[int, int], int] | None = None
 		self._wayland_wm_ipc_warned: bool = False
 		self.cache_directory: Path              = bag.dirs.cache_directory
 		self.config_directory: Path             = bag.dirs.config_directory
@@ -7549,6 +7553,7 @@ class Tauon:
 		self.mini_mode2:                          MiniMode2 = MiniMode2(tauon=self)
 		self.mini_mode3:                          MiniMode3 = MiniMode3(tauon=self)
 		self.mini_mode_signal:                    MiniModeSignal = MiniModeSignal(tauon=self)
+		self.mini_lyrics:                         MiniLyrics = MiniLyrics(tauon=self)
 		self.vb:                                  VorbisMonitor = VorbisMonitor(tauon=self)
 		self.bottom_playlist2:                    EdgePulse2 = EdgePulse2(tauon=self)
 		self.gallery_pulse_top:                   EdgePulse2 = EdgePulse2(tauon=self)
@@ -7996,10 +8001,14 @@ class Tauon:
 			if inp.key_shift_down or inp.key_shiftr_down:
 				return sdl3.SDL_HITTEST_NORMAL
 
+			for rect in self.mini_lyrics.hit_rects:
+				if coll_point((x, y), rect):
+					return sdl3.SDL_HITTEST_NORMAL
+
 			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
 			#     return sdl3.SDL_HITTEST_NORMAL
 
-			if prefs.mini_mode_mode in (MiniModeMode.TAB, MiniModeMode.SLATE) and x > window_size[1] - 5 * gui.scale and y > window_size[1] - 12 * gui.scale:
+			if prefs.mini_mode_mode in (MiniModeMode.TAB, MiniModeMode.SLATE) and x > self.mini_mode_base_height() - 5 * gui.scale and y > self.mini_mode_base_height() - 12 * gui.scale:
 				return sdl3.SDL_HITTEST_NORMAL
 
 			if y < gui.window_control_hit_area_h and x > window_size[
@@ -8017,7 +8026,7 @@ class Tauon:
 
 				frame = round(14 * gui.scale)
 				box_y = round(14 * gui.scale)
-				box_side = min(window_size[0] - frame * 2, window_size[1] - round(30 * gui.scale))
+				box_side = min(window_size[0] - frame * 2, self.mini_mode_base_height() - round(30 * gui.scale))
 				box_rect = (frame, box_y, window_size[0] - frame * 2, box_side)
 				graph_rect = (
 					box_rect[0] + round(12 * gui.scale),
@@ -8094,8 +8103,9 @@ class Tauon:
 			y0 = 0
 			if macos:
 				y0 = round(35 * gui.scale)
-			if window_size[0] == window_size[1]:
-				y1 = window_size[1] - 79 * gui.scale
+			base_h = self.mini_mode_base_height()
+			if window_size[0] == base_h:
+				y1 = base_h - 79 * gui.scale
 			if y0 < y < y1 and not self.search_over.active:
 				return sdl3.SDL_HITTEST_DRAGGABLE
 			return sdl3.SDL_HITTEST_NORMAL
@@ -14927,6 +14937,7 @@ class Tauon:
 			self.thread_manager.ready("style")
 		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
 			size = (640, 460)
+		size = self.mini_mode_window_size(size)
 
 		self.logical_size[0] = size[0]
 		self.logical_size[1] = size[1]
@@ -14941,9 +14952,71 @@ class Tauon:
 
 		if self.mini_mode.save_position:
 			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
+		self.mini_lyrics_lift = None
+		if self.mini_lyrics.drawer_open():
+			self.fit_mini_window_on_screen(opening=True)
 
 		self.gui.update_layout = True
 		self.gui.request_frame()
+
+	def mini_mode_window_size(self, base: tuple[int, int]) -> tuple[int, int]:
+		"""Window size for a mini mode layout of the given size, plus the lyrics drawer when it's open."""
+		self.mini_mode_base_logical = base
+		if self.mini_lyrics.drawer_open():
+			lyrics = self.mini_lyrics
+			return base[0], base[1] - lyrics.drawer_trim(base[0]) + lyrics.drawer_height(base[0])
+		return base
+
+	def mini_mode_base_height(self) -> int:
+		"""Pixel height of the mini mode layout; the lyrics drawer takes the rest of the window."""
+		if not self.mini_lyrics.drawer_open():
+			return self.window_size[1]
+		base_w, base_h = self.mini_mode_base_logical
+		base_h -= self.mini_lyrics.drawer_trim(base_w)
+		return min(self.window_size[1], round(base_h * self.window_size[0] / base_w))
+
+	def toggle_mini_mode_lyrics(self) -> None:
+		self.prefs.mini_mode_lyrics ^= True
+		self.gui.request_frame()
+		if self.gui.mode != GuiMode.MINI:
+			return
+
+		w, h = self.mini_mode_window_size(self.mini_mode_base_logical)
+		self.logical_size[0] = w
+		self.logical_size[1] = h
+		sdl3.SDL_SetWindowMinimumSize(self.t_window, 100, 80)
+		self._set_wayland_mini_mode_window_state(True, w, h, reset_tracking=False)
+		sdl3.SDL_SetWindowResizable(self.t_window, True)
+		sdl3.SDL_SetWindowSize(self.t_window, w, h)
+		if not self._is_wayland_standalone_wm():
+			sdl3.SDL_SetWindowResizable(self.t_window, False)
+		self.fit_mini_window_on_screen(opening=self.prefs.mini_mode_lyrics)
+
+		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
+			# The blurred backdrop is sized to the window
+			self.style_overlay.flush()
+			self.thread_manager.ready("style")
+		self.gui.update_layout = True
+
+	def fit_mini_window_on_screen(self, opening: bool) -> None:
+		"""Lift the mini window so an opened drawer isn't off the bottom of the screen, and drop it back on close."""
+		if self.wayland:
+			return
+		x, y = get_window_position(self.t_window)
+		if not opening:
+			if self.mini_lyrics_lift is not None and self.mini_lyrics_lift[0] == (x, y):
+				sdl3.SDL_SetWindowPosition(self.t_window, x, y + self.mini_lyrics_lift[1])
+			self.mini_lyrics_lift = None
+			return
+
+		bounds = sdl3.SDL_Rect()
+		if not sdl3.SDL_GetDisplayUsableBounds(sdl3.SDL_GetDisplayForWindow(self.t_window), ctypes.byref(bounds)):
+			return
+		bottom = bounds.y + bounds.h
+		if y + self.logical_size[1] > bottom:
+			new_y = max(bounds.y, bottom - self.logical_size[1])
+			sdl3.SDL_SetWindowPosition(self.t_window, x, new_y)
+			self.mini_lyrics_lift = ((x, new_y), y - new_y)
 
 	def restore_full_mode(self) -> None:
 		logging.info("RESTORE FULL")
@@ -20591,6 +20664,7 @@ class Tauon:
 			playlist_folders,  # 200
 			prefs.show_lyrics_showcase,  # 201
 			prefs.milk_opacity,  # 202
+			prefs.mini_mode_lyrics,  # 203
 		]
 
 		for slot, value in db_snapshot.items():
@@ -23089,6 +23163,286 @@ class TimedLyricsRen:
 					break
 
 		return None
+
+class MiniLyrics:
+	"""Lyrics drawer under the mini mode layouts."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon         = tauon
+		self.ddt           = tauon.ddt
+		self.gui           = tauon.gui
+		self.inp           = tauon.inp
+		self.coll          = tauon.coll
+		self.pctl          = tauon.pctl
+		self.prefs         = tauon.prefs
+		self.fields        = tauon.fields
+		self.smooth_scroll = tauon.smooth_scroll
+
+		# Rects that must not drag the borderless window (read by hit_callback)
+		self.hit_rects: list[tuple[int, int, int, int]] = []
+		self.scroll_rect: tuple[int, int, int, int] | None = None
+		self.last_scroll_rect: tuple[int, int, int, int] | None = None
+
+		self.source_key: tuple | None = None
+		self.synced = False
+		self.entries: list[tuple[float | None, str]] = []
+
+		self.layout_key: tuple | None = None
+		self.layouts: list[list[tuple[str, int, int]]] = []
+		self.tops: list[int] = []
+		self.heights: list[int] = []
+		self.gap = 0
+		self.total_h = 0
+
+		# Content offset (px) placed at the anchor; follows the active line unless the user scrolled
+		self.view = 0.0
+		self.follow_key: tuple | None = None
+		self.motion_timer = Timer()
+		self.manual_timer = Timer(100)
+
+	def drawer_open(self) -> bool:
+		return self.prefs.mini_mode_lyrics
+
+	def drawer_height(self, base_w: int) -> int:
+		"""Drawer height in the same units as the mini mode's base width."""
+		if self.prefs.mini_mode_mode == MiniModeMode.SIGNAL:
+			return round(base_w * 0.3)
+		return round(base_w * 0.57)
+
+	def drawer_trim(self, base_w: int) -> int:
+		"""How much to cut from the bottom of the mode's layout while the drawer is
+		open, in the same units as base_w. Slate's empty space under its controls."""
+		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
+			return round(base_w * 80 / 350)
+		return 0
+
+	def begin_frame(self) -> None:
+		self.hit_rects.clear()
+		self.last_scroll_rect = self.scroll_rect
+		self.scroll_rect = None
+
+	def owns_wheel(self) -> bool:
+		"""Whether the mouse wheel is over the lyrics rather than the mode's volume control."""
+		return self.last_scroll_rect is not None and self.coll(self.last_scroll_rect)
+
+	def prepare(self, track: TrackClass | None) -> None:
+		"""Load the lyrics for the track if they changed."""
+		if track is not None:
+			self.tauon.test_auto_lyrics(track)
+
+		lrm = self.tauon.lyrics_ren_mini
+		if lrm.to_reload:
+			# Lyrics were edited or fetched. Nothing else clears the flag while in
+			# mini mode, so clear it here and make the other renderers reload too.
+			lrm.to_reload = False
+			lrm.index = -1
+			self.tauon.lyrics_ren.index = -1
+			self.tauon.timed_lyrics_ren.index = -1
+			self.source_key = None
+
+		key = None
+		if track is not None:
+			key = (track.index, self.prefs.prefer_synced_lyrics, len(track.lyrics or ""), len(track.synced or ""))
+		if key == self.source_key:
+			return
+		self.source_key = key
+		self.entries = []
+		self.synced = False
+		self.layout_key = None
+		self.follow_key = None
+		self.view = 0.0
+		self.manual_timer.force_set(100)
+		if track is None:
+			return
+
+		timed = self.tauon.timed_lyrics_ren
+		if (self.prefs.prefer_synced_lyrics or not track.lyrics) and timed.generate(track):
+			self.synced = True
+			self.entries = list(timed.data)
+		elif track.lyrics:
+			lines = strip_lrc_formatting(track.lyrics).strip("\n").splitlines()
+			self.entries = [(None, line.rstrip()) for line in lines]
+
+	def active_index(self) -> int:
+		"""Index of the synced line being sung, or -1."""
+		if not self.synced or self.pctl.playing_state not in (PlayingState.PLAYING, PlayingState.PAUSED):
+			return -1
+		now = self.tauon.get_real_time()
+		active = -1
+		for i, entry in enumerate(self.entries):
+			if entry[0] > now:
+				if self.pctl.playing_state == PlayingState.PLAYING:
+					self.pctl.wake_past_time = entry[0]
+				break
+			active = i
+		return active
+
+	def line_progress(self, i: int) -> float:
+		"""How far playback is through synced line i, 0 to 1."""
+		if not self.synced or i < 0 or i + 1 >= len(self.entries):
+			return 1.0
+		start = self.entries[i][0]
+		span = self.entries[i + 1][0] - start
+		if span <= 0:
+			return 1.0
+		return max(0.0, min(1.0, (self.tauon.get_real_time() - start) / span))
+
+	def _layout(self, font: int, width: int, gap: int) -> None:
+		key = (self.source_key, font, width, gap, self.gui.scale)
+		if key == self.layout_key:
+			return
+		self.layout_key = key
+		self.layouts = []
+		self.tops = []
+		self.heights = []
+		self.gap = gap
+		blank = round(9 * self.gui.scale)
+		y = 0
+		for entry in self.entries:
+			text = entry[1]
+			if not text.strip():
+				if not self.synced:
+					self.layouts.append([])
+					self.tops.append(y)
+					self.heights.append(blank)
+					y += blank
+					continue
+				text = "♪"
+			lines = [
+				(line.lstrip("\n\r  "), line_y, line_h)
+				for line, line_y, line_h in self.ddt.get_wrapped_layout(text, font, width)]
+			height = lines[-1][1] + lines[-1][2] + gap if lines else blank
+			self.layouts.append(lines)
+			self.tops.append(y)
+			self.heights.append(height)
+			y += height
+		self.total_h = y
+
+	def draw_lines(
+		self,
+		rect: tuple[int, int, int, int],
+		font: int,
+		text_x: int,
+		text_w: int,
+		centre: bool,
+		gap: int,
+		bg: ColourRGBA,
+		colour_for: Callable[[int, bool], ColourRGBA],
+		decorate: Callable[[int, int, int, bool], None] | None = None,
+	) -> None:
+		"""Scrolling lyric lines inside rect. Synced lyrics follow playback and
+		seek on click; static lyrics scroll from the top.
+		colour_for(distance from active line, is active) gives each line's colour;
+		decorate(index, y, text height, is active) draws extras for a line."""
+		x, y, w, h = (round(v) for v in rect)
+		if not self.entries or w < 1 or h < 1:
+			return
+		scale = self.gui.scale
+		self._layout(font, text_w, gap)
+		self.scroll_rect = (x, y, w, h)
+		self.hit_rects.append(self.scroll_rect)
+
+		active = self.active_index()
+		if self.synced:
+			anchor = y + round(h * 0.42)
+			focus = max(active, 0)
+			target = self.tops[focus] + self.heights[focus] / 2
+			low = self.heights[0] / 2
+			high = self.tops[-1] + self.heights[-1] / 2
+		else:
+			pad = round(10 * scale)
+			anchor = y + pad
+			target = None
+			low = 0
+			high = max(0, self.total_h - (h - pad * 2))
+
+		delta = self.smooth_scroll.get_scroll("mini lyrics", self.scroll_rect, 30 * scale)
+		if delta:
+			self.view += delta
+			self.manual_timer.set()
+
+		dt = min(self.motion_timer.hit(), 1 / 30)
+		idle = self.manual_timer.get()
+		if target is not None and (idle > 60 or (idle > 4 and self.pctl.playing_state == PlayingState.PLAYING)):
+			if self.follow_key != self.source_key:
+				self.follow_key = self.source_key
+				self.view = target
+			elif abs(target - self.view) < 0.5:
+				self.view = target
+			else:
+				self.view += (target - self.view) * min(1.0, dt * 9)
+				self.gui.request_frame()
+		self.view = max(low, min(high, self.view))
+
+		clip = sdl3.SDL_Rect(x, y, w, h)  # noqa: RUF057
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		clicked = None
+		top = anchor - round(self.view)
+		for i, lines in enumerate(self.layouts):
+			entry_y = top + self.tops[i]
+			entry_h = self.heights[i]
+			if entry_y + entry_h < y:
+				continue
+			if entry_y > y + h:
+				break
+			if not lines:
+				continue
+			is_active = i == active
+			distance = abs(i - active) if active >= 0 else i + 1
+			colour = colour_for(distance, is_active)
+			for line, line_y, _line_h in lines:
+				if centre:
+					self.ddt.text((text_x, entry_y + line_y, 2), line, colour, font, text_w, bg)
+				else:
+					self.ddt.text((text_x, entry_y + line_y), line, colour, font, text_w, bg)
+			if decorate is not None:
+				decorate(i, entry_y, entry_h - self.gap, is_active)
+			if self.synced and self.inp.mouse_click and self.coll(self.scroll_rect) and self.coll((x, entry_y, w, entry_h)):
+				clicked = i
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+
+		if clicked is not None and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
+			self.inp.mouse_click = False
+			self.pctl.seek_time(self.entries[clicked][0] + self.prefs.sync_lyrics_time_offset / 1000)
+			self.manual_timer.force_set(100)
+			self.gui.request_frame()
+
+	def draw_drawer(
+		self,
+		track: TrackClass | None,
+		rect: tuple[int, int, int, int],
+		text: ColourRGBA,
+		bg: ColourRGBA,
+		fill: bool = True,
+	) -> None:
+		"""The plain drawer used by the art-based mini modes. Without fill, the
+		window's backdrop shows through and bg is only what text blends against."""
+		x, y, w, h = (round(v) for v in rect)
+		scale = self.gui.scale
+		self.hit_rects.append((x, y, w, h))
+		if fill:
+			self.ddt.rect((x, y, w, h), bg)
+
+		self.prepare(track)
+		pad = round(18 * scale)
+		font = 16 if w > 400 * scale else 15
+		if not self.entries:
+			if track is not None:
+				self.ddt.text(
+					(x + w // 2, y + h // 2 - round(9 * scale), 2), _("No lyrics"),
+					ColourRGBA(text.r, text.g, text.b, 90), 314, w - pad * 2, bg)
+			return
+
+		def colour_for(distance: int, is_active: bool) -> ColourRGBA:
+			if is_active:
+				return text
+			if not self.synced:
+				return ColourRGBA(text.r, text.g, text.b, 190)
+			return ColourRGBA(text.r, text.g, text.b, (125, 95, 70, 55)[min(distance, 4) - 1])
+
+		self.draw_lines(
+			(x, y + round(2 * scale), w, h - round(4 * scale)), font,
+			x + w // 2, w - pad * 2, True, round((8 if self.synced else 2) * scale), bg, colour_for)
 
 class MultiLineTextBox:
 	cursor = True
@@ -25972,7 +26326,7 @@ class StyleOverlay:
 		self.gui.delay_frame(0.25)
 		self.gui.request_frame()
 
-	def sample_background(self, x: float, y: float) -> ColourRGBA | None:
+	def sample_background(self, x: float, y: float, require_art_bg: bool = True) -> ColourRGBA | None:
 		"""Local colour of the blurred art background near window point (x, y).
 
 		While a new art background is fading in over the old one, the two
@@ -25982,7 +26336,7 @@ class StyleOverlay:
 		worker prepares the next track's blur the old background is still
 		on screen, and its sample stays valid.)"""
 		sample = self.sample_a
-		if sample is None or self.a_rect is None or not self.gui.have_art_bg:
+		if sample is None or self.a_rect is None or (require_art_bg and not self.gui.have_art_bg):
 			return None
 		# Offscreen Custom Layout widgets draw in a local space at the
 		# scratch origin; map to true window coordinates so they sample
@@ -26002,14 +26356,14 @@ class StyleOverlay:
 			b = round(b2 + (b - b2) * f)
 		return ColourRGBA(r, g, b, 255)
 
-	def sample_background_average(self, x: float, y: float, w: float, h: float) -> ColourRGBA | None:
+	def sample_background_average(self, x: float, y: float, w: float, h: float, require_art_bg: bool = True) -> ColourRGBA | None:
 		"""Average of a grid of local samples across the given window rect,
 		for tinting a whole region's text with one uniform colour."""
 		rt = gt = bt = 0
 		points = (0.17, 0.5, 0.83)
 		for fx in points:
 			for fy in points:
-				s = self.sample_background(x + w * fx, y + h * fy)
+				s = self.sample_background(x + w * fx, y + h * fy, require_art_bg)
 				if s is None:
 					return None
 				rt += s.r
@@ -35617,7 +35971,8 @@ class MiniMode:
 			seek_w = 0
 
 		w = self.window_size[0]
-		h = self.window_size[1]
+		h = self.tauon.mini_mode_base_height()
+		full_h = self.window_size[1]
 
 		y1 = w
 		if w == h:
@@ -35636,12 +35991,15 @@ class MiniMode:
 		self.fields.add(detect_mouse_rect)
 		mouse_in = self.coll(detect_mouse_rect)
 
+		lyrics = self.tauon.mini_lyrics
+		lyrics.begin_frame()
+
 		# Play / Pause when right clicking below art
 		if self.inp.right_click:  # and self.inp.mouse_position[1] > y1:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0:
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -35830,10 +36188,13 @@ class MiniMode:
 		if self.coll(tool_rect):
 			self.tauon.draw_window_tools()
 
-		if w != h:
-			self.ddt.rect_s((1, 1, w - 2, h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
+		if full_h > h:
+			lyrics.draw_drawer(track, (0, h, w, full_h - h), self.colours.mini_mode_text_1, bg)
+
+		if w != full_h:
+			self.ddt.rect_s((1, 1, w - 2, full_h - 2), self.colours.mini_mode_border, 1 * self.gui.scale)
 			if self.gui.scale == 2:
-				self.ddt.rect_s((2, 2, w - 4, h - 4), self.colours.mini_mode_border, 1 * self.gui.scale)
+				self.ddt.rect_s((2, 2, w - 4, full_h - 4), self.colours.mini_mode_border, 1 * self.gui.scale)
 
 class MiniMode2:
 	def __init__(self, tauon: Tauon) -> None:
@@ -35859,7 +36220,8 @@ class MiniMode2:
 
 	def render(self) -> None:
 		w = self.window_size[0]
-		h = self.window_size[1]
+		h = self.tauon.mini_mode_base_height()
+		full_h = self.window_size[1]
 
 		x1 = h
 
@@ -35871,12 +36233,15 @@ class MiniMode2:
 		self.fields.add(detect_mouse_rect)
 		mouse_in = self.coll(detect_mouse_rect)
 
+		lyrics = self.tauon.mini_lyrics
+		lyrics.begin_frame()
+
 		# Play / Pause when right clicking below art
 		if self.inp.right_click:  # and self.inp.mouse_position[1] > y1:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0:
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -35967,6 +36332,9 @@ class MiniMode2:
 
 		self.tauon.draw_ab_repeat_markers(*bg_rect)
 
+		if full_h > h:
+			lyrics.draw_drawer(track, (0, h, w, full_h - h), self.colours.mini_mode_text_1, self.colours.mini_mode_background)
+
 class MiniMode3:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon         = tauon
@@ -36001,7 +36369,8 @@ class MiniMode3:
 			volume_w = 0
 
 		w = self.window_size[0]
-		h = self.window_size[1]
+		h = self.tauon.mini_mode_base_height()
+		full_h = self.window_size[1]
 
 		y1 = w #+ 10 * gui.scale
 		# if w == h:
@@ -36021,7 +36390,7 @@ class MiniMode3:
 		bg = self.colours.mini_mode_background
 		# bg = [250, 250, 250, 255]
 
-		self.ddt.rect((0, 0, w, h), bg)
+		self.ddt.rect((0, 0, w, full_h), bg)
 
 		self.tauon.style_overlay.display()
 
@@ -36035,12 +36404,15 @@ class MiniMode3:
 		self.fields.add(detect_mouse_rect)
 		mouse_in = self.coll(detect_mouse_rect)
 
+		lyrics = self.tauon.mini_lyrics
+		lyrics.begin_frame()
+
 		# Play / Pause when right clicking below art
 		if self.inp.right_click:  # and self.inp.mouse_position[1] > y1:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0:
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -36256,6 +36628,14 @@ class MiniMode3:
 			if self.coll(right_area):
 				self.pctl.advance()
 
+		if full_h > h:
+			# The blurred art carries on behind the drawer; text is drawn
+			# translucent, blended against the backdrop's average colour
+			drawer_rect = (0, h, w, full_h - h)
+			sample = self.tauon.style_overlay.sample_background_average(*drawer_rect, require_art_bg=False) or bg
+			drawer_bg = ColourRGBA(sample.r, sample.g, sample.b, 245)
+			lyrics.draw_drawer(track, drawer_rect, ColourRGBA(255, 255, 255, 255), drawer_bg, fill=False)
+
 		self.tauon.search_over.render()
 
 
@@ -36417,10 +36797,92 @@ class MiniModeSignal:
 	def _track_title(self, track: TrackClass) -> str:
 		return track.title or track.filename or "Unknown track"
 
+	def _render_lyric_feed(
+		self,
+		track: TrackClass | None,
+		rect: tuple[int, int, int, int],
+		shell_fill: ColourRGBA,
+		shell_border: ColourRGBA,
+		text_main: ColourRGBA,
+		text_dim: ColourRGBA,
+		track_text: ColourRGBA,
+		primary: ColourRGBA,
+		secondary: ColourRGBA,
+		grid_line: ColourRGBA,
+	) -> None:
+		"""The lyrics drawer, drawn as a second instrument panel under the spectrum."""
+		lyrics = self.tauon.mini_lyrics
+		scale = self.gui.scale
+		x, y, w, h = (round(v) for v in rect)
+		if h < round(40 * scale):
+			return
+
+		self._cut_panel((x, y, w, h), shell_fill, shell_border, round(16 * scale), accent=secondary)
+		self._grid((x + round(10 * scale), y + round(10 * scale), w - round(20 * scale), h - round(20 * scale)), grid_line, round(20 * scale))
+		self.ddt.text_background_colour = shell_fill
+		self.ddt.text((x + round(14 * scale), y + round(12 * scale)), "LYRIC FEED", text_main, 210, round(120 * scale), shell_fill)
+
+		lyrics.prepare(track)
+		if lyrics.synced:
+			status = "SYNC LOCK"
+		elif lyrics.entries:
+			status = "STATIC TEXT"
+		else:
+			status = "NO CARRIER"
+		status_x = x + w - round(24 * scale)
+		self.ddt.text((status_x, y + round(12 * scale), 1), status, text_dim, 210, round(120 * scale), shell_fill)
+		if lyrics.synced and self.pctl.playing_state == PlayingState.PLAYING:
+			status_w = self.ddt.get_text_w(status, 210) or 0
+			pulse = round(150 + 105 * math.sin(time.time() * 5))
+			dot = round(4 * scale)
+			self.ddt.rect((status_x - status_w - round(10 * scale), y + round(15 * scale), dot, dot), ColourRGBA(secondary.r, secondary.g, secondary.b, pulse))
+
+		area = (x + round(10 * scale), y + round(30 * scale), w - round(20 * scale), h - round(40 * scale))
+		if not lyrics.entries:
+			if track is not None:
+				mid = area[1] + area[3] // 2 - round(10 * scale)
+				self.ddt.text((x + w // 2, mid, 2), "NO LYRIC DATA", text_dim, 210, w, shell_fill)
+				self.ddt.text(
+					(x + w // 2, mid + round(14 * scale), 2), "AWAITING TRANSMISSION",
+					ColourRGBA(text_dim.r, text_dim.g, text_dim.b, 90), 209, w, shell_fill)
+			return
+
+		font = 414
+		gutter = round(56 * scale)
+		text_x = area[0] + gutter
+		text_w = area[2] - gutter - round(20 * scale)
+		stamp_colour = ColourRGBA(text_dim.r, text_dim.g, text_dim.b, 110)
+
+		def colour_for(distance: int, is_active: bool) -> ColourRGBA:
+			if is_active:
+				return text_main
+			if not lyrics.synced:
+				return ColourRGBA(track_text.r, track_text.g, track_text.b, 200)
+			return ColourRGBA(track_text.r, track_text.g, track_text.b, max(40, 200 - distance * 40))
+
+		def decorate(i: int, line_y: int, text_h: int, is_active: bool) -> None:
+			# Timestamp (or line number) gutter; the active line gets a marker
+			# and a bar that fills until the next line
+			stamp = lyrics.entries[i][0]
+			label = f"{int(stamp // 60):02d}:{stamp % 60:04.1f}" if stamp is not None else f"{i + 1:03d}"
+			self.ddt.text(
+				(area[0] + round(8 * scale), line_y + round(3 * scale)), label,
+				secondary if is_active else stamp_colour, 209, gutter, shell_fill)
+			if not is_active:
+				return
+			self.ddt.rect((text_x - round(10 * scale), line_y + round(2 * scale), round(3 * scale), max(1, text_h - round(2 * scale))), primary)
+			line_w = max((self.ddt.get_text_w(line, font) or 0 for line, _line_y, _line_h in lyrics.layouts[i]), default=0)
+			fill = round(min(line_w, text_w) * lyrics.line_progress(i))
+			if fill > 0:
+				self.ddt.rect((text_x, line_y + text_h + round(1 * scale), fill, max(1, round(2 * scale))), secondary)
+
+		lyrics.draw_lines(area, font, text_x, text_w, False, round(7 * scale), shell_fill, colour_for, decorate)
+
 	def render(self) -> None:
 		self.fps.tick()
 		w = self.window_size[0]
-		h = self.window_size[1]
+		h = self.tauon.mini_mode_base_height()
+		full_h = self.window_size[1]
 		scale = self.gui.scale
 
 		clear_bg = ColourRGBA(0, 0, 0, 0)
@@ -36450,13 +36912,17 @@ class MiniModeSignal:
 			point_marker = ColourRGBA(255, 255, 255, 180)
 
 		self.ddt.alpha_bg = True
-		self.ddt.clear_rect((0, 0, w, h))
+		self.ddt.clear_rect((0, 0, w, full_h))
 		self.ddt.text_background_colour = clear_bg
 
 		frame = round(14 * scale)
 		box_y = round(14 * scale)
 		box_side = min(w - frame * 2, h - round(30 * scale))
 		box_rect = (frame, box_y, w - frame * 2, box_side)
+		box_bottom = box_rect[1] + box_rect[3]
+
+		lyrics = self.tauon.mini_lyrics
+		lyrics.begin_frame()
 		seek_bar = [
 			box_rect[0] + round(18 * scale),
 			box_rect[1] + box_rect[3] - round(18 * scale),
@@ -36501,7 +36967,7 @@ class MiniModeSignal:
 		track = self.pctl.playing_object()
 		playlist = self.pctl.default_playlist
 
-		if self.inp.mouse_wheel != 0:
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -36672,6 +37138,12 @@ class MiniModeSignal:
 
 		if self.coll(box_rect) and self.inp.mouse_click and not clicked_track and not self.coll(tuple(seek_hit)):
 			self.tauon.d_click_timer.set()
+
+		if full_h > h:
+			feed_y = box_bottom + round(16 * scale)
+			self._render_lyric_feed(
+				track, (frame, feed_y, w - frame * 2, full_h - feed_y - round(14 * scale)),
+				shell_fill, shell_border, text_main, text_dim, track_text, primary, secondary, grid_line)
 
 		tool_rect = [self.window_size[0] - 110 * self.gui.scale, 2, 108 * self.gui.scale, 45 * self.gui.scale]
 		if self.prefs.left_window_control:
@@ -55598,6 +56070,8 @@ def main(holder: Holder) -> None:
 				prefs.show_lyrics_showcase = save[201]
 			if len(save) > 202 and save[202] is not None:
 				prefs.milk_opacity = min(1.0, max(0.0, float(save[202])))
+			if len(save) > 203 and save[203] is not None:
+				prefs.mini_mode_lyrics = save[203]
 
 			del save
 			state_loaded = True
@@ -57239,6 +57713,7 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
 	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
 	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
+	mode_menu.add(MenuItem(_("Lyrics Drawer"), tauon.toggle_mini_mode_lyrics, check_test=lambda: prefs.mini_mode_lyrics))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Switch to Compact Panel"), tauon.toggle_panel_type, tauon.panel_type_deco))
@@ -57259,6 +57734,7 @@ def main(holder: Holder) -> None:
 	extra_menu.add_to_sub(0, MenuItem(_("Slate"), tauon.set_mini_mode_C1))
 	extra_menu.add_to_sub(0, MenuItem(_("Square"), tauon.set_mini_mode_B1))
 	extra_menu.add_to_sub(0, MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
+	extra_menu.add_to_sub(0, MenuItem(_("Lyrics Drawer"), tauon.toggle_mini_mode_lyrics, check_test=lambda: prefs.mini_mode_lyrics))
 
 	extra_menu.add(MenuItem(_("Random Track"), tauon.random_track, hint=";"))
 
@@ -63270,6 +63746,7 @@ def main(holder: Holder) -> None:
 					else:
 						prefs.mini_mode_mode = MiniModeMode.TAB
 						size = (int(320 * gui.scale), int(90 * gui.scale))
+					size = tauon.mini_mode_window_size(size)
 
 					logical_size[0] = size[0]
 					logical_size[1] = size[1]
