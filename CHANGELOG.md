@@ -11,6 +11,8 @@ Changelog
  - Improved edit mode UI
  - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
+ - Escape now exits mini mode
+ - Fixed mini mode being impossible to exit when the window manager doesn't resize it
 
 ### v13.0.0
 

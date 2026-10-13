@@ -8096,16 +8096,11 @@ class Tauon:
 
 				return sdl3.SDL_HITTEST_DRAGGABLE
 
-			# Square modes
-			y1 = window_size[0]
-			# if prefs.mini_mode_mode == MiniModeMode.SLATE:
-			#     y1 = window_size[1]
+			# Square modes; only the art above the text strip drags
+			y1 = window_size[0] if prefs.mini_mode_mode == MiniModeMode.TAB else self.mini_mode_strip_y()
 			y0 = 0
 			if macos:
 				y0 = round(35 * gui.scale)
-			base_h = self.mini_mode_base_height()
-			if window_size[0] == base_h:
-				y1 = base_h - 79 * gui.scale
 			if y0 < y < y1 and not self.search_over.active:
 				return sdl3.SDL_HITTEST_DRAGGABLE
 			return sdl3.SDL_HITTEST_NORMAL
@@ -14882,18 +14877,24 @@ class Tauon:
 		self.inp.mouse_up = False
 		self.inp.mouse_click = False
 
-		is_wayland_standalone_wm = self._is_wayland_standalone_wm()
-		is_floating_wayland_window = self._wayland_window_is_floating() if is_wayland_standalone_wm else None
+		# Switching layout from within mini mode only resizes; the state saved for
+		# restoring the full window must be kept.
+		switching_layout = self.gui.mode == GuiMode.MINI
 
-		# Standalone Wayland WMs can report maximized flags while window is already floating.
-		# Treat already-floating windows as non-maximized for mini-mode transitions.
-		self.gui.mini_mode_return_maximized = self._window_is_maximized() and not bool(is_floating_wayland_window)
-		if self.gui.mini_mode_return_maximized:
-			sdl3.SDL_RestoreWindow(self.t_window)
-			sdl3.SDL_SyncWindow(self.t_window)
-			sdl3.SDL_PumpEvents()
-			self.gui.maximized = False
-			self.update_layout_do()
+		is_wayland_standalone_wm = self._is_wayland_standalone_wm()
+
+		if not switching_layout:
+			is_floating_wayland_window = self._wayland_window_is_floating() if is_wayland_standalone_wm else None
+
+			# Standalone Wayland WMs can report maximized flags while window is already floating.
+			# Treat already-floating windows as non-maximized for mini-mode transitions.
+			self.gui.mini_mode_return_maximized = self._window_is_maximized() and not bool(is_floating_wayland_window)
+			if self.gui.mini_mode_return_maximized:
+				sdl3.SDL_RestoreWindow(self.t_window)
+				sdl3.SDL_SyncWindow(self.t_window)
+				sdl3.SDL_PumpEvents()
+				self.gui.maximized = False
+				self.update_layout_do()
 
 		if self.gui.mode == GuiMode.MAIN:
 			self.old_window_position = get_window_position(self.t_window)
@@ -14913,12 +14914,13 @@ class Tauon:
 		self.gui.draw_vis4_top = False
 		self.gui.level_update = self.prefs.mini_mode_mode == MiniModeMode.SIGNAL
 
-		i_y = pointer(c_int(0))
-		i_x = pointer(c_int(0))
-		sdl3.SDL_GetWindowPosition(self.t_window, i_x, i_y)
-		self.gui.save_position = (i_x.contents.value, i_y.contents.value)
+		if not switching_layout:
+			i_y = pointer(c_int(0))
+			i_x = pointer(c_int(0))
+			sdl3.SDL_GetWindowPosition(self.t_window, i_x, i_y)
+			self.gui.save_position = (i_x.contents.value, i_y.contents.value)
+			self.mini_mode.was_borderless = self.draw_border
 
-		self.mini_mode.was_borderless = self.draw_border
 		if not is_wayland_standalone_wm:
 			sdl3.SDL_SetWindowBordered(self.t_window, False)
 
@@ -14944,13 +14946,13 @@ class Tauon:
 
 		min_size = (100, 80)
 		sdl3.SDL_SetWindowMinimumSize(self.t_window, min_size[0], min_size[1])
-		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1])
+		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1], reset_tracking=not switching_layout)
 		sdl3.SDL_SetWindowResizable(self.t_window, True)
 		sdl3.SDL_SetWindowSize(self.t_window, self.logical_size[0], self.logical_size[1])
 		if not is_wayland_standalone_wm:
 			sdl3.SDL_SetWindowResizable(self.t_window, False)
 
-		if self.mini_mode.save_position:
+		if self.mini_mode.save_position and not switching_layout:
 			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
 		self.mini_lyrics_lift = None
 		if self.mini_lyrics.drawer_open():
@@ -14974,6 +14976,23 @@ class Tauon:
 		base_w, base_h = self.mini_mode_base_logical
 		base_h -= self.mini_lyrics.drawer_trim(base_w)
 		return min(self.window_size[1], round(base_h * self.window_size[0] / base_w))
+
+	def mini_mode_strip_y(self) -> float:
+		"""Top of the mini mode text/controls strip.
+
+		It sits below the square art, or overlays the art when the window is too short
+		to fit it below (square layouts, or a window the WM wouldn't shrink).
+		"""
+		w = self.window_size[0]
+		h = self.mini_mode_base_height()
+		s = self.gui.scale
+		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
+			strip_h, min_h = 115 * s, 100 * s
+		else:
+			strip_h, min_h = 79 * s, 60 * s
+		if h - w < min_h:
+			return h - strip_h
+		return w
 
 	def toggle_mini_mode_lyrics(self) -> None:
 		self.prefs.mini_mode_lyrics ^= True
@@ -35974,9 +35993,8 @@ class MiniMode:
 		h = self.tauon.mini_mode_base_height()
 		full_h = self.window_size[1]
 
-		y1 = w
-		if w == h:
-			y1 -= 79 * self.gui.scale
+		y1 = self.tauon.mini_mode_strip_y()
+		overlay = y1 < w  # Text strip sits over the art and shows on hover
 
 		h1 = h - y1
 
@@ -36025,14 +36043,14 @@ class MiniMode:
 			line1c = self.colours.mini_mode_text_1
 			line2c = self.colours.mini_mode_text_2
 
-			if h == w and mouse_in_area:
+			if overlay and mouse_in_area:
 				# self.ddt.pretty_rect = (0, 260 * self.gui.scale, w, 100 * self.gui.scale)
 				self.ddt.rect((0, y1, w, h1), ColourRGBA(0, 0, 0, 220))
 				line1c = ColourRGBA(255, 255, 255, 240)
 				line2c = ColourRGBA(255, 255, 255, 77)
 
 			# Double click bottom text to return to full window
-			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
+			text_hit_area = (w // 2 - 115 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
 				if self.tauon.d_click_timer.get() < 0.3:
@@ -36052,7 +36070,7 @@ class MiniMode:
 			seek_marker_rect = tuple(seek_r)
 			seek_r_hit = [seek_r[0], seek_r[1] - 4 * self.gui.scale, seek_r[2], seek_r[3] + 8 * self.gui.scale]
 
-			if w != h or mouse_in_area:
+			if not overlay or mouse_in_area:
 
 				if not line1 and not line2:
 					self.ddt.text((w // 2, y1 + 18 * self.gui.scale, 2), track.filename, line1c, 214, self.window_size[0] - 30 * self.gui.scale)
@@ -36372,9 +36390,7 @@ class MiniMode3:
 		h = self.tauon.mini_mode_base_height()
 		full_h = self.window_size[1]
 
-		y1 = w #+ 10 * gui.scale
-		# if w == h:
-		#     y1 -= 79 * gui.scale
+		y1 = self.tauon.mini_mode_strip_y()
 
 		h1 = h - y1
 
@@ -36449,7 +36465,7 @@ class MiniMode3:
 			# 	line2c = [255, 255, 255, 77]
 
 			# Double click bottom text to return to full window
-			text_hit_area = (60 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
+			text_hit_area = (w // 2 - 115 * self.gui.scale, y1 + 4, 230 * self.gui.scale, 50 * self.gui.scale)
 
 			if self.coll(text_hit_area) and self.inp.mouse_click:
 				if self.tauon.d_click_timer.get() < 0.3:
@@ -61091,7 +61107,8 @@ def main(holder: Holder) -> None:
 					tauon.toggle_side_art()
 
 			elif gui.mode == GuiMode.MINI:
-				if keymaps.test("toggle-minimode"):
+				if keymaps.test("toggle-minimode") or (inp.key_esc_press and tauon.is_level_zero()):
+					inp.key_esc_press = False
 					tauon.restore_full_mode()
 					gui.request_frame()
 
