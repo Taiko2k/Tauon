@@ -12,7 +12,7 @@ Changelog
  - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
  - Escape now exits mini mode
- - Fixed mini mode being impossible to exit when the window manager doesn't resize it
+ - Fixed a mini mode bug on hyperland
 
 ### v13.0.0
 

@@ -408,6 +408,8 @@ enum result_status_enum {
 int result_status = WAITING;
 int mode = STOPPED;
 int command = NONE;
+// The last track drained to its end rather than being stopped or failing
+bool played_out = false;
 
 int decoder_allocated = 0;
 int buffering = 0;
@@ -5030,6 +5032,7 @@ int load_next_inner() {
 }
 
 int load_next() {
+	played_out = false;
 	stream_loading = 1;
 	int r = load_next_inner();
 	stream_loading = 0;
@@ -5037,11 +5040,12 @@ int load_next() {
 }
 
 void end() {
-	// Call when buffer has run out or otherwise ready to stop and flush
+	// Call when buffer has run out or otherwise ready to stop and flush.
+	// Leaves any pending command alone, a seek can arrive as the buffer drains.
 	stop_decoder();
 	pthread_mutex_lock(&buffer_mutex);
 	mode = STOPPED;
-	command = NONE;
+	played_out = false;
 	buff_reset();
 	pre_roll_remaining = 0;
 	pre_roll_waiting_format = false;
@@ -5658,6 +5662,9 @@ void *main_loop(void *thread_id) {
 						mode = PAUSED;
 						//stop_out();
 						command = NONE;
+					} else if (mode == STOPPED) {
+						// The track drained before the pause landed
+						command = NONE;
 					}
 					break;
 
@@ -5671,6 +5678,7 @@ void *main_loop(void *thread_id) {
 
 				case STOP:
 					if (mode == STOPPED) {
+						played_out = false;
 						command = NONE;
 					} else if (mode == PLAYING || mode == ENDING) {
 						// ENDING can also be reached when a stream is
@@ -5680,6 +5688,7 @@ void *main_loop(void *thread_id) {
 					if ((mode == RAMP_DOWN && ramp_settled) || mode == PAUSED
 							|| (dsd_active && mode != STOPPED)) {
 						end();
+						command = NONE;
 					}
 					break;
 
@@ -5813,6 +5822,15 @@ void *main_loop(void *thread_id) {
 				mode = RAMP_DOWN;
 			} else if (mode == PAUSED || (mode == RAMP_DOWN && ramp_settled)) {
 				seek_pcm(seek_request_ms, mode == PAUSED);
+			} else if (mode == STOPPED && played_out && strcmp(loaded_target_file, "RAW FEED") != 0) {
+				// The track drained just before the seek arrived, while the
+				// player still shows it playing. Its decoder is closed, so
+				// reload it at the seek point.
+				strcpy(load_target_file, loaded_target_file);
+				load_target_net = loaded_target_net;
+				load_target_seek = seek_request_ms;
+				config_fade_jump = 0;
+				command = LOAD;
 			} else if (mode != RAMP_DOWN) {
 				log_msg(LOG_WARNING, "pa: Seek ignored, playback has stopped");
 				command = NONE;
@@ -5859,6 +5877,7 @@ void *main_loop(void *thread_id) {
 		if (mode == ENDING && pending_output_fill() == 0) {
 			//log_msg(LOG_INFO, "pa: Buffer ran out at end of track");
 			end();
+			played_out = true;
 		}
 		if (mode == ENDING && next_ready == 1) {
 			//log_msg(LOG_INFO, "pa: Next registered while buffer was draining");
