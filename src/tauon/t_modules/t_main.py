@@ -4509,7 +4509,7 @@ class PlayerCtl:
 						self.stop_mode = StopMode.TRACK
 
 					if self.queue_box.scroll_position > 0:
-						self.queue_box.scroll_position -= 1
+						self.queue_box.row_removed(q)
 
 						# self.advance()
 						# return
@@ -4554,7 +4554,9 @@ class PlayerCtl:
 				if self.prefs.stop_end_queue and not self.force_queue:
 					self.stop_mode = StopMode.TRACK
 				if self.queue_box.scroll_position > 0:
-					self.queue_box.scroll_position -= 1
+					self.queue_box.row_removed(q)
+					if album_finished:
+						self.queue_box.row_removed(queue_album)
 
 		# Stop if playlist is empty
 		elif len(self.playing_playlist()) == 0:
@@ -42779,7 +42781,8 @@ class QueueBox:
 		self.drag_start_position: tuple[int, int] | None = None
 		self.drag_moved = False
 		self.tab_h = 0
-		self.scroll_position: int = 0
+		# Pixel offset of the list viewport into the queue rows
+		self.scroll_position: float = 0
 		self.right_click_id = None
 		self.d_click_ref = None
 		self.restore_auto_queue(self.prefs.view_prefs.get("auto-queue", {}))
@@ -42927,6 +42930,9 @@ class QueueBox:
 	def recalc(self) -> None:
 		self.tab_h = 34 * self.gui.scale
 		self.track_h = 28 * self.gui.scale
+		self.gap = 4 * self.gui.scale
+		self.header_h = 30 * self.gui.scale
+		self.footer_h = 34 * self.gui.scale
 
 	def row_height(self, item: TauonQueueItem) -> int:
 		return self.track_h if item.type == QueueType.TRACK else self.tab_h
@@ -43005,6 +43011,10 @@ class QueueBox:
 			if item.tracks is not None:
 				rows.extend(item.tracks)
 		return rows
+
+	def row_removed(self, item: TauonQueueItem) -> None:
+		"""Keep the view still when a row above it is consumed by playback."""
+		self.scroll_position = max(0, self.scroll_position - self.row_height(item) - self.gap)
 
 	def find_item(self, uuid_int: int | None) -> tuple[TauonQueueItem | None, TauonQueueItem | None]:
 		for item in self.pctl.force_queue:
@@ -43111,25 +43121,31 @@ class QueueBox:
 		target_index = items.index(target) if target is not None else len(items)
 		return target_index not in (index, index + 1)
 
-	def visible_rows(self, y: int, h: int) -> tuple[list[tuple[TauonQueueItem, TauonQueueItem | None, int, int]], int, bool]:
-		rows = self.queue_rows()
-		self.scroll_position = min(self.scroll_position, max(0, len(rows) - 1))
-		row_index = round(self.scroll_position)
-		yy = y + 30 * self.gui.scale
-		bottom = min(y + h, self.window_size[1] - self.gui.panelBY) - 54 * self.gui.scale
+	def list_bounds(self, y: int, h: int) -> tuple[float, float]:
+		top = y + self.header_h
+		bottom = min(y + h, self.window_size[1] - self.gui.panelBY) - self.footer_h
+		return top, max(top, bottom)
+
+	def clamp_scroll(self, y: int, h: int) -> None:
+		top, bottom = self.list_bounds(y, h)
+		content_h = sum(self.row_height(row) + self.gap for row in self.queue_rows())
+		self.scroll_position = min(max(self.scroll_position, 0), max(0, content_h - (bottom - top)))
+
+	def visible_rows(self, y: int, h: int) -> tuple[list[tuple[TauonQueueItem, TauonQueueItem | None, float, int]], float, bool]:
+		"""Rows overlapping the list viewport, the y where the content ends, and whether it continues below."""
+		self.clamp_scroll(y, h)
+		top, bottom = self.list_bounds(y, h)
+		yy = top - self.scroll_position
 		visible = []
-		while row_index < len(rows):
-			item, parent = self.find_item(rows[row_index].uuid_int)
-			if item is None:
-				row_index += 1
-				continue
-			row_h = self.row_height(item)
-			if yy + row_h > bottom:
-				break
-			visible.append((item, parent, yy, row_h))
-			yy += row_h + 4 * self.gui.scale
-			row_index += 1
-		return visible, yy, row_index < len(rows)
+		for item in self.pctl.force_queue:
+			for row, parent in [(item, None), *((child, item) for child in item.tracks or [])]:
+				if yy >= bottom:
+					return visible, bottom, True
+				row_h = self.row_height(row)
+				if yy + row_h > top:
+					visible.append((row, parent, yy, row_h))
+				yy += row_h + self.gap
+		return visible, yy, False
 
 	def drop_target(
 		self, rows: list[tuple[TauonQueueItem, TauonQueueItem | None, int, int]],
@@ -43429,15 +43445,28 @@ class QueueBox:
 		else:
 			self.draw_card(x, yy, self.drag_width, self.row_height(item), yy, track, item, draw_back=True)
 
+	def scroll(self, box_rect: tuple[int, int, int, int], in_panel: bool) -> None:
+		stride = self.track_h + self.gap
+		touch_scroll = self.inp.touch_scroll_y != 0 and coll_point(self.inp.touch_position, box_rect)
+		if self.smooth_scroll.enabled() or touch_scroll or self.smooth_scroll.active("queue"):
+			if in_panel and self.inp.mouse_wheel:
+				self.smooth_scroll.add_wheel_motion("queue", -self.inp.mouse_wheel, stride)
+			if self.inp.touch_released:
+				self.smooth_scroll.release_touch("queue")
+			elif touch_scroll:
+				self.smooth_scroll.apply_touch_drag("queue", -self.inp.touch_scroll_y)
+			self.scroll_position += self.smooth_scroll.step_motion("queue")
+		elif in_panel and self.inp.mouse_wheel:
+			self.scroll_position -= self.smooth_scroll.scroll("queue", stride)
+
 	def draw(self, x: int, y: int, w: int, h: int) -> None:
 		scale = self.gui.scale
 		box_rect = (x, y, w, h)
 		in_panel = self.coll(box_rect)
+		list_top, list_bottom = self.list_bounds(y, h)
+		in_list = self.coll((x, list_top, w, list_bottom - list_top))
 		qb_right_click = 1 if in_panel and self.inp.right_click else 0
-		if in_panel:
-			self.scroll_position = max(0, self.scroll_position - self.smooth_scroll.scroll("queue"))
-		if len(self.queue_rows()) < 3:
-			self.scroll_position = 0
+		self.scroll(box_rect, in_panel)
 		if self.dragging is not None and not (self.inp.mouse_down or self.inp.mouse_up or self.inp.mouse_click):
 			self.dragging = None
 		if not self.queue_menu.active:
@@ -43446,6 +43475,8 @@ class QueueBox:
 		rows, end_y, list_extends = self.visible_rows(y, h)
 		changed = False
 		for item, parent, row_y, row_h in rows:
+			if not in_list:
+				break
 			left = x + (31 if parent is not None else 13) * scale
 			rect = (left, row_y, x + w - 15 * scale - left, row_h)
 			if (parent is not None or item.type == QueueType.ALBUM) and not self.queue_menu.active and self.dragging is None and self.inp.mouse_click and self.coll(self.control_rect(x, row_y, w, child=parent is not None)):
@@ -43542,13 +43573,15 @@ class QueueBox:
 		elif self.pctl.force_queue:
 			self.ddt.text((x + 10 * scale, y + 9 * scale), _("Up Next:"), text_colour, 211)
 
-		if self.scroll_position > 0:
+		if self.scroll_position >= 1:
 			for offset in range(3):
 				self.ddt.rect((x + w // 2, y + (14 + offset * 4) * scale, 3 * scale, 3 * scale), ColourRGBA(230, 190, 0, 255))
 		if self.pctl.pause_queue:
 			self.ddt.rect((x + w - 24 * scale, y + 16 * scale, 3 * scale, 9 * scale), ColourRGBA(230, 190, 0, 255))
 			self.ddt.rect((x + w - 19 * scale, y + 16 * scale, 3 * scale, 9 * scale), ColourRGBA(230, 190, 0, 255))
 
+		clip = sdl3.SDL_Rect(round(x), round(list_top), round(w), round(list_bottom - list_top))  # noqa: RUF057
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
 		for item, parent, row_y, _row_h in rows:
 			if item.uuid_int == self.dragging and self.drag_moved:
 				continue
@@ -43558,16 +43591,18 @@ class QueueBox:
 				self.draw_child_card(x, row_y, w, track, item, draw_back=selected)
 			else:
 				self.draw_card(x, y, w, h, row_y, track, item, selected)
+		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
 
 		if drop is not None:
 			album_id, marker_y = drop
 			marker_x = x + (31 if album_id is not None else 13) * scale
-			self.ddt.rect((marker_x, max(y + 28 * scale, marker_y), x + w - 15 * scale - marker_x, 2 * scale), self.colours.queue_drag_indicator_colour)
+			marker_y = min(max(list_top - 2 * scale, marker_y), list_bottom)
+			self.ddt.rect((marker_x, marker_y, x + w - 15 * scale - marker_x, 2 * scale), self.colours.queue_drag_indicator_colour)
 
-		yy = end_y + 15 * scale
+		yy = min(end_y, list_bottom) + 6 * scale
 		if self.pctl.force_queue:
 			self.ddt.rect((x, yy, w, 3 * scale), ColourRGBA(255, 255, 255, 11))
-		yy += 11 * scale
+		yy += 10 * scale
 		queued_tracks = [track for item in self.pctl.force_queue for track in self.album_tracks(item)]
 		duration = sum(self.pctl.get_track(item.track_id).length for item in queued_tracks)
 		tracks = len(queued_tracks)

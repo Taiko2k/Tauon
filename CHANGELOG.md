@@ -2,6 +2,13 @@
 Changelog
 ---------
 
+### v13.1.0
+
+ - Redesigned settings box
+ - Added search to settings
+ - Added fullscreen milkdrop option
+ - Tweaked queue scrolling
+
 ### v13.0.0
 
  - Added playlist folders
