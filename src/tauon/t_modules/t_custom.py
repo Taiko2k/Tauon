@@ -5966,7 +5966,6 @@ class CustomLayout:
 		gui.custom_edit = False
 		gui.request_frame()
 		box = tauon.rename_playlist_box
-		box.edit_generator = False
 		box.done_callback = callback
 		box.x = tauon.inp.mouse_position[0]
 		box.y = tauon.inp.mouse_position[1]

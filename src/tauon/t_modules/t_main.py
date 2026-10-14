@@ -141,6 +141,8 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
 from tauon.t_modules.t_tagedit_ui import TransEditBox  # noqa: E402
+from tauon.t_modules.t_generator import rename_playlist_references  # noqa: E402
+from tauon.t_modules.t_generator_ui import GeneratorEditBox  # noqa: E402
 from tauon.t_modules.t_musicbrainz_lookup import musicbrainz_call  # noqa: E402
 from tauon.t_modules.t_room import DreamRoom  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
@@ -7547,6 +7549,7 @@ class Tauon:
 		self.sub_lyrics_b:                          TextBox2 = TextBox2(tauon=self)
 		self.sub_lyrics_box:                      SubLyricsBox = SubLyricsBox(tauon=self)
 		self.export_playlist_box:                 ExportPlaylistBox = ExportPlaylistBox(tauon=self)
+		self.generator_box:                        GeneratorEditBox = GeneratorEditBox(tauon=self)
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
@@ -16278,6 +16281,7 @@ class Tauon:
 			and not self.milk_fullscreen.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active \
+			and not self.generator_box.active \
 			and not self.duplicate_import_box.active
 
 	def get_radio_art(self) -> None:
@@ -17323,7 +17327,7 @@ class Tauon:
 
 			elif cm == "air":
 				if self.prefs.subsonic_generator_cache and self.subsonic.last_music is not None \
-						and self.gui.rename_playlist_box and self.rename_playlist_box.edit_generator:
+						and self.generator_box.active:
 					playlist.extend(self.subsonic.last_music)
 				elif not self.subsonic.scanning:
 					playlist.extend(self.subsonic.get_music3(return_list=True))
@@ -17397,6 +17401,14 @@ class Tauon:
 
 			elif cm == "m<":
 				playlist = self.gen_last_modified(0, playlist, reverse=False)
+
+			elif re.fullmatch(r"m[<>]\d+d", cm):
+				# m>30d: modified within the last 30 days, m<30d: longer ago
+				cutoff = time.time() - int(cm[2:-1]) * 86400
+				if cm[1] == ">":
+					playlist = [x for x in playlist if self.pctl.master_library[x].modified_time >= cutoff]
+				else:
+					playlist = [x for x in playlist if self.pctl.master_library[x].modified_time < cutoff]
 
 			elif cm[:2] in ("m>", "m<"):
 				try:
@@ -17686,6 +17698,42 @@ class Tauon:
 				if value.isdigit():
 					playlist = playlist[:int(value)]
 
+			elif re.fullmatch(r"t\d+", cm):
+				# Total time limit in minutes
+				budget = int(cm[1:]) * 60
+				total = 0.0
+				temp = []
+				for item in playlist:
+					if total >= budget:
+						break
+					temp.append(item)
+					total += self.pctl.master_library[item].length
+				playlist = temp
+
+			elif re.fullmatch(r"per-artist\d+", cm):
+				limit = int(cm[10:])
+				counts: dict[str, int] = {}
+				temp = []
+				for item in playlist:
+					tr = self.pctl.master_library[item]
+					artist = (tr.album_artist or tr.artist).lower()
+					if counts.get(artist, 0) < limit:
+						counts[artist] = counts.get(artist, 0) + 1
+						temp.append(item)
+				playlist = temp
+
+			elif re.fullmatch(r"sk[<>]\d+", cm):
+				value = int(cm[3:])
+				if cm[2] == ">":
+					playlist = [x for x in playlist if self.pctl.master_library[x].skips > value]
+				else:
+					playlist = [x for x in playlist if self.pctl.master_library[x].skips < value]
+
+			elif cm == "hr":
+				playlist = [
+					x for x in playlist
+					if self.pctl.master_library[x].bit_depth > 16 or self.pctl.master_library[x].samplerate > 48000]
+
 			# SEARCH FOLDER
 			elif cm.startswith("p\"") and len(cm) > 3:
 
@@ -17883,7 +17931,7 @@ class Tauon:
 		# Eliminate duplicates
 		if playlist:
 			playlist = list(dict.fromkeys(playlist))
-		if self.gui.rename_playlist_box and (not playlist or cmds.count("a") > 1):
+		if self.generator_box.active and (not playlist or cmds.count("a") > 1):
 			pass
 		else:
 			source_playlist[:] = playlist[:]
@@ -17901,7 +17949,7 @@ class Tauon:
 		self.pctl.gen_codes[self.pctl.pl_to_id(pl)] = "self a path tn ypa auto"
 		self.show_message(
 			_("OK. This playlist will automatically sort on import from now on"),
-			_("You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""), mode="done")
+			_("You can remove or edit this behavior with \"Smart Playlist…\" in the playlist tab menu"), mode="done")
 
 	def jellyfin_show_test(self, _: int) -> bool:
 		return bool(self.prefs.jelly_password and self.prefs.jelly_username)
@@ -18188,7 +18236,12 @@ class Tauon:
 		self.reload_metadata(ref.track_id)
 
 	def edit_generator_box(self, index: int) -> None:
-		self.rename_playlist(index, generator=True)
+		self.generator_box.activate(index)
+
+	def rename_playlist_references(self, old: str, new: str) -> None:
+		"""Update generator codes that select a playlist by its old title."""
+		for key, code in self.pctl.gen_codes.items():
+			self.pctl.gen_codes[key] = rename_playlist_references(code, old, new)
 
 	def pin_playlist_toggle(self, pl: int) -> None:
 		self.pctl.multi_playlist[pl].hidden ^= True
@@ -18245,7 +18298,6 @@ class Tauon:
 			folder.title = text
 
 		box = self.rename_playlist_box
-		box.edit_generator = False
 		box.done_callback = done
 		box.x = self.inp.mouse_position[0]
 		box.y = min(self.inp.mouse_position[1], round(350 * self.gui.scale))
@@ -19173,17 +19225,12 @@ class Tauon:
 			"tmix\"" not in code and
 			"r"      not in cmds)
 
-	def rename_playlist(self, index, generator: bool = False) -> None:
+	def rename_playlist(self, index) -> None:
 		self.gui.rename_playlist_box = True
 		self.rename_playlist_box.done_callback = None
-		self.rename_playlist_box.edit_generator = False
 		self.rename_playlist_box.playlist_index = index
 		self.rename_playlist_box.x = self.inp.mouse_position[0]
 		self.rename_playlist_box.y = self.inp.mouse_position[1]
-
-		if generator:
-			self.rename_playlist_box.y = self.window_size[1] // 2 - round(200 * self.gui.scale)
-			self.rename_playlist_box.x = self.window_size[0] // 2 - round(250 * self.gui.scale)
 
 		self.rename_playlist_box.y = min(self.rename_playlist_box.y, round(350 * self.gui.scale))
 
@@ -19195,10 +19242,6 @@ class Tauon:
 		else:
 			self.rename_text_area.set_text(self.pctl.multi_playlist[index].title)
 		self.rename_text_area.highlight_all()
-		self.gui.gen_code_errors = False
-
-		if generator:
-			self.rename_playlist_box.toggle_edit_gen()
 
 	def gen_power2(self) -> list[PowerTag]:
 		tags = {}  # [tag name]: (first position, number of times we saw it)
@@ -40855,50 +40898,39 @@ class RenamePlaylistBox:
 		self.pctl             = tauon.pctl
 		self.colours          = tauon.colours
 		self.window_size      = tauon.window_size
-		self.thread_manager   = tauon.thread_manager
 		self.rename_text_area = tauon.rename_text_area
 		self.x = 300
 		self.y = 300
 		self.playlist_index = 0
 
-		self.edit_generator = False
 		# When set, the box renames something other than a playlist: on commit
 		# the callback receives the entered text (skipped when empty) and the
 		# playlist paths are bypassed. Cleared after every commit and whenever
 		# the box opens for a playlist. Used by the Custom Layout slot rename.
 		self.done_callback: Callable[[str], None] | None = None
 
-	def toggle_edit_gen(self) -> None:
-		self.edit_generator ^= True
-		if self.edit_generator:
-
-			if len(self.rename_text_area.text) > 0:
-				self.pctl.multi_playlist[self.playlist_index].title = self.rename_text_area.text
-
-			pl = self.playlist_index
-			id = self.pctl.pl_to_id(pl)
-
-			text = self.pctl.gen_codes.get(id)
-			if not text:
-				text = ""
-
-			self.rename_text_area.set_text(text)
-			self.rename_text_area.highlight_none()
-
-			self.gui.regen_single = self.tauon.rename_playlist_box.playlist_index
-			self.thread_manager.ready("worker")
-		else:
-			self.rename_text_area.set_text(self.pctl.multi_playlist[self.playlist_index].title)
-			self.rename_text_area.highlight_none()
-			# self.rename_text_area.highlight_all()
+	def commit_title(self) -> None:
+		if self.gui.radio_view:
+			self.pctl.radio_playlists[self.playlist_index].name = self.rename_text_area.text
+			return
+		playlist = self.pctl.multi_playlist[self.playlist_index]
+		old = playlist.title
+		playlist.title = self.rename_text_area.text
+		self.tauon.rename_playlist_references(old, playlist.title)
 
 	def render(self) -> None:
 		if self.gui.level_2_click:
 			self.inp.mouse_click = True
 		self.gui.level_2_click = False
 
-		if self.inp.key_tab_press and self.done_callback is None:
-			self.toggle_edit_gen()
+		# Tab switches to the generator editor
+		if self.inp.key_tab_press and self.done_callback is None and not self.gui.radio_view:
+			self.inp.key_tab_press = False
+			if len(self.rename_text_area.text) > 0:
+				self.commit_title()
+			self.gui.rename_playlist_box = False
+			self.tauon.edit_generator_box(self.playlist_index)
+			return
 
 		text_w = self.ddt.get_text_w(self.rename_text_area.text, 315)
 		min_w = max(250 * self.gui.scale, text_w + 50 * self.gui.scale)
@@ -40910,8 +40942,6 @@ class RenamePlaylistBox:
 
 		rect = [self.x, self.y, min_w, 37 * self.gui.scale]
 		bg = ColourRGBA(40, 40, 40, 255)
-		if self.edit_generator:
-			bg = ColourRGBA(70, 50, 100, 255)
 		self.ddt.text_background_colour = bg
 
 		# Draw background
@@ -40926,206 +40956,6 @@ class RenamePlaylistBox:
 		rect2 = [self.x, self.y + rect[3] - 4 * self.gui.scale, min_w, 4 * self.gui.scale]
 		self.ddt.rect(rect2, ColourRGBA(255, 255, 255, 60))
 
-		if self.edit_generator:
-			pl = self.playlist_index
-			id = self.pctl.pl_to_id(pl)
-			self.pctl.gen_codes[id] = self.rename_text_area.text
-
-			if self.inp.input_text or self.inp.key_backspace_press:
-				self.gui.regen_single = self.tauon.rename_playlist_box.playlist_index
-				self.thread_manager.ready("worker")
-
-				# self.regenerate_playlist(self.tauon.rename_playlist_box.playlist_index)
-			# if self.gui.gen_code_errors:
-			#     del_icon.render(rect[0] + rect[2] - 21 * self.gui.scale, rect[1] + 10 * self.gui.scale, ColourRGBA(255, 70, 70, 255))
-			self.ddt.text_background_colour = ColourRGBA(4, 4, 4, 255)
-			hint_rect = [rect[0], rect[1] + round(50 * self.gui.scale), round(560 * self.gui.scale), round(300 * self.gui.scale)]
-
-			if hint_rect[0] + hint_rect[2] > self.window_size[0]:
-				hint_rect[0] = self.window_size[0] - hint_rect[2]
-
-			self.ddt.rect(hint_rect, ColourRGBA(0, 0, 0, 245))
-			xx0 = hint_rect[0] + round(15 * self.gui.scale)
-			xx = hint_rect[0] + round(25 * self.gui.scale)
-			xx2 = hint_rect[0] + round(85 * self.gui.scale)
-			yy = hint_rect[1] + round(10 * self.gui.scale)
-
-			text_colour = ColourRGBA(150, 150, 150, 255)
-			title_colour = text_colour
-			code_colour = ColourRGBA(250, 250, 250, 255)
-			hint_colour = ColourRGBA(110, 110, 110, 255)
-
-			title_font = 311
-			code_font = 311
-			hint_font = 310
-
-			# self.ddt.pretty_rect = hint_rect
-
-			self.ddt.text(
-				(xx0, yy), _("Type codes separated by spaces. Codes will be executed left to right."), text_colour, title_font)
-			yy += round(18 * self.gui.scale)
-			self.ddt.text((xx0, yy), _("Select sources: (default: all playlists)"), title_colour, title_font)
-			yy += round(14 * self.gui.scale)
-			self.ddt.text((xx, yy), "s\"name\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Select source playlist by name"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "self", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Select playlist itself"), hint_colour, hint_font)
-
-			yy += round(16 * self.gui.scale)
-			self.ddt.text((xx0, yy), _("Add tracks from sources: (at least 1 required)"), title_colour, title_font)
-			yy += round(14 * self.gui.scale)
-
-			self.ddt.text((xx, yy), "a\"name\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Search artist name"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "g\"genre\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Search genre"), hint_colour, hint_font)
-			# yy += round(12 * self.gui.scale)
-			# self.ddt.text((xx, yy), "p\"text\"", code_colour, code_font)
-			# self.ddt.text((xx2, yy), "Search filepath segment", hint_colour, hint_font)
-
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "f\"terms\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Find / Search / Path"), hint_colour, hint_font)
-
-			# yy += round(12 * self.gui.scale)
-			# self.ddt.text((xx, yy), "ext\"flac\"", code_colour, code_font)
-			# self.ddt.text((xx2, yy), "Search by file type", hint_colour, hint_font)
-
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "a", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Add all tracks"), hint_colour, hint_font)
-
-			yy += round(16 * self.gui.scale)
-			self.ddt.text((xx0, yy), _("Filters"), title_colour, title_font)
-			yy += round(14 * self.gui.scale)
-			self.ddt.text((xx, yy), "n123", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Limit to number of tracks"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "y>1999", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Year: >, <, ="), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "pc>5", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Play count: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "d>3", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track duration (minutes): >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ad>5", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Album duration (minutes): >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rat>3.5", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track rating 0-5: >, <, ="), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rata>3.5", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Album rating 0-5: >, <, ="), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "m>date", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Last Modified (YYYY-MM-DD): >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "l", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Loved tracks"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ly", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Has lyrics"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ff\"terms\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Search and keep"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "fx\"terms\"", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Search and exclude"), hint_colour, hint_font)
-
-			# yy += round(12 * self.gui.scale)
-			# self.ddt.text((xx, yy), "com\"text\"", code_colour, code_font)
-			# self.ddt.text((xx2, yy), "Search in comment", hint_colour, hint_font)
-			# yy += round(12 * self.gui.scale)
-
-			xx += round(260 * self.gui.scale)
-			xx2 += round(260 * self.gui.scale)
-			xx0 += round(260 * self.gui.scale)
-			yy = hint_rect[1] + round(10 * self.gui.scale)
-			yy += round(18 * self.gui.scale)
-
-			# yy += round(16 * self.gui.scale)
-			self.ddt.text((xx0, yy), _("Sorters"), title_colour, title_font)
-			yy += round(14 * self.gui.scale)
-
-			self.ddt.text((xx, yy), "st", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Shuffle tracks"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ra", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Shuffle albums"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "y>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Year: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "d>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track duration: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "pt>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track Playtime: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "pa>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Album playtime: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ad>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Album duration: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rv", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Invert tracks"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rva", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Invert albums"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rat>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track rating: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "rata>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Album rating: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "m>", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Modification date: >, <"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "path", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Filepath"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "tn", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Track number per album"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "ypa", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Year per artist"), hint_colour, hint_font)
-			yy += round(12 * self.gui.scale)
-			self.ddt.text((xx, yy), "\"artist\">", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Sort by column name: >, <"), hint_colour, hint_font)
-
-			yy += round(16 * self.gui.scale)
-			self.ddt.text((xx0, yy), _("Special"), title_colour, title_font)
-			yy += round(14 * self.gui.scale)
-			self.ddt.text((xx, yy), "auto", code_colour, code_font)
-			self.ddt.text((xx2, yy), _("Automatically reload on imports"), hint_colour, hint_font)
-
-			yy += round(24 * self.gui.scale)
-			# xx += round(80 * self.gui.scale)
-			xx2 = xx
-			xx2 += self.ddt.text((xx2, yy), _("Status:"), ColourRGBA(90, 90, 90, 255), 212) + round(6 * self.gui.scale)
-			if self.rename_text_area.text:
-				if self.gui.gen_code_errors:
-					if self.gui.gen_code_errors == "playlist":
-						self.ddt.text((xx2, yy), _("Playlist not found"), ColourRGBA(255, 100, 100, 255), 212)
-					elif self.gui.gen_code_errors == "empty":
-						self.ddt.text((xx2, yy), _("Result is empty"), ColourRGBA(250, 190, 100, 255), 212)
-					elif self.gui.gen_code_errors == "close":
-						self.ddt.text((xx2, yy), _("Close quotation…"), ColourRGBA(110, 110, 110, 255), 212)
-					else:
-						self.ddt.text((xx2, yy), "...", ColourRGBA(255, 100, 100, 255), 212)
-				else:
-					self.ddt.text((xx2, yy), _("OK"), ColourRGBA(100, 255, 100, 255), 212)
-			else:
-				self.ddt.text((xx2, yy), _("Disabled"), ColourRGBA(110, 110, 110, 255), 212)
-
-		# self.ddt.pretty_rect = None
-
 		# If enter or click outside of box: save and close
 		if self.inp.key_return_press or (self.inp.key_esc_press and len(self.gui.editline) == 0) \
 				or ((self.inp.mouse_click or self.inp.level_2_right_click) and not self.coll(rect)):
@@ -41136,13 +40966,8 @@ class RenamePlaylistBox:
 				self.done_callback = None
 				if len(self.rename_text_area.text) > 0:
 					cb(self.rename_text_area.text)
-			elif self.edit_generator:
-				pass
 			elif len(self.rename_text_area.text) > 0:
-				if self.gui.radio_view:
-					self.pctl.radio_playlists[self.playlist_index].name = self.rename_text_area.text
-				else:
-					self.pctl.multi_playlist[self.playlist_index].title = self.rename_text_area.text
+				self.commit_title()
 			self.inp.key_return_press = False
 
 class PlaylistBox:
@@ -54531,8 +54356,10 @@ def worker1(tauon: Tauon) -> None:
 
 		# Update smart playlists
 		if gui.regen_single_id is not None:
-			tauon.regenerate_playlist(pl=-1, silent=True, id=gui.regen_single_id)
+			# Clear first so a request made while this runs isn't lost
+			target_id = gui.regen_single_id
 			gui.regen_single_id = None
+			tauon.regenerate_playlist(pl=-1, silent=True, id=target_id)
 
 		# Update smart playlists
 		if gui.regen_single > -1:
@@ -57276,8 +57103,8 @@ def main(holder: Holder) -> None:
 		tauon.upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=tauon.jellyfin_show_test))
 
 	tab_menu.add(MenuItem(_("Regenerate"), tauon.regen_playlist_async, tauon.regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
-	tab_menu.add_sub(_("Generate…"), 150)
-	tab_menu.add(MenuItem(_("Edit Generator…"), tauon.edit_generator_box, pass_ref=True))
+	tab_menu.add_sub(_("Derive…"), 150)
+	tab_menu.add(MenuItem(_("Smart Playlist…"), tauon.edit_generator_box, pass_ref=True))
 	tab_menu.add_sub(_("Sort…"), 170)
 	extra_tab_menu.add_sub(_("From Current…"), 133)
 	# tab_menu.add(_("Sort by Filepath"), standard_sort, pass_ref=True, disable_test=test_pl_tab_locked, pass_ref_deco=True)
@@ -59356,11 +59183,9 @@ def main(holder: Holder) -> None:
 			tauon.scroll_hide_timer.get() < 0.9 or (
 				(tauon.coll(gui.scroll_hide_box) or scroll_hold or gui.quick_search_mode)
 				and not menu_is_open()
-				and not pref_box.enabled
-				and not gui.rename_playlist_box
+				and (gui.quick_search_mode or tauon.is_level_zero(include_menus=False))
 				and gui.layer_focus == 0
 				and gui.show_playlist
-				and not tauon.search_over.active
 			)
 		):
 			scroll_opacity = 255
@@ -60842,6 +60667,7 @@ def main(holder: Holder) -> None:
 				inp.k_input = True
 
 		tauon.trans_edit_box.capture_wheel()
+		tauon.generator_box.capture_wheel()
 		tauon.duplicate_import_box.handle_input()
 
 		radio_directory_search_active = gui.radio_view and radiobox.tab == 1 and not radiobox.active
@@ -60855,6 +60681,7 @@ def main(holder: Holder) -> None:
 			or tauon.trans_edit_box.active
 			or gui.timed_lyrics_editing_now
 			or tauon.export_playlist_box.active
+			or tauon.generator_box.active
 			or tauon.milk_choose.active
 		)
 
@@ -61235,6 +61062,7 @@ def main(holder: Holder) -> None:
 				or gui.rename_playlist_box
 				or gui.rename_folder_box
 				or tauon.search_over.active
+				or tauon.generator_box.active
 			):
 				inp.right_click = False
 
@@ -63378,6 +63206,9 @@ def main(holder: Holder) -> None:
 				if tauon.trans_edit_box.active:
 					tauon.trans_edit_box.render()
 
+				if tauon.generator_box.active:
+					tauon.generator_box.render()
+
 				if radiobox.active:
 					radiobox.render()
 
@@ -63682,7 +63513,7 @@ def main(holder: Holder) -> None:
 							tauon.goto_album(pctl.playlist_playing_position)
 						gui.quick_search_mode = False
 						tauon.search_clear_timer.set()
-				elif not tauon.search_over.active:
+				elif not tauon.search_over.active and tauon.is_level_zero(include_menus=False):
 					if inp.key_up_press and (
 						(
 							not inp.key_shiftr_down

@@ -5,6 +5,7 @@ Changelog
 ### v13.1.0
 
  - Redesigned settings box
+ - Redesigned smart playlist generator editor with steps, presets and new filter codes
  - Added search to settings
  - Added lyrics mode to mini modes
  - Added fullscreen milkdrop option
