@@ -20419,7 +20419,7 @@ class Tauon:
 				line,
 				alpha_mod(titlec, album_fade),
 				self.gui.row_font_size,
-				width - 71 * self.gui.scale - artistoffset - star_x - 20 * self.gui.scale)
+				width - 71 * self.gui.scale - artistoffset - star_x - 20 * self.gui.scale - 2)
 
 			line = get_display_time(n_track.length)
 
