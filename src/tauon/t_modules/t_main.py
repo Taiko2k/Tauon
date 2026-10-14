@@ -33532,7 +33532,8 @@ class Over:
 			hue = self.settings_group_accent(group)
 			active = group.key == self.settings_group_key and not searching
 			rect = (item_x, yy, item_w, round(30 * s))
-			hover = self.coll(rect)
+			# Trim the bottom edge so stacked rows don't share a hover pixel
+			hover = self.coll((rect[0], rect[1], rect[2], rect[3] - 1))
 			fill = active_bg if active else hover_bg if hover else chrome
 			if fill != chrome:
 				ddt.rect(rect, fill)
@@ -33551,7 +33552,7 @@ class Over:
 				if section.key == "account" and not self.account_view:
 					continue
 				srect = (item_x + round(10 * s), yy, item_w - round(10 * s), round(22 * s))
-				shover = self.coll(srect)
+				shover = self.coll((srect[0], srect[1], srect[2], srect[3] - 1))
 				current = section.key == current_section
 				sfill = chrome
 				if current:
