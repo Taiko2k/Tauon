@@ -28884,11 +28884,7 @@ class SettingsRows:
 		rect = self.row(h)
 		key = over.settings_track_key(title)
 		active_index = next((i for i, (_label, active, _callback) in enumerate(options) if active), -1)
-		original = over.settings_track(key, active_index, title, hint, keywords, restart, rect[1])
-		if original is not None and 0 <= original < len(options):
-			options[original][2]()
-			options = [(label, i == original, callback) for i, (label, _active, callback) in enumerate(options)]
-			active_index = original
+		over.settings_track(key, active_index, title, hint, keywords, restart, rect[1])
 		changed = over.settings_is_changed(key, active_index)
 		over.settings_row_label(rect, key, title, hint, self.accent, changed, restart, False, bar_w if not stacked else 0, top_aligned=stacked)
 		if stacked:
@@ -28930,14 +28926,11 @@ class SettingsRows:
 			line_x += chip_w + gap
 		lines = line + 1
 
-		label_h = round((40 if hint else 28) * s)
+		label_h = round((40 if hint else 28) * s) + 1
 		rect = self.row(label_h + lines * chip_h + (lines - 1) * gap + round(10 * s))
 		key = over.settings_track_key(title)
 		active_index = next((i for i, (_label, active, _callback) in enumerate(options) if active), -1)
-		original = over.settings_track(key, active_index, title, hint, keywords, restart, rect[1])
-		if original is not None and 0 <= original < len(options):
-			options[original][2]()
-			active_index = original
+		over.settings_track(key, active_index, title, hint, keywords, restart, rect[1])
 		over.settings_row_label(
 			rect, key, title, hint, self.accent, over.settings_is_changed(key, active_index), restart, False, 0, top_aligned=True)
 
@@ -28985,11 +28978,7 @@ class SettingsRows:
 		s = self.scale
 		rect = self.row(self.row_h(hint))
 		key = over.settings_track_key(title)
-		original = over.settings_track(key, value, title, hint, keywords, False, rect[1])
-		if original is not None and not disabled:
-			value = original
-			if callback is not None:
-				callback(value)
+		over.settings_track(key, value, title, hint, keywords, False, rect[1])
 		value_w = round(64 * s)
 		track_w = round(132 * s)
 		control_w = track_w + value_w + round(10 * s)
@@ -29021,9 +29010,7 @@ class SettingsRows:
 		s = self.scale
 		rect = self.row(self.row_h(hint))
 		key = over.settings_track_key(title)
-		original = over.settings_track(key, value, title, hint, keywords, False, rect[1])
-		if original is not None:
-			value = original
+		over.settings_track(key, value, title, hint, keywords, False, rect[1])
 		button_w = round(22 * s)
 		value_w = round(64 * s)
 		gap = round(4 * s)
@@ -29060,9 +29047,7 @@ class SettingsRows:
 		s = self.scale
 		rect = self.row(self.row_h())
 		key = over.settings_track_key(title)
-		original = over.settings_track(key, (first, second), title, "", keywords, False, rect[1])
-		if original is not None:
-			first, second = original
+		over.settings_track(key, (first, second), title, "", keywords, False, rect[1])
 		button_w = round(22 * s)
 		value_w = round(64 * s)
 		gap = round(4 * s)
@@ -29113,11 +29098,12 @@ class SettingsRows:
 		*,
 		hint: str = "",
 		keywords: str = "",
+		divider: bool = True,
 	) -> bool:
 		"""A labelled row of buttons; returns True when one was pressed."""
 		over = self.over
 		s = self.scale
-		rect = self.row(self.row_h(hint))
+		rect = self.row(self.row_h(hint), divider)
 		button_h = round(24 * s)
 		gap = round(6 * s)
 		widths = [over.ddt.get_text_w(label, 12) + round(20 * s) for label, _callback, _emphasis in buttons]
@@ -29261,10 +29247,6 @@ class Over:
 		self.settings_close_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "ex.png", True)
 		# Change tracking and search, keyed "group/section title/control title"
 		self.settings_baseline: dict[str, object] = {}
-		self.settings_values: dict[str, object] = {}
-		self.settings_titles: dict[str, str] = {}
-		self.settings_restart_keys: set[str] = set()
-		self.settings_revert_all = False
 		self.settings_needs_survey = True
 		self.settings_index: dict[str, SettingsEntry] = {}
 		self.settings_row_offsets: dict[str, float] = {}
@@ -31784,29 +31766,14 @@ class Over:
 			title, hint, keywords, self.settings_track_group, self.settings_track_section_key, self.settings_track_section, where, action)
 		self.settings_row_offsets[key] = y - self.settings_doc_origin
 
-	def settings_track(self, key: str, value: object, title: str, hint: str, keywords: str, restart: bool, y: int) -> object | None:
-		"""Record a control's value as drawn. Returns the value it had when settings
-		opened while Undo all is being applied, otherwise None."""
+	def settings_track(self, key: str, value: object, title: str, hint: str, keywords: str, restart: bool, y: int) -> None:
+		"""Index a control and record the value it had when settings opened."""
 		self.settings_index_entry(key, title, hint, keywords, y)
 		if key not in self.settings_baseline:
 			self.settings_baseline[key] = value
-		self.settings_values[key] = value
-		self.settings_titles[key] = title
-		if restart:
-			self.settings_restart_keys.add(key)
-		if self.settings_revert_all:
-			original = self.settings_baseline[key]
-			if original != value:
-				self.settings_values[key] = original
-				self.gui.update_layout = True
-				return original
-		return None
 
 	def settings_is_changed(self, key: str, value: object) -> bool:
 		return key in self.settings_baseline and self.settings_baseline[key] != value
-
-	def settings_changed_keys(self) -> list[str]:
-		return [key for key, value in self.settings_values.items() if self.settings_baseline.get(key, value) != value]
 
 	# --- Row drawing primitives ---
 
@@ -31903,13 +31870,7 @@ class Over:
 		x, y, w, h = (round(v) for v in rect)
 		active = function if type(function) is bool else function(1)
 		key = self.settings_track_key(title)
-		original = self.settings_track(key, active, title, subtitle, keywords, restart, y)
-		if original is not None and not disabled:
-			if type(function) is bool:
-				active = original
-			else:
-				function()
-				active = function(1)
+		self.settings_track(key, active, title, subtitle, keywords, restart, y)
 
 		base = self.ddt.text_background_colour
 		fill = base
@@ -32156,12 +32117,7 @@ class Over:
 		if selected not in prefs.phazor_devices and prefs.phazor_devices:
 			selected = prefs.phazor_devices[0]
 		device_key = self.settings_track_key(_("Output device"))
-		original = self.settings_track(device_key, selected, _("Output device"), "", "speaker headphones dac usb hdmi", False, rows.y)
-		if original is not None and original in prefs.phazor_devices:
-			prefs.phazor_device_selected = original
-			selected = original
-			self.pctl.playerCommand = "set-device"
-			self.pctl.playerCommandReady = True
+		self.settings_track(device_key, selected, _("Output device"), "", "speaker headphones dac usb hdmi", False, rows.y)
 
 		if not prefs.phazor_devices:
 			rows.note(_("No output devices detected. Try refreshing audio or restarting Tauon."), lines=2)
@@ -32348,7 +32304,6 @@ class Over:
 		db_range = 12
 		labels = ("31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k")
 		bg = self.ddt.text_background_colour
-		self.ddt.rect((inner_x, bar_y + center, inner_w, max(1, round(1 * s))), self.settings_overlay(bg, 30))
 		bar_fill_colour = rows.accent if eq_enabled else self.settings_overlay(bg, 80)
 		bar_x = inner_x
 		for i, q in enumerate(prefs.eq):
@@ -32376,7 +32331,8 @@ class Over:
 			self.ddt.rect((bar_x, bar_y + center, bar_w, start), bar_fill_colour)
 			self.ddt.text((bar_x + bar_w // 2, bar_y + bar_h + round(6 * s), 2), labels[i], self.colours.box_text_label, 10, bg=bg)
 			bar_x += bar_w + bar_gap
-		rows.action("", ((_("Reset"), self.reset_eq, False),))
+		rows.gap(-2)
+		rows.action("", ((_("Reset"), self.reset_eq, False),), divider=False)
 
 	def settings_body_cache(self, rows: SettingsRows) -> None:
 		prefs = self.prefs
@@ -33226,8 +33182,8 @@ class Over:
 		return yy - gap - y
 
 	def survey_settings(self, x: int, w: int) -> None:
-		"""Draw every group off-screen with input disabled, so search, change
-		tracking and Undo all cover pages that aren't open."""
+		"""Draw every group off-screen with input disabled, so search and change
+		tracking cover pages that aren't open."""
 		saved = (self.click, self.right_click, self.coll, self.settings_clip, self.settings_doc_origin, self.settings_text_seen[:])
 		self.click = False
 		self.right_click = False
@@ -33239,7 +33195,6 @@ class Over:
 				self.render_settings_group(group, x, 0, w)
 		finally:
 			self.click, self.right_click, self.coll, self.settings_clip, self.settings_doc_origin, self.settings_text_seen = saved
-			self.settings_revert_all = False
 			self.settings_needs_survey = False
 
 	@staticmethod
@@ -33459,9 +33414,7 @@ class Over:
 		ddt.rect((x, y, full_w, full_h), colours.box_background)
 		self.begin_settings_text_inputs()
 
-		changed = self.settings_changed_keys()
 		header_h = round(46 * s)
-		footer_h = round(36 * s) if changed else 0
 		rail_w = round(140 * s)
 		chrome = colours.sys_tab_bg
 		line = max(1, round(1 * s))
@@ -33481,7 +33434,7 @@ class Over:
 		searching = bool(self.settings_search_box.text.strip())
 
 		body_y = y + header_h
-		body_h = full_h - header_h - footer_h
+		body_h = full_h - header_h
 		content_x = x + rail_w
 		content_w = full_w - rail_w
 		view_rect = (content_x, body_y, content_w, body_h)
@@ -33493,9 +33446,8 @@ class Over:
 		texture = self.ensure_settings_texture((max(1, int(self.window_size[0])), max(1, int(self.window_size[1]))))
 		current_target = sdl3.SDL_GetRenderTarget(self.renderer)
 		sdl3.SDL_SetRenderTarget(self.renderer, texture)
-		if self.settings_needs_survey or self.settings_revert_all:
+		if self.settings_needs_survey:
 			self.survey_settings(doc_x, doc_w)
-			changed = self.settings_changed_keys()
 		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
 		sdl3.SDL_RenderClear(self.renderer)
 
@@ -33621,31 +33573,6 @@ class Over:
 				yy += srect[3]
 			yy += round(6 * s)
 
-		# Footer: what changed since settings opened
-		if changed:
-			fy = y + full_h - footer_h
-			ddt.rect((x, fy, full_w, footer_h), chrome)
-			ddt.rect((x, fy, full_w, line), divider)
-			ddt.text_background_colour = chrome
-			restart = [self.settings_titles.get(key, "") for key in changed if key in self.settings_restart_keys]
-			dot = round(7 * s)
-			dot_colour = self.settings_readable_colour(ColourRGBA(255, 180, 90, 255), chrome, 3.0) if restart else self.settings_page_accent()
-			ddt.rect((x + round(14 * s), fy + (footer_h - dot) // 2, dot, dot), dot_colour)
-			if len(changed) == 1:
-				status = _("1 change since opening")
-			else:
-				status = _("{N} changes since opening").format(N=len(changed))
-			if restart:
-				status += " · " + _("Restart Tauon to apply: {names}").format(names=", ".join(restart))
-			button_w = ddt.get_text_w(_("Undo all"), 12) + round(20 * s)
-			ddt.text(
-				(x + round(28 * s), fy + (footer_h - round(16 * s)) // 2), status, colours.box_text_label, 12, bg=chrome,
-				max_w=full_w - round(48 * s) - button_w)
-			if self.settings_small_button(
-				(x + full_w - round(10 * s) - button_w, fy + (footer_h - round(24 * s)) // 2, button_w, round(24 * s)), _("Undo all")):
-				self.settings_revert_all = True
-				gui.request_frame()
-
 		self.finish_settings_text_inputs()
 		self.click = False
 		self.right_click = False
@@ -33661,10 +33588,6 @@ class Over:
 		self.settings_search_cache = None
 		self.account_view = 0
 		self.settings_baseline = {}
-		self.settings_values = {}
-		self.settings_titles = {}
-		self.settings_restart_keys = set()
-		self.settings_revert_all = False
 		self.settings_needs_survey = True
 		self.settings_search_box.text = ""
 		self.settings_text_focus = self.settings_search_box
