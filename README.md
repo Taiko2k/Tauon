@@ -52,7 +52,7 @@ Installation is available on [Arch Linux](https://archlinux.org/packages/extra/x
 
 Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
 
-There is also a 3rd party AppImage available [here](https://github.com/domesya/Tauon-AppImage).
+There is also a 3rd party AppImage available [here](https://github.com/pkgforge-dev/Tauon-AppImage).
 
 ___
 
