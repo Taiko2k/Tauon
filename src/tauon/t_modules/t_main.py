@@ -22769,9 +22769,13 @@ class Drawing:
 		expanded: bool = False, enabled: bool = True, press: bool | None = None, align_left: bool = False,
 		text_colour: ColourRGBA | None = None, text_highlight_colour: ColourRGBA | None = None,
 		background_colour: ColourRGBA | None = None, background_highlight_colour: ColourRGBA | None = None,
-		border_colour: ColourRGBA | None = None,
+		border_colour: ColourRGBA | None = None, dim: bool = True,
 	) -> bool:
-		"""Draw a dropdown trigger; its caller owns the menu and selection."""
+		"""Draw a dropdown trigger; its caller owns the menu and selection.
+
+		A disabled dropdown ignores the pointer; with dim=False it keeps its normal look, for when
+		it is only blocked by something else being open.
+		"""
 		scale = self.gui.scale
 		padding = round(8 * scale)
 		arrow_w = round(20 * scale)
@@ -22789,7 +22793,7 @@ class Drawing:
 			fill = background_highlight_colour if background_highlight_colour is not None else self.colours.box_button_background_highlight
 			ink = text_highlight_colour if text_highlight_colour is not None else self.colours.box_button_text_highlight
 		background = alpha_blend(fill, self.colours.box_background)
-		if not enabled:
+		if not enabled and dim:
 			ink = alpha_blend(alpha_mod(ink, 120), background)
 		if border_colour is None:
 			self.ddt.rect(rect, fill)

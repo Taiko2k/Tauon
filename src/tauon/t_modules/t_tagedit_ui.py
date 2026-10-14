@@ -980,7 +980,7 @@ class TransEditBox:
 		self.scope_anchor = rect
 		if self.draw.dropdown(
 			label, x, y, w=width, h=rect[3], font=12, align_left=True,
-			expanded=self.scope_open, enabled=self.input_enabled or self.scope_open,
+			expanded=self.scope_open, enabled=self.input_enabled or self.scope_open, dim=False,
 			press=self.input_enabled and self.inp.mouse_click,
 			text_colour=self.input_colour, text_highlight_colour=self.input_colour,
 			background_colour=self.colours.box_thumb_background, border_colour=self.colours.box_text_border,
@@ -1688,7 +1688,7 @@ class TransEditBox:
 			w=art_width,
 			h=round(23 * scale),
 			expanded=art_open,
-			enabled=self.input_enabled or art_open,
+			enabled=self.input_enabled or art_open, dim=False,
 			press=self.input_enabled and self.inp.mouse_click,
 		):
 			self.open_artwork(ax + art_width, y + round(44 * scale))
@@ -1858,7 +1858,7 @@ class TransEditBox:
 			w=preset_space,
 			h=round(23 * scale),
 			expanded=presets_open,
-			enabled=self.input_enabled or presets_open,
+			enabled=self.input_enabled or presets_open, dim=False,
 			press=self.input_enabled and self.inp.mouse_click,
 		):
 			self.open_presets(x + width, add_y + round(26 * scale))
@@ -2181,7 +2181,7 @@ class TransEditBox:
 			w=round(80 * scale),
 			h=round(26 * scale),
 			expanded=menu_open,
-			enabled=self.input_enabled or menu_open,
+			enabled=self.input_enabled or menu_open, dim=False,
 		):
 			self.open_tools(x + width - round(16 * scale), y + round(95 * scale))
 		self._scope_selector(body_x, body_y - round(34 * scale), body_width - round(175 * scale), body_height)
