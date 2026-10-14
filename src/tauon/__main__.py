@@ -117,10 +117,13 @@ if "--no-start" in sys.argv or any(
 # Everything below is only needed to actually start up. Importing GLib and the
 # rest costs far more than the whole remote control path above, so keep them
 # after it - a command like --playpause must not pay for them.
+import array  # noqa: E402
 import ctypes  # noqa: E402
 import ctypes.util  # noqa: E402
+import math  # noqa: E402
 import os  # noqa: E402
 import pickle  # noqa: E402
+import random  # noqa: E402
 import subprocess  # noqa: E402
 from ctypes import c_int, pointer  # noqa: E402
 
@@ -569,44 +572,148 @@ sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
 logical_size[0] = i_x.contents.value
 logical_size[1] = i_y.contents.value
 
-# Loading screen: a full window grid of interconnected isometric wireframe boxes
+# Loading screen: a star field crossed by a faint Milky Way, laid out randomly each startup
 def draw_loading_screen() -> None:
-	box_w = round(44 * scale)  # half-width of a box top face
-	box_r = box_w // 2         # half-height of the top face (2:1 isometric)
-	box_d = round(35 * scale)  # vertical edge length
+	width, height = window_size
+	rng = random.Random()
+	rand = rng.random
+	grey = 134 / 255
 
-	def polyline(points: list[tuple[float, float]]) -> None:
-		array = (sdl3.SDL_FPoint * len(points))()
-		for i, (x, y) in enumerate(points):
-			array[i].x = float(x)
-			array[i].y = float(y)
-		sdl3.SDL_RenderLines(renderer, array, len(points))
-
-	sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
+	sdl3.SDL_SetRenderDrawColor(renderer, 11, 11, 11, 255)
 	sdl3.SDL_RenderFillRect(renderer, None)
 
-	sdl3.SDL_SetRenderDrawColor(renderer, 120, 134, 150, 35)
-	# Boxes tile seamlessly: each box's bottom front edges and right vertical
-	# coincide with its neighbours' top faces and left vertical, so per box only
-	# the top face and the west + south verticals are drawn to avoid doubling up
-	cy = -box_r
-	row = 0
-	while cy < window_size[1] + box_r + box_d:
-		cx = -box_w * 2 + (box_w if row % 2 else 0)
-		while cx < window_size[0] + box_w * 2:
-			n = (cx, cy - box_r)
-			e = (cx + box_w, cy)
-			s = (cx, cy + box_r)
-			w = (cx - box_w, cy)
-			polyline([n, e, s, w, n])
-			polyline([w, (w[0], w[1] + box_d)])
-			polyline([s, (s[0], s[1] + box_d)])
-			cx += box_w * 2
-		cy += box_r + box_d
-		row += 1
+	# Faint stars are pixel sized squares, batched by brightness level as x, y, w, h
+	levels = 5
+	batches: list[list[float]] = [[] for _level in range(levels)]
+	size = 1.0 * scale
+	half = size / 2
+
+	def faint(x: float, y: float, level: int) -> None:
+		batches[level].extend((x - half, y - half, size, size))
+
+	# Brighter stars are soft round dots
+	verts: list[float] = []
+	idx: list[int] = []
+	segments = 8
+	circle = [(math.cos(math.tau * s / segments), math.sin(math.tau * s / segments)) for s in range(segments)]
+
+	def bright(x: float, y: float, radius: float, alpha: float) -> None:
+		base = len(verts) // 8
+		verts.extend((x, y, grey, grey, grey, alpha, 0.0, 0.0))
+		for ring_radius, ring_alpha in ((radius, alpha), (radius + scale, 0.0)):
+			for cx, cy in circle:
+				verts.extend((x + cx * ring_radius, y + cy * ring_radius, grey, grey, grey, ring_alpha, 0.0, 0.0))
+		i, o = base + 1, base + 1 + segments
+		for s in range(segments):
+			n = (s + 1) % segments
+			idx.extend((base, i + s, i + n, i + s, o + s, o + n, i + s, o + n, i + n))
+
+	def star(x: float, y: float, b: float) -> None:
+		"""One brightness scale for every star, b from 0 to 1."""
+		if b < 0.35:
+			faint(x, y, int(b / 0.35 * levels))
+		else:
+			bright(x, y, (0.3 + 0.7 * b) * scale, 0.1 + 0.45 * b)
+
+	# Background field: mostly faint stars with the odd bright one
+	for _k in range(int(width * height / (1100 * scale * scale))):
+		star(rand() * width, rand() * height, rand() ** 3.5)
+
+	# The band runs diagonally through a point near the middle of the window
+	angle = rng.uniform(math.radians(15), math.radians(55)) * rng.choice((-1, 1))
+	ux, uy = math.cos(angle), math.sin(angle)
+	nx, ny = -uy, ux
+	centre_x = width * rng.uniform(0.3, 0.7)
+	centre_y = height * rng.uniform(0.3, 0.7)
+	sigma = min(width, height) * rng.uniform(0.1, 0.15)
+	length = math.hypot(width, height) + 4 * sigma
+
+	# Profiles along the band: clumps of brighter haze, a gentle meander, and a soft, patchy
+	# dust lane that thins out and returns along its length
+	step = 8 * scale
+	bins = int(length / step) + 1
+	clumps = [(rng.uniform(-0.5, 0.5) * length, rng.uniform(0.6, 1.6) * sigma) for _c in range(10)]
+	meander_phase, lane_phase = rng.uniform(0, math.tau), rng.uniform(0, math.tau)
+	patches = [(rng.uniform(1.5, 4) * sigma, rng.uniform(0, math.tau)) for _p in range(3)]
+	clump: list[float] = []
+	meander: list[float] = []
+	lane: list[float] = []
+	lane_depth: list[float] = []
+	for k in range(bins):
+		along = k * step - length / 2
+		clump.append(0.35 + 0.65 * min(1.0, sum(math.exp(-((along - c) / r) ** 2) for c, r in clumps)))
+		meander.append(sigma * 0.25 * math.sin(along / (length * 0.3) + meander_phase))
+		lane.append(sigma * (0.08 + 0.13 * math.sin(along / (1.9 * sigma) + lane_phase)))
+		patchiness = sum(math.sin(along / wavelength + phase) for wavelength, phase in patches) / 3
+		lane_depth.append(0.45 * max(0.0, 0.5 + patchiness))
+	lane_width = sigma * 0.26
+
+	# Band stars, slice by slice: uniform along each slice and roughly Gaussian across it, mixing
+	# a core, a halo and a wide skirt so the band eases into the field. Offsets across the band
+	# come from a precomputed table (sums of three uniforms), and slices wholly outside the
+	# window are skipped.
+	spread = sigma * math.sqrt(2)
+	halo, skirt = spread * 2.2, spread * 4.5
+	table_size = 2048
+	offsets = [
+		(rand() + rand() + rand() - 1.5) * (spread if mix < 0.6 else halo if mix < 0.9 else skirt)
+		for mix in (rand() for _t in range(table_size))]
+	reach = 1.5 * skirt + sigma * 0.25 + step
+	exp = math.exp
+	extends = [batch.extend for batch in batches]
+	per_slice = step * sigma * 0.2 / (scale * scale)
+	for k in range(bins):
+		start = k * step - length / 2
+		mid_x = centre_x + ux * (start + step / 2)
+		mid_y = centre_y + uy * (start + step / 2)
+		if mid_x < -reach or mid_x > width + reach or mid_y < -reach or mid_y > height + reach:
+			continue
+		lane_k, depth = lane[k], lane_depth[k]
+		base_x = centre_x + nx * meander[k]
+		base_y = centre_y + ny * meander[k]
+		for _j in range(int(per_slice * clump[k] + rand())):
+			d = offsets[int(rand() * table_size)]
+			along = start + rand() * step
+			x = base_x + ux * along + nx * d
+			y = base_y + uy * along + ny * d
+			if not (0 <= x < width and 0 <= y < height):
+				continue
+			gap = (d - lane_k) / lane_width
+			if -3 < gap < 3 and rand() < depth * exp(-gap * gap):
+				continue
+			b = rand()
+			if b < 0.012:
+				star(x, y, 0.35 + 0.5 * rand() ** 2)
+			else:
+				extends[int(b * b * b * levels)]((x - half, y - half, size, size))
+
+	# A few small star clusters along the band
+	for _c in range(rng.randint(2, 4)):
+		along = rng.uniform(-0.3, 0.3) * length
+		d = rng.gauss(0, sigma * 0.5) + meander[int((along + length / 2) / step)]
+		cluster_x = centre_x + ux * along + nx * d
+		cluster_y = centre_y + uy * along + ny * d
+		radius = rng.uniform(6, 16) * scale * 2
+		for _s in range(rng.randint(30, 80)):
+			star(
+				cluster_x + (rand() + rand() + rand() - 1.5) * radius,
+				cluster_y + (rand() + rand() + rand() - 1.5) * radius,
+				rand() ** 3 * 0.7)
+
+	for level, batch in enumerate(batches):
+		count = len(batch) // 4
+		if count:
+			rects = (sdl3.SDL_FRect * count).from_buffer(array.array("f", batch))
+			sdl3.SDL_SetRenderDrawColorFloat(renderer, grey, grey, grey, 0.08 + 0.3 * (level + 0.5) / levels)
+			sdl3.SDL_RenderFillRects(renderer, rects, count)
+
+	count = len(verts) // 8
+	if count:
+		vertices = (sdl3.SDL_Vertex * count).from_buffer(array.array("f", verts))
+		indices = (ctypes.c_int * len(idx)).from_buffer(array.array("i", idx))
+		sdl3.SDL_RenderGeometry(renderer, None, vertices, count, indices, len(idx))
 
 	sdl3.SDL_RenderPresent(renderer)
-
 
 draw_loading_screen()
 
