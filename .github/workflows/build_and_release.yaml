@@ -33,7 +33,6 @@ jobs:
             gir1.2-notify-0.7 \
             gir1.2-girepository-3.0-dev \
             kde-config-gtk-style \
-            libcanberra-gtk3-module \
             libgirepository1.0-dev \
             libgirepository-2.0-dev \
             libglib2.0-dev \
@@ -42,6 +41,7 @@ jobs:
             libcairo2-dev \
             libpipewire-0.3-dev \
             libdbus-1-dev \
+            libgtk-4-common \
             libjxl-dev \
             libflac-dev \
             libchromaprint-dev \
@@ -146,7 +146,6 @@ jobs:
             gir1.2-notify-0.7 \
             gir1.2-girepository-3.0-dev \
             kde-config-gtk-style \
-            libcanberra-gtk3-module \
             libgirepository1.0-dev \
             libgirepository-2.0-dev \
             libglib2.0-dev \
@@ -155,6 +154,7 @@ jobs:
             libcairo2-dev \
             libpipewire-0.3-dev \
             libdbus-1-dev \
+            libgtk-4-common \
             libjxl-dev \
             libflac-dev \
             libchromaprint-dev \
