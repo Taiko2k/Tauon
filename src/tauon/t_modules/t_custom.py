@@ -1596,7 +1596,7 @@ class FeuxBar:
 			colour = self._tint(colour, heart_x, mid, panel, boost=0.6)
 			icon.render(heart_x, mid - icon.h // 2, self._fg(colour, backdrop, 2.6))
 
-		text_w = max(self._s(20), heart_x - self._s(14) - text_x)
+		text_w = max(self._s(20), heart_x - self._s(16) - text_x)
 		if text_w < self._s(24):
 			return
 
