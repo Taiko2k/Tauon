@@ -6,8 +6,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-09-29 23:51+0000\n"
-"Last-Translator: Ricardo Simões <xmcorporation@gmail.com>\n"
+"PO-Revision-Date: 2026-10-15 09:51+0000\n"
+"Last-Translator: Ricardo Simões "
+"<ricardosimoes@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_PT/>\n"
 "Language: pt_PT\n"
@@ -15,7 +16,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
-"X-Generator: Weblate 2026.10.dev0\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -60,9 +61,8 @@ msgid "File copy in progress…"
 msgstr "Cópia do ficheiro em curso…"
 
 #: src/tauon/t_modules/t_activity.py:118
-#, fuzzy
 msgid "Cleaning database"
-msgstr "Base de dados limpa!"
+msgstr "A limpar base de dados"
 
 #: src/tauon/t_modules/t_activity.py:121
 #, fuzzy
@@ -100,9 +100,8 @@ msgid "{done} / {total} files"
 msgstr ""
 
 #: src/tauon/t_modules/t_activity.py:140
-#, fuzzy
 msgid "Transcoding…"
-msgstr "Transcodificação"
+msgstr "A transcodificar…"
 
 #: src/tauon/t_modules/t_activity.py:140
 #, fuzzy
@@ -153,9 +152,8 @@ msgid "Scanning Scrobbles…"
 msgstr "Analisando Scrobbles…"
 
 #: src/tauon/t_modules/t_activity.py:168
-#, fuzzy
 msgid "Buffering…"
-msgstr "Carregando… "
+msgstr "A colocar no buffer…"
 
 #: src/tauon/t_modules/t_activity.py:170 src/tauon/t_modules/t_main.py:32955
 msgid "Scrobbling"
@@ -3543,9 +3541,8 @@ msgid "Wait for DAC resynchronization."
 msgstr ""
 
 #: src/tauon/t_modules/t_main.py:31771
-#, fuzzy
 msgid "Pre-roll duration"
-msgstr "Duração da lista de reprodução:"
+msgstr "Duração do pré-roll"
 
 #: src/tauon/t_modules/t_main.py:31787
 msgid "Force stereo output"
@@ -3860,9 +3857,8 @@ msgstr "Mostrar marcador de limite"
 
 #: src/tauon/t_modules/t_main.py:32272 src/tauon/t_modules/t_main.py:32337
 #: src/tauon/t_modules/t_main.py:32623
-#, fuzzy
 msgid "Scrobble Radios"
-msgstr "Scrobbles e gostos."
+msgstr "Rádios com Scrobble"
 
 #: src/tauon/t_modules/t_main.py:32291
 msgid "Token saved."
@@ -5067,9 +5063,8 @@ msgid "No favorite presets yet"
 msgstr "Ainda não há estações guardadas"
 
 #: src/tauon/t_modules/t_main.py:47992
-#, fuzzy
 msgid "No matching favorite presets"
-msgstr "Nenhum resultado de artista correspondente encontrado"
+msgstr "Não existem predefinições favoritas correspondentes"
 
 #: src/tauon/t_modules/t_main.py:47994
 #, fuzzy
@@ -6204,9 +6199,8 @@ msgid "Remove from Folder"
 msgstr "Removido do ficheiro .lrc"
 
 #: src/tauon/t_modules/t_main.py:57051
-#, fuzzy
 msgid "Colour…"
-msgstr "Colorir"
+msgstr "Coloração…"
 
 #: src/tauon/t_modules/t_main.py:57053
 msgid "Blue"
@@ -7323,9 +7317,8 @@ msgid "Select an album to compare tags."
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1370
-#, fuzzy
 msgid "No matching album editions found."
-msgstr "Nenhum resultado de artista correspondente encontrado"
+msgstr "Não foram encontradas edições do álbum correspondentes."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1385
 #, fuzzy
@@ -7400,18 +7393,16 @@ msgid "Mixed"
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1675
-#, fuzzy
 msgid "Embedded album art"
-msgstr "Sem capa de álbum incorporada."
+msgstr "Capa do álbum incorporada"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1677
 msgid "Image {N}"
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1719
-#, fuzzy
 msgid "No embedded art"
-msgstr "Sem capa de álbum incorporada."
+msgstr "Sem imagens incorporadas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1726
 #, fuzzy
@@ -7423,9 +7414,8 @@ msgid "Mixed artwork; first file shown"
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1729
-#, fuzzy
 msgid "{N} embedded image(s)"
-msgstr "Sem capa de álbum incorporada."
+msgstr "{N} imagem(s) incorporadas(s)"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1744
 #, fuzzy
@@ -7439,9 +7429,8 @@ msgid ""
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1755
-#, fuzzy
 msgid "Artwork changed"
-msgstr "Fontes das obras de arte."
+msgstr "A imagem foi alterada"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1785
 msgid "Native key"
@@ -7452,9 +7441,8 @@ msgid "Value / type"
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1837
-#, fuzzy
 msgid "Add key"
-msgstr "Chave API"
+msgstr "Adicionar chave"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1839
 #: src/tauon/t_modules/t_tagedit_ui.py:1855
@@ -7463,9 +7451,8 @@ msgid "Presets"
 msgstr "Predefinições prontas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1867
-#, fuzzy
 msgid "Add"
-msgstr "Adicionar…"
+msgstr "Adicionar"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1881
 msgid "Select a tag to edit; add custom text by name."
@@ -7493,9 +7480,8 @@ msgid "Main"
 msgstr ""
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1962
-#, fuzzy
 msgid "Misc"
-msgstr "Diversos…"
+msgstr "Diversos"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2092
 #, fuzzy
