@@ -180,6 +180,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	ensure_contrast,
 	d_date_display,
 	d_date_display2,
+	decode_playlist_text,
 	filename_safe,
 	filename_to_metadata,
 	fit_box,
@@ -7284,7 +7285,6 @@ class Tauon:
 		self.colours: ColoursClass              = bag.colours
 		self.download_directories: list[str]    = bag.download_directories
 		self.launch_prefix: str                 = bag.launch_prefix
-		self.overlay_texture_texture            = bag.overlay_texture_texture
 		self.de_notify_support: bool            = bag.de_notify_support
 		self.old_window_position: tuple[int, int]          = bag.old_window_position
 		self.mini_mode_restore_size: tuple[int, int] | None = None
@@ -8801,12 +8801,7 @@ class Tauon:
 		pl_dir = Path(m3u_path).parent
 		path = Path(m3u_path)
 		try:
-			with path.open(encoding="utf-8") as file:
-				lines = file.readlines()
-		except UnicodeDecodeError as e:
-			self.show_message(_("Error importing M3U playlist"), _("Error trying to parse playlist as UTF-8:") + f" {e}", mode="warning")
-			logging.error(f"Error trying to parse playlist as UTF-8: {e}")
-			return [], []
+			lines = decode_playlist_text(path.read_bytes()).splitlines()
 		except Exception as e:
 			self.show_message(_("Exception importing M3U playlist"), _("Unknown exception trying to parse playlist") + f" {e}", mode="warning")
 			logging.exception("Unknown exception trying to parse playlist")
@@ -8917,7 +8912,8 @@ class Tauon:
 
 		self.gui.request_frame()
 
-	def read_pls(self, lines: list[str], path: str, followed: bool = False) -> None:
+	def read_pls(self, lines: list[str], path: str, followed: bool = False) -> list[RadioStation]:
+		"""Parse .pls lines into stations, following linked .pls files one level deep"""
 		ids:         list[str] = []
 		urls:   dict[str, str] = {}
 		titles: dict[str, str] = {}
@@ -8951,26 +8947,40 @@ class Tauon:
 
 				if ".pls" in radio.stream_url:
 					if not followed:
-						try:
-							logging.info("Download .pls")
-							response = requests.get(radio.stream_url, stream=True, timeout=15)
-							if int(response.headers["Content-Length"]) < 2000:
-								self.read_pls(response.content.decode().splitlines(), path, followed=True)
-						except Exception:
-							logging.exception("Failed to retrieve .pls")
+						data = self.fetch_small_file(radio.stream_url)
+						if data is not None:
+							stations.extend(self.read_pls(decode_playlist_text(data).splitlines(), path, followed=True))
 				else:
 					stations.append(radio)
 					if self.gui.auto_play_import:
 						self.gui.auto_play_import = False
 						self.radiobox.start(radio)
-		if stations:
-			self.add_stations(stations, os.path.basename(path))
+		return stations
+
+	def fetch_small_file(self, url: str, limit: int = 2000) -> bytes | None:
+		"""Download url if it is under limit bytes, so a live stream is never mistaken for a playlist"""
+		logging.info(f"Download {url}")
+		try:
+			with requests.get(url, stream=True, timeout=15) as response:
+				response.raise_for_status()
+				data = b""
+				for chunk in response.iter_content(chunk_size=1024):
+					data += chunk
+					if len(data) >= limit:
+						logging.warning(f"Skipping {url}: larger than {limit} bytes")
+						return None
+				return data
+		except Exception:
+			logging.exception(f"Failed to retrieve {url}")
+			return None
 
 	def load_pls(self, path: str) -> None:
-		if os.path.isfile(path):
-			with open(path) as f:
-				lines = f.readlines()
-				self.read_pls(lines, path)
+		if not os.path.isfile(path):
+			return
+		lines = decode_playlist_text(Path(path).read_bytes()).splitlines()
+		stations = self.read_pls(lines, path)
+		if stations:
+			self.add_stations(stations, os.path.basename(path))
 
 	def parse_xspf(self, path: str) -> tuple[list[int], list[RadioStation], str]:
 		"""Read specified .xspf playlist file, return lists of track IDs & stations plus playlist name if stored"""
@@ -8987,9 +8997,9 @@ class Tauon:
 			for top in e:
 
 				if top.tag.endswith("info"):
-					info = top.text
+					info = top.text or ""
 				if top.tag.endswith("title"):
-					name = top.text
+					name = top.text or ""
 				if top.tag.endswith("trackList"):
 					for track in top:
 						if track.tag.endswith("track"):
@@ -9025,6 +9035,8 @@ class Tauon:
 									b["album"] = field.text
 								if "duration" in field.tag and field.text:
 									b["duration"] = field.text
+								if field.tag.endswith("info") and field.text:
+									b["track_info"] = field.text
 
 							b["info"] = info
 							b["name"] = name
@@ -9038,23 +9050,25 @@ class Tauon:
 
 		# Extract internet streams first
 		stations: list[RadioStation] = []
-		for i in reversed(range(len(a))):
-			item = a[i]
-			if item["location"].startswith("http"):
-				radio = RadioStation(
-					stream_url=item["location"],
-					title=item["name"])
-			#	radio.scroll = 0 # TODO(Martin): This was here wrong as scrolling is meant to be for RadioPlaylist?
-				if item["info"].startswith("http"):
-					radio.website_url = item["info"]
+		tracks: list[dict[str, str | None]] = []
+		for item in a:
+			location = item.get("location") or ""
+			if not location.startswith("http"):
+				tracks.append(item)
+				continue
+			radio = RadioStation(
+				stream_url=location,
+				title=item.get("title") or item["name"] or Path(path).stem)
+			website = item.get("track_info") or item["info"]
+			if website.startswith("http"):
+				radio.website_url = website
 
-				stations.append(radio)
+			stations.append(radio)
 
-				if self.gui.auto_play_import:
-					self.gui.auto_play_import = False
-					self.radiobox.start(radio)
-
-				del a[i]
+			if self.gui.auto_play_import:
+				self.gui.auto_play_import = False
+				self.radiobox.start(radio)
+		a = tracks
 		playlist: list[int] = []
 		missing = 0
 
@@ -52007,7 +52021,6 @@ class Bag:
 	prefs:                   Prefs
 	formats:                 Formats
 	renderer:                sdl3.LP_SDL_Renderer
-	overlay_texture_texture: sdl3.LP_SDL_Texture
 	fonts:                   Fonts
 	tls_context:             ssl.SSLContext
 	dev_mode:                bool
@@ -53904,7 +53917,7 @@ def worker1(tauon: Tauon) -> None:
 			tauon.load_m3u(path, drop_action=active_drop_action)
 			return 0
 
-		if path.endswith(".pls"):
+		if path.lower().endswith(".pls"):
 			tauon.load_pls(path)
 			return 0
 
@@ -54751,34 +54764,25 @@ def main(holder: Holder) -> None:
 	left_window_control = False
 
 	detect_macstyle = False
-	gtk_settings: Gtk.Settings | None = None
+	force_subpixel_text = False
 	mac_close = ColourRGBA(253, 70, 70, 255)
 	mac_maximize = ColourRGBA(254, 176, 36, 255)
 	mac_minimize = ColourRGBA(42, 189, 49, 255)
-	try:
-		# TODO(Martin): Bump to 4.0 - https://github.com/Taiko2k/Tauon/issues/1316
-		gi.require_version("Gtk", "3.0")
-		from gi.repository import Gtk
+	if not macos and not windows:
+		from tauon.t_modules.t_desktop_settings import read_desktop_settings
 
-		gtk_settings = Gtk.Settings().get_default()
-		if "minimize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-			draw_min_button = False
-		if "maximize" not in str(gtk_settings.get_property("gtk-decoration-layout")):
-			draw_max_button = False
-		if "close" in str(gtk_settings.get_property("gtk-decoration-layout")).split(":")[0]:
-			left_window_control = True
-		gtk_theme = str(gtk_settings.get_property("gtk-theme-name")).lower()
-		#logging.info(f"GTK theme is: {gtk_theme}")
+		desktop_settings = read_desktop_settings(desktop)
+		draw_min_button = desktop_settings.draw_min_button
+		draw_max_button = desktop_settings.draw_max_button
+		left_window_control = desktop_settings.left_window_control
+		force_subpixel_text = desktop_settings.subpixel_rgb
 		for k, v in mac_styles.items():
-			if k in gtk_theme:
+			if k in desktop_settings.theme_name:
 				detect_macstyle = True
 				if v is not None:
 					mac_close = v[0]
 					mac_maximize = v[1]
 					mac_minimize = v[2]
-
-	except Exception:
-		logging.exception("Error accessing GTK settings")
 
 	# Set data folders (portable mode)
 	config_directory = user_directory
@@ -55005,13 +55009,6 @@ def main(holder: Holder) -> None:
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
 		max_window_tex, max_window_tex)
 
-	overlay_texture_texture = sdl3.SDL_CreateTexture(renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, 300, 300)
-	sdl3.SDL_SetTextureBlendMode(overlay_texture_texture, sdl3.SDL_BLENDMODE_BLEND)
-	sdl3.SDL_SetRenderTarget(renderer, overlay_texture_texture)
-	sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-	sdl3.SDL_RenderClear(renderer)
-	sdl3.SDL_SetRenderTarget(renderer, None)
-
 	tracklist_texture = sdl3.SDL_CreateTexture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, max_window_tex,
 		max_window_tex)
@@ -55202,9 +55199,6 @@ def main(holder: Holder) -> None:
 	except Exception:
 		logging.exception("Cannot find libgme")
 
-	force_subpixel_text = False
-	if gtk_settings and gtk_settings.get_property("gtk-xft-rgba") == "rgb":
-		force_subpixel_text = True
 	encoder_output = user_directory / "encoder" if music_directory is None else music_directory / "encode-output"
 	power_save = False
 	if macos or phone:
@@ -55260,7 +55254,6 @@ def main(holder: Holder) -> None:
 		draw_min_button=draw_min_button,
 		draw_max_button=draw_max_button,
 		download_directories=[],
-		overlay_texture_texture=overlay_texture_texture,
 		smtc=False,
 		macos=macos,
 		mac_close=mac_close,
@@ -57788,25 +57781,7 @@ def main(holder: Holder) -> None:
 
 	# pctl.switch_playlist(len(pctl.multi_playlist) - 1)
 
-	sdl3.SDL_SetRenderTarget(renderer, overlay_texture_texture)
-
-	block_size = 3
-
-	x = 0
-	y = 0
-	while y < 300:
-		x = 0
-		while x < 300:
-			ddt.rect((x, y, 1, 1), ColourRGBA(0, 0, 0, 70))
-			ddt.rect((x + 2, y + 0, 1, 1), ColourRGBA(0, 0, 0, 70))
-			ddt.rect((x + 2, y + 2, 1, 1), ColourRGBA(0, 0, 0, 70))
-			ddt.rect((x + 0, y + 2, 1, 1), ColourRGBA(0, 0, 0, 70))
-
-			x += block_size
-		y += block_size
-
 	tauon.sync_target.text = prefs.sync_target
-	sdl3.SDL_SetRenderTarget(renderer, None)
 
 	if tauon.windows:
 		sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed

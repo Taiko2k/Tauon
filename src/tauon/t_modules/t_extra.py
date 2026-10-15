@@ -1012,6 +1012,19 @@ def get_year_from_string(s: str) -> str:
 	return ""
 
 
+def decode_playlist_text(data: bytes) -> str:
+	"""Decode playlist file bytes, stripping any UTF-8 BOM
+
+	Older M3U/PLS files are often Windows-1252 or Latin-1 rather than UTF-8.
+	"""
+	for encoding in ("utf-8-sig", "cp1252"):
+		try:
+			return data.decode(encoding)
+		except UnicodeDecodeError:
+			pass
+	return data.decode("latin-1")
+
+
 def is_music_related(string: str) -> bool:
 	for s in [
 		"Folder.jpg",
