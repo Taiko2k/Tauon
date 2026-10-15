@@ -68,6 +68,21 @@ def pcm_mask(*speakers: str) -> int:
 	return sum(1 << PCM_SPEAKER_NAMES.index(s) for s in speakers)
 
 
+# Segments in the level meter; a peak of 1.0 lights all of them
+LEVEL_METER_SEGMENTS = 12
+
+
+def meter_level(peak: float) -> float:
+	"""Scale a PHAzOR peak to meter segments.
+
+	The meter holds its highest reading and decays it slowly, so a single
+	non-finite or out of range peak would leave a channel lit until restart.
+	"""
+	if not math.isfinite(peak):
+		return 0.0
+	return min(abs(peak), 1.0) * LEVEL_METER_SEGMENTS
+
+
 # FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
 # limited to these and downmixes anything else to the closest one.
 PCM_LAYOUTS = {
@@ -1289,10 +1304,8 @@ def player4(tauon: Tauon) -> None:
 			pctl.output_compression_active = bool(aud.replaygain_get_compressor_active())
 			pctl.output_compression_reduction_db = aud.replaygain_get_compressor_reduction_db()
 		if (tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM)) and gui.vis == 1:
-			amp = aud.get_level_peak_l()
-			l = amp * 12
-			amp = aud.get_level_peak_r()
-			r = amp * 12
+			l = meter_level(aud.get_level_peak_l())
+			r = meter_level(aud.get_level_peak_r())
 
 			tauon.level_train.append((0, l, r))
 			gui.level_update = True
