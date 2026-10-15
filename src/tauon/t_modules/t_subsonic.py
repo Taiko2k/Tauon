@@ -82,6 +82,29 @@ class SubsonicService:
 			return 0
 		return (dt if dt.tzinfo else dt.replace(tzinfo=UTC)).timestamp()
 
+	def _number(self, value: object) -> int:
+		try:
+			return int(value)
+		except (TypeError, ValueError):
+			return 0
+
+	def _separate_albums(self, tracks: list[tuple[TrackClass, object]]) -> None:
+		"""Give each album its own parent_folder_path, as Tauon groups albums by folder.
+
+		Servers like Navidrome report a synthetic "Album Artist/Album/..." path, so two albums that share
+		a name and artist (editions, duplicates) would otherwise land in one folder and merge.
+		"""
+		owners: dict[str, list[object]] = {}
+		for nt, album_id in tracks:
+			ids = owners.setdefault(nt.parent_folder_path, [])
+			if album_id not in ids:
+				ids.append(album_id)
+
+		for nt, album_id in tracks:
+			n = owners[nt.parent_folder_path].index(album_id)
+			if n:
+				nt.parent_folder_path = f"{nt.parent_folder_path} ({n + 1})"
+
 	def _request_json(self, point: str, p: dict[str, str] | None = None) -> tuple[int, dict | None]:
 		"""Make a request, returning the HTTP status alongside the decoded body.
 
@@ -226,6 +249,7 @@ class SubsonicService:
 		"""Fetch every song with an empty search3 query. Returns None if that doesn't work on this server."""
 		songs: list[tuple[TrackClass, str, str, int]] = []
 		seen: set[str] = set()
+		album_ids: dict[str, object] = {}
 
 		def fetch(offset: int, count: int) -> list[dict] | None:
 			try:
@@ -266,7 +290,7 @@ class SubsonicService:
 					if len(page) < stride and any(pages[i + 1:]):
 						logging.warning("search3 returned a short page mid-library, falling back to folder scan")
 						return None
-					self._add_search3_songs(new, seen, songs)
+					self._add_search3_songs(new, seen, songs, album_ids)
 
 				self.gui.request_frame()
 				if done:
@@ -279,10 +303,23 @@ class SubsonicService:
 		if not songs:
 			logging.info("search3 returned no songs, falling back to folder scan")
 			return None
+
+		# Songs come back in no particular order within an album, so keep albums in the order the
+		# server listed them and put each one's tracks in disc and track order
+		album_order: dict[object, int] = {}
+		for song in songs:
+			album_order.setdefault(album_ids[song[2]], len(album_order))
+		songs.sort(key=lambda song: (
+			album_order[album_ids[song[2]]],
+			self._number(song[0].disc_number),
+			self._number(song[0].track_number),
+		))
+		self._separate_albums([(song[0], album_ids[song[2]]) for song in songs])
 		return songs
 
 	def _add_search3_songs(
 		self, new: list[dict], seen: set[str], songs: list[tuple[TrackClass, str, str, int]],
+		album_ids: dict[str, object],
 	) -> None:
 		for song in new:
 			seen.add(song["id"])
@@ -331,6 +368,7 @@ class SubsonicService:
 			nt.subsonic_folder_id = song.get("parent")
 			nt.is_network = True
 
+			album_ids[song["id"]] = song.get("albumId") or (nt.parent_folder_path, name)
 			songs.append((nt, name, song["id"], int(song.get("userRating", 0))))
 
 	def r(
@@ -919,6 +957,9 @@ class SubsonicService:
 
 		while statuses.count(2) != len(statuses):
 			time.sleep(0.1)
+
+		if tag_mode:
+			self._separate_albums([(song[0], folders[i][0]) for i, sset in enumerate(songsets) for song in sset])
 
 		try:
 			a = self.r("getStarred2")
