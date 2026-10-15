@@ -1012,6 +1012,33 @@ def get_year_from_string(s: str) -> str:
 	return ""
 
 
+STREAM_SCHEMES = ("http", "https", "icy", "rtsp", "rtsps", "rtmp", "rtmps", "mms", "mmsh", "mmst")
+
+
+def is_stream_url(url: str) -> bool:
+	"""Whether url uses a protocol a radio station can be played from"""
+	scheme, sep, _rest = url.partition("://")
+	return bool(sep) and scheme.lower() in STREAM_SCHEMES
+
+
+def is_http_url(url: str) -> bool:
+	return url.lower().startswith(("http://", "https://"))
+
+
+def normalise_stream_url(url: str) -> str:
+	"""Rewrite scheme aliases to ones the proxy and FFmpeg understand
+
+	icy:// is Shoutcast/Icecast shorthand for HTTP. FFmpeg has no plain mms://,
+	and MMS over HTTP is what servers still running it speak.
+	"""
+	lower = url.lower()
+	if lower.startswith("icy://"):
+		return "http://" + url[6:]
+	if lower.startswith("mms://"):
+		return "mmsh://" + url[6:]
+	return url
+
+
 def decode_playlist_text(data: bytes) -> str:
 	"""Decode playlist file bytes, stripping any UTF-8 BOM
 

@@ -209,9 +209,12 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	hsl_to_rgb,
 	hue_matched,
 	is_grey,
+	is_http_url,
 	is_light,
+	is_stream_url,
 	j_chars,
 	mac_styles,
+	normalise_stream_url,
 	point_distance,
 	point_proximity_test,
 	reduce_paths,
@@ -8823,7 +8826,7 @@ class Tauon:
 					if "," in bline and bline.startswith("#EXTINF:"):
 						line_title = bline.split(",", 1)[1].strip("\r\n").strip()
 
-				if line.startswith("http"):
+				if is_stream_url(line):
 					radio: RadioStation = RadioStation(
 						stream_url=line,
 						title=line_title or os.path.splitext(os.path.basename(path))[0].strip())
@@ -8920,13 +8923,14 @@ class Tauon:
 
 		for line in lines:
 			line = line.strip("\r\n")
-			if "=" in line and line.startswith("File") and "http" in line:
+			if "=" in line and line.startswith("File"):
 				# Get number
 				n = line.split("=")[0][4:]
-				if n.isdigit():
+				url = line.split("=", 1)[1].strip()
+				if n.isdigit() and is_stream_url(url):
 					if n not in ids:
 						ids.append(n)
-					urls[n] = line.split("=", 1)[1].strip()
+					urls[n] = url
 
 			if "=" in line and line.startswith("Title"):
 				# Get number
@@ -9053,7 +9057,7 @@ class Tauon:
 		tracks: list[dict[str, str | None]] = []
 		for item in a:
 			location = item.get("location") or ""
-			if not location.startswith("http"):
+			if not is_stream_url(location):
 				tracks.append(item)
 				continue
 			radio = RadioStation(
@@ -39881,36 +39885,46 @@ class RadioBox:
 		text = text.lower()
 		self.search_radio_browser(f"/json/stations/search?order=votes&limit=250&reverse=true&name={text}")
 
+	@staticmethod
+	def url_suffix(url: str) -> str:
+		"""File extension of a URL's path, ignoring any query string"""
+		return Path(urllib.parse.urlparse(url).path).suffix.lower()
+
 	def is_m3u(self, url: str) -> bool:
-		return url.lower().endswith(".m3u") or url.lower().endswith(".m3u8")
+		return self.url_suffix(url) in (".m3u", ".m3u8")
+
+	def plays_direct(self, url: str) -> bool:
+		"""Whether FFmpeg should open url itself rather than the stream proxy.
+
+		The proxy only speaks HTTP, and segmented streams (HLS, DASH, MPEG-TS)
+		need FFmpeg's own demuxers. These streams get no ICY titles or recording.
+		"""
+		return not is_http_url(url) or self.url_suffix(url) in (".m3u8", ".mpd", ".ts")
 
 	def extract_stream_m3u(self, url: str, recursion_limit: int = 5) -> str | None:
+		"""Resolve an M3U URL to the stream it lists. HLS playlists resolve to themselves"""
 		if recursion_limit <= 0:
 			return None
 		logging.info("Fetching M3U...")
 
-		try:
-			response = requests.get(url, timeout=10)
-			if response.status_code != 200:
-				logging.error(f"M3U Fetch error code: {response.status_code}")
-				return None
-
-			content = response.text
-			lines = content.strip().split("\n")
-
-			for line in lines:
-				line = line.strip()
-				if not line.startswith("#") and len(line) > 0:
-					if self.is_m3u(line):
-						next_url = urllib.parse.urljoin(url, line)
-						return self.extract_stream_m3u(next_url, recursion_limit - 1)
-					return urllib.parse.urljoin(url, line)
-
+		data = self.tauon.fetch_small_file(url, limit=256 * 1024)
+		if data is None:
 			return None
+		content = decode_playlist_text(data)
 
-		except Exception:
-			logging.exception("Failed to extract M3U")
-			return None
+		# HLS lists segments, not a stream; FFmpeg follows those itself
+		if "#EXT-X-" in content:
+			return url
+
+		for line in content.splitlines():
+			line = line.strip()
+			if not line.startswith("#") and len(line) > 0:
+				next_url = normalise_stream_url(urllib.parse.urljoin(url, line))
+				if self.is_m3u(next_url) and is_http_url(next_url):
+					return self.extract_stream_m3u(next_url, recursion_limit - 1)
+				return next_url
+
+		return None
 
 	def abort_load(self, clear_station: bool = True) -> None:
 		logging.info(
@@ -39995,7 +40009,7 @@ class RadioBox:
 		self.gui.request_frame()
 
 	def start2(self, station: RadioStation, request_id: int) -> None:
-		url = station.stream_url
+		url = normalise_stream_url(station.stream_url)
 		logging.info(
 			f"Radio start2 entered request_id={request_id} current_request={self.load_request_id} url={url!r}"
 		)
@@ -40003,25 +40017,31 @@ class RadioBox:
 			logging.info(f"Radio start2 ignoring stale request_id={request_id}")
 			return
 
-		if self.is_m3u(url):
+		direct = self.plays_direct(url)
+		if is_http_url(url) and self.is_m3u(url):
+			playlist_url = url
 			url = self.extract_stream_m3u(url)
 			logging.info(f"Extracted URL is: {url}")
 			if not url:
 				logging.info("Failed to extract stream from M3U")
 				self.fail_load(request_id)
 				return
+			# Resolving to itself means HLS, which only FFmpeg can follow
+			direct = url == playlist_url or self.plays_direct(url)
 
 		if request_id != self.load_request_id:
 			logging.info(f"Radio start2 ignoring stale request_id={request_id} after M3U resolve")
 			return
 
-		run_proxy = not url.endswith(".ts")
+		run_proxy = not direct
 		self.run_proxy = run_proxy
 
-		# self.pctl.url = url
 		self.pctl.url = f"http://127.0.0.1:{7812}"
 		if not run_proxy:
-			self.pctl.url = station.stream_url
+			logging.info(f"Radio playing directly through FFmpeg: {url}")
+			if self.prefs.auto_rec:
+				self.show_message(_("This station can't be recorded"), _("Recording only works with HTTP streams."))
+			self.pctl.url = url
 			# The proxy path tears the previous stream down as part of
 			# start_download; nothing else does it for a direct URL
 			if self.tauon.stream_proxy.download_running or self.tauon.stream_proxy.encode_running \
@@ -40612,7 +40632,7 @@ class RadioBox:
 		):
 			if not self.radio_field.text:
 				self.show_message(_("Enter a stream URL"))
-			elif "http://" in self.radio_field.text or "https://" in self.radio_field.text:
+			elif is_stream_url(self.radio_field.text.strip()):
 				radio = self.station_editing
 				if self.add_mode:
 					radio: RadioStation = RadioStation(
@@ -40636,7 +40656,7 @@ class RadioBox:
 				self.active = False
 				self.cancel_custom_image_edit()
 			else:
-				self.show_message(_("Could not validate URL. Must start with https:// or http://"))
+				self.show_message(_("Could not validate URL. Must start with http://, https://, rtsp://, rtmp:// or mms://"))
 
 	def draw_list(self) -> None:
 		x = self.x

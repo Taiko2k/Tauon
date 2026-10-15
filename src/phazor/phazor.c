@@ -270,6 +270,14 @@ int load_target_net_pending = 0;
 int load_target_net = 0;
 int loaded_target_net = 0;
 
+// True for "scheme://..." targets (http, rtsp, rtmp, mms...), false for local paths
+static bool is_url(const char *target) {
+	const char *c = target;
+	while ((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9')
+			|| *c == '+' || *c == '-' || *c == '.') c++;
+	return c != target && strncmp(c, "://", 3) == 0;
+}
+
 unsigned int load_target_seek = 0;
 unsigned int next_ready = 0;
 unsigned int seek_request_ms = 0;
@@ -3436,7 +3444,7 @@ int get_audio(int max_frames, float* buff) {
 		// Streams can't be waited on the way a local file can, so an
 		// underrun means pausing to re-buffer. FEED is radio, which has no
 		// decoder of its own to report a stall.
-		if (get_buff_fill() < 10 && (loaded_target_file[0] == 'h' || codec == FEED)) {
+		if (get_buff_fill() < 10 && (is_url(loaded_target_file) || codec == FEED)) {
 
 			if (mode == PLAYING) {
 				if (buffering == 0) log_msg(LOG_INFO, "pa: Buffering...");
@@ -4379,7 +4387,7 @@ int load_next_inner() {
 	src_channels = 2;
 	decode_kbps = 0;
 
-	bool is_net = loaded_target_net == 1 && loaded_target_file[0] == 'h';
+	bool is_net = loaded_target_net == 1 && is_url(loaded_target_file);
 
 	// For URLs, ignore any query string when looking at the file extension
 	static char ext_path[4096];
@@ -4397,7 +4405,7 @@ int load_next_inner() {
 	samples_decoded = 0;
 	stream_meta_end = 0;
 
-	if (loaded_target_file[0] == 'h') buffering = 1;
+	if (is_url(loaded_target_file)) buffering = 1;
 
 	pthread_mutex_lock(&buffer_mutex);
 	rg_byte = high;
@@ -4434,7 +4442,7 @@ int load_next_inner() {
 	}
 
 	// If target is a radio/plain url, use FFMPEG
-	if (loaded_target_file[0] == 'h' && !is_net) {
+	if (is_url(loaded_target_file) && !is_net) {
 		codec = FFMPEG;
 		start_ffmpeg(loaded_target_file, load_target_seek);
 		load_target_seek = 0;
