@@ -1,12 +1,13 @@
-"""Read window button layout, theme and subpixel order from the desktop via GIO"""
+"""Read window button layout, theme and subpixel order from the desktop's GNOME settings"""
 
 from __future__ import annotations
 
+import ast
 import logging
 import os
+import shutil
+import subprocess
 from dataclasses import dataclass
-
-from gi.repository import Gio, GLib
 
 WM_SCHEMA = "org.gnome.desktop.wm.preferences"
 INTERFACE_SCHEMA = "org.gnome.desktop.interface"
@@ -30,33 +31,55 @@ class DesktopSettings:
 
 def read_portal() -> dict[str, dict[str, object]]:
 	"""Read the keys through the settings portal, the only view of the host's settings inside Flatpak"""
-	bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
-	reply = bus.call_sync(
-		"org.freedesktop.portal.Desktop",
-		"/org/freedesktop/portal/desktop",
-		"org.freedesktop.portal.Settings",
-		"ReadAll",
-		GLib.Variant("(as)", (list(KEYS),)),
-		GLib.VariantType("(a{sa{sv}})"),
-		Gio.DBusCallFlags.NONE,
-		500,
-		None,
-	)
-	return reply.unpack()[0]
+	import dbus  # noqa: PLC0415
+
+	# A private connection, so the shared bus is still created with t_dbus's main loop
+	bus = dbus.SessionBus(private=True)
+	try:
+		portal = bus.get_object("org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop", introspect=False)
+		reply = portal.ReadAll(list(KEYS), dbus_interface="org.freedesktop.portal.Settings", timeout=0.5)
+	finally:
+		bus.close()
+	return {str(schema): {str(k): str(v) for k, v in values.items()} for schema, values in reply.items()}
+
+
+def parse_gvariant_string(text: str) -> str:
+	"""Unquote a GVariant text-format string such as 'appmenu:close'"""
+	try:
+		value = ast.literal_eval(text)
+	except (ValueError, SyntaxError):
+		return text
+	return value if isinstance(value, str) else text
 
 
 def read_gsettings() -> dict[str, dict[str, object]]:
 	values: dict[str, dict[str, object]] = {}
-	source = Gio.SettingsSchemaSource.get_default()
-	if source is None:
+	gsettings = shutil.which("gsettings")
+	if gsettings is None:
 		return values
-	for schema_id, keys in KEYS.items():
-		# Gio.Settings aborts the process on a missing schema, so look it up first
-		schema = source.lookup(schema_id, True)
-		if schema is None:
+	# One process per schema, run concurrently; a missing schema just exits non-zero
+	procs = {
+		schema_id: subprocess.Popen(
+			[gsettings, "list-recursively", schema_id],
+			stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+		)
+		for schema_id in KEYS
+	}
+	for schema_id, proc in procs.items():
+		try:
+			out, _ = proc.communicate(timeout=2)
+		except subprocess.TimeoutExpired:
+			proc.kill()
+			proc.communicate()
 			continue
-		settings = Gio.Settings.new_full(schema, None, None)
-		values[schema_id] = {key: settings.get_value(key).unpack() for key in keys if schema.has_key(key)}
+		if proc.returncode != 0:
+			continue
+		found: dict[str, object] = {}
+		for line in out.splitlines():
+			parts = line.split(" ", 2)
+			if len(parts) == 3 and parts[1] in KEYS[schema_id]:
+				found[parts[1]] = parse_gvariant_string(parts[2])
+		values[schema_id] = found
 	return values
 
 
@@ -64,11 +87,8 @@ def read_desktop_settings(desktop: str | None) -> DesktopSettings:
 	result = DesktopSettings()
 	try:
 		values = read_portal() if os.path.exists("/.flatpak-info") else read_gsettings()
-	except GLib.Error as e:
-		logging.warning(f"Could not read desktop settings: {e.message}")
-		return result
-	except Exception:
-		logging.exception("Error reading desktop settings")
+	except Exception as e:
+		logging.warning(f"Could not read desktop settings: {e}")
 		return result
 
 	interface = values.get(INTERFACE_SCHEMA, {})
