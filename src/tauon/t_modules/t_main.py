@@ -7734,19 +7734,7 @@ class Tauon:
 		#logging.debug(f"Setting tray tooltip to '{tooltip}'")
 		sdl3.SDL_SetTrayTooltip(self.sdl_tray, tooltip.encode("utf-8"))
 
-	# TODO(Martin): Get this working with native SDL scroll implementation when available
-	#def sdl_tray_scroll(self, indicator: AppIndicator3.Indicator, steps: int, direction: int) -> None:
-	#	if direction == Gdk.ScrollDirection.UP:
-	#		self.tauon.pctl.player_volume += 4
-	#		self.tauon.pctl.player_volume = min(self.tauon.pctl.player_volume, 100)
-	#		self.tauon.pctl.set_volume()
-	#	if direction == Gdk.ScrollDirection.DOWN:
-	#		if self.tauon.pctl.player_volume > 4:
-	#			self.tauon.pctl.player_volume -= 4
-	#		else:
-	#			self.tauon.pctl.player_volume = 0
-	#		self.tauon.pctl.set_volume()
-	#	self.tauon.gui.update += 1
+	# TODO(Martin): Scroll on the tray icon to change volume once SDL exposes tray scroll events
 
 	def show_tray(self) -> None:
 		self.requested_tray = True

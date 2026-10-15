@@ -29,11 +29,10 @@ jobs:
           sudo apt-get install -y \
             gettext \
             gobject-introspection \
+            gir1.2-pango-1.0 \
             gir1.2-rsvg-2.0 \
             gir1.2-notify-0.7 \
             gir1.2-girepository-3.0-dev \
-            kde-config-gtk-style \
-            libcanberra-gtk3-module \
             libgirepository1.0-dev \
             libgirepository-2.0-dev \
             libglib2.0-dev \
@@ -142,11 +141,10 @@ jobs:
           sudo apt-get install -y \
             gettext \
             gobject-introspection \
+            gir1.2-pango-1.0 \
             gir1.2-rsvg-2.0 \
             gir1.2-notify-0.7 \
             gir1.2-girepository-3.0-dev \
-            kde-config-gtk-style \
-            libcanberra-gtk3-module \
             libgirepository1.0-dev \
             libgirepository-2.0-dev \
             libglib2.0-dev \
@@ -268,7 +266,6 @@ jobs:
         run: |
           brew install \
             gobject-introspection \
-            gtk+3 \
             pango \
             pillow \
             sdl3 \

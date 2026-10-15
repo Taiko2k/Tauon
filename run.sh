@@ -64,8 +64,6 @@ clean_venv_run() {
 	# Necessary for Windows (MINGW64) if compiling things like Pillow
 	export CFLAGS="-I/mingw64/include"
 #	export LDFLAGS="-L/mingw64/lib"
-	# Necessary for correct typing for GTK/GDK
-	export PYGOBJECT_STUB_CONFIG=Gtk3,Gdk3
 	pip install ".[all,dev]" build
 	python -m tools.i18n.compile_translations
 	python -m build --wheel
