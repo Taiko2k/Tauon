@@ -467,5 +467,8 @@ class Gnome:
 			except Exception:
 				logging.exception("MPRIS2 CONNECT FAILED")
 
+		# Let the main thread finish setting up the tray's GTK display first,
+		# see Tauon.tray_setup_done
+		tauon.tray_setup_done.wait()
 		mainloop = GLib.MainLoop()
 		mainloop.run()
