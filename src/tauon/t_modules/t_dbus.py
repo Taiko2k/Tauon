@@ -334,6 +334,23 @@ class Gnome:
 		self.bus_object = None
 		self.tauon: Tauon = tauon
 		self.resume_playback: bool = False
+		self.thread: threading.Thread | None = None
+		self.mainloop: GLib.MainLoop | None = None
+		self.stopping: bool = False
+
+	def stop(self, timeout: float = 2.0) -> None:
+		"""Stop the D-Bus main loop and wait for its thread to finish.
+
+		The loop runs GLib's default main context, which also dispatches the
+		tray's GTK and D-Bus menu objects. Stop it before those are destroyed,
+		so the two threads don't race on objects being freed.
+		"""
+		self.stopping = True
+		self.tauon.tray_setup_done.set()
+		if self.mainloop is not None:
+			self.mainloop.quit()
+		if self.thread is not None and self.thread is not threading.current_thread():
+			self.thread.join(timeout)
 
 	def focus(self) -> None:
 		if self.bus_object is not None:
@@ -469,6 +486,7 @@ class Gnome:
 
 		# Let the main thread finish setting up the tray's GTK display first,
 		# see Tauon.tray_setup_done
+		self.mainloop = GLib.MainLoop()
 		tauon.tray_setup_done.wait()
-		mainloop = GLib.MainLoop()
-		mainloop.run()
+		if not self.stopping:
+			self.mainloop.run()

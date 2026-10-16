@@ -56255,6 +56255,7 @@ def main(holder: Holder) -> None:
 		try:
 			gnome_thread = threading.Thread(target=tauon.gnome.main)
 			gnome_thread.daemon = True
+			tauon.gnome.thread = gnome_thread
 			gnome_thread.start()
 		except Exception:
 			logging.exception("Could not start Dbus thread")
@@ -64427,6 +64428,12 @@ def main(holder: Holder) -> None:
 	tauon.wayland_blur.shutdown()
 	tauon.macos_blur.shutdown()
 	tauon.windows_blur.shutdown()
+
+	# Stop the D-Bus thread's GLib loop first: it dispatches the tray's GTK and
+	# D-Bus menu objects, which destroying the tray (here, or SDL_Quit in the
+	# launcher) frees from this thread.
+	if not macos and not tauon.windows:
+		tauon.gnome.stop()
 
 	# Tray entries hold ctypes callbacks as well. Destroy the tray before this
 	# function drops Tauon's references to those callbacks.
