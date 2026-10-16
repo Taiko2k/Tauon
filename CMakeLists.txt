@@ -75,9 +75,31 @@ endif()
 set_target_properties(tauon-native PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 if(APPLE)
 	target_link_libraries(tauon-native PRIVATE "-framework CoreFoundation")
+	# GObject typelibs name their libraries by leaf name (libglib-2.0.0.dylib),
+	# which dlopen resolves through the launcher's rpaths. The python
+	# executable finds Homebrew's through its framework's /opt/homebrew/lib
+	# rpath, so the launcher carries the embedded Python's absolute rpaths too.
+	# The bundle staging tool removes absolute rpaths again.
+	set(TAUON_MACOS_RPATHS "@executable_path/../Frameworks")
+	find_program(TAUON_OTOOL otool)
+	foreach(python_library IN LISTS Python3_LIBRARIES)
+		if(TAUON_OTOOL AND EXISTS "${python_library}")
+			execute_process(
+				COMMAND "${TAUON_OTOOL}" -l "${python_library}"
+				OUTPUT_VARIABLE python_load_commands
+				ERROR_QUIET
+			)
+			string(REGEX MATCHALL "path /[^\n]* \\(offset" python_rpaths "${python_load_commands}")
+			foreach(python_rpath IN LISTS python_rpaths)
+				string(REGEX REPLACE "^path (.*) \\(offset$" "\\1" python_rpath "${python_rpath}")
+				list(APPEND TAUON_MACOS_RPATHS "${python_rpath}")
+			endforeach()
+		endif()
+	endforeach()
+	list(REMOVE_DUPLICATES TAUON_MACOS_RPATHS)
 	set_target_properties(tauon-native PROPERTIES
-		BUILD_RPATH "@executable_path/../Frameworks"
-		INSTALL_RPATH "@executable_path/../Frameworks"
+		BUILD_RPATH "${TAUON_MACOS_RPATHS}"
+		INSTALL_RPATH "${TAUON_MACOS_RPATHS}"
 	)
 elseif(UNIX)
 	set_target_properties(tauon-native PROPERTIES
