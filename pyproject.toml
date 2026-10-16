@@ -84,9 +84,9 @@
 #	ext-modules = [
 #		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
 
-	# Linux + macOS + Windows (MINGW64)
+	# Linux + macOS + Windows (UCRT64)
 	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/mingw64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"], extra-compile-args = ["-D MINI"] },
+		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/ucrt64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"], extra-compile-args = ["-D MINI"] },
 		# Set as optional to allow soft-failure, it's expected not to build on Windows/macOS, but we don't want to fail the entire build on it
 		# I have not found a better way to solve this, ideally we would somehow tag this as Linux-exclusive
 		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/usr/include/pipewire-0.3", "/usr/include/spa-0.2"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], extra-compile-args = ["-D PIPE"], optional = true },

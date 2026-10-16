@@ -20,7 +20,7 @@ win_build() {
 	#curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf # 16MB
 	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
 	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
-	cp -r /mingw64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
+	cp -r /ucrt64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
 	echo -e "Packaged to dist/TauonMusicBox"
 }
 
@@ -61,9 +61,9 @@ clean_venv_run() {
 	python -m venv .venv
 	source .venv/bin/activate
 #	python -m pip install -U pip
-	# Necessary for Windows (MINGW64) if compiling things like Pillow
-	export CFLAGS="-I/mingw64/include"
-#	export LDFLAGS="-L/mingw64/lib"
+	# Necessary for Windows (UCRT64) if compiling things like Pillow
+	export CFLAGS="-I/ucrt64/include"
+#	export LDFLAGS="-L/ucrt64/lib"
 	pip install ".[all,dev]" build
 	python -m tools.i18n.compile_translations
 	python -m build --wheel

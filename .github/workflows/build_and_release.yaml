@@ -428,7 +428,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pip-
 
-      # TODO(Martin): p7zip should be 7zip but MINGW64 hasn't updated at the time of writing, try switching it later
+      # TODO(Martin): p7zip should be 7zip but MSYS2 hasn't updated at the time of writing, try switching it later
       - name: Read Package List
         id: read_packages
         run: |
@@ -437,10 +437,10 @@ jobs:
           $packages = $packages.Trim() + " p7zip"
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
-      - name: Set up MSYS2 MinGW-W64
+      - name: Set up MSYS2 UCRT64
         uses: msys2/setup-msys2@v2
         with:
-          msystem: mingw64
+          msystem: ucrt64
           update: true
           install: ${{ env.packages }}
 
@@ -448,14 +448,14 @@ jobs:
         shell: msys2 {0}
         run: |
           update-ca-trust
-          sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /mingw64/include/opus/opusfile.h
+          sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /ucrt64/include/opus/opusfile.h
 
       - name: Install Python dependencies and setup venv
         shell: msys2 {0}
         run: |
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
-          export CFLAGS="-I/mingw64/include"
+          export CFLAGS="-I/ucrt64/include"
           export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
           .venv/bin/python -m pip install \
             ".[all]" \

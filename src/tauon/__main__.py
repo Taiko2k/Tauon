@@ -283,7 +283,7 @@ else:
 			# TODO(Martin): Silent crash
 			transfer_args_and_exit()
 	if pyinstaller_mode:
-		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts")  # "C:\\msys64\\mingw64\\etc\\fonts"
+		os.environ["FONTCONFIG_PATH"] = str(install_directory / "etc" / "fonts")  # "C:\\msys64\\ucrt64\\etc\\fonts"
 
 phone = False
 d = os.environ.get("XDG_CURRENT_DESKTOP")
