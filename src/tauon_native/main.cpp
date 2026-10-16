@@ -1442,7 +1442,12 @@ PyObject* bridge_poll_events(PyObject*, PyObject*) {
 	}
 
 	SDL_Event event;
-	while (SDL_PollEvent(&event)) {
+	while (true) {
+		bool received = false;
+		TAUON_WITHOUT_GIL(received = SDL_PollEvent(&event));
+		if (!received) {
+			break;
+		}
 		PyObject* dictionary = event_to_dictionary(event);
 		if (dictionary == nullptr || PyList_Append(events, dictionary) != 0) {
 			Py_XDECREF(dictionary);
@@ -1495,7 +1500,7 @@ PyObject* bridge_init_subsystem(PyObject*, PyObject* argument) {
 }
 
 PyObject* bridge_pump_events(PyObject*, PyObject*) {
-	SDL_PumpEvents();
+	TAUON_WITHOUT_GIL(SDL_PumpEvents());
 	Py_RETURN_NONE;
 }
 
@@ -1537,13 +1542,16 @@ PyObject* bridge_set_clipboard_text(PyObject*, PyObject* argument) {
 	if (encoded == nullptr) {
 		return nullptr;
 	}
-	const bool success = SDL_SetClipboardText(PyBytes_AS_STRING(encoded));
+	const char* text = PyBytes_AS_STRING(encoded);
+	bool success = false;
+	TAUON_WITHOUT_GIL(success = SDL_SetClipboardText(text));
 	Py_DECREF(encoded);
 	return PyBool_FromLong(success ? 1 : 0);
 }
 
 PyObject* bridge_get_clipboard_text(PyObject*, PyObject*) {
-	char* text = SDL_GetClipboardText();
+	char* text = nullptr;
+	TAUON_WITHOUT_GIL(text = SDL_GetClipboardText());
 	if (text == nullptr) {
 		return PyUnicode_FromString("");
 	}
@@ -1553,7 +1561,9 @@ PyObject* bridge_get_clipboard_text(PyObject*, PyObject*) {
 }
 
 PyObject* bridge_has_clipboard_text(PyObject*, PyObject*) {
-	return PyBool_FromLong(SDL_HasClipboardText() ? 1 : 0);
+	bool has_text = false;
+	TAUON_WITHOUT_GIL(has_text = SDL_HasClipboardText());
+	return PyBool_FromLong(has_text ? 1 : 0);
 }
 
 PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
@@ -1592,7 +1602,8 @@ PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
 		nullptr,
 	};
 	int choice = -1;
-	const bool shown = SDL_ShowMessageBox(&data, &choice);
+	bool shown = false;
+	TAUON_WITHOUT_GIL(shown = SDL_ShowMessageBox(&data, &choice));
 	Py_XDECREF(sequence);
 	if (!shown) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());

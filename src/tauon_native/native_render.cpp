@@ -162,8 +162,9 @@ PyObject* native_create_texture(PyObject*, PyObject* args) {
 	if (renderer == nullptr) {
 		return nullptr;
 	}
-	SDL_Texture* texture = SDL_CreateTexture(renderer, static_cast<SDL_PixelFormat>(format),
-		static_cast<SDL_TextureAccess>(access), width, height);
+	SDL_Texture* texture = nullptr;
+	TAUON_WITHOUT_GIL(texture = SDL_CreateTexture(renderer, static_cast<SDL_PixelFormat>(format),
+		static_cast<SDL_TextureAccess>(access), width, height));
 	return pointer_to_python(texture);
 }
 
@@ -186,9 +187,12 @@ PyObject* native_create_texture_from_rgba(PyObject*, PyObject* args) {
 		PyErr_SetString(PyExc_ValueError, "RGBA buffer is smaller than width * height * 4");
 		return nullptr;
 	}
-	SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, pixels.buf, width * 4);
-	SDL_Texture* texture = surface != nullptr ? SDL_CreateTextureFromSurface(renderer, surface) : nullptr;
-	SDL_DestroySurface(surface);
+	SDL_Texture* texture = nullptr;
+	TAUON_WITHOUT_GIL(
+		SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_RGBA32, pixels.buf, width * 4);
+		texture = surface != nullptr ? SDL_CreateTextureFromSurface(renderer, surface) : nullptr;
+		SDL_DestroySurface(surface)
+	);
 	PyBuffer_Release(&pixels);
 	return pointer_to_python(texture);
 }
@@ -375,7 +379,8 @@ PyObject* native_update_texture(PyObject*, PyObject* args) {
 		PyBuffer_Release(&pixels);
 		return nullptr;
 	}
-	const bool success = SDL_UpdateTexture(texture, rectangle_pointer, pixels.buf, pitch);
+	bool success = false;
+	TAUON_WITHOUT_GIL(success = SDL_UpdateTexture(texture, rectangle_pointer, pixels.buf, pitch));
 	PyBuffer_Release(&pixels);
 	return sdl_result(success);
 }
@@ -490,7 +495,8 @@ PyObject* native_create_popup_window(PyObject*, PyObject* args) {
 	if (!PyArg_ParseTuple(args, "OiiiiK", &parent_value, &x, &y, &width, &height, &flags)) return nullptr;
 	SDL_Window* parent = pointer_from_python<SDL_Window>(parent_value, "parent window");
 	if (parent == nullptr) return nullptr;
-	SDL_Window* window = SDL_CreatePopupWindow(parent, x, y, width, height, static_cast<SDL_WindowFlags>(flags));
+	SDL_Window* window = nullptr;
+	TAUON_WITHOUT_GIL(window = SDL_CreatePopupWindow(parent, x, y, width, height, static_cast<SDL_WindowFlags>(flags)));
 	return pointer_to_python(window);
 }
 
@@ -500,7 +506,8 @@ PyObject* native_create_window(PyObject*, PyObject* args) {
 	int height = 0;
 	unsigned long long flags = 0;
 	if (!PyArg_ParseTuple(args, "siiK", &title, &width, &height, &flags)) return nullptr;
-	SDL_Window* window = SDL_CreateWindow(title, width, height, static_cast<SDL_WindowFlags>(flags));
+	SDL_Window* window = nullptr;
+	TAUON_WITHOUT_GIL(window = SDL_CreateWindow(title, width, height, static_cast<SDL_WindowFlags>(flags)));
 	return pointer_to_python(window);
 }
 
@@ -510,21 +517,22 @@ PyObject* native_create_renderer(PyObject*, PyObject* args) {
 	if (!PyArg_ParseTuple(args, "Oz", &window_value, &name)) return nullptr;
 	SDL_Window* window = pointer_from_python<SDL_Window>(window_value, "window");
 	if (window == nullptr) return nullptr;
-	SDL_Renderer* renderer = SDL_CreateRenderer(window, name);
+	SDL_Renderer* renderer = nullptr;
+	TAUON_WITHOUT_GIL(renderer = SDL_CreateRenderer(window, name));
 	return pointer_to_python(renderer);
 }
 
 PyObject* native_destroy_renderer(PyObject*, PyObject* value) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer", true);
 	if (PyErr_Occurred()) return nullptr;
-	SDL_DestroyRenderer(renderer);
+	TAUON_WITHOUT_GIL(SDL_DestroyRenderer(renderer));
 	return invalidate_handle(value);
 }
 
 PyObject* native_destroy_window(PyObject*, PyObject* value) {
 	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window", true);
 	if (PyErr_Occurred()) return nullptr;
-	SDL_DestroyWindow(window);
+	TAUON_WITHOUT_GIL(SDL_DestroyWindow(window));
 	return invalidate_handle(value);
 }
 
@@ -592,7 +600,7 @@ WINDOW_ACTION(native_raise_window, SDL_RaiseWindow)
 PyObject* native_render_present(PyObject*, PyObject* value) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer");
 	if (renderer == nullptr) return nullptr;
-	SDL_RenderPresent(renderer);
+	TAUON_WITHOUT_GIL(SDL_RenderPresent(renderer));
 	Py_RETURN_NONE;
 }
 
@@ -680,7 +688,10 @@ PyObject* native_create_texture_from_cairo(PyObject*, PyObject* args) {
 			Py_RETURN_NONE;
 		}
 	}
-	SDL_Texture* texture = surface != nullptr ? SDL_CreateTextureFromSurface(renderer, surface) : nullptr;
+	SDL_Texture* texture = nullptr;
+	if (surface != nullptr) {
+		TAUON_WITHOUT_GIL(texture = SDL_CreateTextureFromSurface(renderer, surface));
+	}
 	SDL_DestroySurface(surface);
 	PyBuffer_Release(&pixels);
 	return pointer_to_python(texture);
@@ -694,13 +705,17 @@ PyObject* native_read_render_pixels(PyObject*, PyObject* args) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(renderer_value, "renderer");
 	SDL_Rect rectangle{};
 	if (renderer == nullptr || !parse_rect(rectangle_value, rectangle)) return nullptr;
-	SDL_Surface* raw = SDL_RenderReadPixels(renderer, &rectangle);
+	SDL_Surface* raw = nullptr;
+	TAUON_WITHOUT_GIL(raw = SDL_RenderReadPixels(renderer, &rectangle));
 	if (raw == nullptr) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
 		return nullptr;
 	}
 	const SDL_PixelFormat format = alpha ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_XRGB8888;
-	SDL_Surface* surface = raw->format == format ? raw : SDL_ConvertSurface(raw, format);
+	SDL_Surface* surface = raw;
+	if (raw->format != format) {
+		TAUON_WITHOUT_GIL(surface = SDL_ConvertSurface(raw, format));
+	}
 	if (surface != raw) SDL_DestroySurface(raw);
 	if (surface == nullptr) {
 		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
@@ -887,7 +902,10 @@ PyObject* native_create_tray(PyObject*, PyObject* args) {
 	const char* tooltip = nullptr;
 	if (!PyArg_ParseTuple(args, "iiy*s", &width, &height, &pixels, &tooltip)) return nullptr;
 	SDL_Surface* surface = surface_from_rgba(width, height, pixels);
-	SDL_Tray* tray = surface != nullptr ? SDL_CreateTray(surface, tooltip) : nullptr;
+	SDL_Tray* tray = nullptr;
+	if (surface != nullptr) {
+		TAUON_WITHOUT_GIL(tray = SDL_CreateTray(surface, tooltip));
+	}
 	SDL_DestroySurface(surface);
 	PyBuffer_Release(&pixels);
 	if (PyErr_Occurred()) {
@@ -904,7 +922,7 @@ PyObject* native_set_tray_icon(PyObject*, PyObject* args) {
 	if (!PyArg_ParseTuple(args, "Oiiy*", &tray_value, &width, &height, &pixels)) return nullptr;
 	SDL_Tray* tray = pointer_from_python<SDL_Tray>(tray_value, "tray");
 	SDL_Surface* surface = tray != nullptr ? surface_from_rgba(width, height, pixels) : nullptr;
-	if (surface != nullptr) SDL_SetTrayIcon(tray, surface);
+	if (surface != nullptr) TAUON_WITHOUT_GIL(SDL_SetTrayIcon(tray, surface));
 	SDL_DestroySurface(surface);
 	PyBuffer_Release(&pixels);
 	if (surface == nullptr) return nullptr;
@@ -962,7 +980,7 @@ PyObject* native_set_tray_entry_callback(PyObject*, PyObject* args) {
 PyObject* native_destroy_tray(PyObject*, PyObject* value) {
 	SDL_Tray* tray = pointer_from_python<SDL_Tray>(value, "tray", true);
 	if (PyErr_Occurred()) return nullptr;
-	SDL_DestroyTray(tray);
+	TAUON_WITHOUT_GIL(SDL_DestroyTray(tray));
 	for (auto& item : tray_callbacks) Py_DECREF(item.second);
 	tray_callbacks.clear();
 	return invalidate_handle(value);
@@ -1012,7 +1030,9 @@ PyObject* native_video_driver(PyObject*, PyObject*) {
 PyObject* native_flush_renderer(PyObject*, PyObject* value) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer");
 	if (renderer == nullptr) return nullptr;
-	return sdl_result(SDL_FlushRenderer(renderer));
+	bool success = false;
+	TAUON_WITHOUT_GIL(success = SDL_FlushRenderer(renderer));
+	return sdl_result(success);
 }
 
 PyObject* native_render_texture_rotated(PyObject*, PyObject* args) {
@@ -1070,7 +1090,8 @@ PyObject* native_gl_set_attribute(PyObject*, PyObject* args) {
 PyObject* native_gl_create_context(PyObject*, PyObject* value) {
 	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window");
 	if (window == nullptr) return nullptr;
-	SDL_GLContext context = SDL_GL_CreateContext(window);
+	SDL_GLContext context = nullptr;
+	TAUON_WITHOUT_GIL(context = SDL_GL_CreateContext(window));
 	return pointer_to_python(context);
 }
 
@@ -1145,7 +1166,8 @@ PyObject* native_create_texture_from_opengl(PyObject*, PyObject* args) {
 	SDL_SetNumberProperty(properties, SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, width);
 	SDL_SetNumberProperty(properties, SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, height);
 	SDL_SetNumberProperty(properties, SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, access);
-	SDL_Texture* texture = SDL_CreateTextureWithProperties(renderer, properties);
+	SDL_Texture* texture = nullptr;
+	TAUON_WITHOUT_GIL(texture = SDL_CreateTextureWithProperties(renderer, properties));
 	SDL_DestroyProperties(properties);
 	return pointer_to_python(texture);
 }
