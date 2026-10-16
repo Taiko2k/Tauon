@@ -506,6 +506,22 @@ int forward_arguments(int argc, char** argv) {
 	return 0;
 }
 
+#if !defined(_WIN32) && !defined(__APPLE__)
+std::filesystem::path source_checkout_root(const std::filesystem::path& executable) {
+	std::error_code error;
+	for (std::filesystem::path directory = executable.parent_path(); !directory.empty(); directory = directory.parent_path()) {
+		if (std::filesystem::is_regular_file(directory / "pyproject.toml", error)
+			&& std::filesystem::is_regular_file(directory / "src" / "tauon" / "__main__.py", error)) {
+			return directory;
+		}
+		if (directory == directory.parent_path()) {
+			break;
+		}
+	}
+	return {};
+}
+#endif
+
 std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (const char* override_path = std::getenv("TAUON_USER_DATA_DIR")) {
 		return std::filesystem::path(override_path);
@@ -523,13 +539,15 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (const char* app_data = std::getenv("APPDATA")) {
 		return std::filesystem::path(app_data) / "TauonMusicBox";
 	}
-#elif !defined(__APPLE__) && defined(TAUON_DEVELOPMENT_BUILD)
-	// Match Python's source-tree development mode when this executable is run
-	// from the same checkout. Installed builds use the XDG location below.
-	const std::filesystem::path project_root = std::filesystem::path(TAUON_SOURCE_DIR).parent_path();
-	const std::filesystem::path relative = executable.lexically_relative(project_root);
-	if (!relative.empty() && *relative.begin() != "..") {
-		return project_root / "user-data";
+#elif !defined(__APPLE__)
+	// A launcher inside a source checkout (its build tree or virtual
+	// environment) keeps user data in that checkout. Installed builds use the
+	// XDG location below.
+	if (!is_bundled_install(executable)) {
+		const std::filesystem::path project_root = source_checkout_root(executable);
+		if (!project_root.empty()) {
+			return project_root / "user-data";
+		}
 	}
 #endif
 
@@ -1638,22 +1656,14 @@ std::filesystem::path source_directory() {
 	if (const char* override_path = std::getenv("TAUON_PYTHONPATH")) {
 		return std::filesystem::path(override_path);
 	}
-#if defined(TAUON_DEVELOPMENT_BUILD)
-	return std::filesystem::path(TAUON_SOURCE_DIR);
-#else
 	return {};
-#endif
 }
 
 std::filesystem::path python_site_packages_directory() {
 	if (const char* override_path = std::getenv("TAUON_PYTHON_SITE_PACKAGES")) {
 		return std::filesystem::path(override_path);
 	}
-#if defined(TAUON_DEVELOPMENT_BUILD)
-	return std::filesystem::path(TAUON_PYTHON_SITE_PACKAGES);
-#else
 	return {};
-#endif
 }
 
 bool prepend_python_path(const std::filesystem::path& directory) {
@@ -1715,6 +1725,9 @@ int run_python(NativeState& state, int argc, char** argv) {
 		config.user_site_directory = 0;
 		config.write_bytecode = 0;
 	} else {
+		// CPython derives the environment from config.executable: a launcher
+		// installed in a virtual environment's scripts directory finds its
+		// pyvenv.cfg, and one installed in a system prefix finds that prefix
 		PyConfig_InitPythonConfig(&config);
 	}
 	config.parse_argv = 0;

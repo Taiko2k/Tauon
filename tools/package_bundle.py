@@ -41,30 +41,76 @@ STDLIB_EXCLUDES = {
 	"turtledemo",
 	"venv",
 }
-LINUX_SYSTEM_LIBRARIES = {
-	"ld-linux-aarch64.so.1",
+# Libraries a Linux bundle takes from the host instead of shipping, matched by
+# exact soname. They are glibc, or must match the host's graphics drivers,
+# sound servers or font configuration. This is the AppImage project's list:
+#   https://github.com/AppImageCommunity/pkg2appimage/blob/master/excludelist
+# vendored from commit 15a64c20dc23a0154622ba25829364323903b6b5 (2024-11-03),
+# fetched 2026-10-16. To refresh, replace these entries with the first word of
+# each uncommented line of that file, in its order.
+APPIMAGE_EXCLUDED_LIBRARIES = frozenset({
+	"ld-linux.so.2",
 	"ld-linux-x86-64.so.2",
-	"libBrokenLocale.so.1",
 	"libanl.so.1",
+	"libBrokenLocale.so.1",
+	"libcidn.so.1",
 	"libc.so.6",
 	"libdl.so.2",
 	"libm.so.6",
+	"libmvec.so.1",
 	"libnss_compat.so.2",
 	"libnss_dns.so.2",
 	"libnss_files.so.2",
 	"libnss_hesiod.so.2",
+	"libnss_nisplus.so.2",
+	"libnss_nis.so.2",
 	"libpthread.so.0",
 	"libresolv.so.2",
 	"librt.so.1",
+	"libthread_db.so.1",
 	"libutil.so.1",
+	"libstdc++.so.6",
+	"libGL.so.1",
+	"libEGL.so.1",
+	"libGLdispatch.so.0",
+	"libGLX.so.0",
+	"libOpenGL.so.0",
+	"libdrm.so.2",
+	"libglapi.so.0",
+	"libgbm.so.1",
+	"libxcb.so.1",
+	"libX11.so.6",
+	"libX11-xcb.so.1",
+	"libwayland-client.so.0",
+	"libasound.so.2",
+	"libfontconfig.so.1",
+	"libfreetype.so.6",
+	"libharfbuzz.so.0",
+	"libcom_err.so.2",
+	"libexpat.so.1",
+	"libgcc_s.so.1",
+	"libgpg-error.so.0",
+	"libICE.so.6",
+	"libSM.so.6",
+	"libusb-1.0.so.0",
+	"libuuid.so.1",
+	"libz.so.1",
+	"libjack.so.0",
+	"libpipewire-0.3.so.0",
+	"libxcb-dri3.so.0",
+	"libxcb-dri2.so.0",
+	"libfribidi.so.0",
+	"libgmp.so.10",
+})
+LINUX_HOST_LIBRARIES = APPIMAGE_EXCLUDED_LIBRARIES | {
+	# glibc's arm64 loader, which upstream does not list
+	"ld-linux-aarch64.so.1",
+	# PipeWire's SPA plugins and fontconfig's config files are versioned with
+	# these, so they must stay host copies even if upstream drops them. See
+	# https://github.com/Taiko2k/Tauon/issues/2323 for the fontconfig case.
+	"libfontconfig.so.1",
+	"libpipewire-0.3.so.0",
 }
-# Libraries that must come from the host so they match its configuration:
-# PipeWire's SPA plugins and fontconfig's config files are versioned with them.
-# See https://github.com/Taiko2k/Tauon/issues/2323 for the fontconfig case.
-LINUX_HOST_LIBRARY_PREFIXES = (
-	"libfontconfig.so",
-	"libpipewire-0.3.so",
-)
 # Loaded at runtime with ctypes rather than linked, so dependency scanning misses it
 CHROMAPRINT_NAMES = {
 	"linux": ("libchromaprint.so.1",),
@@ -140,7 +186,7 @@ def copy_python_runtime(python_root: Path) -> Path:
 	tauon_package = site_destination / "tauon"
 	if not (tauon_package / "__main__.py").is_file():
 		raise RuntimeError(
-			"Tauon is not installed in the active Python environment; install the freshly built wheel before staging"
+			"Tauon is not installed in the active Python environment; run `pip install .` (not an editable install) before staging"
 		)
 	return tauon_package
 
@@ -274,7 +320,7 @@ def copy_gi_shared_libraries(destination: Path) -> None:
 	destination.mkdir(parents=True, exist_ok=True)
 	search_directories = library_search_directories()
 	missing: list[str] = []
-	for name in sorted(gi_shared_library_names()):
+	for name in sorted(gi_shared_library_names() - LINUX_HOST_LIBRARIES):
 		source = locate_shared_library(name, search_directories)
 		if source is None:
 			missing.append(name)
@@ -315,6 +361,15 @@ def parse_ldd(binary: Path) -> set[tuple[str, Path]]:
 		if path.is_file():
 			dependencies.add((name, path.resolve()))
 	return dependencies
+
+
+def elf_needed(binary: Path) -> list[str]:
+	"""Direct dependencies of an ELF file, unlike ldd's flattened list."""
+	try:
+		result = run(["objdump", "-p", str(binary)], check=False)
+	except FileNotFoundError:
+		return []
+	return re.findall(r"^\s*NEEDED\s+(\S+)", result.stdout, re.MULTILINE)
 
 
 def windows_imports(binary: Path) -> set[str]:
@@ -389,13 +444,15 @@ def collect_linux_dependencies(bundle_root: Path, executable: Path, internal_roo
 	seen: set[tuple[str, Path]] = set()
 	while queue:
 		binary = queue.popleft()
-		for dependency_name, dependency in parse_ldd(binary):
+		# Follow direct dependencies only, resolved through ldd, so whatever is
+		# reachable only through a host library stays on the host too
+		resolved = dict(parse_ldd(binary))
+		for dependency_name in elf_needed(binary):
+			if dependency_name in LINUX_HOST_LIBRARIES or dependency_name not in resolved:
+				continue
+			dependency = resolved[dependency_name]
 			key = (dependency_name, dependency)
-			if (
-				key in seen
-				or dependency_name in LINUX_SYSTEM_LIBRARIES
-				or dependency_name.startswith(LINUX_HOST_LIBRARY_PREFIXES)
-			):
+			if key in seen:
 				continue
 			seen.add(key)
 			destination = library_directory / dependency_name
@@ -689,14 +746,30 @@ def stage_bundle(arguments: argparse.Namespace) -> Path:
 	return app_root
 
 
+def installed_launcher(platform_name: str) -> Path:
+	"""The launcher that `pip install .` placed in the active environment's scripts directory."""
+	return Path(sysconfig.get_path("scripts")) / ("tauon.exe" if platform_name == "windows" else "tauon")
+
+
 def parse_arguments() -> argparse.Namespace:
 	parser = argparse.ArgumentParser(description=__doc__)
 	parser.add_argument("--platform", choices=("linux", "macos", "windows"), required=True)
-	parser.add_argument("--native", type=Path, required=True, help="Built tauon-native executable")
-	parser.add_argument("--output", type=Path, required=True, help="Directory that will receive the bundle")
+	parser.add_argument(
+		"--native",
+		type=Path,
+		help="Native launcher executable (default: the tauon launcher installed in the active environment)",
+	)
+	parser.add_argument(
+		"--output",
+		type=Path,
+		default=REPO_ROOT / "dist" / "package",
+		help="Directory that will receive the bundle (default: dist/package)",
+	)
 	parser.add_argument("--projectm", type=Path, help="Optional projectM shared library")
 	parser.add_argument("--portable", action="store_true", help="Create a portable marker beside the native executable")
 	arguments = parser.parse_args()
+	if arguments.native is None:
+		arguments.native = installed_launcher(arguments.platform)
 	if not arguments.native.is_file():
 		parser.error(f"native executable does not exist: {arguments.native}")
 	if arguments.projectm and not arguments.projectm.is_file():

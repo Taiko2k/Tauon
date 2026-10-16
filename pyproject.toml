@@ -49,65 +49,21 @@
 		"pygobject-stubs",
 	]
 
-[project.entry-points."distutils.commands"]
-	compile_translations = "tools.i18n.compile_translations:main"
-
-	#hard_fix = "hard_fix:main"
-	## Note that if above goes to main, it should get done before phazor compiler.
-
 [project.urls]
 	homepage = "https://tauonmusicbox.rocks/"
 
 [build-system]
-	requires = ["setuptools>=75.3"]
-	build-backend = "setuptools.build_meta"
+	requires = ["scikit-build-core>=0.11"]
+	build-backend = "scikit_build_core.build"
 
-[tool.setuptools]
-	# https://setuptools.pypa.io/en/latest/userguide/ext_modules.html
-	# This is terribly formatted as in TOML 1.0 it all has to be inline, can only be changed when TOML 1.1 ships
-
-	# Windows (MSVC) - does not work as PyGObject, Pango, Cairo et al won't build under MVSC
-	#   One option would be to test https://github.com/wingtk/gvsbuild + https://stackoverflow.com/a/72737752
-	# ./vcpkg.exe install libsndfile:x64-windows # TODO download the necessities instead of this bundle, libflac at minimum
-	# ./vcpkg.exe install mpg123:x64-windows
-	# ./vcpkg.exe install libsamplerate:x64-windows
-	# ./vcpkg.exe install libopenmpt:x64-windows
-	# ./vcpkg.exe install wavpack:x64-windows
-	# ./vcpkg.exe install libgme:x64-windows
-	# ./vcpkg.exe install pthreads:x64-windows
-	# wavpack.lib is trying to be found but it is wavpackdll.lib
-	# opusfile includes opus libraries without opus/ wtf copy them over
-#	ext-modules = [
-#		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["src/phazor/miniaudio", "C:/Users/Yeet/Tauon/src/phazor/miniaudio", "C:/Users/Yeet/Tauon/vcpkg/installed/x64-windows/include", "C:/Users/Yeet/Tauon/src/phazor/kissfft", "C:/Users/Yeet/Tauon/src/phazor/miniaudio"], libraries=["samplerate", "wavpackdll", "opusfile", "ogg", "opus", "vorbisfile", "mpg123", "FLAC", "openmpt", "pthreadVC3", "gme"], library-dirs = ["vcpkg/installed/x64-windows/lib"] },]
-
-	# Linux + macOS + Windows (UCRT64)
-	ext-modules = [
-		{name = "phazor", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/opt/homebrew/include/opus", "/opt/homebrew/include", "C:/msys64/ucrt64/include/opus"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme"], library-dirs = ["/opt/homebrew/lib"], extra-compile-args = ["-D MINI"] },
-		# Set as optional to allow soft-failure, it's expected not to build on Windows/macOS, but we don't want to fail the entire build on it
-		# I have not found a better way to solve this, ideally we would somehow tag this as Linux-exclusive
-		{name = "phazor-pw", sources = ["src/phazor/kissfft/kiss_fftr.c", "src/phazor/kissfft/kiss_fft.c", "src/phazor/phazor.c"], include-dirs = ["/usr/include/opus", "/usr/include/pipewire-0.3", "/usr/include/spa-0.2"], libraries = ["samplerate", "wavpack", "opusfile", "vorbisfile", "mpg123", "FLAC", "openmpt", "gme", "pipewire-0.3"], extra-compile-args = ["-D PIPE"], optional = true },
-	]
-
-	package-dir = {"" = "src"}
-
-	# Should we care about these options or is it fine to omit them here?
-	# -D PIPE/-D MINI is needed for sure
-	#   -shared -o libphazor.so -fPIC -Wall -O3 -g -D MINI #-Wextra
-	#   -shared -o libphazor-pipe.so -fPIC -Wall -O3 -g -D PIPE #-Wextra
-
-	packages = [
-		"tauon",
-		"tauon.t_modules"
-	]
-
-[tool.setuptools.package-data]
-	"tauon" = [
-		"assets/**/*",
-		"locale/*/*/*.mo",
-		"py.typed",
-		"templates/**/*",
-		"theme/**/*",
-	]
+# The top-level CMakeLists.txt builds the tauon launcher, the Phazor audio
+# libraries and the translations, and installs them into the wheel
+[tool.scikit-build]
+	minimum-version = "build-system.requires"
+	cmake.version = ">=3.20"
+	wheel.packages = ["src/tauon"]
+	wheel.exclude = ["tauon/tests/**"]
+	sdist.include = ["src/phazor/kissfft", "src/phazor/miniaudio"]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]

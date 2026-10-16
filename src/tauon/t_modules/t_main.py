@@ -105,6 +105,7 @@ from unidecode import unidecode
 
 import tauon_native
 
+import tauon as tauon_package
 from tauon.t_modules import t_image as native_image
 from tauon.t_modules import t_native as sdl3
 
@@ -40939,8 +40940,6 @@ class PlaylistBox:
 
 		bag              = tauon.bag
 		self.lock_icon = asset_loader(bag, bag.loaded_asset_dc, "lock-corner.png", True)
-		self.pin_icon = asset_loader(bag, bag.loaded_asset_dc, "dia-pin.png", True)
-		self.gen_icon = asset_loader(bag, bag.loaded_asset_dc, "gen-gear.png", True)
 
 
 		# if gui.scale == 1.25:
@@ -48425,7 +48424,6 @@ class ViewBox:
 		self.side_img     = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tracks+side.png", True)
 		self.gallery1_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery1.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
-		self.combo_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "combo.png", True)
 		self.lyrics_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics.png", True)
 		#self.editor_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics-editor.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
@@ -54894,6 +54892,12 @@ def main(holder: Holder) -> None:
 		music_directory = None
 
 	locale_directory = install_directory / "locale"
+	if not locale_directory.is_dir():
+		# Editable installs keep the compiled translations beside the installed package files
+		locale_directory = next(
+			(Path(path) / "locale" for path in tauon_package.__path__ if (Path(path) / "locale").is_dir()),
+			locale_directory,
+		)
 	if flatpak_mode:
 		locale_directory = Path("/app/share/locale")
 	#elif str(install_directory).startswith(("/opt/", "/usr/")):

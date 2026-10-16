@@ -44,6 +44,7 @@ from typing import TYPE_CHECKING
 import requests
 from requests.models import PreparedRequest
 
+import tauon as tauon_package
 from tauon.t_modules.t_enums import PlayerState, PlayingState
 from tauon.t_modules.t_extra import Timer, shooter, tmp_cache_dir
 from tauon.t_modules.t_replaygain import replaygain_multiplier
@@ -1039,29 +1040,25 @@ def find_library(libname: str) -> Path | None:
 
 
 def get_phazor_path(pctl: PlayerCtl) -> Path:
-	"""Locate the PHaZOR library in the specified priority order.
+	"""Locate the PHaZOR library.
 
-	Tries .so, .dll, .pyd, .dylib in that order and finally uses find_library as a fallback.
+	The CMake build installs lib<name>.so, .dll or .dylib into the tauon package.
+	Editable installs keep it beside the installed package files, which the package path
+	also lists. find_library covers builds that ship Phazor as an extension module,
+	such as the Android recipe.
 
 	:param pctl: PlayerCtl object containing installation details
 	:return: Path to the library file
 	:raises Exception: If no library is found
 	"""
-	# This is where compile-phazor.sh scripts place the dll
-	base_path = Path(pctl.install_directory).parent.parent / "build"
-
-	# Define the library name and extensions in priority order
 	lib_name = "phazor-pw" if (not pctl.windows and not pctl.tauon.macos) and pctl.prefs.pipewire else "phazor"
 
-	extensions = [".so", ".dll", ".pyd", ".dylib"]
+	for package_directory in tauon_package.__path__:
+		for ext in (".so", ".dll", ".dylib"):
+			lib_path = Path(package_directory) / f"lib{lib_name}{ext}"
+			if lib_path.is_file():
+				return lib_path
 
-	# Check explicitly for each file
-	for ext in extensions:
-		lib_path = base_path / f"lib{lib_name}{ext}"
-		if lib_path.is_file():
-			return lib_path
-
-	# Fallback to find_library. Used if built using setuptools
 	lib_path = find_library(lib_name)
 	if lib_path:
 		return Path(lib_path)

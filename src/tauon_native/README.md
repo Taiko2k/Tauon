@@ -18,32 +18,31 @@ another Tauon instance owns the instance lock, file paths and `file://` URIs
 are forwarded through the controller's `/open/` endpoint; otherwise they are
 passed to the newly started Python application.
 
-## Development build
+## Building
 
-SDL3, CMake 3.20 or later, a C++17 compiler, and the Python development files
-for Tauon's environment are required.
+The top-level `CMakeLists.txt` builds the launcher together with Phazor, and
+`pip install .` runs it through scikit-build-core. The launcher is installed as
+`tauon` in the environment's scripts directory:
 
 ```sh
-cmake -S . -B build/native \
-  -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-  -DTAUON_DEVELOPMENT_BUILD=ON \
-  -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/native --parallel
-./build/native/tauon-native
+python -m pip install .
+.venv/bin/tauon
 ```
 
-Development builds embed the source and Python site-packages locations
-selected by CMake. Release builds leave `TAUON_DEVELOPMENT_BUILD` disabled and
-use either the system Python installation or a private runtime relative to the
-native executable. `TAUON_PYTHONPATH` and `TAUON_PYTHON_SITE_PACKAGES` remain
-available as explicit development and diagnostic overrides.
+The launcher finds Python from its own location. In a bundle it uses the
+private runtime beside it. Otherwise CPython's path calculation starts from the
+launcher, so one in a virtual environment's `bin` directory picks up that
+environment's `pyvenv.cfg`, and one in a system prefix uses that prefix.
+No paths are compiled in. `TAUON_PYTHONPATH` and `TAUON_PYTHON_SITE_PACKAGES`
+remain available as explicit development and diagnostic overrides.
 
-See `BUILDING.md` for the supported bundle layout and platform build commands.
+See `BUILDING.md` for editable installs, the supported bundle layout and
+platform build commands.
 
 For a bridge-only check that does not import the full Tauon application:
 
 ```sh
-./build/native/tauon-native --tray --native-smoke-test
+.venv/bin/tauon --tray --native-smoke-test
 ```
 
 The smoke test exercises the built-in bridge and verifies the C++-created

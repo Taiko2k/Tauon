@@ -86,32 +86,10 @@ jobs:
           sudo dpkg -i *.deb
         # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
-      - name: Install Python dependencies and setup venv
-        env:
-          SDL_GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          python -m pip install --upgrade pip
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install \
-            ".[all]" \
-            build
-
-      - name: Build the project using python-build
-        run: |
-          source .venv/bin/activate
-          python -m tools.i18n.compile_translations
-          python -m build --wheel
-
-      - name: Install the wheel into the build environment
-        run: |
-          source .venv/bin/activate
-          pip install --no-deps --force-reinstall dist/*.whl
-
       - name: Build SDL3
         run: |
-          curl -L "https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL_VERSION}.tar.gz" -o build/sdl.tar.gz
           mkdir -p build/sdl-src
+          curl -L "https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL_VERSION}.tar.gz" -o build/sdl.tar.gz
           tar --strip-components=1 -xf build/sdl.tar.gz -C build/sdl-src
           cmake -S build/sdl-src -B build/sdl-build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -122,15 +100,14 @@ jobs:
           cmake --build build/sdl-build --parallel
           cmake --install build/sdl-build
 
-      - name: Build native launcher
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
         run: |
+          python -m venv .venv
           source .venv/bin/activate
-          cmake -S . -B build/native -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="${PWD}/build/sdl-prefix" \
-            -DPython3_EXECUTABLE="${PWD}/.venv/bin/python" \
-            -DTAUON_DEVELOPMENT_BUILD=OFF
-          cmake --build build/native --parallel
+          python -m pip install --upgrade pip
+          CMAKE_PREFIX_PATH="${PWD}/build/sdl-prefix" pip install ".[all]"
 
       - name: Assemble relocatable Linux bundle
         run: |
@@ -138,7 +115,6 @@ jobs:
           LD_LIBRARY_PATH="${PWD}/build/sdl-prefix/lib:${LD_LIBRARY_PATH}" \
             python tools/package_bundle.py \
             --platform linux \
-            --native build/native/tauon-native \
             --output dist/package \
             --portable
 
@@ -226,27 +202,20 @@ jobs:
         run: |
           bash src/nowplaying/build_app.sh
 
-      - name: Install Python dependencies and setup venv
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
         run: |
           export CXXFLAGS="-I/opt/homebrew/include"
           export LDFLAGS="-L/opt/homebrew/lib"
+          export CMAKE_PREFIX_PATH="$(brew --prefix)"
           $(brew --prefix python@3.15)/libexec/bin/python -m venv .venv
           .venv/bin/python -m pip install --upgrade pip
           .venv/bin/python -m pip install \
             --no-cache-dir \
             --no-binary=jxlpy \
             ".[all]" \
-            build \
             pytest
-
-      - name: Build the project using python-build
-        run: |
-          .venv/bin/python -m tools.i18n.compile_translations
-          .venv/bin/python -m build --wheel
-
-      - name: Install the wheel into the build environment
-        run: |
-          .venv/bin/python -m pip install --no-deps --force-reinstall dist/*.whl
 
       - name: Run tests using pytest
         run: |
@@ -273,20 +242,10 @@ jobs:
           cmake --build build/projectm-src/build -j3
           cmake --install build/projectm-src/build
 
-      - name: Build native launcher
-        run: |
-          cmake -S . -B build/native -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH="$(brew --prefix)" \
-            -DPython3_EXECUTABLE="${PWD}/.venv/bin/python" \
-            -DTAUON_DEVELOPMENT_BUILD=OFF
-          cmake --build build/native --parallel
-
       - name: Assemble relocatable macOS app
         run: |
           .venv/bin/python tools/package_bundle.py \
             --platform macos \
-            --native build/native/tauon-native \
             --projectm build/projectm/lib/libprojectM-4.4.dylib \
             --output dist/package
 
@@ -380,16 +339,17 @@ jobs:
           update-ca-trust
           sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /ucrt64/include/opus/opusfile.h
 
-      - name: Install Python dependencies and setup venv
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
         shell: msys2 {0}
         run: |
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
           export CFLAGS="-I/ucrt64/include"
+          export CMAKE_PREFIX_PATH=/ucrt64
           export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
-          .venv/bin/python -m pip install \
-            ".[all]" \
-            build
+          .venv/bin/python -m pip install ".[all]"
 
       - name: Read version from pyproject.toml
         shell: msys2 {0}
@@ -408,19 +368,6 @@ jobs:
           print(f"Detected version: {version}")
           PY
 
-      - name: Build the project using python-build
-        shell: msys2 {0}
-        run: |
-          source .venv/bin/activate
-          python -m tools.i18n.compile_translations
-          python -m build --wheel
-
-      - name: Install the wheel into the build environment
-        shell: msys2 {0}
-        run: |
-          source .venv/bin/activate
-          pip install --no-deps --force-reinstall dist/*.whl
-
       # https://github.com/Taiko2k/Tauon/pull/931#issuecomment-1464880133
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
@@ -437,24 +384,12 @@ jobs:
           curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf                         # 16MB
           curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf                        # 16MB
 
-      - name: Build native launcher
-        shell: msys2 {0}
-        run: |
-          source .venv/bin/activate
-          cmake -S . -B build/native -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_PREFIX_PATH=/ucrt64 \
-            -DPython3_EXECUTABLE="${PWD}/.venv/bin/python" \
-            -DTAUON_DEVELOPMENT_BUILD=OFF
-          cmake --build build/native --parallel
-
       - name: Assemble relocatable Windows app
         shell: msys2 {0}
         run: |
           source .venv/bin/activate
           python tools/package_bundle.py \
             --platform windows \
-            --native build/native/tauon-native.exe \
             --projectm /ucrt64/bin/libprojectM-4-4.dll \
             --output dist/package \
             --portable

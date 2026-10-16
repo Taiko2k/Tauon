@@ -1,8 +1,21 @@
 # Building Tauon
 
 Tauon is a native C++ application that embeds its Python UI. The
-`tauon-native` executable owns SDL, creates the main window and renderer, and
+`tauon-native` launcher owns SDL, creates the main window and renderer, and
 then imports `tauon.__main__` in its embedded CPython interpreter.
+
+One CMake project (`CMakeLists.txt`) builds all native code: the launcher, the
+Phazor audio libraries (`phazor`, and `phazor-pw` on Linux when PipeWire is
+available) and the compiled translations. `pyproject.toml` drives it through
+scikit-build-core, so `pip install .` builds everything and installs:
+
+- the Python package, with `libphazor*` and `locale/` inside `tauon/`
+- the launcher as `tauon` in the environment's scripts directory
+  (`.venv/bin/tauon`)
+
+An installed launcher finds its Python environment from its own location: one
+in a virtual environment's `bin` directory uses that environment, and one in a
+system prefix uses that prefix.
 
 Do not launch Tauon with `python -m tauon`, `python src/tauon/__main__.py`, or a
 generated Python console script. Those bypass the native SDL owner and are
@@ -23,13 +36,13 @@ For an existing checkout:
 git submodule update --init --recursive
 ```
 
-Tauon requires Python 3.11 or newer, its matching Python development files,
-CMake 3.20 or newer, a C++17 compiler, SDL3, and the development libraries used
-by the Phazor audio backend.
+Tauon requires Python 3.11 or newer with its development files (including
+the shared `libpython` the launcher embeds), CMake 3.20 or newer, a C and
+C++17 compiler, pkg-config, SDL3, gettext's `msgfmt`, and the development
+libraries used by the Phazor audio backend.
 
-The Python interpreter used to build `tauon-native` must have the same minor
-version and ABI as the Python environment containing Tauon and its compiled
-extensions.
+The launcher embeds the interpreter that builds it, so build and run it with
+the same Python environment.
 
 ## Linux development environment
 
@@ -47,31 +60,46 @@ sudo apt install \
 
 Install SDL3 from your distribution when available. If it is not packaged,
 build and install a current SDL3 release into a local prefix, then pass that
-prefix through `CMAKE_PREFIX_PATH`.
+prefix through the `CMAKE_PREFIX_PATH` environment variable.
 
-Create the Python environment and build Tauon:
+Create the Python environment and install Tauon into it:
 
 ```sh
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install ".[all,dev]" build pytest
-python -m tools.i18n.compile_translations
-python -m build --wheel
-python -m pip install --no-deps --force-reinstall dist/*.whl
-
-cmake -S . -B build/native -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-  -DTAUON_DEVELOPMENT_BUILD=ON
-cmake --build build/native --parallel
+python -m pip install ".[all,dev]" pytest
 ```
 
 Run the application:
 
 ```sh
-./build/native/tauon-native
+.venv/bin/tauon
 ```
+
+### Editable installs
+
+For development, install Tauon in editable mode with a persistent build
+directory. Python changes then apply on the next launch, and re-running the
+install rebuilds only the native code that changed:
+
+```sh
+python -m pip install scikit-build-core
+python -m pip install --no-build-isolation -C build-dir=build/editable -e ".[all,dev]"
+.venv/bin/tauon
+```
+
+`./run.sh` wraps these steps. When the launcher lives inside a source checkout
+(as `.venv/bin/tauon` does), Linux builds keep user data in the checkout's
+`user-data` directory rather than `~/.local/share/TauonMusicBox`.
+
+Editable installs read translations from the build output. Running
+`python -m tools.i18n.compile_translations` writes them into
+`src/tauon/locale` instead, which takes precedence.
+
+Extra CMake options can be passed through pip, for example
+`-C cmake.define.CMAKE_PREFIX_PATH=/path/to/sdl3` or
+`-C cmake.build-type=Debug`.
 
 ## macOS development environment
 
@@ -92,10 +120,10 @@ $(brew --prefix python@3.15)/libexec/bin/python -m venv .venv
 source .venv/bin/activate
 ```
 
-If CMake cannot locate SDL3, add:
+If CMake cannot locate SDL3 or Python, set:
 
 ```sh
--DCMAKE_PREFIX_PATH="$(brew --prefix)"
+export CMAKE_PREFIX_PATH="$(brew --prefix)"
 ```
 
 ## Windows development environment
@@ -109,22 +137,9 @@ pacman -S --needed $(tr '\n' ' ' < extra/msyspac.txt)
 python -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install ".[all,dev]" build pytest
-python -m tools.i18n.compile_translations
-python -m build --wheel
-python -m pip install --no-deps --force-reinstall dist/*.whl
-```
-
-Build the native launcher:
-
-```sh
-cmake -S . -B build/native -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_PREFIX_PATH=/ucrt64 \
-  -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-  -DTAUON_DEVELOPMENT_BUILD=ON
-cmake --build build/native --parallel
-./build/native/tauon-native.exe
+export CMAKE_PREFIX_PATH=/ucrt64
+python -m pip install ".[all,dev]" pytest
+.venv/bin/tauon.exe
 ```
 
 ## Tests and smoke checks
@@ -139,38 +154,27 @@ python -m py_compile src/tauon/t_modules/t_main.py
 Exercise the embedded bridge and native-created SDL objects:
 
 ```sh
-./build/native/tauon-native --tray --native-smoke-test
+.venv/bin/tauon --tray --native-smoke-test
 ```
 
 On a headless Linux machine, run the smoke test through `xvfb-run`.
 
 ## Release-style bundles
 
-Release builds must disable development paths:
+Bundles are staged from a virtual environment where Tauon was installed with
+`pip install .` (not an editable install). Example for Linux:
 
 ```sh
-cmake -S . -B build/native-release -G Ninja \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DPython3_EXECUTABLE="$PWD/.venv/bin/python" \
-  -DTAUON_DEVELOPMENT_BUILD=OFF
-cmake --build build/native-release --parallel
-```
-
-The active virtual environment must contain the freshly built Tauon wheel
-before running the staging tool. Example for Linux:
-
-```sh
-python tools/package_bundle.py \
-  --platform linux \
-  --native build/native-release/tauon-native \
-  --output dist/package \
-  --portable
+python -m pip install ".[all]"
+python tools/package_bundle.py --platform linux --portable
 ```
 
 Use `--platform windows` or `--platform macos` on those operating systems.
-`--projectm PATH` adds the platform's projectM shared library. The staging tool
-copies a private Python standard library and site-packages tree, collects
-native dependencies, and creates the layout expected by `tauon-native`.
+`--projectm PATH` adds the platform's projectM shared library. The bundle is
+written to `dist/package` unless `--output` says otherwise, and uses the
+environment's installed `tauon` launcher unless `--native` names another. The
+staging tool copies a private Python standard library and site-packages tree,
+collects native dependencies, and creates the layout expected by the launcher.
 
 The `portable` marker belongs beside the native executable. When present,
 Tauon writes user data to `user-data` beside the executable. Installer builds
@@ -181,11 +185,15 @@ arm64 app, the Windows workflow produces x86-64, and the Linux workflow
 produces both x86-64 and arm64 archives. Each Linux archive is
 portable across distributions only to the extent allowed by the CI runner's
 glibc baseline; build it on the oldest Linux base that the project intends to
-support. The staging tool deliberately leaves glibc and the dynamic loader to
-the host instead of trying to ship them, and likewise uses the host's PipeWire
-and fontconfig so that their plugins and configuration files match.
+support. The staging tool leaves the libraries on the AppImage project's
+exclude list to the host, along with anything only they depend on. That covers
+glibc and the dynamic loader, the C++ runtime, OpenGL/EGL, DRM, X11/xcb and
+Wayland client libraries, ALSA, JACK, PipeWire, and fontconfig with
+FreeType and HarfBuzz, so that they match the host's drivers, sound server,
+plugins and configuration files. The list is vendored in
+`tools/package_bundle.py`, which describes how to refresh it.
 
 Arch Linux and Flatpak packaging are maintained outside this repository. Their
-recipes should build the wheel and `tauon-native` separately, install both into
-the system prefix (`/usr` or `/app`), install the native executable as
-`bin/tauon`, and invoke it directly.
+recipes should build the wheel (`python -m build --wheel`) and install it into
+the system prefix (`/usr` or `/app`), which places the launcher at `bin/tauon`,
+and invoke that directly.

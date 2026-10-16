@@ -1,5 +1,0 @@
-include src/phazor/pcm.h
-recursive-include src/phazor/kissfft *.h
-recursive-include src/phazor/miniaudio *.h
-recursive-include tools *.py
-recursive-include packaging *.sh *.py
