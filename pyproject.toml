@@ -24,7 +24,10 @@
 		"pillow",  # ;                      sys_platform != 'darwin' # Install Pillow from brew on macOS
 		"pygobject",
 		"pylast",
-		"pyobjc-framework-cocoa ; sys_platform == 'darwin'",
+		# pyobjc-core 12.2 realises every Objective-C class in the process when
+		# objc is imported, adding 1-3s to startup
+		"pyobjc-core < 12.2 ; sys_platform == 'darwin'",
+		"pyobjc-framework-cocoa < 12.2 ; sys_platform == 'darwin'",
 		"pyopengl",
 		"pypresence",
 		"rapidfuzz",
