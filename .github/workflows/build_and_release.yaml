@@ -26,6 +26,8 @@ jobs:
             artifact: TauonMusicBox-linux-arm64
     env:
       SDL_VERSION: "3.4.0"
+      # Of the SDL3-<version>.tar.gz release asset
+      SDL_SHA256: "082cbf5f429e0d80820f68dc2b507a94d4cc1b4e70817b119bbb8ec6a69584b8"
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7
@@ -76,20 +78,36 @@ jobs:
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
-            liblcms2-dev \
-            wget
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl-dev_0.10.3-4ubuntu1_${{ matrix.deb_arch }}.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_${{ matrix.deb_arch }}.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_${{ matrix.deb_arch }}.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_${{ matrix.deb_arch }}.deb
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux-${{ matrix.arch }}
+            liblcms2-dev
+          # Release assets can be replaced, so each download must match the
+          # SHA-256 it had when it was pinned
+          fetch() {
+            curl -fsSL --retry 3 -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --strict
+          }
+          extras=https://github.com/Taiko2k/Tauon/releases/download/Extras
+          if [ "${{ matrix.arch }}" = x64 ]; then
+            fetch libjxl-dev.deb "${extras}/libjxl-dev_0.10.3-4ubuntu1_amd64.deb" 05fdfdb98206489183320efefb8500d4dedac0b235042940a44c94ced075433e
+            fetch libjxl.deb     "${extras}/libjxl0.10_0.10.3-4ubuntu1_amd64.deb" d494af89f272bdaf052d93e7d55030137c488a654a8640db66f988ca4b3a153b
+            fetch libhwy-dev.deb "${extras}/libhwy-dev_1.2.0-3ubuntu2_amd64.deb"  ebb35a856835bcd878e20c9c2e38dd46d8ca9145a1cc4b4c17a630c03f069b12
+            fetch libhwy.deb     "${extras}/libhwy1t64_1.2.0-3ubuntu2_amd64.deb"  d623d4ea0ad56a4e2d39545d5941dfba7120700b631438f092df3508d73947f6
+            fetch lrclib-solver  "${extras}/lrclib-solver-linux-x64"              b8becce458918941428bf16725ff790f48401b3053c564b7c7962fe70ea74a95
+          else
+            fetch libjxl-dev.deb "${extras}/libjxl-dev_0.10.3-4ubuntu1_arm64.deb" c2fe61a6110f0e29cf8bb4eb49dd1b542c587177c39492da1b249f4b409d7758
+            fetch libjxl.deb     "${extras}/libjxl0.10_0.10.3-4ubuntu1_arm64.deb" 11bf8e65a71af025893bd2334f2efc390be08d87e3f63775ab372a8401617b4f
+            fetch libhwy-dev.deb "${extras}/libhwy-dev_1.2.0-3ubuntu2_arm64.deb"  58b4cabf50b4993de7c435f9c7b037c331376cb105d24a34a35b48e54597e8d9
+            fetch libhwy.deb     "${extras}/libhwy1t64_1.2.0-3ubuntu2_arm64.deb"  f41efe00549002f437349f41ae04a760db477ad275b1913690c9c9ea24ca2273
+            fetch lrclib-solver  "${extras}/lrclib-solver-linux-arm64"            06f0a3ca4b5ba05c22b6d6b83a39e88d677aaf8c0850135d4a4c3c5d616870a7
+          fi
           sudo dpkg -i *.deb
         # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
       - name: Build SDL3
         run: |
           mkdir -p build/sdl-src
-          curl -L "https://github.com/libsdl-org/SDL/archive/refs/tags/release-${SDL_VERSION}.tar.gz" -o build/sdl.tar.gz
+          curl -fsSL --retry 3 -o build/sdl.tar.gz \
+            "https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-${SDL_VERSION}.tar.gz"
+          echo "${SDL_SHA256}  build/sdl.tar.gz" | sha256sum --check --strict
           tar --strip-components=1 -xf build/sdl.tar.gz -C build/sdl-src
           cmake -S build/sdl-src -B build/sdl-build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
@@ -196,7 +214,8 @@ jobs:
 
       - name: Download lirclib solver
         run: |
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos-arm64
+          curl -fsSL --retry 3 -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos-arm64
+          echo "3f655b3c85f3de950aafd5301cfc8470421ed5d9c52bec164fdfd0eb4d102e57  lrclib-solver" | shasum -a 256 --check --strict
 
       - name: Build macOS Now Playing helper
         run: |
@@ -348,7 +367,6 @@ jobs:
           python -m venv .venv
           export CFLAGS="-I/ucrt64/include"
           export CMAKE_PREFIX_PATH=/ucrt64
-          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
           .venv/bin/python -m pip install ".[all]"
 
       - name: Read version from pyproject.toml
@@ -372,17 +390,27 @@ jobs:
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-x64.exe
-          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/Extras/TauonSMTC.dll
+          set -eo pipefail
+          # Release assets can be replaced, so each download must match the
+          # SHA-256 it had when it was pinned. Fonts come from fixed commits.
+          fetch() {
+            curl -fsSL --retry 3 -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --strict
+          }
+          extras=https://github.com/Taiko2k/Tauon/releases/download/Extras
+          noto=https://github.com/notofonts/notofonts.github.io/raw/5c3913063bb189df4edc94b766584dfb4c04a187/fonts/NotoSans/full/ttf
+          noto_cjk=https://github.com/notofonts/noto-cjk/raw/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese
+          fetch lrclib-solver.exe "${extras}/lrclib-solver-windows-x64.exe" 95c874e516bffaeac6d5f17260c088938e411a0b1dcf90699c77cec2adf2a7a4
+          fetch TauonSMTC.dll     "${extras}/TauonSMTC.dll"                 98a19392d17c3da3ae0e04b99d5d1a1ea54d377a762d6b8bde3d0c6154e254dd
           mkdir fonts
-          curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
-          curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
-          curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf               # 800KB
-          curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf             # 800KB
-          curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf            # 800KB
-          curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf                           # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf                         # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf                        # 16MB
+          fetch fonts/NotoSans-ExtraCondensed.ttf     "${noto}/NotoSans-ExtraCondensed.ttf"     378c95db3ac074e5ffdb5491cfe4c4b5eadb431b71281164f974a3d4e70ac3ba # 800KB
+          fetch fonts/NotoSans-ExtraCondensedBold.ttf "${noto}/NotoSans-ExtraCondensedBold.ttf" cc63d525eee76665becc0c8bdebb4b4c6e9e4764215f9949576ea81062ea1f79 # 800KB
+          fetch fonts/NotoSans-Bold.ttf               "${noto}/NotoSans-Bold.ttf"               3a08a47daa00cade516425c15c57615aef2fd418ec9811a7b9f465088f92cc05 # 800KB
+          fetch fonts/NotoSans-Medium.ttf             "${noto}/NotoSans-Medium.ttf"             1d1570dd66d70cbcd56646c55580c3cc453c7abc505534230c165f93b55ad394 # 800KB
+          fetch fonts/NotoSans-Regular.ttf            "${noto}/NotoSans-Regular.ttf"            f5f552c8c5edb61fe6efb824baf4d4de47b1a8689ab4925ff43f7bd6a4ebece5 # 800KB
+          fetch fonts/NotoSansCJKjp-Bold.otf          "${noto_cjk}/NotoSansCJKjp-Bold.otf"      e53dcb0dcb2922e45d01aae1ebd2f382bb81d4229b18b6b883bd170678af1f76 # 16MB
+          fetch fonts/NotoSansCJKjp-Medium.otf        "${noto_cjk}/NotoSansCJKjp-Medium.otf"    dd523e580e3413c480b2d701bf64e534c20f8419e3cfb6a44c2bdcd8d2a6c052 # 16MB
+          fetch fonts/NotoSansCJKjp-Regular.otf       "${noto_cjk}/NotoSansCJKjp-Regular.otf"   68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5 # 16MB
 
       - name: Assemble relocatable Windows app
         shell: msys2 {0}

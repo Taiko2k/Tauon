@@ -33,8 +33,9 @@ The launcher finds Python from its own location. In a bundle it uses the
 private runtime beside it. Otherwise CPython's path calculation starts from the
 launcher, so one in a virtual environment's `bin` directory picks up that
 environment's `pyvenv.cfg`, and one in a system prefix uses that prefix.
-No paths are compiled in. `TAUON_PYTHONPATH` and `TAUON_PYTHON_SITE_PACKAGES`
-remain available as explicit development and diagnostic overrides.
+No paths are compiled in. Outside a bundle, `TAUON_PYTHONPATH` and
+`TAUON_PYTHON_SITE_PACKAGES` are available as explicit development and
+diagnostic overrides. Bundles ignore them.
 
 See `BUILDING.md` for editable installs, the supported bundle layout and
 platform build commands.

@@ -1771,8 +1771,11 @@ int run_python(NativeState& state, int argc, char** argv) {
 		return 1;
 	}
 
+	// A bundle runs only its own runtime, so the path overrides apply to
+	// development launchers alone
 	int exit_code = 0;
-	if (!prepend_python_path(python_site_packages_directory()) || !prepend_python_path(source_directory())) {
+	if (!bundled
+		&& (!prepend_python_path(python_site_packages_directory()) || !prepend_python_path(source_directory()))) {
 		PyErr_Print();
 		exit_code = 1;
 	} else if (has_argument(argc, argv, "--native-smoke-test")) {

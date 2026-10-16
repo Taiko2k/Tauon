@@ -55,12 +55,17 @@ jobs:
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
-            liblcms2-dev \
-            wget
-          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
-          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
-          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
-          wget http://old-releases.ubuntu.com/ubuntu/pool/universe/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
+            liblcms2-dev
+          # Each download must match the SHA-256 it had when it was pinned
+          fetch() {
+            curl -fsSL --retry 3 -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --strict
+          }
+          pool=https://old-releases.ubuntu.com/ubuntu/pool/universe
+          fetch libjxl-dev.deb "${pool}/j/jpeg-xl/libjxl-dev_0.10.3-4ubuntu1_amd64.deb" 05fdfdb98206489183320efefb8500d4dedac0b235042940a44c94ced075433e
+          fetch libjxl.deb     "${pool}/j/jpeg-xl/libjxl0.10_0.10.3-4ubuntu1_amd64.deb" d494af89f272bdaf052d93e7d55030137c488a654a8640db66f988ca4b3a153b
+          fetch libhwy-dev.deb "${pool}/h/highway/libhwy-dev_1.2.0-3ubuntu2_amd64.deb"  ebb35a856835bcd878e20c9c2e38dd46d8ca9145a1cc4b4c17a630c03f069b12
+          fetch libhwy.deb     "${pool}/h/highway/libhwy1t64_1.2.0-3ubuntu2_amd64.deb"  d623d4ea0ad56a4e2d39545d5941dfba7120700b631438f092df3508d73947f6
           sudo dpkg -i *.deb
         #    libsdl2-image-dev \
         #  wget http://mirrors.edge.kernel.org/ubuntu/pool/main/l/lcms2/liblcms2-dev_2.14-2build1_amd64.deb
