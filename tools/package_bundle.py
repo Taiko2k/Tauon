@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import compileall
 import os
 import plistlib
+import py_compile
 import re
 import shutil
 import stat
@@ -189,6 +191,19 @@ def copy_python_runtime(python_root: Path) -> Path:
 			"Tauon is not installed in the active Python environment; run `pip install .` (not an editable install) before staging"
 		)
 	return tauon_package
+
+
+def compile_python_runtime(python_root: Path) -> None:
+	# The launcher doesn't write bytecode inside a bundle, so without this every
+	# launch compiles each imported module from source. Unchecked hashes keep
+	# the bytecode valid when an archive or installer changes source mtimes.
+	for directory in (python_root / "stdlib", python_root / "site-packages"):
+		compileall.compile_dir(
+			directory,
+			quiet=2,
+			workers=0,
+			invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
+		)
 
 
 def copy_optional_file(source: Path, destination: Path, *, executable: bool = False) -> bool:
@@ -717,6 +732,7 @@ def stage_bundle(arguments: argparse.Namespace) -> Path:
 		executable.chmod(executable.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
 
 	tauon_package = copy_python_runtime(python_root)
+	compile_python_runtime(python_root)
 	copy_application_extras(tauon_package, arguments.platform)
 	copy_runtime_data(internal_root, arguments.platform)
 	if arguments.platform == "macos":
