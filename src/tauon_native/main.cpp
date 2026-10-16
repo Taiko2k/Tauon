@@ -522,14 +522,52 @@ std::filesystem::path source_checkout_root(const std::filesystem::path& executab
 }
 #endif
 
+// PyInstaller builds kept the portable marker and user data in _internal
+std::filesystem::path legacy_portable_directory(const std::filesystem::path& executable) {
+	return executable.parent_path() / "_internal";
+}
+
+bool has_portable_marker(const std::filesystem::path& executable) {
+	std::error_code error;
+	return std::filesystem::exists(executable.parent_path() / "portable", error)
+		|| std::filesystem::exists(legacy_portable_directory(executable) / "portable", error);
+}
+
+std::filesystem::path portable_user_data_directory(const std::filesystem::path& executable) {
+	return executable.parent_path() / "user-data";
+}
+
+// A release extracted over a PyInstaller portable build would otherwise start
+// with an empty library while the old data stays in _internal/user-data
+void migrate_legacy_portable_user_data(const std::filesystem::path& executable) {
+	const std::filesystem::path legacy = legacy_portable_directory(executable) / "user-data";
+	const std::filesystem::path current = portable_user_data_directory(executable);
+	std::error_code error;
+	if (!std::filesystem::is_directory(legacy, error)) {
+		return;
+	}
+	if (std::filesystem::exists(current, error)) {
+		std::cerr << "Tauon: leaving old portable user data in " << legacy.string()
+			<< " because " << current.string() << " already exists\n";
+		return;
+	}
+	std::filesystem::rename(legacy, current, error);
+	if (error) {
+		std::cerr << "Tauon: unable to move old portable user data from " << legacy.string()
+			<< " to " << current.string() << ": " << error.message() << '\n';
+		return;
+	}
+	std::cerr << "Tauon: moved old portable user data to " << current.string() << '\n';
+}
+
 std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (const char* override_path = std::getenv("TAUON_USER_DATA_DIR")) {
 		return std::filesystem::path(override_path);
 	}
 
 	const std::filesystem::path executable = current_executable_path(executable_argument);
-	if (std::filesystem::exists(executable.parent_path() / "portable")) {
-		return executable.parent_path() / "user-data";
+	if (has_portable_marker(executable)) {
+		return portable_user_data_directory(executable);
 	}
 
 #if defined(_WIN32)
@@ -1887,14 +1925,19 @@ int tauon_main(int argc, char** argv) {
 		print_usage(argc > 0 ? argv[0] : "tauon-native");
 		return 0;
 	}
-	// Match the shell launcher: controller commands never start a new player.
+	// Controller commands never start a new player
 	if (has_controller_argument(argc, argv)) {
 		return forward_arguments(argc, argv);
 	}
 
 	NativeState state;
 	state.executable_path = current_executable_path(argc > 0 ? argv[0] : "tauon-native");
-	state.portable = std::filesystem::exists(state.executable_path.parent_path() / "portable");
+	state.portable = has_portable_marker(state.executable_path);
+	// Before the instance lock, which lives in the user data directory
+	if (state.portable
+		&& user_data_directory(argv[0]) == portable_user_data_directory(state.executable_path)) {
+		migrate_legacy_portable_user_data(state.executable_path);
+	}
 	configure_bundled_environment(state.executable_path);
 	g_state = &state;
 	const InstanceLockResult instance_lock = acquire_instance_lock(state, argv[0]);

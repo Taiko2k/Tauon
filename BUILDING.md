@@ -102,7 +102,10 @@ one. The tool copies a private Python runtime and collects native
 dependencies.
 
 `--portable` puts a `portable` marker beside the executable, which keeps user
-data in `user-data` next to it. Installer builds must not include it.
+data in `user-data` next to it. Installer builds must not include it. The
+launcher moves data left in `_internal/user-data` by older (PyInstaller)
+portable builds there on first launch, and still honours their
+`_internal/portable` marker.
 
 Bundles are per-architecture: CI builds macOS arm64, Windows x86-64, and Linux
 x86-64 and arm64. A Linux bundle runs only on hosts with at least the build
