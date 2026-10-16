@@ -40983,8 +40983,6 @@ class PlaylistBox:
 
 		bag              = tauon.bag
 		self.lock_icon = asset_loader(bag, bag.loaded_asset_dc, "lock-corner.png", True)
-		self.pin_icon = asset_loader(bag, bag.loaded_asset_dc, "dia-pin.png", True)
-		self.gen_icon = asset_loader(bag, bag.loaded_asset_dc, "gen-gear.png", True)
 
 
 		# if gui.scale == 1.25:
@@ -48484,7 +48482,6 @@ class ViewBox:
 		self.side_img     = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "tracks+side.png", True)
 		self.gallery1_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery1.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
-		self.combo_img    = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "combo.png", True)
 		self.lyrics_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics.png", True)
 		#self.editor_img   = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "lyrics-editor.png", True)
 		self.gallery2_img = asset_loader(tauon.bag, tauon.bag.loaded_asset_dc, "gallery2.png", True)
