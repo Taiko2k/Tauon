@@ -22,7 +22,7 @@ Options:
   --notary-profile NAME   notarytool keychain profile (default: $NOTARYTOOL_PROFILE)
   --skip-notarize         Rebuild/sign only; skip notarization + stapling
   --keep-temp             Keep temp working directory for debugging
-  --jobs N                Binaries to sign at once (default: CPU count)
+  --jobs N                Binaries to sign at once (default: 3)
   -h, --help              Show this help
 
 Notarization auth (choose one):
@@ -165,7 +165,8 @@ APP_NAME=""
 NOTARY_PROFILE="${NOTARYTOOL_PROFILE:-}"
 SKIP_NOTARIZE=0
 KEEP_TEMP=0
-SIGN_JOBS="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+# Each signature makes a request to Apple's timestamp server, so stay modest
+SIGN_JOBS=3
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
