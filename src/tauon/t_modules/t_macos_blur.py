@@ -22,7 +22,7 @@ import ctypes
 import logging
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -105,7 +105,7 @@ class MacOSBlur:
 	def load_library(self) -> bool:
 		if self.lib is not None:
 			return True
-		if sdl3.SDL_GetCurrentVideoDriver() != b"cocoa":
+		if sdl3.get_current_video_driver() != b"cocoa":
 			self.unavailable = True
 			return False
 		try:
@@ -133,9 +133,8 @@ class MacOSBlur:
 		try:
 			import objc  # noqa: PLC0415 - macOS only
 
-			properties = sdl3.SDL_GetWindowProperties(self.tauon.t_window)
-			pointer = sdl3.SDL_GetPointerProperty(
-				properties, sdl3.SDL_PROP_WINDOW_COCOA_WINDOW_POINTER, None)
+			pointer = sdl3.get_window_pointer_property(
+				self.tauon.t_window, sdl3.SDL_PROP_WINDOW_COCOA_WINDOW_POINTER)
 			if not pointer:
 				return None
 			window = objc.objc_object(c_void_p=ctypes.c_void_p(int(pointer)))

@@ -27,7 +27,6 @@
 		"pyobjc-framework-cocoa ; sys_platform == 'darwin'",
 		"pyopengl",
 		"pypresence",
-		"pysdl3",
 		"rapidfuzz",
 		"requests",
 		"send2trash",
@@ -49,9 +48,6 @@
 	dev = [
 		"pygobject-stubs",
 	]
-
-[project.gui-scripts]
-	tauonmb = "tauon.__main__:main"
 
 [project.entry-points."distutils.commands"]
 	compile_translations = "tools.i18n.compile_translations:main"
@@ -104,11 +100,14 @@
 		"tauon.t_modules"
 	]
 
-[tool.setuptools.dynamic]
-	dependencies = {file = "requirements.txt"}
-
 [tool.setuptools.package-data]
-	"tauon" = ["assets/*", "assets/svg/*", "locale/*/*/*.mo", "templates/*", "theme/*"]
+	"tauon" = [
+		"assets/**/*",
+		"locale/*/*/*.mo",
+		"py.typed",
+		"templates/**/*",
+		"theme/**/*",
+	]
 
 # https://github.com/microsoft/pyright/blob/main/docs/configuration.md#pyright-configuration
 [tool.pyright]

@@ -6,9 +6,10 @@ usage() {
 Usage:
   macos_resign_repack_notarize_dmg.sh --input-dmg PATH --identity "Developer ID Application: ..." [options]
 
-Unpacks a CI-built DMG, deep-signs the .app bundle, rebuilds the DMG using the same
-create-dmg layout settings used in .github/workflows/build_and_release.yaml, then
-notarizes and staples the rebuilt DMG.
+Unpacks a CI-built DMG, signs nested code from the inside out, rebuilds the DMG
+using the same create-dmg layout settings used in
+.github/workflows/build_and_release.yaml, then notarizes and staples the rebuilt
+DMG.
 
 Options:
   --input-dmg PATH        Source DMG from CI (required)
@@ -179,6 +180,7 @@ require_cmd codesign
 require_cmd xcrun
 require_cmd ditto
 require_cmd create-dmg
+require_cmd file
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -251,11 +253,36 @@ ATTACHED=0
 
 regularize_nested_bundle_symlinks "$SIGNED_APP"
 
-log "Deep-signing app bundle: $SIGNED_APP"
+sign_code() {
+  local target="$1"
+  codesign \
+    --force \
+    --timestamp \
+    --options runtime \
+    --sign "$IDENTITY" \
+    "$target"
+}
+
+log "Signing bundled Mach-O files"
+while IFS= read -r -d '' candidate; do
+  if file -b "$candidate" | grep -q 'Mach-O'; then
+    sign_code "$candidate"
+  fi
+done < <(find "$SIGNED_APP/Contents" -type f -print0)
+
+log "Signing nested bundles and frameworks"
+while IFS= read -r bundle; do
+  sign_code "$bundle"
+done < <(
+  find "$SIGNED_APP/Contents" -depth -type d \
+    \( -name '*.app' -o -name '*.framework' \) \
+    -print
+)
+
+log "Signing app bundle: $SIGNED_APP"
 codesign_cmd=(
   codesign
   --force
-  --deep
   --timestamp
   --options runtime
   --sign "$IDENTITY"

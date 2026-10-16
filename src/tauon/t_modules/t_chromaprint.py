@@ -22,6 +22,14 @@ if TYPE_CHECKING:
 _CONTEXT_LOCK = threading.Lock()
 
 
+def _bundled_library_directory() -> str | None:
+	try:
+		import tauon_native  # noqa: PLC0415
+	except ImportError:
+		return None
+	return tauon_native.bundled_library_directory()
+
+
 class ChromaprintError(Exception):
 	pass
 
@@ -43,9 +51,9 @@ class Chromaprint:
 				else ("libchromaprint.so.1", "libchromaprint.so")
 			)
 			locations = [*directories, Path(sys.executable).parent, Path(sys.prefix) / "lib"]
-			frozen_root = getattr(sys, "_MEIPASS", None)
-			if frozen_root:
-				locations.insert(0, Path(frozen_root))
+			bundled_directory = _bundled_library_directory()
+			if bundled_directory:
+				locations.insert(0, Path(bundled_directory))
 			if sys.platform == "darwin":
 				locations.extend((Path("/opt/homebrew/lib"), Path("/usr/local/lib")))
 			elif sys.platform == "win32":

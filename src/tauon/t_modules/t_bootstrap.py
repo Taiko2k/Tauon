@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 	from io import TextIOWrapper
 	from pathlib import Path
 
-	from sdl3 import LP_SDL_Renderer, LP_SDL_Window
+	from tauon.t_modules.t_native import LP_SDL_Renderer, LP_SDL_Window
 
 	from tauon.__main__ import LogHistoryHandler
 
@@ -30,7 +30,6 @@ class Holder:
 	old_window_position:    tuple[int, int] | None # X Y res
 	install_directory:      Path
 	user_directory:         Path
-	pyinstaller_mode:       bool
 	phone:                  bool
 	window_default_size:    tuple[int, int] # X Y res
 	window_title:           bytes # t_title.encode("utf-8")
@@ -43,4 +42,6 @@ class Holder:
 	dev_mode:               bool
 	instance_lock:          TextIOWrapper | None
 	log:                    LogHistoryHandler
+	native_bootstrap:       bool # The C++ launcher owns SDL shutdown and the main window/renderer lifetime
+	portable_mode:          bool # The native launcher found a portable marker beside itself
 	# fmt:on

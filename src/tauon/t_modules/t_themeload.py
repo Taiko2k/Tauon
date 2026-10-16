@@ -25,9 +25,9 @@ import logging
 import os
 from typing import TYPE_CHECKING, Protocol
 
-import sdl3
 from PIL import Image
 
+from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_extra import ColourRGBA, rgb_add_hls, test_lumi
 
 if TYPE_CHECKING:
@@ -510,7 +510,7 @@ class Deco:
 
 	def unload(self) -> None:
 		for item in self.drawables:
-			sdl3.SDL_DestroyTexture(item.texture)
+			sdl3.destroy_texture(item.texture)
 		self.drawables.clear()
 
 	def load(self, name: str) -> None:
@@ -560,15 +560,11 @@ class Deco:
 			im = im.resize((new_w, new_h), Image.Resampling.LANCZOS)
 			w, h = new_w, new_h
 
-		g = io.BytesIO()
-		g.seek(0)
-		im.save(g, "PNG")
-		g.seek(0)
-		s_image = self.tauon.ddt.load_image(g)
-		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-		sdl3.SDL_SetTextureAlphaMod(texture, opacity)
-		sdl3.SDL_DestroySurface(s_image)
-		sdl_rect = sdl3.SDL_FRect(0, 0, w, h)
+		if im.mode != "RGBA":
+			im = im.convert("RGBA")
+		texture = sdl3.create_texture_from_rgba(self.renderer, w, h, im.tobytes())
+		sdl3.set_texture_alpha_mod(texture, opacity)
+		sdl_rect = sdl3.FRect(0, 0, w, h)
 
 		drawable = Drawable()
 		drawable.x = x
@@ -584,7 +580,7 @@ class Deco:
 			d = self.drawables[0]
 			d.rect.x = round(x - int(d.w + round(d.x * self.tauon.gui.scale)))
 			d.rect.y = round(y - int(d.h + round(d.y * self.tauon.gui.scale)))
-			sdl3.SDL_RenderTexture(self.renderer, d.texture, None, d.rect)
+			sdl3.render_texture(self.renderer, d.texture, None, d.rect)
 
 			if pretty_text:
 				ddt.pretty_rect = (d.rect.x, d.rect.y, d.rect.w, d.rect.h)
