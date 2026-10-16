@@ -22,6 +22,7 @@ Options:
   --notary-profile NAME   notarytool keychain profile (default: $NOTARYTOOL_PROFILE)
   --skip-notarize         Rebuild/sign only; skip notarization + stapling
   --keep-temp             Keep temp working directory for debugging
+  --jobs N                Binaries to sign at once (default: CPU count)
   -h, --help              Show this help
 
 Notarization auth (choose one):
@@ -32,9 +33,8 @@ Notarization auth (choose one):
        APPLE_APP_PASSWORD (or APPLE_APP_SPECIFIC_PASSWORD)
 
 Requirements:
-  macOS command-line tools: hdiutil, codesign, xcrun, ditto
+  macOS command-line tools: hdiutil, codesign, xcrun, ditto, python3
   create-dmg (same tool used by the GitHub workflow)
-  python3 (optional, used to generate the custom DMG background if available)
 EOF
 }
 
@@ -79,6 +79,51 @@ bundle_exec_name() {
   printf '%s' "$exec_name"
 }
 
+# Prints Mach-O files below a directory, NUL-terminated, in one pass. With
+# "executables" only those in a bundle's Contents/MacOS or a framework's main
+# binary; with "others" everything else. codesign reads a bundle's executable
+# while signing other code inside the bundle, so those can't be replaced
+# concurrently.
+macho_files() {
+  python3 -I - "$1" "$2" <<'PY'
+import os
+import sys
+
+def is_bundle_executable(path):
+    parts = path.split(b"/")
+    in_macos = len(parts) >= 3 and parts[-2] == b"MacOS" and parts[-3] == b"Contents"
+    framework_binary = len(parts) >= 4 and parts[-3] == b"Versions" and parts[-4] == parts[-1] + b".framework"
+    return in_macos or framework_binary
+
+want_executables = sys.argv[2] == "executables"
+
+MAGICS = {
+    b"\xca\xfe\xba\xbe", b"\xbe\xba\xfe\xca",  # universal
+    b"\xfe\xed\xfa\xce", b"\xce\xfa\xed\xfe",  # 32-bit
+    b"\xfe\xed\xfa\xcf", b"\xcf\xfa\xed\xfe",  # 64-bit
+}
+out = sys.stdout.buffer
+for root, _, names in os.walk(os.fsencode(sys.argv[1])):
+    for name in names:
+        path = os.path.join(root, name)
+        if os.path.islink(path):
+            continue
+        try:
+            with open(path, "rb") as handle:
+                header = handle.read(8)
+        except OSError:
+            continue
+        if header[:4] not in MAGICS:
+            continue
+        # Java class files share the universal magic but store a class file
+        # version where a universal binary stores its small architecture count
+        if header[:4] == b"\xca\xfe\xba\xbe" and int.from_bytes(header[4:8], "big") >= 30:
+            continue
+        if is_bundle_executable(path) == want_executables:
+            out.write(path + b"\0")
+PY
+}
+
 regularize_nested_bundle_symlinks() {
   local app_path="$1"
   local top_info="$app_path/Contents/Info.plist"
@@ -120,6 +165,7 @@ APP_NAME=""
 NOTARY_PROFILE="${NOTARYTOOL_PROFILE:-}"
 SKIP_NOTARIZE=0
 KEEP_TEMP=0
+SIGN_JOBS="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -161,6 +207,11 @@ while [[ $# -gt 0 ]]; do
       KEEP_TEMP=1
       shift
       ;;
+    --jobs)
+      [[ $# -ge 2 ]] || fail "--jobs requires a value"
+      SIGN_JOBS="$2"
+      shift 2
+      ;;
     -h|--help)
       usage
       exit 0
@@ -180,7 +231,9 @@ require_cmd codesign
 require_cmd xcrun
 require_cmd ditto
 require_cmd create-dmg
-require_cmd file
+require_cmd python3
+
+[[ "$SIGN_JOBS" =~ ^[1-9][0-9]*$ ]] || fail "--jobs must be a positive integer"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -263,12 +316,18 @@ sign_code() {
     "$target"
 }
 
-log "Signing bundled Mach-O files"
-while IFS= read -r -d '' candidate; do
-  if file -b "$candidate" | grep -q 'Mach-O'; then
-    sign_code "$candidate"
-  fi
-done < <(find "$SIGNED_APP/Contents" -type f -print0)
+log "Signing bundle executables"
+macho_files "$SIGNED_APP/Contents" executables \
+  | while IFS= read -r -d '' binary; do
+      sign_code "$binary"
+    done
+
+# The remaining files each carry their own signature, so they can be signed in
+# parallel; most of the time is spent waiting on Apple's timestamp server
+log "Signing other Mach-O files ($SIGN_JOBS at a time)"
+macho_files "$SIGNED_APP/Contents" others \
+  | xargs -0 -n 1 -P "$SIGN_JOBS" \
+    codesign --force --timestamp --options runtime --sign "$IDENTITY"
 
 log "Signing nested bundles and frameworks"
 while IFS= read -r bundle; do
