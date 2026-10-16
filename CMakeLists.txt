@@ -23,17 +23,17 @@ find_package(Threads REQUIRED)
 find_package(Gettext)
 
 # scikit-build-core installs relative to the wheel's platlib (site-packages)
-# and provides the environment's scripts directory. Plain CMake installs
-# target the selected interpreter's site-packages and the prefix's bin.
+# and provides the environment's scripts directory, a new staging directory
+# on every build, so these are plain variables rather than cache entries.
+# Plain CMake installs target the selected interpreter's site-packages and
+# the prefix's bin.
 if(SKBUILD)
-	set(TAUON_DEFAULT_PACKAGE_DIR "tauon")
-	set(TAUON_DEFAULT_SCRIPTS_DIR "${SKBUILD_SCRIPTS_DIR}")
+	set(TAUON_PACKAGE_INSTALL_DIR "tauon")
+	set(TAUON_SCRIPTS_INSTALL_DIR "${SKBUILD_SCRIPTS_DIR}")
 else()
-	set(TAUON_DEFAULT_PACKAGE_DIR "${Python3_SITEARCH}/tauon")
-	set(TAUON_DEFAULT_SCRIPTS_DIR "${CMAKE_INSTALL_BINDIR}")
+	set(TAUON_PACKAGE_INSTALL_DIR "${Python3_SITEARCH}/tauon" CACHE PATH "Install directory of the tauon Python package")
+	set(TAUON_SCRIPTS_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}" CACHE PATH "Install directory of the tauon launcher")
 endif()
-set(TAUON_PACKAGE_INSTALL_DIR "${TAUON_DEFAULT_PACKAGE_DIR}" CACHE PATH "Install directory of the tauon Python package")
-set(TAUON_SCRIPTS_INSTALL_DIR "${TAUON_DEFAULT_SCRIPTS_DIR}" CACHE PATH "Install directory of the tauon launcher")
 
 # Native launcher
 
