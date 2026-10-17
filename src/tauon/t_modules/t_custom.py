@@ -202,16 +202,13 @@ class MilkDropWidget(Widget):
 
 		show_vis = False
 		if tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
-			# Same warm-up dance as the ArtBox path: burn the album art into the
-			# visualiser shortly after playback starts, then render each frame.
-			if tauon.pctl.a_time < 1.3:
-				if 1 < tauon.pctl.a_time < 1.3:
-					tauon.milky.render(discard=True)
-					if track is not None:
-						tauon.milky.burn(track)
-			else:
-				tauon.milky.render()
-				show_vis = True
+			# Unlike the ArtBox there is no album art to fall back to, so render
+			# every frame through track start and only burn the new art in during
+			# the same window the ArtBox uses.
+			tauon.milky.render()
+			show_vis = True
+			if 1 < tauon.pctl.a_time < 1.3 and track is not None:
+				tauon.milky.burn(track)
 			if tauon.pctl.playing_state != PlayingState.PAUSED:
 				gui.delay_frame(tauon.frame_pace())
 
