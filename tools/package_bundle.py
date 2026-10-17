@@ -5,6 +5,8 @@ from __future__ import annotations
 
 import argparse
 import compileall
+import functools
+import importlib
 import os
 import plistlib
 import py_compile
@@ -260,6 +262,7 @@ def copy_runtime_data(internal_root: Path, platform_name: str) -> None:
 		typelib_directory = ""
 	if typelib_directory:
 		copy_tree(Path(typelib_directory), typelib_dest)
+	copy_gi_typelibs(typelib_dest)
 	try:
 		glib_prefix = run(["pkg-config", "--variable=prefix", "glib-2.0"], check=False).stdout.strip()
 	except FileNotFoundError:
@@ -277,6 +280,55 @@ def copy_runtime_data(internal_root: Path, platform_name: str) -> None:
 		fontconfig_directory = ""
 	if fontconfig_directory:
 		copy_tree(Path(fontconfig_directory), internal_root / "etc" / "fonts")
+	strip_build_font_caches(internal_root / "etc" / "fonts")
+
+
+def strip_build_font_caches(fonts_directory: Path) -> None:
+	# An absolute cache directory belongs to the build machine's prefix, such as
+	# Homebrew's var/cache/fontconfig. The per-user caches remain.
+	for config in fonts_directory.rglob("*.conf"):
+		if config.is_symlink() or not config.is_file():
+			continue
+		text = config.read_text(encoding="utf-8")
+		stripped = re.sub(r"[ \t]*<cachedir>/[^<]*</cachedir>[ \t]*\n?", "", text)
+		if stripped != text:
+			config.write_text(stripped, encoding="utf-8")
+
+
+@functools.cache
+def gi_namespaces() -> dict[str, tuple[str, Path]]:
+	"""The GI namespaces Tauon uses and everything they depend on, with each
+	one's version and typelib file, as this interpreter resolves them."""
+	try:
+		import gi  # noqa: PLC0415
+	except ImportError:
+		return {}
+	repository = gi.Repository.get_default()
+	for namespace, version in GI_NAMESPACES:
+		# Notify lists alternative versions; the first one available wins
+		if namespace in repository.get_loaded_namespaces():
+			continue
+		try:
+			gi.require_version(namespace, version)
+			importlib.import_module(f"gi.repository.{namespace}")
+		except (ImportError, ValueError):
+			continue
+	return {
+		namespace: (repository.get_version(namespace), Path(repository.get_typelib_path(namespace)))
+		for namespace in repository.get_loaded_namespaces()
+	}
+
+
+def copy_gi_typelibs(destination: Path) -> None:
+	# Homebrew keeps each formula's typelibs in its own keg, so copying a
+	# typelib directory misses most of them. Copy each file the namespaces load,
+	# resolving the shared directory's symlinks.
+	destination.mkdir(parents=True, exist_ok=True)
+	for _version, typelib in gi_namespaces().values():
+		# A copy from a typelib directory may already be there, read-only
+		target = destination / typelib.name
+		target.unlink(missing_ok=True)
+		shutil.copy2(typelib, target)
 
 
 def gi_shared_library_names() -> set[str]:
@@ -284,7 +336,7 @@ def gi_shared_library_names() -> set[str]:
 	if inspector is None:
 		return set()
 	names: set[str] = set()
-	for namespace, version in GI_NAMESPACES:
+	for namespace, (version, _typelib) in gi_namespaces().items():
 		result = run(
 			[inspector, namespace, f"--version={version}", "--print-shlibs"],
 			check=False,
