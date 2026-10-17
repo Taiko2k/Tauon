@@ -39,6 +39,7 @@ import logging
 import math
 import threading
 import time
+import webbrowser
 from collections.abc import Iterator
 from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Callable
@@ -2311,9 +2312,10 @@ class DetailsWidget(Widget):
 	"""A table of the current track's metadata (playing-or-selected track, like
 	the side panel): one row per populated field with alternating row
 	backgrounds, ordered most-common-first (Title at the top). Fields without a
-	value are skipped entirely. Stateless and input-free, so duplicates are
-	allowed and it draws at real coordinates (offscreen=False); rows stop at the
-	segment bottom and text is clipped to the columns.
+	value are skipped entirely. Duplicates are allowed and it draws at real
+	coordinates (offscreen=False); rows stop at the segment bottom and text is
+	clipped to the columns. Right-clicking a row opens tauon.details_menu to copy
+	that field; a URL in the comment is drawn as a clickable link.
 	"""
 
 	kind = "details"
@@ -2323,8 +2325,9 @@ class DetailsWidget(Widget):
 	offscreen = False
 
 	# (label, value getter) — most common fields first; the no-track state
-	# lists every label from this table.
-	_FIELDS: list[tuple[str, Callable]] = [
+	# lists every label from this table. The untranslated label is the field's
+	# key. Values may be multi-line; only the first line is drawn.
+	FIELDS: list[tuple[str, Callable]] = [
 		(N_("Title"), lambda t: t.title),
 		(N_("Artist"), lambda t: t.artist),
 		(N_("Album"), lambda t: t.album),
@@ -2341,16 +2344,28 @@ class DetailsWidget(Widget):
 		(N_("Bitrate"), lambda t: f"{t.bitrate} kbps" if t.bitrate else ""),
 		(N_("Sample rate"), lambda t: get_samplerate_string(t.samplerate) if t.samplerate else ""),
 		(N_("Bit depth"), lambda t: f"{t.bit_depth} bit" if t.bit_depth else ""),
-		(N_("Comment"), lambda t: t.comment.splitlines()[0] if t.comment else ""),
+		(N_("Comment"), lambda t: t.comment),
 	]
 
 	def __init__(self) -> None:
 		self.scroll = 0  # whole rows scrolled off the top
+		# The (track, key) reference this instance last opened details_menu
+		# with; matched by identity so only that instance highlights its row.
+		self._menu_ref: tuple | None = None
 
 	@classmethod
-	def _rows(cls, track) -> list[tuple[str, str]]:
-		rows = [(_(label), str(getter(track)).strip()) for label, getter in cls._FIELDS]
-		return [(label, value) for label, value in rows if value]
+	def field_value(cls, track, key: str) -> str:
+		"""The full (possibly multi-line) value of the field `key` for `track`."""
+		for label, getter in cls.FIELDS:
+			if label == key:
+				return str(getter(track) or "").strip()
+		return ""
+
+	@classmethod
+	def _rows(cls, track) -> list[tuple[str, str, str]]:
+		"""(key, translated label, first line of value) for each populated field."""
+		rows = [(key, _(key), cls.field_value(track, key)) for key, _getter in cls.FIELDS]
+		return [(key, label, value.splitlines()[0].strip()) for key, label, value in rows if value]
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		gui = tauon.gui
@@ -2365,7 +2380,7 @@ class DetailsWidget(Widget):
 		# row background, both fading out further down the list.
 		empty = track is None
 		if empty:
-			rows = [(_(label), "") for label, _getter in self._FIELDS]
+			rows = [(key, _(key), "") for key, _getter in self.FIELDS]
 		else:
 			rows = self._rows(track)
 
@@ -2389,16 +2404,25 @@ class DetailsWidget(Widget):
 		# Alternate row tint: slightly lighter on dark themes, darker on light.
 		tint_up = not colours.lm
 		ry = round(y + 2 * gui.scale)  # first row's top
+		menu = tauon.details_menu
+		menu_key = self._menu_ref[1] if menu.active and menu.reference is self._menu_ref else None
 		for i in range(int(self.scroll), len(rows)):
 			if ry + row_h > y + h:
 				break
-			label, value = rows[i]
+			key, label, value = rows[i]
+			if value and inp.right_click and tauon.coll((x, ry, w, row_h)) and tauon.is_level_zero():
+				self._menu_ref = (track, key)
+				menu.activate(self._menu_ref)
+				menu_key = key
+				inp.right_click = False
 			# Fade per absolute row index so the empty list dissolves downward.
 			fade = max(0.0, 1.0 - i / len(rows)) if empty else 1.0
 			if i % 2:  # parity by field, so stripes stay put when scrolled
 				a = round(9 * fade) if empty else 9
 				tint = ColourRGBA(255, 255, 255, a) if tint_up else ColourRGBA(0, 0, 0, a)
 				ddt.rect((x, ry, w, row_h), tint)
+			if value and key == menu_key:
+				ddt.rect((x, ry, w, row_h), ColourRGBA(255, 255, 255, 22) if tint_up else ColourRGBA(0, 0, 0, 22))
 			ddt.text_background_colour = base
 			# ddt.text's y is baseline-anchored internally but offset back by
 			# 13*scale in t_draw for legacy compat, so it behaves near enough to
@@ -2408,9 +2432,20 @@ class DetailsWidget(Widget):
 			if empty:
 				lc = ColourRGBA(lc.r, lc.g, lc.b, round(lc.a * fade))
 			ddt.text((round(x) + pad, ty), label, lc, 211, max_w=label_w - pad)
-			if value:
-				ddt.text((round(x) + label_w + pad, ty), value, colours.side_bar_line1, 212,
-					max_w=round(w) - label_w - pad * 2)
+			vx = round(x) + label_w + pad
+			max_w = round(w) - label_w - pad * 2
+			if key == "Comment" and ("http://" in value or "https://" in value or "www." in value):
+				link_x, link_w, target = tauon.draw_linked_text(
+					(vx, ty), value, colours.side_bar_line1, 212, max_w=max_w)
+				link_rect = (vx + link_x, ry, link_w, row_h)
+				tauon.fields.add(link_rect)
+				if link_w and tauon.coll(link_rect) and tauon.is_level_zero():
+					gui.cursor_want = 3
+					if inp.mouse_click:
+						webbrowser.open(target, new=2, autoraise=True)
+						inp.mouse_click = False
+			elif value:
+				ddt.text((vx, ty), value, colours.side_bar_line1, 212, max_w=max_w)
 			ry += row_h
 
 

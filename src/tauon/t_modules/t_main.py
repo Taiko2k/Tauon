@@ -138,6 +138,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	WIDGET_SPECS as CL_WIDGET_SPECS,
 	AlbumflowWidget,
 	CustomLayout,
+	DetailsWidget,
 	FeuxBar,
 	GridGalleryWidget,
 	draw_layout_glyph,
@@ -20795,7 +20796,12 @@ class Tauon:
 		except Exception:
 			logging.exception("Unknown error encountered while writing database")
 
-	def draw_linked_text(self, location: tuple[int, int], text: str, colour: list[int], font: int, force: bool = False, replace: str = "") -> tuple[int, int, str]:
+	def draw_linked_text(self, location: tuple[int, int], text: str, colour: list[int], font: int, force: bool = False, replace: str = "", max_w: int | None = None) -> tuple[int, int, str]:
+		"""Draw text with its first URL styled as a link.
+
+		Returns the link's x offset, its drawn width and its target. With max_w,
+		everything is clipped to that width.
+		"""
 		base = ""
 		link_text = ""
 		rest = ""
@@ -20828,9 +20834,17 @@ class Tauon:
 		x = location[0]
 		y = location[1]
 
-		self.ddt.text((x, y), base, colour, font)
-		self.ddt.text((x + left, y), link_text, self.colours.link_text, font)
-		self.ddt.text((x + right, y), rest, colour, font)
+		if max_w is None:
+			self.ddt.text((x, y), base, colour, font)
+			self.ddt.text((x + left, y), link_text, self.colours.link_text, font)
+			self.ddt.text((x + right, y), rest, colour, font)
+		else:
+			self.ddt.text((x, y), base, colour, font, max_w=max_w)
+			if left < max_w:
+				self.ddt.text((x + left, y), link_text, self.colours.link_text, font, max_w=max_w - left)
+			if right < max_w:
+				self.ddt.text((x + right, y), rest, colour, font, max_w=max_w - right)
+			right = max(left, min(right, max_w))
 
 		tweak = font
 		while tweak > 100:
@@ -56609,6 +56623,13 @@ def main(holder: Holder) -> None:
 	for _i, _sp in enumerate(CL_SPECTRO_PRESETS):
 		spectrogram_menu.add(MenuItem(
 			_sp[0], _spectro_set_colour(_i), check_test=_spectro_preset_check(_i)))
+
+	# Right-click menu for a Track Details widget row. The reference is
+	# (track, field key) for the row that was clicked.
+	details_menu = Menu(tauon, 120)
+	tauon.details_menu = details_menu
+	details_menu.add(MenuItem(
+		_("Copy"), lambda ref: copy_to_clipboard(DetailsWidget.field_value(*ref)), pass_ref=True))
 
 	# Per-instance display options for Albumflow.
 	albumflow_menu = Menu(tauon, 150)
