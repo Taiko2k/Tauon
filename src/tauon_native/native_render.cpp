@@ -379,6 +379,28 @@ PyObject* native_update_texture(PyObject*, PyObject* args) {
 		PyBuffer_Release(&pixels);
 		return nullptr;
 	}
+	// SDL reads every row of the region from the buffer, so a short buffer
+	// would upload whatever memory follows it
+	int width = rectangle.w;
+	int height = rectangle.h;
+	if (rectangle_pointer == nullptr) {
+		float texture_width = 0;
+		float texture_height = 0;
+		SDL_GetTextureSize(texture, &texture_width, &texture_height);
+		width = static_cast<int>(texture_width);
+		height = static_cast<int>(texture_height);
+	}
+	const auto format = static_cast<SDL_PixelFormat>(SDL_GetNumberProperty(
+		SDL_GetTextureProperties(texture), SDL_PROP_TEXTURE_FORMAT_NUMBER, SDL_PIXELFORMAT_UNKNOWN));
+	if (width > 0 && height > 0 && !SDL_ISPIXELFORMAT_FOURCC(format)) {
+		const Py_ssize_t required = static_cast<Py_ssize_t>(height - 1) * pitch
+			+ static_cast<Py_ssize_t>(width) * SDL_BYTESPERPIXEL(format);
+		if (pixels.len < required) {
+			PyErr_Format(PyExc_ValueError, "pixel buffer has %zd bytes, but the update needs %zd", pixels.len, required);
+			PyBuffer_Release(&pixels);
+			return nullptr;
+		}
+	}
 	bool success = false;
 	TAUON_WITHOUT_GIL(success = SDL_UpdateTexture(texture, rectangle_pointer, pixels.buf, pitch));
 	PyBuffer_Release(&pixels);

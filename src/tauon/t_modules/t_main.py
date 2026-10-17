@@ -47302,9 +47302,7 @@ class Milky:
 			pm.restore_renderer_context()
 
 		if not discard:
-			sdl3.update_texture(
-				self.render_texture, None,
-				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
+			sdl3.update_texture(self.render_texture, None, self.readback_buffer, int(w) * 4)
 			self._blit(srect)
 		self.fps.tick()
 
