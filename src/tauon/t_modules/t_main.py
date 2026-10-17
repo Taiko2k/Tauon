@@ -46497,6 +46497,15 @@ except Exception:
 	milky_error = "PyOpenGL failed to load"
 
 
+def in_macos_bundle() -> bool:
+	"""Whether this is a macOS app bundle, which loads only its own libraries.
+
+	Its hardened runtime rejects libraries signed by anyone else, and it
+	shouldn't touch a Homebrew install on the user's Mac.
+	"""
+	return sys.platform == "darwin" and tauon_native.bundled_library_directory() is not None
+
+
 def find_projectm_library() -> str | None:
 	if sys.platform == "win32":
 		module_dir = Path(__file__).resolve().parents[2]
@@ -46506,18 +46515,51 @@ def find_projectm_library() -> str | None:
 				if path.is_file():
 					return str(path)
 	if sys.platform == "darwin":
-
 		base_dirs = [Path(tauon_native.executable_directory()), Path(sys.executable).parent]
+		if not in_macos_bundle():
+			# find_library() only searches ~/lib, /usr/local/lib, /lib and
+			# /usr/lib, so name the usual install prefixes
+			base_dirs += [Path.home() / ".local" / "lib", Path("/opt/homebrew/lib"), Path("/usr/local/lib")]
 		for base_dir in base_dirs:
 			for dylib_name in ("libprojectM-4.4.dylib", "libprojectM-4.dylib"):
 				path = base_dir / dylib_name
 				if path.is_file():
 					return str(path)
+		if in_macos_bundle():
+			return None
 	for lib_name in ("projectM-4", "libprojectM-4-4", "libprojectM-4"):
 		path = ctypes.util.find_library(lib_name)
 		if path:
 			return path
 	return None
+
+
+def load_shared_library(name: str, fallback_names: tuple[str, ...]) -> CDLL:
+	"""Load lib<name>, preferring the bundle's copy over the system's.
+
+	find_library() doesn't search the bundle. A macOS bundle uses only its own
+	copy; bare names would also search /usr/local/lib.
+	"""
+	candidates: list[str] = []
+	bundled_directory = tauon_native.bundled_library_directory()
+	if bundled_directory:
+		candidates.extend(
+			str(path)
+			for path in sorted(Path(bundled_directory).glob(f"lib{name}[.-]*"))
+			if path.suffix in (".dll", ".dylib") or ".so" in path.suffixes
+		)
+	if not in_macos_bundle():
+		found = ctypes.util.find_library(name)
+		if found:
+			candidates.append(found)
+		candidates.extend(fallback_names)
+	error: OSError | None = None
+	for candidate in dict.fromkeys(candidates):
+		try:
+			return ctypes.CDLL(candidate)
+		except OSError as e:
+			error = e
+	raise OSError(f"Unable to load lib{name}") from error
 
 
 if not find_projectm_library():
@@ -55118,16 +55160,8 @@ def main(holder: Holder) -> None:
 	colours.post_config()
 
 	mpt: CDLL | None = None
-	p = ctypes.util.find_library("openmpt") # Linux
-	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
-		if p:
-			mpt = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
-
+		mpt = load_shared_library("openmpt", ("libopenmpt.so.0", "libopenmpt-0.dll"))
 		mpt.openmpt_module_create_from_memory.restype = c_void_p
 		mpt.openmpt_module_get_metadata.restype = c_char_p
 		mpt.openmpt_module_get_duration_seconds.restype = c_double
@@ -55135,16 +55169,8 @@ def main(holder: Holder) -> None:
 		logging.exception("Failed to load libopenmpt!")
 
 	gme: CDLL | None = None
-	p = ctypes.util.find_library("gme") # Linux
-	p = p or ctypes.util.find_library("libgme") # Windows
 	try:
-		if p:
-			gme = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			gme = ctypes.cdll.LoadLibrary("libgme.dll")
-		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
-
+		gme = load_shared_library("gme", ("libgme.so.0", "libgme.dll"))
 		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
 		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
 		gme.gme_track_info.restype = ctypes.c_char_p
@@ -56049,43 +56075,6 @@ def main(holder: Holder) -> None:
 
 	if prefs.prefer_side is False:
 		gui.rsp = False
-
-	mpt: CDLL | None = None
-	p = ctypes.util.find_library("openmpt") # Linux
-	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
-	try:
-		if p:
-			mpt = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
-
-		mpt.openmpt_module_create_from_memory.restype = c_void_p
-		mpt.openmpt_module_get_metadata.restype = c_char_p
-		mpt.openmpt_module_get_duration_seconds.restype = c_double
-	except Exception:
-		logging.exception("Failed to load libopenmpt!")
-
-	gme: CDLL | None = None
-	p = ctypes.util.find_library("gme") # Linux
-	p = p or ctypes.util.find_library("libgme") # Windows
-	try:
-		if p:
-			gme = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			gme = ctypes.cdll.LoadLibrary("libgme.dll")
-		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
-
-		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
-		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
-		gme.gme_track_info.restype = ctypes.c_char_p
-		gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
-		gme.gme_open_file.restype = ctypes.c_char_p
-
-	except Exception:
-		logging.exception("Cannot find libgme")
 
 	tauon = Tauon(
 		holder=holder,
