@@ -1593,7 +1593,7 @@ PyObject* bridge_get_clipboard_text(PyObject*, PyObject*) {
 	if (text == nullptr) {
 		return PyUnicode_FromString("");
 	}
-	PyObject* result = PyUnicode_DecodeUTF8(text, -1, "surrogateescape");
+	PyObject* result = PyUnicode_DecodeUTF8(text, static_cast<Py_ssize_t>(SDL_strlen(text)), "surrogateescape");
 	SDL_free(text);
 	return result;
 }

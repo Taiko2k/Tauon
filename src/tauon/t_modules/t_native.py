@@ -409,10 +409,7 @@ def set_clipboard_text(text) -> None:
 	tauon_native.set_clipboard_text(_text(text))
 
 
-def get_clipboard_text() -> bytes:
-	return tauon_native.get_clipboard_text().encode("utf-8", errors="surrogateescape")
-
-
+get_clipboard_text = tauon_native.get_clipboard_text
 has_clipboard_text = tauon_native.has_clipboard_text
 render_line = tauon_native.render_line
 get_texture_size = tauon_native.get_texture_size

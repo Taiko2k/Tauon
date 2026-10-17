@@ -10888,12 +10888,8 @@ class Tauon:
 	def paste_deco(self) -> Decorator:
 		active = False
 		line = None
-		if len(self.pctl.cargo) > 0:
+		if len(self.pctl.cargo) > 0 or clipboard_has_paths():
 			active = True
-		elif has_clipboard_text():
-			text = copy_from_clipboard()
-			if text.startswith("/") or "file://" in text:
-				active = True
 
 		line_colour = self.colours.menu_text if active else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, line)
@@ -53477,16 +53473,30 @@ def copy_to_clipboard(text: str) -> None:
 
 def copy_from_clipboard() -> str:
 	try:
-		return sdl3.get_clipboard_text().decode("utf-8", errors="surrogateescape")
-	except UnicodeDecodeError:
-		logging.exception("Clipboard text decode error")
-		return ""
+		return sdl3.get_clipboard_text()
 	except Exception:
-		logging.exception("Unknown clipboard text decode error")
+		logging.exception("Failed to read text from the clipboard")
 		return ""
 
 def has_clipboard_text() -> bool:
 	return sdl3.has_clipboard_text()
+
+_clipboard_paths_check: dict[str, float | bool] = {"checked": 0.0, "result": False}
+
+def clipboard_has_paths() -> bool:
+	"""Whether the clipboard holds a path or file:// URI.
+
+	Menu decorators call this every frame while their menu is open, so the
+	clipboard is read at most twice a second.
+	"""
+	now = time.monotonic()
+	if now - _clipboard_paths_check["checked"] >= 0.5:
+		result = False
+		if has_clipboard_text():
+			text = copy_from_clipboard()
+			result = text.startswith("/") or "file://" in text
+		_clipboard_paths_check.update(checked=now, result=result)
+	return bool(_clipboard_paths_check["result"])
 
 def field_copy(text_field) -> None:
 	text_field.copy()
