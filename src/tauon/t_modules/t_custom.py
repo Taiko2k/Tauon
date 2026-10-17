@@ -43,7 +43,7 @@ from collections.abc import Iterator
 from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Callable
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_enums import Backend, PlayingState
 from tauon.t_modules.t_extra import (
@@ -410,7 +410,7 @@ class SpectrogramWidget(Widget):
 	Rendering: a ring texture of one column per sample, sized to the widget
 	(just enough columns to span its width; recreated — newest history carried
 	over — when the segment size settles after a change, never mid-drag). Each
-	new column is one tiny SDL_UpdateTexture write, and the visible window is
+	new column is one tiny update_texture write, and the visible window is
 	at most two scaled blits per frame. Float (subpixel) dest rects + a
 	fractional offset give a continuous scroll instead of a per-column step;
 	linear filtering smooths both axes. (The Spectral Flow field is scrolled the
@@ -608,25 +608,25 @@ class SpectrogramWidget(Widget):
 			history_span = max(1, cls._cols - 2)
 			advance = (cls._consumed + cls._frac_accum) - cls._flow_render_scroll
 			pan = min(margin, max(0.0, advance * (cls._flow_w - 1) / history_span))
-			src = sdl3.SDL_FRect(pan, 0, cls._flow_w - margin, cls._flow_h)
+			src = sdl3.FRect(pan, 0, cls._flow_w - margin, cls._flow_h)
 			# The prototype composites a blurred screen-blend copy behind the field.
 			# A faint expanded additive pass gives SDL the same soft bloom without
 			# maintaining another full-size render target.
 			glow_pad = 3.0 * gui.scale
-			glow_dst = sdl3.SDL_FRect(
+			glow_dst = sdl3.FRect(
 				x - glow_pad, y - glow_pad, w + glow_pad * 2, h + glow_pad * 2)
-			clip = sdl3.SDL_Rect(rect[0], rect[1], rect[2], rect[3])
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(clip))
-			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_ADD)
-			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 34)
-			sdl3.SDL_RenderTexture(
-				tauon.renderer, cls._flow_tex, ctypes.byref(src), ctypes.byref(glow_dst))
-			sdl3.SDL_SetTextureAlphaMod(cls._flow_tex, 255)
-			sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
-			dst = sdl3.SDL_FRect(x, y, w, h)
-			sdl3.SDL_RenderTexture(
-				tauon.renderer, cls._flow_tex, ctypes.byref(src), ctypes.byref(dst))
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
+			clip = sdl3.Rect(rect[0], rect[1], rect[2], rect[3])
+			sdl3.set_render_clip_rect(tauon.renderer, clip)
+			sdl3.set_texture_blend_mode(cls._flow_tex, sdl3.SDL_BLENDMODE_ADD)
+			sdl3.set_texture_alpha_mod(cls._flow_tex, 34)
+			sdl3.render_texture(
+				tauon.renderer, cls._flow_tex, src, glow_dst)
+			sdl3.set_texture_alpha_mod(cls._flow_tex, 255)
+			sdl3.set_texture_blend_mode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
+			dst = sdl3.FRect(x, y, w, h)
+			sdl3.render_texture(
+				tauon.renderer, cls._flow_tex, src, dst)
+			sdl3.set_render_clip_rect(tauon.renderer, None)
 		elif cls._filled:
 			col_px = 1.5 * gui.scale
 			offset = cls._frac_accum * col_px
@@ -638,18 +638,18 @@ class SpectrogramWidget(Widget):
 			else:
 				runs = [(start, cls._cols - start), (0, visible - (cls._cols - start))]
 
-			clip = sdl3.SDL_Rect(rect[0], rect[1], rect[2], rect[3])
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(clip))
+			clip = sdl3.Rect(rect[0], rect[1], rect[2], rect[3])
+			sdl3.set_render_clip_rect(tauon.renderer, clip)
 			# The newest column's left edge sits at (right - offset): it is
 			# revealed from the right edge as time passes, then the next column
 			# lands exactly where it left off — constant leftward velocity.
 			dx = x + w - offset - (visible - 1) * col_px
 			for s, n in runs:
-				src = sdl3.SDL_FRect(s, 0, n, bins)
-				dst = sdl3.SDL_FRect(dx, y, n * col_px, h)
-				sdl3.SDL_RenderTexture(tauon.renderer, cls._tex, ctypes.byref(src), ctypes.byref(dst))
+				src = sdl3.FRect(s, 0, n, bins)
+				dst = sdl3.FRect(dx, y, n * col_px, h)
+				sdl3.render_texture(tauon.renderer, cls._tex, src, dst)
 				dx += n * col_px
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
+			sdl3.set_render_clip_rect(tauon.renderer, None)
 
 		if tauon.coll(rect) and tauon.inp.right_click and tauon.is_level_zero(False):
 			tauon.spectrogram_menu.activate()
@@ -726,12 +726,12 @@ class SpectrogramWidget(Widget):
 		if cls._flow_tex is not None and (cls._flow_w, cls._flow_h) == (flow_w, flow_h):
 			return
 		if cls._flow_tex is not None:
-			sdl3.SDL_DestroyTexture(cls._flow_tex)
-		cls._flow_tex = sdl3.SDL_CreateTexture(
+			sdl3.destroy_texture(cls._flow_tex)
+		cls._flow_tex = sdl3.create_texture(
 			tauon.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
 			sdl3.SDL_TEXTUREACCESS_STREAMING, flow_w, flow_h)
-		sdl3.SDL_SetTextureScaleMode(cls._flow_tex, sdl3.SDL_SCALEMODE_LINEAR)
-		sdl3.SDL_SetTextureBlendMode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_texture_scale_mode(cls._flow_tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_texture_blend_mode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
 		cls._flow_w = flow_w
 		cls._flow_h = flow_h
 		cls._flow_pixels = None
@@ -744,12 +744,12 @@ class SpectrogramWidget(Widget):
 		old_vals, old_cols, old_write, old_filled = cls._vals, cls._cols, cls._write, cls._filled
 		old_bins = cls._tex_bins
 		if cls._tex is not None:
-			sdl3.SDL_DestroyTexture(cls._tex)
-		cls._tex = sdl3.SDL_CreateTexture(
+			sdl3.destroy_texture(cls._tex)
+		cls._tex = sdl3.create_texture(
 			tauon.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
 			sdl3.SDL_TEXTUREACCESS_STREAMING, cols, bins)
-		sdl3.SDL_SetTextureScaleMode(cls._tex, sdl3.SDL_SCALEMODE_LINEAR)
-		sdl3.SDL_SetTextureBlendMode(cls._tex, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_texture_scale_mode(cls._tex, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_texture_blend_mode(cls._tex, sdl3.SDL_BLENDMODE_NONE)
 		cls._cols = cols
 		cls._tex_bins = bins
 		cls._vals = bytearray(cols * bins)
@@ -806,8 +806,8 @@ class SpectrogramWidget(Widget):
 			cls._flow_dirty = True
 		else:
 			pix = self._colour_column(write, bins)
-			rect = sdl3.SDL_Rect(write, 0, 1, bins)
-			sdl3.SDL_UpdateTexture(cls._tex, ctypes.byref(rect), pix, 4)
+			rect = sdl3.Rect(write, 0, 1, bins)
+			sdl3.update_texture(cls._tex, rect, pix, 4)
 		cls._write = (write + 1) % cls._cols
 		cls._filled = min(cls._filled + 1, cls._cols)
 
@@ -1107,11 +1107,11 @@ class SpectrogramWidget(Widget):
 			if status:
 				logging.warning("Native Spectral Flow render failed with status %d", status)
 				return
-			sdl3.SDL_UpdateTexture(
+			sdl3.update_texture(
 				cls._flow_tex, None, pixel_buffer, cls._flow_w * 4)
 			return
 		pixels = cls._build_flow_pixels(bins)
-		sdl3.SDL_UpdateTexture(cls._flow_tex, None, pixels, cls._flow_w * 4)
+		sdl3.update_texture(cls._flow_tex, None, pixels, cls._flow_w * 4)
 
 	def _recolour(self, bins: int) -> None:
 		"""Rewrite the whole texture from the magnitude ring with the current
@@ -1126,7 +1126,7 @@ class SpectrogramWidget(Widget):
 		for plane in range(4):
 			table = bytes(cls._lut[i][plane] for i in range(256))
 			out[plane::4] = vals.translate(table)
-		sdl3.SDL_UpdateTexture(cls._tex, None, bytes(out), cls._cols * 4)
+		sdl3.update_texture(cls._tex, None, bytes(out), cls._cols * 4)
 
 
 class TopPanelWidget(Widget):
@@ -1416,9 +1416,9 @@ class FeuxBar:
 		# Match the standard bar: punch the panel colour in (for window
 		# transparency) unless art is showing underneath, then blend over it.
 		if not gui.have_art_bg:
-			sdl3.SDL_SetRenderDrawBlendMode(self.tauon.renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_blend_mode(self.tauon.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect((0, top, w, h), panel)
-		sdl3.SDL_SetRenderDrawBlendMode(self.tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		ddt.text_background_colour = panel
 
 		back_l = self._backdrop(panel, self._s(60), mid)
@@ -2789,20 +2789,16 @@ class _AlbumflowBase(GalleryWidget):
 			colours = [(1.0, 1.0, 1.0, 1.0)] * 4
 		if uv is None:
 			uv = [(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)]
-		vertices = (sdl3.SDL_Vertex * 4)()
-		for index, ((px, py), (u, v), colour) in enumerate(zip(points, uv, colours)):
-			vertex = vertices[index]
-			vertex.position.x = px
-			vertex.position.y = py
-			vertex.tex_coord.x = u
-			vertex.tex_coord.y = v
-			vertex.color.r, vertex.color.g, vertex.color.b, vertex.color.a = colour
-		indices = (ctypes.c_int * 6)(0, 1, 2, 0, 2, 3)
+		vertices = [
+			(px, py, u, v, *colour)
+			for (px, py), (u, v), colour in zip(points, uv, colours)
+		]
+		indices = (0, 1, 2, 0, 2, 3)
 		if texture is not None:
-			sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_texture_blend_mode(texture, sdl3.SDL_BLENDMODE_BLEND)
 		else:
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_RenderGeometry(renderer, texture, vertices, 4, indices, 6)
+			sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(renderer, texture, vertices, indices)
 
 	@classmethod
 	def _render_textured_cover(cls, renderer, points: list[tuple[float, float]],
@@ -2815,17 +2811,12 @@ class _AlbumflowBase(GalleryWidget):
 		"""
 		strips = 8
 		vertex_count = (strips + 1) * 2
-		vertices = (sdl3.SDL_Vertex * vertex_count)()
+		vertices = []
 		for strip in range(strips + 1):
 			sx = strip / strips
 			for row in range(2):
-				vertex = vertices[strip * 2 + row]
 				px, py = cls._sample_quad(points, sx, float(row))
-				vertex.position.x = px
-				vertex.position.y = py
-				vertex.tex_coord.x = sx
-				vertex.tex_coord.y = float(row)
-				vertex.color.r, vertex.color.g, vertex.color.b, vertex.color.a = colour
+				vertices.append((px, py, sx, float(row), *colour))
 		index_values = []
 		for strip in range(strips):
 			top_left = strip * 2
@@ -2834,10 +2825,8 @@ class _AlbumflowBase(GalleryWidget):
 				top_left, top_right, top_right + 1,
 				top_left, top_right + 1, top_left + 1,
 			))
-		indices = (ctypes.c_int * len(index_values))(*index_values)
-		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_RenderGeometry(
-			renderer, texture, vertices, vertex_count, indices, len(index_values))
+		sdl3.set_texture_blend_mode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(renderer, texture, vertices, index_values)
 
 	@classmethod
 	def _render_reflection(cls, renderer, texture,
@@ -3152,10 +3141,10 @@ class _AlbumflowBase(GalleryWidget):
 		old_w, old_h = owner._aa_size
 		if owner._aa_texture is None or target_w > old_w or target_h > old_h:
 			if owner._aa_texture is not None:
-				sdl3.SDL_DestroyTexture(owner._aa_texture)
+				sdl3.destroy_texture(owner._aa_texture)
 			old_w = max(target_w, old_w)
 			old_h = max(target_h, old_h)
-			owner._aa_texture = sdl3.SDL_CreateTexture(
+			owner._aa_texture = sdl3.create_texture(
 				renderer,
 				sdl3.SDL_PIXELFORMAT_ARGB8888,
 				sdl3.SDL_TEXTUREACCESS_TARGET,
@@ -3165,30 +3154,28 @@ class _AlbumflowBase(GalleryWidget):
 			if owner._aa_texture is None:
 				owner._aa_size = (0, 0)
 				return None
-			sdl3.SDL_SetTextureBlendMode(owner._aa_texture, sdl3.SDL_BLENDMODE_BLEND)
-			sdl3.SDL_SetTextureScaleMode(owner._aa_texture, sdl3.SDL_SCALEMODE_LINEAR)
+			sdl3.set_texture_blend_mode(owner._aa_texture, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_texture_scale_mode(owner._aa_texture, sdl3.SDL_SCALEMODE_LINEAR)
 			owner._aa_size = (old_w, old_h)
 
-		scale_x = ctypes.c_float(1.0)
-		scale_y = ctypes.c_float(1.0)
-		sdl3.SDL_GetRenderScale(renderer, ctypes.byref(scale_x), ctypes.byref(scale_y))
-		previous_target = sdl3.SDL_GetRenderTarget(renderer)
-		sdl3.SDL_SetRenderTarget(renderer, owner._aa_texture)
-		sdl3.SDL_SetRenderScale(renderer, scale, scale)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(renderer)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		return previous_target, scale_x.value, scale_y.value, target_w, target_h
+		scale_x, scale_y = sdl3.get_render_scale(renderer)
+		previous_target = sdl3.get_render_target(renderer)
+		sdl3.set_render_target(renderer, owner._aa_texture)
+		sdl3.set_render_scale(renderer, scale, scale)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+		sdl3.render_clear(renderer)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		return previous_target, scale_x, scale_y, target_w, target_h
 
 	@staticmethod
 	def _finish_antialias(renderer, state, w: float, h: float) -> None:
 		previous_target, scale_x, scale_y, target_w, target_h = state
-		sdl3.SDL_SetRenderScale(renderer, scale_x, scale_y)
-		sdl3.SDL_SetRenderTarget(renderer, previous_target)
-		source = sdl3.SDL_FRect(0, 0, target_w, target_h)
-		destination = sdl3.SDL_FRect(0, 0, w, h)
-		sdl3.SDL_RenderTexture(renderer, _AlbumflowBase._aa_texture, source, destination)
+		sdl3.set_render_scale(renderer, scale_x, scale_y)
+		sdl3.set_render_target(renderer, previous_target)
+		source = sdl3.FRect(0, 0, target_w, target_h)
+		destination = sdl3.FRect(0, 0, w, h)
+		sdl3.render_texture(renderer, _AlbumflowBase._aa_texture, source, destination)
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		"""Supersample album art, then draw UI overlays at native resolution."""
@@ -6400,23 +6387,23 @@ class CustomLayout:
 		top = min(round(tabs.rect[1]) for tabs in tab_stacks)
 		right = max(round(tabs.rect[0] + tabs.rect[2]) for tabs in tab_stacks)
 		bottom = max(round(tabs.rect[1] + tabs.rect[3]) for tabs in tab_stacks)
-		area = sdl3.SDL_FRect(left, top, right - left, bottom - top)
+		area = sdl3.FRect(left, top, right - left, bottom - top)
 
 		renderer = self.renderer
 		scratch = self._get_scratch()
-		prev = sdl3.SDL_GetRenderTarget(renderer)
-		sdl3.SDL_SetRenderTarget(renderer, scratch)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(renderer, area)
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		prev = sdl3.get_render_target(renderer)
+		sdl3.set_render_target(renderer, scratch)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+		sdl3.render_fill_rect(renderer, area)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 		try:
 			for tabs in tab_stacks:
 				self._draw_tab_bar_to_target(tabs)
 		finally:
-			sdl3.SDL_SetRenderTarget(renderer, prev)
+			sdl3.set_render_target(renderer, prev)
 
-		sdl3.SDL_RenderTexture(renderer, scratch, area, area)
+		sdl3.render_texture(renderer, scratch, area, area)
 
 	def _draw_tab_bar_to_target(self, node: TabStack) -> None:
 		"""Draw one tab strip onto the current render target."""
@@ -6782,14 +6769,14 @@ class CustomLayout:
 			inp.mouse_position[0] = -99999
 			inp.mouse_position[1] = -99999
 
-		prev = sdl3.SDL_GetRenderTarget(renderer)
-		sdl3.SDL_SetRenderTarget(renderer, scratch)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(renderer)
+		prev = sdl3.get_render_target(renderer)
+		sdl3.set_render_target(renderer, scratch)
+		sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+		sdl3.render_clear(renderer)
 		try:
 			widget.draw(tauon, 0, 0, iw, ih, content_rect)
 		finally:
-			sdl3.SDL_SetRenderTarget(renderer, prev)
+			sdl3.set_render_target(renderer, prev)
 			tauon.window_size[0] = saved_w
 			tauon.window_size[1] = saved_h
 			inp.view_offset = saved_view
@@ -6815,8 +6802,8 @@ class CustomLayout:
 				inp.mouse_up_position[0], inp.mouse_up_position[1] = saved_up
 				inp.last_click_location[0], inp.last_click_location[1] = saved_last_click
 
-		src = sdl3.SDL_FRect(0, 0, iw, ih)
-		dst = sdl3.SDL_FRect(ox, oy, iw, ih)
+		src = sdl3.FRect(0, 0, iw, ih)
+		dst = sdl3.FRect(ox, oy, iw, ih)
 		# The widget painted its own panel fill into the scratch, which under a
 		# transparency style is already the single translucent layer that panel
 		# is meant to have. Blending it onto the layout base would stack a
@@ -6824,10 +6811,10 @@ class CustomLayout:
 		# standard layout; copy the pixels over the base instead.
 		replace = bool(tauon.prefs.transparent_mode) and not gui.have_art_bg
 		if replace:
-			sdl3.SDL_SetTextureBlendMode(scratch, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_RenderTexture(renderer, scratch, src, dst)
+			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.render_texture(renderer, scratch, src, dst)
 		if replace:
-			sdl3.SDL_SetTextureBlendMode(scratch, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND)
 
 	def _draw_art_bg_veil(self, root: Node, ww: int, wh: int) -> None:
 		"""Dim the art background between widgets. Widgets dim their own rects
@@ -6842,22 +6829,22 @@ class CustomLayout:
 		texture afterwards."""
 		renderer = self.renderer
 		veil = self._get_scratch()
-		sdl3.SDL_SetRenderTarget(renderer, veil)
+		sdl3.set_render_target(renderer, veil)
 		# Blend NONE writes store the exact straight-alpha colour (and zeros in
 		# the holes) for the texture's BLENDMODE_BLEND composite below
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 		colour = self.tauon.colours.playlist_panel_background
-		sdl3.SDL_SetRenderDrawColor(renderer, colour.r, colour.g, colour.b, colour.a)
-		area = sdl3.SDL_FRect(0, 0, ww, wh)
-		sdl3.SDL_RenderFillRect(renderer, area)
-		sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
+		sdl3.set_render_draw_color(renderer, colour.r, colour.g, colour.b, colour.a)
+		area = sdl3.FRect(0, 0, ww, wh)
+		sdl3.render_fill_rect(renderer, area)
+		sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
 		for leaf in iter_visible_leaves(root):
 			if not isinstance(leaf, Leaf):
 				continue
 			paint = self._leaf_paint_rect(leaf)
 			if paint is None:
 				continue
-			sdl3.SDL_RenderFillRect(renderer, sdl3.SDL_FRect(paint[0], paint[1], paint[2], paint[3]))
+			sdl3.render_fill_rect(renderer, sdl3.FRect(paint[0], paint[1], paint[2], paint[3]))
 
 		# Tab backgrounds use the same offscreen panel fill as widgets, so they
 		# also need the same un-veiled art underneath that fill.
@@ -6867,11 +6854,11 @@ class CustomLayout:
 			for rect in (*tab_rects, bridge):
 				if rect is None:
 					continue
-				sdl3.SDL_RenderFillRect(
-					renderer, sdl3.SDL_FRect(rect[0], rect[1], rect[2], rect[3]))
-		sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetRenderTarget(renderer, self.gui.main_texture)
-		sdl3.SDL_RenderTexture(renderer, veil, area, area)
+				sdl3.render_fill_rect(
+					renderer, sdl3.FRect(rect[0], rect[1], rect[2], rect[3]))
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_target(renderer, self.gui.main_texture)
+		sdl3.render_texture(renderer, veil, area, area)
 
 	def _get_scratch(self):
 		"""Lazily create (and resize) the offscreen scratch texture, kept separate
@@ -6879,10 +6866,10 @@ class CustomLayout:
 		size = self.gui.max_window_tex
 		if self._scratch is None or self._scratch_size != size:
 			if self._scratch is not None:
-				sdl3.SDL_DestroyTexture(self._scratch)
-			self._scratch = sdl3.SDL_CreateTexture(
+				sdl3.destroy_texture(self._scratch)
+			self._scratch = sdl3.create_texture(
 				self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, size, size)
-			sdl3.SDL_SetTextureBlendMode(self._scratch, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_texture_blend_mode(self._scratch, sdl3.SDL_BLENDMODE_BLEND)
 			self._scratch_size = size
 		return self._scratch
 

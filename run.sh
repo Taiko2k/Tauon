@@ -3,25 +3,13 @@
 set -euo pipefail
 
 win_build() {
-	rm -rf dist/tauon
-	# Had to do Windows Security -> Virus & thread protection*2 -> Manage settings -> Windows Real-time protection: off
-
-	pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
-
-	mkdir -p dist/TauonMusicBox/etc
-	#mkdir fonts
-	#curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf # 800KB
-	#curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf # 800KB
-	#curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf # 800KB
-	#curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf # 16MB
-	#curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf # 16MB
-	#curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf # 16MB
-	rm -rf dist/tauon/share/{icons,locale,tcl/tzdata} dist/TauonMusicBox/tcl/tzdata
-	cp -r fonts dist/tauon/ || echo 'fonts directory is not present!'
-	cp -r /ucrt64/etc/fonts dist/TauonMusicBox/etc # TODO(Martin): Why is this here?
-	echo -e "Packaged to dist/TauonMusicBox"
+	# Rebuilds the native code and installs Tauon into the venv, then stages a bundle
+	CMAKE_PREFIX_PATH=/ucrt64 .venv/bin/python -m pip install --no-deps --force-reinstall .
+	.venv/bin/python tools/package_bundle.py \
+		--platform windows \
+		--output dist/package \
+		--portable
+	echo -e "Packaged to dist/package/TauonMusicBox"
 }
 
 python_check() {
@@ -31,22 +19,27 @@ python_check() {
 	fi
 }
 
+# Editable install: Python changes apply on the next launch, native code is
+# rebuilt incrementally in build/editable whenever this runs
+install_dev() {
+	pip install --no-build-isolation -C build-dir=build/editable -e "${@}"
+}
+
 dirty_venv_run() {
 	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
-	export PYTHONPATH=".":"${PYTHONPATH-}"
 	source .venv/bin/activate
-	tauonmb # "${@}" # Passing args is broken atm
+	install_dev . --no-deps
+	.venv/bin/tauon
 }
 
 clean_venv_run() {
 	python_check
 	# Ensure correct cwd, for example: ~/Projects/Tauon
 	cd "$(dirname "${0}")"
-	export PYTHONPATH=".":"${PYTHONPATH-}"
 
-	rm -rf .venv build dist tauon_music_box.egg-info src/phazor/{kissfft,miniaudio}
+	rm -rf .venv build dist src/phazor/{kissfft,miniaudio}
 	mkdir -p src/phazor/{kissfft,miniaudio}
 
 	_kissfftver=131.1.0
@@ -64,50 +57,9 @@ clean_venv_run() {
 	# Necessary for Windows (UCRT64) if compiling things like Pillow
 	export CFLAGS="-I/ucrt64/include"
 #	export LDFLAGS="-L/ucrt64/lib"
-	pip install ".[all,dev]" build
-	python -m tools.i18n.compile_translations
-	python -m build --wheel
-	pip install --prefix ".venv" dist/*.whl --force-reinstall
-	tauonmb # "${@}" # Passing args is broken atm
-}
-
-compile_phazor() {
-	outFile="build/libphazor.so"
-	python_link_flags=""
-	if [[ "$(uname -s)" == "Darwin" ]]; then
-		outFile="build/libphazor.dylib"
-    # Allow unresolved Py* symbols at link time; they resolve from the host process.
-		python_link_flags="-Wl,-undefined,dynamic_lookup"
-	fi
-	mkdir -p build
-	# Homebrew's opusfile installs headers under include/opus/opusfile.h, but the code uses <opus/opusfile.h>.
-	# Ensure the parent include dir (the one containing the `opus/` folder) is on the include path.
-	opusfile_root_include=""
-	if command -v pkg-config >/dev/null 2>&1 && pkg-config --exists opusfile 2>/dev/null; then
-		opusfile_incdir="$(pkg-config --variable=includedir opusfile 2>/dev/null || true)"
-		if [ -n "${opusfile_incdir}" ]; then
-			# `includedir` is typically `<prefix>/include`, which should contain `opus/opusfile.h`.
-			opusfile_root_include="-I${opusfile_incdir}"
-		fi
-	fi
-	gcc \
-		src/phazor/kissfft/kiss_fftr.c src/phazor/kissfft/kiss_fft.c src/phazor/phazor.c \
-		${opusfile_root_include} \
-		$(pkg-config --cflags --libs python3 samplerate wavpack opusfile vorbisfile libmpg123 flac libopenmpt libgme) \
-		${python_link_flags} \
-		-shared -o ${outFile} -fPIC -Wall -O3 -g -D MINI
-	echo "Compiled as ${outFile}!"
-}
-
-compile_phazor_pipewire() {
-	compile_phazor
-	outFile="build/libphazor-pw.so"
-	mkdir -p build
-	gcc \
-		src/phazor/kissfft/kiss_fftr.c src/phazor/kissfft/kiss_fft.c src/phazor/phazor.c \
-		$(pkg-config --cflags --libs python3 samplerate wavpack opusfile vorbisfile libmpg123 flac libopenmpt libgme libpipewire-0.3) \
-		-shared -o ${outFile} -fPIC -Wall -O3 -g -D PIPE
-	echo "Compiled as ${outFile}!"
+	pip install scikit-build-core
+	install_dev ".[all,dev]"
+	.venv/bin/tauon
 }
 
 show_menu() {
@@ -130,10 +82,6 @@ process_answer() {
 			dirty_venv_run; exit ;;
 		"Windows build,3" | "3" )
 			win_build; exit ;;
-		"Compile phazor,4" | "4" )
-			compile_phazor; exit ;;
-		"Compile phazor with PipeWire support,5" | "5" )
-			compile_phazor_pipewire; exit ;;
 		* )
 			echo "Wrong option supplied! Options were: "
 			answer_num=1
@@ -148,9 +96,7 @@ process_answer() {
 answer_options=(
 	"Clean venv run"
 	"Dirty venv run"
-	"Windows build"
-	"Compile phazor"
-	"Compile phazor with PipeWire support")
+	"Windows build")
 
 if [[ ${#} -eq 0 ]]; then
 	show_menu

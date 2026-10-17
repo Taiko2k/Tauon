@@ -23,7 +23,7 @@ import logging
 import math
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -233,15 +233,15 @@ class WaylandBlur:
 		"""
 		try:
 			# tauon.wayland only reflects SDL_VIDEODRIVER; ask SDL what it chose
-			if sdl3.SDL_GetCurrentVideoDriver() != b"wayland":
+			if sdl3.get_current_video_driver() != b"wayland":
 				self.unavailable = True
 				return False
 			if not self.load_library():
 				return False
 
-			props = sdl3.SDL_GetWindowProperties(self.tauon.t_window)
-			display = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER, None)
-			surface = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, None)
+			window = self.tauon.t_window
+			display = sdl3.get_window_pointer_property(window, sdl3.SDL_PROP_WINDOW_WAYLAND_DISPLAY_POINTER)
+			surface = sdl3.get_window_pointer_property(window, sdl3.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER)
 			if not display or not surface:
 				# The window may not be shown yet; try again next frame
 				return False
@@ -285,8 +285,8 @@ class WaylandBlur:
 
 	def check_surface(self) -> bool:
 		"""Make a new effect object if SDL has given the window a new wl_surface"""
-		props = sdl3.SDL_GetWindowProperties(self.tauon.t_window)
-		surface = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER, None)
+		surface = sdl3.get_window_pointer_property(
+			self.tauon.t_window, sdl3.SDL_PROP_WINDOW_WAYLAND_SURFACE_POINTER)
 		if surface == self.surface:
 			return True
 		if not surface:

@@ -78,11 +78,9 @@ from ctypes import (
 	c_double,
 	c_float,
 	c_int,
-	c_ubyte,
 	c_uint,
 	c_uint32,
 	c_void_p,
-	pointer,
 )
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -100,11 +98,16 @@ import mutagen.oggopus
 import mutagen.oggvorbis
 import requests
 import cairo
-import sdl3
 from bs4 import BeautifulSoup
 from PIL import Image, ImageChops, ImageDraw, ImageEnhance, ImageFilter
 from send2trash import send2trash
 from unidecode import unidecode
+
+import tauon_native
+
+import tauon as tauon_package
+from tauon.t_modules import t_image as native_image
+from tauon.t_modules import t_native as sdl3
 
 builtins._ = lambda x: x
 
@@ -236,6 +239,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	uri_parse,
 	year_search,
 )
+from tauon.t_modules.t_window_state import WINDOW_STATE_FILENAME, WindowState, serialize_window_state
 from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
@@ -376,7 +380,7 @@ except Exception:
 	logging.exception("Unknown error trying to import Chrome(pychromecast), chromecast support will be disabled.")
 
 try:
-	# pyLast needs to be imported AFTER setup_tls() else pyinstaller breaks - we reimport it later
+	# pyLast needs to be imported AFTER setup_tls(), so we reimport it later.
 	import pylast
 except Exception:
 	logging.exception("pyLast module not found, Last.fm support will be disabled.")
@@ -492,20 +496,17 @@ class LoadImageAsset:
 		self.path = path
 		self.scale_name = scale_name
 
-		raw_image = sdl3.IMG_Load(c_char_p(self.path.encode()))
-		self.texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, raw_image)
+		raw_image = native_image.load(c_char_p(self.path.encode()))
+		self.texture = sdl3.create_texture_from_surface(self.renderer, raw_image)
 
-		p_w = pointer(c_float(0.0))
-		p_h = pointer(c_float(0.0))
-		sdl3.SDL_GetTextureSize(self.texture, p_w, p_h)
+		width, height = sdl3.get_texture_size(self.texture)
 
 		if is_full_path:
-			sdl3.SDL_SetTextureAlphaMod(self.texture, c_ubyte(bag.prefs.custom_bg_opacity))
+			sdl3.set_texture_alpha_mod(self.texture, bag.prefs.custom_bg_opacity)
 
-		self.rect = sdl3.SDL_FRect(0, 0, p_w.contents.value, p_h.contents.value)
-		sdl3.SDL_DestroySurface(raw_image)
-		self.w = p_w.contents.value
-		self.h = p_h.contents.value
+		self.rect = sdl3.FRect(0, 0, width, height)
+		self.w = width
+		self.h = height
 
 		# Lazily created copies of this texture on other renderers (e.g. a
 		# SecondaryWindow), keyed by renderer_key(). The home renderer's texture
@@ -521,19 +522,18 @@ class LoadImageAsset:
 			return self.texture
 		texture = self._alt_textures.get(key)
 		if texture is None:
-			raw_image = sdl3.IMG_Load(c_char_p(self.path.encode()))
-			texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
-			sdl3.SDL_DestroySurface(raw_image)
+			raw_image = native_image.load(c_char_p(self.path.encode()))
+			texture = sdl3.create_texture_from_surface(renderer, raw_image)
 			self._alt_textures[key] = texture
 		return texture
 
 	def _destroy_alt_textures(self) -> None:
 		for texture in self._alt_textures.values():
-			sdl3.SDL_DestroyTexture(texture)
+			sdl3.destroy_texture(texture)
 		self._alt_textures.clear()
 
 	def reload(self) -> None:
-		sdl3.SDL_DestroyTexture(self.texture)
+		sdl3.destroy_texture(self.texture)
 		self._destroy_alt_textures()
 		if self.scale_name:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
@@ -542,7 +542,7 @@ class LoadImageAsset:
 	def render(self, x: float, y: float, _colour: ColourRGBA | None = None, renderer: sdl3.LP_SDL_Renderer | None = None) -> None:
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderTexture(renderer or self.renderer, self._texture_for(renderer), None, self.rect)
+		sdl3.render_texture(renderer or self.renderer, self._texture_for(renderer), None, self.rect)
 
 class WhiteModImageAsset:
 	# TODO(Martin): Global class var!
@@ -556,16 +556,13 @@ class WhiteModImageAsset:
 		self.path = path
 		self.scale_name = scale_name
 
-		raw_image = sdl3.IMG_Load(path.encode())
-		self.texture = sdl3.SDL_CreateTextureFromSurface(self.bag.renderer, raw_image)
+		raw_image = native_image.load(path.encode())
+		self.texture = sdl3.create_texture_from_surface(self.bag.renderer, raw_image)
 		self.colour = ColourRGBA(255, 255, 255, 255)
-		p_w = pointer(c_float(0.0))
-		p_h = pointer(c_float(0.0))
-		sdl3.SDL_GetTextureSize(self.texture, p_w, p_h)
-		self.rect = sdl3.SDL_FRect(0, 0, p_w.contents.value, p_h.contents.value)
-		sdl3.SDL_DestroySurface(raw_image)
-		self.w = p_w.contents.value
-		self.h = p_h.contents.value
+		width, height = sdl3.get_texture_size(self.texture)
+		self.rect = sdl3.FRect(0, 0, width, height)
+		self.w = width
+		self.h = height
 
 		# Lazily created copies on other renderers, with each copy's last applied
 		# colour-mod tracked separately: value is [texture, last_colour].
@@ -585,20 +582,19 @@ class WhiteModImageAsset:
 			return self.texture, self.colour, None
 		entry = self._alt_textures.get(key)
 		if entry is None:
-			raw_image = sdl3.IMG_Load(self.path.encode())
-			texture = sdl3.SDL_CreateTextureFromSurface(renderer, raw_image)
-			sdl3.SDL_DestroySurface(raw_image)
+			raw_image = native_image.load(self.path.encode())
+			texture = sdl3.create_texture_from_surface(renderer, raw_image)
 			entry = [texture, ColourRGBA(255, 255, 255, 255)]
 			self._alt_textures[key] = entry
 		return entry[0], entry[1], key
 
 	def _destroy_alt_textures(self) -> None:
 		for entry in self._alt_textures.values():
-			sdl3.SDL_DestroyTexture(entry[0])
+			sdl3.destroy_texture(entry[0])
 		self._alt_textures.clear()
 
 	def reload(self) -> None:
-		sdl3.SDL_DestroyTexture(self.texture)
+		sdl3.destroy_texture(self.texture)
 		self._destroy_alt_textures()
 		if self.scale_name:
 			self.path = str(self.dirs.scaled_asset_directory / self.scale_name)
@@ -607,15 +603,15 @@ class WhiteModImageAsset:
 	def render(self, x: float, y: float, colour: ColourRGBA, renderer: sdl3.LP_SDL_Renderer | None = None) -> None:
 		texture, last_colour, alt_key = self._entry_for(renderer)
 		if colour != last_colour:
-			sdl3.SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b)
-			sdl3.SDL_SetTextureAlphaMod(texture, colour.a)
+			sdl3.set_texture_color_mod(texture, colour.r, colour.g, colour.b)
+			sdl3.set_texture_alpha_mod(texture, colour.a)
 			if alt_key is None:
 				self.colour = colour
 			else:
 				self._alt_textures[alt_key][1] = colour
 		self.rect.x = round(x)
 		self.rect.y = round(y)
-		sdl3.SDL_RenderTexture(renderer or self.bag.renderer, texture, None, self.rect)
+		sdl3.render_texture(renderer or self.bag.renderer, texture, None, self.rect)
 
 class DConsole:
 	"""GUI console with logs"""
@@ -675,17 +671,17 @@ class GuiVar:
 		self.pl_update = True
 
 	def destroy_textures(self) -> None:
-		sdl3.SDL_DestroyTexture(self.spec4_tex)
-		sdl3.SDL_DestroyTexture(self.spec1_tex)
-		sdl3.SDL_DestroyTexture(self.spec2_tex)
-		sdl3.SDL_DestroyTexture(self.spec_level_tex)
+		sdl3.destroy_texture(self.spec4_tex)
+		sdl3.destroy_texture(self.spec1_tex)
+		sdl3.destroy_texture(self.spec2_tex)
+		sdl3.destroy_texture(self.spec_level_tex)
 
 	# def test_text_input(self):
 	#	 if self.text_input_request and not self.text_input_active:
-	#		 sdl3.SDL_StartTextInput()
+	#		 sdl3.start_text_input()
 	#		 self.update += 1
 	#	 if not self.text_input_request and self.text_input_active:
-	#		 sdl3.SDL_StopTextInput()
+	#		 sdl3.stop_text_input()
 	#	 self.text_input_request = False
 
 	def bottom_panel_height(self) -> float:
@@ -697,15 +693,15 @@ class GuiVar:
 		self.spec_y = round(5 * self.scale)
 		self.spec_w = round(80 * self.scale)
 		self.spec_h = round(20 * self.scale)
-		self.spec1_rec = sdl3.SDL_FRect(0, self.spec_y, self.spec_w, self.spec_h)
+		self.spec1_rec = sdl3.FRect(0, self.spec_y, self.spec_w, self.spec_h)
 
 		self.spec4_y = round(200 * self.scale)
 		self.spec4_w = round(322 * self.scale)
 		self.spec4_h = round(100 * self.scale)
-		self.spec4_rec = sdl3.SDL_FRect(0, self.spec4_y, self.spec4_w, self.spec4_h)
+		self.spec4_rec = sdl3.FRect(0, self.spec4_y, self.spec4_w, self.spec4_h)
 
-		self.bar = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
-		self.bar4 = sdl3.SDL_FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.bar = sdl3.FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
+		self.bar4 = sdl3.FRect(10, 10, round(3 * self.scale), 10)  # spec bar bin
 		self.set_height = round(25 * self.scale)
 		self.panelBY = self.bottom_panel_height()
 		self.panelY = round(30 * self.scale)
@@ -719,9 +715,9 @@ class GuiVar:
 		self.spec2 = [0] * self.spec2_y
 		self.spec2_phase = 0
 		self.spec2_buffers = []
-		self.spec2_rec = sdl3.SDL_FRect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
-		self.spec2_source = sdl3.SDL_FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
-		self.spec2_dest = sdl3.SDL_FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_rec = sdl3.FRect(1230, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_source = sdl3.FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
+		self.spec2_dest = sdl3.FRect(900, round(4 * self.scale), self.spec2_w, self.spec2_y)
 		self.spec2_position = 0
 		self.spec2_timer = Timer()
 		self.spec2_timer.set()
@@ -731,30 +727,30 @@ class GuiVar:
 		self.level_s = 1 * self.scale
 		self.level_ww = round(79 * self.scale)
 		self.level_hh = round(18 * self.scale)
-		self.spec_level_rec = sdl3.SDL_FRect(
+		self.spec_level_rec = sdl3.FRect(
 			0, round(self.level_y - 10 * self.scale), round(self.level_ww),round(self.level_hh))
 
-		self.spec2_tex = sdl3.SDL_CreateTexture(
+		self.spec2_tex = sdl3.create_texture(
 			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec2_w, self.spec2_y)
-		self.spec4_tex = sdl3.SDL_CreateTexture(
+		self.spec4_tex = sdl3.create_texture(
 			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec4_w, self.spec4_y)
-		self.spec1_tex = sdl3.SDL_CreateTexture(
+		self.spec1_tex = sdl3.create_texture(
 			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.spec_w, self.spec_h)
-		self.spec_level_tex = sdl3.SDL_CreateTexture(
+		self.spec_level_tex = sdl3.create_texture(
 			self.bag.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, self.level_ww, self.level_hh)
-		sdl3.SDL_SetTextureBlendMode(self.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.spec4_tex, sdl3.SDL_BLENDMODE_BLEND)
 		# Blend so a translucent vis_bg (frosted art background) lets the
 		# panel and art beneath show through
-		sdl3.SDL_SetTextureBlendMode(self.spec1_tex, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetTextureBlendMode(self.spec2_tex, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetTextureBlendMode(self.spec_level_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.spec1_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.spec2_tex, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.spec_level_tex, sdl3.SDL_BLENDMODE_BLEND)
 		self.artist_panel_height = 320 * self.scale
 		self.last_artist_panel_height = self.artist_panel_height
 
 		self.window_control_hit_area_w = 100 * self.scale
 		self.window_control_hit_area_h = 30 * self.scale
 
-	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.SDL_FRect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
+	def __init__(self, bag: Bag, tracklist_texture_rect: sdl3.FRect, tracklist_texture: sdl3.LP_SDL_Texture, main_texture_overlay_temp: sdl3.LP_SDL_Texture, main_texture: sdl3.LP_SDL_Texture, max_window_tex: int) -> None:
 		self.bag: Bag = bag
 		self.console: DConsole = bag.console
 		self.inp: Input = Input(gui=self)
@@ -917,7 +913,7 @@ class GuiVar:
 		self.playlist_text_offset: float = 0
 		self.row_font_size:          int = 13
 		self.compact_bar: bool = False
-		self.tracklist_texture_rect: sdl3.SDL_FRect = tracklist_texture_rect
+		self.tracklist_texture_rect: sdl3.FRect = tracklist_texture_rect
 		self.tracklist_texture = tracklist_texture
 
 		self.trunk_end = "..."  # "…"
@@ -1231,13 +1227,13 @@ class GuiVar:
 		# self.text_input_request = False
 		# self.text_input_active = False
 		self.center_blur_pixel = (0, 0, 0)
-		self.cursor_hand = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_POINTER)
-		self.cursor_standard = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_DEFAULT)
-		self.cursor_shift = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_EW_RESIZE)
+		self.cursor_hand = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_POINTER)
+		self.cursor_standard = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_DEFAULT)
+		self.cursor_shift = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_EW_RESIZE)
 		# General-purpose vertical-resize cursor, available on every platform
 		# (unlike cursor_top_side which is only NS on Windows/X11).
-		self.cursor_ns = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
-		self.cursor_text = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_TEXT)
+		self.cursor_ns = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
+		self.cursor_text = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_TEXT)
 
 		self.cursor_br_corner   = self.cursor_standard
 		self.cursor_right_side  = self.cursor_standard
@@ -1249,10 +1245,10 @@ class GuiVar:
 
 
 		if bag.windows:
-			self.cursor_br_corner = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
+			self.cursor_br_corner = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_NWSE_RESIZE)
 			self.cursor_right_side = self.cursor_shift
 			self.cursor_left_side = self.cursor_shift
-			self.cursor_top_side = sdl3.SDL_CreateSystemCursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
+			self.cursor_top_side = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 			self.cursor_bottom_side = self.cursor_top_side
 
 class StarStore:
@@ -1584,9 +1580,9 @@ class KeyMap:
 						key = items[1]
 					else:
 						if self.bag.prefs.use_scancodes:
-							key = sdl3.SDL_GetScancodeFromName(items[1].encode())
+							key = sdl3.get_scancode_from_name(items[1].encode())
 						else:
-							key = sdl3.SDL_GetKeyFromName(items[1].encode())
+							key = sdl3.get_key_from_name(items[1].encode())
 						if key == 0:
 							continue
 
@@ -2396,14 +2392,14 @@ class WinTask:
 		# URL streams have no known duration, so show no progress for them either
 		if self.pctl.playing_state in (PlayingState.STOPPED, PlayingState.URL_STREAM) and self.updated_state != 0:
 			self.updated_state = 0
-			sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, 0.0)
-			sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
+			sdl3.set_window_progress_value(self.tauon.t_window, 0.0)
+			sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
 
 		elif self.prefs.taskbar_progress:
 
 			if self.pctl.playing_state == PlayingState.PLAYING:
 				if self.updated_state != 1:
-					sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
+					sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
 
 				self.updated_state = 1
 				if self.pctl.playing_length > 1.1:
@@ -2412,11 +2408,11 @@ class WinTask:
 					frac = 0.0
 
 				frac = min(max(frac, 0.0), 1.0)
-				sdl3.SDL_SetWindowProgressValue(self.tauon.t_window, frac)
+				sdl3.set_window_progress_value(self.tauon.t_window, frac)
 
 			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
 				self.updated_state = 2
-				sdl3.SDL_SetWindowProgressState(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
+				sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
 
 
 class PlayerCtl:
@@ -7121,16 +7117,13 @@ class GallClass:
 				# finish processing
 
 				s_image = self.ddt.load_image(order[1])
-				c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-				sdl3.SDL_DestroySurface(s_image)
-				sdl3.SDL_SetTextureBlendMode(c, sdl3.SDL_BLENDMODE_BLEND)
-				sdl3.SDL_SetTextureScaleMode(c, sdl3.SDL_SCALEMODE_LINEAR)
-				tex_w = pointer(c_float(0))
-				tex_h = pointer(c_float(0))
-				sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
-				dst = sdl3.SDL_FRect(x, y)
-				dst.w = int(tex_w.contents.value)
-				dst.h = int(tex_h.contents.value)
+				c = sdl3.create_texture_from_surface(self.renderer, s_image)
+				sdl3.set_texture_blend_mode(c, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.set_texture_scale_mode(c, sdl3.SDL_SCALEMODE_LINEAR)
+				tex_w, tex_h = sdl3.get_texture_size(c)
+				dst = sdl3.FRect(x, y)
+				dst.w = int(tex_w)
+				dst.h = int(tex_h)
 
 
 				order[0] = 3
@@ -7149,7 +7142,7 @@ class GallClass:
 
 				if not return_texture:
 					if max_height is None:
-						sdl3.SDL_RenderTexture(self.renderer, order[2], None, order[3])
+						sdl3.render_texture(self.renderer, order[2], None, order[3])
 					else:
 						max_height = round(max_height)
 						clip_top = y
@@ -7161,10 +7154,10 @@ class GallClass:
 						if render_bottom > render_top and order[3].h > 0:
 							source_y = ((render_top - dst_top) / order[3].h) * order[3].h
 							source_h = ((render_bottom - render_top) / order[3].h) * order[3].h
-							source_rect = sdl3.SDL_FRect(0, source_y, order[3].w, source_h)
-							dest_rect = sdl3.SDL_FRect(
+							source_rect = sdl3.FRect(0, source_y, order[3].w, source_h)
+							dest_rect = sdl3.FRect(
 								order[3].x, render_top, order[3].w, render_bottom - render_top)
-							sdl3.SDL_RenderTexture(self.renderer, order[2], source_rect, dest_rect)
+							sdl3.render_texture(self.renderer, order[2], source_rect, dest_rect)
 
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
@@ -7177,7 +7170,7 @@ class GallClass:
 					# while key in self.queue:
 					#	 self.queue.remove(key)
 					if self.gall[key][2] is not None:
-						sdl3.SDL_DestroyTexture(self.gall[key][2])
+						sdl3.destroy_texture(self.gall[key][2])
 					del self.gall[key]
 					del self.key_list[0]
 
@@ -7317,6 +7310,7 @@ class Tauon:
 		self.folder_image_offsets: dict[str, int] = bag.folder_image_offsets
 		self.inp: Input                          = gui.inp
 		self.instance_lock: io.TextIOWrapper[io._WrappedBuffer] | None = holder.instance_lock
+		self.native_bootstrap: bool                = holder.native_bootstrap
 		self.n_version: str                    = holder.n_version
 		self.t_window                     = holder.t_window
 		self.t_title: str                         = holder.t_title
@@ -7378,11 +7372,11 @@ class Tauon:
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
 		self.move_in_progress:       bool = False
 		self.worker2_lock: threading.LockType                 = threading.Lock()
-		self.dummy_event:          sdl3.SDL_Event = sdl3.SDL_Event()
-		self.temp_dest:            sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0)
-		self.text_box_canvas_rect:      sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-		self.text_box_canvas_hide_rect: sdl3.SDL_FRect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-		self.text_box_canvas           = sdl3.SDL_CreateTexture(
+		self.dummy_event = None
+		self.temp_dest:            sdl3.FRect = sdl3.FRect(0, 0)
+		self.text_box_canvas_rect:      sdl3.FRect = sdl3.FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+		self.text_box_canvas_hide_rect: sdl3.FRect = sdl3.FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+		self.text_box_canvas           = sdl3.create_texture(
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
 			sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
 		self.translate                            = _
@@ -7686,6 +7680,12 @@ class Tauon:
 		self.requested_raise: bool = False
 		self.requested_tray: bool = False
 		self.requested_tray_destruct: bool = False
+		# SDL's Linux tray initialises GTK, which hooks the display into GLib's
+		# default main context. The D-Bus thread runs that same context, and if it
+		# is already running during GTK's setup the two threads race on the
+		# half-open display (a hang or crash at startup). The D-Bus thread waits
+		# for this before running its main loop.
+		self.tray_setup_done: threading.Event = threading.Event()
 		self.sdl_tray: sdl3.LP_SDL_Tray | None = None
 		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
 		self.sdl_tray_launched: bool = False
@@ -7720,19 +7720,19 @@ class Tauon:
 
 	def load_sdl_icon(self, path: Path) -> sdl3.LP_SDL_Surface:
 		"""Load an image file into an SDL_Surface suitable for a tray icon."""
-		surf = sdl3.IMG_Load(str(path).encode("utf-8"))
+		surf = native_image.load(str(path).encode("utf-8"))
 		if not surf:
-			raise RuntimeError(f"IMG_Load failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"load_image failed: {sdl3.get_error()}")
 		return surf
 
 	def update_tray_icon(self, name: str) -> None:
 		"""Name like \"tray-indicator-stop\""""
 		surf = self.load_sdl_icon(Path(self.get_tray_icon(name)))
-		sdl3.SDL_SetTrayIcon(self.sdl_tray, surf)
+		sdl3.set_tray_icon(self.sdl_tray, surf)
 
 	def sdl_set_tray_tooltip(self, tooltip: str) -> None:
 		#logging.debug(f"Setting tray tooltip to '{tooltip}'")
-		sdl3.SDL_SetTrayTooltip(self.sdl_tray, tooltip.encode("utf-8"))
+		sdl3.set_tray_tooltip(self.sdl_tray, tooltip.encode("utf-8"))
 
 	# TODO(Martin): Scroll on the tray icon to change volume once SDL exposes tray scroll events
 
@@ -7776,97 +7776,97 @@ class Tauon:
 	def init_sdl_tray(self) -> None:
 		icon_surface = self.load_sdl_icon(Path(self.get_tray_icon("tray-indicator-default")))
 		# Create tray (no icon, just tooltip)
-		self.sdl_tray = sdl3.SDL_CreateTray(icon_surface, b"Tauon Music Box")
+		self.sdl_tray = sdl3.create_tray(icon_surface, b"Tauon Music Box")
 		if not self.sdl_tray:
-			logging.error(f"SDL_CreateTray failed: {sdl3.SDL_GetError().decode()}")
+			logging.error(f"create_tray failed: {sdl3.get_error()}")
 			return
 
 		# Create menu
-		menu = sdl3.SDL_CreateTrayMenu(self.sdl_tray)
+		menu = sdl3.create_tray_menu(self.sdl_tray)
 		if not menu:
-			raise RuntimeError(f"SDL_CreateTrayMenu failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"create_tray_menu failed: {sdl3.get_error()}")
 
 		# --- Open Tauon Music Box ---
-		open_entry = sdl3.SDL_InsertTrayEntryAt(
+		open_entry = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			self.strings.menu_open_tauon.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not open_entry:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(Open) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(Open) failed: {sdl3.get_error()}")
 
 		# --- Separator ---
-		sep1 = sdl3.SDL_InsertTrayEntryAt(
+		sep1 = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			None,  # NULL label => separator
 			0,     # flags ignored for separators
 		)
 		if not sep1:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(sep1) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(sep1) failed: {sdl3.get_error()}")
 
 		# --- Play/Pause ---
-		playpause_entry = sdl3.SDL_InsertTrayEntryAt(
+		playpause_entry = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			self.strings.menu_play_pause.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not playpause_entry:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(Play/Pause) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(Play/Pause) failed: {sdl3.get_error()}")
 
 		# --- Next Track ---
-		next_entry = sdl3.SDL_InsertTrayEntryAt(
+		next_entry = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			self.strings.menu_next.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not next_entry:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(Next) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(Next) failed: {sdl3.get_error()}")
 
 		# --- Previous Track ---
-		prev_entry = sdl3.SDL_InsertTrayEntryAt(
+		prev_entry = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			self.strings.menu_previous.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not prev_entry:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(Previous) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(Previous) failed: {sdl3.get_error()}")
 
 		# --- Separator ---
-		sep2 = sdl3.SDL_InsertTrayEntryAt(
+		sep2 = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			None,  # separator
 			0,
 		)
 		if not sep2:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(sep2) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(sep2) failed: {sdl3.get_error()}")
 
 		# --- Quit ---
-		quit_entry = sdl3.SDL_InsertTrayEntryAt(
+		quit_entry = sdl3.insert_tray_entry(
 			menu,
 			-1,
 			self.strings.menu_quit.encode(),
 			sdl3.SDL_TRAYENTRY_BUTTON,
 		)
 		if not quit_entry:
-			raise RuntimeError(f"SDL_InsertTrayEntryAt(Quit) failed: {sdl3.SDL_GetError().decode()}")
+			raise RuntimeError(f"insert_tray_entry(Quit) failed: {sdl3.get_error()}")
 
-		self._tray_open_cb =      sdl3.SDL_TrayCallback(self.tray_open_callback)
-		self._tray_playpause_cb = sdl3.SDL_TrayCallback(self.tray_playpause_callback)
-		self._tray_next_cb =      sdl3.SDL_TrayCallback(self.tray_next_callback)
-		self._tray_quit_cb =      sdl3.SDL_TrayCallback(self.tray_quit_callback)
-		self._tray_prev_cb =      sdl3.SDL_TrayCallback(self.tray_prev_callback)
+		self._tray_open_cb = self.tray_open_callback
+		self._tray_playpause_cb = self.tray_playpause_callback
+		self._tray_next_cb = self.tray_next_callback
+		self._tray_quit_cb = self.tray_quit_callback
+		self._tray_prev_cb = self.tray_prev_callback
 
-		sdl3.SDL_SetTrayEntryCallback(open_entry, self._tray_open_cb, None)
-		sdl3.SDL_SetTrayEntryCallback(playpause_entry, self._tray_playpause_cb, None)
-		sdl3.SDL_SetTrayEntryCallback(next_entry, self._tray_next_cb, None)
-		sdl3.SDL_SetTrayEntryCallback(quit_entry, self._tray_quit_cb, None)
-		sdl3.SDL_SetTrayEntryCallback(prev_entry, self._tray_prev_cb, None)
+		sdl3.set_tray_entry_callback(open_entry, self._tray_open_cb)
+		sdl3.set_tray_entry_callback(playpause_entry, self._tray_playpause_cb)
+		sdl3.set_tray_entry_callback(next_entry, self._tray_next_cb)
+		sdl3.set_tray_entry_callback(quit_entry, self._tray_quit_cb)
+		sdl3.set_tray_entry_callback(prev_entry, self._tray_prev_cb)
 
 		self.sdl_tray_launched = True
 		self.gui.tray_active = True
@@ -7875,7 +7875,7 @@ class Tauon:
 		if self.sdl_tray is None:
 			logging.warning("Attempted to destroy non-existent tray")
 			return
-		sdl3.SDL_DestroyTray(self.sdl_tray)
+		sdl3.destroy_tray(self.sdl_tray)
 		self.sdl_tray = None
 		self.sdl_tray_launched = False
 		self.gui.tray_active = False
@@ -7997,7 +7997,7 @@ class Tauon:
 		except Exception:
 			logging.exception("FFPROBE couldn't supply a track")
 
-	def hit_callback(self, win, point, data):
+	def hit_callback(self, point_x, point_y):
 		gui          = self.gui
 		inp          = self.inp
 		windows         = self.windows
@@ -8006,8 +8006,8 @@ class Tauon:
 		logical_size = self.logical_size
 		window_size  = self.window_size
 
-		x = point.contents.x / logical_size[0] * window_size[0]
-		y = point.contents.y / logical_size[0] * window_size[0]
+		x = point_x / logical_size[0] * window_size[0]
+		y = point_y / logical_size[0] * window_size[0]
 
 		# Special layout modes
 		if gui.mode == GuiMode.MINI:
@@ -8470,7 +8470,7 @@ class Tauon:
 		for textures in (self.corner_mask_textures, self.corner_border_textures):
 			if textures:
 				for texture in textures:
-					sdl3.SDL_DestroyTexture(texture)
+					sdl3.destroy_texture(texture)
 		self.corner_mask_textures = None
 		self.corner_border_textures = None
 		self.corner_texture_size = (0, 0)
@@ -8498,7 +8498,7 @@ class Tauon:
 		arc = arc.resize((radius, radius), Image.Resampling.LANCZOS)
 
 		# dst = dst * srcA, keeps pixels inside the corner circle and erases outside
-		mask_blend = sdl3.SDL_ComposeCustomBlendMode(
+		mask_blend = sdl3.compose_custom_blend_mode(
 			sdl3.SDL_BLENDFACTOR_ZERO,
 			sdl3.SDL_BLENDFACTOR_SRC_ALPHA,
 			sdl3.SDL_BLENDOPERATION_ADD,
@@ -8524,12 +8524,11 @@ class Tauon:
 				corner.save(g, "PNG")
 				g.seek(0)
 				surface = self.ddt.load_image(g)
-				texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
-				sdl3.SDL_DestroySurface(surface)
-				if not texture or not sdl3.SDL_SetTextureBlendMode(texture, blend):
-					logging.warning(f"Failed to create corner texture: {sdl3.SDL_GetError()}")
+				texture = sdl3.create_texture_from_surface(self.renderer, surface)
+				if not texture or not sdl3.set_texture_blend_mode(texture, blend):
+					logging.warning(f"Failed to create corner texture: {sdl3.get_error()}")
 					if texture:
-						sdl3.SDL_DestroyTexture(texture)
+						sdl3.destroy_texture(texture)
 					self.destroy_corner_textures()
 					self.corner_textures_failed = True
 					return False
@@ -8556,20 +8555,20 @@ class Tauon:
 		w = self.window_size[0]
 		h = self.window_size[1]
 		positions = ((0, 0), (w - radius, 0), (0, h - radius), (w - radius, h - radius))
-		rect = sdl3.SDL_FRect(0.0, 0.0, float(radius), float(radius))
+		rect = sdl3.FRect(0.0, 0.0, float(radius), float(radius))
 
 		for texture, (x, y) in zip(self.corner_mask_textures, positions):
 			rect.x = float(x)
 			rect.y = float(y)
-			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
+			sdl3.render_texture(self.renderer, texture, None, rect)
 
 		frame = self.colours.window_frame
 		for texture, (x, y) in zip(self.corner_border_textures, positions):
-			sdl3.SDL_SetTextureColorMod(texture, frame.r, frame.g, frame.b)
-			sdl3.SDL_SetTextureAlphaMod(texture, frame.a)
+			sdl3.set_texture_color_mod(texture, frame.r, frame.g, frame.b)
+			sdl3.set_texture_alpha_mod(texture, frame.a)
 			rect.x = float(x)
 			rect.y = float(y)
-			sdl3.SDL_RenderTexture(self.renderer, texture, None, rect)
+			sdl3.render_texture(self.renderer, texture, None, rect)
 
 	def prime_fonts(self) -> None:
 		standard_font = self.prefs.linux_font
@@ -10277,10 +10276,10 @@ class Tauon:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def paste_lyrics(self, track_object: TrackClass) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText()
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 			#logging.info(clip)
-			track_object.lyrics = clip.decode("utf-8")
+			track_object.lyrics = clip
 			if self.prefs.save_lyrics_changes_to_files:
 				self.write_lyrics(track_object)
 			self.lyrics_ren_mini.to_reload = True
@@ -10374,7 +10373,7 @@ class Tauon:
 			self.lyrics_ren_mini.to_reload = True
 
 	def paste_lyrics_deco(self) -> Decorator:
-		line_colour = self.colours.menu_text if sdl3.SDL_HasClipboardText() else self.colours.menu_text_disabled
+		line_colour = self.colours.menu_text if has_clipboard_text() else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, None)
 
 	def chord_lyrics_paste_show_test(self, _) -> bool:
@@ -10889,12 +10888,8 @@ class Tauon:
 	def paste_deco(self) -> Decorator:
 		active = False
 		line = None
-		if len(self.pctl.cargo) > 0:
+		if len(self.pctl.cargo) > 0 or clipboard_has_paths():
 			active = True
-		elif sdl3.SDL_HasClipboardText():
-			text = copy_from_clipboard()
-			if text.startswith("/") or "file://" in text:
-				active = True
 
 		line_colour = self.colours.menu_text if active else self.colours.menu_text_disabled
 		return Decorator(line_colour, self.colours.menu_background, line)
@@ -13516,14 +13511,14 @@ class Tauon:
 
 	def clip_ar_al(self, index: int) -> None:
 		line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].album
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def clip_ar(self, index: int) -> None:
 		if self.pctl.master_library[index].album_artist:
 			line = self.pctl.master_library[index].album_artist
 		else:
 			line = self.pctl.master_library[index].artist
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def clip_title(self, ref: MenuTrackRef) -> None:
 		n_track = self.pctl.get_track(ref.track_id)
@@ -13532,7 +13527,7 @@ class Tauon:
 			line = n_track.album_artist + " - " + n_track.album
 		else:
 			line = n_track.parent_folder_name
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def lightning_copy(self) -> None:
 		self.s_copy()
@@ -14737,7 +14732,7 @@ class Tauon:
 		self.show_message(_("You added tracks to a generator playlist. Do you want to clear the generator?"), mode="confirm")
 
 	def _window_is_maximized(self) -> bool:
-		flags = sdl3.SDL_GetWindowFlags(self.t_window)
+		flags = sdl3.get_window_flags(self.t_window)
 		return bool(flags & sdl3.SDL_WINDOW_MAXIMIZED)
 
 	def frame_pace(self) -> float:
@@ -14749,9 +14744,7 @@ class Tauon:
 		(driver override, occluded window) this still caps the loop near the
 		refresh rate instead of letting it spin unbounded."""
 		hz = 0.0
-		mode = sdl3.SDL_GetCurrentDisplayMode(sdl3.SDL_GetDisplayForWindow(self.t_window))
-		if mode:
-			hz = mode.contents.refresh_rate
+		hz = sdl3.get_display_refresh_rate(self.t_window)
 		if not 0 < hz < 1000:
 			hz = 60.0
 		return 0.85 / hz
@@ -14918,23 +14911,20 @@ class Tauon:
 			# Treat already-floating windows as non-maximized for mini-mode transitions.
 			self.gui.mini_mode_return_maximized = self._window_is_maximized() and not bool(is_floating_wayland_window)
 			if self.gui.mini_mode_return_maximized:
-				sdl3.SDL_RestoreWindow(self.t_window)
-				sdl3.SDL_SyncWindow(self.t_window)
-				sdl3.SDL_PumpEvents()
+				sdl3.restore_window(self.t_window)
+				sdl3.sync_window(self.t_window)
+				sdl3.pump_events()
 				self.gui.maximized = False
 				self.update_layout_do()
 
 		if self.gui.mode == GuiMode.MAIN:
 			self.old_window_position = get_window_position(self.t_window)
-			saved_w = pointer(c_int(0))
-			saved_h = pointer(c_int(0))
-			sdl3.SDL_GetWindowSize(self.t_window, saved_w, saved_h)
-			self.mini_mode_restore_size = (saved_w.contents.value, saved_h.contents.value)
+			self.mini_mode_restore_size = sdl3.get_window_size(self.t_window)
 			self.gui.save_size[0] = self.mini_mode_restore_size[0]
 			self.gui.save_size[1] = self.mini_mode_restore_size[1]
 
 		if self.prefs.mini_mode_on_top and not self.wayland:
-			sdl3.SDL_SetWindowAlwaysOnTop(self.t_window, True)
+			sdl3.set_window_always_on_top(self.t_window, True)
 
 		self.gui.mode = GuiMode.MINI
 		self.gui.vis = 0
@@ -14943,14 +14933,11 @@ class Tauon:
 		self.gui.level_update = self.prefs.mini_mode_mode == MiniModeMode.SIGNAL
 
 		if not switching_layout:
-			i_y = pointer(c_int(0))
-			i_x = pointer(c_int(0))
-			sdl3.SDL_GetWindowPosition(self.t_window, i_x, i_y)
-			self.gui.save_position = (i_x.contents.value, i_y.contents.value)
+			self.gui.save_position = sdl3.get_window_position(self.t_window)
 			self.mini_mode.was_borderless = self.draw_border
 
 		if not is_wayland_standalone_wm:
-			sdl3.SDL_SetWindowBordered(self.t_window, False)
+			sdl3.set_window_bordered(self.t_window, False)
 
 		size = (350, 429)
 		if self.prefs.mini_mode_mode == MiniModeMode.MINI:
@@ -14973,15 +14960,15 @@ class Tauon:
 		self.logical_size[1] = size[1]
 
 		min_size = (100, 80)
-		sdl3.SDL_SetWindowMinimumSize(self.t_window, min_size[0], min_size[1])
+		sdl3.set_window_minimum_size(self.t_window, min_size[0], min_size[1])
 		self._set_wayland_mini_mode_window_state(True, self.logical_size[0], self.logical_size[1], reset_tracking=not switching_layout)
-		sdl3.SDL_SetWindowResizable(self.t_window, True)
-		sdl3.SDL_SetWindowSize(self.t_window, self.logical_size[0], self.logical_size[1])
+		sdl3.set_window_resizable(self.t_window, True)
+		sdl3.set_window_size(self.t_window, self.logical_size[0], self.logical_size[1])
 		if not is_wayland_standalone_wm:
-			sdl3.SDL_SetWindowResizable(self.t_window, False)
+			sdl3.set_window_resizable(self.t_window, False)
 
 		if self.mini_mode.save_position and not switching_layout:
-			sdl3.SDL_SetWindowPosition(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
+			sdl3.set_window_position(self.t_window, self.mini_mode.save_position[0], self.mini_mode.save_position[1])
 		self.mini_lyrics_lift = None
 		if self.mini_lyrics.drawer_open():
 			self.fit_mini_window_on_screen(opening=True)
@@ -15031,12 +15018,12 @@ class Tauon:
 		w, h = self.mini_mode_window_size(self.mini_mode_base_logical)
 		self.logical_size[0] = w
 		self.logical_size[1] = h
-		sdl3.SDL_SetWindowMinimumSize(self.t_window, 100, 80)
+		sdl3.set_window_minimum_size(self.t_window, 100, 80)
 		self._set_wayland_mini_mode_window_state(True, w, h, reset_tracking=False)
-		sdl3.SDL_SetWindowResizable(self.t_window, True)
-		sdl3.SDL_SetWindowSize(self.t_window, w, h)
+		sdl3.set_window_resizable(self.t_window, True)
+		sdl3.set_window_size(self.t_window, w, h)
 		if not self._is_wayland_standalone_wm():
-			sdl3.SDL_SetWindowResizable(self.t_window, False)
+			sdl3.set_window_resizable(self.t_window, False)
 		self.fit_mini_window_on_screen(opening=self.prefs.mini_mode_lyrics)
 
 		if self.prefs.mini_mode_mode == MiniModeMode.SLATE:
@@ -15052,72 +15039,65 @@ class Tauon:
 		x, y = get_window_position(self.t_window)
 		if not opening:
 			if self.mini_lyrics_lift is not None and self.mini_lyrics_lift[0] == (x, y):
-				sdl3.SDL_SetWindowPosition(self.t_window, x, y + self.mini_lyrics_lift[1])
+				sdl3.set_window_position(self.t_window, x, y + self.mini_lyrics_lift[1])
 			self.mini_lyrics_lift = None
 			return
 
-		bounds = sdl3.SDL_Rect()
-		if not sdl3.SDL_GetDisplayUsableBounds(sdl3.SDL_GetDisplayForWindow(self.t_window), ctypes.byref(bounds)):
+		bounds = sdl3.get_display_usable_bounds(self.t_window)
+		if bounds is None:
 			return
 		bottom = bounds.y + bounds.h
 		if y + self.logical_size[1] > bottom:
 			new_y = max(bounds.y, bottom - self.logical_size[1])
-			sdl3.SDL_SetWindowPosition(self.t_window, x, new_y)
+			sdl3.set_window_position(self.t_window, x, new_y)
 			self.mini_lyrics_lift = ((x, new_y), y - new_y)
 
 	def restore_full_mode(self) -> None:
 		logging.info("RESTORE FULL")
-		i_y = pointer(c_int(0))
-		i_x = pointer(c_int(0))
-		sdl3.SDL_GetWindowPosition(self.t_window, i_x, i_y)
-		self.mini_mode.save_position = [i_x.contents.value, i_y.contents.value]
+		self.mini_mode.save_position = list(sdl3.get_window_position(self.t_window))
 
 		if not self.mini_mode.was_borderless:
-			sdl3.SDL_SetWindowBordered(self.t_window, True)
+			sdl3.set_window_bordered(self.t_window, True)
 
 		restore_size = self.mini_mode_restore_size or (self.gui.save_size[0], self.gui.save_size[1])
 		self.logical_size[0] = restore_size[0]
 		self.logical_size[1] = restore_size[1]
 
-		sdl3.SDL_SetWindowPosition(self.t_window, self.gui.save_position[0], self.gui.save_position[1])
+		sdl3.set_window_position(self.t_window, self.gui.save_position[0], self.gui.save_position[1])
 
 
-		sdl3.SDL_SetWindowResizable(self.t_window, True)
-		sdl3.SDL_SetWindowSize(self.t_window, self.logical_size[0], self.logical_size[1])
-		sdl3.SDL_SetWindowAlwaysOnTop(self.t_window, False)
+		sdl3.set_window_resizable(self.t_window, True)
+		sdl3.set_window_size(self.t_window, self.logical_size[0], self.logical_size[1])
+		sdl3.set_window_always_on_top(self.t_window, False)
 
 		# if self.macos:
 		# 	sdl3.SDLSetWindowMinimumSize(self.t_window, 560, 330)
 		# else:
 		if self.logical_size[0] != self.window_size[0]:
-			sdl3.SDL_SetWindowMinimumSize(self.t_window, 560, 330)
+			sdl3.set_window_minimum_size(self.t_window, 560, 330)
 		else:
-			sdl3.SDL_SetWindowMinimumSize(self.t_window, round(560 * self.gui.scale), round(330 * self.gui.scale))
+			sdl3.set_window_minimum_size(self.t_window, round(560 * self.gui.scale), round(330 * self.gui.scale))
 
 		self.restore_ignore_timer.set()  # Hacky
 
 		self.gui.mode = GuiMode.MAIN
 		self._set_wayland_mini_mode_window_state(False)
 
-		sdl3.SDL_SyncWindow(self.t_window)
-		sdl3.SDL_PumpEvents()
-		sdl3.SDL_GetWindowSize(self.t_window, i_x, i_y)
-		self.window_size[0] = i_x.contents.value
-		self.window_size[1] = i_y.contents.value
-		self.logical_size[0] = i_x.contents.value
-		self.logical_size[1] = i_y.contents.value
+		sdl3.sync_window(self.t_window)
+		sdl3.pump_events()
+		width, height = sdl3.get_window_size(self.t_window)
+		self.window_size[:] = width, height
+		self.logical_size[:] = width, height
 
 		self.inp.mouse_down = False
 		self.inp.mouse_up = False
 		self.inp.mouse_click = False
 
 		if self.gui.mini_mode_return_maximized:
-			sdl3.SDL_MaximizeWindow(self.t_window)
+			sdl3.maximize_window(self.t_window)
 			time.sleep(0.05)
-			sdl3.SDL_PumpEvents()
-			sdl3.SDL_GetWindowSize(self.t_window, i_x, i_y)
-			self.logical_size[0] = i_x.contents.value
-			self.logical_size[1] = i_y.contents.value
+			sdl3.pump_events()
+			self.logical_size[:] = sdl3.get_window_size(self.t_window)
 			self.gui.maximized = True
 		self.gui.mini_mode_return_maximized = False
 		self.mini_mode_restore_size = None
@@ -16026,21 +16006,21 @@ class Tauon:
 				while window_size[1] > gui.max_window_tex:
 					gui.max_window_tex += 1000
 
-				gui.tracklist_texture_rect = sdl3.SDL_FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
+				gui.tracklist_texture_rect = sdl3.FRect(0, 0, gui.max_window_tex, gui.max_window_tex)
 				renderer = self.renderer
-				sdl3.SDL_DestroyTexture(gui.tracklist_texture)
-				sdl3.SDL_RenderClear(renderer)
-				gui.tracklist_texture = sdl3.SDL_CreateTexture(
+				sdl3.destroy_texture(gui.tracklist_texture)
+				sdl3.render_clear(renderer)
+				gui.tracklist_texture = sdl3.create_texture(
 					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
 					gui.max_window_tex,
 					gui.max_window_tex)
 
-				sdl3.SDL_SetRenderTarget(renderer, gui.tracklist_texture)
-				sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-				sdl3.SDL_RenderClear(renderer)
+				sdl3.set_render_target(renderer, gui.tracklist_texture)
+				sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+				sdl3.render_clear(renderer)
 				# Premultiplied src-over: the texture holds premultiplied
 				# content (see creation site in main())
-				sdl3.SDL_SetTextureBlendMode(gui.tracklist_texture, sdl3.SDL_ComposeCustomBlendMode(
+				sdl3.set_texture_blend_mode(gui.tracklist_texture, sdl3.compose_custom_blend_mode(
 					sdl3.SDL_BLENDFACTOR_ONE,
 					sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 					sdl3.SDL_BLENDOPERATION_ADD,
@@ -16049,30 +16029,30 @@ class Tauon:
 					sdl3.SDL_BLENDOPERATION_ADD,
 				))
 
-				# sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-				# sdl3.SDL_RenderClear(renderer)
+				# sdl3.set_render_target(renderer, gui.main_texture)
+				# sdl3.render_clear(renderer)
 
-				sdl3.SDL_DestroyTexture(gui.main_texture)
-				gui.main_texture = sdl3.SDL_CreateTexture(
+				sdl3.destroy_texture(gui.main_texture)
+				gui.main_texture = sdl3.create_texture(
 					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
 					gui.max_window_tex,
 					gui.max_window_tex)
-				sdl3.SDL_SetTextureBlendMode(gui.main_texture, sdl3.SDL_BLENDMODE_BLEND)
-				sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-				sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-				sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-				sdl3.SDL_RenderClear(renderer)
+				sdl3.set_texture_blend_mode(gui.main_texture, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.set_render_target(renderer, gui.main_texture)
+				sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+				sdl3.set_render_target(renderer, gui.main_texture)
+				sdl3.render_clear(renderer)
 
-				sdl3.SDL_DestroyTexture(gui.main_texture_overlay_temp)
-				gui.main_texture_overlay_temp = sdl3.SDL_CreateTexture(
+				sdl3.destroy_texture(gui.main_texture_overlay_temp)
+				gui.main_texture_overlay_temp = sdl3.create_texture(
 					renderer, sdl3.SDL_PIXELFORMAT_ARGB8888,
 					sdl3.SDL_TEXTUREACCESS_TARGET, gui.max_window_tex,
 					gui.max_window_tex)
-				sdl3.SDL_SetTextureBlendMode(gui.main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
-				sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-				sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-				sdl3.SDL_SetRenderTarget(renderer, gui.main_texture_overlay_temp)
-				sdl3.SDL_RenderClear(renderer)
+				sdl3.set_texture_blend_mode(gui.main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.set_render_target(renderer, gui.main_texture_overlay_temp)
+				sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+				sdl3.set_render_target(renderer, gui.main_texture_overlay_temp)
+				sdl3.render_clear(renderer)
 
 			self.update_set()
 
@@ -16146,14 +16126,12 @@ class Tauon:
 		origin) scaled points->pixels gives the correct main-window position
 		regardless of where the (possibly compositor-repositioned) popup was.
 		"""
-		gx, gy = ctypes.c_float(0), ctypes.c_float(0)
-		sdl3.SDL_GetGlobalMouseState(ctypes.byref(gx), ctypes.byref(gy))
-		wx, wy = ctypes.c_int(0), ctypes.c_int(0)
-		sdl3.SDL_GetWindowPosition(self.t_window, ctypes.byref(wx), ctypes.byref(wy))
+		_buttons, gx, gy = sdl3.get_global_mouse_state()
+		wx, wy = sdl3.get_window_position(self.t_window)
 		logical = self.bag.logical_size
 		scale = (self.window_size[0] / logical[0]) if logical[0] else 1.0
-		self.inp.mouse_position[0] = int((gx.value - wx.value) * scale)
-		self.inp.mouse_position[1] = int((gy.value - wy.value) * scale)
+		self.inp.mouse_position[0] = int((gx - wx) * scale)
+		self.inp.mouse_position[1] = int((gy - wy) * scale)
 
 	def draw_popup_menus(self) -> None:
 		"""Render context menus, in their own popup window or inline.
@@ -16404,12 +16382,10 @@ class Tauon:
 				line = self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].artist + " - " + \
 					self.pctl.master_library[self.pctl.track_queue[self.pctl.queue_step]].title
 				# line += "   : :   Tauon Music Box"
-				line = line.encode("utf-8")
-				sdl3.SDL_SetWindowTitle(self.t_window, line)
+				sdl3.set_window_title(self.t_window, line)
 		else:
 			line = "Tauon Music Box"
-			line = line.encode("utf-8")
-			sdl3.SDL_SetWindowTitle(self.t_window, line)
+			sdl3.set_window_title(self.t_window, line)
 
 	def open_encode_out(self) -> None:
 		if not self.prefs.encoder_output.exists():
@@ -16493,7 +16469,7 @@ class Tauon:
 		self.prefs.album_mode = False
 		self.gui.rsp = True
 		self.window_size = self.window_default_size
-		sdl3.SDL_SetWindowSize(self.t_window, c_int(self.logical_size[0]), c_int(self.logical_size[1]))
+		sdl3.set_window_size(self.t_window, self.logical_size[0], self.logical_size[1])
 
 		self.gui.rspw = 80 + int(self.window_size[0] * 0.18)
 		self.gui.update_layout = True
@@ -16575,7 +16551,7 @@ class Tauon:
 			line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].album
 		else:
 			line = self.pctl.master_library[index].album_artist + " - " + self.pctl.master_library[index].album
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def ser_gen_thread(self, tr: TrackClass) -> None:
 		s_artist = tr.artist
@@ -16619,7 +16595,7 @@ class Tauon:
 	def clip_ar_tr(self, ref: MenuTrackRef) -> None:
 		index = ref.track_id
 		line = self.pctl.master_library[index].artist + " - " + self.pctl.master_library[index].title
-		sdl3.SDL_SetClipboardText(line.encode("utf-8"))
+		copy_to_clipboard(line)
 
 	def tidal_copy_album(self, ref: MenuTrackRef) -> None:
 		index = ref.track_id
@@ -18190,7 +18166,7 @@ class Tauon:
 		self.update_set()
 
 	def set_colour(self, colour: ColourRGBA) -> None:
-		sdl3.SDL_SetRenderDrawColor(self.renderer, colour.r, colour.g, colour.b, colour.a)
+		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)
 
 	# 2025-02-02 - commented out as it was not used
 	#def advance_theme() -> None:
@@ -20449,7 +20425,7 @@ class Tauon:
 				break
 
 		for key, value in self.gall_ren.gall.items():
-			sdl3.SDL_DestroyTexture(value[2])
+			sdl3.destroy_texture(value[2])
 		self.gall_ren.gall = {}
 
 		if delete_disk:
@@ -20463,7 +20439,7 @@ class Tauon:
 		self.prefs.failed_artists.clear()
 		for key, value in self.artist_list_box.thumb_cache.items():
 			if value:
-				sdl3.SDL_DestroyTexture(value[0])
+				sdl3.destroy_texture(value[0])
 		self.artist_list_box.thumb_cache.clear()
 		self.gui.request_frame()
 
@@ -20487,7 +20463,7 @@ class Tauon:
 		keys = set()
 		for key, value in self.gall_ren.gall.items():
 			if key[0] == track:
-				sdl3.SDL_DestroyTexture(value[2])
+				sdl3.destroy_texture(value[2])
 				if key not in keys:
 					keys.add(key)
 		for key in keys:
@@ -20769,18 +20745,18 @@ class Tauon:
 			if not prefs.save_window_position:
 				old_position = None
 
-			save = [
-				self.draw_border,
-				gui.save_size,
-				prefs.window_opacity,
-				gui.scale,
-				gui.maximized,
-				old_position,
-			]
-
 			if not self.fs_mode:
-				with atomic_save(self.user_directory / "window.p") as file:
-					pickle.dump(save, file, protocol=pickle.HIGHEST_PROTOCOL)
+				window_state = WindowState(
+					width=gui.save_size[0],
+					height=gui.save_size[1],
+					opacity=prefs.window_opacity,
+					scale=gui.scale,
+					borderless=self.draw_border,
+					maximized=gui.maximized,
+					position=old_position,
+				)
+				with atomic_save(self.user_directory / WINDOW_STATE_FILENAME, "w") as file:
+					file.write(serialize_window_state(window_state))
 
 			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
 				json.dump(prefs.lyrics_subs, file)
@@ -21387,7 +21363,7 @@ class Tauon:
 			return self.prefs.update_title
 
 		line = self.window_title
-		sdl3.SDL_SetWindowTitle(self.t_window, line)
+		sdl3.set_window_title(self.t_window, line)
 		self.prefs.update_title ^= True
 		if self.prefs.update_title:
 			self.update_title_do()
@@ -21497,9 +21473,9 @@ class Tauon:
 		self.draw_border ^= True
 
 		if self.draw_border:
-			sdl3.SDL_SetWindowBordered(self.t_window, False)
+			sdl3.set_window_bordered(self.t_window, False)
 		else:
-			sdl3.SDL_SetWindowBordered(self.t_window, True)
+			sdl3.set_window_bordered(self.t_window, True)
 		return None
 
 	def toggle_rounded_corners(self, mode: int = 0) -> bool | None:
@@ -22032,13 +22008,13 @@ class Tauon:
 	def do_maximize_button(self) -> None:
 		if self.gui.fullscreen:
 			self.gui.fullscreen = False
-			sdl3.SDL_SetWindowFullscreen(self.t_window, 0)
+			sdl3.set_window_fullscreen(self.t_window, 0)
 		elif self.gui.maximized:
 			self.gui.maximized = False
-			sdl3.SDL_RestoreWindow(self.t_window)
+			sdl3.restore_window(self.t_window)
 		else:
 			self.gui.maximized = True
-			sdl3.SDL_MaximizeWindow(self.t_window)
+			sdl3.maximize_window(self.t_window)
 
 		self.inp.mouse_down = False
 		self.inp.mouse_click = False
@@ -22047,11 +22023,11 @@ class Tauon:
 	def do_minimize_button(self) -> None:
 		if self.macos:
 			# hack
-			sdl3.SDL_SetWindowBordered(self.t_window, True)
-			sdl3.SDL_MinimizeWindow(self.t_window)
-			sdl3.SDL_SetWindowBordered(self.t_window, False)
+			sdl3.set_window_bordered(self.t_window, True)
+			sdl3.minimize_window(self.t_window)
+			sdl3.set_window_bordered(self.t_window, False)
 		else:
-			sdl3.SDL_MinimizeWindow(self.t_window)
+			sdl3.minimize_window(self.t_window)
 
 		self.inp.mouse_down = False
 		self.inp.mouse_click = False
@@ -22314,16 +22290,16 @@ class Tauon:
 
 	def exit(self, reason: str) -> None:
 		logging.info(f"Shutting down. Reason: {reason}")
-		if not sdl3.SDL_HideWindow(self.t_window):
-			logging.warning(f"Failed to hide window during shutdown: {sdl3.SDL_GetError()}")
-		elif not sdl3.SDL_SyncWindow(self.t_window):
-			logging.warning(f"Timed out synchronizing hidden window during shutdown: {sdl3.SDL_GetError()}")
-		sdl3.SDL_PumpEvents()
+		if not sdl3.hide_window(self.t_window):
+			logging.warning(f"Failed to hide window during shutdown: {sdl3.get_error()}")
+		elif not sdl3.sync_window(self.t_window):
+			logging.warning(f"Timed out synchronizing hidden window during shutdown: {sdl3.get_error()}")
+		sdl3.pump_events()
 		self.pctl.running = False
 		self.wake()
 
 	def min_to_tray(self) -> None:
-		sdl3.SDL_HideWindow(self.t_window)
+		sdl3.hide_window(self.t_window)
 		self.gui.mouse_unknown = True
 
 	def request_raise(self) -> None:
@@ -22331,20 +22307,21 @@ class Tauon:
 		self.wake()
 
 	def raise_window(self) -> None:
-		sdl3.SDL_ShowWindow(self.t_window)
-		sdl3.SDL_RaiseWindow(self.t_window)
-		sdl3.SDL_RestoreWindow(self.t_window)
+		sdl3.show_window(self.t_window)
+		sdl3.raise_window(self.t_window)
+		sdl3.restore_window(self.t_window)
 		self.gui.lowered = False
 		self.gui.request_frame()
 
 	def focus_window(self) -> None:
-		sdl3.SDL_RaiseWindow(self.t_window)
+		sdl3.raise_window(self.t_window)
 
 	def get_playing_playlist_id(self) -> int:
 		return self.pctl.pl_to_id(self.pctl.active_playlist_playing)
 
 	def wake(self) -> None:
-		sdl3.SDL_PushEvent(ctypes.byref(self.dummy_event))
+
+		tauon_native.wake_event_loop()
 
 class PlexService:
 
@@ -22893,18 +22870,15 @@ class DropShadow:
 
 		s_image = self.ddt.load_image(g)
 
-		c = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-		sdl3.SDL_SetTextureAlphaMod(c, self.opacity)
+		c = sdl3.create_texture_from_surface(self.renderer, s_image)
+		sdl3.set_texture_alpha_mod(c, self.opacity)
 
-		tex_w = pointer(c_float(0))
-		tex_h = pointer(c_float(0))
-		sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
+		tex_w, tex_h = sdl3.get_texture_size(c)
 
-		dst = sdl3.SDL_FRect(0, 0)
-		dst.w = int(tex_w.contents.value)
-		dst.h = int(tex_h.contents.value)
+		dst = sdl3.FRect(0, 0)
+		dst.w = int(tex_w)
+		dst.h = int(tex_h)
 
-		sdl3.SDL_DestroySurface(s_image)
 		g.close()
 		im.close()
 
@@ -22918,7 +22892,7 @@ class DropShadow:
 		unit = self.readys[(w, h)]
 		unit[0].x = round(x) - round(self.underscan)
 		unit[0].y = round(y) - round(self.underscan)
-		sdl3.SDL_RenderTexture(self.renderer, unit[1], None, unit[0])
+		sdl3.render_texture(self.renderer, unit[1], None, unit[0])
 
 def strip_lrc_formatting(lyrics: str) -> str:
 	text = ""
@@ -23465,8 +23439,8 @@ class MiniLyrics:
 				self.gui.request_frame()
 		self.view = max(low, min(high, self.view))
 
-		clip = sdl3.SDL_Rect(x, y, w, h)  # noqa: RUF057
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		clip = sdl3.Rect(x, y, w, h)  # noqa: RUF057
+		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		clicked = None
 		top = anchor - round(self.view)
 		for i, lines in enumerate(self.layouts):
@@ -23490,7 +23464,7 @@ class MiniLyrics:
 				decorate(i, entry_y, entry_h - self.gap, is_active)
 			if self.synced and self.inp.mouse_click and self.coll(self.scroll_rect) and self.coll((x, entry_y, w, entry_h)):
 				clicked = i
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, None)
 
 		if clicked is not None and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 			self.inp.mouse_click = False
@@ -23581,13 +23555,13 @@ class MultiLineTextBox:
 			height = round(20000*gui.scale)
 		width, height = max(1, round(width)), max(1, round(height))
 		try:
-			sdl3.SDL_DestroyTexture(self.text_box_canvas)
+			sdl3.destroy_texture(self.text_box_canvas)
 		except AttributeError:
 			pass # just means we're creating it 4 the first time
-		self.text_box_canvas_rect = sdl3.SDL_FRect(0, 0, width, height)
-		self.text_box_canvas = sdl3.SDL_CreateTexture(
+		self.text_box_canvas_rect = sdl3.FRect(0, 0, width, height)
+		self.text_box_canvas = sdl3.create_texture(
 			self.renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(self.text_box_canvas_rect.w), round(self.text_box_canvas_rect.h))
-		sdl3.SDL_SetTextureBlendMode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 		self.x = x
 		self.y = y
 		self.canvas_size = (width, height)
@@ -23769,16 +23743,15 @@ class MultiLineTextBox:
 		return 0
 
 	def paste(self) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
-			self.paste_text = clip
+		if has_clipboard_text():
+			self.paste_text = copy_from_clipboard()
 
 	def copy(self) -> None:
 		text = self.get_selection()
 		if not text:
 			text = self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+			copy_to_clipboard(text)
 
 	def set_text(self, text: str) -> None:
 		self.text = text
@@ -23849,18 +23822,18 @@ class MultiLineTextBox:
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
-		previous_target = sdl3.SDL_GetRenderTarget(self.renderer)
-		sdl3.SDL_SetRenderTarget(self.renderer, self.text_box_canvas)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		previous_target = sdl3.get_render_target(self.renderer)
+		sdl3.set_render_target(self.renderer, self.text_box_canvas)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
 
 		self.text_box_canvas_rect.x = 0
 		self.text_box_canvas_rect.y = 0
 		# if height != 0:
 		# 	self.text_box_canvas_rect.h = height
-		sdl3.SDL_RenderFillRect(self.renderer, self.text_box_canvas_rect)
+		sdl3.render_fill_rect(self.renderer, self.text_box_canvas_rect)
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		selection_height *= self.gui.scale
 
@@ -24025,7 +23998,7 @@ class MultiLineTextBox:
 			# Paste via ctrl-v
 			if self.inp.key_ctrl_down and self.inp.key_v_press:
 				autoscroll = True
-				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				clip = copy_from_clipboard()
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
@@ -24037,7 +24010,7 @@ class MultiLineTextBox:
 				autoscroll = True
 				text = self.get_selection()
 				if text:
-					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+					copy_to_clipboard(text)
 				self.eliminate_selection()
 
 			if self.inp.key_ctrl_down and self.inp.key_a_press:
@@ -24142,18 +24115,18 @@ class MultiLineTextBox:
 				)
 
 			pixel_to_logical = self.tauon.pixel_to_logical
-			input_area = sdl3.SDL_Rect(
+			input_area = sdl3.Rect(
 				pixel_to_logical(x), pixel_to_logical(self.y + line_y - scroll),
 				pixel_to_logical(width), pixel_to_logical(line_height)
 			)
-			sdl3.SDL_SetTextInputArea(self.t_window, input_area, pixel_to_logical(space))
+			sdl3.set_text_input_area(self.t_window, input_area, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_target(self.renderer, previous_target)
 		self.text_box_canvas_rect.x = round(x)
 		self.text_box_canvas_rect.y = round(y) - headroom
-		sdl3.SDL_RenderTexture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
+		sdl3.render_texture(self.renderer, self.text_box_canvas, None, self.text_box_canvas_rect)
 		if scroll != original_scroll:
 			self.gui.request_frame()
 		return round(scroll - original_scroll)
@@ -24180,8 +24153,8 @@ class TextBox2:
 		self.paste_text: str = ""
 
 	def paste(self) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 			self.paste_text = clip
 
 	def copy(self) -> None:
@@ -24189,7 +24162,7 @@ class TextBox2:
 		if not text:
 			text = self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+			copy_to_clipboard(text)
 
 	def set_text(self, text: str) -> None:
 		self.text = text
@@ -24241,16 +24214,16 @@ class TextBox2:
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
-		previous_target = sdl3.SDL_GetRenderTarget(self.renderer)
-		sdl3.SDL_SetRenderTarget(self.renderer, self.tauon.text_box_canvas)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+		previous_target = sdl3.get_render_target(self.renderer)
+		sdl3.set_render_target(self.renderer, self.tauon.text_box_canvas)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
 
 		self.tauon.text_box_canvas_rect.x = 0
 		self.tauon.text_box_canvas_rect.y = 0
-		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_rect)
+		sdl3.render_fill_rect(self.renderer, self.tauon.text_box_canvas_rect)
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		selection_height *= self.gui.scale
 
@@ -24374,7 +24347,7 @@ class TextBox2:
 
 			# Paste via ctrl-v
 			if self.inp.key_ctrl_down and self.inp.key_v_press:
-				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				clip = copy_from_clipboard()
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
@@ -24557,8 +24530,8 @@ class TextBox2:
 				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
-			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
+			rect = sdl3.Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.set_text_input_area(self.t_window, rect, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
 
@@ -24566,23 +24539,23 @@ class TextBox2:
 		self.tauon.text_box_canvas_hide_rect.y = 0
 
 		# if self.offset:
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 
 		self.tauon.text_box_canvas_hide_rect.w = round(self.offset)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_hide_rect)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
+		sdl3.render_fill_rect(self.renderer, self.tauon.text_box_canvas_hide_rect)
 
 		self.tauon.text_box_canvas_hide_rect.w = round(t_len)
 		self.tauon.text_box_canvas_hide_rect.x = round(self.offset + width + round(5 * self.gui.scale))
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderFillRect(self.renderer, self.tauon.text_box_canvas_hide_rect)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
+		sdl3.render_fill_rect(self.renderer, self.tauon.text_box_canvas_hide_rect)
 
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetRenderTarget(self.renderer, previous_target)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_target(self.renderer, previous_target)
 
 		self.tauon.text_box_canvas_rect.x = round(x)
 		self.tauon.text_box_canvas_rect.y = round(y) - headroom
-		sdl3.SDL_RenderTexture(self.renderer, self.tauon.text_box_canvas, None, self.tauon.text_box_canvas_rect)
+		sdl3.render_texture(self.renderer, self.tauon.text_box_canvas, None, self.tauon.text_box_canvas_rect)
 
 class TextBox:
 	# TODO(Martin): Global class var!
@@ -24603,8 +24576,8 @@ class TextBox:
 		self.down_lock: bool = False
 
 	def paste(self) -> None:
-		if sdl3.SDL_HasClipboardText():
-			clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+		if has_clipboard_text():
+			clip = copy_from_clipboard()
 
 			if "http://" in self.text and "http://" in clip:
 				self.text = ""
@@ -24621,7 +24594,7 @@ class TextBox:
 		if not text:
 			text = self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+			copy_to_clipboard(text)
 
 	def set_text(self, text: str) -> None:
 		self.text = text
@@ -24786,7 +24759,7 @@ class TextBox:
 
 			# Paste via ctrl-v
 			if inp.key_ctrl_down and inp.key_v_press:
-				clip = sdl3.SDL_GetClipboardText().decode("utf-8")
+				clip = copy_from_clipboard()
 				self.eliminate_selection()
 				self.text = self.text[0: len(self.text) - self.cursor_position] + clip + self.text[len(
 					self.text) - self.cursor_position:]
@@ -24797,7 +24770,7 @@ class TextBox:
 			if inp.key_ctrl_down and inp.key_x_press and len(self.get_selection()) > 0:
 				text = self.get_selection()
 				if text:
-					sdl3.SDL_SetClipboardText(text.encode("utf-8"))
+					copy_to_clipboard(text)
 				self.eliminate_selection()
 
 			if inp.key_ctrl_down and inp.key_a_press:
@@ -24958,8 +24931,8 @@ class TextBox:
 					ColourRGBA(245, 245, 245, 255))
 
 			pixel_to_logical = self.tauon.pixel_to_logical
-			rect = sdl3.SDL_Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.SDL_SetTextInputArea(self.t_window, rect, pixel_to_logical(space))
+			rect = sdl3.Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
+			sdl3.set_text_input_area(self.t_window, rect, pixel_to_logical(space))
 
 		self.tauon.animate_monitor_timer.set()
 
@@ -24991,7 +24964,7 @@ class AlbumArt:
 		self.windows: bool                 = tauon.windows
 		self.macos: bool                = tauon.macos
 		self.prefs: Prefs                = tauon.prefs
-		self.temp_dest: sdl3.SDL_FRect            = tauon.temp_dest
+		self.temp_dest: sdl3.FRect            = tauon.temp_dest
 		self.a_cache_directory: Path    = tauon.dirs.a_cache_directory
 		self.b_cache_directory: Path    = tauon.dirs.b_cache_directory
 		self.style_overlay: StyleOverlay        = style_overlay
@@ -25224,7 +25197,7 @@ class AlbumArt:
 		self.temp_dest.y = int((box[1] - self.temp_dest.h) / 2) + self.temp_dest.y
 
 		# render the image
-		sdl3.SDL_RenderTexture(self.renderer, self.current_frame(unit, animate), None, self.temp_dest)
+		sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, self.temp_dest)
 		self.style_overlay.hole_punches.append(self.temp_dest)
 
 		self.gui.art_drawn_rect = (self.temp_dest.x, self.temp_dest.y, self.temp_dest.w, self.temp_dest.h)
@@ -26146,19 +26119,16 @@ class AlbumArt:
 		textures = []
 		for g in g_list:
 			s_image = self.ddt.load_image(g)
-			textures.append(sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image))
-			sdl3.SDL_DestroySurface(s_image)
+			textures.append(sdl3.create_texture_from_surface(self.renderer, s_image))
 			g.close()
 
 		c = textures[0]
 
-		tex_w = pointer(c_float(0))
-		tex_h = pointer(c_float(0))
-		sdl3.SDL_GetTextureSize(c, tex_w, tex_h)
+		tex_w, tex_h = sdl3.get_texture_size(c)
 
-		dst = sdl3.SDL_FRect(round(location[0]), round(location[1]))
-		dst.w = int(tex_w.contents.value)
-		dst.h = int(tex_h.contents.value)
+		dst = sdl3.FRect(round(location[0]), round(location[1]))
+		dst.w = int(tex_w)
+		dst.h = int(tex_h)
 
 		unit = ImageObject()
 		unit.index = index
@@ -26191,10 +26161,10 @@ class AlbumArt:
 		"""Free a cached unit's texture, or all of its frames' if it is animated"""
 		if unit.frame_textures:
 			for texture in unit.frame_textures:
-				sdl3.SDL_DestroyTexture(texture)
+				sdl3.destroy_texture(texture)
 			unit.frame_textures = None
 		elif unit.texture is not None:
-			sdl3.SDL_DestroyTexture(unit.texture)
+			sdl3.destroy_texture(unit.texture)
 		unit.texture = None
 
 	def current_frame(self, unit: ImageObject, animate: bool) -> sdl3.LP_SDL_Texture:
@@ -26254,7 +26224,7 @@ class AlbumArt:
 
 		self.tauon.style_overlay.hole_punches.append(rect)
 
-		sdl3.SDL_RenderTexture(self.renderer, self.current_frame(unit, animate), None, rect)
+		sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, rect)
 
 		self.gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
@@ -26326,7 +26296,7 @@ class StyleOverlay:
 		self.window_size_int = None
 		self.parent_path = None
 
-		self.hole_punches: list[sdl3.SDL_FRect] = []
+		self.hole_punches: list[sdl3.FRect] = []
 		#self.hole_refills = []
 
 		# Small copy of the processed blur image for sampling local colour
@@ -26396,13 +26366,12 @@ class StyleOverlay:
 
 	def flush(self) -> None:
 		if self.a_texture is not None:
-			sdl3.SDL_DestroyTexture(self.a_texture)
+			sdl3.destroy_texture(self.a_texture)
 			self.a_texture = None
 		if self.b_texture is not None:
-			sdl3.SDL_DestroyTexture(self.b_texture)
+			sdl3.destroy_texture(self.b_texture)
 			self.b_texture = None
 		if self.surface is not None:
-			sdl3.SDL_DestroySurface(self.surface)
 			self.surface = None
 		self.sample_a = None
 		self.sample_b = None
@@ -26539,17 +26508,16 @@ class StyleOverlay:
 			# The surface was decoded on the worker thread; only the texture
 			# upload happens here. (Streaming the upload in strips across
 			# frames was tried and made things worse: on Metal every
-			# mid-frame SDL_UpdateTexture splits the render pass, turning
+			# mid-frame update_texture splits the render pass, turning
 			# one stall into many.)
-			surf = self.surface.contents
+			surf = self.surface
 
-			c = sdl3.SDL_CreateTextureFromSurface(self.renderer, self.surface)
+			c = sdl3.create_texture_from_surface(self.renderer, self.surface)
 
-			dst = sdl3.SDL_FRect(-40)
-			dst.w = surf.w
-			dst.h = surf.h
+			dst = sdl3.FRect(-40)
+			dst.w = surf.width
+			dst.h = surf.height
 
-			sdl3.SDL_DestroySurface(self.surface)
 			self.surface = None
 
 			self.fade_on_timer.set()
@@ -26598,9 +26566,9 @@ class StyleOverlay:
 
 		t = self.fade_on_timer.get()
 		if not background:
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
-			sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 255)
-			sdl3.SDL_RenderClear(self.renderer)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture_overlay_temp)
+			sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 255)
+			sdl3.render_clear(self.renderer)
 
 		if self.a_texture is not None and self.window_size_int != self.window_size:
 			self.flush()
@@ -26615,14 +26583,14 @@ class StyleOverlay:
 				if background:
 					# The alpha mod may be left over from when this was the
 					# fading-in front texture
-					sdl3.SDL_SetTextureAlphaMod(self.b_texture, 255)
-				sdl3.SDL_RenderTexture(self.renderer, self.b_texture, None, self.b_rect)
+					sdl3.set_texture_alpha_mod(self.b_texture, 255)
+				sdl3.render_texture(self.renderer, self.b_texture, None, self.b_rect)
 
 			elif t > 0.55:
 				# Deferred a beat past the fade's end: releasing a large
 				# texture on the same frame the animation lands is a
 				# visible hitch
-				sdl3.SDL_DestroyTexture(self.b_texture)
+				sdl3.destroy_texture(self.b_texture)
 				self.b_texture = None
 				self.b_rect = None
 			else:
@@ -26682,35 +26650,35 @@ class StyleOverlay:
 				# (set in update_layout_do) controls how strongly it shows
 				# through, so no whole-window opacity pass or hole punching
 				# is needed.
-				sdl3.SDL_SetTextureAlphaMod(self.a_texture, fade)
-				sdl3.SDL_RenderTexture(self.renderer, self.a_texture, None, self.a_rect)
+				sdl3.set_texture_alpha_mod(self.a_texture, fade)
+				sdl3.render_texture(self.renderer, self.a_texture, None, self.a_rect)
 				return
 
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture_overlay_temp)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture_overlay_temp)
 
-			sdl3.SDL_SetTextureAlphaMod(self.a_texture, fade)
-			sdl3.SDL_RenderTexture(self.renderer, self.a_texture, None, self.a_rect)
+			sdl3.set_texture_alpha_mod(self.a_texture, fade)
+			sdl3.render_texture(self.renderer, self.a_texture, None, self.a_rect)
 
-			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 
-			sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
+			sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
 			for rect in self.hole_punches:
-				sdl3.SDL_RenderFillRect(self.renderer, rect)
+				sdl3.render_fill_rect(self.renderer, rect)
 
-			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture)
 			opacity = self.prefs.art_bg_opacity
 			if self.prefs.mini_mode_mode == MiniModeMode.SLATE and self.gui.mode == GuiMode.MINI:
 				opacity = 255
 
-			sdl3.SDL_SetTextureAlphaMod(self.gui.main_texture_overlay_temp, opacity)
-			sdl3.SDL_RenderTexture(self.renderer, self.gui.main_texture_overlay_temp, None, None)
+			sdl3.set_texture_alpha_mod(self.gui.main_texture_overlay_temp, opacity)
+			sdl3.render_texture(self.renderer, self.gui.main_texture_overlay_temp, None, None)
 
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture)
 
 		elif not background:
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture)
 
 class ToolTip:
 
@@ -29332,16 +29300,16 @@ class Over:
 
 	def destroy_settings_texture(self) -> None:
 		if self.settings_doc_texture is not None:
-			sdl3.SDL_DestroyTexture(self.settings_doc_texture)
+			sdl3.destroy_texture(self.settings_doc_texture)
 			self.settings_doc_texture = None
 			self.settings_doc_texture_size = (0, 0)
 
 	def destroy_theme_editor_gradient_textures(self) -> None:
 		if self.theme_editor_sv_texture is not None:
-			sdl3.SDL_DestroyTexture(self.theme_editor_sv_texture)
+			sdl3.destroy_texture(self.theme_editor_sv_texture)
 			self.theme_editor_sv_texture = None
 		if self.theme_editor_hue_texture is not None:
-			sdl3.SDL_DestroyTexture(self.theme_editor_hue_texture)
+			sdl3.destroy_texture(self.theme_editor_hue_texture)
 			self.theme_editor_hue_texture = None
 		self.theme_editor_sv_texture_key = None
 		self.theme_editor_hue_texture_key = None
@@ -29351,14 +29319,14 @@ class Over:
 			return self.settings_doc_texture
 
 		self.destroy_settings_texture()
-		self.settings_doc_texture = sdl3.SDL_CreateTexture(
+		self.settings_doc_texture = sdl3.create_texture(
 			self.renderer,
 			sdl3.SDL_PIXELFORMAT_ARGB8888,
 			sdl3.SDL_TEXTUREACCESS_TARGET,
 			size[0],
 			size[1],
 		)
-		sdl3.SDL_SetTextureBlendMode(self.settings_doc_texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_blend_mode(self.settings_doc_texture, sdl3.SDL_BLENDMODE_BLEND)
 		self.settings_doc_texture_size = size
 		return self.settings_doc_texture
 
@@ -29742,27 +29710,18 @@ class Over:
 		)
 
 	def theme_editor_texture_from_pixels(self, width: int, height: int, pixel_bytes: bytes) -> sdl3.LP_SDL_Texture | None:
-		buffer = ctypes.create_string_buffer(pixel_bytes)
-		surface = sdl3.SDL_CreateSurfaceFrom(
-			width,
-			height,
-			sdl3.SDL_PIXELFORMAT_ARGB8888,
-			ctypes.cast(buffer, c_void_p),
-			width * 4,
-		)
-		texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, surface)
-		sdl3.SDL_DestroySurface(surface)
+		texture = sdl3.create_texture_from_argb(self.renderer, width, height, pixel_bytes, width * 4)
 		if texture is not None:
-			sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
-			if hasattr(sdl3, "SDL_SetTextureScaleMode") and hasattr(sdl3, "SDL_SCALEMODE_LINEAR"):
-				sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+			sdl3.set_texture_blend_mode(texture, sdl3.SDL_BLENDMODE_BLEND)
+			if hasattr(sdl3, "set_texture_scale_mode") and hasattr(sdl3, "SDL_SCALEMODE_LINEAR"):
+				sdl3.set_texture_scale_mode(texture, sdl3.SDL_SCALEMODE_LINEAR)
 		return texture
 
 	def render_theme_editor_texture(self, texture, rect: tuple[int, int, int, int]) -> None:
 		if texture is None:
 			return
-		dest_rect = sdl3.SDL_FRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
-		sdl3.SDL_RenderTexture(self.renderer, texture, None, dest_rect)
+		dest_rect = sdl3.FRect(float(rect[0]), float(rect[1]), float(rect[2]), float(rect[3]))
+		sdl3.render_texture(self.renderer, texture, None, dest_rect)
 
 	def ensure_theme_editor_sv_texture(self, width: int, height: int, hue: float):
 		downscale = 10
@@ -29773,7 +29732,7 @@ class Over:
 			return self.theme_editor_sv_texture
 
 		if self.theme_editor_sv_texture is not None:
-			sdl3.SDL_DestroyTexture(self.theme_editor_sv_texture)
+			sdl3.destroy_texture(self.theme_editor_sv_texture)
 			self.theme_editor_sv_texture = None
 
 		source_width = max(1, width // downscale)
@@ -29801,7 +29760,7 @@ class Over:
 			return self.theme_editor_hue_texture
 
 		if self.theme_editor_hue_texture is not None:
-			sdl3.SDL_DestroyTexture(self.theme_editor_hue_texture)
+			sdl3.destroy_texture(self.theme_editor_hue_texture)
 			self.theme_editor_hue_texture = None
 
 		source_width = max(1, width // downscale)
@@ -33450,12 +33409,12 @@ class Over:
 		doc_w = content_w - pad * 2 - scrollbar_w
 
 		texture = self.ensure_settings_texture((max(1, int(self.window_size[0])), max(1, int(self.window_size[1]))))
-		current_target = sdl3.SDL_GetRenderTarget(self.renderer)
-		sdl3.SDL_SetRenderTarget(self.renderer, texture)
+		current_target = sdl3.get_render_target(self.renderer)
+		sdl3.set_render_target(self.renderer, texture)
 		if self.settings_needs_survey:
 			self.survey_settings(doc_x, doc_w)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(self.renderer)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
+		sdl3.render_clear(self.renderer)
 
 		max_scroll = self.sync_settings_content_scroll(view_rect, self.settings_doc_height)
 		doc_origin = body_y + pad - round(self.settings_content_scroll)
@@ -33475,9 +33434,9 @@ class Over:
 			self.settings_clip = None
 		self.settings_doc_height = doc_h + pad * 2
 
-		sdl3.SDL_SetRenderTarget(self.renderer, current_target)
-		src_rect = sdl3.SDL_FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
-		sdl3.SDL_RenderTexture(self.renderer, texture, src_rect, src_rect)
+		sdl3.set_render_target(self.renderer, current_target)
+		src_rect = sdl3.FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
+		sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
 
 		# Jumps requested by the sidebar or a search result
 		pending = self.settings_pending_scroll
@@ -34850,9 +34809,9 @@ class BottomBarType1:
 		# Replace pixels (for window transparency) unless the art background
 		# is underneath, in which case blend over it
 		if not self.gui.have_art_bg:
-			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		# Let the grey furniture inherit a hint of the local art hue/saturation
 		so = tauon.style_overlay
@@ -35654,9 +35613,9 @@ class BottomBarType_ao1:
 		# Replace pixels (for window transparency) unless the art background
 		# is underneath, in which case blend over it
 		if not self.gui.have_art_bg:
-			sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
-		sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 		right_offset = 0
 		if self.gui.display_time_mode >= 2:
@@ -36407,7 +36366,7 @@ class MiniMode3:
 		track = self.pctl.playing_object()
 		wid = (w // 2) + round(60 * self.gui.scale)
 		ins = (self.window_size[0] - wid) / 2
-		art_rect = sdl3.SDL_FRect(round(ins), round(ins), round(wid), round(wid))
+		art_rect = sdl3.FRect(round(ins), round(ins), round(wid), round(wid))
 		self.tauon.style_overlay.hole_punches.clear()
 		if track is not None:
 			self.tauon.style_overlay.hole_punches.append(art_rect)
@@ -37816,9 +37775,9 @@ class StandardPlaylist:
 		cv = 0  # update gui.playlist_current_visible_tracks
 
 		# Draw the background
-		sdl3.SDL_SetRenderTarget(self.renderer, gui.tracklist_texture)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(self.renderer)
+		sdl3.set_render_target(self.renderer, gui.tracklist_texture)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
+		sdl3.render_clear(self.renderer)
 
 		rect = (left, gui.panelY, width, window_size[1] - (gui.panelBY + gui.panelY))
 
@@ -39006,7 +38965,7 @@ class StandardPlaylist:
 				self.inp.mouse_position[1] < window_size[1] - 55 and width + left > self.inp.mouse_position[0] > gui.playlist_left + 15):
 			tauon.playlist_menu.activate()
 
-		sdl3.SDL_SetRenderTarget(self.renderer, gui.main_texture)
+		sdl3.set_render_target(self.renderer, gui.main_texture)
 		self._blit_tracklist()
 
 		if self.inp.mouse_down is False:
@@ -39038,7 +38997,7 @@ class StandardPlaylist:
 			cut = bar_top + gui.set_height - cy
 			cy += cut
 			ch -= cut
-		r = sdl3.SDL_FRect(round(cx), round(cy), round(cw), round(ch))
+		r = sdl3.FRect(round(cx), round(cy), round(cw), round(ch))
 		# The texture already carries the tracklist's own translucent panel
 		# fill. Custom Layout paints a base fill across the window before the
 		# widgets draw, so blending over it would stack a second layer and the
@@ -39047,7 +39006,7 @@ class StandardPlaylist:
 		# background, where the art below is meant to show through.)
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
-		sdl3.SDL_RenderTexture(self.renderer, self.gui.tracklist_texture, r, r)
+		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
 	def cache_render(self) -> None:
 		self.update_album_rating_hover()
@@ -39395,7 +39354,7 @@ class ScrollBox:
 					self.held = True
 
 					# p_y = pointer(c_int(0))
-					# sdl3.SDL_GetGlobalMouseState(None, p_y)
+					# sdl3.get_global_mouse_state(None, p_y)
 					self.input_sdl.mouse_capture_want = True
 					self.source_click_y = self.inp.mouse_position[1]
 					self.source_bar_y = position
@@ -41084,7 +41043,7 @@ class PlaylistBox:
 		if self._chevron is not None:
 			if self._chevron[0] == size:
 				return self._chevron[1]
-			sdl3.SDL_DestroyTexture(self._chevron[1])
+			sdl3.destroy_texture(self._chevron[1])
 
 		surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
 		context = cairo.Context(surface)
@@ -41106,13 +41065,9 @@ class PlaylistBox:
 		data[0::4] = b"\xff" * pixels
 		data[1::4] = b"\xff" * pixels
 		data[2::4] = b"\xff" * pixels
-		buffer = ctypes.create_string_buffer(bytes(data))
-		sdl_surface = sdl3.SDL_CreateSurfaceFrom(
-			size, size, sdl3.SDL_PIXELFORMAT_ARGB8888, ctypes.cast(buffer, c_void_p), surface.get_stride())
-		texture = sdl3.SDL_CreateTextureFromSurface(self.ddt.renderer, sdl_surface)
-		sdl3.SDL_DestroySurface(sdl_surface)
-		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+		texture = sdl3.create_texture_from_argb(self.ddt.renderer, size, size, data, surface.get_stride())
+		sdl3.set_texture_blend_mode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_scale_mode(texture, sdl3.SDL_SCALEMODE_LINEAR)
 		self._chevron = (size, texture)
 		return texture
 
@@ -41120,10 +41075,10 @@ class PlaylistBox:
 		"""Draw the folder chevron centred on a point; 0 points right, 90 down."""
 		size = max(6, round(10 * self.gui.scale))
 		texture = self.chevron_texture(size)
-		sdl3.SDL_SetTextureColorMod(texture, colour.r, colour.g, colour.b)
-		sdl3.SDL_SetTextureAlphaMod(texture, colour.a)
-		dst = sdl3.SDL_FRect(round(cx - size / 2), round(cy - size / 2), size, size)
-		sdl3.SDL_RenderTextureRotated(self.ddt.renderer, texture, None, dst, ctypes.c_double(angle), None, sdl3.SDL_FLIP_NONE)
+		sdl3.set_texture_color_mod(texture, colour.r, colour.g, colour.b)
+		sdl3.set_texture_alpha_mod(texture, colour.a)
+		dst = sdl3.FRect(round(cx - size / 2), round(cy - size / 2), size, size)
+		sdl3.render_texture_rotated(self.ddt.renderer, texture, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
 
 	def chevron_angle(self, folder: PlaylistFolder) -> float:
 		"""Folder chevron angle, turning towards its collapsed or open position."""
@@ -41710,7 +41665,7 @@ class ArtistList:
 		self.current_album_counts: dict[str, list[str]] = {}
 		self.current_artist_track_counts: dict[str, int] = {}
 
-		self.thumb_cache: dict[str, list[sdl3.LP_SDL_Texture | sdl3.SDL_FRect] | None] = {}
+		self.thumb_cache: dict[str, list[sdl3.LP_SDL_Texture | sdl3.FRect] | None] = {}
 
 		self.to_fetch = ""
 		self.to_fetch_mbid_a = ""
@@ -41761,14 +41716,11 @@ class ArtistList:
 				g.seek(0)
 
 				s_image = self.ddt.load_image(g)
-				texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-				sdl3.SDL_DestroySurface(s_image)
-				tex_w = pointer(c_float(0))
-				tex_h = pointer(c_float(0))
-				sdl3.SDL_GetTextureSize(texture, tex_w, tex_h)
-				rect = sdl3.SDL_FRect(0, 0)
-				rect.w = int(tex_w.contents.value)
-				rect.h = int(tex_h.contents.value)
+				texture = sdl3.create_texture_from_surface(self.renderer, s_image)
+				tex_w, tex_h = sdl3.get_texture_size(texture)
+				rect = sdl3.FRect(0, 0)
+				rect.w = int(tex_w)
+				rect.h = int(tex_h)
 
 				self.thumb_cache[artist] = [texture, rect]
 			except Exception:
@@ -42002,7 +41954,7 @@ class ArtistList:
 			tab_rect = (x, y - round(2 * self.gui.scale), round(190 * self.gui.scale), self.tab_h - round(1 * self.gui.scale))
 
 			for r in subtract_rect(tab_rect, rect):
-				r = sdl3.SDL_FRect(r[0], r[1], r[2], r[3])
+				r = sdl3.FRect(r[0], r[1], r[2], r[3])
 				self.tauon.style_overlay.hole_punches.append(r)
 
 			self.ddt.rect(tab_rect, back_colour_2)
@@ -42049,10 +42001,10 @@ class ArtistList:
 			if thumb is not None:
 				thumb[1].x = thumb_x
 				thumb[1].y = round(y)
-				sdl3.SDL_RenderTexture(self.renderer, thumb[0], None, thumb[1])
+				sdl3.render_texture(self.renderer, thumb[0], None, thumb[1])
 				drawn = True
 				if self.prefs.art_bg:
-					rect = sdl3.SDL_FRect(thumb_x, round(y), self.thumb_size, self.thumb_size)
+					rect = sdl3.FRect(thumb_x, round(y), self.thumb_size, self.thumb_size)
 					if (rect.y + rect.h) > self.window_size[1] - self.gui.panelBY:
 						diff = (rect.y + rect.h) - (self.window_size[1] - self.gui.panelBY)
 						rect.h -= round(diff)
@@ -43900,8 +43852,8 @@ class QueueBox:
 			self.ddt.rect((x + w - 24 * scale, y + 16 * scale, 3 * scale, 9 * scale), ColourRGBA(230, 190, 0, 255))
 			self.ddt.rect((x + w - 19 * scale, y + 16 * scale, 3 * scale, 9 * scale), ColourRGBA(230, 190, 0, 255))
 
-		clip = sdl3.SDL_Rect(round(x), round(list_top), round(w), round(list_bottom - list_top))  # noqa: RUF057
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		clip = sdl3.Rect(round(x), round(list_top), round(w), round(list_bottom - list_top))  # noqa: RUF057
+		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		for item, parent, row_y, _row_h in rows:
 			if item.uuid_int == self.dragging and self.drag_moved:
 				continue
@@ -43911,7 +43863,7 @@ class QueueBox:
 				self.draw_child_card(x, row_y, w, track, item, draw_back=selected)
 			else:
 				self.draw_card(x, y, w, h, row_y, track, item, selected)
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, None)
 
 		if drop is not None:
 			album_id, marker_y = drop
@@ -44112,14 +44064,14 @@ class MetaBox:
 		# lines would show through the album art box
 		# The annotations say int, but the panel geometry arrives scaled
 		# (gui.rspw is a float), so these do need rounding
-		clip = sdl3.SDL_Rect(round(x), round(y), round(w), round(h))  # noqa: RUF057
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		clip = sdl3.Rect(round(x), round(y), round(w), round(h))  # noqa: RUF057
+		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		self.lyrics_ren_mini.render(
 			self.pctl.track_queue[self.pctl.queue_step], x + margin,
 			y + self.lyrics_ren_mini.lyrics_position + 13 * self.gui.scale,
 			w - 50 * self.gui.scale,
 			None, 0)
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, None)
 
 		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
@@ -44354,19 +44306,16 @@ class PictureRender:
 
 		if self.image_data is not None:
 			if self.texture is not None:
-				sdl3.SDL_DestroyTexture(self.texture)
+				sdl3.destroy_texture(self.texture)
 
 			# Convert raw image to sdl texture
 			#logging.info("Create Texture")
 			s_image = self.ddt.load_image(self.image_data)
-			self.texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, s_image)
-			sdl3.SDL_DestroySurface(s_image)
-			tex_w = pointer(c_float(0))
-			tex_h = pointer(c_float(0))
-			sdl3.SDL_GetTextureSize(self.texture, tex_w, tex_h)
-			self.srect = sdl3.SDL_FRect(round(x), round(y))
-			self.srect.w = int(tex_w.contents.value)
-			self.srect.h = int(tex_h.contents.value)
+			self.texture = sdl3.create_texture_from_surface(self.renderer, s_image)
+			tex_w, tex_h = sdl3.get_texture_size(self.texture)
+			self.srect = sdl3.FRect(round(x), round(y))
+			self.srect.w = int(tex_w)
+			self.srect.h = int(tex_h)
 			self.image_data = None
 
 		if self.texture is not None:
@@ -44376,7 +44325,7 @@ class PictureRender:
 				self.srect.w = round(w)
 			if h is not None:
 				self.srect.h = round(h)
-			sdl3.SDL_RenderTexture(self.renderer, self.texture, None, self.srect)
+			sdl3.render_texture(self.renderer, self.texture, None, self.srect)
 			self.tauon.style_overlay.hole_punches.append(self.srect)
 
 @dataclass
@@ -45399,21 +45348,18 @@ class RadioThumbGen:
 				self.thread_manager.ready("radio-thumb")
 			return 0
 		if r[0] == 2:
-			texture = sdl3.SDL_CreateTextureFromSurface(self.renderer, r[3])
-			sdl3.SDL_DestroySurface(r[3])
-			tex_w = pointer(c_float(0))
-			tex_h = pointer(c_float(0))
-			sdl3.SDL_GetTextureSize(texture, tex_w, tex_h)
-			rect = sdl3.SDL_FRect(0, 0)
-			rect.w = int(tex_w.contents.value)
-			rect.h = int(tex_h.contents.value)
+			texture = sdl3.create_texture_from_surface(self.renderer, r[3])
+			tex_w, tex_h = sdl3.get_texture_size(texture)
+			rect = sdl3.FRect(0, 0)
+			rect.w = int(tex_w)
+			rect.h = int(tex_h)
 			r[2] = texture
 			r[1] = rect
 			r[0] = 1
 		if r[0] == 1:
 			r[1].x = round(x)
 			r[1].y = round(y)
-			sdl3.SDL_RenderTexture(self.renderer, r[2], None, r[1])
+			sdl3.render_texture(self.renderer, r[2], None, r[1])
 			return 1
 		return 0
 
@@ -45975,8 +45921,8 @@ class RadioView:
 		if return_pressed and query and countries:
 			selected_entry = countries[0]
 
-		clip = sdl3.SDL_Rect(*list_rect)
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(clip))
+		clip = sdl3.Rect(*list_rect)
+		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		row_y = list_rect[1]
 		for name, code, station_count in entries[start:start + visible + 1]:
 			row = (list_rect[0], row_y, list_rect[2] - round(7 * s), row_h)
@@ -46009,7 +45955,7 @@ class RadioView:
 				selected_entry = (name, code, station_count)
 				self.inp.mouse_click = False
 			row_y += row_h
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, None)
 
 		if len(entries) > visible:
 			track_x = list_rect[0] + list_rect[2] - round(3 * s)
@@ -46118,8 +46064,8 @@ class RadioView:
 		start = int(scroll)
 		y = rect[1] - (scroll - start) * stride
 		insert = None
-		list_clip = sdl3.SDL_Rect(rect[0], rect[1], rect[2], rect[3])
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(list_clip))
+		list_clip = sdl3.Rect(rect[0], rect[1], rect[2], rect[3])
+		sdl3.set_render_clip_rect(self.tauon.renderer, list_clip)
 		for index in range(start, len(radios)):
 			if y >= rect[1] + rect[3]:
 				break
@@ -46249,7 +46195,7 @@ class RadioView:
 				elif not discover:
 					insert = index
 			y += stride
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, None)
 
 		if self.drag:
 			self.gui.update_on_drag = True
@@ -46433,9 +46379,9 @@ class RadioView:
 			self.draw_filter_popover()
 
 def get_renderer_name(renderer: sdl3.LP_SDL_Renderer) -> str | None:
-	renderer_name = sdl3.SDL_GetRendererName(renderer)
+	renderer_name = sdl3.get_renderer_name(renderer)
 	if not renderer_name:
-		logging.warning(f"SDL_GetRendererName failed: {sdl3.SDL_GetError()}")
+		logging.warning(f"get_renderer_name failed: {sdl3.get_error()}")
 		return None
 
 	if isinstance(renderer_name, bytes):
@@ -46547,6 +46493,15 @@ except Exception:
 	milky_error = "PyOpenGL failed to load"
 
 
+def in_macos_bundle() -> bool:
+	"""Whether this is a macOS app bundle, which loads only its own libraries.
+
+	Its hardened runtime rejects libraries signed by anyone else, and it
+	shouldn't touch a Homebrew install on the user's Mac.
+	"""
+	return sys.platform == "darwin" and tauon_native.bundled_library_directory() is not None
+
+
 def find_projectm_library() -> str | None:
 	if sys.platform == "win32":
 		module_dir = Path(__file__).resolve().parents[2]
@@ -46556,20 +46511,51 @@ def find_projectm_library() -> str | None:
 				if path.is_file():
 					return str(path)
 	if sys.platform == "darwin":
-		base_dirs = [Path(sys.executable).parent]
-		if hasattr(sys, "_MEIPASS"):
-			# PyInstaller bundle: dylibs land in Contents/Frameworks
-			base_dirs.append(Path(sys._MEIPASS))
+		base_dirs = [Path(tauon_native.executable_directory()), Path(sys.executable).parent]
+		if not in_macos_bundle():
+			# find_library() only searches ~/lib, /usr/local/lib, /lib and
+			# /usr/lib, so name the usual install prefixes
+			base_dirs += [Path.home() / ".local" / "lib", Path("/opt/homebrew/lib"), Path("/usr/local/lib")]
 		for base_dir in base_dirs:
 			for dylib_name in ("libprojectM-4.4.dylib", "libprojectM-4.dylib"):
 				path = base_dir / dylib_name
 				if path.is_file():
 					return str(path)
+		if in_macos_bundle():
+			return None
 	for lib_name in ("projectM-4", "libprojectM-4-4", "libprojectM-4"):
 		path = ctypes.util.find_library(lib_name)
 		if path:
 			return path
 	return None
+
+
+def load_shared_library(name: str, fallback_names: tuple[str, ...]) -> CDLL:
+	"""Load lib<name>, preferring the bundle's copy over the system's.
+
+	find_library() doesn't search the bundle. A macOS bundle uses only its own
+	copy; bare names would also search /usr/local/lib.
+	"""
+	candidates: list[str] = []
+	bundled_directory = tauon_native.bundled_library_directory()
+	if bundled_directory:
+		candidates.extend(
+			str(path)
+			for path in sorted(Path(bundled_directory).glob(f"lib{name}[.-]*"))
+			if path.suffix in (".dll", ".dylib") or ".so" in path.suffixes
+		)
+	if not in_macos_bundle():
+		found = ctypes.util.find_library(name)
+		if found:
+			candidates.append(found)
+		candidates.extend(fallback_names)
+	error: OSError | None = None
+	for candidate in dict.fromkeys(candidates):
+		try:
+			return ctypes.CDLL(candidate)
+		except OSError as e:
+			error = e
+	raise OSError(f"Unable to load lib{name}") from error
 
 
 if not find_projectm_library():
@@ -46761,23 +46747,23 @@ class ProjectM:
 			logging.info(f"Set projectm texture paths: {path_bytes}")
 
 	def create_own_context(self) -> bool:
-		self.renderer_gl_context = sdl3.SDL_GL_GetCurrentContext()
-		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
-		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_MINOR_VERSION, 3)
-		sdl3.SDL_GL_SetAttribute(sdl3.SDL_GL_CONTEXT_PROFILE_MASK, sdl3.SDL_GL_CONTEXT_PROFILE_CORE)
-		self.own_gl_context = sdl3.SDL_GL_CreateContext(self.tauon.t_window)
+		self.renderer_gl_context = sdl3.gl_get_current_context()
+		sdl3.gl_set_attribute(sdl3.SDL_GL_CONTEXT_MAJOR_VERSION, 3)
+		sdl3.gl_set_attribute(sdl3.SDL_GL_CONTEXT_MINOR_VERSION, 3)
+		sdl3.gl_set_attribute(sdl3.SDL_GL_CONTEXT_PROFILE_MASK, sdl3.SDL_GL_CONTEXT_PROFILE_CORE)
+		self.own_gl_context = sdl3.gl_create_context(self.tauon.t_window)
 		if not self.own_gl_context:
-			logging.error(f"Failed to create core profile GL context for projectM: {sdl3.SDL_GetError()}")
+			logging.error(f"Failed to create core profile GL context for projectM: {sdl3.get_error()}")
 			return False
-		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+		sdl3.gl_make_current(self.tauon.t_window, self.own_gl_context)
 		return True
 
 	def make_own_context_current(self) -> None:
-		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.own_gl_context)
+		sdl3.gl_make_current(self.tauon.t_window, self.own_gl_context)
 
 	def restore_renderer_context(self) -> None:
 		if self.renderer_gl_context:
-			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, self.renderer_gl_context)
+			sdl3.gl_make_current(self.tauon.t_window, self.renderer_gl_context)
 
 	@staticmethod
 	def prepare_opengl() -> None:
@@ -47071,16 +47057,16 @@ class Milky:
 		w = int(self.tauon.gui.main_art_box[2])
 		h = int(self.tauon.gui.main_art_box[3])
 
-		sdl3.SDL_SetRenderTarget(self.renderer, self.render_texture)
+		sdl3.set_render_target(self.renderer, self.render_texture)
 
 		# Burned into the visualiser's own texture once, so it holds a single
 		# frame of animated art rather than driving the animation itself
 		self.tauon.album_art_gen.display(target_track, (0, 0), (w, h), fast=False, animate=False)
-		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+		sdl3.set_render_target(self.renderer, self.gui.main_texture)
 
-		sdl3.SDL_FlushRenderer(self.renderer)
-		context = sdl3.SDL_GL_GetCurrentContext()
-		sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+		sdl3.flush_renderer(self.renderer)
+		context = sdl3.gl_get_current_context()
+		sdl3.gl_make_current(self.tauon.t_window, context)
 		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
 
 		glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
@@ -47113,26 +47099,26 @@ class Milky:
 		w = self.tauon.gui.main_art_box[2]
 		h = self.tauon.gui.main_art_box[3]
 
-		srect = sdl3.SDL_FRect(x, y, w, h)
+		srect = sdl3.FRect(x, y, w, h)
 
 		#print(f"OpenGL Version: {glGetString(GL_VERSION).decode()}")
 
 		if not self.ready:
-			saved_target = sdl3.SDL_GetRenderTarget(self.renderer)
-			sdl3.SDL_SetRenderTarget(self.renderer, None)
-			sdl3.SDL_FlushRenderer(self.renderer)
-			context = sdl3.SDL_GL_GetCurrentContext()
+			saved_target = sdl3.get_render_target(self.renderer)
+			sdl3.set_render_target(self.renderer, None)
+			sdl3.flush_renderer(self.renderer)
+			context = sdl3.gl_get_current_context()
 			if not context:
 				logging.error("Cannot initialize projectM: SDL has no current OpenGL context")
-				sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
+				sdl3.set_render_target(self.renderer, saved_target)
 				self.projectm.lib_error = True
 				return
 			# SDL may create or switch its GL context while submitting queued work.
 			# Capture it after the flush and make it current immediately before
 			# projectM creates GL resources; a stale context crashes Mesa here.
-			if not sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context):
-				logging.error(f"Cannot initialize projectM: {sdl3.SDL_GetError()}")
-				sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
+			if not sdl3.gl_make_current(self.tauon.t_window, context):
+				logging.error(f"Cannot initialize projectM: {sdl3.get_error()}")
+				sdl3.set_render_target(self.renderer, saved_target)
 				self.projectm.lib_error = True
 				return
 			saved_fbo_init = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
@@ -47140,7 +47126,7 @@ class Milky:
 			self.projectm.load_library()
 			self.projectm.init()
 			glBindFramebuffer(GL_FRAMEBUFFER, saved_fbo_init)
-			sdl3.SDL_SetRenderTarget(self.renderer, saved_target)
+			sdl3.set_render_target(self.renderer, saved_target)
 			if self.projectm.lib:
 				self.ready = True
 		if self.projectm.lib_error is True:
@@ -47160,22 +47146,22 @@ class Milky:
 			self.render_readback(w, h, srect, discard)
 			return
 
-		sdl3.SDL_FlushRenderer(self.renderer)
+		sdl3.flush_renderer(self.renderer)
 		saved_fbo = glGetIntegerv(GL_FRAMEBUFFER_BINDING)
 
 		if (w, h) != self.loaded_size:
 
 			self.loaded_size = (w, h)
-			sdl3.SDL_ClearError()
-			context = sdl3.SDL_GL_GetCurrentContext()
-			sdl3.SDL_GL_MakeCurrent(self.tauon.t_window, context)
+			sdl3.clear_error()
+			context = sdl3.gl_get_current_context()
+			sdl3.gl_make_current(self.tauon.t_window, context)
 
 			if self.render_texture:
-				sdl3.SDL_DestroyTexture(self.render_texture)
+				sdl3.destroy_texture(self.render_texture)
 				glDeleteTextures(1, [self.gl_texture_id])
 				glDeleteFramebuffers(1, [self.framebuffer])
 			if self.key_render_texture:
-				sdl3.SDL_DestroyTexture(self.key_render_texture)
+				sdl3.destroy_texture(self.key_render_texture)
 				glDeleteTextures(1, [self.key_texture_id])
 				glDeleteFramebuffers(1, [self.key_framebuffer])
 				self.key_render_texture = None
@@ -47207,25 +47193,25 @@ class Milky:
 			glBindFramebuffer(GL_FRAMEBUFFER, 0)
 			glBindTexture(GL_TEXTURE_2D, 0)
 
-			props = sdl3.SDL_CreateProperties()
+			props = sdl3.create_properties()
 			# Set properties to wrap the OpenGL texture
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, gl_texture_id)
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
-			#sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, sdl3.SDL_PIXELFORMAT_RGBA8888)
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, gl_texture_id)
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
+			#sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_FORMAT_NUMBER, sdl3.SDL_PIXELFORMAT_RGBA8888)
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
 
 			# Create SDL texture from the OpenGL texture
-			self.render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+			self.render_texture = sdl3.create_texture_with_properties(self.renderer, props)
 
 		if self.projectm.render_frame_fbo_available:
-			sdl3.SDL_FlushRenderer(self.renderer)
+			sdl3.flush_renderer(self.renderer)
 			glBindFramebuffer(GL_FRAMEBUFFER, self.framebuffer)
 			self.projectm.render_frame(self.framebuffer)
 		else:
-			current_target = sdl3.SDL_GetRenderTarget(self.renderer)
-			sdl3.SDL_SetRenderTarget(self.renderer, None)
-			sdl3.SDL_FlushRenderer(self.renderer)
+			current_target = sdl3.get_render_target(self.renderer)
+			sdl3.set_render_target(self.renderer, None)
+			sdl3.flush_renderer(self.renderer)
 			glBindFramebuffer(GL_FRAMEBUFFER, 0)
 			self.projectm.render_frame()
 			glBindTexture(GL_TEXTURE_2D, self.gl_texture_id)
@@ -47233,7 +47219,7 @@ class Milky:
 			glBindTexture(GL_TEXTURE_2D, 0)
 			glClearColor(0.0, 0.0, 0.0, 0.0)
 			glClear(GL_COLOR_BUFFER_BIT)
-			sdl3.SDL_SetRenderTarget(self.renderer, current_target)
+			sdl3.set_render_target(self.renderer, current_target)
 
 		# Cut Out: run the key shader over the fresh frame. It samples the
 		# projectM texture (read-only — projectM feeds it back into subsequent
@@ -47257,7 +47243,7 @@ class Milky:
 		out = src * src + dst * (1 - src) — the source colour acts as its own
 		per-channel matte."""
 		if self.cut_out_blend_mode is None:
-			self.cut_out_blend_mode = sdl3.SDL_ComposeCustomBlendMode(
+			self.cut_out_blend_mode = sdl3.compose_custom_blend_mode(
 				sdl3.SDL_BLENDFACTOR_SRC_COLOR,
 				sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_COLOR,
 				sdl3.SDL_BLENDOPERATION_ADD,
@@ -47290,14 +47276,14 @@ class Milky:
 			# The frame's own alpha counts under BLEND (the opaque copy ignored it).
 			blend = sdl3.SDL_BLENDMODE_BLEND if opacity < 255 else sdl3.SDL_BLENDMODE_NONE
 
-		sdl3.SDL_SetTextureBlendMode(texture, blend)
-		sdl3.SDL_SetTextureColorMod(texture, colour_mod, colour_mod, colour_mod)
-		sdl3.SDL_SetTextureAlphaMod(texture, opacity)
+		sdl3.set_texture_blend_mode(texture, blend)
+		sdl3.set_texture_color_mod(texture, colour_mod, colour_mod, colour_mod)
+		sdl3.set_texture_alpha_mod(texture, opacity)
 		if self.projectm.own_gl_context:
 			# Readback frames are bottom-up relative to SDL.
-			sdl3.SDL_RenderTextureRotated(self.renderer, texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
+			sdl3.render_texture_rotated(self.renderer, texture, None, srect, 0.0, None, sdl3.SDL_FLIP_VERTICAL)
 		else:
-			sdl3.SDL_RenderTexture(self.renderer, texture, None, srect)
+			sdl3.render_texture(self.renderer, texture, None, srect)
 
 	def render_readback(self, w, h, srect, discard: bool = False) -> None:
 		"""Dedicated-context path (macOS): projectM renders into an FBO in its
@@ -47305,14 +47291,14 @@ class Milky:
 		uploaded to a streaming SDL texture, since GL textures can't be shared
 		between a core context and the renderer's 2.1 compatibility context."""
 		pm = self.projectm
-		sdl3.SDL_FlushRenderer(self.renderer)
+		sdl3.flush_renderer(self.renderer)
 
 		if (w, h) != self.loaded_size:
 			self.loaded_size = (w, h)
 
 			if self.render_texture:
-				sdl3.SDL_DestroyTexture(self.render_texture)
-			self.render_texture = sdl3.SDL_CreateTexture(
+				sdl3.destroy_texture(self.render_texture)
+			self.render_texture = sdl3.create_texture(
 				self.renderer, sdl3.SDL_PIXELFORMAT_RGBA32,
 				sdl3.SDL_TEXTUREACCESS_STREAMING, int(w), int(h))
 			self.readback_buffer = (ctypes.c_ubyte * (int(w) * int(h) * 4))()
@@ -47354,9 +47340,7 @@ class Milky:
 			pm.restore_renderer_context()
 
 		if not discard:
-			sdl3.SDL_UpdateTexture(
-				self.render_texture, None,
-				ctypes.cast(self.readback_buffer, ctypes.c_void_p), int(w) * 4)
+			sdl3.update_texture(self.render_texture, None, self.readback_buffer, int(w) * 4)
 			self._blit(srect)
 		self.fps.tick()
 
@@ -47445,14 +47429,14 @@ class Milky:
 			if not complete:
 				raise RuntimeError("Key framebuffer not complete")
 
-			props = sdl3.SDL_CreateProperties()
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, self.key_texture_id)
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
-			sdl3.SDL_SetNumberProperty(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
-			self.key_render_texture = sdl3.SDL_CreateTextureWithProperties(self.renderer, props)
+			props = sdl3.create_properties()
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_OPENGL_TEXTURE_NUMBER, self.key_texture_id)
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_WIDTH_NUMBER, int(w))
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_HEIGHT_NUMBER, int(h))
+			sdl3.set_number_property(props, sdl3.SDL_PROP_TEXTURE_CREATE_ACCESS_NUMBER, sdl3.SDL_TEXTUREACCESS_TARGET)
+			self.key_render_texture = sdl3.create_texture_with_properties(self.renderer, props)
 			if not self.key_render_texture:
-				raise RuntimeError(f"SDL_CreateTextureWithProperties failed: {sdl3.SDL_GetError()}")
+				raise RuntimeError(f"create_texture_with_properties failed: {sdl3.get_error()}")
 			return True
 		except Exception:
 			logging.exception("Failed to create Milkdrop key target, using blend-mode fallback")
@@ -47530,8 +47514,8 @@ class MilkFullscreen:
 		if not self.gui.fullscreen:
 			self.gui.fullscreen = True
 			self._entered_window_fullscreen = True
-			sdl3.SDL_SetWindowFullscreenMode(tauon.t_window, None)
-			sdl3.SDL_SetWindowFullscreen(tauon.t_window, True)
+			sdl3.set_window_fullscreen_mode(tauon.t_window, None)
+			sdl3.set_window_fullscreen(tauon.t_window, True)
 		self.gui.request_frame()
 
 	def close(self) -> None:
@@ -47542,7 +47526,7 @@ class MilkFullscreen:
 		# still set (the Escape handler may already have left it).
 		if self._entered_window_fullscreen and self.gui.fullscreen:
 			self.gui.fullscreen = False
-			sdl3.SDL_SetWindowFullscreen(self.tauon.t_window, False)
+			sdl3.set_window_fullscreen(self.tauon.t_window, False)
 		self._entered_window_fullscreen = False
 		self.gui.request_frame()
 
@@ -47989,7 +47973,7 @@ def draw_showcase_art_box(
 		ColourRGBA(60, 60, 60, 135),
 	)
 	ddt.rect(rect, tauon.colours.playlist_panel_background)
-	tauon.style_overlay.hole_punches.append(sdl3.SDL_FRect(round(x), round(y), round(box_w), round(box_h)))
+	tauon.style_overlay.hole_punches.append(sdl3.FRect(round(x), round(y), round(box_w), round(box_h)))
 
 	tauon.album_art_gen.display(track, (x, y), (box_w, box_h))
 	show_vis = False
@@ -48301,15 +48285,15 @@ class Showcase:
 		if top and self.tauon.search_over.active:
 			self.gui.draw_vis4_top = False
 			return
-		sdl3.SDL_SetRenderTarget(self.renderer, self.gui.spec4_tex)
-		sdl3.SDL_SetRenderDrawColor(self.renderer, 0, 0, 0, 0)
-		sdl3.SDL_RenderClear(self.renderer)
+		sdl3.set_render_target(self.renderer, self.gui.spec4_tex)
+		sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 0)
+		sdl3.render_clear(self.renderer)
 
 		bx = 0
 		by = 50 * self.gui.scale
 
 		if self.gui.vis_4_colour is not None:
-			sdl3.SDL_SetRenderDrawColor(
+			sdl3.set_render_draw_color(
 				self.renderer, self.gui.vis_4_colour.r, self.gui.vis_4_colour.g, self.gui.vis_4_colour.b, self.gui.vis_4_colour.a)
 
 		if (self.pctl.playing_time < 0.5 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM))) or (
@@ -48348,27 +48332,27 @@ class Showcase:
 			self.gui.bar4.w = round(2 * self.gui.scale)
 			self.gui.bar4.h = round(dis * 2 * self.gui.scale)
 
-			sdl3.SDL_RenderFillRect(self.renderer, self.gui.bar4)
+			sdl3.render_fill_rect(self.renderer, self.gui.bar4)
 
 			# Set distance between bars
 			bx += 8 * self.gui.scale
 
 		if top:
-			sdl3.SDL_SetRenderTarget(self.renderer, None)
+			sdl3.set_render_target(self.renderer, None)
 		else:
-			sdl3.SDL_SetRenderTarget(self.renderer, self.gui.main_texture)
+			sdl3.set_render_target(self.renderer, self.gui.main_texture)
 
-		# sdl3.SDL_SetRenderDrawBlendMode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		# sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		# The strip is a fixed-size texture, so a segment smaller than it (or a
 		# tall bar reaching the texture's edge) would otherwise spill past the
 		# host widget - clip the blit to the rect the caller reserved for it.
 		clip = self.gui.vis4_clip
 		if clip is not None:
-			clip_rect = sdl3.SDL_Rect(clip[0], clip[1], clip[2], clip[3])
-			sdl3.SDL_SetRenderClipRect(self.renderer, ctypes.byref(clip_rect))
-		sdl3.SDL_RenderTexture(self.renderer, self.gui.spec4_tex, None, self.gui.spec4_rec)
+			clip_rect = sdl3.Rect(clip[0], clip[1], clip[2], clip[3])
+			sdl3.set_render_clip_rect(self.renderer, clip_rect)
+		sdl3.render_texture(self.renderer, self.gui.spec4_tex, None, self.gui.spec4_rec)
 		if clip is not None:
-			sdl3.SDL_SetRenderClipRect(self.renderer, None)
+			sdl3.set_render_clip_rect(self.renderer, None)
 
 class ColourPulse2:
 	"""Animates colour between two colours"""
@@ -49366,19 +49350,17 @@ class GetSDLInput:
 		self.mouse_capture = False
 
 	def mouse(self) -> tuple[int, int]:
-		sdl3.SDL_PumpEvents()
-		i_y = pointer(c_float(0))
-		i_x = pointer(c_float(0))
-		sdl3.SDL_GetMouseState(i_x, i_y)
-		return (int(i_x.contents.value / self.logical_size[0] * self.window_size[0]),
-			int(i_y.contents.value / self.logical_size[0] * self.window_size[0]))
+		sdl3.pump_events()
+		_buttons, x, y = sdl3.get_mouse_state()
+		return (int(x / self.logical_size[0] * self.window_size[0]),
+			int(y / self.logical_size[0] * self.window_size[0]))
 
 	def test_capture_mouse(self) -> None:
 		if not self.mouse_capture and self.mouse_capture_want:
-			sdl3.SDL_CaptureMouse(True)
+			sdl3.capture_mouse(True)
 			self.mouse_capture = True
 		elif self.mouse_capture and not self.mouse_capture_want:
-			sdl3.SDL_CaptureMouse(False)
+			sdl3.capture_mouse(False)
 			self.mouse_capture = False
 
 
@@ -52121,25 +52103,22 @@ def is_module_loaded(module_name: str, object_name: str = "") -> bool:
 		return module_name in sys.modules and hasattr(sys.modules[module_name], object_name)
 	return module_name in sys.modules
 
-def get_cert_path(holder: Holder) -> str:
-	if holder.pyinstaller_mode:
-		return os.path.join(sys._MEIPASS, "certifi", "cacert.pem")
-	# Running as script
+def get_cert_path() -> str:
 	return certifi.where()
 
-def setup_tls(holder: Holder) -> ssl.SSLContext:
+def setup_tls() -> ssl.SSLContext:
 	"""TLS setup (needed for frozen installs)
 
 	This function has to be called BEFORE modules that init TLS context are imported or otherwise do so (like pylast - see https://github.com/Taiko2k/Tauon/issues/1442)
 	"""
 	# Set the TLS certificate path environment variable
-	cert_path = get_cert_path(holder)
+	cert_path = get_cert_path()
 	logging.debug(f"Found TLS cert file at: {cert_path}")
 	os.environ["SSL_CERT_FILE"] = cert_path
 	os.environ["REQUESTS_CA_BUNDLE"] = cert_path
 
 	# Create default TLS context
-	return ssl.create_default_context(cafile=get_cert_path(holder))
+	return ssl.create_default_context(cafile=get_cert_path())
 
 def whicher(target: str, flatpak_mode: bool) -> bool | str | None:
 	"""Detect and launch programs outside of flatpak sandbox"""
@@ -52313,7 +52292,7 @@ def set_path(nt: TrackClass, path: str) -> None:
 # 		return
 # 	while bag.pump:
 # 		time.sleep(0.005)
-# 		sdl3.SDL_PumpEvents()
+# 		sdl3.pump_events()
 
 def save_prefs(bag: Bag) -> None:
 	cf    = bag.cf
@@ -53143,16 +53122,11 @@ def clear_icon_cache(scaled_asset_directory: Path) -> None:
 
 
 def get_global_mouse() -> tuple[float, float]:
-	i_y = pointer(c_float(0))
-	i_x = pointer(c_float(0))
-	sdl3.SDL_GetGlobalMouseState(i_x, i_y)
-	return i_x.contents.value, i_y.contents.value
+	_buttons, x, y = sdl3.get_global_mouse_state()
+	return x, y
 
 def get_window_position(t_window: sdl3.LP_SDL_Window) -> tuple[int, int]:
-	i_y = pointer(c_int(0))
-	i_x = pointer(c_int(0))
-	sdl3.SDL_GetWindowPosition(t_window, i_x, i_y)
-	return i_x.contents.value, i_y.contents.value
+	return sdl3.get_window_position(t_window)
 
 def encode_track_name(track_object: TrackClass) -> str:
 	if track_object.is_cue or not track_object.filename:
@@ -53495,17 +53469,34 @@ def recode(text: str, enc: str) -> str:
 	return text.encode("Latin-1", "ignore").decode(enc, "ignore")
 
 def copy_to_clipboard(text: str) -> None:
-	sdl3.SDL_SetClipboardText(text.encode(errors="surrogateescape"))
+	sdl3.set_clipboard_text(text)
 
 def copy_from_clipboard() -> str:
 	try:
-		return sdl3.SDL_GetClipboardText().decode()
-	except UnicodeDecodeError:
-		logging.exception("Clipboard text decode error")
-		return ""
+		return sdl3.get_clipboard_text()
 	except Exception:
-		logging.exception("Unknown clipboard text decode error")
+		logging.exception("Failed to read text from the clipboard")
 		return ""
+
+def has_clipboard_text() -> bool:
+	return sdl3.has_clipboard_text()
+
+_clipboard_paths_check: dict[str, float | bool] = {"checked": 0.0, "result": False}
+
+def clipboard_has_paths() -> bool:
+	"""Whether the clipboard holds a path or file:// URI.
+
+	Menu decorators call this every frame while their menu is open, so the
+	clipboard is read at most twice a second.
+	"""
+	now = time.monotonic()
+	if now - _clipboard_paths_check["checked"] >= 0.5:
+		result = False
+		if has_clipboard_text():
+			text = copy_from_clipboard()
+			result = text.startswith("/") or "file://" in text
+		_clipboard_paths_check.update(checked=now, result=result)
+	return bool(_clipboard_paths_check["result"])
 
 def field_copy(text_field) -> None:
 	text_field.copy()
@@ -54655,7 +54646,7 @@ def visit_radio_station(item: tuple[int, RadioStation]) -> None:
 
 def window_is_focused(t_window: sdl3.LP_SDL_Window) -> bool:
 	"""Thread safe?"""
-	return bool(sdl3.SDL_GetWindowFlags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
+	return bool(sdl3.get_window_flags(t_window) & sdl3.SDL_WINDOW_INPUT_FOCUS)
 
 def menu_is_open() -> bool:
 	for menu in Menu.instances:
@@ -54730,7 +54721,6 @@ def main(holder: Holder) -> None:
 	old_window_position    = holder.old_window_position
 	install_directory      = holder.install_directory
 	user_directory         = holder.user_directory
-	pyinstaller_mode       = holder.pyinstaller_mode
 	phone                  = holder.phone
 	window_default_size    = holder.window_default_size
 	window_title           = holder.window_title
@@ -54742,6 +54732,7 @@ def main(holder: Holder) -> None:
 	t_agent                = holder.t_agent
 	dev_mode               = holder.dev_mode
 	log                    = holder.log
+	portable_mode          = holder.portable_mode
 	logging.info(f"Window size: {window_size}; Logical size: {logical_size}")
 	renderer_name = get_renderer_name(renderer)
 	if renderer_name is not None:
@@ -54752,10 +54743,10 @@ def main(holder: Holder) -> None:
 		if not milky_error:
 			milky_error = "SDL renderer is not OpenGL"
 
-	tls_context = setup_tls(holder)
+	tls_context = setup_tls()
 	last_fm_enable = is_module_loaded("pylast")
 	if last_fm_enable:
-		# pyLast needs to be reimported AFTER setup_tls(), else pyinstaller breaks
+		# pyLast needs to be reimported after setup_tls().
 		importlib.reload(pylast)
 
 	discord_allow = is_module_loaded("pypresence", "ActivityType")
@@ -54831,7 +54822,7 @@ def main(holder: Holder) -> None:
 	if macos or windows:
 		install_mode = True
 	# Override to Portable mode if necessary
-	if (install_directory / "portable").is_file():
+	if portable_mode:
 		install_mode = False
 	elif str(install_directory).startswith(("/opt/", "/usr/", "/app/", "/snap/", "/nix/store/")):
 		install_mode = True
@@ -54858,9 +54849,6 @@ def main(holder: Holder) -> None:
 			flatpak_mode = True
 
 	logging.info(f"Platform: {sys.platform}")
-
-	if pyinstaller_mode:
-		logging.info("Pyinstaller mode")
 
 	# If we're installed, use home data locations
 	if install_mode:
@@ -54960,6 +54948,12 @@ def main(holder: Holder) -> None:
 		music_directory = None
 
 	locale_directory = install_directory / "locale"
+	if not locale_directory.is_dir():
+		# Editable installs keep the compiled translations beside the installed package files
+		locale_directory = next(
+			(Path(path) / "locale" for path in tauon_package.__path__ if (Path(path) / "locale").is_dir()),
+			locale_directory,
+		)
 	if flatpak_mode:
 		locale_directory = Path("/app/share/locale")
 	#elif str(install_directory).startswith(("/opt/", "/usr/")):
@@ -55005,14 +54999,14 @@ def main(holder: Holder) -> None:
 		launch_prefix = "flatpak-spawn --host "
 
 	if not macos:
-		icon = sdl3.IMG_Load(str(asset_directory / "icon-64.png").encode())
-		sdl3.SDL_SetWindowIcon(t_window, icon)
+		icon = native_image.load(str(asset_directory / "icon-64.png").encode())
+		sdl3.set_window_icon(t_window, icon)
 
 	if not phone:
 		if window_size[0] != logical_size[0]:
-			sdl3.SDL_SetWindowMinimumSize(t_window, 560, 330)
+			sdl3.set_window_minimum_size(t_window, 560, 330)
 		else:
-			sdl3.SDL_SetWindowMinimumSize(t_window, round(560 * scale), round(330 * scale))
+			sdl3.set_window_minimum_size(t_window, round(560 * scale), round(330 * scale))
 
 	max_window_tex = 1000
 	if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
@@ -55021,22 +55015,22 @@ def main(holder: Holder) -> None:
 		while window_size[1] > max_window_tex:
 			max_window_tex += 1000
 
-	main_texture = sdl3.SDL_CreateTexture(
+	main_texture = sdl3.create_texture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, max_window_tex,
 		max_window_tex)
-	main_texture_overlay_temp = sdl3.SDL_CreateTexture(
+	main_texture_overlay_temp = sdl3.create_texture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET,
 		max_window_tex, max_window_tex)
 
-	tracklist_texture = sdl3.SDL_CreateTexture(
+	tracklist_texture = sdl3.create_texture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, max_window_tex,
 		max_window_tex)
-	tracklist_texture_rect = sdl3.SDL_FRect(0, 0, max_window_tex, max_window_tex)
+	tracklist_texture_rect = sdl3.FRect(0, 0, max_window_tex, max_window_tex)
 	# The tracklist texture is built over a transparent clear, so its content
 	# is effectively premultiplied (translucent panel fills, premultiplied
 	# text textures); composite it src-over in premultiplied form —
 	# SDL_BLENDMODE_BLEND would multiply by alpha a second time
-	sdl3.SDL_SetTextureBlendMode(tracklist_texture, sdl3.SDL_ComposeCustomBlendMode(
+	sdl3.set_texture_blend_mode(tracklist_texture, sdl3.compose_custom_blend_mode(
 		sdl3.SDL_BLENDFACTOR_ONE,
 		sdl3.SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA,
 		sdl3.SDL_BLENDOPERATION_ADD,
@@ -55045,44 +55039,37 @@ def main(holder: Holder) -> None:
 		sdl3.SDL_BLENDOPERATION_ADD,
 	))
 
-	sdl3.SDL_SetRenderTarget(renderer, None)
+	sdl3.set_render_target(renderer, None)
 
 	# Paint main texture
-	sdl3.SDL_SetRenderTarget(renderer, main_texture)
-	sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
+	sdl3.set_render_target(renderer, main_texture)
+	sdl3.set_render_draw_color(renderer, 0, 0, 0, 255)
 
-	sdl3.SDL_SetRenderTarget(renderer, main_texture_overlay_temp)
-	sdl3.SDL_SetTextureBlendMode(main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
-	sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255)
-	sdl3.SDL_RenderClear(renderer)
+	sdl3.set_render_target(renderer, main_texture_overlay_temp)
+	sdl3.set_texture_blend_mode(main_texture_overlay_temp, sdl3.SDL_BLENDMODE_BLEND)
+	sdl3.set_render_draw_color(renderer, 0, 0, 0, 255)
+	sdl3.render_clear(renderer)
 
 
 
-	# sdl3.SDL_SetRenderTarget(renderer, None)
-	# sdl3.SDL_SetRenderDrawColor(renderer, 7, 7, 7, 255)
-	# sdl3.SDL_RenderClear(renderer)
-	# #sdl3.SDL_RenderPresent(renderer)
+	# sdl3.set_render_target(renderer, None)
+	# sdl3.set_render_draw_color(renderer, 7, 7, 7, 255)
+	# sdl3.render_clear(renderer)
+	# #sdl3.render_present(renderer)
 
-	# sdl3.SDL_SetWindowOpacity(t_window, window_opacity)
+	# sdl3.set_window_opacity(t_window, window_opacity)
 
 	loaded_asset_dc: dict[str, WhiteModImageAsset | LoadImageAsset] = {}
 	# loading_image = asset_loader(bag, bag.loaded_asset_dc, "loading.png")
 
 	if maximized:
-		i_x = pointer(c_int(0))
-		i_y = pointer(c_int(0))
-
 		time.sleep(0.02)
-		sdl3.SDL_PumpEvents()
-		sdl3.SDL_GetWindowSize(t_window, i_x, i_y)
-		logical_size[0] = i_x.contents.value
-		logical_size[1] = i_y.contents.value
-		sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-		window_size[0] = i_x.contents.value
-		window_size[1] = i_y.contents.value
+		sdl3.pump_events()
+		logical_size[:] = sdl3.get_window_size(t_window)
+		window_size[:] = sdl3.get_window_size_in_pixels(t_window)
 
 	# loading_image.render(window_size[0] // 2 - loading_image.w // 2, window_size[1] // 2 - loading_image.h // 2)
-	# SDL_RenderPresent(renderer)
+	# render_present(renderer)
 
 	if install_directory != config_directory and not (config_directory / "input.txt").is_file():
 		logging.warning("Input config file is missing, first run? Copying input.txt template from templates directory")
@@ -55183,16 +55170,8 @@ def main(holder: Holder) -> None:
 	colours.post_config()
 
 	mpt: CDLL | None = None
-	p = ctypes.util.find_library("openmpt") # Linux
-	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
 	try:
-		if p:
-			mpt = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
-
+		mpt = load_shared_library("openmpt", ("libopenmpt.so.0", "libopenmpt-0.dll"))
 		mpt.openmpt_module_create_from_memory.restype = c_void_p
 		mpt.openmpt_module_get_metadata.restype = c_char_p
 		mpt.openmpt_module_get_duration_seconds.restype = c_double
@@ -55200,16 +55179,8 @@ def main(holder: Holder) -> None:
 		logging.exception("Failed to load libopenmpt!")
 
 	gme: CDLL | None = None
-	p = ctypes.util.find_library("gme") # Linux
-	p = p or ctypes.util.find_library("libgme") # Windows
 	try:
-		if p:
-			gme = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			gme = ctypes.cdll.LoadLibrary("libgme.dll")
-		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
-
+		gme = load_shared_library("gme", ("libgme.so.0", "libgme.dll"))
 		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
 		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
 		gme.gme_track_info.restype = ctypes.c_char_p
@@ -55972,7 +55943,7 @@ def main(holder: Holder) -> None:
 	# SDL_GetWindowWMInfo(t_window, sss)
 
 	if prefs.use_gamepad:
-		sdl3.SDL_InitSubSystem(sdl3.SDL_INIT_GAMEPAD)
+		sdl3.init_subsystem(sdl3.SDL_INIT_GAMEPAD)
 
 	if bag.windows and win_ver >= 10:
 		#logging.info(sss.info.win.window)
@@ -56114,43 +56085,6 @@ def main(holder: Holder) -> None:
 
 	if prefs.prefer_side is False:
 		gui.rsp = False
-
-	mpt: CDLL | None = None
-	p = ctypes.util.find_library("openmpt") # Linux
-	p = p or ctypes.util.find_library("libopenmpt-0") # Windows
-	try:
-		if p:
-			mpt = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt-0.dll")
-		else:
-			mpt = ctypes.cdll.LoadLibrary("libopenmpt.so.0")
-
-		mpt.openmpt_module_create_from_memory.restype = c_void_p
-		mpt.openmpt_module_get_metadata.restype = c_char_p
-		mpt.openmpt_module_get_duration_seconds.restype = c_double
-	except Exception:
-		logging.exception("Failed to load libopenmpt!")
-
-	gme: CDLL | None = None
-	p = ctypes.util.find_library("gme") # Linux
-	p = p or ctypes.util.find_library("libgme") # Windows
-	try:
-		if p:
-			gme = ctypes.cdll.LoadLibrary(p)
-		elif windows:
-			gme = ctypes.cdll.LoadLibrary("libgme.dll")
-		else:
-			gme = ctypes.cdll.LoadLibrary("libgme.so.0")
-
-		gme.gme_free_info.argtypes = [ctypes.POINTER(GMETrackInfo)]
-		gme.gme_track_info.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.POINTER(GMETrackInfo)), ctypes.c_int]
-		gme.gme_track_info.restype = ctypes.c_char_p
-		gme.gme_open_file.argtypes = [ctypes.c_char_p, ctypes.POINTER(ctypes.c_void_p), ctypes.c_int]
-		gme.gme_open_file.restype = ctypes.c_char_p
-
-	except Exception:
-		logging.exception("Cannot find libgme")
 
 	tauon = Tauon(
 		holder=holder,
@@ -56318,6 +56252,7 @@ def main(holder: Holder) -> None:
 		try:
 			gnome_thread = threading.Thread(target=tauon.gnome.main)
 			gnome_thread.daemon = True
+			tauon.gnome.thread = gnome_thread
 			gnome_thread.start()
 		except Exception:
 			logging.exception("Could not start Dbus thread")
@@ -56365,10 +56300,9 @@ def main(holder: Holder) -> None:
 				xcursor_theme = os.environ["XCURSOR_THEME"]
 				xcursor_size = os.environ["XCURSOR_SIZE"]
 				c1 = xcu.XcursorLibraryLoadImage(c_char_p(name.encode()), c_char_p(xcursor_theme.encode()), c_int(int(xcursor_size))).contents
-				sdl3.SDL_surface = sdl3.SDL_CreateSurfaceFrom(c1.width, c1.height, sdl3.SDL_PIXELFORMAT_ARGB8888, c1.pixels, c1.width * 4)
-				cursor = sdl3.SDL_CreateColorCursor(sdl3.SDL_surface, round(c1.xhot), round(c1.yhot))
+				surface = native_image.from_buffer(c1.width, c1.height, c1.pixels, c1.width * 4)
+				cursor = sdl3.create_color_cursor_from_surface(surface, round(c1.xhot), round(c1.yhot))
 				xcu.XcursorImageDestroy(ctypes.byref(c1))
-				sdl3.SDL_DestroySurface(sdl3.SDL_surface)
 				return cursor
 
 			cursor_br_corner = get_xcursor("se-resize")
@@ -56377,27 +56311,24 @@ def main(holder: Holder) -> None:
 			cursor_left_side = get_xcursor("left_side")
 			cursor_bottom_side = get_xcursor("bottom_side")
 
-			if sdl3.SDL_GetCurrentVideoDriver() == b"wayland":
+			if sdl3.get_current_video_driver() == b"wayland":
 				cursor_standard = get_xcursor("left_ptr")
 				cursor_text = get_xcursor("xterm")
 				cursor_shift = get_xcursor("sb_h_double_arrow")
 				cursor_hand = get_xcursor("hand2")
-				sdl3.SDL_SetCursor(cursor_standard)
+				sdl3.set_cursor(cursor_standard)
 
 		except Exception:
 			logging.exception("Error loading xcursor")
 
 
 	if not maximized and gui.maximized:
-		sdl3.SDL_MaximizeWindow(t_window)
+		sdl3.maximize_window(t_window)
 
-	# logging.error(sdl3.SDL_GetError())
+	# logging.error(sdl3.get_error())
 
-	props = sdl3.SDL_GetWindowProperties(t_window)
-
-	if tauon.windows:
-		gui.window_id = sdl3.SDL_GetPointerProperty(props, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
-		#gui.window_id = sss.info.win.window
+	# The old PySDL path exposed the Win32 HWND here. Nothing in the current UI
+	# consumes it, so the native bridge deliberately keeps platform handles private.
 
 	ddt = tauon.ddt
 	ddt.scale = gui.scale
@@ -56405,11 +56336,11 @@ def main(holder: Holder) -> None:
 
 	tauon.prime_fonts()
 
-	text_box_canvas_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-	text_box_canvas_hide_rect = sdl3.SDL_FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
-	text_box_canvas = sdl3.SDL_CreateTexture(
+	text_box_canvas_rect = sdl3.FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+	text_box_canvas_hide_rect = sdl3.FRect(0, 0, round(2000 * gui.scale), round(40 * gui.scale))
+	text_box_canvas = sdl3.create_texture(
 		renderer, sdl3.SDL_PIXELFORMAT_ARGB8888, sdl3.SDL_TEXTUREACCESS_TARGET, round(text_box_canvas_rect.w), round(text_box_canvas_rect.h))
-	sdl3.SDL_SetTextureBlendMode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
+	sdl3.set_texture_blend_mode(text_box_canvas, sdl3.SDL_BLENDMODE_BLEND)
 
 	tauon.rename_files.text = prefs.rename_tracks_template
 	if rename_files_previous:
@@ -57662,8 +57593,7 @@ def main(holder: Holder) -> None:
 	# Set SDL window drag areas
 	# if system != "Windows":
 
-	c_hit_callback = sdl3.SDL_HitTest(tauon.hit_callback)
-	sdl3.SDL_SetWindowHitTest(t_window, c_hit_callback, 0)
+	sdl3.set_window_hit_test(t_window, tauon.hit_callback)
 
 	# --------------------------------------------------------------------------------------------
 
@@ -57720,7 +57650,7 @@ def main(holder: Holder) -> None:
 		):
 			tauon.open_uri(item)
 
-	sdl_version = sdl3.SDL_GetVersion()
+	sdl_version = sdl3.get_version()
 	logging.info(f"Using SDL version: {sdl_version!s}")
 
 	# C-ML
@@ -57729,31 +57659,31 @@ def main(holder: Holder) -> None:
 	if prefs.backend == Backend.NONE:
 		tauon.show_message(_("ERROR: No backend found"), mode="error")
 
-	# SDL_RenderClear(renderer)
-	# SDL_RenderPresent(renderer)
+	# render_clear(renderer)
+	# render_present(renderer)
 
-	# SDL_ShowWindow(t_window)
+	# show_window(t_window)
 
 	# Clear spectogram texture
-	sdl3.SDL_SetRenderTarget(renderer, gui.spec2_tex)
-	sdl3.SDL_RenderClear(renderer)
+	sdl3.set_render_target(renderer, gui.spec2_tex)
+	sdl3.render_clear(renderer)
 	ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
-	sdl3.SDL_SetRenderTarget(renderer, gui.spec1_tex)
-	sdl3.SDL_RenderClear(renderer)
+	sdl3.set_render_target(renderer, gui.spec1_tex)
+	sdl3.render_clear(renderer)
 	ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
-	sdl3.SDL_SetRenderTarget(renderer, gui.spec_level_tex)
-	sdl3.SDL_RenderClear(renderer)
+	sdl3.set_render_target(renderer, gui.spec_level_tex)
+	sdl3.render_clear(renderer)
 	ddt.rect((0, 0, 1000, 1000), ColourRGBA(7, 7, 7, 255))
 
-	sdl3.SDL_SetRenderTarget(renderer, None)
+	sdl3.set_render_target(renderer, None)
 
-	# sdl3.SDL_RenderPresent(renderer)
+	# sdl3.render_present(renderer)
 
 	# time.sleep(3)
 
-	sdl3.SDL_StartTextInput(t_window)
+	sdl3.start_text_input(t_window)
 	active_touch = tauon.touch_input_tracker
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
@@ -57803,7 +57733,7 @@ def main(holder: Holder) -> None:
 	tauon.sync_target.text = prefs.sync_target
 
 	if tauon.windows:
-		sdl3.SDL_SetWindowResizable(t_window, True)  # Not sure why this is needed
+		sdl3.set_window_resizable(t_window, True)  # Not sure why this is needed
 
 	# Generate theme buttons
 	tauon.pref_box.refresh_theme_presets()
@@ -57812,8 +57742,6 @@ def main(holder: Holder) -> None:
 
 	# MAIN LOOP
 	# main_loop(tauon)
-
-	event = sdl3.SDL_Event()
 
 	# ---------------------------------------------------------------------
 	# Player variables
@@ -57941,8 +57869,8 @@ def main(holder: Holder) -> None:
 			# Tiles at the scroll edges render partially outside the gallery
 			# area; clip so they can't draw over (or show through) the panels
 			# above and below. Reset in the finally below.
-			gallery_clip = sdl3.SDL_Rect(round(x), round(gui.panelY), round(w), round(h))
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, ctypes.byref(gallery_clip))
+			gallery_clip = sdl3.Rect(round(x), round(gui.panelY), round(w), round(h))
+			sdl3.set_render_clip_rect(tauon.renderer, gallery_clip)
 
 			# ddt.rect_r(rect, [255, 0, 0, 200], True)
 
@@ -58751,7 +58679,7 @@ def main(holder: Holder) -> None:
 							)
 
 						if prefs.art_bg and drawn_art:
-							rect = sdl3.SDL_FRect(
+							rect = sdl3.FRect(
 								round(x), round(y), tauon.album_mode_art_size, tauon.album_mode_art_size
 							)
 							if rect.y < gui.panelY:
@@ -59021,7 +58949,7 @@ def main(holder: Holder) -> None:
 		except Exception:
 			logging.exception("Gallery render error!")
 		finally:
-			sdl3.SDL_SetRenderClipRect(tauon.renderer, None)
+			sdl3.set_render_clip_rect(tauon.renderer, None)
 		# END POWER BAR ------------------------
 
 	tauon.gallery_render = render_gallery  # exposed for the Custom Layout Album Gallery widget
@@ -59521,6 +59449,8 @@ def main(holder: Holder) -> None:
 	tauon.set_tray_icons()
 	if prefs.use_tray or "--tray" in sys.argv:
 		tauon.show_tray()
+	else:
+		tauon.tray_setup_done.set()
 
 	if (prefs.start_in_tray and prefs.use_tray) or "--tray" in sys.argv:
 		tauon.min_to_tray()
@@ -59588,18 +59518,18 @@ def main(holder: Holder) -> None:
 		inp.mouse_click = False
 		# gui.update = 2
 
-		while sdl3.SDL_PollEvent(ctypes.byref(event)) != 0:
+		for event in sdl3.poll_events():
 			# if event.type == sdl3.SDL_SYSWMEVENT:
 			#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
 
 			if event.type == sdl3.SDL_EVENT_GAMEPAD_ADDED:
 				if not prefs.use_gamepad:
 					continue
-				if sdl3.SDL_IsGamepad(event.gdevice.which):
-					sdl3.SDL_OpenGamepad(event.gdevice.which)
+				if sdl3.is_gamepad(event.gdevice.which):
+					sdl3.open_gamepad(event.gdevice.which)
 					try:
 						logging.info(
-							f"Found game controller: {sdl3.SDL_GetGamepadNameForID(event.gdevice.which).decode()}"
+							f"Found game controller: {sdl3.get_gamepad_name(event.gdevice.which).decode()}"
 						)
 					except Exception:
 						logging.exception("Error getting game controller")
@@ -59721,12 +59651,9 @@ def main(holder: Holder) -> None:
 						i_y = max(i_y, 0)
 						i_y = min(i_y, window_size[1])
 					else:
-						i_y = pointer(c_int(0))
-						i_x = pointer(c_int(0))
-
-						sdl3.SDL_GetMouseState(i_x, i_y)
-						i_y = i_y.contents.value / logical_size[0] * window_size[0]
-						i_x = i_x.contents.value / logical_size[0] * window_size[0]
+						_buttons, i_x, i_y = sdl3.get_mouse_state()
+						i_y = i_y / logical_size[0] * window_size[0]
+						i_x = i_x / logical_size[0] * window_size[0]
 
 					if coll_point((i_x, i_y), gui.main_art_box):
 						logging.info("Drop picture...")
@@ -59806,7 +59733,7 @@ def main(holder: Holder) -> None:
 					mp.last_local = (int(event.motion.x * mp.scale), int(event.motion.y * mp.scale))
 					tauon.active_pointer_window = mp
 					gui.request_frame()
-				elif event.motion.windowID == sdl3.SDL_GetWindowID(tauon.t_window):
+				elif event.motion.windowID == sdl3.get_window_id(tauon.t_window):
 					inp.mouse_position[0] = int(event.motion.x / logical_size[0] * window_size[0])
 					inp.mouse_position[1] = int(event.motion.y / logical_size[0] * window_size[0])
 					mouse_moved = True
@@ -59874,7 +59801,7 @@ def main(holder: Holder) -> None:
 					# Only a release on the main window records a main-window mouse-up; a
 					# release inside the menu popup uses popup-local coords and must not
 					# drive main drag logic or corrupt mouse_up_position.
-					if inp.mouse_down and event.button.windowID == sdl3.SDL_GetWindowID(tauon.t_window):
+					if inp.mouse_down and event.button.windowID == sdl3.get_window_id(tauon.t_window):
 						inp.mouse_up = True
 						inp.mouse_up_position[0] = event.motion.x / logical_size[0] * window_size[0]
 						inp.mouse_up_position[1] = event.motion.y / logical_size[0] * window_size[0]
@@ -60186,7 +60113,7 @@ def main(holder: Holder) -> None:
 				# as the menu popup - otherwise e.g. a popup resize fires
 				# WINDOW_RESIZED and overwrites the main window's logical_size,
 				# corrupting all main-window mouse-coordinate scaling.
-				if event.window.windowID != sdl3.SDL_GetWindowID(tauon.t_window):
+				if event.window.windowID != sdl3.get_window_id(tauon.t_window):
 					continue
 
 				if event.type == sdl3.SDL_EVENT_WINDOW_FOCUS_GAINED:
@@ -60231,11 +60158,7 @@ def main(holder: Holder) -> None:
 					# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
 					pass
 				elif event.type == sdl3.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
-					i_x = pointer(c_int(0))
-					i_y = pointer(c_int(0))
-					sdl3.SDL_GetWindowSizeInPixels(t_window, i_x, i_y)
-					window_size[0] = i_x.contents.value
-					window_size[1] = i_y.contents.value
+					window_size[:] = sdl3.get_window_size_in_pixels(t_window)
 					auto_scale(bag)
 					gui.update_layout = True
 					gui.request_frame()
@@ -60243,7 +60166,7 @@ def main(holder: Holder) -> None:
 					# sdl3.SDL_WINDOWEVENT_RESIZED logs width to data1 and height to data2
 					# if event.window.data1 < 500:
 					# 	logging.error("Window width is less than 500, grrr why does this happen, stupid bug")
-					# 	sdl3.SDL_SetWindowSize(t_window, logical_size[0], logical_size[1])
+					# 	sdl3.set_window_size(t_window, logical_size[0], logical_size[1])
 					# elif tauon.restore_ignore_timer.get() > 1:  # Hacky
 					# 	gui.update = 2
 
@@ -60447,7 +60370,10 @@ def main(holder: Holder) -> None:
 			tauon.requested_tray_destruct = False
 		if tauon.requested_tray:
 			#logging.debug("Creating tray as it was requested")
-			tauon.init_sdl_tray()
+			try:
+				tauon.init_sdl_tray()
+			finally:
+				tauon.tray_setup_done.set()
 			tauon.requested_tray = False
 
 		# Keep the frame body (seek-bar time tick, housekeeping) running while
@@ -60483,14 +60409,14 @@ def main(holder: Holder) -> None:
 			else:
 				tauon.sleep_timer.set()
 			if tauon.sleep_timer.get() > 2:
-				sdl3.SDL_WaitEventTimeout(None, 1000)
+				tauon_native.wait_for_event(1000)
 			continue
 
 		gui.new_playlist_cooldown = False
 
 		if inp.mouse_down and not tauon.coll((2, 2, window_size[0] - 4, window_size[1] - 4)):
-			# logging.info(sdl3.SDL_GetMouseState(None, None))
-			if sdl3.SDL_GetGlobalMouseState(None, None) == 0:
+			# logging.info(sdl3.get_mouse_state(None, None))
+			if sdl3.get_global_mouse_state()[0] == 0:
 				inp.mouse_down = False
 				inp.mouse_up = True
 				inp.quick_drag = False
@@ -60640,11 +60566,10 @@ def main(holder: Holder) -> None:
 				if keymaps.test("toggle-fullscreen"):
 					if not gui.fullscreen and gui.mode != GuiMode.MINI:
 						gui.fullscreen = True
-						sdl3.SDL_SetWindowFullscreenMode(t_window, None)
-						sdl3.SDL_SetWindowFullscreen(t_window, True)
+						sdl3.set_window_fullscreen(t_window, True)
 					elif gui.fullscreen:
 						gui.fullscreen = False
-						sdl3.SDL_SetWindowFullscreen(t_window, False)
+						sdl3.set_window_fullscreen(t_window, False)
 
 				if keymaps.test("playlist-toggle-breaks"):
 					# Toggle force off folder break for viewed playlist
@@ -60684,7 +60609,7 @@ def main(holder: Holder) -> None:
 
 			if gui.fullscreen and inp.key_esc_press:
 				gui.fullscreen = False
-				sdl3.SDL_SetWindowFullscreen(t_window, 0)
+				sdl3.set_window_fullscreen(t_window, 0)
 
 			# Disable keys for text cursor control
 			if not text_entry_shortcuts_blocked:
@@ -61121,12 +61046,12 @@ def main(holder: Holder) -> None:
 					if keymaps.test("opacity-up"):
 						prefs.window_opacity += 0.05
 						prefs.window_opacity = min(prefs.window_opacity, 1)
-						sdl3.SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+						sdl3.set_window_opacity(t_window, prefs.window_opacity)
 
 					if keymaps.test("opacity-down"):
 						prefs.window_opacity -= 0.05
 						prefs.window_opacity = max(prefs.window_opacity, 0.30)
-						sdl3.SDL_SetWindowOpacity(t_window, prefs.window_opacity)
+						sdl3.set_window_opacity(t_window, prefs.window_opacity)
 
 					if keymaps.test("seek-forward"):
 						pctl.seek_time(pctl.playing_time + prefs.seek_interval)
@@ -61396,14 +61321,14 @@ def main(holder: Holder) -> None:
 					item.reload()
 				reset_render = False
 
-			sdl3.SDL_SetRenderTarget(renderer, None)
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-			sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-			sdl3.SDL_RenderClear(renderer)
-			sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-			sdl3.SDL_RenderClear(renderer)
-			sdl3.SDL_SetRenderTarget(renderer, gui.main_texture)
-			sdl3.SDL_RenderClear(renderer)
+			sdl3.set_render_target(renderer, None)
+			sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+			sdl3.render_clear(renderer)
+			sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.render_clear(renderer)
+			sdl3.set_render_target(renderer, gui.main_texture)
+			sdl3.render_clear(renderer)
 
 			# Blurred album art background: drawn first so all panels and
 			# text composite on top of it (panel colours are made translucent
@@ -63538,8 +63463,8 @@ def main(holder: Holder) -> None:
 					window_size[1] = size[1]
 
 					tauon._set_wayland_mini_mode_window_state(True, size[0], size[1], reset_tracking=False)
-					sdl3.SDL_SetWindowMinimumSize(t_window, size[0], size[1])
-					sdl3.SDL_SetWindowSize(t_window, size[0], size[1])
+					sdl3.set_window_minimum_size(t_window, size[0], size[1])
+					sdl3.set_window_size(t_window, size[0], size[1])
 
 				if prefs.mini_mode_mode == MiniModeMode.SLATE:
 					tauon.mini_mode3.render()
@@ -63912,26 +63837,26 @@ def main(holder: Holder) -> None:
 				gui.cursor_is = gui.cursor_want
 
 				if gui.cursor_is == 0:
-					sdl3.SDL_SetCursor(gui.cursor_standard)
+					sdl3.set_cursor(gui.cursor_standard)
 				elif gui.cursor_is == 1:
-					sdl3.SDL_SetCursor(gui.cursor_shift)
+					sdl3.set_cursor(gui.cursor_shift)
 				elif gui.cursor_is == 2:
-					sdl3.SDL_SetCursor(gui.cursor_text)
+					sdl3.set_cursor(gui.cursor_text)
 				elif gui.cursor_is == 3:
-					sdl3.SDL_SetCursor(gui.cursor_hand)
+					sdl3.set_cursor(gui.cursor_hand)
 				elif gui.cursor_is == 4:
-					sdl3.SDL_SetCursor(gui.cursor_br_corner)
+					sdl3.set_cursor(gui.cursor_br_corner)
 				elif gui.cursor_is == 8:
-					sdl3.SDL_SetCursor(gui.cursor_right_side)
+					sdl3.set_cursor(gui.cursor_right_side)
 				elif gui.cursor_is == 9:
-					sdl3.SDL_SetCursor(gui.cursor_top_side)
+					sdl3.set_cursor(gui.cursor_top_side)
 				elif gui.cursor_is == 10:
-					sdl3.SDL_SetCursor(gui.cursor_left_side)
+					sdl3.set_cursor(gui.cursor_left_side)
 				elif gui.cursor_is == 11:
-					sdl3.SDL_SetCursor(gui.cursor_bottom_side)
+					sdl3.set_cursor(gui.cursor_bottom_side)
 				elif gui.cursor_is == 12:
 					# Vertical-resize cursor (NS) — used by the Custom Layout boundaries.
-					sdl3.SDL_SetCursor(gui.cursor_ns)
+					sdl3.set_cursor(gui.cursor_ns)
 
 			tauon.input_sdl.test_capture_mouse()
 			tauon.input_sdl.mouse_capture_want = False
@@ -64055,13 +63980,13 @@ def main(holder: Holder) -> None:
 			# logging.info("FRAME " + str(tauon.core_timer.get()))
 			gui.present = True
 
-			sdl3.SDL_SetRenderTarget(renderer, None)
+			sdl3.set_render_target(renderer, None)
 			if tauon.dream_room.active:
 				# Dream Room: compose the frame as a 3D scene with the UI on a
 				# monitor instead of blitting it fullscreen
 				tauon.dream_room.render()
 			else:
-				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+				sdl3.render_texture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 
 			if gui.turbo:
 				gui.level_update = True
@@ -64088,13 +64013,13 @@ def main(holder: Holder) -> None:
 		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active and not tauon.milk_fullscreen.active:
 			gui.level_update = False
 
-			sdl3.SDL_SetRenderTarget(renderer, None)
+			sdl3.set_render_target(renderer, None)
 			if not gui.present:
-				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
-				sdl3.SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0)
-				sdl3.SDL_RenderClear(renderer)
-				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-				sdl3.SDL_RenderTexture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
+				sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
+				sdl3.set_render_draw_color(renderer, 0, 0, 0, 0)
+				sdl3.render_clear(renderer)
+				sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.render_texture(renderer, gui.main_texture, None, gui.tracklist_texture_rect)
 				gui.present = True
 
 			# The level meter / spectrum / scrolling spectrogram are top-panel
@@ -64137,13 +64062,13 @@ def main(holder: Holder) -> None:
 				if len(gui.spec2_buffers) > 0 and vis_update:
 					vis_update = False
 
-					sdl3.SDL_SetRenderTarget(renderer, gui.spec2_tex)
+					sdl3.set_render_target(renderer, gui.spec2_tex)
 					# Replace-blend: vis_bg may be translucent (frosted art
 					# bg) and old column pixels must not show through it
-					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+					sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 					for i, value in enumerate(gui.spec2_buffers[0]):
 						ddt.rect([gui.spec2_position, i, 1, 1], colours.vis_bg)
-					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+					sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 					del gui.spec2_buffers[0]
 
@@ -64152,7 +64077,7 @@ def main(holder: Holder) -> None:
 					if gui.spec2_position > gui.spec2_w - 1:
 						gui.spec2_position = 0
 
-					sdl3.SDL_SetRenderTarget(renderer, None)
+					sdl3.set_render_target(renderer, None)
 
 				#
 				# else:
@@ -64164,16 +64089,16 @@ def main(holder: Holder) -> None:
 					gui.spec2_source.w = gui.spec2_position
 					gui.spec2_dest.x = gui.spec2_rec.x + gui.spec2_rec.w - gui.spec2_position
 					gui.spec2_dest.w = gui.spec2_position
-					sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+					sdl3.render_texture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
 
 					gui.spec2_source.x = gui.spec2_position
 					gui.spec2_source.y = 0
 					gui.spec2_source.w = gui.spec2_rec.w - gui.spec2_position
 					gui.spec2_dest.x = gui.spec2_rec.x
 					gui.spec2_dest.w = gui.spec2_rec.w - gui.spec2_position
-					sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
+					sdl3.render_texture(renderer, gui.spec2_tex, gui.spec2_source, gui.spec2_dest)
 				else:
-					sdl3.SDL_RenderTexture(renderer, gui.spec2_tex, None, gui.spec2_rec)
+					sdl3.render_texture(renderer, gui.spec2_tex, None, gui.spec2_rec)
 
 				if pref_box.enabled:
 					# ddt.rect((gui.spec2_rec.x, gui.spec2_rec.y, gui.spec2_rec.w, gui.spec2_rec.h), ColourRGBA(0, 0, 0, 90))
@@ -64229,19 +64154,19 @@ def main(holder: Holder) -> None:
 					pass
 
 				if not gui.test:
-					sdl3.SDL_SetRenderTarget(renderer, gui.spec1_tex)
+					sdl3.set_render_target(renderer, gui.spec1_tex)
 
 					# Replace-blend: vis_bg may be translucent (frosted art
 					# bg) and the texture persists between frames
-					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+					sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 					ddt.rect((0, 0, gui.spec_w, gui.spec_h), colours.vis_bg)
-					sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+					sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 					# xx = 0
 					gui.bar.x = 0
 					on = 0
 
-					sdl3.SDL_SetRenderDrawColor(
+					sdl3.set_render_draw_color(
 						renderer, colours.vis_colour.r, colours.vis_colour.g, colours.vis_colour.b, colours.vis_colour.a
 					)
 
@@ -64264,15 +64189,15 @@ def main(holder: Holder) -> None:
 						gui.bar.y = 0 + gui.spec_h - item
 						gui.bar.h = item
 
-						sdl3.SDL_RenderFillRect(renderer, gui.bar)
+						sdl3.render_fill_rect(renderer, gui.bar)
 
 						gui.bar.x += round(4 * gui.scale)
 
 					if tauon.pref_box.enabled:
 						ddt.rect((0, 0, gui.spec_w, gui.spec_h), ColourRGBA(0, 0, 0, 90))
 
-					sdl3.SDL_SetRenderTarget(renderer, None)
-					sdl3.SDL_RenderTexture(renderer, gui.spec1_tex, None, gui.spec1_rec)
+					sdl3.set_render_target(renderer, None)
+					sdl3.render_texture(renderer, gui.spec1_tex, None, gui.spec1_rec)
 
 			if gui.vis == 1 and vis_show:
 				if prefs.backend == Backend.GSTREAMER or True:
@@ -64290,7 +64215,7 @@ def main(holder: Holder) -> None:
 					else:
 						tauon.level_train.clear()
 
-				sdl3.SDL_SetRenderTarget(renderer, gui.spec_level_tex)
+				sdl3.set_render_target(renderer, gui.spec_level_tex)
 
 				x = vis_right - 20 * gui.scale - gui.offset_extra
 				y = gui.level_y
@@ -64306,9 +64231,9 @@ def main(holder: Holder) -> None:
 				level_bg = colours.grey(10)
 				if gui.have_art_bg and prefs.art_bg_frosted:
 					level_bg = ColourRGBA(10, 10, 10, 115)
-				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_NONE)
+				sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_NONE)
 				ddt.rect_a((0, 0), (79 * gui.scale, 18 * gui.scale), level_bg)
-				sdl3.SDL_SetRenderDrawBlendMode(renderer, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
 				x = round(gui.level_ww - 9 * gui.scale)
 				y = 10 * gui.scale
@@ -64426,17 +64351,17 @@ def main(holder: Holder) -> None:
 						pass
 					ddt.rect_a(((x - (w * t) - (s * t)), y), (w, w), cc)
 
-				sdl3.SDL_SetRenderTarget(renderer, None)
-				sdl3.SDL_RenderTexture(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
+				sdl3.set_render_target(renderer, None)
+				sdl3.render_texture(renderer, gui.spec_level_tex, None, gui.spec_level_rec)
 
 		if gui.present:
-			sdl3.SDL_SetRenderTarget(renderer, None)
+			sdl3.set_render_target(renderer, None)
 			tauon.duplicate_import_box.render()
 			tauon.render_rounded_corners()
 			tauon.wayland_blur.sync()
 			tauon.macos_blur.sync()
 			tauon.windows_blur.sync()
-			sdl3.SDL_RenderPresent(renderer)
+			sdl3.render_present(renderer)
 
 			gui.present = False
 
@@ -64489,18 +64414,32 @@ def main(holder: Holder) -> None:
 	if gui.mode == GuiMode.MAIN:
 		tauon.old_window_position = get_window_position(t_window)
 
-	sdl3.SDL_DestroyTexture(gui.main_texture)
-	sdl3.SDL_DestroyTexture(gui.tracklist_texture)
-	sdl3.SDL_DestroyTexture(gui.spec2_tex)
-	sdl3.SDL_DestroyTexture(gui.spec1_tex)
-	sdl3.SDL_DestroyTexture(gui.spec_level_tex)
+	sdl3.destroy_texture(gui.main_texture)
+	sdl3.destroy_texture(gui.tracklist_texture)
+	sdl3.destroy_texture(gui.spec2_tex)
+	sdl3.destroy_texture(gui.spec1_tex)
+	sdl3.destroy_texture(gui.spec_level_tex)
 	ddt.clear_text_cache()
 	tauon.clear_img_cache(False)
 
 	tauon.wayland_blur.shutdown()
 	tauon.macos_blur.shutdown()
 	tauon.windows_blur.shutdown()
-	sdl3.SDL_DestroyWindow(t_window)
+
+	# Stop the D-Bus thread's GLib loop first: it dispatches the tray's GTK and
+	# D-Bus menu objects, which destroying the tray (here, or SDL_Quit in the
+	# launcher) frees from this thread.
+	if not macos and not tauon.windows:
+		tauon.gnome.stop()
+
+	# Tray entries hold ctypes callbacks as well. Destroy the tray before this
+	# function drops Tauon's references to those callbacks.
+	if tauon.sdl_tray is not None:
+		tauon.destroy_sdl_tray()
+
+	# Clear the Python hit-test callback while Python and its closure are still
+	# alive; the native bootstrap destroys the window after this function returns.
+	sdl3.set_window_hit_test(t_window, None)
 
 	pctl.playerCommand = "unload"
 	pctl.playerCommandReady = True
@@ -64566,15 +64505,8 @@ def main(holder: Holder) -> None:
 		except Exception:
 			logging.exception("uninit notification error")
 
-	try:
+	if tauon.instance_lock is not None:
 		tauon.instance_lock.close()
-	except Exception:
-		logging.exception("No lock object to close")
-
-	# sdl3.IMG_Quit()
-	# sdl3.SDL_QuitSubSystem(sdl3.SDL_INIT_EVERYTHING)
-	sdl3.SDL_Quit()
-	# logging.info("SDL unloaded")
 
 	exit_timer = Timer()
 	exit_timer.set()

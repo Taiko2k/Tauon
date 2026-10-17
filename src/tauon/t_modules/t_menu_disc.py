@@ -19,14 +19,13 @@ record when it closes.
 
 from __future__ import annotations
 
-import ctypes
 import math
 import random
 import threading
 import time
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_extra import ColourRGBA
 
@@ -277,14 +276,10 @@ def bake(shader: Callable[[float, float], Pixel], w: int, h: int | None = None,
 
 def texture_from_pixels(renderer, pixels: bytes, w: int, h: int):
 	"""Upload bake() output as a linearly filtered, alpha-blended texture."""
-	buffer = ctypes.create_string_buffer(pixels)
-	surface = sdl3.SDL_CreateSurfaceFrom(
-		w, h, sdl3.SDL_PIXELFORMAT_ARGB8888, ctypes.cast(buffer, ctypes.c_void_p), w * 4)
-	texture = sdl3.SDL_CreateTextureFromSurface(renderer, surface)
-	sdl3.SDL_DestroySurface(surface)
+	texture = sdl3.create_texture_from_argb(renderer, w, h, pixels, w * 4)
 	if texture:
-		sdl3.SDL_SetTextureBlendMode(texture, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.SDL_SetTextureScaleMode(texture, sdl3.SDL_SCALEMODE_LINEAR)
+		sdl3.set_texture_blend_mode(texture, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.set_texture_scale_mode(texture, sdl3.SDL_SCALEMODE_LINEAR)
 	return texture
 
 
@@ -395,7 +390,7 @@ class MenuDisc:
 	def destroy(self) -> None:
 		for texture in (self.rim, self.hub, self.core_mono, self.core_colour, self.ripple, *self.fx.values()):
 			if texture:
-				sdl3.SDL_DestroyTexture(texture)
+				sdl3.destroy_texture(texture)
 		self.rim = self.hub = self.core_mono = self.core_colour = self.ripple = None
 		self.fx = {}
 		self.size = 0
@@ -414,7 +409,7 @@ class MenuDisc:
 		if size != self.size or not self.rim:
 			for texture in (self.rim, self.hub, self.core_mono, self.core_colour, self.ripple):
 				if texture:
-					sdl3.SDL_DestroyTexture(texture)
+					sdl3.destroy_texture(texture)
 			self.size = size
 			self.rim = self.texture(bake(shade_rim, size), size, size)
 			self.hub = self.texture(bake(shade_hub, size), size, size)
@@ -432,7 +427,7 @@ class MenuDisc:
 			if self.fx_pixels:
 				for texture in self.fx.values():
 					if texture:
-						sdl3.SDL_DestroyTexture(texture)
+						sdl3.destroy_texture(texture)
 				self.fx = {name: self.texture(px, w, h) for name, (w, h, px) in self.fx_pixels.items()}
 				self.fx_pixels = None
 
@@ -451,35 +446,32 @@ class MenuDisc:
 		else:
 			r, g, b = (round(v) for v in colour)
 			a = 255
-		sdl3.SDL_SetTextureColorMod(texture, r, g, b)
-		sdl3.SDL_SetTextureAlphaMod(texture, round(clamp(a * alpha, 0, 255)))
-		sdl3.SDL_SetTextureBlendMode(
+		sdl3.set_texture_color_mod(texture, r, g, b)
+		sdl3.set_texture_alpha_mod(texture, round(clamp(a * alpha, 0, 255)))
+		sdl3.set_texture_blend_mode(
 			texture, sdl3.SDL_BLENDMODE_ADD if glow and self.additive else sdl3.SDL_BLENDMODE_BLEND)
-		dst = sdl3.SDL_FRect(cx - w / 2, cy - h / 2, w, h)
+		dst = sdl3.FRect(cx - w / 2, cy - h / 2, w, h)
 		if angle % 360:
-			sdl3.SDL_RenderTextureRotated(self.tauon.renderer, texture, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
+			sdl3.render_texture_rotated(self.tauon.renderer, texture, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
 		else:
-			sdl3.SDL_RenderTexture(self.tauon.renderer, texture, None, dst)
+			sdl3.render_texture(self.tauon.renderer, texture, None, dst)
 
 	def clip(self, reach: float | None = None):
 		"""Clip to the bar, or to reach px either side of the disc within it.
 		Returns the previous clip state for unclip()."""
 		renderer = self.tauon.renderer
-		prev = None
-		if sdl3.SDL_RenderClipEnabled(renderer):
-			prev = sdl3.SDL_Rect()
-			sdl3.SDL_GetRenderClipRect(renderer, ctypes.byref(prev))
+		prev = sdl3.get_render_clip_rect(renderer)
 		x, y, w, h = self.bar
 		if reach is not None:
 			left = max(x, self.centre[0] - reach)
 			w = min(x + w, self.centre[0] + reach) - left
 			x = left
-		rect = sdl3.SDL_Rect(round(x), round(y), round(w), round(h))
-		sdl3.SDL_SetRenderClipRect(renderer, ctypes.byref(rect))
+		rect = sdl3.Rect(round(x), round(y), round(w), round(h))
+		sdl3.set_render_clip_rect(renderer, rect)
 		return prev
 
 	def unclip(self, prev) -> None:
-		sdl3.SDL_SetRenderClipRect(self.tauon.renderer, ctypes.byref(prev) if prev is not None else None)
+		sdl3.set_render_clip_rect(self.tauon.renderer, prev)
 
 	def trigger(self) -> None:
 		"""Play the open animation: turn on to the next half-turn rest position,

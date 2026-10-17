@@ -8,9 +8,26 @@ on:
     paths-ignore:
       - 'locale/**'
 jobs:
-  build-linux-arm64:
-    name: "Linux arm64"
-    runs-on: ubuntu-24.04-arm
+  build-linux:
+    name: "Linux ${{ matrix.arch }}"
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            runner: ubuntu-24.04
+            deb_arch: amd64
+            # Keep the established release asset name for x64
+            artifact: TauonMusicBox-linux
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            deb_arch: arm64
+            artifact: TauonMusicBox-linux-arm64
+    env:
+      SDL_VERSION: "3.4.0"
+      # Of the SDL3-<version>.tar.gz release asset
+      SDL_SHA256: "082cbf5f429e0d80820f68dc2b507a94d4cc1b4e70817b119bbb8ec6a69584b8"
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7
@@ -28,6 +45,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             gettext \
+            cmake \
             gobject-introspection \
             gir1.2-pango-1.0 \
             gir1.2-rsvg-2.0 \
@@ -51,187 +69,91 @@ jobs:
             libsamplerate0-dev \
             libvorbis-dev \
             libwavpack-dev \
+            libxss-dev \
+            ninja-build \
+            patchelf \
+            pkg-config \
+            xvfb \
             p7zip
           # JPEG-XL hack since 24.04 is too old
           sudo apt-get install -y \
             libgif7 \
-            liblcms2-dev \
-            wget
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl-dev_0.10.3-4ubuntu1_arm64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_arm64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_arm64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_arm64.deb
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux-arm64
-          sudo dpkg -i *.deb
-
-      - name: Install Python dependencies and setup venv
-        env:
-          SDL_GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          python -m pip install --upgrade pip
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install \
-            ".[all]" \
-            build \
-            pyinstaller
-          python -c "import sdl3"
-        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-
-      - name: Build the project using python-build
-        run: |
-          source .venv/bin/activate
-          python -m tools.i18n.compile_translations
-          python -m build --wheel
-
-      - name: Install the project into a venv
-        run: |
-          source .venv/bin/activate
-          pip install --prefix ".venv" dist/*.whl
-
-      - name: "[DEBUG] List all files"
-        run: find .
-
-      # (Martin): ln hack is due to https://github.com/Taiko2k/Tauon/issues/2052
-      - name: Build Linux App with PyInstaller
-        run: |
-          source .venv/bin/activate
-          pyinstaller --log-level=DEBUG packaging/pyinstaller/linux.spec
-          ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
-          touch dist/TauonMusicBox/_internal/portable
-
-      - name: Create 7Z
-        run: |
-          APP_NAME="TauonMusicBox"
-          cd "dist/${APP_NAME}"
-
-          ARCHIVE_PATH="../../${APP_NAME}-linux-arm64.7z"
-
-          7z a -r -snl "${ARCHIVE_PATH}" "."
-
-      - name: Upload 7Z artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: TauonMusicBox-linux-arm64
-          path: TauonMusicBox-linux-arm64.7z
-
-      #- name: Run Tauon for testing
-      #  run: |
-      #    source .venv/bin/activate
-      #    tauonmb
-
-  build-linux-x64:
-    name: "Linux x64"
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout source code
-        uses: actions/checkout@v7
-        with:
-          submodules: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.15'
-          cache: 'pip'
-
-      - name: Install deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            gettext \
-            gobject-introspection \
-            gir1.2-pango-1.0 \
-            gir1.2-rsvg-2.0 \
-            gir1.2-notify-0.7 \
-            gir1.2-girepository-3.0-dev \
-            libgirepository1.0-dev \
-            libgirepository-2.0-dev \
-            libglib2.0-dev \
-            python3-gi-cairo \
-            libayatana-appindicator3-dev \
-            libcairo2-dev \
-            libpipewire-0.3-dev \
-            libdbus-1-dev \
-            libjxl-dev \
-            libflac-dev \
-            libchromaprint-dev \
-            libgme-dev \
-            libmpg123-dev \
-            libopenmpt-dev \
-            libopusfile-dev \
-            libsamplerate0-dev \
-            libvorbis-dev \
-            libwavpack-dev \
-            p7zip
-          # JPEG-XL hack since 24.04 is too old
-          sudo apt-get install -y \
-            libgif7 \
-            liblcms2-dev \
-            wget
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl-dev_0.10.3-4ubuntu1_amd64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libjxl0.10_0.10.3-4ubuntu1_amd64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy-dev_1.2.0-3ubuntu2_amd64.deb
-          wget https://github.com/Taiko2k/Tauon/releases/download/Extras/libhwy1t64_1.2.0-3ubuntu2_amd64.deb
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-linux-x64
+            liblcms2-dev
+          # Release assets can be replaced, so each download must match the
+          # SHA-256 it had when it was pinned
+          fetch() {
+            curl -fsSL --retry 3 -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --strict
+          }
+          extras=https://github.com/Taiko2k/Tauon/releases/download/Extras
+          if [ "${{ matrix.arch }}" = x64 ]; then
+            fetch libjxl-dev.deb "${extras}/libjxl-dev_0.10.3-4ubuntu1_amd64.deb" 05fdfdb98206489183320efefb8500d4dedac0b235042940a44c94ced075433e
+            fetch libjxl.deb     "${extras}/libjxl0.10_0.10.3-4ubuntu1_amd64.deb" d494af89f272bdaf052d93e7d55030137c488a654a8640db66f988ca4b3a153b
+            fetch libhwy-dev.deb "${extras}/libhwy-dev_1.2.0-3ubuntu2_amd64.deb"  ebb35a856835bcd878e20c9c2e38dd46d8ca9145a1cc4b4c17a630c03f069b12
+            fetch libhwy.deb     "${extras}/libhwy1t64_1.2.0-3ubuntu2_amd64.deb"  d623d4ea0ad56a4e2d39545d5941dfba7120700b631438f092df3508d73947f6
+            fetch lrclib-solver  "${extras}/lrclib-solver-linux-x64"              b8becce458918941428bf16725ff790f48401b3053c564b7c7962fe70ea74a95
+          else
+            fetch libjxl-dev.deb "${extras}/libjxl-dev_0.10.3-4ubuntu1_arm64.deb" c2fe61a6110f0e29cf8bb4eb49dd1b542c587177c39492da1b249f4b409d7758
+            fetch libjxl.deb     "${extras}/libjxl0.10_0.10.3-4ubuntu1_arm64.deb" 11bf8e65a71af025893bd2334f2efc390be08d87e3f63775ab372a8401617b4f
+            fetch libhwy-dev.deb "${extras}/libhwy-dev_1.2.0-3ubuntu2_arm64.deb"  58b4cabf50b4993de7c435f9c7b037c331376cb105d24a34a35b48e54597e8d9
+            fetch libhwy.deb     "${extras}/libhwy1t64_1.2.0-3ubuntu2_arm64.deb"  f41efe00549002f437349f41ae04a760db477ad275b1913690c9c9ea24ca2273
+            fetch lrclib-solver  "${extras}/lrclib-solver-linux-arm64"            06f0a3ca4b5ba05c22b6d6b83a39e88d677aaf8c0850135d4a4c3c5d616870a7
+          fi
           sudo dpkg -i *.deb
         # wget https://github.com/Taiko2k/Tauon/releases/download/Extras/liblcms2-dev_2.14-2build1_amd64.deb
 
-      - name: Install Python dependencies and setup venv
-        env:
-          SDL_GITHUB_TOKEN: ${{ github.token }}
+      - name: Build SDL3
         run: |
-          python -m pip install --upgrade pip
+          mkdir -p build/sdl-src
+          curl -fsSL --retry 3 -o build/sdl.tar.gz \
+            "https://github.com/libsdl-org/SDL/releases/download/release-${SDL_VERSION}/SDL3-${SDL_VERSION}.tar.gz"
+          echo "${SDL_SHA256}  build/sdl.tar.gz" | sha256sum --check --strict
+          tar --strip-components=1 -xf build/sdl.tar.gz -C build/sdl-src
+          cmake -S build/sdl-src -B build/sdl-build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${PWD}/build/sdl-prefix" \
+            -DSDL_SHARED=ON \
+            -DSDL_STATIC=OFF \
+            -DSDL_TEST_LIBRARY=OFF
+          cmake --build build/sdl-build --parallel
+          cmake --install build/sdl-build
+
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
+        run: |
           python -m venv .venv
           source .venv/bin/activate
-          pip install \
-            ".[all]" \
-            build \
-            pyinstaller
-          python -c "import sdl3"
-        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
+          python -m pip install --upgrade pip
+          CMAKE_PREFIX_PATH="${PWD}/build/sdl-prefix" pip install ".[all]"
 
-      - name: Build the project using python-build
+      - name: Assemble relocatable Linux bundle
         run: |
           source .venv/bin/activate
-          python -m tools.i18n.compile_translations
-          python -m build --wheel
+          LD_LIBRARY_PATH="${PWD}/build/sdl-prefix/lib:${LD_LIBRARY_PATH}" \
+            python tools/package_bundle.py \
+            --platform linux \
+            --output dist/package \
+            --portable
 
-      - name: Install the project into a venv
+      - name: Smoke test staged Linux bundle
         run: |
-          source .venv/bin/activate
-          pip install --prefix ".venv" dist/*.whl
-
-      - name: "[DEBUG] List all files"
-        run: find .
-
-      # (Martin): ln hack is due to https://github.com/Taiko2k/Tauon/issues/2052
-      - name: Build Linux App with PyInstaller
-        run: |
-          source .venv/bin/activate
-          pyinstaller --log-level=DEBUG packaging/pyinstaller/linux.spec
-          ln -s _internal/libSDL3.so dist/TauonMusicBox/libSDL3.so.0
-          touch dist/TauonMusicBox/_internal/portable
+          xvfb-run -a dist/package/TauonMusicBox/tauon --tray --native-smoke-test
 
       - name: Create 7Z
         run: |
           APP_NAME="TauonMusicBox"
-          cd "dist/${APP_NAME}"
+          cd "dist/package/${APP_NAME}"
 
-          ARCHIVE_PATH="../../${APP_NAME}-linux.7z"
+          ARCHIVE_PATH="../../${{ matrix.artifact }}.7z"
 
           7z a -r -snl "${ARCHIVE_PATH}" "."
 
       - name: Upload 7Z artifact
         uses: actions/upload-artifact@v7
         with:
-          name: TauonMusicBox-linux
-          path: TauonMusicBox-linux.7z
-
-      #- name: Run Tauon for testing
-      #  run: |
-      #    source .venv/bin/activate
-      #    tauonmb
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}.7z
 
   build-macos-arm64:
     name: "macOS arm64"
@@ -279,8 +201,9 @@ jobs:
             libopenmpt \
             wavpack \
             game-music-emu \
+            ninja \
             create-dmg \
-            Python@3.15
+            python@3.15
 
       - name: Remove aws-sam-cli as it makes pydantic core preinstalled in brew but we want to use pip's
         run: brew uninstall aws-sam-cli pydantic
@@ -291,46 +214,31 @@ jobs:
 
       - name: Download lirclib solver
         run: |
-          curl -L -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos-arm64
+          curl -fsSL --retry 3 -o lrclib-solver https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-macos-arm64
+          echo "3f655b3c85f3de950aafd5301cfc8470421ed5d9c52bec164fdfd0eb4d102e57  lrclib-solver" | shasum -a 256 --check --strict
 
       - name: Build macOS Now Playing helper
         run: |
           bash src/nowplaying/build_app.sh
 
-      - name: Install Python dependencies and setup venv
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
         run: |
           export CXXFLAGS="-I/opt/homebrew/include"
           export LDFLAGS="-L/opt/homebrew/lib"
-
-          $(brew --prefix python)/libexec/bin/pip install --break-system-packages \
+          export CMAKE_PREFIX_PATH="$(brew --prefix)"
+          $(brew --prefix python@3.15)/libexec/bin/python -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install \
+            --no-cache-dir \
+            --no-binary=jxlpy \
             ".[all]" \
-            build \
-            pyinstaller \
             pytest
-        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-        #  $(brew --prefix python)/libexec/bin/python -m pip install --break-system-packages --upgrade pip
-        #  $(brew --prefix python)/libexec/bin/python -m venv --system-site-packages .venv
-        #  source .venv/bin/activate
-        #  CFLAGS: "-I/opt/homebrew/include"
-
-      - name: Build the project using python-build
-        run: |
-          $(brew --prefix python)/libexec/bin/python -m tools.i18n.compile_translations
-          $(brew --prefix python)/libexec/bin/python -m build --wheel
-        #  source .venv/bin/activate
-
-      - name: Install the project into a venv
-        run: |
-          $(brew --prefix python)/libexec/bin/pip install --prefix ".venv" dist/*.whl
-        #  $(brew --prefix python)/libexec/bin/pip install --break-system-packages dist/*.whl
-        #  source .venv/bin/activate
 
       - name: Run tests using pytest
         run: |
-          PYTHONPATH=src pytest src/tauon/tests
-
-      - name: "[DEBUG] List all files"
-        run: find .
+          PYTHONPATH=src .venv/bin/python -m pytest src/tauon/tests
 
       - name: Cache projectM build
         id: cache-projectm
@@ -353,29 +261,34 @@ jobs:
           cmake --build build/projectm-src/build -j3
           cmake --install build/projectm-src/build
 
-      - name: Build macOS app with PyInstaller
+      - name: Assemble relocatable macOS app
         run: |
-          pyinstaller --log-level=DEBUG packaging/pyinstaller/mac.spec
-        #  source .venv/bin/activate
-        env:
-          DYLD_LIBRARY_PATH: "/opt/homebrew/lib"
+          .venv/bin/python tools/package_bundle.py \
+            --platform macos \
+            --projectm build/projectm/lib/libprojectM-4.4.dylib \
+            --output dist/package
 
       - name: Ensure Now Playing helper is executable
         run: |
-          chmod +x "dist/Tauon.app/Contents/Resources/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
+          chmod +x \
+            "dist/package/Tauon.app/Contents/Resources/python/site-packages/tauon/lib/TauonNowPlaying.app/Contents/MacOS/TauonNowPlaying"
 
-      - name: "[DEBUG] List all files in .app"
-        run: find "dist/Tauon.app"
+      - name: Smoke test staged macOS app
+        run: |
+          "dist/package/Tauon.app/Contents/MacOS/Tauon" --tray --native-smoke-test
+          codesign --verify --deep --strict --verbose=2 "dist/package/Tauon.app"
+          ! find "dist/package/Tauon.app" -type f -exec otool -L {} \; 2>/dev/null \
+            | grep -E '/opt/homebrew|/usr/local|/Users/runner/work'
 
       - name: Generate DMG background image
         run: |
-          $(brew --prefix python)/libexec/bin/python extra/generate_dmg_background.py dist/dmg-background.png
+          .venv/bin/python extra/generate_dmg_background.py dist/dmg-background.png
 
       - name: Create DMG
         run: |
           mkdir -p dist/dmg
           APP_NAME="Tauon"
-          APP_PATH="dist/${APP_NAME}.app"
+          APP_PATH="dist/package/${APP_NAME}.app"
           DMG_PATH="dist/dmg/${APP_NAME}.dmg"
 
           # FIXME: Undo this overengineered crap once the following issue gets figured out:
@@ -404,11 +317,6 @@ jobs:
         with:
           name: Tauon-dmg
           path: dist/dmg/Tauon.dmg
-
-      #- name: Run Tauon for testing
-      #  run: |
-      #    hdiutil attach dist/dmg/Tauon.dmg
-      #    /Volumes/Tauon/Tauon.app/Contents/MacOS/Tauon
 
   build-windows-x64:
     name: "Windows x64"
@@ -450,19 +358,16 @@ jobs:
           update-ca-trust
           sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /ucrt64/include/opus/opusfile.h
 
-      - name: Install Python dependencies and setup venv
+      # Builds the launcher, Phazor and translations through CMake and installs
+      # them with the Python package into the virtual environment
+      - name: Build and install Tauon into a venv
         shell: msys2 {0}
         run: |
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
           export CFLAGS="-I/ucrt64/include"
-          export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
-          .venv/bin/python -m pip install \
-            ".[all]" \
-            build \
-            pyinstaller
-        #    https://github.com/pyinstaller/pyinstaller/archive/develop.zip
-        #  export PIP_FIND_LINKS=https://github.com/ddelange/python-magic/releases/expanded_assets/0.4.28.post8
+          export CMAKE_PREFIX_PATH=/ucrt64
+          .venv/bin/python -m pip install ".[all]"
 
       - name: Read version from pyproject.toml
         shell: msys2 {0}
@@ -481,76 +386,73 @@ jobs:
           print(f"Detected version: {version}")
           PY
 
-      - name: Build the project using python-build
-        shell: msys2 {0}
-        run: |
-          source .venv/bin/activate
-          python -m tools.i18n.compile_translations
-          python -m build --wheel
-
-      - name: Install the project into a venv
-        shell: msys2 {0}
-        run: |
-          source .venv/bin/activate
-          pip install --prefix ".venv" dist/*.whl
-
       # https://github.com/Taiko2k/Tauon/pull/931#issuecomment-1464880133
       - name: Download optionals from latest release files and notofonts' GitHub
         shell: msys2 {0}
         run: |
-          curl -L -o lrclib-solver.exe https://github.com/Taiko2k/Tauon/releases/download/Extras/lrclib-solver-x64.exe
-          curl -L -o TauonSMTC.dll  https://github.com/Taiko2k/Tauon/releases/download/Extras/TauonSMTC.dll
+          set -eo pipefail
+          # Release assets can be replaced, so each download must match the
+          # SHA-256 it had when it was pinned. Fonts come from fixed commits.
+          fetch() {
+            curl -fsSL --retry 3 -o "$1" "$2"
+            echo "$3  $1" | sha256sum --check --strict
+          }
+          extras=https://github.com/Taiko2k/Tauon/releases/download/Extras
+          noto=https://github.com/notofonts/notofonts.github.io/raw/5c3913063bb189df4edc94b766584dfb4c04a187/fonts/NotoSans/full/ttf
+          noto_cjk=https://github.com/notofonts/noto-cjk/raw/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese
+          fetch lrclib-solver.exe "${extras}/lrclib-solver-windows-x64.exe" 95c874e516bffaeac6d5f17260c088938e411a0b1dcf90699c77cec2adf2a7a4
+          fetch TauonSMTC.dll     "${extras}/TauonSMTC.dll"                 98a19392d17c3da3ae0e04b99d5d1a1ea54d377a762d6b8bde3d0c6154e254dd
           mkdir fonts
-          curl -L -o fonts/NotoSans-ExtraCondensed.ttf     https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensed.ttf     # 800KB
-          curl -L -o fonts/NotoSans-ExtraCondensedBold.ttf https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-ExtraCondensedBold.ttf # 800KB
-          curl -L -o fonts/NotoSans-Bold.ttf               https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf               # 800KB
-          curl -L -o fonts/NotoSans-Medium.ttf             https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Medium.ttf             # 800KB
-          curl -L -o fonts/NotoSans-Regular.ttf            https://github.com/notofonts/notofonts.github.io/raw/refs/heads/main/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf            # 800KB
-          curl -L -o fonts/NotoSansCJKjp-Bold.otf          https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf                           # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Medium.otf        https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Medium.otf                         # 16MB
-          curl -L -o fonts/NotoSansCJKjp-Regular.otf       https://github.com/notofonts/noto-cjk/raw/refs/heads/main/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf                        # 16MB
+          fetch fonts/NotoSans-ExtraCondensed.ttf     "${noto}/NotoSans-ExtraCondensed.ttf"     378c95db3ac074e5ffdb5491cfe4c4b5eadb431b71281164f974a3d4e70ac3ba # 800KB
+          fetch fonts/NotoSans-ExtraCondensedBold.ttf "${noto}/NotoSans-ExtraCondensedBold.ttf" cc63d525eee76665becc0c8bdebb4b4c6e9e4764215f9949576ea81062ea1f79 # 800KB
+          fetch fonts/NotoSans-Bold.ttf               "${noto}/NotoSans-Bold.ttf"               3a08a47daa00cade516425c15c57615aef2fd418ec9811a7b9f465088f92cc05 # 800KB
+          fetch fonts/NotoSans-Medium.ttf             "${noto}/NotoSans-Medium.ttf"             1d1570dd66d70cbcd56646c55580c3cc453c7abc505534230c165f93b55ad394 # 800KB
+          fetch fonts/NotoSans-Regular.ttf            "${noto}/NotoSans-Regular.ttf"            f5f552c8c5edb61fe6efb824baf4d4de47b1a8689ab4925ff43f7bd6a4ebece5 # 800KB
+          fetch fonts/NotoSansCJKjp-Bold.otf          "${noto_cjk}/NotoSansCJKjp-Bold.otf"      e53dcb0dcb2922e45d01aae1ebd2f382bb81d4229b18b6b883bd170678af1f76 # 16MB
+          fetch fonts/NotoSansCJKjp-Medium.otf        "${noto_cjk}/NotoSansCJKjp-Medium.otf"    dd523e580e3413c480b2d701bf64e534c20f8419e3cfb6a44c2bdcd8d2a6c052 # 16MB
+          fetch fonts/NotoSansCJKjp-Regular.otf       "${noto_cjk}/NotoSansCJKjp-Regular.otf"   68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5 # 16MB
 
-      - name: "[DEBUG] List all files"
-        shell: msys2 {0}
-        run: find .
-
-      - name: Build Windows App with PyInstaller
+      - name: Assemble relocatable Windows app
         shell: msys2 {0}
         run: |
           source .venv/bin/activate
-          pyinstaller --log-level=DEBUG packaging/pyinstaller/windows.spec
-          touch dist/TauonMusicBox/_internal/portable
+          python tools/package_bundle.py \
+            --platform windows \
+            --projectm /ucrt64/bin/libprojectM-4-4.dll \
+            --output dist/package \
+            --portable
+
+      - name: Smoke test staged Windows bundle
+        shell: msys2 {0}
+        run: |
+          "dist/package/TauonMusicBox/Tauon Music Box.exe" --tray --native-smoke-test
 
       - name: Create 7Z
         shell: msys2 {0}
         run: |
           APP_NAME="TauonMusicBox"
-          cd "dist/${APP_NAME}"
+          cd "dist/package/${APP_NAME}"
 
           ARCHIVE_PATH="../../${APP_NAME}-windows.7z"
 
           7z a -r "${ARCHIVE_PATH}" "."
 
-      #- name: "[DEBUG] List all files after pyinstaller"
-      #  shell: msys2 {0}
-      #  run: find .
-
       - name: Upload 7Z artifact
         uses: actions/upload-artifact@v7
         with:
           name: TauonMusicBox-windows
-          path: TauonMusicBox-windows.7z
+          path: dist/TauonMusicBox-windows.7z
 
       - name: Remove portable flag
         shell: msys2 {0}
         run: |
-          rm dist/TauonMusicBox/_internal/portable
+          rm "dist/package/TauonMusicBox/portable"
 
       - name: Replace Tauon version in .ISS
         run: |
           sed -i "s|{{ tauon_version }}|${{ steps.version.outputs.version }}|g" extra/setup.iss
 
-      - name: Get current drive letter nad replace what's in .ISS
+      - name: Get current drive letter and replace what's in .ISS
         shell: pwsh
         run: |
           $Drive = (Get-Item -Path "${{ github.workspace }}").PSDrive.Name + ":\"
@@ -600,7 +502,7 @@ jobs:
 
   pre-release:
     if: github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && github.event_name == 'push'
-    needs: [get-info, build-linux-arm64, build-linux-x64, build-windows-x64, build-macos-arm64]
+    needs: [get-info, build-linux, build-windows-x64, build-macos-arm64]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts

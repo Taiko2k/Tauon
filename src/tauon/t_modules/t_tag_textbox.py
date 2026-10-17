@@ -111,12 +111,12 @@ class TagTextBox(TextBox2):
 		self.selection = self.cursor_position
 
 	def copy(self) -> None:
-		import sdl3  # noqa: PLC0415
+		from tauon.t_modules import t_native  # noqa: PLC0415
 
 		self.normalize_input()
 		text = self.get_selection() or self.text
 		if text:
-			sdl3.SDL_SetClipboardText(text.replace(self.separator, " / ").encode("utf-8"))
+			t_native.set_clipboard_text(text.replace(self.separator, " / "))
 
 	def draw(self, *args: object, **kwargs: object) -> None:
 		if self.auto_slash_conversion and self.paste_text:

@@ -9,7 +9,7 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, alpha_mod
 from tauon.t_modules.t_menu_disc import bake, smoothstep, texture_from_pixels
@@ -293,16 +293,16 @@ class ActivityPopover:
 		size = round(SPINNER_PX * self.tauon.gui.scale)
 		if size != self.spinner_size or not self.spinner:
 			if self.spinner:
-				sdl3.SDL_DestroyTexture(self.spinner)
+				sdl3.destroy_texture(self.spinner)
 			self.spinner = texture_from_pixels(renderer, bake(shade_spinner, size), size, size)
 			self.spinner_size = size
 		if not self.spinner:
 			return
-		sdl3.SDL_SetTextureColorMod(self.spinner, colour.r, colour.g, colour.b)
-		sdl3.SDL_SetTextureAlphaMod(self.spinner, colour.a)
+		sdl3.set_texture_color_mod(self.spinner, colour.r, colour.g, colour.b)
+		sdl3.set_texture_alpha_mod(self.spinner, colour.a)
 		angle = time.monotonic() * SPINNER_RPS * 360 % 360
-		dst = sdl3.SDL_FRect(round(cx - size / 2), round(cy - size / 2), size, size)
-		sdl3.SDL_RenderTextureRotated(renderer, self.spinner, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
+		dst = sdl3.FRect(round(cx - size / 2), round(cy - size / 2), size, size)
+		sdl3.render_texture_rotated(renderer, self.spinner, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
 
 	def row_height(self, row: Activity) -> int:
 		if row.key in ("transcode", "sync"):

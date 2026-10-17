@@ -2,25 +2,17 @@
 
 import subprocess
 import sys
-import time
 
 
-def test_launch_main_script() -> None:
-	"""Test that Tauon launches without crashing."""
-	proc = subprocess.Popen(  # noqa: S603 - We care not to verify input here
+def test_direct_python_launch_is_rejected() -> None:
+	"""The Python package must not bypass the native SDL owner."""
+	result = subprocess.run(  # noqa: S603 - The interpreter and module are fixed test inputs
 		[sys.executable, "-m", "tauon"],
-		stdout=subprocess.PIPE,
-		stderr=subprocess.PIPE,
+		capture_output=True,
+		text=True,
+		timeout=10,
+		check=False,
 	)
 
-	try:
-		# Give it a moment to initialize
-		time.sleep(1)
-		assert proc.poll() is None, "Tauon exited early"
-	finally:
-		# Clean up process
-		proc.terminate()
-		try:
-			proc.wait(timeout=2)
-		except subprocess.TimeoutExpired:
-			proc.kill()
+	assert result.returncode != 0
+	assert "Tauon must be launched through the tauon-native executable" in result.stderr

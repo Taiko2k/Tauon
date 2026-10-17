@@ -26,7 +26,7 @@ import ctypes
 import logging
 from typing import TYPE_CHECKING
 
-import sdl3
+from tauon.t_modules import t_native as sdl3
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon
@@ -179,7 +179,7 @@ class WindowsBlur:
 	def load_libraries(self) -> bool:
 		if self.set_composition is not None or self.dwm is not None:
 			return True
-		if sdl3.SDL_GetCurrentVideoDriver() != b"windows":
+		if sdl3.get_current_video_driver() != b"windows":
 			self.unavailable = True
 			return False
 		try:
@@ -204,10 +204,8 @@ class WindowsBlur:
 	def get_hwnd(self) -> int | None:
 		"""The window handle the blur calls take"""
 		try:
-			properties = sdl3.SDL_GetWindowProperties(self.tauon.t_window)
-			pointer = sdl3.SDL_GetPointerProperty(
-				properties, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER, None)
-			return int(pointer) if pointer else None
+			return sdl3.get_window_pointer_property(
+				self.tauon.t_window, sdl3.SDL_PROP_WINDOW_WIN32_HWND_POINTER)
 		except Exception:
 			logging.exception("Failed to find the Windows window handle")
 			return None

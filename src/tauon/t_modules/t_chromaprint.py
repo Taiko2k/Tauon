@@ -22,6 +22,14 @@ if TYPE_CHECKING:
 _CONTEXT_LOCK = threading.Lock()
 
 
+def _bundled_library_directory() -> str | None:
+	try:
+		import tauon_native  # noqa: PLC0415
+	except ImportError:
+		return None
+	return tauon_native.bundled_library_directory()
+
+
 class ChromaprintError(Exception):
 	pass
 
@@ -43,18 +51,22 @@ class Chromaprint:
 				else ("libchromaprint.so.1", "libchromaprint.so")
 			)
 			locations = [*directories, Path(sys.executable).parent, Path(sys.prefix) / "lib"]
-			frozen_root = getattr(sys, "_MEIPASS", None)
-			if frozen_root:
-				locations.insert(0, Path(frozen_root))
-			if sys.platform == "darwin":
+			bundled_directory = _bundled_library_directory()
+			if bundled_directory:
+				locations.insert(0, Path(bundled_directory))
+			# A macOS bundle doesn't search the system, so it never touches a
+			# Homebrew install; bare names would also search /usr/local/lib
+			macos_bundle = sys.platform == "darwin" and bundled_directory is not None
+			if sys.platform == "darwin" and not macos_bundle:
 				locations.extend((Path("/opt/homebrew/lib"), Path("/usr/local/lib")))
 			elif sys.platform == "win32":
 				locations.extend(Path(item) for item in os.get_exec_path() if item)
 			candidates = [str(folder / name) for folder in locations for name in names if (folder / name).is_file()]
-			found = ctypes.util.find_library("chromaprint")
-			if found:
-				candidates.append(found)
-			candidates.extend(names)
+			if not macos_bundle:
+				found = ctypes.util.find_library("chromaprint")
+				if found:
+					candidates.append(found)
+				candidates.extend(names)
 		for candidate in dict.fromkeys(candidates):
 			try:
 				if sys.platform == "win32" and Path(candidate).is_absolute():
