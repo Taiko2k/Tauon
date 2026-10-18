@@ -18,6 +18,7 @@
 #include <cerrno>
 #include <charconv>
 #include <cctype>
+#include <cstdint>
 #include <cstring>
 #include <cstdlib>
 #include <filesystem>
@@ -872,13 +873,13 @@ void show_startup_error(const std::string& message) {
 	SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Tauon Music Box failed to start :(", message.c_str(), nullptr);
 }
 
-// Loading screen: a star field crossed by a faint Milky Way, laid out randomly
-// each startup
+// Loading screen: a star field crossed by a faint Milky Way, laid out from a
+// seed picked once per startup so every present shows the same sky
 class StarField {
 public:
-	StarField(SDL_Renderer* renderer, float width, float height, float scale)
+	StarField(SDL_Renderer* renderer, float width, float height, float scale, std::uint32_t seed)
 		: renderer_(renderer), width_(width), height_(height), scale_(scale),
-		  size_(scale), half_(scale / 2.0f), random_(std::random_device{}()) {
+		  size_(scale), half_(scale / 2.0f), random_(seed) {
 		for (int segment = 0; segment < kSegments; ++segment) {
 			const double angle = 2.0 * SDL_PI_D * segment / kSegments;
 			circle_[segment] = {static_cast<float>(std::cos(angle)), static_cast<float>(std::sin(angle))};
@@ -1108,11 +1109,11 @@ private:
 	std::vector<int> indices_;
 };
 
-void draw_loading_screen(SDL_Renderer* renderer, SDL_Window* window, double scale) {
+void draw_loading_screen(SDL_Renderer* renderer, SDL_Window* window, double scale, std::uint32_t seed) {
 	int width = 0;
 	int height = 0;
 	SDL_GetWindowSizeInPixels(window, &width, &height);
-	StarField(renderer, static_cast<float>(width), static_cast<float>(height), static_cast<float>(scale)).draw();
+	StarField(renderer, static_cast<float>(width), static_cast<float>(height), static_cast<float>(scale), seed).draw();
 }
 
 bool initialise_native_app(NativeState& state, int argc, char** argv) {
@@ -1213,7 +1214,8 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		// window. SDL window operations are asynchronous on several backends
 		// (including Cocoa), so without SDL_SyncWindow() it might not become
 		// visible until Python begins polling events.
-		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale);
+		const std::uint32_t splash_seed = std::random_device{}();
+		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed);
 		if (!SDL_ShowWindow(state.window.get())) {
 			std::cerr << "Tauon: failed to show the startup window: " << SDL_GetError() << '\n';
 			return false;
@@ -1231,7 +1233,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		SDL_PumpEvents();
 		// Present once more after mapping in case the video backend discarded the
 		// hidden window's drawable contents.
-		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale);
+		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed);
 		SDL_PumpEvents();
 	}
 	return true;
