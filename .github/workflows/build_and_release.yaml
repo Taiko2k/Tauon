@@ -154,6 +154,7 @@ jobs:
         with:
           name: ${{ matrix.artifact }}
           path: dist/${{ matrix.artifact }}.7z
+          archive: false
 
   build-macos-arm64:
     name: "macOS arm64"
@@ -317,6 +318,7 @@ jobs:
         with:
           name: Tauon-dmg
           path: dist/dmg/Tauon.dmg
+          archive: false
 
   build-windows-x64:
     name: "Windows x64"
@@ -442,6 +444,7 @@ jobs:
         with:
           name: TauonMusicBox-windows
           path: dist/TauonMusicBox-windows.7z
+          archive: false
 
       - name: Remove portable flag
         shell: msys2 {0}
@@ -481,6 +484,7 @@ jobs:
         with:
           name: TauonMusicBox-windows-installer
           path: extra/Output/TauonMusicBox-windows-installer.exe
+          archive: false
 
   get-info:
     runs-on: ubuntu-latest
