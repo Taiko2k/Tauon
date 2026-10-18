@@ -7431,6 +7431,8 @@ class Tauon:
 		self.d_click_timer: Timer                = Timer()
 		self.d_click_timer.force_set(10)
 		self.lyrics_check_timer: Timer           = Timer()
+		self.lyric_txt_checked: set[int]         = set()  # tracks already looked at for a .txt this session
+		self.lyric_sidecar_cache: tuple[int, float, tuple[Path | None, Path | None]] | None = None
 		self.scroll_hide_timer: Timer            = Timer(100)
 		self.scroll_gallery_hide_timer: Timer    = Timer(100)
 		self.get_lfm_wait_timer: Timer           = Timer(10)
@@ -10304,43 +10306,65 @@ class Tauon:
 		copy_to_clipboard(track_object.lyrics)
 
 	def clear_lyrics(self, track_object: TrackClass) -> None:
+		"""Clear static lyrics. With saving to files on, a .txt beside the track is deleted."""
+		txt_path = find_lyric_sidecars(track_object)[1]
+		self.lyric_sidecar_cache = None
 		track_object.lyrics = ""
 		if self.prefs.save_lyrics_changes_to_files:
 			self.write_lyrics(track_object)
 		self.lyrics_ren_mini.to_reload = True
+		if txt_path is None:
+			return
+
+		# Keep the lazy check from loading the .txt straight back in
+		self.lyric_txt_checked.add(track_object.index)
+		if not self.prefs.save_lyrics_changes_to_files:
+			self.show_message(
+				_("Cleared lyrics in Tauon only"),
+				_("The .txt file was kept because \"Save lyrics edits to tags\" is off."),
+				mode="done",
+			)
+			return
+		try:
+			txt_path.unlink()
+		except OSError:
+			logging.exception("Failed to delete lyrics file")
+			self.show_message(_("Could not delete lyrics file"), _("The .txt file could not be deleted."), mode="error")
+			return
+		self.show_message(_("Deleted lyrics file"), txt_path.name, mode="done")
+
+	def clear_lyrics_deletes_file(self, track_object: TrackClass) -> bool:
+		return self.prefs.save_lyrics_changes_to_files and self.cached_lyric_sidecars(track_object)[1] is not None
+
+	def clear_synced_lyrics_deletes_file(self, track_object: TrackClass) -> bool:
+		return self.prefs.save_synced_to_lrc and self.cached_lyric_sidecars(track_object)[0] is not None
 
 	def track_has_synced_lyrics(self, track_object: TrackClass) -> bool:
-		return find_synced_lyric_data(track_object) is not None
+		# Asked every frame by the menu, so the folder lookup goes through the cache
+		if track_object.synced and find_synced_lyric_data(track_object) is not None:
+			return True
+		if track_object.lyrics and lyrics_are_synced(track_object.lyrics):
+			return True
+		return self.cached_lyric_sidecars(track_object)[0] is not None
 
 	def clear_synced_lyrics_disable_test(self, track_object: TrackClass) -> bool:
 		return not self.track_has_synced_lyrics(track_object)
 
 	def clear_synced_lyrics(self, track_object: TrackClass) -> None:
-		had_embedded_synced = find_synced_lyric_data(track_object, just_check=True)
-		lrc_path: Path | None = None
+		had_embedded_synced = bool(track_object.lyrics) and lyrics_are_synced(track_object.lyrics)
 		had_cached_synced = bool(track_object.synced)
 		deleted_lrc = False
 		cleared_tags = False
 		kept_lrc = False
 
-		if not track_object.is_network:
-			direc = Path(track_object.parent_folder_path)
-			name = Path(track_object.filename).stem
-			if direc.is_dir():
-				lrc_path = next(
-					(
-						f for f in direc.iterdir()
-						if f.is_file()
-						and f.stem == name
-						and f.suffix.lower() == ".lrc"
-					),
-					None,
-				)
-
+		lrc_path = find_lyric_sidecars(track_object)[0]
+		self.lyric_sidecar_cache = None
 		track_object.synced = ""
 
 		if had_embedded_synced:
 			track_object.lyrics = ""
+			# Keep the lazy check from refilling the lyrics field from a .txt
+			self.lyric_txt_checked.add(track_object.index)
 			if self.prefs.save_lyrics_changes_to_files:
 				self.write_lyrics(track_object)
 				cleared_tags = True
@@ -10353,7 +10377,7 @@ class Tauon:
 				except Exception:
 					logging.exception("Failed to delete synced lyrics file")
 					self.show_message(
-						_("Could not clear synced lyrics"),
+						_("Could not delete synced lyrics file"),
 						_("The .lrc file could not be deleted."),
 						mode="error",
 					)
@@ -10363,9 +10387,9 @@ class Tauon:
 
 		self.lyrics_ren_mini.to_reload = True
 		if deleted_lrc and cleared_tags:
-			self.show_message(_("Cleared synced lyrics"), _("Removed from .lrc and tags"), mode="done")
+			self.show_message(_("Deleted synced lyrics file"), _("Also removed from tags"), mode="done")
 		elif deleted_lrc:
-			self.show_message(_("Cleared synced lyrics"), _("Removed from .lrc"), mode="done")
+			self.show_message(_("Deleted synced lyrics file"), lrc_path.name, mode="done")
 		elif cleared_tags:
 			self.show_message(_("Cleared synced lyrics"), _("Removed from tags"), mode="done")
 		elif kept_lrc:
@@ -10399,7 +10423,12 @@ class Tauon:
 
 	def clear_lyrics_deco(self, track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text if track_object.lyrics else self.colours.menu_text_disabled
-		return Decorator(line_colour, self.colours.menu_background, None)
+		text = _("Delete Lyrics File") if self.clear_lyrics_deletes_file(track_object) else None
+		return Decorator(line_colour, self.colours.menu_background, text)
+
+	def clear_synced_lyrics_deco(self, track_object: TrackClass) -> Decorator:
+		text = _("Delete Synced Lyrics File") if self.clear_synced_lyrics_deletes_file(track_object) else None
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
 
 	def edit_lyrics_deco(self, _track_object: TrackClass) -> Decorator:
 		line_colour = self.colours.menu_text# if track_object.lyrics else self.colours.menu_text_disabled
@@ -10670,37 +10699,41 @@ class Tauon:
 					r = requests.get("https://webservice.fanart.tv/v3/music/albums/" \
 						+ artist_id + "?api_key=" + self.prefs.fatvap, timeout=(4, 10))
 
-					artlink = r.json()["albums"][album_id]["albumcover"][0]["url"]
-					id = r.json()["albums"][album_id]["albumcover"][0]["id"]
+					covers = r.json().get("albums", {}).get(album_id, {}).get("albumcover")
+					if not covers:
+						logging.info(f"No fanart.tv cover for release group: {album_id}")
+					else:
+						artlink = covers[0]["url"]
+						id = covers[0]["id"]
 
-					response = urllib.request.urlopen(artlink, context=self.tls_context)
-					info = response.info()
+						response = urllib.request.urlopen(artlink, context=self.tls_context)
+						info = response.info()
 
-					t = io.BytesIO()
-					t.seek(0)
-					t.write(response.read())
-					t.seek(0, 2)
-					buffer_size = t.tell()
-					t.seek(0)
+						t = io.BytesIO()
+						t.seek(0)
+						t.write(response.read())
+						t.seek(0, 2)
+						buffer_size = t.tell()
+						t.seek(0)
 
-					if info.get_content_maintype() == "image" and buffer_size > 1000:
-						if info.get_content_subtype() == "jpeg":
-							filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
-						elif info.get_content_subtype() == "png":
-							filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
-						else:
-							self.show_message(_("Could not detect downloaded filetype."), mode="error")
+						if info.get_content_maintype() == "image" and buffer_size > 1000:
+							if info.get_content_subtype() == "jpeg":
+								filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".jpg")
+							elif info.get_content_subtype() == "png":
+								filepath = os.path.join(tr.parent_folder_path, "cover-" + id + ".png")
+							else:
+								self.show_message(_("Could not detect downloaded filetype."), mode="error")
+								return
+
+							with open(filepath, "wb") as f:
+								f.write(t.read())
+
+							self.show_message(_("Cover art downloaded from fanart.tv"), mode="done")
+							# self.clear_img_cache()
+							for track_id in self.pctl.default_playlist:
+								if tr.parent_folder_path == self.pctl.get_track(track_id).parent_folder_path:
+									self.clear_track_image_cache(self.pctl.get_track(track_id))
 							return
-
-						with open(filepath, "wb") as f:
-							f.write(t.read())
-
-						self.show_message(_("Cover art downloaded from fanart.tv"), mode="done")
-						# self.clear_img_cache()
-						for track_id in self.pctl.default_playlist:
-							if tr.parent_folder_path == self.pctl.get_track(track_id).parent_folder_path:
-								self.clear_track_image_cache(self.pctl.get_track(track_id))
-						return
 				except Exception:
 					logging.exception("Failed to get from fanart.tv")
 
@@ -15281,12 +15314,17 @@ class Tauon:
 		im.close()
 		logging.info("Found artist image from Discogs")
 
-	def save_fanart_artist_thumb(self, mbid: str, filepath: str, preview: bool = False) -> None:
+	def save_fanart_artist_thumb(self, mbid: str, filepath: str, preview: bool = False) -> bool:
+		"""Return True if an image was saved to filepath"""
 		logging.info("Searching fanart.tv for image...")
 		#logging.info("mbid is " + mbid)
 		r = requests.get("https://webservice.fanart.tv/v3/music/" + mbid + "?api_key=" + self.prefs.fatvap, timeout=5)
 		#logging.info(r.json())
-		thumblink = r.json()["artistthumb"][0]["url"]
+		thumbs = r.json().get("artistthumb")
+		if not thumbs:
+			logging.info("No artist thumbnail on fanart.tv")
+			return False
+		thumblink = thumbs[0]["url"]
 		if preview:
 			thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
@@ -15312,6 +15350,8 @@ class Tauon:
 					_("Notice: Artist image sourced from fanart.tv"),
 					_("They encourage you to contribute at {link}").format(link="https://fanart.tv"), mode="link")
 			logging.info("Found artist thumbnail from fanart.tv")
+			return True
+		return False
 
 	def queue_pause_deco(self) -> Decorator:
 		if self.pctl.pause_queue:
@@ -20043,9 +20083,35 @@ class Tauon:
 			shoot_dl.daemon = True
 			shoot_dl.start()
 
+	def check_lyric_txt(self, track_object: TrackClass) -> None:
+		"""Load a .txt sidecar into a track without static lyrics.
+
+		Tracks scanned before .txt support, or before the file was added, only
+		get them here. Each track's folder is listed at most once per session.
+		"""
+		if track_object.lyrics or track_object.is_network or track_object.index in self.lyric_txt_checked:
+			return
+		self.lyric_txt_checked.add(track_object.index)
+		txt_path = self.cached_lyric_sidecars(track_object)[1]
+		if txt_path and load_lyric_txt(track_object, txt_path):
+			self.lyrics_ren_mini.to_reload = True
+
+	def cached_lyric_sidecars(self, track_object: TrackClass) -> tuple[Path | None, Path | None]:
+		"""find_lyric_sidecars for a track, cached briefly since menus ask every frame."""
+		now = time.monotonic()
+		cache = self.lyric_sidecar_cache
+		if cache is not None and cache[0] == track_object.index and now - cache[1] < 1:
+			return cache[2]
+		sidecars = find_lyric_sidecars(track_object)
+		self.lyric_sidecar_cache = (track_object.index, now, sidecars)
+		return sidecars
+
 	def test_auto_lyrics(self, track_object: TrackClass) -> None:
 		if not track_object:
 			return
+
+		# A .txt beside the track takes precedence over searching online
+		self.check_lyric_txt(track_object)
 
 		if self.prefs.auto_lyrics and not track_object.lyrics and track_object.index not in self.prefs.auto_lyrics_checked:
 			if self.lyrics_check_timer.get() > 5 and self.pctl.playing_time > 1:
@@ -25513,41 +25579,43 @@ class AlbumArt:
 				"https://webservice.fanart.tv/v3/music/" \
 				+ artist_id + "?api_key=" + self.prefs.fatvap, timeout=(4, 10))
 
-			artlink = r.json()["artistbackground"][0]["url"]
+			backgrounds = r.json().get("artistbackground")
+			if not backgrounds:
+				logging.info(f"No fanart.tv background for: {artist}")
+			else:
+				response = urllib.request.urlopen(backgrounds[0]["url"], context=self.tls_context)
+				info = response.info()
 
-			response = urllib.request.urlopen(artlink, context=self.tls_context)
-			info = response.info()
+				assert info.get_content_maintype() == "image"
 
-			assert info.get_content_maintype() == "image"
+				t = io.BytesIO()
+				t.seek(0)
+				t.write(response.read())
+				t.seek(0, 2)
+				l = t.tell()
+				t.seek(0)
 
-			t = io.BytesIO()
-			t.seek(0)
-			t.write(response.read())
-			t.seek(0, 2)
-			l = t.tell()
-			t.seek(0)
+				assert l > 1000
 
-			assert l > 1000
-
-			# Cache image for future use
-			path = os.path.join(self.a_cache_directory, artist + "-ftv-full.jpg")
-			with open(path, "wb") as f:
-				f.write(t.read())
-			t.seek(0)
-			return t
+				# Cache image for future use
+				path = os.path.join(self.a_cache_directory, artist + "-ftv-full.jpg")
+				with open(path, "wb") as f:
+					f.write(t.read())
+				t.seek(0)
+				return t
 
 		except Exception:
 			logging.exception(f"Failed to find fanart background for: {artist}")
-			if not self.gui.artist_info_panel:
-				self.tauon.artist_info_box.get_data(artist)
-				path = self.tauon.artist_info_box.get_data(artist, get_img_path=True)
-				if os.path.isfile(path):
-					logging.debug("Downloaded background lfm")
-					return open(path, "rb")
 
+		if not self.gui.artist_info_panel:
+			self.tauon.artist_info_box.get_data(artist)
+			path = self.tauon.artist_info_box.get_data(artist, get_img_path=True)
+			if os.path.isfile(path):
+				logging.debug("Downloaded background lfm")
+				return open(path, "rb")
 
-			self.prefs.failed_background_artists.append(artist)
-			return None
+		self.prefs.failed_background_artists.append(artist)
+		return None
 
 	def get_blur_im(self, track: TrackClass) -> BytesIO | bool | None:
 		source_image = None
@@ -45541,8 +45609,8 @@ class ArtistInfoBox:
 			got_image_path = ""
 			if data[3] and self.prefs.enable_fanart_artist:
 				try:
-					self.tauon.save_fanart_artist_thumb(data[3], img_filepath)
-					got_image_path = img_filepath
+					if self.tauon.save_fanart_artist_thumb(data[3], img_filepath):
+						got_image_path = img_filepath
 				except Exception:
 					logging.exception("Failed to find image from fanart.tv")
 
@@ -53628,35 +53696,88 @@ def find_synced_lyric_data(track: TrackClass, just_check: bool = False, reload: 
 			return False
 
 
-	# Check if we have a .LRC file
-	direc = Path(track.parent_folder_path)
-	if not direc.is_dir():
-		logging.warning(f"Could not find directory: {track.parent_folder_path}")
-		return None
+	# Check for a .lrc file. At tag scan (reload), a .txt also fills empty static lyrics
+	lrc_path, txt_path = find_lyric_sidecars(track)
+	if reload and txt_path:
+		load_lyric_txt(track, txt_path)
 
-	name = os.path.splitext(track.filename)[0]
-
-	# Case-insensitive file check
-	matched_file = next(
-		(
-			f for f in direc.iterdir()
-			if f.is_file()
-			and f.stem == name
-			and f.suffix.lower() == ".lrc"
-		),
-		None,
-	)
-
-	if matched_file:
-		try:
-			data = collapse_doubled_lines(matched_file.read_text(encoding="utf-8").splitlines())
-		except Exception:
-			logging.exception("Read lyrics file error")
+	if lrc_path:
+		text = read_lyric_text(lrc_path)
+		if text is None:
 			return None
+		data = collapse_doubled_lines(text.splitlines())
 		track.synced = "\n".join(data)
 		return data
 
 	return None
+
+LYRIC_FILE_MAX_BYTES = 512 * 1024
+
+def find_lyric_sidecars(track: TrackClass) -> tuple[Path | None, Path | None]:
+	"""Return the .lrc and .txt files beside a track that share its file name.
+
+	Suffixes match case-insensitively. Uses one directory listing and only
+	stats entries whose name matches, since this runs for every track at import.
+	"""
+	if track.is_network or not track.parent_folder_path:
+		return None, None
+	name = os.path.splitext(track.filename)[0]
+	lrc_path: Path | None = None
+	txt_path: Path | None = None
+	try:
+		with os.scandir(track.parent_folder_path) as entries:
+			for entry in entries:
+				stem, suffix = os.path.splitext(entry.name)
+				if stem != name:
+					continue
+				suffix = suffix.lower()
+				if suffix == ".lrc" and lrc_path is None and entry.is_file():
+					lrc_path = Path(entry.path)
+				elif suffix == ".txt" and txt_path is None and entry.is_file():
+					txt_path = Path(entry.path)
+	except OSError:
+		logging.warning(f"Could not find directory: {track.parent_folder_path}")
+	return lrc_path, txt_path
+
+def read_lyric_text(path: Path) -> str | None:
+	"""Read a lyrics file, or return None if it can't be read, is too large, or isn't text.
+
+	Hand-made lyrics files are often not UTF-8, so a UTF-16 BOM is honoured and
+	anything that isn't valid UTF-8 is decoded with the locale encoding.
+	"""
+	try:
+		if path.stat().st_size > LYRIC_FILE_MAX_BYTES:
+			logging.warning(f"Lyrics file is too large to load: {path}")
+			return None
+		data = path.read_bytes()
+	except OSError:
+		logging.exception("Read lyrics file error")
+		return None
+	if data.startswith((b"\xff\xfe", b"\xfe\xff")):
+		try:
+			return data.decode("utf-16")
+		except UnicodeDecodeError:
+			return None
+	if b"\x00" in data:
+		return None
+	try:
+		return data.decode("utf-8-sig")
+	except UnicodeDecodeError:
+		return data.decode(py_locale.getpreferredencoding(False), errors="replace")
+
+def load_lyric_txt(track: TrackClass, path: Path) -> bool:
+	"""Fill a track's empty static lyrics from a .txt file. Return True if they were filled.
+
+	Lyrics from tags take precedence. A .txt in LRC format is picked up as synced
+	lyrics by find_synced_lyric_data, the same as LRC text in the lyrics tag.
+	"""
+	if track.lyrics:
+		return False
+	text = read_lyric_text(path)
+	if not text or not text.strip():
+		return False
+	track.lyrics = "\n".join(text.splitlines()).strip("\n")
+	return True
 
 def close_all_menus() -> None:
 	for menu in Menu.instances:
@@ -57201,7 +57322,7 @@ def main(holder: Holder) -> None:
 		menu.add_to_sub(misc_sub, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 		menu.add_to_sub(misc_sub, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 		menu.add_to_sub(misc_sub, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-		menu.add_to_sub(misc_sub, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
+		menu.add_to_sub(misc_sub, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, tauon.clear_synced_lyrics_deco, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
 		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 		menu.add_to_sub(misc_sub, MenuItem(_("Toggle art position"),
 			tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
@@ -57238,7 +57359,7 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Paste Lyrics"), tauon.paste_lyrics, tauon.paste_lyrics_deco, pass_ref=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Copy Lyrics"), tauon.copy_lyrics, tauon.copy_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Clear Lyrics"), tauon.clear_lyrics, tauon.clear_lyrics_deco, pass_ref=True, pass_ref_deco=True))
-	center_info_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
+	center_info_menu.add_to_sub(0, MenuItem(_("Clear Synced Lyrics"), tauon.clear_synced_lyrics, tauon.clear_synced_lyrics_deco, pass_ref=True, disable_test=tauon.clear_synced_lyrics_disable_test, pass_ref_deco=True))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art panel"), tauon.toggle_side_art, tauon.toggle_side_art_deco, show_test=tauon.lyrics_in_side_show))
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))

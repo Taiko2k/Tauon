@@ -4,13 +4,14 @@ Changelog
 
 ### v13.1.0
 
- - Switched to native exe launcher
- - Redesigned settings box
- - Redesigned smart playlist editor
+ - Added locate missing files feature
  - Added search to settings
  - Added lyrics mode to mini modes
  - Added fullscreen milkdrop option
  - Added copy option to track details widget
+ - Switched to native exe launcher
+ - Redesigned settings box
+ - Redesigned smart playlist editor
  - Improved edit mode UI
  - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
