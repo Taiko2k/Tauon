@@ -741,6 +741,69 @@ def ensure_contrast(colour: ColourRGBA, background: ColourRGBA, minimum: float =
 	)
 
 
+def _lightness_variants(colour: ColourRGBA) -> list[tuple[float, ColourRGBA]]:
+	"""The colour at every lightness in 0.01 steps, keeping hue and saturation."""
+	hue, _lightness, saturation = colorsys.rgb_to_hls(colour.r / 255, colour.g / 255, colour.b / 255)
+	variants = []
+	for step in range(101):
+		lightness = step / 100
+		red, green, blue = colorsys.hls_to_rgb(hue, lightness, saturation)
+		variants.append((lightness, ColourRGBA(round(red * 255), round(green * 255), round(blue * 255), colour.a)))
+	return variants
+
+
+def ensure_distinct(
+	colour: ColourRGBA,
+	other: ColourRGBA,
+	background: ColourRGBA,
+	*,
+	separation: float = 1.5,
+	minimum: float = 4.5,
+	other_minimum: float = 3.0,
+) -> tuple[ColourRGBA, ColourRGBA]:
+	"""Return (colour, other) adjusted so colour stands apart from other.
+
+	Used for the active lyric line among the inactive lines. The two must differ
+	by the separation contrast ratio. Hue and saturation are kept and only
+	lightness moves.
+
+	colour moves to the nearest lightness that is distinct from other and still
+	readable on background (minimum). When other already sits at the readable
+	limit, as on mid-tone surfaces, there is no room for that, so colour takes
+	its most distinct readable lightness and other fades towards the background
+	instead, staying above other_minimum.
+	"""
+	if contrast_ratio(colour, other) >= separation and contrast_ratio(colour, background) >= minimum:
+		return colour, other
+	start = colorsys.rgb_to_hls(colour.r / 255, colour.g / 255, colour.b / 255)[1]
+	variants = _lightness_variants(colour)
+	readable = [item for item in variants if contrast_ratio(item[1], background) >= minimum]
+	passing = [item for item in readable if contrast_ratio(item[1], other) >= separation]
+	if passing:
+		return min(passing, key=lambda item: abs(item[0] - start))[1], other
+
+	if readable:
+		colour = max(readable, key=lambda item: contrast_ratio(item[1], other))[1]
+	other_start = colorsys.rgb_to_hls(other.r / 255, other.g / 255, other.b / 255)[1]
+	other_passing = [
+		item
+		for item in _lightness_variants(other)
+		if contrast_ratio(item[1], colour) >= separation and contrast_ratio(item[1], background) >= other_minimum
+	]
+	if other_passing:
+		return colour, min(other_passing, key=lambda item: abs(item[0] - other_start))[1]
+
+	# Neither can move far enough, so balance colour between both targets.
+	colour = max(
+		variants,
+		key=lambda item: min(
+			contrast_ratio(item[1], other) / separation,
+			contrast_ratio(item[1], background) / minimum,
+		),
+	)[1]
+	return colour, other
+
+
 def colour_value(c1: ColourRGBA) -> int:
 	"""Give the sum of first 3 elements in a list"""
 	return c1.r + c1.g + c1.b

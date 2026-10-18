@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from PIL import Image
 
-from tauon.t_modules.t_extra import ColourRGBA, contrast_ratio
+from tauon.t_modules.t_extra import ColourRGBA, contrast_ratio, ensure_distinct
 
 if TYPE_CHECKING:
 	from collections.abc import Iterable
@@ -740,6 +740,9 @@ def _apply_complete_theme(colours: object, theme: ArtTheme) -> None:
 		prefer_light,
 		4.5,
 	)
+	# Both lyric roles start from the same extreme lightness, so the active
+	# line would otherwise match the inactive ones.
+	lyrics_accent, lyrics_text = ensure_distinct(lyrics_accent, lyrics_text, lyrics_surface)
 	mini_title = _readable_tint((mini_surface,), background_hue, 0.06, prefer_light, 5.4)
 	mini_secondary = _readable_tint((mini_surface,), side_hue, 0.07, prefer_light, 4.0)
 	column_text = _readable_tint((column_surface,), background_hue, 0.06, prefer_light, 4.5)
