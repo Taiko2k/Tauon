@@ -272,6 +272,18 @@ from tauon.t_modules.t_playlist_folders import (  # noqa: E402
 )
 from tauon.t_modules.t_playlist_folders import MAX_DEPTH as PLAYLIST_FOLDER_MAX_DEPTH  # noqa: E402
 from tauon.t_modules.t_prefs import Prefs  # noqa: E402
+from tauon.t_modules.t_relocate import (  # noqa: E402
+	LibTrack,
+	RelocatePlan,
+)
+from tauon.t_modules.t_relocate import Mapping as RelocateMapping  # noqa: E402
+from tauon.t_modules.t_relocate import (  # noqa: E402
+	build_plan as build_relocate_plan,
+	default_fold as relocate_default_fold,
+	join as relocate_join,
+	normalise as relocate_normalise,
+	remainder as relocate_remainder,
+)
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
@@ -7547,6 +7559,7 @@ class Tauon:
 		self.sub_lyrics_b:                          TextBox2 = TextBox2(tauon=self)
 		self.sub_lyrics_box:                      SubLyricsBox = SubLyricsBox(tauon=self)
 		self.export_playlist_box:                 ExportPlaylistBox = ExportPlaylistBox(tauon=self)
+		self.relocate_box:                        RelocateBox = RelocateBox(tauon=self)
 		self.generator_box:                        GeneratorEditBox = GeneratorEditBox(tauon=self)
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
@@ -27351,6 +27364,383 @@ class ExportPlaylistBox:
 
 		if warnings and target != 1:
 			self.show_message(_("Playlist exported"), str(target), mode="done")
+
+class RelocateBox:
+	"""Repair the paths of missing tracks after the user moved their music folder."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon        = tauon
+		self.ddt          = tauon.ddt
+		self.gui          = tauon.gui
+		self.inp          = tauon.inp
+		self.coll         = tauon.coll
+		self.draw         = tauon.draw
+		self.pctl         = tauon.pctl
+		self.fields       = tauon.fields
+		self.colours      = tauon.colours
+		self.window_size  = tauon.window_size
+		self.show_message = tauon.show_message
+		self.active = False
+		self.anchor_path = ""
+		self.to_box = TextBox2(tauon)
+		self.box_rect:  tuple[int, int, int, int] = (0, 0, 0, 0)
+		self.drop_rect: tuple[int, int, int, int] = (0, 0, 0, 0)
+		self.edit_timer = Timer()
+		self.seen_text = ""      # Field text as of the last frame, for debouncing edits
+		self.analysed_text = ""  # Field text the current plan belongs to
+		self.generation = 0      # Bumped to cancel an in-flight analysis
+		self.plan: RelocatePlan | None = None
+		self.busy = False
+		self.scanned = 0
+		self.rule_cache: tuple[tuple, tuple[str, str, str]] = ((), ("", "", ""))
+		self.ref_cache: tuple[str, int, str] = ("", 0, "")
+
+	def disable_test(self, ref: MenuTrackRef) -> bool:
+		track = self.pctl.master_library[ref.track_id]
+		return track.is_network or not track.fullpath or os.path.isfile(track.fullpath)
+
+	def activate(self, ref: MenuTrackRef) -> None:
+		self.anchor_path = self.pctl.master_library[ref.track_id].fullpath
+		self.to_box.text = ""
+		self.seen_text = ""
+		self.analysed_text = ""
+		self.generation += 1
+		self.plan = None
+		self.busy = False
+		self.active = True
+		self.gui.box_over = True
+
+	def close(self) -> None:
+		self.active = False
+		self.gui.box_over = False
+		self.generation += 1
+		self.gui.request_frame()
+
+	def accept_drop(self, target: str) -> bool:
+		"""Take file drops while open. The box is modal, so drops elsewhere are swallowed."""
+		if not self.active:
+			return False
+		if self.coll(self.box_rect):
+			text = relocate_normalise(target)
+			self.to_box.text = text
+			self.seen_text = text
+			self.analyse(text)
+			self.gui.request_frame()
+		return True
+
+	def analyse(self, text: str) -> None:
+		self.generation += 1
+		generation = self.generation
+		self.analysed_text = text
+		self.plan = None
+		self.scanned = 0
+		self.busy = bool(text.strip())
+		if not self.busy:
+			return
+		anchor = self.anchor_path
+
+		def progress(count: int) -> None:
+			if generation == self.generation:
+				self.scanned = count
+				self.gui.request_frame()
+
+		def run() -> None:
+			tracks = [
+				LibTrack(key, t.fullpath, t.size or 0, t.start_time if t.is_cue else None)
+				for key, t in list(self.pctl.master_library.items())
+				if t.fullpath and not t.is_network
+			]
+			try:
+				plan = build_relocate_plan(
+					tracks, anchor, text, cancelled=lambda: generation != self.generation, progress=progress)
+			except Exception:
+				logging.exception("Relocate analysis failed")
+				plan = RelocatePlan(error="failed")
+			if plan is None or generation != self.generation:
+				return
+			self.plan = plan
+			self.busy = False
+			self.gui.request_frame()
+
+		threading.Thread(target=run, daemon=True).start()
+
+	def apply(self) -> None:
+		plan = self.plan
+		if plan is None:
+			return
+		tauon = self.tauon
+		library = self.pctl.master_library
+		moved = 0
+		for track_id, (old, new) in plan.moves.items():
+			track = library.get(track_id)
+			if track is None or track.fullpath != old:
+				continue
+			set_path(track, new)
+			track.found = True
+			tauon.search_string_cache.pop(track_id, None)
+			tauon.search_dia_string_cache.pop(track_id, None)
+			tauon.search_field_cache.pop(track_id, None)
+			tauon.search_dia_field_cache.pop(track_id, None)
+			moved += 1
+
+		mapping = plan.mapping
+		if mapping is not None:
+			for playlist in self.pctl.multi_playlist:
+				for i, folder in enumerate(playlist.last_folder):
+					rest = relocate_remainder(folder.replace("\\", "/"), mapping.old_root, relocate_default_fold())
+					if rest is not None and not os.path.isdir(folder):
+						playlist.last_folder[i] = relocate_join(mapping.new_root, rest) if rest else mapping.new_root
+
+		merged = self.merge_duplicates(
+			{dup: orig for dup, orig in plan.duplicates.items() if dup in library and orig in library})
+
+		self.pctl.album_dex.clear()
+		self.pctl.tree_view_box.clear_all()
+		tauon.album_art_gen.clear_cache()
+		self.gui.pl_update = True
+		self.gui.request_tracklist_redraw()
+		self.close()
+
+		detail = ""
+		if merged:
+			detail = _("Merged {N} duplicate tracks").format(N=f"{merged:n}")
+		self.show_message(_("Relocated {N} tracks").format(N=f"{moved:n}"), detail, mode="done")
+
+	def merge_duplicates(self, dup_map: dict[int, int]) -> int:
+		"""Point references at the original tracks, then remove the re-imported copies."""
+		if not dup_map:
+			return 0
+		for playlist in self.pctl.multi_playlist:
+			ids = playlist.playlist_ids
+			if not any(i in dup_map for i in ids):
+				continue
+			present = set(ids)
+			ids[:] = [dup_map.get(i, i) for i in ids if not (i in dup_map and dup_map[i] in present)]
+		self.pctl.track_queue[:] = [dup_map.get(i, i) for i in self.pctl.track_queue]
+		for item in self.pctl.force_queue:
+			item.track_id = dup_map.get(item.track_id, item.track_id)
+			if item.tracks is not None:
+				for ref in item.tracks:
+					ref.track_id = dup_map.get(ref.track_id, ref.track_id)
+		for dup in dup_map:
+			self.pctl.purge_track(dup, fast=True)
+		return len(dup_map)
+
+	def summary(self) -> tuple[str, ColourRGBA, str]:
+		"""Return the status line, its colour, and a line of secondary details."""
+		label = self.colours.box_text_label
+		text = self.colours.box_input_text
+		plan = self.plan
+
+		def count(n: int) -> str:
+			return f"{n:n}"  # Digit grouping follows the user's locale
+
+		if not self.to_box.text.strip():
+			return "", label, ""
+		if self.to_box.text != self.analysed_text or self.busy or plan is None:
+			if self.scanned:
+				return _("Searching… {N} files").format(N=count(self.scanned)), label, ""
+			return _("Checking…"), label, ""
+		if plan.error == "not_found":
+			return _("That path doesn't exist"), text, ""
+		if plan.error:
+			return _("Something went wrong checking that path"), text, ""
+		if not plan.moves:
+			return _("No missing tracks found there"), text, ""
+		details = []
+		if plan.unresolved:
+			details.append(_("{N} still missing").format(N=count(plan.unresolved)))
+		if plan.duplicates:
+			details.append(_("{N} re-imported copies merged").format(N=count(len(plan.duplicates))))
+		if plan.scan_truncated:
+			details.append(_("Search stopped early"))
+		return _("{N} tracks will be relocated").format(N=count(len(plan.moves))), text, "  ·  ".join(details)
+
+	def rule_parts(self, mapping: RelocateMapping, width: int) -> tuple[str, str, str]:
+		"""Old prefix, new prefix and shared tail, shortened to fit `width`."""
+		key = (mapping.old_root, mapping.new_root, mapping.base_old, width)
+		if self.rule_cache[0] != key:
+			tail = mapping.base_old[len(mapping.old_root):] + "/…"
+			tail = self.tauon.trunc_line(tail, 211, width // 2)
+			room = width - self.ddt.get_text_w(tail, 211)
+			old = self.tauon.right_trunc(mapping.old_root or "/", 211, room)
+			new = self.tauon.right_trunc(mapping.new_root or "/", 211, room)
+			self.rule_cache = (key, (old, new, tail))
+		return self.rule_cache[1]
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		gui = self.gui
+		ddt = self.ddt
+		colours = self.colours
+		s = gui.scale
+
+		pad = round(20 * s)
+		w = min(round(600 * s), self.window_size[0] - round(40 * s))
+		inner_w = w - pad * 2
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		# Anchor the top so the box only grows downward as its contents change
+		y = max(round(20 * s), int(self.window_size[1] / 2) - round(140 * s))
+
+		text = self.to_box.text
+		plan = self.plan
+		ready = plan is not None and not self.busy and text == self.analysed_text
+		mapping = plan.mapping if ready and plan.moves else None
+		matched_by_scan = ready and bool(plan.moves) and plan.mapping is None
+		status, status_colour, details = self.summary()
+
+		def text_top(top: int, height: int, font: int) -> int:
+			"""Y that vertically centres a line of `font` in a row, matching draw.button."""
+			return top + height // 2 - round({11: 8, 211: 8, 212: 9, 213: 10, 214: 11}[font] * s)
+
+		# Heights of each section, top to bottom
+		title_h = round(46 * s)
+		zone_h = round(100 * s)
+		ref_h = round(38 * s)
+		field_h = round(26 * s)
+		rule_h = round(46 * s) if mapping is not None else round(24 * s) if matched_by_scan else 0
+		bar_h = round(19 * s)
+		foot_h = round(44 * s) if details else round(26 * s)
+		h = title_h + zone_h + ref_h + field_h + round(16 * s) + rule_h + bar_h + foot_h + pad
+		self.box_rect = (x, y, w, h)
+
+		ddt.rect_a((x - 2 * s, y - 2 * s), (w + 4 * s, h + 4 * s), colours.box_border)
+		ddt.rect_a((x, y), (w, h), colours.box_background)
+		ddt.text_background_colour = colours.box_background
+
+		if self.inp.key_esc_press or (
+			(self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click)
+			and not self.coll(self.box_rect)):
+			self.close()
+			return
+
+		ddt.text(
+			(x + pad, text_top(y + round(6 * s), title_h - round(6 * s), 214)), _("Relocate Music Folder"),
+			colours.box_title_text, 214, max_w=inner_w)
+		yy = y + title_h
+
+		# Drop zone
+		zone = (x + pad, yy, inner_w, zone_h)
+		self.drop_rect = zone
+		self.fields.add(zone)
+		hovered = gui.ext_drop_mode and self.coll(self.box_rect)
+		zone_bg = colours.box_button_background_highlight if hovered else colours.box_thumb_background
+		ddt.rect(zone, zone_bg)
+		ddt.rect_s(zone, colours.box_text_border, max(1, round(s)))
+		icon = gui.folder_icon.asset
+		# Icon, one or two lines of prompt, and a smaller line, centred as a block
+		lines = ddt.get_wrapped_lines(
+			_("Drop your music folder, an album, or a track here"), 211, inner_w - round(40 * s))[:2]
+		line_h = round(18 * s)
+		gap = round(8 * s)
+		block_h = icon.h + gap + line_h * (len(lines) + 1)
+		cy = yy + (zone_h - block_h) // 2 + round(4 * s)
+		icon.render(x + w // 2 - icon.w // 2, cy, colours.box_text_label)
+		cy += icon.h + gap
+		for line in lines:
+			ddt.text((x + w // 2, text_top(cy, line_h, 211), 2), line, colours.box_sub_text, 211, bg=zone_bg)
+			cy += line_h
+		ddt.text(
+			(x + w // 2, text_top(cy, line_h, 11), 2), _("or type the path below"), colours.box_text_label, 11,
+			bg=zone_bg, max_w=inner_w - round(40 * s))
+		yy += zone_h
+
+		# The missing track this is all relative to
+		ref_label = _("Missing")
+		ref_label_w = ddt.get_text_w(ref_label, 211)
+		path_x = x + pad + ref_label_w + round(10 * s)
+		path_w = x + w - pad - path_x
+		if self.ref_cache[:2] != (self.anchor_path, path_w):
+			self.ref_cache = (self.anchor_path, path_w, self.tauon.right_trunc(self.anchor_path, 211, path_w))
+		ref_y = text_top(yy, ref_h, 211)
+		ddt.text((x + pad, ref_y), ref_label, colours.box_text_label, 211)
+		ddt.text((path_x, ref_y), self.ref_cache[2], colours.box_sub_text, 211)
+		yy += ref_h
+
+		# Path field
+		field = (x + pad, yy, inner_w, field_h)
+		self.fields.add(field)
+		ddt.bordered_rect(field, colours.box_background, colours.box_text_border, round(1 * s))
+		text_x = x + pad + round(8 * s)
+		text_y = text_top(yy, field_h, 211) - round(2 * s)
+		if not text and not gui.editline:
+			ddt.text(
+				(text_x, text_y), _("New location of the track, its album, or your music folder"),
+				colours.box_text_label, 211, max_w=inner_w - round(16 * s))
+		self.to_box.draw(
+			text_x, text_y, colours.box_input_text, True,
+			font=211, width=inner_w - round(16 * s), click=gui.level_2_click)
+		yy += field_h + round(16 * s)
+
+		# Re-analyse once typing settles
+		if text != self.seen_text:
+			self.seen_text = text
+			self.edit_timer.set()
+			gui.delay_frame(0.5)
+		elif text != self.analysed_text and self.edit_timer.get() >= 0.45:
+			self.analyse(text)
+
+		# The rewrite rule: old prefix struck out, new prefix, shared tail
+		if mapping is not None:
+			old, new, tail = self.rule_parts(mapping, inner_w)
+			red, green = (
+				(ColourRGBA(180, 60, 60, 255), ColourRGBA(40, 130, 60, 255)) if colours.lm
+				else (ColourRGBA(226, 140, 140, 255), ColourRGBA(130, 206, 146, 255)))
+			tail_colour = colours.box_text_label
+			old_w = ddt.get_text_w(old, 211)
+			ddt.text((x + pad, yy), old, red, 211)
+			ddt.rect((x + pad, yy + round(9 * s), old_w, max(1, round(s))), red)
+			ddt.text((x + pad + old_w, yy), tail, tail_colour, 211)
+			yy += round(22 * s)
+			new_w = ddt.get_text_w(new, 211)
+			ddt.text((x + pad, yy), new, green, 211)
+			ddt.text((x + pad + new_w, yy), tail, tail_colour, 211)
+			yy += rule_h - round(22 * s)
+		elif matched_by_scan:
+			ddt.text((x + pad, yy), _("Matched by file name and size"), colours.box_text_label, 211, max_w=inner_w)
+			yy += rule_h
+
+		# Progress while checking, a divider otherwise
+		line_y = yy + round(4 * s)
+		if self.busy:
+			ddt.rect((x + pad, line_y, inner_w, round(3 * s)), colours.box_thumb_background)
+			seg = inner_w // 4
+			phase = (time.monotonic() * 0.8) % 1.0
+			sx = round((inner_w + seg) * phase) - seg
+			left = max(0, sx)
+			right = min(inner_w, sx + seg)
+			if right > left:
+				ddt.rect((x + pad + left, line_y, right - left, round(3 * s)), colours.toggle_box_on)
+			gui.request_frame()
+		else:
+			ddt.rect((x + pad, line_y + round(1 * s), inner_w, max(1, round(s))), colours.box_text_border)
+		yy += bar_h
+
+		# Summary and buttons
+		button_h = round(26 * s)
+		bx = x + w - pad
+		show_relocate = ready and bool(plan.moves)
+		if show_relocate:
+			label = _("Relocate")
+			bw = ddt.get_text_w(label, 212) + round(28 * s)
+			bx -= bw
+			if self.draw.button(label, bx, yy, w=bw, h=button_h, press=gui.level_2_click):
+				self.apply()
+				return
+			bx -= round(8 * s)
+		label = _("Cancel")
+		bw = ddt.get_text_w(label, 212) + round(28 * s)
+		bx -= bw
+		if self.draw.button(label, bx, yy, w=bw, h=button_h, press=gui.level_2_click):
+			self.close()
+			return
+
+		text_w = bx - round(16 * s) - (x + pad)
+		if status:
+			ddt.text((x + pad, text_top(yy, button_h, 212)), status, status_colour, 212, max_w=text_w)
+		if details:
+			ddt.text((x + pad, text_top(yy + button_h, round(18 * s), 11)), details, colours.box_text_label, 11, max_w=text_w)
 
 class SearchOverlay:
 
@@ -57124,7 +57514,7 @@ def main(holder: Holder) -> None:
 	gui.edit_tags_icon.colour = hue_matched(colours.level_green, ColourRGBA(153, 229, 133, 255))
 	gui.edit_tags_icon.xoff = 1
 	track_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon))
-	track_menu.add_sub(_("Meta…"), 160)
+	track_menu.add_sub(_("Meta…"), 180)
 
 	track_menu.br()
 	# track_menu.add('Cut', s_cut, pass_ref=False)
@@ -57157,6 +57547,7 @@ def main(holder: Holder) -> None:
 
 	track_menu.add_to_sub(0, MenuItem(_("Lyrics…"), tauon.show_lyrics_menu, pass_ref=True))
 	track_menu.add_to_sub(0, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	track_menu.add_to_sub(0, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
 	track_menu.add_to_sub(0, MenuItem(_("Look Out the Window"), tauon.dream_room.toggle))
 	# track_menu.add_to_sub("Copy Playlist", 1, transfer, pass_ref=True, args=[1, 3])
 
@@ -59695,7 +60086,7 @@ def main(holder: Holder) -> None:
 					tauon.drop_import_action = action
 					for line in link.split("\n"):
 						target = str(urllib.parse.unquote(line)).replace("file:///", "/")
-						if not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
+						if not tauon.relocate_box.accept_drop(target) and not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
 							tauon.drop_file(target)
 					if action.complete:
 						tauon.drop_import_action = None
@@ -59727,7 +60118,7 @@ def main(holder: Holder) -> None:
 					.replace("\r", "")
 				)
 				# logging.info(target)
-				if not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
+				if not tauon.relocate_box.accept_drop(target) and not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
 					tauon.drop_file(target)
 
 			elif event.type == sdl3.SDL_EVENT_QUIT:
@@ -63070,6 +63461,9 @@ def main(holder: Holder) -> None:
 
 				if tauon.export_playlist_box.active:
 					tauon.export_playlist_box.render()
+
+				if tauon.relocate_box.active:
+					tauon.relocate_box.render()
 
 				if tauon.trans_edit_box.active:
 					tauon.trans_edit_box.render()
