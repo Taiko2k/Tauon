@@ -339,6 +339,9 @@ static void pre_roll_wait_for_format() {
 #define RG_COMPRESSOR_THRESHOLD 0.89125093813f // -1 dBFS
 #define RG_COMPRESSOR_RELEASE_MS 150.0f
 
+// Release the output device after this long paused so the sink can suspend
+#define PAUSE_RELEASE_MS 60000
+
 typedef struct {
 	float b0;
 	float b1;
@@ -4006,7 +4009,11 @@ static void seek_pcm(int milliseconds, bool paused) {
 		pipe_dsd_streaming = 0;
 		pipe_dsd_requested = 0;
 		pipe_dsd_requested_rate = 0;
-		return pw_stream_disconnect(global_stream);
+		// Our own disconnect, not a lost stream or a refused DSD format
+		pipe_expecting_disconnect = true;
+		int ret = pw_stream_disconnect(global_stream);
+		pipe_expecting_disconnect = false;
+		return ret;
 	}
 #endif
 
@@ -5544,6 +5551,7 @@ void *main_loop(void *thread_id) {
 	int load_prepared = 0;     // target loaded, transition cutover pending
 	int preload_waited_ms = 0;
 	int ramp_waited_ms = 0;    // how long we have been waiting for a ramp-down
+	int64_t paused_since_ms = 0;  // when the current pause began, 0 when not paused
 
 	// SRC ----------------------------
 
@@ -5649,6 +5657,15 @@ void *main_loop(void *thread_id) {
 		// wedge the command queue; the gate ramp itself is a few milliseconds.
 		if (mode == RAMP_DOWN) ramp_waited_ms += 5;
 		else ramp_waited_ms = 0;
+
+		// A long pause lets go of the device. RESUME reconnects via start_out().
+		if (mode == PAUSED) {
+			if (paused_since_ms == 0) paused_since_ms = now_ms();
+			else if (out_thread_running && now_ms() - paused_since_ms > PAUSE_RELEASE_MS) {
+				log_msg(LOG_INFO, "ph: Paused for %d s, releasing output device", PAUSE_RELEASE_MS / 1000);
+				stop_out();
+			}
+		} else paused_since_ms = 0;
 
 		// A ramp-down is finished when the gate has closed. With nothing left
 		// in the buffer there are no samples to ramp with, so get_audio()
