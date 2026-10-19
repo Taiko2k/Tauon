@@ -162,12 +162,17 @@ class WaveformCache:
 
 		waveform = Waveform(track.length)
 		start = float(track.start_time) if track.is_cue or track.start_time else 0.0
-		length = float(track.length) if start else 0.0
+		# A cue track at 0:00 still has to stop at its own end
+		length = float(track.length) if start or track.is_cue else 0.0
 		with self.lock:
 			self.missing.pop(key, None)
 			self.cache[key] = waveform
 			while len(self.cache) > CACHE_LIMIT:
 				self.cache.popitem(last=False)
+			# A queued job that never started would leave its waveform empty for good
+			replaced = self.pending
+			if replaced is not None and self.cache.get(replaced.key) is replaced.waveform:
+				del self.cache[replaced.key]
 			self.pending = _Job(key, str(ffmpeg), source, start, length, waveform)
 			if self.thread is None:
 				self.thread = threading.Thread(target=self._run, name="waveform", daemon=True)

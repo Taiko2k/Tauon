@@ -1,6 +1,7 @@
 import math
 import shutil
 import struct
+import threading
 import time
 import wave
 from types import SimpleNamespace
@@ -174,3 +175,61 @@ def test_cache_backs_off_when_source_is_missing(tmp_path):
 	assert cache.get(track) is None
 	assert not calls
 	assert cache.thread is None
+
+
+def _gated_cache(monkeypatch, tmp_path):
+	"""A cache whose scans block on `gate`, recording each job they get."""
+	gate = threading.Event()
+	jobs = []
+
+	def scan(self, job):
+		jobs.append(job)
+		gate.wait(5)
+		if self._superseded():
+			self._drop(job)
+			return
+		job.waveform.rms.extend([0.1] * 10)
+		job.waveform.done = True
+
+	monkeypatch.setattr(WaveformCache, "_scan", scan)
+	tauon = SimpleNamespace(
+		get_ffmpeg=lambda: "ffmpeg", gui=SimpleNamespace(request_frame=lambda: None), wake=lambda: None)
+
+	def track(name, **kw):
+		path = tmp_path / name
+		path.touch()
+		base = {"fullpath": str(path), "start_time": 0, "length": 0.5, "is_network": False, "is_cue": False}
+		base.update(kw)
+		return SimpleNamespace(**base)
+
+	return WaveformCache(tauon), gate, jobs, track
+
+
+def _wait(condition):
+	deadline = time.monotonic() + 5
+	while not condition() and time.monotonic() < deadline:
+		time.sleep(0.01)
+	assert condition()
+
+
+def test_cache_rescans_a_track_whose_queued_job_was_replaced(monkeypatch, tmp_path):
+	cache, gate, jobs, track = _gated_cache(monkeypatch, tmp_path)
+	a, b, c = track("a"), track("b"), track("c")
+	cache.get(a)
+	_wait(lambda: len(jobs) == 1)
+	cache.get(b)  # queued behind a
+	cache.get(c)  # replaces b before it starts
+	gate.set()
+	_wait(lambda: len(jobs) == 2)
+
+	waveform = cache.get(b)
+	_wait(lambda: waveform.done)
+	assert [job.key[0] for job in jobs] == [a.fullpath, c.fullpath, b.fullpath]
+
+
+def test_cue_track_at_start_is_limited_to_its_length(monkeypatch, tmp_path):
+	cache, gate, jobs, track = _gated_cache(monkeypatch, tmp_path)
+	gate.set()
+	cache.get(track("image.flac", is_cue=True, length=180.0))
+	_wait(lambda: jobs)
+	assert (jobs[0].start, jobs[0].length) == (0.0, 180.0)

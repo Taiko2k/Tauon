@@ -20308,7 +20308,6 @@ class Tauon:
 						self.lastfm.love(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
 					except Exception:
 						logging.exception("Failed updating last.fm love status")
-						self.show_message(_("Failed updating last.fm love status"), mode="warning")
 						star.loved = False
 						self.star_store.insert(track_id, star)
 						self.show_message(
@@ -60725,9 +60724,10 @@ def main(holder: Holder) -> None:
 							gui.request_tracklist_redraw()
 							gui.request_frame()
 
-						elif not (active_touch.has_moved_scroll or active_touch.has_moved_sideswipe or active_touch.is_rightclick) \
-							and abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
-							or abs(inp.touch_position[0] - active_touch.start_position_px[0]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale:
+						# Long-press (rightclick) still has to get here to become a drag
+						elif not (active_touch.has_moved_scroll or active_touch.has_moved_sideswipe) \
+							and (abs(inp.touch_position[1] - active_touch.start_position_px[1]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale \
+							or abs(inp.touch_position[0] - active_touch.start_position_px[0]) > SCROLL_PHYSICS_MIN_PIXELS*gui.scale):
 							movement = int(abs(inp.touch_position[1] - active_touch.start_position_px[1]) > abs(inp.touch_position[0] - active_touch.start_position_px[0])) + int(not axis) == 1
 							# pick between vertical & horizontal movement when either exceeds threshold
 							active_touch.has_moved_scroll = movement
