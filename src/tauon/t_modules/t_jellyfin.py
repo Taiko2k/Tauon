@@ -32,6 +32,7 @@ import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, Timer
+from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -46,7 +47,13 @@ ITEM_PAGE_SIZE = 200
 ITEM_FETCH_TIMEOUT = (10, 600)  # (connect, read) seconds per page
 
 
-class Jellyfin:
+# Fields needed to build a track from an audio item
+TRACK_FIELDS = ["Genres", "DateCreated", "MediaSources", "People"]
+
+
+class Jellyfin(RemotePlaylistSource):
+	code_prefix = "jelly"
+
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon: Tauon = tauon
 		self.gui: GuiVar = tauon.gui
@@ -66,7 +73,7 @@ class Jellyfin:
 		self.session_item_id: int | None = None
 		self.session_update_timer: Timer = Timer()
 		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
-		self.playlists = []
+		self.init_remote_playlists()
 
 		self.lyrics_scan_lock = threading.Lock()
 		self.lyrics_scan_pending: set[str] = set()
@@ -373,97 +380,165 @@ class Jellyfin:
 			)
 		logging.info("DONE")
 
-	def get_playlist(self, playlist_id: str, name: str = "", return_list: bool = False) -> list | None:
+	def _headers(self) -> dict[str, str]:
+		return {
+			"Token": self.accessToken,
+			"X-Application": "Tauon/1.0",
+			"Authorization": self._get_jellyfin_auth(),
+		}
+
+	def _list_playlists(self) -> list[RemotePlaylist] | None:
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 		if not self.connected:
-			return []
+			self.remote_playlists_error = _("Could not connect to the server")
+			return None
 		response = requests.get(
-			f"{self.server_url}/Playlists/{playlist_id}/Items",
-			headers={
-				"Token": self.accessToken,
-				"X-Application": "Tauon/1.0",
-				"Authorization": self._get_jellyfin_auth(),
-			},
+			f"{self.server_url}/Items",
+			headers=self._headers(),
 			params={
-				"UserId": self.userId,
+				"userId": self.userId,
+				"includeItemTypes": ["Playlist"],
+				"recursive": True,
+				"fields": ["ChildCount"],
+				"sortBy": "SortName",
+				"sortOrder": "Ascending",
 			},
-			timeout=10,
+			timeout=(5, 30),
 		)
+		if response.status_code != HTTPStatus.OK:
+			logging.error(f"Error listing Jellyfin playlists: [{response.status_code}] {response.reason}")
+			self.remote_playlists_error = f"[{response.status_code}] {response.reason}"
+			return None
+		return [
+			RemotePlaylist(id=item["Id"], name=item.get("Name") or item["Id"], count=item.get("ChildCount") or 0)
+			for item in response.json().get("Items", [])
+			# Jellyfin playlists can hold video too
+			if item.get("Id") and item.get("MediaType") != "Video"
+		]
 
-		existing = {}
+	def playlist_track_ids(self, playlist_id: str) -> list[int] | None:
+		if not self.connected or not self.accessToken:
+			self._authenticate()
+		if not self.connected:
+			return None
+		try:
+			response = requests.get(
+				f"{self.server_url}/Playlists/{playlist_id}/Items",
+				headers=self._headers(),
+				params={"UserId": self.userId, "fields": TRACK_FIELDS},
+				timeout=(5, 60),
+			)
+		except Exception:
+			logging.exception("Error fetching Jellyfin playlist")
+			return None
+		if response.status_code != HTTPStatus.OK:
+			logging.error(f"Error fetching Jellyfin playlist: [{response.status_code}] {response.reason}")
+			return None
+
+		existing: dict[str, int] = {}
 		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "JELY":
 				existing[track.url_key] = track_id
 
 		playlist: list[int] = []
-		for item in response.json()["Items"]:
-			track_id = existing.get(item["Id"])
-			if track_id is not None:
-				playlist.append(track_id)
-
-		if return_list:
-			return playlist
-
-		self.scanning = False
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
-		self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{playlist_id}"'
-		self.gui.request_tracklist_redraw()
-		self.gui.request_frame()
-		self.tauon.reload()
-		self.tauon.wake()
-		return None
-
-	def get_playlists(self) -> None:
-		if not self.playlists:
-			self.ingest_library(return_list=True)
-		if not self.connected:
-			return
-
-		for p in self.playlists:
-			found = False
-			for pp in self.pctl.multi_playlist:
-				if f'jelly"{p["Id"]}"' in self.pctl.gen_codes.get(pp.uuid_int, ""):
-					found = True
-					break
-			if found:
+		for item in response.json().get("Items", []):
+			if item.get("Type") != "Audio" or not item.get("Id"):
 				continue
+			track_id = existing.get(item["Id"])
+			if track_id is None:
+				# Not in the library yet, so add it from the playlist's own copy
+				nt = self._store_track(item, existing)
+				existing[item["Id"]] = track_id = nt.index
+			playlist.append(track_id)
+		return playlist
 
-			# Get Playlist
-			response = requests.get(
-				f"{self.server_url}/Playlists/{p['Id']}/Items",
-				headers={
-					"Token": self.accessToken,
-					"X-Application": "Tauon/1.0",
-					"Authorization": self._get_jellyfin_auth(),
-				},
-				params={
-					"UserId": self.userId,
-				},
-				timeout=10,
-			)
+	def get_playlist(self, playlist_id: str) -> list[int] | None:
+		"""Track ids for the jelly"<id>" generator code."""
+		track_ids = self.playlist_track_ids(playlist_id)
+		if track_ids is None:
+			self.show_message(_("Error fetching Jellyfin playlist"), mode="warning")
+		return track_ids
 
-			existing = {}
-			for track_id, track in self.pctl.master_library.items():
-				if track.is_network and track.file_ext == "JELY":
-					existing[track.url_key] = track_id
+	def _store_track(self, track: dict, existing: dict[str, int]) -> TrackClass:
+		"""Create or update the library track for an audio item."""
+		track_id = existing.get(track.get("Id"))
+		if track_id is not None:
+			nt = self.pctl.get_track(track_id)
+		else:
+			nt = self.tauon.TrackClass()
+			track_id = allocate_track_id(self.pctl)
+		nt.index = track_id  # this is tauons track id
+		try:
+			nt.fullpath = track.get("MediaSources")[0]["Path"]
+		except Exception:
+			logging.exception("Jelly exception on get path")
+		nt.filename = Path(nt.fullpath).name
+		nt.parent_folder_path = str(Path(nt.fullpath).parent)
+		nt.parent_folder_name = Path(nt.parent_folder_path).name
+		nt.file_ext = "JELY"
+		try:
+			nt.size = track.get("MediaSources")[0]["Size"]
+		except Exception:
+			logging.exception("Jelly exception on get size")
+		nt.modified_time = time.mktime(
+			time.strptime(track.get("DateCreated").rsplit(".", 1)[0], "%Y-%m-%dT%H:%M:%S")
+		)
 
-			playlist: list[int] = []
-			for item in response.json()["Items"]:
-				track_id = existing.get(item["Id"])
-				if track_id is not None:
-					playlist.append(track_id)
+		nt.is_network = True
+		nt.url_key = track.get("Id")
+		previous_art_key = nt.art_url_key
+		has_embedded_image = any(
+			stream.get("Type") == "EmbeddedImage"
+			for source in track.get("MediaSources") or []
+			for stream in source.get("MediaStreams") or []
+		)
+		if (track.get("ImageTags") or {}).get("Primary") or has_embedded_image:
+			nt.art_url_key = nt.url_key
+		elif track.get("AlbumPrimaryImageTag"):
+			nt.art_url_key = track.get("AlbumId")
+		else:
+			nt.art_url_key = None
+		if nt.art_url_key != previous_art_key:
+			self.tauon.album_art_gen.source_cache.pop(nt.index, None)
 
-			self.scanning = False
-			self.pctl.multi_playlist.append(self.tauon.pl_gen(title=p["Name"], playlist_ids=playlist))
-			self.pctl.gen_codes[self.tauon.pl_to_id(len(self.pctl.multi_playlist) - 1)] = f'jelly"{p["Id"]}"'
+		artists = track.get("Artists", [])
+		nt.artist = "; ".join(artists)
+		if len(artists) > 1:
+			nt.artists = artists
+		nt.album_artist = track.get("AlbumArtist", "")
+		replay_gain = track.get("NormalizationGain", "")
+		if replay_gain:
+			nt.replaygain_track_gain = float(replay_gain)
+		nt.title = track.get("Name", "")
+		nt.composer = "; ".join(d["Name"] for d in track.get("People", []) if d["Type"] == "Composer")
+		nt.length = track.get("RunTimeTicks", 0) / 10000000  # needs to be in seconds
+		nt.album = track.get("Album", "")
+		nt.date = str(track.get("ProductionYear", ""))
+		nt.track_number = str(track.get("IndexNumber", ""))
+		genres = track.get("Genres", [])
+		nt.genre = "; ".join(genres)
+		nt.disc_number = str(track.get("ParentIndexNumber", ""))
 
-		# The import may have updated tracks shown in the current view, so
-		# refresh the playlist and gallery
-		self.gui.request_tracklist_redraw()
-		self.gui.request_frame()
-		self.tauon.reload()
-		self.tauon.wake()
+		try:
+			for d in track.get("MediaSources")[0]["MediaStreams"]:
+				if d["Type"] == "Audio":
+					nt.bitrate = round(d.get("BitRate", 0) / 1000)
+					nt.samplerate = round(d.get("SampleRate", 0))
+					nt.bit_depth = d.get("BitDepth", 0)
+					nt.comment = d.get("Comment", "")
+					nt.codec = d.get("Codec", "")
+					break
+		except Exception:
+			logging.exception("Jelly exception getting audio mediastream")
+
+		try:
+			nt.container = track.get("MediaSources")[0].get("Container", "").upper()
+		except Exception:
+			logging.exception("Jelly exception get container")
+
+		self.pctl.master_library[track_id] = nt
+		return nt
 
 	def ingest_library(self, return_list: bool = False) -> list[int] | None:
 		self.gui.request_frame()
@@ -505,10 +580,10 @@ class Jellyfin:
 					},
 					params={
 						"userId": self.userId,
-						"fields": ["Genres", "DateCreated", "MediaSources", "People"],
+						"fields": TRACK_FIELDS,
 						"enableImages": True,
 						"enableImageTypes": ["Primary"],
-						"includeItemTypes": ["Audio", "Playlist"],
+						"includeItemTypes": ["Audio"],
 						"recursive": True,
 						# Pages must come back in a stable order, otherwise items
 						# could be missed or duplicated between requests
@@ -550,7 +625,6 @@ class Jellyfin:
 
 		# filter audio items only
 		audio_items = [item for item in items if item["Type"] == "Audio"]
-		self.playlists = [item for item in items if item["Type"] == "Playlist"]
 		# sort by artist, then album, then track number
 		sorted_items = sorted(
 			audio_items,
@@ -564,83 +638,7 @@ class Jellyfin:
 		fav_status: dict[TrackClass, bool] = {}
 		for parent, items in grouped_items:
 			for track in items:
-				track_id = existing.get(track.get("Id"))
-				# logging.info(track.items())
-				if track_id is not None:
-					nt = self.pctl.get_track(track_id)
-				else:
-					nt = self.tauon.TrackClass()
-					track_id = allocate_track_id(self.pctl)
-				nt.index = track_id  # this is tauons track id
-				try:
-					nt.fullpath = track.get("MediaSources")[0]["Path"]
-				except Exception:
-					logging.exception("Jelly exception on get path")
-				nt.filename = Path(nt.fullpath).name
-				nt.parent_folder_path = str(Path(nt.fullpath).parent)
-				nt.parent_folder_name = Path(nt.parent_folder_path).name
-				nt.file_ext = "JELY"
-				try:
-					nt.size = track.get("MediaSources")[0]["Size"]
-				except Exception:
-					logging.exception("Jelly exception on get size")
-				nt.modified_time = time.mktime(
-					time.strptime(track.get("DateCreated").rsplit(".", 1)[0], "%Y-%m-%dT%H:%M:%S")
-				)
-
-				nt.is_network = True
-				nt.url_key = track.get("Id")
-				previous_art_key = nt.art_url_key
-				has_embedded_image = any(
-					stream.get("Type") == "EmbeddedImage"
-					for source in track.get("MediaSources") or []
-					for stream in source.get("MediaStreams") or []
-				)
-				if (track.get("ImageTags") or {}).get("Primary") or has_embedded_image:
-					nt.art_url_key = nt.url_key
-				elif track.get("AlbumPrimaryImageTag"):
-					nt.art_url_key = track.get("AlbumId")
-				else:
-					nt.art_url_key = None
-				if nt.art_url_key != previous_art_key:
-					self.tauon.album_art_gen.source_cache.pop(nt.index, None)
-
-				artists = track.get("Artists", [])
-				nt.artist = "; ".join(artists)
-				if len(artists) > 1:
-					nt.artists = artists
-				nt.album_artist = track.get("AlbumArtist", "")
-				replay_gain = track.get("NormalizationGain", "")
-				if replay_gain:
-					nt.replaygain_track_gain = float(replay_gain)
-				nt.title = track.get("Name", "")
-				nt.composer = "; ".join(d["Name"] for d in track.get("People", []) if d["Type"] == "Composer")
-				nt.length = track.get("RunTimeTicks", 0) / 10000000  # needs to be in seconds
-				nt.album = track.get("Album", "")
-				nt.date = str(track.get("ProductionYear", ""))
-				nt.track_number = str(track.get("IndexNumber", ""))
-				genres = track.get("Genres", [])
-				nt.genre = "; ".join(genres)
-				nt.disc_number = str(track.get("ParentIndexNumber", ""))
-
-				try:
-					for d in track.get("MediaSources")[0]["MediaStreams"]:
-						if d["Type"] == "Audio":
-							nt.bitrate = round(d.get("BitRate", 0) / 1000)
-							nt.samplerate = round(d.get("SampleRate", 0))
-							nt.bit_depth = d.get("BitDepth", 0)
-							nt.comment = d.get("Comment", "")
-							nt.codec = d.get("Codec", "")
-							break
-				except Exception:
-					logging.exception("Jelly exception getting audio mediastream")
-
-				try:
-					nt.container = track.get("MediaSources")[0].get("Container", "").upper()
-				except Exception:
-					logging.exception("Jelly exception get container")
-
-				self.pctl.master_library[track_id] = nt
+				nt = self._store_track(track, existing)
 				playlist.append(nt.index)
 
 				# Sync favorite

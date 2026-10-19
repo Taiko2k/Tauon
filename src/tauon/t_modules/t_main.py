@@ -33,6 +33,7 @@ import copy
 import ctypes
 import ctypes.util
 import datetime
+import functools
 import gc as gbc
 import gettext
 import glob
@@ -410,6 +411,7 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS
+	from tauon.t_modules.t_remote_playlists import RemotePlaylistSource
 	from tauon.t_modules.t_logging import LogHistoryHandler
 	from collections.abc import Callable, Sequence
 	from subprocess import Popen
@@ -17274,6 +17276,8 @@ class Tauon:
 		playlist = []
 		selections: list[list[int]] = []
 		errors = False
+		# A server playlist couldn't be fetched: keep the old contents rather than emptying it
+		fetch_failed = False
 		selections_searched = 0
 		search_results_cache: dict[tuple[str, bool], list[list[int | str | None]]] = {}
 
@@ -17352,7 +17356,11 @@ class Tauon:
 
 			elif cm.startswith("jelly\""):
 				if not self.jellyfin.scanning:
-					playlist.extend(self.jellyfin.get_playlist(quote, return_list=True))
+					track_ids = self.jellyfin.get_playlist(quote)
+					if track_ids is None:
+						fetch_failed = True
+					else:
+						playlist.extend(track_ids)
 
 			elif cm == "jelly":
 				if not self.jellyfin.scanning:
@@ -17368,6 +17376,14 @@ class Tauon:
 					playlist.extend(self.subsonic.last_music)
 				elif not self.subsonic.scanning:
 					playlist.extend(self.subsonic.get_music3(return_list=True))
+
+			elif cm.startswith("air\""):
+				track_ids = self.subsonic.playlist_track_ids(quote)
+				if track_ids is None:
+					fetch_failed = True
+					self.show_message(_("Error fetching Airsonic playlist"), mode="warning")
+				else:
+					playlist.extend(track_ids)
 
 			elif cm == "a":
 				if not selections and not selections_searched:
@@ -17969,6 +17985,8 @@ class Tauon:
 		if playlist:
 			playlist = list(dict.fromkeys(playlist))
 		if self.generator_box.active and (not playlist or cmds.count("a") > 1):
+			pass
+		elif fetch_failed:
 			pass
 		else:
 			source_playlist[:] = playlist[:]
@@ -19272,6 +19290,8 @@ class Tauon:
 			"slt"    not in cmds and
 			"spl\""  not in code and
 			"tpl\""  not in code and
+			"jelly\"" not in code and
+			"air\""  not in code and
 			"tar\""  not in code and
 			"tmix\"" not in code and
 			"r"      not in cmds)
@@ -19666,16 +19686,6 @@ class Tauon:
 			assert url
 			return url
 		return None
-
-	def jellyfin_get_playlists_thread(self) -> None:
-		if self.jellyfin.scanning:
-			self.inp.mouse_click = False
-			self.show_message(_("Job already in progress!"))
-			return
-		self.jellyfin.scanning = True
-		shoot_dl = threading.Thread(target=self.jellyfin.get_playlists)
-		shoot_dl.daemon = True
-		shoot_dl.start()
 
 	def jellyfin_get_library_thread(self) -> None:
 		self.pref_box.close()
@@ -30863,6 +30873,101 @@ class Over:
 		self.pctl.playerCommand = "seteq"
 		self.pctl.playerCommandReady = True
 
+	def settings_server_playlists_height(self, service: RemotePlaylistSource) -> int:
+		s = self.gui.scale
+		h = round(116 * s)
+		if self.settings_server_playlists_status(service):
+			h += round(28 * s)
+		if service.remote_playlists:
+			h += round(6 * s) + len(service.remote_playlists) * round(42 * s)
+		return h
+
+	def settings_server_playlists_status(self, service: RemotePlaylistSource) -> str:
+		if service.remote_playlists_error:
+			return service.remote_playlists_error
+		if service.remote_playlists_loading and not service.remote_playlists:
+			return _("Loading playlists…")
+		if service.remote_playlists == []:
+			return _("No playlists on this server.")
+		return ""
+
+	def render_settings_server_playlists(
+		self, service: RemotePlaylistSource, x: int, y: int, w: int, *, accent: ColourRGBA,
+	) -> int:
+		"""Card listing a server's playlists, each importable on its own, plus Import all."""
+		s = self.gui.scale
+		h = self.settings_server_playlists_height(service)
+		inner_x, inner_y, inner_w, _inner_h = self.draw_settings_section(
+			(x, y, w, h), _("Playlists"), _("Pick playlists to import, or import them all."), accent)
+		bg = self.ddt.text_background_colour
+
+		if service.remote_playlists_loading:
+			list_label, list_callback = _("Loading…"), None
+		elif service.remote_playlists is None:
+			list_label, list_callback = _("Show playlists"), service.start_fetch_playlist_list
+		else:
+			list_label, list_callback = _("Refresh list"), service.start_fetch_playlist_list
+		self.draw_settings_action_row(
+			(inner_x, inner_y, inner_w, round(36 * s)),
+			[
+				(list_label, list_callback, False),
+				(_("Import all"), service.start_import_all_playlists, True),
+			],
+			accent,
+		)
+		inner_y += round(42 * s)
+
+		status = self.settings_server_playlists_status(service)
+		if status:
+			colour = self.colours.box_text_label
+			if service.remote_playlists_error:
+				colour = self.settings_readable_colour(ColourRGBA(255, 120, 100, 255), bg, 3.0)
+			self.ddt.text((inner_x + round(12 * s), inner_y + round(4 * s)), status, colour, 12, bg=bg, max_w=inner_w)
+			inner_y += round(28 * s)
+
+		if not service.remote_playlists:
+			return h
+
+		# One pass over the generator codes, rather than one per row
+		codes = "\n".join(self.pctl.gen_codes.values())
+		row_h = round(42 * s)
+		button_w = round(96 * s)
+		button_h = round(26 * s)
+		line = max(1, round(1 * s))
+		for i, playlist in enumerate(service.remote_playlists):
+			row = (inner_x, inner_y + i * row_h, inner_w, row_h)
+			if i:
+				self.ddt.rect((row[0], row[1], row[2], line), self.settings_overlay(bg, 12))
+			fill = bg
+			if self.coll(row):
+				fill = self.settings_surface(bg, 5)
+				self.ddt.rect((row[0], row[1] + line, row[2], row[3] - line), fill)
+			self.ddt.text_background_colour = fill
+
+			imported = service.playlist_code(playlist.id) in codes
+			busy = playlist.id in service.remote_playlists_busy
+			details = []
+			if playlist.smart:
+				details.append(_("Smart playlist"))
+			if playlist.count:
+				details.append(_("1 track") if playlist.count == 1 else _("{count} tracks").format(count=playlist.count))
+			if imported:
+				details.append(_("Imported"))
+			self.settings_row_label(
+				row, "", playlist.name, " · ".join(details), accent,
+				changed=False, restart=False, disabled=False, control_w=button_w, flash=False)
+
+			if busy:
+				label, callback = _("Importing…"), None
+			else:
+				label = _("Update") if imported else _("Import")
+				callback = functools.partial(service.start_import_playlists, [playlist])
+			self.settings_small_button(
+				(row[0] + row[2] - round(12 * s) - button_w, row[1] + (row_h - button_h) // 2, button_w, button_h),
+				label, callback, emphasis=not imported and not busy)
+		self.ddt.text_background_colour = bg
+		return h
+
 	def render_settings_service_detail(
 		self,
 		view: int,
@@ -31224,7 +31329,7 @@ class Over:
 		if view == 7:
 			card1_h = round(218 * gui.scale)
 			card2_h = round(260 * gui.scale)
-			total_h = card1_h + card_gap + card2_h
+			total_h = card1_h + card_gap + card2_h + card_gap + self.settings_server_playlists_height(tauon.subsonic)
 			if not draw:
 				return total_h
 
@@ -31298,6 +31403,8 @@ class Over:
 				],
 				accent,
 			)
+			self.render_settings_server_playlists(
+				tauon.subsonic, x, y + card1_h + card_gap + card2_h + card_gap, w, accent=accent)
 			return total_h
 
 		if view == 9:
@@ -31414,21 +31521,10 @@ class Over:
 
 		if view == 10:
 			card1_h = round(266 * gui.scale)
-			card2_h = round(158 * gui.scale)
-			total_h = card1_h + card_gap + card2_h
+			card2_h = round(116 * gui.scale)
+			total_h = card1_h + card_gap + card2_h + card_gap + self.settings_server_playlists_height(tauon.jellyfin)
 			if not draw:
 				return total_h
-
-			def import_jelly_playlists() -> None:
-				found = False
-				for value in self.pctl.gen_codes.values():
-					if value.startswith("jelly"):
-						found = True
-						break
-				if not found:
-					self.show_message(_("Run music import first"))
-				else:
-					tauon.jellyfin_get_playlists_thread()
 
 			rect = (x, y, w, card1_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
@@ -31474,25 +31570,19 @@ class Over:
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				_("Actions"),
-				_("Import music and playlists."),
+				_("Import the music library."),
 				accent,
 			)
 			self.draw_settings_action_row(
 				(inner_x, inner_y, inner_w, action_h),
 				[
 					(_("Import music"), tauon.jellyfin_get_library_thread, True),
-					(_("Import playlists"), import_jelly_playlists, False),
-				],
-				accent,
-			)
-			inner_y += action_h + row_gap
-			self.draw_settings_action_row(
-				(inner_x, inner_y, inner_w, action_h),
-				[
 					(_("Test connectivity"), tauon.jellyfin.test, False),
 				],
 				accent,
 			)
+			self.render_settings_server_playlists(
+				tauon.jellyfin, x, y + card1_h + card_gap + card2_h + card_gap, w, accent=accent)
 			return total_h
 
 		if view == 11:

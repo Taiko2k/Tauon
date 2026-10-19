@@ -36,6 +36,7 @@ import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord
+from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -48,7 +49,9 @@ if TYPE_CHECKING:
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
 
-class SubsonicService:
+class SubsonicService(RemotePlaylistSource):
+	code_prefix = "air"
+
 	def __init__(self, tauon: Tauon, album_star_store: AlbumStarStore) -> None:
 		self.tauon: Tauon = tauon
 		self.gui: GuiVar = tauon.gui
@@ -58,12 +61,12 @@ class SubsonicService:
 		self.star_store: StarStore = tauon.star_store
 		self.album_star_store: AlbumStarStore = album_star_store
 		self.show_message = tauon.show_message
-		self.playlists = tauon.prefs.subsonic_playlists
 		self.scanning: bool = False
 		self.last_music: list[int] | None = None
 		self.lyrics_scan_lock = threading.Lock()
 		self.lyrics_scan_pending: set[str] = set()
 		self.lyrics_scan_checked: set[str] = set()
+		self.init_remote_playlists()
 
 
 	def _as_list(self, value):
@@ -370,6 +373,64 @@ class SubsonicService:
 
 			album_ids[song["id"]] = song.get("albumId") or (nt.parent_folder_path, name)
 			songs.append((nt, name, song["id"], int(song.get("userRating", 0))))
+
+	def _response(self, d: dict | None) -> dict | None:
+		"""The subsonic-response body if the request succeeded, else None."""
+		response = d.get("subsonic-response") if isinstance(d, dict) else None
+		if not isinstance(response, dict) or response.get("status") != "ok":
+			logging.error(f"Subsonic request failed: {response.get('error') if isinstance(response, dict) else d}")
+			return None
+		return response
+
+	def _list_playlists(self) -> list[RemotePlaylist] | None:
+		response = self._response(self.r("getPlaylists", show_errors=False))
+		if response is None:
+			self.remote_playlists_error = _("Could not connect to the server")
+			return None
+		return [
+			RemotePlaylist(
+				id=str(p["id"]),
+				name=p.get("name") or str(p["id"]),
+				count=self._number(p.get("songCount")),
+				# Navidrome marks smart playlists read-only, and adds validUntil once they've been evaluated.
+				# Other users' playlists can be read-only too, hence the owner check.
+				smart=bool(p.get("validUntil")) or (
+					p.get("readonly") is True and p.get("owner") == self.prefs.subsonic_user),
+			)
+			for p in self._as_list((response.get("playlists") or {}).get("playlist"))
+			if isinstance(p, dict) and p.get("id") is not None
+		]
+
+	def playlist_track_ids(self, playlist_id: str) -> list[int] | None:
+		try:
+			response = self._response(self.r("getPlaylist", p={"id": playlist_id}, show_errors=False))
+		except Exception:
+			logging.exception("Error fetching Subsonic playlist")
+			return None
+		if response is None:
+			return None
+		entries = [
+			e for e in self._as_list((response.get("playlist") or {}).get("entry"))
+			if isinstance(e, dict) and e.get("id")
+		]
+
+		existing: dict[str, int] = {}
+		for track_id, track in self.pctl.master_library.items():
+			if track.is_network and track.file_ext == "SUB":
+				existing[track.url_key] = track_id
+
+		# Songs that aren't in the library yet (it was never imported, or changed since) get added
+		missing = list({e["id"]: e for e in entries if e["id"] not in existing}.values())
+		songs: list[tuple[TrackClass, str, str, int]] = []
+		self._add_search3_songs(missing, set(), songs, {})
+		for nt, _album, song_id, rating in songs:
+			nt.index = allocate_track_id(self.pctl)
+			self.pctl.master_library[nt.index] = nt
+			existing[song_id] = nt.index
+			if rating:
+				self.star_store.set_rating(nt.index, rating * 2)
+
+		return [existing[e["id"]] for e in entries]
 
 	def r(
 		self,
