@@ -34557,7 +34557,7 @@ class TopPanel:
 				colour = colours.corner_button_active
 		colour = self.tauon.style_overlay.tint_from_background(
 			colour, wwx + 93 * gui.scale, yy + 16 * gui.scale, 0.2,
-			colours.bottom_panel_colour)
+			colours.top_panel_background)
 
 		if not prefs.shuffle_lock and not gui.custom_mode:
 			if gui.combo_mode:
@@ -34580,7 +34580,7 @@ class TopPanel:
 			lcol = colours.corner_button_active if self.tauon.layout_menu.active or self.coll(lrect) else colours.corner_button
 			lcol = self.tauon.style_overlay.tint_from_background(
 				lcol, wwx + 53 * gui.scale, yy + 16 * gui.scale, 0.2,
-				colours.bottom_panel_colour)
+				colours.top_panel_background)
 			gw = round(18 * gui.scale)
 			gh = round(13 * gui.scale)
 			draw_layout_glyph(

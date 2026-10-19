@@ -6668,6 +6668,16 @@ class CustomLayout:
 		menu = getattr(self.tauon, "layout_menu", None)
 		active = gui.custom_edit or (menu is not None and menu.active)
 		col = colours.corner_button_active if active else colours.corner_button
+		# Over an art background, take the menu disc's tint, then drop back by
+		# the lift that tint gives over black art, so the pair keep the same
+		# relative levels they have there.
+		overlay = self.tauon.style_overlay
+		sample = overlay.sample_background(x + w / 2, y + h / 2)
+		if sample is not None:
+			panel = colours.top_panel_background
+			on_black = overlay.tint_from_sample(col, ColourRGBA(0, 0, 0, 255), 0.2, panel)
+			lift = rgb_to_hls(on_black.r, on_black.g, on_black.b)[1] - rgb_to_hls(col.r, col.g, col.b)[1]
+			col = rgb_add_hls(overlay.tint_from_sample(col, sample, 0.2, panel), 0, -lift, 0)
 		# Same 3-panel layout glyph as the View Switcher icon, just smaller.
 		gw = round(18 * gui.scale)
 		gh = round(13 * gui.scale)
