@@ -144,6 +144,7 @@ from tauon.t_modules.t_custom import (  # noqa: E402
 	draw_layout_glyph,
 )
 from tauon.t_modules.t_draw import QuickThumbnail, TDraw  # noqa: E402
+from tauon.t_modules.t_tagedit import TagDocument  # noqa: E402
 from tauon.t_modules.t_tagedit_ui import TransEditBox  # noqa: E402
 from tauon.t_modules.t_generator import rename_playlist_references  # noqa: E402
 from tauon.t_modules.t_generator_ui import GeneratorEditBox  # noqa: E402
@@ -18833,6 +18834,9 @@ class Tauon:
 			final_name = manual_name + "." + codec
 			os.rename(target_out, final_out)
 
+		if manual_directory is None and self.prefs.transcode_embed_art:
+			self.embed_transcode_art(t, final_out)
+
 		if self.prefs.transcode_inplace and not t.is_network and not t.is_cue:
 			logging.info("MOVE AND REPLACE!")
 			if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
@@ -18881,6 +18885,17 @@ class Tauon:
 			os.remove(path)
 		self.core_use -= 1
 		self.gui.request_frame()
+
+	def embed_transcode_art(self, track: TrackClass, path: Path) -> None:
+		try:
+			image = self.album_art_gen.save_thumb(track, (1080, 1080), None)
+			if not image:
+				return
+			document = TagDocument(path)
+			document.set_artwork(image.getvalue())
+			document.save()
+		except Exception:
+			logging.exception("Failed to embed album art in transcoded file")
 
 	def cue_scan(self, content: str, tn: TrackClass) -> int | None:
 		# Get length from backend
@@ -20808,6 +20823,8 @@ class Tauon:
 			prefs.show_lyrics_showcase,  # 201
 			prefs.milk_opacity,  # 202
 			prefs.mini_mode_lyrics,  # 203
+			prefs.transcode_embed_art,  # 204
+			prefs.transcode_copy_art,  # 205
 		]
 
 		for slot, value in db_snapshot.items():
@@ -32108,6 +32125,8 @@ class Over:
 			_("Codec"): "codec format encode encoder convert conversion flac opus ogg vorbis mp3 transcode",
 			_("Save opus as .ogg"): "opus ogg extension file type transcode",
 			_("Bitrate"): "bitrate quality kbps size compression transcode",
+			_("Embed album art"): "cover artwork picture image thumbnail embedded tag transcode",
+			_("Copy album art"): "cover artwork picture image cover.jpg folder file transcode",
 			_("Output folder"): "transcode encode output folder location destination open",
 			_("Save to output folder"): "transcode output folder destination save location",
 			_("Save and overwrite files in place"): "transcode overwrite replace in place same folder original",
@@ -33082,6 +33101,8 @@ class Over:
 			prefs.transcode_bitrate = int(rows.stepper(
 				_("Bitrate"), prefs.transcode_bitrate, 32, 320, step=8,
 				formatter=lambda number: f"{int(number)} kbps"))
+		prefs.transcode_embed_art = rows.switch(prefs.transcode_embed_art, _("Embed album art"), _("Add the album cover to each transcoded file."))
+		prefs.transcode_copy_art = rows.switch(prefs.transcode_copy_art, _("Copy album art"), _("Save the album cover as cover.jpg in the output folder."))
 		rows.action(_("Output folder"), ((_("Open"), tauon.open_encode_out, False),))
 		rows.switch(tauon.toggle_transcode_output, _("Save to output folder"))
 		rows.switch(tauon.toggle_transcode_inplace, _("Save and overwrite files in place"))
@@ -55051,7 +55072,7 @@ def worker1(tauon: Tauon) -> None:
 					except Exception:
 						logging.exception("Encode folder not removed")
 					tauon.reload_metadata(folder_items[0])
-				else:
+				elif prefs.transcode_copy_art:
 					tauon.album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
 
 				#logging.info(tauon.transcode_list[0])
@@ -55079,7 +55100,7 @@ def worker1(tauon: Tauon) -> None:
 						mode="warning")
 				else:
 					line = _("Press F9 to show output.")
-					if prefs.transcode_codec == "flac":
+					if prefs.transcode_codec == "flac" and prefs.transcode_copy_art:
 						line = _("Note that any associated output picture is a thumbnail and not an exact copy.")
 					if not gui.sync_progress:
 						if not gui.message_box:
@@ -56370,6 +56391,10 @@ def main(holder: Holder) -> None:
 				prefs.milk_opacity = min(1.0, max(0.0, float(save[202])))
 			if len(save) > 203 and save[203] is not None:
 				prefs.mini_mode_lyrics = save[203]
+			if len(save) > 204 and save[204] is not None:
+				prefs.transcode_embed_art = save[204]
+			if len(save) > 205 and save[205] is not None:
+				prefs.transcode_copy_art = save[205]
 
 			del save
 			state_loaded = True

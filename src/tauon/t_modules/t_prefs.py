@@ -68,6 +68,8 @@ class Prefs:
 	transcode_codec:   str = "opus"
 	transcode_mode:    str = "single"
 	transcode_bitrate: int = 64
+	transcode_embed_art: bool = False
+	transcode_copy_art:  bool = True
 
 	#line_style: int = 1
 	device:      int = 1
