@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-10-12 11:26+0000\n"
+"PO-Revision-Date: 2026-10-13 11:51+0000\n"
 "Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
@@ -601,7 +601,7 @@ msgstr "Сканирование скробблов завершено"
 
 #: src/tauon/t_modules/t_main.py:5287
 msgid "Removed {N} loves."
-msgstr "Удалено {N} лайков."
+msgstr "Удалено {N} избранного."
 
 #: src/tauon/t_modules/t_main.py:5300
 msgid "There was an error, try re-log in"
@@ -617,7 +617,7 @@ msgstr "Это может занять много времени."
 
 #: src/tauon/t_modules/t_main.py:5332
 msgid "There was an error getting friends loves"
-msgstr "Произошла ошибка при получении лайков друзей"
+msgstr "Произошла ошибка при получении избранного друзей"
 
 #: src/tauon/t_modules/t_main.py:5340
 msgid "Scanning loved tracks for: {username}"
@@ -3048,7 +3048,7 @@ msgstr "Это пометит все треки в локальной базе �
 
 #: src/tauon/t_modules/t_main.py:30660
 msgid "Cleared all loves"
-msgstr "Очистить все лайки"
+msgstr "Очистить всё избранное"
 
 #: src/tauon/t_modules/t_main.py:30666
 msgid "Error, not connected to last.fm"
@@ -3590,7 +3590,7 @@ msgstr "Сохранить в выходной каталог"
 
 #: src/tauon/t_modules/t_main.py:32042
 msgid "Save and overwrite files in place"
-msgstr "Сохранять и перезаписывать файлы на месте"
+msgstr "Сохранять и перезаписывать на месте"
 
 #: src/tauon/t_modules/t_main.py:32048
 msgid "Sync to device"
@@ -3743,19 +3743,19 @@ msgstr "Загрузка меток избранного и счётчиков �
 
 #: src/tauon/t_modules/t_main.py:32220
 msgid "Get user loves"
-msgstr "Получить лайки пользователя"
+msgstr "Получить избр. пользователя"
 
 #: src/tauon/t_modules/t_main.py:32221
 msgid "Clear local loves"
-msgstr "Очистить локал. лайки"
+msgstr "Очистка локал. избранного"
 
 #: src/tauon/t_modules/t_main.py:32229
 msgid "Get friend loves"
-msgstr "Получить лайки друзей"
+msgstr "Получить избр. друзей"
 
 #: src/tauon/t_modules/t_main.py:32230
 msgid "Clear friend loves"
-msgstr "Очистить избранное друзей"
+msgstr "Очистка избр. друзей"
 
 #: src/tauon/t_modules/t_main.py:32238 src/tauon/t_modules/t_main.py:32672
 msgid "Get scrobble counts"
@@ -4163,7 +4163,7 @@ msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:33150
 msgid "This program comes with absolutely no warranty."
-msgstr "Программа поставляется без какой-либо гарантии."
+msgstr "Эта программа поставляется без какой-либо гарантии."
 
 #: src/tauon/t_modules/t_main.py:33152
 msgid "Open website"
@@ -4183,7 +4183,7 @@ msgstr "Люди и ссылки проекта."
 
 #: src/tauon/t_modules/t_main.py:33162
 msgid "Created by"
-msgstr "Создано"
+msgstr "Автор"
 
 #: src/tauon/t_modules/t_main.py:33165
 msgid "Contributors"
