@@ -499,6 +499,7 @@ def discord_loop_entrypoint(main) -> None:
                     "activity_type":       ActivityType.LISTENING,
                     "status_display_type": status_display,
                     "pid":                 main.pid,
+                    "name":                safe_text(artist, "Tauon"),
                     "details":             details,
                     "state":               state_text,
                     "large_image":         cached_large_image,
