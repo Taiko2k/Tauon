@@ -304,6 +304,7 @@ from tauon.t_modules.t_tagscan import (  # noqa: E402
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
+from tauon.t_modules.t_waveform import WaveformCache  # noqa: E402
 from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
 from tauon.t_modules.t_windows_blur import WindowsBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -7533,6 +7534,8 @@ class Tauon:
 		self.deco:                                      Deco = Deco(tauon=self)
 		self.bottom_bar1:                     BottomBarType1 = BottomBarType1(tauon=self)
 		self.bottom_bar_ao1:               BottomBarType_ao1 = BottomBarType_ao1(tauon=self)
+		# Shared by every FeuxBar, so two panels never scan the same track.
+		self.waveforms:                        WaveformCache = WaveformCache(self)
 		# The standard layout's full bottom panel (prefs.feux_panel).
 		# The custom layout's widget owns its own instance.
 		self.feux_bar:                               FeuxBar = FeuxBar(self)
@@ -9301,6 +9304,11 @@ class Tauon:
 		"""Show or hide the Feux panel's cover art. The title and artist fall
 		back against the panel's left edge while it is hidden."""
 		self.prefs.feux_panel_art = not self.prefs.feux_panel_art
+		self.gui.request_frame()
+
+	def toggle_feux_waveform(self) -> None:
+		"""Show or hide the playing track's waveform in the Feux scrub bar."""
+		self.prefs.feux_panel_waveform = not self.prefs.feux_panel_waveform
 		self.gui.request_frame()
 
 	def lsp_menu_test_queue(self) -> bool:
@@ -20835,6 +20843,7 @@ class Tauon:
 			prefs.mini_mode_lyrics,  # 203
 			prefs.transcode_embed_art,  # 204
 			prefs.transcode_copy_art,  # 205
+			prefs.feux_panel_waveform,  # 206
 		]
 
 		for slot, value in db_snapshot.items():
@@ -56485,6 +56494,8 @@ def main(holder: Holder) -> None:
 				prefs.transcode_embed_art = save[204]
 			if len(save) > 205 and save[205] is not None:
 				prefs.transcode_copy_art = save[205]
+			if len(save) > 206 and save[206] is not None:
+				prefs.feux_panel_waveform = save[206]
 
 			del save
 			state_loaded = True
@@ -58102,6 +58113,9 @@ def main(holder: Holder) -> None:
 	# classic bar has no art to hide.
 	mode_menu.add(MenuItem(_("Show Album Art"), tauon.toggle_feux_art,
 		check_test=lambda: prefs.feux_panel_art,
+		show_test=lambda ref=None: tauon.feux_panel_showing()))
+	mode_menu.add(MenuItem(_("Show Waveform"), tauon.toggle_feux_waveform,
+		check_test=lambda: prefs.feux_panel_waveform,
 		show_test=lambda ref=None: tauon.feux_panel_showing()))
 
 	mode_menu.br()

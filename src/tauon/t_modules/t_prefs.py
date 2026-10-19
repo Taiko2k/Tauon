@@ -231,6 +231,9 @@ class Prefs:
 	# title and artist sit against the panel's left edge instead. Shared by
 	# the standard and custom layouts -- there is only ever one Feux panel.
 	feux_panel_art: bool = True
+	# Whether the Feux panel's scrub bar shows the playing track's waveform
+	# as needles (see t_waveform). Scanned with FFmpeg, kept in memory only.
+	feux_panel_waveform: bool = False
 	# Width of the Feux panel's now-playing pod -- the art and title, up to the
 	# hairline the user drags. Stored unscaled (see FeuxBar.POD1_W, the default)
 	# so a chosen width holds its proportions across a UI scale change; the

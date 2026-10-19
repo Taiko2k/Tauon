@@ -62,6 +62,7 @@ from tauon.t_modules.t_extra import (
 	rgb_to_hls,
 	test_lumi,
 )
+from tauon.t_modules.t_waveform import Needles, coverage_quads, normalise
 
 if TYPE_CHECKING:
 	from tauon.t_modules.t_main import Tauon, ToolTip
@@ -1255,6 +1256,18 @@ class FeuxBar:
 
 	LOVED_COLOUR = ColourRGBA(244, 100, 100, 255)
 
+	# Waveform needles (prefs.feux_panel_waveform), unscaled. Each needle
+	# owns NEEDLE_STEP px of the bar; NEEDLE_GAP of that opens up between
+	# them once its waveform data arrives.
+	NEEDLE_STEP = 3
+	NEEDLE_GAP  = 1
+	NEEDLE_MIN  = 0.75   # half height at silence
+	NEEDLE_TIME = 0.8    # seconds to unzip and rise, or settle and close
+	# Lightness pushed into the seek colours, away from the backdrop: thin
+	# needles read darker than the solid bar they come out of.
+	NEEDLE_LIFT_FILL = 0.20
+	NEEDLE_LIFT_BG   = 0.14
+
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.gui = tauon.gui
@@ -1273,6 +1286,7 @@ class FeuxBar:
 		self._on_seek = False
 		self.glint = Timer(force=100)          # expired: no glint on the first frame
 		self.glint_playing: bool | None = None
+		self.needles = Needles(self.NEEDLE_TIME)
 
 	# -- assets ---------------------------------------------------------
 
@@ -1795,6 +1809,12 @@ class FeuxBar:
 
 		bar_h = self._s(self.BAR_H)
 		bar_y = mid - bar_h // 2
+		needles = self.tauon.prefs.feux_panel_waveform
+		reach = self._s(9)
+		if needles:
+			# Whole needles only, so the flat state fills the bar exactly.
+			bar_w -= bar_w % max(2, self._s(self.NEEDLE_STEP))
+			reach = max(reach, round(self._needle_reach(h) - bar_h / 2) + self._s(3))
 		seek_bg = self._tint(colours.seek_bar_background, bar_x + bar_w / 2, mid, panel, boost=0.6)
 		seek_fill = colours.seek_bar_fill
 		# Same guard the standard bar uses: if a bright backdrop pushed the
@@ -1805,7 +1825,7 @@ class FeuxBar:
 			seek_fill = hls_pull_contrast(seek_fill, seek_bg, floor=0.12)
 		seek_fill = self._fg(seek_fill, alpha_blend(seek_bg, backdrop), 1.6)
 
-		hit = (bar_x, bar_y - self._s(9), bar_w, bar_h + self._s(18))
+		hit = (bar_x, bar_y - reach, bar_w, bar_h + reach * 2)
 		self.fields.add(hit)
 		if self.coll(hit):
 			self._on_seek = True
@@ -1830,11 +1850,88 @@ class FeuxBar:
 				if pctl.playing_ready():
 					pctl.seek_decimal(progress)
 
-		ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
-		if progress > 0:
-			ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
+		if needles:
+			self._draw_needles(bar_x, bar_y, bar_w, bar_h, h, progress, seek_bg, seek_fill, backdrop)
+		else:
+			ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
+			if progress > 0:
+				ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
 		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
 		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
+
+	def _needle_reach(self, panel_h: int) -> float:
+		"""Half height of the loudest needle; grows a little with the panel."""
+		return max(self._s(10), min(self._s(24), panel_h * 0.22))
+
+	def _draw_needles(self, x: int, y: int, w: int, bar_h: int, panel_h: int,
+			progress: float, bg: ColourRGBA, fill: ColourRGBA, backdrop: ColourRGBA) -> None:
+		"""The scrub bar as waveform needles. Each needle unzips from the flat
+		bar as its part of the playing track's waveform is scanned, and
+		settles back into it when there is no waveform to show."""
+		tauon = self.tauon
+		pctl = self.pctl
+		step = max(2, self._s(self.NEEDLE_STEP))
+		gap = max(1, self._s(self.NEEDLE_GAP))
+		n = int(w // step)
+		flat = bar_h / 2
+		low = self.NEEDLE_MIN * self.gui.scale
+		high = self._needle_reach(panel_h)
+		self.needles.layout(n, flat, (n, step, gap, flat, low, high))
+
+		waveform = None
+		if pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
+			track = pctl.playing_object()
+			if track is not None:
+				waveform = tauon.waveforms.get(track)
+		levels = normalise(waveform.spans(n)) if waveform is not None else [None] * n
+		targets = [
+			(flat, 0.0) if level is None else (low + (high - low) * level, 1.0)
+			for level in levels
+		]
+		now = time.monotonic()
+		if self.needles.update(targets, now):
+			self.gui.request_frame()
+
+		played = x + round(w * progress)
+		cy = y + flat
+		# Lift the colours away from the backdrop (brighter on dark panels,
+		# darker on light ones) as each needle's gap opens, so the flat state
+		# keeps the classic bar's colours exactly.
+		lift = 1 if rgb_to_hls(backdrop.r, backdrop.g, backdrop.b)[1] < 0.5 else -1
+
+		def pair(colour: ColourRGBA, amount: float) -> tuple[tuple, tuple]:
+			lit = rgb_add_hls(colour, l=amount * lift)
+			return (
+				(colour.r / 255, colour.g / 255, colour.b / 255, colour.a / 255),
+				(lit.r / 255, lit.g / 255, lit.b / 255, lit.a / 255))
+
+		fill_pair = pair(fill, self.NEEDLE_LIFT_FILL)
+		bg_pair = pair(bg, self.NEEDLE_LIFT_BG)
+
+		def mix(colours: tuple[tuple, tuple], g: float) -> tuple:
+			if g <= 0:
+				return colours[0]
+			if g >= 1:
+				return colours[1]
+			return tuple(a + (b - a) * g for a, b in zip(*colours))
+
+		vertices: list = []
+		indices: list = []
+		for i in range(n):
+			half, g = self.needles.value(i, now)
+			left = x + i * step
+			right = left + step - gap * g
+			top, bottom = cy - half, cy + half
+			if played >= right:
+				coverage_quads(left, top, right, bottom, mix(fill_pair, g), vertices, indices)
+			elif played <= left:
+				coverage_quads(left, top, right, bottom, mix(bg_pair, g), vertices, indices)
+			else:
+				coverage_quads(left, top, played, bottom, mix(fill_pair, g), vertices, indices)
+				coverage_quads(played, top, right, bottom, mix(bg_pair, g), vertices, indices)
+		if vertices:
+			sdl3.set_render_draw_blend_mode(tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.render_geometry(tauon.renderer, None, vertices, indices)
 
 	def _draw_glint(self, cx: float, cy: float, r: int, k: float) -> None:
 		"""A band of light crossing the disc from top left to bottom right,
