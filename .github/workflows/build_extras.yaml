@@ -11,24 +11,23 @@ jobs:
       - name: Checkout source code
         uses: actions/checkout@v7
 
-      - name: Set up MSYS2 UCRT64
+      - name: Set up MSYS2 CLANG64
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ucrt64
+          msystem: clang64
           update: true
           install: >-
             cmake
             make
             ninja
-            mingw-w64-ucrt-x86_64-cmake
-            mingw-w64-ucrt-x86_64-gcc
-            mingw-w64-ucrt-x86_64-make
-            mingw-w64-ucrt-x86_64-nasm
-            mingw-w64-ucrt-x86_64-ninja
-            mingw-w64-ucrt-x86_64-openssl
-            mingw-w64-ucrt-x86_64-pkg-config
-            mingw-w64-ucrt-x86_64-pkgconf
-            mingw-w64-ucrt-x86_64-rust
+            mingw-w64-clang-x86_64-cmake
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-make
+            mingw-w64-clang-x86_64-nasm
+            mingw-w64-clang-x86_64-ninja
+            mingw-w64-clang-x86_64-openssl
+            mingw-w64-clang-x86_64-pkgconf
+            mingw-w64-clang-x86_64-rust
 
       - name: Build lrclib-solver.exe
         shell: msys2 {0}
