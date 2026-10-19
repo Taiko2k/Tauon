@@ -97,6 +97,28 @@
 
   <releases>
 
+    <release version="13.1.0" date="2026-10-19">
+      <description>
+        <ul>
+          <li>Added locate missing files feature</li>
+          <li>Added search to settings</li>
+          <li>Added lyrics mode to mini modes</li>
+          <li>Added fullscreen milkdrop option</li>
+          <li>Added copy option to track details widget</li>
+          <li>Added embed art for transcode</li>
+          <li>Switched to native exe launcher</li>
+          <li>Redesigned settings box</li>
+          <li>Redesigned smart playlist editor</li>
+          <li>Improved edit mode UI</li>
+          <li>Improved playlist support for Jellyfin/Airsonic</li>
+          <li>Added lyrics drawer to mini modes</li>
+          <li>Tweaked queue scrolling</li>
+          <li>Escape now exits mini mode</li>
+          <li>Fixed a mini mode bug on Hyprland</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="13.0.0" date="2026-10-08">
       <description>
         <ul>
