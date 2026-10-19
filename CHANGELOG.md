@@ -4,6 +4,7 @@ Changelog
 
 ### v13.1.0
 
+ - Added waveform setting to bottom bar
  - Added locate missing files feature
  - Added search to settings
  - Added lyrics mode to mini modes
