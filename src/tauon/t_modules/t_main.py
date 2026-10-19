@@ -5478,15 +5478,58 @@ class ListenBrainz:
 		self.n_version    = tauon.n_version
 		self.show_message = tauon.show_message
 		self.enable       = tauon.prefs.enable_lb
+		self.mbid_cache: dict[tuple[str, str], str | None] = {}
 		# self.url = "https://api.listenbrainz.org/1/submit-listens"
 
-	def url(self) -> str:
+	def api_url(self, endpoint: str) -> str:
 		url = self.prefs.listenbrainz_url
 		if not url:
 			url = "https://api.listenbrainz.org/"
 		if not url.endswith("/"):
 			url += "/"
-		return url + "1/submit-listens"
+		return url + "1/" + endpoint
+
+	def url(self) -> str:
+		return self.api_url("submit-listens")
+
+	def recording_mbid(self, track_object: TrackClass) -> str | None:
+		"""Recording MBID from tags, else looked up by artist and title."""
+		if track_object.musicbrainz_recordingid:
+			return track_object.musicbrainz_recordingid
+
+		title = track_object.title
+		artist = get_artist_strip_feat(track_object)
+		if not title or not artist:
+			return None
+
+		key = (artist.lower(), title.lower())
+		if key in self.mbid_cache:
+			return self.mbid_cache[key]
+
+		params = {"artist_name": artist, "recording_name": title}
+		if track_object.album:
+			params["release_name"] = track_object.album
+		r = requests.get(
+			self.api_url("metadata/lookup/"), params=params,
+			headers={"Authorization": "Token " + self.prefs.lb_token}, timeout=10)
+		r.raise_for_status()
+		mbid = r.json().get("recording_mbid") or None
+		self.mbid_cache[key] = mbid
+		return mbid
+
+	def love(self, track_object: TrackClass, loved: bool = True) -> bool:
+		"""Send love (or clear it) as recording feedback. False if the track can't be matched."""
+		mbid = self.recording_mbid(track_object)
+		if not mbid:
+			logging.info(f"No ListenBrainz recording match for {track_object.artist} - {track_object.title}")
+			return False
+
+		data = {"recording_mbid": mbid, "score": 1 if loved else 0}
+		r = requests.post(
+			self.api_url("feedback/recording-feedback"),
+			headers={"Authorization": "Token " + self.prefs.lb_token}, json=data, timeout=10)
+		r.raise_for_status()
+		return True
 
 	def listen_full(self, track_object: TrackClass, time: int) -> bool | None:
 		if self.enable is False:
@@ -20202,6 +20245,15 @@ class Tauon:
 		except Exception:
 			logging.exception("Failed to signal Discord wakeup")
 
+	def lb_love(self, track_id: int, loved: bool) -> None:
+		if not self.lb.enable or not self.prefs.lb_token:
+			return
+		try:
+			self.lb.love(self.pctl.master_library[track_id], loved)
+		except Exception:
+			logging.exception("Failed updating ListenBrainz love status")
+			self.show_message(_("Failed updating ListenBrainz love status"), mode="warning")
+
 	def love(self, set: bool = True, track_id: int | None = None, no_delay: bool = False, notify: bool = False, sync: bool = True) -> bool | None:
 		if track_id is None and len(self.pctl.track_queue) < 1:
 			return False
@@ -20263,6 +20315,7 @@ class Tauon:
 							_("Error updating love to last.fm!"),
 							_("Maybe check your internet connection and try again?"), mode="error")
 
+				self.lb_love(track_id, True)
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id])
 				if self.pctl.master_library[track_id].file_ext == "SUB":
@@ -20282,6 +20335,7 @@ class Tauon:
 						self.show_message(_("Failed updating last.fm love status"), mode="warning")
 						star.loved = True
 						self.star_store.insert(track_id, star)
+				self.lb_love(track_id, False)
 				if self.pctl.master_library[track_id].file_ext == "JELY":
 					self.jellyfin.favorite(self.pctl.master_library[track_id], un=True)
 				if self.pctl.master_library[track_id].file_ext == "SUB":
