@@ -937,7 +937,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.wfile.write(b"Invalid parameter")
 
 			elif path.startswith("/api1/start/"):
-				levels, _ = self.parse_trail(path)
+				levels, _params = self.parse_trail(path)
 				if len(levels) == 5:
 					playlist = levels[3]
 					position = levels[4]
@@ -1003,12 +1003,12 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/albumtracks/"):
 				# Get tracks that appear in an album /albumtracks/plid/albumid
-				levels, _ = self.parse_trail(path)
+				levels, _params = self.parse_trail(path)
 				l = []
 				if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
 					pl = tauon.id_to_pl(int(levels[3]))
 					if pl is not None:
-						_, album, _ = tauon.get_album_info(int(levels[4]), pl)
+						_playing, album, _select = tauon.get_album_info(int(levels[4]), pl)
 						# logging.info(album)
 						for p in album:
 							l.append(self.get_track(p, pl, album_id=int(levels[4])))
@@ -1022,7 +1022,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/trackposition/"):
 				# get track /trackposition/plid/playlistposition
-				levels, _ = self.parse_trail(path)
+				levels, _params = self.parse_trail(path)
 				if len(levels) == 5 and levels[3].isdigit() and levels[4].isdigit():
 					pl = tauon.id_to_pl(int(levels[3]))
 					if pl is not None:

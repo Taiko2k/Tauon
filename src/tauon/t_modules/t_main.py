@@ -9539,8 +9539,8 @@ class Tauon:
 		# self.gui.update_layout = True
 
 	def flush_artist_bio(self, artist: str) -> None:
-		if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
-			os.remove(os.path.join(self.a_cache_directory, artist + "-lfm.txt"))
+		if os.path.isfile(os.path.join(self.a_cache_directory, filename_safe(artist) + "-lfm.txt")):
+			os.remove(os.path.join(self.a_cache_directory, filename_safe(artist) + "-lfm.txt"))
 		self.artist_info_box.text = ""
 		self.artist_info_box.artist_on = None
 
@@ -25638,7 +25638,7 @@ class AlbumArt:
 			return None
 
 		# Check cache for existing image
-		path = os.path.join(self.b_cache_directory, artist)
+		path = os.path.join(self.b_cache_directory, filename_safe(artist))
 		if os.path.isfile(path):
 			logging.info("Load cached background")
 			return open(path, "rb")
@@ -25687,7 +25687,7 @@ class AlbumArt:
 				assert l > 1000
 
 				# Cache image for future use
-				path = os.path.join(self.a_cache_directory, artist + "-ftv-full.jpg")
+				path = os.path.join(self.a_cache_directory, filename_safe(artist) + "-ftv-full.jpg")
 				with open(path, "wb") as f:
 					f.write(t.read())
 				t.seek(0)
@@ -45509,14 +45509,14 @@ class ArtistInfoBox:
 				return
 
 			if self.min_rq_timer.get() < 10:  # Limit rate
-				if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
+				if os.path.isfile(os.path.join(self.a_cache_directory, filename_safe(artist) + "-lfm.txt")):
 					pass
 				else:
 					self.status = _("Cooldown…")
 					wait = True
 
 			if self.pctl.playing_time < 2:
-				if os.path.isfile(os.path.join(self.a_cache_directory, artist + "-lfm.txt")):
+				if os.path.isfile(os.path.join(self.a_cache_directory, filename_safe(artist) + "-lfm.txt")):
 					pass
 				else:
 					self.status = "..."
