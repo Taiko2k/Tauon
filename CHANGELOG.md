@@ -18,7 +18,7 @@ Changelog
  - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
  - Escape now exits mini mode
- - Fixed a mini mode bug on hyperland
+ - Fixed a mini mode bug on Hyprland
 
 ### v13.0.0
 
