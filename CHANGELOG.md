@@ -9,10 +9,12 @@ Changelog
  - Added lyrics mode to mini modes
  - Added fullscreen milkdrop option
  - Added copy option to track details widget
+ - Added embed art for transcode
  - Switched to native exe launcher
  - Redesigned settings box
  - Redesigned smart playlist editor
  - Improved edit mode UI
+ - Improved playlist support for Jellyfin/Airsonic
  - Added lyrics drawer to mini modes
  - Tweaked queue scrolling
  - Escape now exits mini mode
