@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/17271572/56716255-f03ba080-678d-11e9-880f-49d6cbf77e60.jpg" alt="Tauon music player">
+  <img src="https://tauonmusicbox.rocks/_astro/main-screen.C2kzKk6w_Zwao8B.webp" alt="Tauon music player">
 </p>
 
 ## Features :sparkles:
