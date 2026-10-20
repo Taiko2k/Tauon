@@ -34080,8 +34080,12 @@ class Over:
 		self.settings_doc_height = doc_h + pad * 2
 
 		sdl3.set_render_target(self.renderer, current_target)
-		src_rect = sdl3.FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
-		sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
+		# A control on the page can close the window or drop the texture mid-frame
+		if self.settings_doc_texture is texture:
+			src_rect = sdl3.FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
+			sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
+		else:
+			gui.request_frame()
 
 		# Jumps requested by the sidebar or a search result
 		pending = self.settings_pending_scroll
