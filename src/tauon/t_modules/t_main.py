@@ -7620,6 +7620,7 @@ class Tauon:
 		self.generator_box:                        GeneratorEditBox = GeneratorEditBox(tauon=self)
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
+		self.tracklist_layout_panel:              TracklistLayoutPanel = TracklistLayoutPanel(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
@@ -16382,7 +16383,8 @@ class Tauon:
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active \
 			and not self.generator_box.active \
-			and not self.duplicate_import_box.active
+			and not self.duplicate_import_box.active \
+			and not self.tracklist_layout_panel.active
 
 	def get_radio_art(self) -> None:
 		if self.radiobox.loaded_url in self.radiobox.websocket_source_urls:
@@ -33243,8 +33245,8 @@ class Over:
 
 	def settings_body_elsewhere(self, rows: SettingsRows) -> None:
 		rows.pointer(_("Gallery thumbnail size and titles"), _("Right-click the gallery"), "album grid covers bigger smaller")
-		rows.pointer(_("Tracklist columns, font size and row height"), _("Right-click a track › Layout"), "rows bigger smaller text")
-		rows.pointer(_("Track menu search links"), _("Right-click a track › Layout"), "wikipedia bandcamp genius sonemic")
+		rows.pointer(_("Tracklist columns, font size and row height"), _("Right-click a track › Layout…"), "rows bigger smaller text")
+		rows.pointer(_("Track menu search links"), _("Right-click a track › Layout…"), "wikipedia bandcamp genius sonemic")
 		rows.pointer(_("Tabs and top-panel visualiser"), _("Right-click the top panel"), "spectrum meter")
 		rows.pointer(_("Centred side panel and art zoom"), _("Right-click the side-panel art"), "cover milkdrop")
 		rows.pointer(_("Showcase visualiser and wide mode"), _("Right-click the showcase view"), "lyrics")
@@ -41579,6 +41581,411 @@ class RenamePlaylistBox:
 			elif len(self.rename_text_area.text) > 0:
 				self.commit_title()
 			self.inp.key_return_press = False
+
+class TracklistLayoutPanel:
+	"""Popover with the tracklist's look settings, opened from Layout… in the
+	track and folder menus. A click outside or Esc closes it."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.inp         = tauon.inp
+		self.ddt         = tauon.ddt
+		self.coll        = tauon.coll
+		self.prefs       = tauon.prefs
+		self.fields      = tauon.fields
+		self.colours     = tauon.colours
+		self.window_size = tauon.window_size
+		self.active = False
+		# Set by the main loop when a left click lands inside the panel
+		self.click = False
+		self.anchor = (0, 0)
+		self.rect = (0, 0, 0, 0)
+		self._bg = ColourRGBA(0, 0, 0, 255)
+		self._text = ColourRGBA(255, 255, 255, 255)
+		self._accent = ColourRGBA(255, 255, 255, 255)
+		self._line_px = 1
+
+	def open(self, x: float, y: float) -> None:
+		self.anchor = (round(x), round(y))
+		self.active = True
+		self.click = False
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		self.active = False
+		self.click = False
+		self.gui.request_frame()
+
+	def inside(self) -> bool:
+		return self.active and self.coll(self.rect)
+
+	# --- Settings ---
+
+	def _redraw(self) -> None:
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
+
+	def _toggle_left_align(self) -> None:
+		self.prefs.row_title_format = 1 if self.prefs.row_title_format == 2 else 2
+		self._redraw()
+
+	def _toggle_genre(self) -> None:
+		self.prefs.row_title_genre ^= True
+		self._redraw()
+
+	def _toggle_full_album_art(self) -> None:
+		self.prefs.column_album_art_full_height ^= True
+		self.gui.playlist_scroll_pixels = 0
+		self._redraw()
+
+	def _toggle_set_bar(self) -> None:
+		self.gui.set_bar ^= True
+		self.gui.update_layout = True
+		self._redraw()
+
+	def _set_scrollbar_left(self, left: bool) -> None:
+		self.prefs.tracklist_scrollbar_left = left
+		self._redraw()
+
+	def _set_columns(self, columns: bool) -> None:
+		if self.gui.set_mode != columns:
+			self.tauon.view_box.col(True)
+			self._redraw()
+
+	def _step(self, attr: str, low: int, high: int, direction: int) -> None:
+		new = min(high, max(low, getattr(self.prefs, attr) + direction))
+		if new != getattr(self.prefs, attr):
+			setattr(self.prefs, attr, new)
+			self.gui.update_layout = True
+			self._redraw()
+
+	def density(self) -> str:
+		"""The preset the current sizing matches: "thin", "thick" or ""."""
+		prefs = self.prefs
+		if prefs.playlist_font_size != 15:
+			return ""
+		if prefs.playlist_row_height == round(22 * prefs.ui_scale) and prefs.tracklist_y_text_offset == 0:
+			return "thin"
+		if prefs.playlist_row_height == round(27 * prefs.ui_scale):
+			return "thick"
+		return ""
+
+	def steppers(self) -> list[tuple[str, str, int, int]]:
+		"""(label, prefs attribute, low, high) for the Text row."""
+		ui = self.prefs.ui_scale
+		return [
+			(_("Font size"), "playlist_font_size", 12, 17),
+			(_("Row height"), "playlist_row_height", round(15 * ui), round(45 * ui)),
+			(_("Baseline"), "tracklist_y_text_offset", -10, 10),
+		]
+
+	def chip_rows(self) -> list[list[tuple[str, str, list[tuple[str, Callable[[], object], Callable[[], bool]]]]]]:
+		"""Rows of one or two side-by-side sections, each (title, mode, chips).
+		mode is "standard" or "columns" when the section only affects that
+		view, "" for both; a chip is (label, on_click, is_on)."""
+		tauon = self.tauon
+		prefs = self.prefs
+		gui = self.gui
+		return [
+			[(_("Track rows"), "standard", [
+				(_("Loves"), tauon.heart_toggle, lambda: bool(tauon.heart_toggle(1))),
+				(_("Track ratings"), tauon.rating_toggle, lambda: bool(tauon.rating_toggle(1))),
+				(_("Star hints"), tauon.star_toggle, lambda: bool(tauon.star_toggle(1))),
+				(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
+			])],
+			[(_("Album titles"), "", [
+				(_("Year"), tauon.toggle_append_date, lambda: bool(tauon.toggle_append_date(1))),
+				(_("Duration"), tauon.toggle_append_total_time, lambda: bool(tauon.toggle_append_total_time(1))),
+				(_("Genre"), self._toggle_genre, lambda: bool(prefs.row_title_genre)),
+				(_("Album ratings"), tauon.album_rating_toggle, lambda: bool(tauon.album_rating_toggle(1))),
+				(_("Left align"), self._toggle_left_align, lambda: prefs.row_title_format == 2),
+			])],
+			[(_("Columns"), "columns", [
+				(_("Header bar"), self._toggle_set_bar, lambda: bool(gui.set_bar)),
+				(_("Full album art"), self._toggle_full_album_art, lambda: bool(prefs.column_album_art_full_height)),
+			]),
+			(_("Scroll bar"), "", [
+				(_("Left"), lambda: self._set_scrollbar_left(True), lambda: bool(prefs.tracklist_scrollbar_left)),
+				(_("Right"), lambda: self._set_scrollbar_left(False), lambda: not prefs.tracklist_scrollbar_left),
+			])],
+			[(_("Track menu links"), "", [
+				(_("Wikipedia"), tauon.toggle_wiki, lambda: bool(tauon.toggle_wiki(1))),
+				(_("Sonemic"), tauon.toggle_rym, lambda: bool(tauon.toggle_rym(1))),
+				(_("Bandcamp"), tauon.toggle_band, lambda: bool(tauon.toggle_band(1))),
+				(_("Genius"), tauon.toggle_gen, lambda: bool(tauon.toggle_gen(1))),
+			])],
+		]
+
+	def section_applies(self, mode: str) -> bool:
+		return not mode or (mode == "columns") == bool(self.gui.set_mode)
+
+	def flow(self, labels: list[str], max_w: int) -> tuple[list[tuple[int, int, int]], int]:
+		"""Lay chips out left to right, wrapping at max_w: (x, line, width)
+		per chip, and the number of lines."""
+		s = self.gui.scale
+		positions = []
+		line = line_x = 0
+		for label in labels:
+			w = min(max_w, self.ddt.get_text_w(label, 412) + round(28 * s))
+			if line_x and line_x + w > max_w:
+				line += 1
+				line_x = 0
+			positions.append((line_x, line, w))
+			line_x += w + round(6 * s)
+		return positions, line + 1
+
+	def flow_width(self, labels: list[str]) -> int:
+		"""Width of the chips laid out on a single line."""
+		positions, _lines = self.flow(labels, 1 << 20)
+		return positions[-1][0] + positions[-1][2] if positions else 0
+
+	# --- Drawing ---
+
+	def _ink(self, alpha: int, over: ColourRGBA) -> ColourRGBA:
+		return alpha_blend(alpha_mod(self._text, alpha), over)
+
+	def _label(self, rect: tuple[int, int, int, int], title: str, note: str = "") -> None:
+		x, y, w, _h = rect
+		s = self.gui.scale
+		self.ddt.text((x, y + round(9 * s)), title, self._ink(150, self._bg), 211, bg=self._bg)
+		if note:
+			self.ddt.text((x + w, y + round(9 * s), 1), note, self.colours.menu_text_disabled, 10, bg=self._bg)
+
+	def _tile(
+		self, rect: tuple[int, int, int, int], label: str, selected: bool,
+		painter: Callable[[tuple[int, int, int, int], ColourRGBA, ColourRGBA, ColourRGBA], None],
+	) -> bool:
+		x, y, w, h = rect
+		s = self.gui.scale
+		bg = self._bg
+		hover = not selected and self.coll(rect)
+		if selected:
+			fill = alpha_blend(alpha_mod(self._accent, 40), bg)
+			border = alpha_blend(alpha_mod(self._accent, 170), bg)
+		elif hover:
+			fill = self.colours.menu_highlight_background
+			border = self._ink(60, bg)
+		else:
+			fill = bg
+			border = self._ink(35, bg)
+		self.ddt.bordered_rect(rect, fill, border, self._line_px)
+		pad = round(10 * s)
+		strong = self._accent if selected else self._ink(200, fill)
+		painter((x + pad, y + round(9 * s), w - pad * 2, round(24 * s)), self._ink(110, fill), strong, self._ink(40, fill))
+		text_colour = self._text if selected or hover else self._ink(190, fill)
+		self.ddt.text((x + w // 2, y + h - round(22 * s), 2), label, text_colour, 412, bg=fill, max_w=w - pad)
+		if selected:
+			self.ddt.rect((x, y + h - round(2 * s), w, round(2 * s)), self._accent)
+		self.fields.add(rect)
+		return hover and self.click
+
+	def _paint_standard(self, rect, ink, strong, faint) -> None:
+		x, y, w, _h = rect
+		s = self.gui.scale
+		bar = max(1, round(2 * s))
+		self.ddt.rect((x, y, round(w * 0.6), bar + self._line_px), strong)
+		for i in range(3):
+			ry = y + round((8 + i * 7) * s)
+			self.ddt.rect((x + round(4 * s), ry, round(w * 0.5), bar), ink)
+			self.ddt.rect((x + w - round(w * 0.12), ry, round(w * 0.12), bar), ink)
+
+	def _paint_columns(self, rect, ink, strong, faint) -> None:
+		x, y, w, h = rect
+		s = self.gui.scale
+		bar = max(1, round(2 * s))
+		self.ddt.rect((x, y, w, round(4 * s)), strong)
+		for f in (0.36, 0.78):
+			self.ddt.rect((x + round(w * f), y + round(4 * s), self._line_px, h - round(4 * s)), faint)
+		for i in range(3):
+			ry = y + round((10 + i * 6) * s)
+			for start, span in ((0.02, 0.28), (0.39, 0.34), (0.81, 0.15)):
+				self.ddt.rect((x + round(w * start), ry, round(w * span), bar), ink)
+
+	def _paint_rows(self, rect, ink, strong, rows: int, spacing: int, thickness: int) -> None:
+		x, y, w, _h = rect
+		s = self.gui.scale
+		bar = max(1, round(thickness * s))
+		for i in range(rows):
+			ry = y + round((2 + i * spacing) * s)
+			self.ddt.rect((x, ry, round(w * 0.62), bar), strong if i == 0 else ink)
+			self.ddt.rect((x + w - round(w * 0.12), ry, round(w * 0.12), bar), ink)
+
+	def _paint_thin(self, rect, ink, strong, faint) -> None:
+		self._paint_rows(rect, ink, strong, 5, 5, 2)
+
+	def _paint_thick(self, rect, ink, strong, faint) -> None:
+		self._paint_rows(rect, ink, strong, 3, 9, 3)
+
+	def _stepper(self, rect: tuple[int, int, int, int], title: str, attr: str, low: int, high: int) -> None:
+		x, y, w, h = rect
+		s = self.gui.scale
+		fill = self._ink(8, self._bg)
+		self.ddt.bordered_rect(rect, fill, self._ink(30, self._bg), self._line_px)
+		self.ddt.text((x + w // 2, y + round(4 * s), 2), title, self._ink(150, fill), 10, bg=fill, max_w=w - round(6 * s))
+		bh = round(20 * s)
+		by = y + h - bh - round(3 * s)
+		value = getattr(self.prefs, attr)
+		for sign, bx, direction, enabled in (
+			("−", x + round(3 * s), -1, value > low),
+			("+", x + w - bh - round(3 * s), 1, value < high),
+		):
+			button = (bx, by, bh, bh)
+			hover = enabled and self.coll(button)
+			button_fill = fill
+			if hover:
+				button_fill = self.colours.menu_highlight_background
+				self.ddt.rect(button, button_fill)
+			colour = self._text if enabled else self.colours.menu_text_disabled
+			self.ddt.text((bx + bh // 2, by + round(2 * s), 2), sign, colour, 412, bg=button_fill)
+			self.fields.add(button)
+			if hover and self.click:
+				self._step(attr, low, high, direction)
+		self.ddt.text((x + w // 2, by + round(2 * s), 2), str(getattr(self.prefs, attr)), self._text, 412, bg=fill)
+
+	def _chip(self, rect: tuple[int, int, int, int], label: str, on: bool, disabled: bool) -> bool:
+		x, y, w, h = rect
+		s = self.gui.scale
+		bg = self._bg
+		hover = not disabled and self.coll(rect)
+		if disabled:
+			fill = self._ink(8, bg) if on else bg
+			border = self._ink(18, bg)
+		elif on:
+			fill = alpha_blend(alpha_mod(self._accent, 45), bg)
+			border = alpha_blend(alpha_mod(self._accent, 150), bg)
+		elif hover:
+			fill = self.colours.menu_highlight_background
+			border = self._ink(60, bg)
+		else:
+			fill = bg
+			border = self._ink(35, bg)
+		self.ddt.bordered_rect(rect, fill, border, self._line_px)
+
+		box = round(7 * s)
+		bx = x + round(8 * s)
+		by = y + (h - box) // 2
+		if on:
+			self.ddt.rect((bx, by, box, box), self.colours.menu_text_disabled if disabled else self._accent)
+		else:
+			line = self._ink(30 if disabled else 80, fill)
+			b = self._line_px
+			self.ddt.rect((bx, by, box, b), line)
+			self.ddt.rect((bx, by + box - b, box, b), line)
+			self.ddt.rect((bx, by + b, b, box - b * 2), line)
+			self.ddt.rect((bx + box - b, by + b, b, box - b * 2), line)
+
+		if disabled:
+			text_colour = self.colours.menu_text_disabled
+		elif on or hover:
+			text_colour = self._text
+		else:
+			text_colour = self._ink(190, fill)
+		text_x = bx + box + round(5 * s)
+		self.ddt.text((text_x, y + round(4 * s)), label, text_colour, 412, bg=fill, max_w=x + w - text_x - round(5 * s))
+		if not disabled:
+			self.fields.add(rect)
+		return hover and self.click
+
+	def render(self) -> None:
+		gui = self.gui
+		s = gui.scale
+		colours = self.colours
+		self._bg = colours.menu_background
+		self._text = colours.menu_text
+		self._accent = colours.toggle_box_on
+		self._line_px = max(1, round(1 * s))
+		bg = self._bg
+
+		w = round(364 * s)
+		pad = round(12 * s)
+		inner = w - pad * 2
+		gap = round(6 * s)
+		label_h = round(26 * s)
+		tile_h = round(64 * s)
+		chip_h = round(24 * s)
+		stepper_h = round(44 * s)
+
+		# Side-by-side sections get their one-line width when the row has
+		# room, else an equal share; a row is as tall as its tallest section
+		rows = []
+		for row in self.chip_rows():
+			free = inner - pad * (len(row) - 1)
+			widths = [self.flow_width([chip[0] for chip in chips]) for _title, _mode, chips in row]
+			if sum(widths) > free:
+				widths = [free // len(row)] * len(row)
+			else:
+				widths[-1] += free - sum(widths)
+			laid = []
+			lines = 1
+			section_x = 0
+			for (title, mode, chips), section_w in zip(row, widths):
+				positions, section_lines = self.flow([chip[0] for chip in chips], section_w)
+				laid.append((section_x, section_w, title, mode, chips, positions))
+				lines = max(lines, section_lines)
+				section_x += section_w + pad
+			rows.append((laid, label_h + lines * chip_h + (lines - 1) * gap))
+		h = round(4 * s) + (label_h + tile_h) * 2 + label_h + stepper_h + pad
+		h += sum(row_h for _laid, row_h in rows)
+
+		margin = round(8 * s)
+		x = max(margin, min(self.anchor[0], self.window_size[0] - w - margin))
+		y = self.anchor[1]
+		if y + h > self.window_size[1] - margin:
+			y = self.window_size[1] - margin - h
+		y = max(margin, y)
+		self.rect = (x, y, w, h)
+
+		border = rgb_add_hls(bg, 0, -0.12, -0.1) if Menu.background_is_light(bg) else rgb_add_hls(bg, 0, 0.1, 0)
+		self.ddt.bordered_rect(self.rect, bg, border, self._line_px)
+		self.ddt.text_background_colour = bg
+
+		left = x + pad
+		yy = y + round(4 * s)
+		tile_w = (inner - gap) // 2
+
+		self._label((left, yy, inner, label_h), _("View"))
+		yy += label_h
+		if self._tile((left, yy, tile_w, tile_h), _("Standard"), not gui.set_mode, self._paint_standard):
+			self._set_columns(False)
+		if self._tile((left + tile_w + gap, yy, tile_w, tile_h), _("Columns"), bool(gui.set_mode), self._paint_columns):
+			self._set_columns(True)
+		yy += tile_h
+
+		self._label((left, yy, inner, label_h), _("Density"))
+		yy += label_h
+		density = self.density()
+		if self._tile((left, yy, tile_w, tile_h), _("Thin"), density == "thin", self._paint_thin):
+			self.tauon.pref_box.small_preset()
+			self._redraw()
+		if self._tile((left + tile_w + gap, yy, tile_w, tile_h), _("Thick"), density == "thick", self._paint_thick):
+			self.tauon.pref_box.large_preset()
+			self._redraw()
+		yy += tile_h
+
+		self._label((left, yy, inner, label_h), _("Text"))
+		yy += label_h
+		steppers = self.steppers()
+		step_w = (inner - gap * (len(steppers) - 1)) // len(steppers)
+		for i, (title, attr, low, high) in enumerate(steppers):
+			self._stepper((left + i * (step_w + gap), yy, step_w, stepper_h), title, attr, low, high)
+		yy += stepper_h
+
+		for laid, row_h in rows:
+			for section_x, section_w, title, mode, chips, positions in laid:
+				applies = self.section_applies(mode)
+				note = ""
+				if not applies:
+					note = _("Standard view only") if mode == "standard" else _("Columns view only")
+				self._label((left + section_x, yy, section_w, label_h), title, note)
+				for (label, on_click, is_on), (chip_x, line, chip_w) in zip(chips, positions):
+					chip = (left + section_x + chip_x, yy + label_h + line * (chip_h + gap), chip_w, chip_h)
+					if self._chip(chip, label, is_on(), not applies):
+						on_click()
+						self._redraw()
+			yy += row_h
+
+		self.click = False
 
 class PlaylistBox:
 
@@ -57993,107 +58400,15 @@ def main(holder: Holder) -> None:
 	track_menu.br()
 	track_menu.add(MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, icon=gui.transcode_icon))
 
-	# Layout submenu: the columns toggles plus the tracklist settings, moved
-	# here from Settings > Tracklist. (ViewBox.col stays as the shared columns
-	# implementation — the toggle-columns keybind uses it too.)
-	def menu_toggle_columns(ref=None) -> None:
-		tauon.view_box.col(True)
+	# Layout… opens the tracklist layout panel where the menu was opened
+	def layout_panel_opener(menu: Menu) -> Callable[..., None]:
+		def cb(ref=None) -> None:
+			tauon.tracklist_layout_panel.open(*menu.popup_anchor)
+		return cb
 
-	def _columns_off_test(ref=None) -> bool:
-		return not gui.set_mode
-
-	def _columns_on_test(ref=None) -> bool:
-		return gui.set_mode
-
-	def menu_toggle_set_bar(ref=None) -> None:
-		gui.set_bar ^= True
-		gui.update_layout = True
-		gui.request_tracklist_redraw()
-
-	def _bar_deco() -> Decorator:
-		text = _("Hide Bar") if gui.set_bar else _("Show Bar")
-		return Decorator(colours.menu_text, colours.menu_background, text)
-
-	def _tl_toggle_left_align() -> None:
-		prefs.row_title_format = 1 if prefs.row_title_format == 2 else 2
-		gui.request_frame()
-		gui.request_tracklist_redraw()
-
-	def _tl_toggle_genre() -> None:
-		prefs.row_title_genre ^= True
-		gui.request_frame()
-		gui.request_tracklist_redraw()
-
-	def _tl_toggle_scrollbar_left() -> None:
-		prefs.tracklist_scrollbar_left ^= True
-		gui.request_frame()
-		gui.request_tracklist_redraw()
-
-	def _tl_toggle_full_album_art() -> None:
-		prefs.column_album_art_full_height ^= True
-		gui.playlist_scroll_pixels = 0
-		gui.request_frame()
-		gui.request_tracklist_redraw()
-
-	def _tl_stepper(attr: str, lo: int, hi: int) -> tuple[Callable, Callable, Callable]:
-		def value(ref=None) -> int:
-			return getattr(prefs, attr)
-		def step(direction: int) -> Callable[..., None]:
-			def cb(ref=None) -> None:
-				new = min(hi, max(lo, getattr(prefs, attr) + direction))
-				if new != getattr(prefs, attr):
-					setattr(prefs, attr, new)
-					gui.update_layout = True
-					gui.request_tracklist_redraw()
-			return cb
-		return value, step(-1), step(1)
-
-	def add_layout_sub(menu: Menu) -> None:
-		"""Append the tracklist Layout submenu to ``menu`` (fresh MenuItems per
-		menu; the callbacks/decos are shared closures above)."""
-		menu.add_sub(_("Layout"), 190)
-		sub = menu.sub_number - 1
-		menu.add_to_sub(sub, MenuItem(_("Show Columns"), menu_toggle_columns, show_test=_columns_off_test))
-		menu.add_to_sub(sub, MenuItem(_("Hide Columns"), menu_toggle_columns, show_test=_columns_on_test))
-		menu.add_to_sub(sub, MenuItem(_("Hide Bar"), menu_toggle_set_bar, _bar_deco,
-			no_exit=True, disable_test=lambda: not gui.set_mode))
-
-		def toggle_item(label: str, func: Callable, get_state: Callable[[], bool | None]) -> None:
-			def cb(ref=None) -> None:
-				func()
-			# no_exit: checkbox-style toggles keep the submenu open (the state
-			# box flips in place), like the custom-layout Layout… submenu toggles.
-			menu.add_to_sub(sub, MenuItem(label, cb, check_test=get_state, no_exit=True))
-
-		toggle_item(_("Loves"), tauon.heart_toggle, lambda: tauon.heart_toggle(1))
-		toggle_item(_("Track ratings"), tauon.rating_toggle, lambda: tauon.rating_toggle(1))
-		toggle_item(_("Album ratings"), tauon.album_rating_toggle, lambda: tauon.album_rating_toggle(1))
-		toggle_item(_("Star hints"), tauon.star_toggle, lambda: tauon.star_toggle(1))
-		toggle_item(_("Playcount lines"), tauon.star_line_toggle, lambda: tauon.star_line_toggle(1))
-		toggle_item(_("Left align"), _tl_toggle_left_align, lambda: prefs.row_title_format == 2)
-		toggle_item(_("Genre"), _tl_toggle_genre, lambda: prefs.row_title_genre)
-		toggle_item(_("Year"), tauon.toggle_append_date, lambda: tauon.toggle_append_date(1))
-		toggle_item(_("Duration"), tauon.toggle_append_total_time, lambda: tauon.toggle_append_total_time(1))
-		toggle_item(_("Scroll bar on left"), _tl_toggle_scrollbar_left, lambda: prefs.tracklist_scrollbar_left)
-		toggle_item(_("Show full album art"), _tl_toggle_full_album_art, lambda: prefs.column_album_art_full_height)
-
-		menu.add_incrementor_to_sub(sub, _("Font size"), *_tl_stepper("playlist_font_size", 12, 17))
-		menu.add_incrementor_to_sub(sub, _("Row height"), *_tl_stepper("playlist_row_height", 15, 45))
-		menu.add_incrementor_to_sub(sub, _("Text baseline"), *_tl_stepper("tracklist_y_text_offset", -10, 10))
-
-		menu.add_to_sub(sub, MenuItem(_("Thin default"), lambda: tauon.pref_box.small_preset()))
-		menu.add_to_sub(sub, MenuItem(_("Thick default"), lambda: tauon.pref_box.large_preset()))
-
-		# Optional search-provider items in the track menu, moved here from
-		# Settings > Function ("Track menu extras")
-		toggle_item(_("Wikipedia artist search"), tauon.toggle_wiki, lambda: tauon.toggle_wiki(1))
-		toggle_item(_("Sonemic artist search"), tauon.toggle_rym, lambda: tauon.toggle_rym(1))
-		toggle_item(_("Bandcamp artist search"), tauon.toggle_band, lambda: tauon.toggle_band(1))
-		toggle_item(_("Genius track search"), tauon.toggle_gen, lambda: tauon.toggle_gen(1))
-
-	add_layout_sub(track_menu)
+	track_menu.add(MenuItem(_("Layout…"), layout_panel_opener(track_menu)))
 	folder_menu.br()
-	add_layout_sub(folder_menu)
+	folder_menu.add(MenuItem(_("Layout…"), layout_panel_opener(folder_menu)))
 
 
 	# Create top menu
@@ -61380,6 +61695,10 @@ def main(holder: Holder) -> None:
 				tauon.top_panel.activity.close()
 				inp.key_esc_press = False
 
+			if inp.key_esc_press and tauon.tracklist_layout_panel.active:
+				tauon.tracklist_layout_panel.close()
+				inp.key_esc_press = False
+
 			if gui.fullscreen and inp.key_esc_press:
 				gui.fullscreen = False
 				sdl3.set_window_fullscreen(t_window, 0)
@@ -61654,6 +61973,20 @@ def main(holder: Holder) -> None:
 
 			if inp.right_click:
 				inp.level_2_right_click = True
+
+			layout_panel = tauon.tracklist_layout_panel
+			layout_panel.click = False
+			if layout_panel.active:
+				if layout_panel.inside():
+					if inp.mouse_click:
+						layout_panel.click = True
+						inp.mouse_click = False
+					inp.right_click = False
+					inp.mouse_wheel = 0
+				elif inp.mouse_click or inp.right_click:
+					# A right click outside still reaches what's under it
+					inp.mouse_click = False
+					layout_panel.close()
 
 			if pref_box.enabled:
 				if pref_box.inside():
@@ -63100,6 +63433,7 @@ def main(holder: Holder) -> None:
 						and not gui.timed_lyrics_editing_now
 						and not Menu.active
 						and not tauon.artist_info_scroll.held
+						and not tauon.tracklist_layout_panel.active
 					):
 						tauon.columns_tool_tip.render()
 					else:
@@ -63109,6 +63443,9 @@ def main(holder: Holder) -> None:
 
 				if gui.rename_playlist_box:
 					tauon.rename_playlist_box.render()
+
+				if tauon.tracklist_layout_panel.active:
+					tauon.tracklist_layout_panel.render()
 
 				if gui.preview_artist:
 					border = round(4 * gui.scale)
