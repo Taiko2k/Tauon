@@ -59,7 +59,11 @@ clean_venv_run() {
 		export CFLAGS="-I${MSYSTEM_PREFIX}/include"
 	fi
 	pip install scikit-build-core
-	install_dev ".[all,dev]"
+	# Dependencies keep build isolation, some only ship sdists with their own build requirements
+	mkdir -p build
+	python -c 'import tomllib; p = tomllib.load(open("pyproject.toml", "rb"))["project"]; print("\n".join(p["dependencies"] + p["optional-dependencies"]["all"] + p["optional-dependencies"]["dev"]))' > build/requirements.txt
+	pip install -r build/requirements.txt
+	install_dev . --no-deps
 	.venv/bin/tauon
 }
 
