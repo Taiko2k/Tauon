@@ -85,6 +85,7 @@ from ctypes import (
 )
 from dataclasses import dataclass, field
 from pathlib import Path
+from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Literal
 
 import certifi
@@ -6887,6 +6888,8 @@ class GallClass:
 		self.limit: int = 150
 		self.frame: int = 0
 		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
+		# Keys drawn or handed out since new_frame(); never evicted mid-frame
+		self.frame_used: set[tuple[TrackClass, int, int]] = set()
 
 	def new_frame(self) -> None:
 		"""Advance the wanted-stamp epoch. Called once at the start of each render pass.
@@ -6896,6 +6899,7 @@ class GallClass:
 		doesn't leave hundreds of no-longer-visible sizes to thumbnail.
 		"""
 		self.frame += 1
+		self.frame_used.clear()
 		if not self.frame % 600 and self.frame_stamp:
 			# Stamps for keys removed from the queue elsewhere (halt, cache
 			# clear, scroll trim) would otherwise linger forever
@@ -7222,9 +7226,11 @@ class GallClass:
 				if (track, size, offset) in self.key_list:
 					self.key_list.remove((track, size, offset))
 				self.key_list.append((track, size, offset))
+				self.frame_used.add(key)
 
-				# Remove old images to conserve RAM usage
-				if len(self.key_list) > self.limit:
+				# Remove old images to conserve RAM usage. A key used this frame
+				# may still be held by a caller (return_texture), so wait a frame
+				if len(self.key_list) > self.limit and self.key_list[0] not in self.frame_used:
 					self.gui.request_frame()
 					key = self.key_list[0]
 					# while key in self.queue:
@@ -7685,6 +7691,8 @@ class Tauon:
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
 		self.gall_ren:                  GallClass = GallClass(tauon=self, size=self.album_mode_art_size)
+		# Tracks whose image textures a worker thread wants dropped; freed on the UI thread
+		self.pending_image_clears: SimpleQueue[TrackClass] = SimpleQueue()
 		self.thumb_tracks:            ThumbTracks = ThumbTracks(tauon=self)
 		self.chunker:                     Chunker = Chunker()
 		self.stream_proxy:              StreamEnc = StreamEnc(self)
@@ -20626,18 +20634,35 @@ class Tauon:
 					os.remove(os.path.join(direc, item))
 					logging.info(f"Cleared cache thumbnail: {os.path.join(direc, item)}")
 
-		keys = set()
-		for key, value in self.gall_ren.gall.items():
-			if key[0] == track:
-				sdl3.destroy_texture(value[2])
-				if key not in keys:
-					keys.add(key)
-		for key in keys:
-			del self.gall_ren.gall[key]
-			if key in self.gall_ren.key_list:
-				self.gall_ren.key_list.remove(key)
-
 		self.gui.halt_image_rendering = False
+		if threading.current_thread() is threading.main_thread():
+			self.drop_track_image_textures([track])
+		else:
+			# Art downloads land here on their own thread; SDL textures must be
+			# freed on the UI thread, between frames
+			self.pending_image_clears.put(track)
+			self.gui.request_frame()
+
+	def drop_pending_image_clears(self) -> None:
+		"""Free the textures worker threads asked to drop. Called at the start of a frame."""
+		tracks: list[TrackClass] = []
+		while True:
+			try:
+				tracks.append(self.pending_image_clears.get_nowait())
+			except Empty:
+				break
+		if tracks:
+			self.drop_track_image_textures(tracks)
+
+	def drop_track_image_textures(self, tracks: list[TrackClass]) -> None:
+		wanted = set(tracks)
+		gall_ren = self.gall_ren
+		for key in [key for key in gall_ren.gall if key[0] in wanted]:
+			order = gall_ren.gall.pop(key)
+			if order[2] is not None:
+				sdl3.destroy_texture(order[2])
+			if key in gall_ren.key_list:
+				gall_ren.key_list.remove(key)
 		self.album_art_gen.clear_cache()
 
 	def signal_handler(self, signum, frame) -> None:
@@ -26502,6 +26527,8 @@ class StyleOverlay:
 		self._fade_step: int = -1
 
 		self.go_to_sleep: bool = False
+		# Set when worker() flushes; display() frees the textures on the UI thread
+		self.textures_stale: bool = False
 
 		self.current_track_album: str = "none"
 		self.current_track_id: int = -1
@@ -26548,13 +26575,21 @@ class StyleOverlay:
 				self.gui.request_frame()
 				return
 
-	def flush(self) -> None:
+	def release_textures(self) -> None:
+		self.textures_stale = False
 		if self.a_texture is not None:
 			sdl3.destroy_texture(self.a_texture)
 			self.a_texture = None
 		if self.b_texture is not None:
 			sdl3.destroy_texture(self.b_texture)
 			self.b_texture = None
+
+	def flush(self) -> None:
+		if threading.current_thread() is threading.main_thread():
+			self.release_textures()
+		else:
+			# Called from worker(); SDL textures are freed by display() on the UI thread
+			self.textures_stale = True
 		if self.surface is not None:
 			self.surface = None
 		self.sample_a = None
@@ -26679,6 +26714,9 @@ class StyleOverlay:
 			self.ddt.rect(
 				(0, 0, self.window_size[0], self.window_size[1]),
 				ColourRGBA(base.r, base.g, base.b, 255))
+
+		if self.textures_stale:
+			self.release_textures()
 
 		if self.min_on_timer.get() < 0:
 			return
@@ -42315,6 +42353,8 @@ class ArtistList:
 		self.current_artist_track_counts: dict[str, int] = {}
 
 		self.thumb_cache: dict[str, list[sdl3.LP_SDL_Texture | sdl3.FRect] | None] = {}
+		# Artists whose thumbnail should reload; queued from any thread, dropped in render()
+		self.stale_thumbs: SimpleQueue[str] = SimpleQueue()
 
 		self.to_fetch = ""
 		self.to_fetch_mbid_a = ""
@@ -42947,7 +42987,23 @@ class ArtistList:
 
 				self.artist_list_menu.activate(in_reference=artist)
 
+	def invalidate_thumb(self, artist: str) -> None:
+		"""Reload an artist's thumbnail. Safe to call from any thread."""
+		self.stale_thumbs.put(artist)
+		self.gui.request_frame()
+
+	def drop_stale_thumbs(self) -> None:
+		while True:
+			try:
+				artist = self.stale_thumbs.get_nowait()
+			except Empty:
+				return
+			thumb = self.thumb_cache.pop(artist, None)
+			if thumb is not None:
+				sdl3.destroy_texture(thumb[0])
+
 	def render(self, x: int, y: int, w: int, h: int) -> None:
+		self.drop_stale_thumbs()
 		if self.prefs.artist_list_style == 1:
 			self.tab_h = round(60 * self.gui.scale)
 		else:
@@ -45824,10 +45880,7 @@ class ArtistInfoBox:
 				return None
 
 			# Trigger reload of thumbnail in artist list box
-			for key, value in list(self.tauon.artist_list_box.thumb_cache.items()):
-				if key == artist:
-					del self.tauon.artist_list_box.thumb_cache[artist]
-					break
+			self.tauon.artist_list_box.invalidate_thumb(artist)
 
 			self.status = "Ready"
 			self.gui.request_frame()
@@ -62031,6 +62084,7 @@ def main(holder: Holder) -> None:
 			gui.update = False
 			tauon.gall_ren.new_frame()
 			ddt.new_frame()
+			tauon.drop_pending_image_clears()
 
 			if reset_render:
 				logging.info("Reset render targets!")

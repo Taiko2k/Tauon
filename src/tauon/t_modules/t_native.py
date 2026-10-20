@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+import threading
 from dataclasses import dataclass
 
 import tauon_native
@@ -192,7 +194,13 @@ def create_color_cursor_from_surface(surface: ImageData, hot_x: int, hot_y: int)
 	return create_color_cursor(surface.width, surface.height, surface.pixels, hot_x, hot_y)
 
 
-destroy_texture = tauon_native.destroy_texture
+def destroy_texture(texture) -> None:
+	if threading.current_thread() is not threading.main_thread():
+		# The renderer isn't thread-safe and the UI may be drawing this texture
+		logging.error("destroy_texture called off the UI thread", stack_info=True)
+	tauon_native.destroy_texture(texture)
+
+
 get_render_target = tauon_native.get_render_target
 
 
