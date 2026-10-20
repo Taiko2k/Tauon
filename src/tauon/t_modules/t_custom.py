@@ -1265,8 +1265,14 @@ class FeuxBar:
 	NEEDLE_TIME = 0.8    # seconds to unzip and rise, or settle and close
 	# Lightness pushed into the seek colours, away from the backdrop: thin
 	# needles read darker than the solid bar they come out of.
-	NEEDLE_LIFT_FILL = 0.20
+	NEEDLE_LIFT_FILL = 0.24
 	NEEDLE_LIFT_BG   = 0.14
+	# Saturation scale for the played needles, so the lift doesn't wash them out.
+	NEEDLE_SAT_FILL  = 0.4
+	# Extra lift for grey fills, which saturation can't help. Fades out by
+	# NEEDLE_GREY_SAT saturation.
+	NEEDLE_LIFT_GREY = 0.12
+	NEEDLE_GREY_SAT  = 0.3
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -1899,13 +1905,29 @@ class FeuxBar:
 		# keeps the classic bar's colours exactly.
 		lift = 1 if rgb_to_hls(backdrop.r, backdrop.g, backdrop.b)[1] < 0.5 else -1
 
-		def pair(colour: ColourRGBA, amount: float) -> tuple[tuple, tuple]:
-			lit = rgb_add_hls(colour, l=amount * lift)
+		def pair(colour: ColourRGBA, amount: float, sat: float = 0.0, grey: float = 0.0,
+				keep_chroma: bool = False) -> tuple[tuple, tuple]:
+			l, s = rgb_to_hls(colour.r, colour.g, colour.b)[1:]
+			amount += grey * max(0.0, 1 - s / self.NEEDLE_GREY_SAT)
+			new_l = min(1.0, max(0.0, l + amount * lift))
+			# Saturation scales rather than adds, so a grey fill stays grey.
+			new_s = s * (1 + sat)
+			if keep_chroma:
+				# Lightening toward white or black thins the colour. Stop the
+				# lift where the source's chroma still fits, then raise the
+				# saturation enough to keep it.
+				chroma = (1 - abs(2 * l - 1)) * s
+				new_l = min(new_l, max(l, 1 - chroma / 2)) if lift > 0 else max(new_l, min(l, chroma / 2))
+				room = 1 - abs(2 * new_l - 1)
+				if room > 0:
+					new_s = max(new_s, chroma / room)
+			lit = rgb_add_hls(colour, l=new_l - l, s=new_s - s)
 			return (
 				(colour.r / 255, colour.g / 255, colour.b / 255, colour.a / 255),
 				(lit.r / 255, lit.g / 255, lit.b / 255, lit.a / 255))
 
-		fill_pair = pair(fill, self.NEEDLE_LIFT_FILL)
+		fill_pair = pair(fill, self.NEEDLE_LIFT_FILL, self.NEEDLE_SAT_FILL, self.NEEDLE_LIFT_GREY,
+			keep_chroma=True)
 		bg_pair = pair(bg, self.NEEDLE_LIFT_BG)
 
 		def mix(colours: tuple[tuple, tuple], g: float) -> tuple:
