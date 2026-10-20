@@ -347,10 +347,10 @@ jobs:
           $packages = $packages.Trim() + " p7zip"
           echo "packages=$packages" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8
 
-      - name: Set up MSYS2 UCRT64
+      - name: Set up MSYS2 CLANG64
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ucrt64
+          msystem: clang64
           update: true
           install: ${{ env.packages }}
 
@@ -358,7 +358,7 @@ jobs:
         shell: msys2 {0}
         run: |
           update-ca-trust
-          sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' /ucrt64/include/opus/opusfile.h
+          sed -i 's,<opus_multistream.h>,<opus/opus_multistream.h>,' "${MSYSTEM_PREFIX}/include/opus/opusfile.h"
 
       # Builds the launcher, Phazor and translations through CMake and installs
       # them with the Python package into the virtual environment
@@ -367,8 +367,8 @@ jobs:
         run: |
           python -m pip install --break-system-packages --upgrade pip
           python -m venv .venv
-          export CFLAGS="-I/ucrt64/include"
-          export CMAKE_PREFIX_PATH=/ucrt64
+          export CFLAGS="-I${MSYSTEM_PREFIX}/include"
+          export CMAKE_PREFIX_PATH="${MSYSTEM_PREFIX}"
           .venv/bin/python -m pip install ".[all]"
 
       - name: Read version from pyproject.toml
@@ -420,7 +420,7 @@ jobs:
           source .venv/bin/activate
           python tools/package_bundle.py \
             --platform windows \
-            --projectm /ucrt64/bin/libprojectM-4-4.dll \
+            --projectm "${MSYSTEM_PREFIX}/bin/libprojectM-4-4.dll" \
             --output dist/package \
             --portable
 

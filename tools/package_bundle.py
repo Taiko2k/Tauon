@@ -443,7 +443,8 @@ def windows_imports(binary: Path) -> set[str]:
 	try:
 		result = run(["objdump", "-p", str(binary)], check=False)
 	except FileNotFoundError:
-		return set()
+		# Without it no DLLs would be bundled; CLANG64 ships it in llvm-tools
+		raise RuntimeError("objdump is required to collect Windows DLL dependencies") from None
 	imports: set[str] = set()
 	for line in result.stdout.splitlines():
 		match = re.match(r"\s*DLL Name:\s*(\S+)", line)

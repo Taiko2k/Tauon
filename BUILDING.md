@@ -46,12 +46,12 @@ brew install \
 $(brew --prefix python@3.15)/libexec/bin/python -m venv .venv
 ```
 
-**Windows** (MSYS2 UCRT64 shell; the launcher is `.venv/bin/tauon.exe`):
+**Windows** (MSYS2 CLANG64 shell; the launcher is `.venv/bin/tauon.exe`):
 
 ```sh
 pacman -S --needed $(tr '\n' ' ' < extra/msyspac.txt)
 python -m venv .venv
-export CMAKE_PREFIX_PATH=/ucrt64
+export CMAKE_PREFIX_PATH="${MSYSTEM_PREFIX}"
 ```
 
 ## Install and run
