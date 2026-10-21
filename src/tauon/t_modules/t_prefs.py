@@ -168,6 +168,9 @@ class Prefs:
 
 	last_fm_token = None
 	last_fm_username = ""
+	libre_fm_token = None
+	libre_fm_username = ""
+	auto_libre_fm: bool = False
 
 	use_card_style: bool = True
 
@@ -395,7 +398,6 @@ class Prefs:
 	save_window_position: bool = True
 	always_ffmpeg: bool = False
 
-	use_libre_fm: bool = False
 	back_restarts: bool = False
 
 	old_playlist_box_position = 0

@@ -51,6 +51,7 @@ def database_migrate(
 	db_version: float,
 	master_library: dict[int, TrackClass],
 	legacy_track_misc: dict[int, dict],
+	legacy_use_libre_fm: bool = False,
 	install_mode: bool,
 	multi_playlist: list[str | int | bool] | list[TauonPlaylist],
 	a_cache_dir: str,
@@ -293,5 +294,18 @@ def database_migrate(
 		pctl.multi_playlist = multi_playlist
 		pctl.force_queue = p_force_queue
 		validate_and_repair_database(pctl)
+
+	if db_version <= 80:  # noqa: PLR2004
+		logging.info("Updating database to version 81")
+		# Last.fm and Libre.fm used to share one account, with a switch picking
+		# the network. They are separate services now: move a Libre.fm account
+		# out of the Last.fm slot.
+		if legacy_use_libre_fm:
+			prefs.libre_fm_token = prefs.last_fm_token
+			prefs.libre_fm_username = prefs.last_fm_username
+			prefs.auto_libre_fm = prefs.auto_lfm
+			prefs.last_fm_token = None
+			prefs.last_fm_username = ""
+			prefs.auto_lfm = False
 
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

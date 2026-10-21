@@ -2463,6 +2463,7 @@ class PlayerCtl:
 		self.prefs: Prefs                     = self.bag.prefs
 		self.sm: CDLL | None                  = self.bag.sm
 		self.lastfm: LastFMapi                = LastFMapi(tauon=tauon, pctl=self)
+		self.librefm: LastFMapi               = LastFMapi(tauon=tauon, pctl=self, libre=True)
 		self.lfm_scrobbler: LastScrob         = LastScrob(tauon=tauon, pctl=self)
 		self.artist_info_box: ArtistInfoBox   = ArtistInfoBox(tauon=tauon, pctl=self)
 		self.artist_list_box: ArtistList      = ArtistList(tauon=tauon, pctl=self)
@@ -4915,7 +4916,9 @@ class PlayerCtl:
 		self.gui.request_tracklist_redraw()
 
 class LastFMapi:
-	def __init__(self, tauon: Tauon, pctl: PlayerCtl) -> None:
+	def __init__(self, tauon: Tauon, pctl: PlayerCtl, libre: bool = False) -> None:
+		self.libre: bool = libre
+		self.name: str = "Libre.fm" if libre else "Last.fm"
 		self.tauon: Tauon = tauon
 		self.star_store: StarStore = pctl.star_store
 		self.show_message = tauon.show_message
@@ -4938,8 +4941,51 @@ class LastFMapi:
 		self.scanning_loves = False
 		self.scanning_scrobbles = False
 
+	# Each service keeps its own account and scrobble toggle in prefs
+	@property
+	def token(self) -> str | None:
+		return self.prefs.libre_fm_token if self.libre else self.prefs.last_fm_token
+
+	@token.setter
+	def token(self, value: str | None) -> None:
+		if self.libre:
+			self.prefs.libre_fm_token = value
+		else:
+			self.prefs.last_fm_token = value
+
+	@property
+	def username(self) -> str:
+		return self.prefs.libre_fm_username if self.libre else self.prefs.last_fm_username
+
+	@username.setter
+	def username(self, value: str) -> None:
+		if self.libre:
+			self.prefs.libre_fm_username = value
+		else:
+			self.prefs.last_fm_username = value
+
+	@property
+	def enabled(self) -> bool:
+		return self.prefs.auto_libre_fm if self.libre else self.prefs.auto_lfm
+
+	@enabled.setter
+	def enabled(self, value: bool) -> None:
+		if self.libre:
+			self.prefs.auto_libre_fm = value
+		else:
+			self.prefs.auto_lfm = value
+
+	def toggle_enabled(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.enabled
+		self.enabled ^= True
+		if self.enabled and not self.last_fm_enable:
+			self.show_message(_("Optional module python-pylast not installed"), mode="warning")
+			self.enabled = False
+		return None
+
 	def get_network(self) -> type[LibreFMNetwork | LastFMNetwork]:
-		if self.prefs.use_libre_fm:
+		if self.libre:
 			return pylast.LibreFMNetwork
 		return pylast.LastFMNetwork
 
@@ -4977,12 +5023,12 @@ class LastFMapi:
 		try:
 			# session_key = self.sg.get_web_auth_session_key(self.url)
 			session_key, username = self.sg.get_web_auth_session_key_username(self.url)
-			self.prefs.last_fm_token = session_key
+			self.token = session_key
 			self.network = self.get_network()(api_key=self.API_KEY, api_secret=
-			self.API_SECRET, session_key=self.prefs.last_fm_token)
+			self.API_SECRET, session_key=self.token)
 			# user = self.network.get_authenticated_user()
 			# username = user.get_name()
-			self.prefs.last_fm_username = username
+			self.username = username
 
 		except Exception as e:
 			if "Unauthorized Token" in str(e):
@@ -4992,13 +5038,13 @@ class LastFMapi:
 				logging.exception("Unknown error")
 				self.show_message(_("Error"), _("Unknown error."), mode="error")
 
-		if not self.tauon.toggle_lfm_auto(mode=1):
-			self.tauon.toggle_lfm_auto()
+		if not self.enabled:
+			self.toggle_enabled()
 
 	def auth3(self) -> None:
 		"""Used for 'logout'"""
-		self.prefs.last_fm_token = None
-		self.prefs.last_fm_username = ""
+		self.token = None
+		self.username = ""
 		self.show_message(_("Logout will complete on app restart."))
 
 	def connect(self, m_notify: bool = True) -> bool | None:
@@ -5007,36 +5053,36 @@ class LastFMapi:
 
 		if self.connected is True:
 			if m_notify:
-				self.show_message(_("Already connected to Last.fm"))
+				self.show_message(_("Already connected to {service}").format(service=self.name))
 			return True
 
-		if self.prefs.last_fm_token is None:
-			self.show_message(_("No Last.Fm account registered"), _("Authorise an account in settings"), mode="info")
+		if self.token is None:
+			self.show_message(_("No {service} account registered").format(service=self.name), _("Authorise an account in settings"), mode="info")
 			return None
 
-		logging.info("Attempting to connect to Last.fm network")
+		logging.info(f"Attempting to connect to {self.name} network")
 
 		try:
 			self.network = self.get_network()(
-				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=self.prefs.last_fm_token)  # , username=lfm_username, password_hash=lfm_hash)
+				api_key=self.API_KEY, api_secret=self.API_SECRET, session_key=self.token)  # , username=lfm_username, password_hash=lfm_hash)
 
 			self.connected = True
 			if m_notify:
-				self.show_message(_("Connection to Last.fm was successful."), mode="done")
+				self.show_message(_("Connection to {service} was successful.").format(service=self.name), mode="done")
 
-			logging.info("Connection to lastfm appears successful")
+			logging.info(f"Connection to {self.name} appears successful")
 			return True
 
 		except Exception as e:
-			logging.exception("Error connecting to Last.fm network")
-			self.show_message(_("Error connecting to Last.fm network"), str(e), mode="warning")
+			logging.exception(f"Error connecting to {self.name} network")
+			self.show_message(_("Error connecting to {service} network").format(service=self.name), str(e), mode="warning")
 			return False
 
 	def toggle(self) -> None:
 		self.prefs.scrobble_hold ^= True
 
 	def details_ready(self) -> bool:
-		return bool(self.prefs.last_fm_token)
+		return bool(self.token)
 
 	def last_fm_only_connect(self) -> bool:
 		if not self.last_fm_enable:
@@ -5067,10 +5113,10 @@ class LastFMapi:
 	def get_all_scrobbles_estimate_time(self) -> float | None:
 		if not self.connected:
 			self.connect(False)
-		if not self.connected or not self.prefs.last_fm_username:
+		if not self.connected or not self.username:
 			return None
 
-		user = pylast.User(self.prefs.last_fm_username, self.network)
+		user = pylast.User(self.username, self.network)
 		total = user.get_playcount()
 
 		if total:
@@ -5080,13 +5126,13 @@ class LastFMapi:
 	def get_all_scrobbles(self) -> None:
 		if not self.connected:
 			self.connect(False)
-		if not self.connected or not self.prefs.last_fm_username:
+		if not self.connected or not self.username:
 			return
 
 		try:
 			self.scanning_scrobbles = True
 			self.network.enable_rate_limit()
-			user = pylast.User(self.prefs.last_fm_username, self.network)
+			user = pylast.User(self.username, self.network)
 			# username = user.get_name()
 			self.tauon.perf_timer.set()
 			tracks = user.get_recent_tracks(None)
@@ -5180,9 +5226,12 @@ class LastFMapi:
 	def sync_pull_love(self, track_object: TrackClass) -> None:
 		if not self.prefs.lastfm_pull_love or not (track_object.artist and track_object.title):
 			return
+		# Last.fm is the love source when both services scrobble
+		if self.libre and self.tauon.lastfm.enabled:
+			return
 		if not self.last_fm_enable:
 			return
-		if self.prefs.auto_lfm:
+		if self.enabled:
 			self.connect(False)
 		if not self.connected:
 			return
@@ -5192,7 +5241,7 @@ class LastFMapi:
 			if not track:
 				logging.error("Get love: track not found")
 				return
-			track.username = self.prefs.last_fm_username
+			track.username = self.username
 
 			remote_loved = track.get_userloved()
 
@@ -5216,7 +5265,7 @@ class LastFMapi:
 			return True
 		if self.prefs.scrobble_hold:
 			return True
-		if self.prefs.auto_lfm:
+		if self.enabled:
 			self.connect(False)
 
 		if timestamp is None:
@@ -5264,7 +5313,7 @@ class LastFMapi:
 					logging.exception("Failed to retry!")
 
 			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
-			logging.error("Error connecting to last.fm")
+			logging.error(f"Error connecting to {self.name}")
 			self.tauon.scrobble_warning_timer.set()
 			self.gui.request_frame()
 			self.gui.delay_frame(5)
@@ -5298,7 +5347,7 @@ class LastFMapi:
 		#	return ""
 
 	def love(self, artist: str, title: str) -> None:
-		if not self.connected and self.prefs.auto_lfm:
+		if not self.connected and self.enabled:
 			self.connect(False)
 			self.prefs.scrobble_hold = True
 		if self.connected and artist and title:
@@ -5308,7 +5357,7 @@ class LastFMapi:
 	def unlove(self, artist: str, title: str) -> None:
 		if not self.last_fm_enable:
 			return
-		if not self.connected and self.prefs.auto_lfm:
+		if not self.connected and self.enabled:
 			self.connect(False)
 			self.prefs.scrobble_hold = True
 		if self.connected and artist and title:
@@ -5330,7 +5379,7 @@ class LastFMapi:
 		self.scanning_friends = True
 
 		try:
-			username = self.prefs.last_fm_username
+			username = self.username
 			logging.info(f"Username is {username}")
 
 			if not username:
@@ -5374,7 +5423,7 @@ class LastFMapi:
 	def dl_love(self) -> None:
 		if not self.last_fm_enable:
 			return
-		username = self.prefs.last_fm_username
+		username = self.username
 		self.show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
 		self.scanning_username = username
 
@@ -5443,9 +5492,9 @@ class LastFMapi:
 			return None
 		if self.prefs.scrobble_hold:
 			return 0
-		if self.prefs.auto_lfm:
+		if self.enabled:
 			if self.connect(False) is False:
-				self.prefs.auto_lfm = False
+				self.enabled = False
 		else:
 			return 0
 
@@ -5705,6 +5754,11 @@ class LastScrob:
 			return prefs.scrobble_plex
 		return True
 
+	def scrobble_services(self) -> dict[str, LastFMapi]:
+		"""Last.fm-style services that are switched on and have an account, by queue tag."""
+		services = {"lfm": self.tauon.lastfm, "libre": self.tauon.librefm}
+		return {tag: api for tag, api in services.items() if api.enabled and (api.connected or api.details_ready())}
+
 	def start_queue(self) -> None:
 		self.running = True
 		mini_t = threading.Thread(target=self.process_queue)
@@ -5723,8 +5777,10 @@ class LastScrob:
 
 				success = True
 
-				if tr[2] == "lfm" and self.prefs.auto_lfm and (self.lastfm.connected or self.lastfm.details_ready()):
-					success = self.lastfm.scrobble(tr[0], tr[1])
+				if tr[2] in ("lfm", "libre"):
+					api = self.scrobble_services().get(tr[2])
+					if api is not None:
+						success = api.scrobble(tr[0], tr[1])
 				elif tr[2] == "lb" and self.lb.enable:
 					success = self.lb.listen_full(tr[0], tr[1])
 				elif tr[2] == "maloja":
@@ -5806,8 +5862,8 @@ class LastScrob:
 			return
 
 		if not self.prefs.scrobble_hold:
-			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
-				mini_t = threading.Thread(target=self.tauon.lastfm.update, args=([track_object]))
+			for api in self.scrobble_services().values():
+				mini_t = threading.Thread(target=api.update, args=([track_object]))
 				mini_t.daemon = True
 				mini_t.start()
 
@@ -5829,8 +5885,8 @@ class LastScrob:
 			return
 
 		if not self.prefs.scrobble_hold:
-			if self.prefs.auto_lfm and (self.tauon.lastfm.connected or self.tauon.lastfm.details_ready()):
-				self.queue.append((track_object, int(time.time()), "lfm"))
+			for tag in self.scrobble_services():
+				self.queue.append((track_object, int(time.time()), tag))
 			if self.lb.enable:
 				self.queue.append((track_object, int(time.time()), "lb"))
 			if self.prefs.maloja_url and self.prefs.maloja_enable:
@@ -7574,6 +7630,7 @@ class Tauon:
 		self.tree_view_box:                         TreeView = self.pctl.tree_view_box
 		self.star_store:                           StarStore = self.pctl.star_store
 		self.lastfm:                               LastFMapi = self.pctl.lastfm
+		self.librefm:                              LastFMapi = self.pctl.librefm
 		self.lfm_scrobbler:                        LastScrob = self.pctl.lfm_scrobbler
 		self.artist_list_box:                     ArtistList = self.pctl.artist_list_box
 		self.touch_input_tracker:          TouchInputTracker = TouchInputTracker(tauon=self)
@@ -14399,14 +14456,15 @@ class Tauon:
 		self.gui.level_meter_colour_mode = 2
 
 	def last_fm_menu_deco(self) -> Decorator:
+		lastfm_style = self.prefs.auto_lfm or self.prefs.auto_libre_fm
 		if self.prefs.scrobble_hold:
-			if not self.prefs.auto_lfm and self.lb.enable:
+			if not lastfm_style and self.lb.enable:
 				line = _("ListenBrainz is Paused")
 			else:
 				line = _("Scrobbling is Paused")
 			bg = self.colours.menu_background
 		else:
-			if not self.prefs.auto_lfm and self.lb.enable:
+			if not lastfm_style and self.lb.enable:
 				line = _("ListenBrainz is Active")
 			else:
 				line = _("Scrobbling is Active")
@@ -14420,7 +14478,10 @@ class Tauon:
 		return None
 
 	def lastfm_menu_test(self, _: int) -> bool:
-		return bool((self.prefs.auto_lfm and self.prefs.last_fm_token is not None) or self.prefs.enable_lb or self.prefs.maloja_enable)
+		return bool(
+			(self.prefs.auto_lfm and self.prefs.last_fm_token is not None)
+			or (self.prefs.auto_libre_fm and self.prefs.libre_fm_token is not None)
+			or self.prefs.enable_lb or self.prefs.maloja_enable)
 
 	def lb_mode(self) -> bool:
 		return self.prefs.enable_lb
@@ -20301,7 +20362,7 @@ class Tauon:
 			self.gui.delay_frame(1.81)
 
 		delay = 0.3
-		if no_delay or not sync or not self.lastfm.details_ready():
+		if no_delay or not sync or not (self.lastfm.details_ready() or self.librefm.details_ready()):
 			delay = 0
 
 		star.loved_timestamp = time.time()
@@ -20313,15 +20374,17 @@ class Tauon:
 			star.loved = True
 			self.star_store.insert(track_id, star)
 			if sync:
-				if self.prefs.last_fm_token:
+				for api in (self.lastfm, self.librefm):
+					if not api.token:
+						continue
 					try:
-						self.lastfm.love(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
+						api.love(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
 					except Exception:
-						logging.exception("Failed updating last.fm love status")
+						logging.exception(f"Failed updating {api.name} love status")
 						star.loved = False
 						self.star_store.insert(track_id, star)
 						self.show_message(
-							_("Error updating love to last.fm!"),
+							_("Error updating love to {service}!").format(service=api.name),
 							_("Maybe check your internet connection and try again?"), mode="error")
 
 				self.lb_love(track_id, True)
@@ -20336,12 +20399,14 @@ class Tauon:
 			star.loved = False
 			self.star_store.insert(track_id, star)
 			if sync:
-				if self.prefs.last_fm_token:
+				for api in (self.lastfm, self.librefm):
+					if not api.token:
+						continue
 					try:
-						self.lastfm.unlove(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
+						api.unlove(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
 					except Exception:
-						logging.exception("Failed updating last.fm love status")
-						self.show_message(_("Failed updating last.fm love status"), mode="warning")
+						logging.exception(f"Failed updating {api.name} love status")
+						self.show_message(_("Failed updating {service} love status").format(service=api.name), mode="warning")
 						star.loved = True
 						self.star_store.insert(track_id, star)
 				self.lb_love(track_id, False)
@@ -20871,7 +20936,7 @@ class Tauon:
 			[],
 			prefs.auto_rec,
 			"",
-			prefs.use_libre_fm,
+			False,  # Was use_libre_fm, see database_migrate
 			self.playlist_box.scroll_on,
 			prefs.artist_list_sort_mode,
 			prefs.phazor_device_selected,
@@ -20924,6 +20989,9 @@ class Tauon:
 			prefs.transcode_embed_art,  # 204
 			prefs.transcode_copy_art,  # 205
 			prefs.feux_panel_waveform,  # 206
+			prefs.libre_fm_token,  # 207
+			prefs.libre_fm_username,  # 208
+			prefs.auto_libre_fm,  # 209
 		]
 
 		for slot, value in db_snapshot.items():
@@ -21769,17 +21837,7 @@ class Tauon:
 		return None
 
 	def toggle_lfm_auto(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return self.prefs.auto_lfm
-		self.prefs.auto_lfm ^= True
-		if self.prefs.auto_lfm and not self.bag.last_fm_enable:
-			self.show_message(_("Optional module python-pylast not installed"), mode="warning")
-			self.prefs.auto_lfm = False
-		# if prefs.auto_lfm:
-		#     lastfm.hold = False
-		# else:
-		#     lastfm.hold = True
-		return None
+		return self.lastfm.toggle_enabled(mode)
 
 	def toggle_lb(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -29777,6 +29835,7 @@ class Over:
 		self.prefs:             Prefs = tauon.prefs
 		self.fields:           Fields = tauon.fields
 		self.lastfm:        LastFMapi = tauon.lastfm
+		self.librefm:       LastFMapi = tauon.librefm
 		self.formats:         Formats = tauon.formats
 		self.colours:    ColoursClass = tauon.colours
 		self.window_size              = tauon.window_size
@@ -31090,13 +31149,16 @@ class Over:
 		field_h = round(42 * gui.scale)
 		note_h = round(46 * gui.scale)
 
-		if view == 1:
-			service_name = "Last.fm" if not prefs.use_libre_fm else "Libre.fm"
-			account_subtitle = prefs.last_fm_username or _("Account not connected.")
-			card1_h = round(252 * gui.scale) if prefs.last_fm_token is None else round(216 * gui.scale)
+		if view in (1, 13):
+			api = self.librefm if view == 13 else self.lastfm
+			account_subtitle = api.username or _("Account not connected.")
+			card1_h = round(216 * gui.scale)
 			card2_h = round(200 * gui.scale)
 			card3_h = round(182 * gui.scale)
 			total_h = card1_h + card_gap + card2_h + card_gap + card3_h
+			# Library sync and options stay on the Last.fm page
+			if view == 13:
+				total_h = card1_h
 			if not draw:
 				return total_h
 
@@ -31104,50 +31166,45 @@ class Over:
 			rect = (x, card_y, w, card1_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
-				service_name,
+				api.name,
 				_("Scrobble playback and sync loves."),
 				accent,
 			)
 			self.settings_switch_row(
 				(inner_x, inner_y, inner_w, info_row_h),
-				self.tauon.toggle_lfm_auto,
+				api.toggle_enabled,
 				_("Enable scrobbling"),
 				account_subtitle,
 				accent,
 			)
 			inner_y += info_row_h + row_gap
-			if prefs.last_fm_token is None:
+			if api.token is None:
 				self.draw_settings_action_row(
 					(inner_x, inner_y, inner_w, action_h),
 					[
-						(_("Login"), self.lastfm.auth1, True),
-						(_("Done"), self.lastfm.auth2, False),
+						(_("Login"), api.auth1, True),
+						(_("Done"), api.auth2, False),
 					],
 					accent,
 				)
 				inner_y += action_h + row_gap
-				if self.lastfm.url is None:
-					prefs.use_libre_fm = self.settings_switch_row(
-						(inner_x, inner_y, inner_w, row_h),
-						prefs.use_libre_fm,
-						_("Use LibreFM"),
-						accent=accent,
-					)
-					inner_y += row_h + row_gap
 				note_text = _("Use Login, finish the browser step, then click Done.")
-				if self.lastfm.url is not None:
+				if api.url is not None:
 					note_text = _("Finish authorisation in the browser, then click Done.")
 				self.draw_settings_note((inner_x, inner_y, inner_w, note_h), note_text, accent, _("Authorisation"))
 			else:
 				self.draw_settings_action_row(
 					(inner_x, inner_y, inner_w, action_h),
 					[
-						(_("Forget account"), self.lastfm.auth3, True),
+						(_("Forget account"), api.auth3, True),
 					],
 					accent,
 				)
 				inner_y += action_h + row_gap
-				self.draw_settings_note((inner_x, inner_y, inner_w, note_h), prefs.last_fm_username, accent, _("Signed in as"))
+				self.draw_settings_note((inner_x, inner_y, inner_w, note_h), api.username, accent, _("Signed in as"))
+
+			if view == 13:
+				return total_h
 
 			card_y += card1_h + card_gap
 			rect = (x, card_y, w, card2_h)
@@ -32346,7 +32403,6 @@ class Over:
 			_("Upload to catbox.moe"): "discord rich presence cover art image upload catbox litterbox",
 			_("Auto-search lyrics"): "lyrics search fetch automatic download words karaoke",
 			_("Enable scrobbling"): "scrobble scrobbling lastfm last.fm listenbrainz maloja history",
-			_("Use LibreFM"): "librefm libre.fm scrobble alternative",
 			_("Allow local scrobbling"): "scrobble scrobbling local plex jellyfin tidal duplicate",
 			_("Scrobble Radios"): "scrobble radio stream internet radio",
 			_("Show threshold marker"): "scrobble threshold marker point seek bar progress",
@@ -33524,7 +33580,8 @@ class Over:
 	def settings_account_services(self) -> list[tuple[int, str]]:
 		prefs = self.prefs
 		return [
-			(1, "Last.fm" if not prefs.use_libre_fm else "Libre.fm"),
+			(1, "Last.fm"),
+			(13, "Libre.fm"),
 			(2, "ListenBrainz"),
 			(9, "Maloja"),
 			(10, "Jellyfin"),
@@ -33539,10 +33596,11 @@ class Over:
 		"""Whether a service is set up, and a short status line for its tile."""
 		prefs = self.prefs
 		tauon = self.tauon
-		if view == 1:
-			if prefs.last_fm_token is None:
+		if view in (1, 13):
+			api = self.librefm if view == 13 else self.lastfm
+			if api.token is None:
 				return False, _("Not connected")
-			return bool(prefs.auto_lfm), _("Scrobbling") if prefs.auto_lfm else prefs.last_fm_username or _("Signed in")
+			return bool(api.enabled), _("Scrobbling") if api.enabled else api.username or _("Signed in")
 		if view == 2:
 			if not prefs.lb_token:
 				return False, _("Not connected")
@@ -35548,7 +35606,7 @@ class BottomBarType1:
 		# Scrobble marker
 
 		if prefs.scrobble_mark \
-		and (prefs.auto_lfm or self.tauon.lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold \
+		and (prefs.auto_lfm or prefs.auto_libre_fm or self.tauon.lb.enable or prefs.maloja_enable) and not prefs.scrobble_hold \
 		and pctl.playing_length > 0 and (self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)):
 			if pctl.master_library[pctl.track_queue[pctl.queue_step]].length > 240 * 2:
 				l_target = 240
@@ -56320,7 +56378,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 80
+	latest_db_version: float = 81
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -56525,6 +56583,8 @@ def main(holder: Holder) -> None:
 	# Legacy TrackClass.misc dicts pulled from pre-v79 saves, keyed by track
 	# index. Distributed into the new __slots__ fields by the v79 migration.
 	legacy_track_misc: dict[int, dict] = {}
+	# Pre-v81 Last.fm/Libre.fm network switch, applied by the v81 migration.
+	legacy_use_libre_fm = False
 	state_loaded = False
 	for t in range(2):
 		#	 os.path.getsize(user_directory / "state.p") < 100
@@ -56563,6 +56623,7 @@ def main(holder: Holder) -> None:
 			bag.master_library = {}
 			bag.p_force_queue = []
 			legacy_track_misc.clear()
+			legacy_use_libre_fm = False
 			if len(save) > 0 and save[0] is not None:
 				bag.master_library = save[0]
 				# try: # TODO(Taiko): remove me before release!
@@ -56880,7 +56941,7 @@ def main(holder: Holder) -> None:
 			if len(save) > 152 and save[152] is not None:
 				prefs.auto_rec = save[152]
 			if len(save) > 154 and save[154] is not None:
-				prefs.use_libre_fm = save[154]
+				legacy_use_libre_fm = bool(save[154])
 			if len(save) > 155 and save[155] is not None:
 				prefs.old_playlist_box_position = save[155]
 			if len(save) > 156 and save[156] is not None:
@@ -57013,6 +57074,12 @@ def main(holder: Holder) -> None:
 				prefs.transcode_copy_art = save[205]
 			if len(save) > 206 and save[206] is not None:
 				prefs.feux_panel_waveform = save[206]
+			if len(save) > 207 and save[207] is not None:
+				prefs.libre_fm_token = save[207]
+			if len(save) > 208 and save[208] is not None:
+				prefs.libre_fm_username = save[208]
+			if len(save) > 209 and save[209] is not None:
+				prefs.auto_libre_fm = save[209]
 
 			del save
 			state_loaded = True
@@ -57358,6 +57425,7 @@ def main(holder: Holder) -> None:
 				db_version=db_version,
 				master_library=pctl.master_library,
 				legacy_track_misc=legacy_track_misc,
+				legacy_use_libre_fm=legacy_use_libre_fm,
 				install_mode=install_mode,
 				multi_playlist=pctl.multi_playlist,
 				install_directory=install_directory,
@@ -58616,7 +58684,7 @@ def main(holder: Holder) -> None:
 	if gui.scale == 1.25:
 		lb_icon.yoff = 0
 
-	if prefs.auto_lfm:
+	if prefs.auto_lfm or prefs.auto_libre_fm:
 		listen_icon = lastfm_icon
 	elif tauon.lb.enable:
 		listen_icon = lb_icon
