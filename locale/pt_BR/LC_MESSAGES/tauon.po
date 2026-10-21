@@ -7,8 +7,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box v6.0.3\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:33+0000\n"
-"Last-Translator: Marcelo dos Santos Mafra <msmafra@gmail.com>\n"
+"PO-Revision-Date: 2026-10-21 22:27+0000\n"
+"Last-Translator: Marcelo dos Santos Mafra "
+"<msmafra@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Brazil) <https://hosted.weblate.org/projects/"
 "tauon-music-box/tauon-music-box/pt_BR/>\n"
 "Language: pt_BR\n"
@@ -16,7 +17,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 
 #: src/tauon/t_modules/t_activity.py:97
 #, fuzzy
@@ -952,8 +953,7 @@ msgstr "O download falhou"
 
 #: src/tauon/t_modules/t_main.py:9999
 msgid "No presets loaded. Download preset pack? (~5MB)"
-msgstr ""
-"Nenhuma predefinição carregada. Baixar pacote de predefinições? (~5 MB)"
+msgstr "Nenhuma predefinição carregada. Baixar pacote de predefinições? (~5 MB)"
 
 #: src/tauon/t_modules/t_main.py:10095
 msgid "There are no lyric sources enabled."
@@ -1518,8 +1518,7 @@ msgstr "O diretório de origem não encontrado!"
 
 #: src/tauon/t_modules/t_main.py:12689
 msgid "Safety interrupt! The source folder seems to have many files."
-msgstr ""
-"Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
+msgstr "Interrupção de segurança! A pasta de origem parece ter muitos arquivos."
 
 #: src/tauon/t_modules/t_main.py:12699
 msgid "The track needs to have an artist name."
@@ -2306,8 +2305,7 @@ msgstr "Erro conectando ao servidor PLEX"
 
 #: src/tauon/t_modules/t_main.py:22182
 msgid "Try checking login credentials and that the server is accessible."
-msgstr ""
-"Tente verificar as credenciais de login e se o servidor está acessível."
+msgstr "Tente verificar as credenciais de login e se o servidor está acessível."
 
 #: src/tauon/t_modules/t_main.py:22277
 msgid "PLEX Collection"
@@ -5567,8 +5565,7 @@ msgstr "Arquivos não exitem ou inacessíveis"
 
 #: src/tauon/t_modules/t_main.py:53924
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
-"Se você estiver usando Flatpak, você provavelmente deveria seguir isso:"
+msgstr "Se você estiver usando Flatpak, você provavelmente deveria seguir isso:"
 
 #: src/tauon/t_modules/t_main.py:53932
 msgid "Bad permissions"

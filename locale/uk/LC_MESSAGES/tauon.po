@@ -6,8 +6,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:40+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-10-21 22:39+0000\n"
+"Last-Translator: Kosťantin Horovij "
+"<lg096066587039@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Ukrainian <https://hosted.weblate.org/projects/tauon-music-"
 "box/tauon-music-box/uk/>\n"
 "Language: uk\n"
@@ -16,7 +17,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && "
 "n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -1833,8 +1834,7 @@ msgstr "{N} рейтингів імпортовано"
 
 #: src/tauon/t_modules/t_main.py:14067
 msgid "This will delete all track and album ratings from the local database!"
-msgstr ""
-"Це видалить усі рейтинги композицій та альбомів з локальної бази даних!"
+msgstr "Це видалить усі рейтинги композицій та альбомів з локальної бази даних!"
 
 #: src/tauon/t_modules/t_main.py:14068 src/tauon/t_modules/t_main.py:30651
 msgid ""
@@ -1981,8 +1981,8 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Ви можете вилучити або відредагувати цю поведінку, перейшовши за посиланням "
-"«Різне…» > «Редагувати виробника…»"
+"Ви можете вилучити або відредагувати цю поведінку, перейшовши за посиланням «"
+"Різне…» > «Редагувати виробника…»"
 
 #: src/tauon/t_modules/t_main.py:17758
 msgid "A regen is already in progress…"
@@ -2433,8 +2433,7 @@ msgstr "?"
 
 #: src/tauon/t_modules/t_main.py:26821
 msgid "Enable relative paths when keeping playlist files together with audio"
-msgstr ""
-"Увімкнути відносні шляхи, коли файли списків зберігаються поруч з аудіо"
+msgstr "Увімкнути відносні шляхи, коли файли списків зберігаються поруч з аудіо"
 
 #: src/tauon/t_modules/t_main.py:26822
 msgid "Disable to move playlist files while keeping audio in one location"
@@ -2902,8 +2901,8 @@ msgstr ""
 #: src/tauon/t_modules/t_main.py:30280
 msgid "Tracks will be saved to \"Saved Radio Tracks\" playlist."
 msgstr ""
-"Композиції будуть збережені до списку відтворення «Збережені радіо-"
-"композиції»."
+"Композиції будуть збережені до списку відтворення «Збережені радіо-композиції"
+"»."
 
 #: src/tauon/t_modules/t_main.py:30293
 msgid "Recorded tracks are added to \"Saved Radio Tracks\"."
@@ -5173,8 +5172,7 @@ msgstr "Або збережіть ще раз, утримуючи Alt, щоб п
 
 #: src/tauon/t_modules/t_main.py:50483
 msgid "Lyrics might misbehave if their timestamps are out of order."
-msgstr ""
-"Тексти можуть працювати неправильно, якщо часові мітки не впорядковані."
+msgstr "Тексти можуть працювати неправильно, якщо часові мітки не впорядковані."
 
 #: src/tauon/t_modules/t_main.py:50484
 msgid "Please make sure all timestamps are ordered correctly."

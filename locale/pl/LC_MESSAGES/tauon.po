@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:36+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-10-21 22:35+0000\n"
+"Last-Translator: Anonymous <anonymous@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Polish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/pl/>\n"
 "Language: pl\n"
@@ -16,7 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 "
 "|| n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -1974,8 +1974,8 @@ msgstr "Dobra, od teraz ta lista posortuje się automatycznie po imporcie"
 msgid ""
 "You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Możesz usunąć lub zmienić to zachowanie przez \"Inne…\" > \"Edytuj generator…"
-"\""
+"Możesz usunąć lub zmienić to zachowanie przez \"Inne…\" > \"Edytuj generator"
+"…\""
 
 #: src/tauon/t_modules/t_main.py:17758
 msgid "A regen is already in progress…"
@@ -4324,8 +4324,7 @@ msgstr "Nie udało się wczytać krajów. Spróbuj ponownie za chwilę."
 
 #: src/tauon/t_modules/t_main.py:39937 src/tauon/t_modules/t_main.py:40437
 msgid "Couldn't reach the station directory. Try again in a moment."
-msgstr ""
-"Nie udało się połączyć z katalogiem stacji. Spróbuj ponownie za chwilę."
+msgstr "Nie udało się połączyć z katalogiem stacji. Spróbuj ponownie za chwilę."
 
 #: src/tauon/t_modules/t_main.py:40309
 msgid "Search text…"

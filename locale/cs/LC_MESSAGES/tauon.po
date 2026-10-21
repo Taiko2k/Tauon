@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:37+0000\n"
-"Last-Translator: Fjuro <fjuro@users.noreply.hosted.weblate.org>\n"
+"PO-Revision-Date: 2026-10-21 22:36+0000\n"
+"Last-Translator: Anonymous <anonymous@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Czech <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/cs/>\n"
 "Language: cs\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -205,8 +205,7 @@ msgstr ""
 #: src/tauon/t_modules/t_chrome.py:262
 #, fuzzy
 msgid "Check that the file and FFmpeg are available."
-msgstr ""
-"Zkontrolujte, zda je zdrojový soubor stále dostupný, a zkuste to znovu."
+msgstr "Zkontrolujte, zda je zdrojový soubor stále dostupný, a zkuste to znovu."
 
 #: src/tauon/t_modules/t_chrome.py:267
 msgid "Unable to convert audio for Chromecast"
@@ -1883,8 +1882,7 @@ msgstr "Dobře, teď je to normální seznam skladeb."
 #: src/tauon/t_modules/t_main.py:14656
 msgid ""
 "You added tracks to a generator playlist. Do you want to clear the generator?"
-msgstr ""
-"Přidali jste skladby do generovaného seznamu. Chcete generátor vymazat?"
+msgstr "Přidali jste skladby do generovaného seznamu. Chcete generátor vymazat?"
 
 #: src/tauon/t_modules/t_main.py:14981
 msgid "Station is already in: "
@@ -4313,8 +4311,7 @@ msgstr "Obrázek stanice se nepodařilo uložit"
 
 #: src/tauon/t_modules/t_main.py:39767
 msgid "Check that the source file is still available and try again."
-msgstr ""
-"Zkontrolujte, zda je zdrojový soubor stále dostupný, a zkuste to znovu."
+msgstr "Zkontrolujte, zda je zdrojový soubor stále dostupný, a zkuste to znovu."
 
 #: src/tauon/t_modules/t_main.py:39870
 msgid "Couldn't load countries. Try again in a moment."

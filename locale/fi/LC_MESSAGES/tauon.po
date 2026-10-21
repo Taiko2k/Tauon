@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:36+0000\n"
-"Last-Translator: Ricky Tigg <ricky.tigg@gmail.com>\n"
+"PO-Revision-Date: 2026-10-21 22:37+0000\n"
+"Last-Translator: Anonymous <anonymous@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Finnish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/fi/>\n"
 "Language: fi\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -3033,8 +3033,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:30463
 msgid "Leave blank to export beside the playlist, or set a folder here."
-msgstr ""
-"Jätä tyhjäksi viedäksesi soittolistan viereen tai määritä kansio tähän."
+msgstr "Jätä tyhjäksi viedäksesi soittolistan viereen tai määritä kansio tähän."
 
 #: src/tauon/t_modules/t_main.py:30472
 msgid "Auto-import playlists from this folder"
@@ -3071,8 +3070,7 @@ msgstr "Vaihda konsoli"
 
 #: src/tauon/t_modules/t_main.py:30650
 msgid "This will mark all tracks in local database as unloved!"
-msgstr ""
-"Tämä merkitsee kaikki paikallisen tietokannan kappaleet ei-suosikeiksi!"
+msgstr "Tämä merkitsee kaikki paikallisen tietokannan kappaleet ei-suosikeiksi!"
 
 #: src/tauon/t_modules/t_main.py:30660
 msgid "Cleared all loves"

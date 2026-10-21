@@ -6,14 +6,17 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon Music Box\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-05-14 00:00+1200\n"
-"Last-Translator: Tauon Korean translators\n"
-"Language-Team: Korean\n"
+"PO-Revision-Date: 2026-10-21 22:40+0000\n"
+"Last-Translator: Anonymous <anonymous@users.noreply.hosted.weblate.org>\n"
+"Language-Team: Korean <https://hosted.weblate.org/projects/tauon-music-box/"
+"tauon-music-box/ko/>\n"
 "Language: ko\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: pygettext.py 1.5\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 
 #: src/tauon/t_modules/t_activity.py:97
 #, fuzzy
@@ -1146,8 +1149,7 @@ msgstr "상대 경로를 사용할 수 없습니다"
 #: src/tauon/t_modules/t_main.py:10884 src/tauon/t_modules/t_main.py:10929
 msgid ""
 "One or more tracks are stored on a separate drive from the playlist file."
-msgstr ""
-"하나 이상의 트랙이 플레이리스트 파일과 다른 드라이브에 저장되어 있습니다."
+msgstr "하나 이상의 트랙이 플레이리스트 파일과 다른 드라이브에 저장되어 있습니다."
 
 #: src/tauon/t_modules/t_main.py:10980
 msgid "Playlist is locked to prevent accidental erasure"
@@ -1964,8 +1966,7 @@ msgstr "확인. 이제부터 이 플레이리스트는 가져올 때 자동 정�
 #: src/tauon/t_modules/t_main.py:17746
 msgid ""
 "You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
-msgstr ""
-"\"기타…\" > \"생성기 편집…\"에서 이 동작을 제거하거나 편집할 수 있습니다"
+msgstr "\"기타…\" > \"생성기 편집…\"에서 이 동작을 제거하거나 편집할 수 있습니다"
 
 #: src/tauon/t_modules/t_main.py:17758
 msgid "A regen is already in progress…"
@@ -2205,16 +2206,16 @@ msgid ""
 "For safety, this setting will default to off. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
-"안전을 위해 이 설정은 기본적으로 꺼집니다. 내장 썸네일은 보존되지 않으므로 먼"
-"저 추출하는 것이 좋습니다."
+"안전을 위해 이 설정은 기본적으로 꺼집니다. 내장 썸네일은 보존되지 않으므로 "
+"먼저 추출하는 것이 좋습니다."
 
 #: src/tauon/t_modules/t_main.py:21509
 msgid ""
 "For safety, this setting will reset on restart. Embedded thumbnails are not "
 "kept so you may want to extract them first."
 msgstr ""
-"안전을 위해 이 설정은 다시 시작하면 초기화됩니다. 내장 썸네일은 보존되지 않으"
-"므로 먼저 추출하는 것이 좋습니다."
+"안전을 위해 이 설정은 다시 시작하면 초기화됩니다. 내장 썸네일은 보존되지 "
+"않으므로 먼저 추출하는 것이 좋습니다."
 
 #: src/tauon/t_modules/t_main.py:21674
 msgid "Could not access! Possible insufficient Flatpak permissions."
@@ -2231,8 +2232,8 @@ msgstr "필요한 Flatpak 권한이 없으면 재부팅 시 대상이 사라질 
 #: src/tauon/t_modules/t_main.py:21684
 msgid "Path may be transient! Continue? Press \"No\" for more information."
 msgstr ""
-"경로가 임시 경로일 수 있습니다! 계속할까요? 자세한 내용은 \"아니요\"를 누르세"
-"요."
+"경로가 임시 경로일 수 있습니다! 계속할까요? 자세한 내용은 \"아니요\"를 "
+"누르세요."
 
 #: src/tauon/t_modules/t_main.py:21806
 msgid "Stop the sync before exiting!"
@@ -2560,8 +2561,8 @@ msgid ""
 "If you haven't, please consider donating at https://github.com/sponsors/"
 "Taiko2k"
 msgstr ""
-"아직 후원하지 않으셨다면 https://github.com/sponsors/Taiko2k 에서 후원을 고려"
-"해 주세요"
+"아직 후원하지 않으셨다면 https://github.com/sponsors/Taiko2k 에서 후원을 "
+"고려해 주세요"
 
 #: src/tauon/t_modules/t_main.py:28216
 msgid "GitHub Sponsors"
@@ -2947,8 +2948,7 @@ msgstr "알림: 이 API는 보안이 강화되어 있지 않습니다."
 #: src/tauon/t_modules/t_main.py:30370 src/tauon/t_modules/t_main.py:31048
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
-"신뢰할 수 있는 LAN에서만 활성화하고 포트(7814)를 인터넷에 노출하지 마세요"
+msgstr "신뢰할 수 있는 LAN에서만 활성화하고 포트(7814)를 인터넷에 노출하지 마세요"
 
 #: src/tauon/t_modules/t_main.py:30376 src/tauon/t_modules/t_main.py:31055
 msgid "Enable Listen Along"
@@ -3253,8 +3253,8 @@ msgid ""
 "The order layouts appear in the layout menu and when cycling layouts. The "
 "current layout is highlighted."
 msgstr ""
-"레이아웃 메뉴에 표시되는 순서와 레이아웃을 순환할 때의 순서입니다. 현재 레이"
-"아웃이 강조 표시됩니다."
+"레이아웃 메뉴에 표시되는 순서와 레이아웃을 순환할 때의 순서입니다. 현재 "
+"레이아웃이 강조 표시됩니다."
 
 #: src/tauon/t_modules/t_main.py:31296
 msgid "Move up"
@@ -4417,8 +4417,7 @@ msgstr "저장됨"
 
 #: src/tauon/t_modules/t_main.py:41031
 msgid "Type codes separated by spaces. Codes will be executed left to right."
-msgstr ""
-"코드를 공백으로 구분해 입력하세요. 코드는 왼쪽에서 오른쪽으로 실행됩니다."
+msgstr "코드를 공백으로 구분해 입력하세요. 코드는 왼쪽에서 오른쪽으로 실행됩니다."
 
 #: src/tauon/t_modules/t_main.py:41033
 msgid "Select sources: (default: all playlists)"
@@ -5038,12 +5037,12 @@ msgid ""
 "The right-click menu will also let you search and download lyrics from your "
 "selected lyrics sources, if you think they may be available online."
 msgstr ""
-"이 곡의 정적 가사가 아직 없습니다. 시작하려면 이 텍스트를 바로 교체하거나, 이"
-"미 동기화된 가사가 있다면 마우스 오른쪽 버튼을 클릭해 \"동기화된 가사에서 복"
-"사\"를 선택하세요.\n"
+"이 곡의 정적 가사가 아직 없습니다. 시작하려면 이 텍스트를 바로 교체하거나, "
+"이미 동기화된 가사가 있다면 마우스 오른쪽 버튼을 클릭해 \"동기화된 가사에서 "
+"복사\"를 선택하세요.\n"
 "\n"
-"오른쪽 클릭 메뉴에서는 선택한 가사 소스에서 가사를 검색하고 내려받을 수도 있"
-"습니다. 온라인에서 구할 수 있을 것 같다면 시도해 보세요."
+"오른쪽 클릭 메뉴에서는 선택한 가사 소스에서 가사를 검색하고 내려받을 수도 "
+"있습니다. 온라인에서 구할 수 있을 것 같다면 시도해 보세요."
 
 #: src/tauon/t_modules/t_main.py:50183
 msgid "Copy From Unsynced"
@@ -5123,13 +5122,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:50473
 msgid "Lyrics will misbehave if only some of them are timed."
-msgstr ""
-"일부 가사에만 시간이 지정되어 있으면 가사가 제대로 동작하지 않을 수 있습니다."
+msgstr "일부 가사에만 시간이 지정되어 있으면 가사가 제대로 동작하지 않을 수 있습니다."
 
 #: src/tauon/t_modules/t_main.py:50474
 msgid "You can time all of them or none of them, either will work."
-msgstr ""
-"모두에 시간을 지정하거나 전혀 지정하지 않으면 됩니다. 둘 다 작동합니다."
+msgstr "모두에 시간을 지정하거나 전혀 지정하지 않으면 됩니다. 둘 다 작동합니다."
 
 #: src/tauon/t_modules/t_main.py:50475 src/tauon/t_modules/t_main.py:50485
 msgid "Alternatively, save again while holding Alt to override."
@@ -5307,8 +5304,7 @@ msgstr "가사는 올바른 형식이어야 합니다"
 
 #: src/tauon/t_modules/t_main.py:52018
 msgid "Your synced lyrics are either out of order or not fully timed."
-msgstr ""
-"동기화 가사가 순서대로 되어 있지 않거나 모든 줄에 시간이 지정되지 않았습니다."
+msgstr "동기화 가사가 순서대로 되어 있지 않거나 모든 줄에 시간이 지정되지 않았습니다."
 
 #: src/tauon/t_modules/t_main.py:52019
 msgid "We cannot upload broken lyrics to LRCLIB."
@@ -5566,8 +5562,8 @@ msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
 msgstr ""
-"압축 파일이 손상되었을 수 있습니다. 디스크 공간이 충분하고 쓰기 권한이 있나"
-"요?"
+"압축 파일이 손상되었을 수 있습니다. 디스크 공간이 충분하고 쓰기 권한이 "
+"있나요?"
 
 #: src/tauon/t_modules/t_main.py:54041
 msgid "Failed to extract rar archive."
@@ -5695,8 +5691,8 @@ msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
 msgstr ""
-"네트워크 트랙 재스캔은 지원되지 않습니다. 대신 플레이리스트를 다시 가져오세"
-"요."
+"네트워크 트랙 재스캔은 지원되지 않습니다. 대신 플레이리스트를 다시 "
+"가져오세요."
 
 #: src/tauon/t_modules/t_main.py:56500
 msgid "Playlists + Queue"

@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:33+0000\n"
-"Last-Translator: legion 1978 <legion1978@gmail.com>\n"
+"PO-Revision-Date: 2026-10-21 22:31+0000\n"
+"Last-Translator: Francisco Emile Molina Honoré <pacoe1000@gmail.com>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/es/>\n"
 "Language: es\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -2017,8 +2017,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:17787
 msgid "To exit this mode, click \"Disengage\" from main MENU"
-msgstr ""
-"Para salir de este modo, haz clic en 'Desconectar' en el MENÚ principal"
+msgstr "Para salir de este modo, haz clic en 'Desconectar' en el MENÚ principal"
 
 #: src/tauon/t_modules/t_main.py:17877 src/tauon/t_modules/t_main.py:17879
 msgid "No artist image found."
@@ -2451,8 +2450,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:26822
 msgid "Disable to move playlist files while keeping audio in one location"
-msgstr ""
-"Desactívalo para mover las listas manteniendo el audio en una ubicación"
+msgstr "Desactívalo para mover las listas manteniendo el audio en una ubicación"
 
 #: src/tauon/t_modules/t_main.py:26826
 msgid "Auto-export"
@@ -3886,8 +3884,7 @@ msgstr "Fuentes de imágenes de artista y carátulas."
 
 #: src/tauon/t_modules/t_main.py:32371
 msgid "Use fanart.tv for artist images and manual cover art lookup."
-msgstr ""
-"Usar fanart.tv para imágenes de artista y búsqueda manual de carátulas."
+msgstr "Usar fanart.tv para imágenes de artista y búsqueda manual de carátulas."
 
 #: src/tauon/t_modules/t_main.py:32379
 msgid "Cover art (manual only)"
@@ -5653,8 +5650,7 @@ msgstr "Error de conexión"
 
 #: src/tauon/t_modules/t_main.py:54238
 msgid "We can't upload your lyrics because we can't connect to the server."
-msgstr ""
-"No podemos subir tus letras porque no podemos conectar con el servidor."
+msgstr "No podemos subir tus letras porque no podemos conectar con el servidor."
 
 #: src/tauon/t_modules/t_main.py:54239
 msgid "Are you offline?"
