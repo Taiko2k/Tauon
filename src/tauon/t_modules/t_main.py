@@ -412,7 +412,7 @@ if TYPE_CHECKING:
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
-	from tauon.t_modules.t_dbus import MPRIS
+	from tauon.t_modules.t_dbus import MPRIS, SuspendInhibitor
 	from tauon.t_modules.t_remote_playlists import RemotePlaylistSource
 	from tauon.t_modules.t_logging import LogHistoryHandler
 	from collections.abc import Callable, Sequence
@@ -7767,7 +7767,7 @@ class Tauon:
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
 
-		self.play_lock = None
+		self.play_lock: SuspendInhibitor | None = None
 		self.update_play_lock: Callable[[], None] | None = None
 		self.sleep_lock = None
 		self.shutdown_lock = None
@@ -15241,17 +15241,10 @@ class Tauon:
 		sdl3.set_window_size(self.t_window, self.logical_size[0], self.logical_size[1])
 		sdl3.set_window_always_on_top(self.t_window, False)
 
-		# if self.macos:
-		# 	sdl3.SDLSetWindowMinimumSize(self.t_window, 560, 330)
-		# else:
-		if self.logical_size[0] != self.window_size[0]:
-			sdl3.set_window_minimum_size(self.t_window, 560, 330)
-		else:
-			sdl3.set_window_minimum_size(self.t_window, round(560 * self.gui.scale), round(330 * self.gui.scale))
-
 		self.restore_ignore_timer.set()  # Hacky
 
 		self.gui.mode = GuiMode.MAIN
+		self.update_window_minimum_size()
 		self._set_wayland_mini_mode_window_state(False)
 
 		sdl3.sync_window(self.t_window)
@@ -15668,6 +15661,16 @@ class Tauon:
 			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
 			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), name, ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
+	def update_window_minimum_size(self) -> None:
+		"""Set the main window's minimum size from the current UI scale and display density."""
+		if self.bag.phone or self.gui.mode != GuiMode.MAIN:
+			return
+		# The minimum is in window units, which differ from pixels on HiDPI displays
+		logical_w = sdl3.get_window_size(self.t_window)[0]
+		pixel_w = sdl3.get_window_size_in_pixels(self.t_window)[0]
+		factor = self.prefs.scale_want * logical_w / pixel_w if logical_w and pixel_w else self.prefs.scale_want
+		sdl3.set_window_minimum_size(self.t_window, round(560 * factor), round(330 * factor))
+
 	def reload_scale(self, skip_render: bool = False) -> None:
 		auto_scale(self.bag)
 
@@ -15694,6 +15697,7 @@ class Tauon:
 		self.view_box.__init__(self, reload=True)
 		self.queue_box.recalc()
 		self.playlist_box.recalc()
+		self.update_window_minimum_size()
 
 	def update_layout_do(self) -> None:
 		window_size = self.window_size
@@ -56222,12 +56226,6 @@ def main(holder: Holder) -> None:
 		icon = native_image.load(str(asset_directory / "icon-64.png").encode())
 		sdl3.set_window_icon(t_window, icon)
 
-	if not phone:
-		if window_size[0] != logical_size[0]:
-			sdl3.set_window_minimum_size(t_window, 560, 330)
-		else:
-			sdl3.set_window_minimum_size(t_window, round(560 * scale), round(330 * scale))
-
 	max_window_tex = 1000
 	if window_size[0] > max_window_tex or window_size[1] > max_window_tex:
 		while window_size[0] > max_window_tex:
@@ -57353,6 +57351,7 @@ def main(holder: Holder) -> None:
 
 	auto_scale(bag)
 	scale_assets(tauon, bag, gui, prefs.scale_want)
+	tauon.update_window_minimum_size()
 
 	tauon.after_scan              = after_scan
 	tauon.search_string_cache     = search_string_cache
@@ -61316,6 +61315,7 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 					window_size[:] = sdl3.get_window_size_in_pixels(t_window)
 					auto_scale(bag)
+					tauon.update_window_minimum_size()
 					gui.update_layout = True
 					gui.request_frame()
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
@@ -65712,7 +65712,7 @@ def main(holder: Holder) -> None:
 	if tauon.shutdown_lock is not None:
 		del tauon.shutdown_lock
 	if tauon.play_lock is not None:
-		del tauon.play_lock
+		tauon.play_lock.release()
 
 	cache_dir = tmp_cache_dir()
 	if os.path.isdir(cache_dir):

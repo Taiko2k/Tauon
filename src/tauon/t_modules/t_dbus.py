@@ -329,6 +329,119 @@ class MPRIS(dbus.service.Object):
 		self.Seeked(dbus.Int64(int(seconds * 1000000)))
 
 
+PORTAL_NAME = "org.freedesktop.portal.Desktop"
+PORTAL_PATH = "/org/freedesktop/portal/desktop"
+PORTAL_INHIBIT_SUSPEND = 4
+
+
+class SuspendInhibitor:
+	"""Blocks automatic suspend while audio is playing.
+
+	Prefers the XDG inhibit portal's Suspend flag, which leaves screen dimming
+	and blanking alone. Falls back to a logind "idle" lock, which KDE also
+	treats as a request to keep the screen on.
+	"""
+
+	def __init__(self) -> None:
+		self.session_bus: dbus.SessionBus | None = None
+		self.portal: dbus.Interface | None = None
+		self.login: dbus.Interface | None = None
+		self.portal_handle: str | None = None
+		self.portal_match: dbus.connection.SignalMatch | None = None
+		self.login_lock: dbus.types.UnixFd | None = None
+		self.token_count: int = 0
+		self.lock = threading.Lock()
+
+	@property
+	def available(self) -> bool:
+		return self.portal is not None or self.login is not None
+
+	def connect_portal(self) -> None:
+		try:
+			bus = dbus.SessionBus()
+			portal_object = bus.get_object(PORTAL_NAME, PORTAL_PATH)
+			# Only exported when a portal backend implements it
+			portal_object.Get("org.freedesktop.portal.Inhibit", "version", dbus_interface=dbus.PROPERTIES_IFACE)
+		except dbus.DBusException:
+			logging.info("Inhibit portal unavailable, suspend blocking will use logind")
+			return
+		self.session_bus = bus
+		self.portal = dbus.Interface(portal_object, dbus_interface="org.freedesktop.portal.Inhibit")
+
+	def acquire(self) -> None:
+		with self.lock:
+			if self.portal_handle is not None or self.login_lock is not None:
+				return
+			if self.portal is not None:
+				try:
+					self.portal_inhibit()
+					return
+				except dbus.DBusException:
+					logging.exception("Inhibit portal request failed, falling back to logind")
+					self.drop_portal()
+			self.login_inhibit()
+
+	def release(self) -> None:
+		with self.lock:
+			if self.portal_handle is not None:
+				try:
+					request = self.session_bus.get_object(PORTAL_NAME, self.portal_handle)
+					request.Close(dbus_interface="org.freedesktop.portal.Request")
+				except dbus.DBusException:
+					logging.exception("Failed to release the inhibit portal request")
+				self.clear_portal_request()
+			# logind drops the lock once its file descriptor is closed
+			self.login_lock = None
+
+	def login_inhibit(self) -> None:
+		if self.login is not None:
+			self.login_lock = self.login.Inhibit("idle", "Tauon Music Box", "Audio is playing", "block")
+
+	def portal_inhibit(self) -> None:
+		self.token_count += 1
+		token = f"tauon_play_{self.token_count}"
+		sender = self.session_bus.get_unique_name()[1:].replace(".", "_")
+		path = f"{PORTAL_PATH}/request/{sender}/{token}"
+
+		def on_response(response: int, results: dict) -> None:
+			self.on_portal_response(path, response)
+
+		# Subscribe before calling, so an immediate denial isn't missed
+		self.portal_match = self.session_bus.add_signal_receiver(
+			on_response,
+			signal_name="Response",
+			dbus_interface="org.freedesktop.portal.Request",
+			path=path,
+		)
+		try:
+			self.portal_handle = str(self.portal.Inhibit(
+				"", dbus.UInt32(PORTAL_INHIBIT_SUSPEND), {"handle_token": token, "reason": "Audio is playing"}))
+		except dbus.DBusException:
+			self.clear_portal_request()
+			raise
+
+	def on_portal_response(self, path: str, response: int) -> None:
+		# Success needs no action, the request stays open until closed
+		if response == 0:
+			return
+		with self.lock:
+			if self.portal_handle != path:
+				return
+			logging.warning(f"Inhibit portal denied the request ({response}), falling back to logind")
+			self.drop_portal()
+			self.login_inhibit()
+
+	def clear_portal_request(self) -> None:
+		if self.portal_match is not None:
+			self.portal_match.remove()
+			self.portal_match = None
+		self.portal_handle = None
+
+	def drop_portal(self) -> None:
+		self.clear_portal_request()
+		self.portal = None
+
+
 class Gnome:
 	def __init__(self, tauon: Tauon) -> None:
 		self.bus_object = None
@@ -390,10 +503,13 @@ class Gnome:
 			if self.tauon.inp.media_key:
 				gui.request_frame()
 
-		try:
-			# set up the glib main loop.
-			dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+		# set up the glib main loop.
+		dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
 
+		play_lock = SuspendInhibitor()
+		play_lock.connect_portal()
+
+		try:
 			bus = dbus.Bus(dbus.Bus.TYPE_SYSTEM)
 			bus_object = bus.get_object("org.freedesktop.login1", "/org/freedesktop/login1")
 
@@ -401,25 +517,7 @@ class Gnome:
 
 			tauon.sleep_lock = iface.Inhibit("sleep", "Tauon Music Box", "Pause music on sleep", "delay")
 			tauon.shutdown_lock = iface.Inhibit("shutdown", "Tauon Music Box", "Save data to disk", "delay")
-
-			def update_play_lock() -> None:
-				if prefs.block_suspend:
-					if (
-						pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
-						and tauon.play_lock is None
-					):
-						tauon.play_lock = iface.Inhibit("idle", "Tauon Music Box", "Audio is playing", "block")
-					elif (
-						pctl.playing_state not in (PlayingState.PLAYING, PlayingState.URL_STREAM)
-						and tauon.play_lock is not None
-					):
-						del tauon.play_lock
-						tauon.play_lock = None
-				elif tauon.play_lock is not None:
-					del tauon.play_lock
-					tauon.play_lock = None
-
-			tauon.update_play_lock = update_play_lock
+			play_lock.login = iface
 
 			def PrepareForSleep(active: int) -> None:
 				if active == 1 and tauon.sleep_lock is not None:
@@ -460,6 +558,16 @@ class Gnome:
 
 		except Exception:
 			logging.exception("Failure to connect to login1")
+
+		if play_lock.available:
+			def update_play_lock() -> None:
+				if prefs.block_suspend and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
+					play_lock.acquire()
+				else:
+					play_lock.release()
+
+			tauon.play_lock = play_lock
+			tauon.update_play_lock = update_play_lock
 
 		# t_bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
 		# t_bus_name = dbus.service.BusName('com.github.taiko2k.tauonmb', t_bus)  # This object must be kept alive
