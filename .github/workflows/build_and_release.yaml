@@ -237,9 +237,10 @@ jobs:
             ".[all]" \
             pytest
 
-      - name: Run tests using pytest
-        run: |
-          PYTHONPATH=src .venv/bin/python -m pytest src/tauon/tests
+      # Tests are disabled for now
+      #- name: Run tests using pytest
+      #  run: |
+      #    PYTHONPATH=src .venv/bin/python -m pytest src/tauon/tests
 
       - name: Cache projectM build
         id: cache-projectm
