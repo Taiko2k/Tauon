@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-10-15 09:51+0000\n"
+"PO-Revision-Date: 2026-10-21 16:59+0000\n"
 "Last-Translator: Ricardo Simões "
 "<ricardosimoes@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Portuguese (Portugal) <https://hosted.weblate.org/projects/"
@@ -20,9 +20,8 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
 
 #: src/tauon/t_modules/t_activity.py:97
-#, fuzzy
 msgid "Importing tracks"
-msgstr "Importar faixas"
+msgstr "A importar faixas"
 
 #: src/tauon/t_modules/t_activity.py:99
 msgid "Importing XSPF playlist"
@@ -33,14 +32,12 @@ msgid "Extracting Archive…"
 msgstr "Extrair ficheiro…"
 
 #: src/tauon/t_modules/t_activity.py:102
-#, fuzzy
 msgid "{N} tracks imported"
-msgstr "Classificações {N} importadas"
+msgstr "{N} faixas importadas"
 
 #: src/tauon/t_modules/t_activity.py:104
-#, fuzzy
 msgid "Stopping import…"
-msgstr "Parando…"
+msgstr "A parar importação…"
 
 #: src/tauon/t_modules/t_activity.py:110
 #, fuzzy
@@ -184,7 +181,7 @@ msgstr "Inativo"
 
 #: src/tauon/t_modules/t_activity.py:380
 msgid "Overall"
-msgstr ""
+msgstr "Em geral"
 
 #: src/tauon/t_modules/t_activity.py:389
 #, fuzzy
@@ -198,7 +195,7 @@ msgstr "Lista de reprodução atual"
 
 #: src/tauon/t_modules/t_chrome.py:261
 msgid "Unable to cast this audio format"
-msgstr ""
+msgstr "Não é possível reproduzir este formato de áudio"
 
 #: src/tauon/t_modules/t_chrome.py:262
 #, fuzzy
