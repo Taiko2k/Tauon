@@ -412,7 +412,7 @@ if TYPE_CHECKING:
 	from websocket import WebSocketApp
 
 	from tauon.t_modules.t_bootstrap import Holder
-	from tauon.t_modules.t_dbus import MPRIS
+	from tauon.t_modules.t_dbus import MPRIS, SuspendInhibitor
 	from tauon.t_modules.t_remote_playlists import RemotePlaylistSource
 	from tauon.t_modules.t_logging import LogHistoryHandler
 	from collections.abc import Callable, Sequence
@@ -7767,7 +7767,7 @@ class Tauon:
 		self.tray_lock = threading.Lock()
 		self.tray_releases = 0
 
-		self.play_lock = None
+		self.play_lock: SuspendInhibitor | None = None
 		self.update_play_lock: Callable[[], None] | None = None
 		self.sleep_lock = None
 		self.shutdown_lock = None
@@ -65712,7 +65712,7 @@ def main(holder: Holder) -> None:
 	if tauon.shutdown_lock is not None:
 		del tauon.shutdown_lock
 	if tauon.play_lock is not None:
-		del tauon.play_lock
+		tauon.play_lock.release()
 
 	cache_dir = tmp_cache_dir()
 	if os.path.isdir(cache_dir):
