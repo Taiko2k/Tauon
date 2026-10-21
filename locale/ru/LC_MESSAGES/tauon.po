@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-09-08 23:10+1200\n"
-"PO-Revision-Date: 2026-10-13 11:51+0000\n"
-"Last-Translator: Andrei Stepanov <adem@users.noreply.hosted.weblate.org>\n"
+"PO-Revision-Date: 2026-10-21 22:33+0000\n"
+"Last-Translator: Edward T <boogie___man@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/ru/>\n"
 "Language: ru\n"
@@ -2214,8 +2214,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:21674
 msgid "Could not access! Possible insufficient Flatpak permissions."
-msgstr ""
-"Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
+msgstr "Не удалось получить доступ! Возможные недостаточные разрешения Flatpak."
 
 #: src/tauon/t_modules/t_main.py:21675 src/tauon/t_modules/t_main.py:21682
 msgid " For details, see {link}"
@@ -5558,8 +5557,7 @@ msgstr "Не удалось извлечь zip-архив."
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
-msgstr ""
-"Архив зашифрован. Вам нужно будет извлечь его вручную с помощью пароля."
+msgstr "Архив зашифрован. Вам нужно будет извлечь его вручную с помощью пароля."
 
 #: src/tauon/t_modules/t_main.py:54017 src/tauon/t_modules/t_main.py:54025
 msgid ""
@@ -6796,8 +6794,7 @@ msgstr "Восстановление"
 
 #: src/tauon/t_modules/t_main.py:63107
 msgid "Moves folder up 2 levels and deletes the old container folder"
-msgstr ""
-"Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
+msgstr "Перемещает каталог на 2 уровня вверх и удаляет старый каталог-контейнер"
 
 #: src/tauon/t_modules/t_main.py:63119
 msgid "Deletes some unnecessary files from folder"

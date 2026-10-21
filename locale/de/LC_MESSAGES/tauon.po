@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-17 01:39+0000\n"
-"Last-Translator: Udon <UdonLearn@posteo.org>\n"
+"PO-Revision-Date: 2026-10-21 22:30+0000\n"
+"Last-Translator: Anonymous <anonymous@users.noreply.hosted.weblate.org>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/de/>\n"
 "Language: de\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -3410,8 +3410,7 @@ msgstr "Mini-Modus immer im Vordergrund"
 
 #: src/tauon/t_modules/t_main.py:31591
 msgid "Always-on-top feature not yet implemented for Wayland mode"
-msgstr ""
-"Immer-im-Vordergrund ist für den Wayland-Modus noch nicht implementiert"
+msgstr "Immer-im-Vordergrund ist für den Wayland-Modus noch nicht implementiert"
 
 #: src/tauon/t_modules/t_main.py:31599
 msgid "Smooth scrolling"
@@ -3770,8 +3769,8 @@ msgstr "LibreFM verwenden"
 #: src/tauon/t_modules/t_main.py:32194
 msgid "Use Login, finish the browser step, then click Done."
 msgstr ""
-"Verwende „Anmelden“, schließe den Schritt im Browser ab und klicke dann auf "
-"„Fertig“."
+"Verwende „Anmelden“, schließe den Schritt im Browser ab und klicke dann auf „"
+"Fertig“."
 
 #: src/tauon/t_modules/t_main.py:32196
 msgid "Finish authorisation in the browser, then click Done."
@@ -4000,8 +3999,7 @@ msgstr ""
 
 #: src/tauon/t_modules/t_main.py:32588
 msgid "Connection looked successful but the API key was invalid."
-msgstr ""
-"Die Verbindung schien erfolgreich, aber der API-Schlüssel war ungültig."
+msgstr "Die Verbindung schien erfolgreich, aber der API-Schlüssel war ungültig."
 
 #: src/tauon/t_modules/t_main.py:32590
 msgid "Connection to Maloja server was successful."
@@ -5684,8 +5682,7 @@ msgstr "Wir haben nicht die nötigen Berechtigungen, um die Datei auszuführen:"
 
 #: src/tauon/t_modules/t_main.py:54277
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
-"Der Liedtext kann nicht hochgeladen werden, und wir wissen nicht warum."
+msgstr "Der Liedtext kann nicht hochgeladen werden, und wir wissen nicht warum."
 
 #: src/tauon/t_modules/t_main.py:54295
 msgid "Lyrics upload failed with error code: "

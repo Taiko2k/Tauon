@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Tauon\n"
 "POT-Creation-Date: 2026-10-12 00:01+0200\n"
-"PO-Revision-Date: 2026-04-28 14:09+0000\n"
-"Last-Translator: luca rastelli <mad_fer_it@msn.com>\n"
+"PO-Revision-Date: 2026-10-21 22:35+0000\n"
+"Last-Translator: luca rastelli <luca247@users.noreply.hosted.weblate.org>\n"
 "Language-Team: Italian <https://hosted.weblate.org/projects/tauon-music-box/"
 "tauon-music-box/it/>\n"
 "Language: it\n"
@@ -15,7 +15,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.17.1-dev\n"
+"X-Generator: Weblate 2026.11.dev0\n"
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:97
@@ -1989,8 +1989,8 @@ msgstr ""
 msgid ""
 "You remove or edit this behavior by going \"Misc…\" > \"Edit generator…\""
 msgstr ""
-"Puoi rimuovere o configurare questo comportamento andando su \"Gen…"
-"\">\"Modifica generator…\""
+"Puoi rimuovere o configurare questo comportamento andando su \"Gen…\">"
+"\"Modifica generator…\""
 
 #: src/tauon/t_modules/t_main.py:17758
 msgid "A regen is already in progress…"
@@ -2200,8 +2200,7 @@ msgstr "Le notifiche non sono supportate su questo DE"
 #: src/tauon/t_modules/t_main.py:21169
 msgid ""
 "Note that ratings are stored in the local database and not written to tags."
-msgstr ""
-"Nota che i giudizi sono salvati nel database locale e non nei metadati."
+msgstr "Nota che i giudizi sono salvati nel database locale e non nei metadati."
 
 #: src/tauon/t_modules/t_main.py:21226 src/tauon/t_modules/t_main.py:21279
 msgid "Change will be applied on restart."
@@ -2981,8 +2980,7 @@ msgstr "Attenzione: Questa API non è completamente sicura."
 #: src/tauon/t_modules/t_main.py:30370 src/tauon/t_modules/t_main.py:31048
 msgid ""
 "Only enable in a trusted LAN and do not expose port (7814) to the internet"
-msgstr ""
-"Abilita solo in una LAN sicura, e non esporre la porta (7814) alla rete"
+msgstr "Abilita solo in una LAN sicura, e non esporre la porta (7814) alla rete"
 
 #: src/tauon/t_modules/t_main.py:30376 src/tauon/t_modules/t_main.py:31055
 msgid "Enable Listen Along"
