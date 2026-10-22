@@ -3,8 +3,6 @@
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #include <windows.h>
 #include <shellapi.h>
 #endif
@@ -33,6 +31,7 @@
 #include <utility>
 #include <vector>
 
+#include "ipc.h"
 #include "native_render.h"
 
 #if defined(__APPLE__)
@@ -40,12 +39,8 @@
 #endif
 
 #if !defined(_WIN32)
-#include <arpa/inet.h>
 #include <dlfcn.h>
 #include <fcntl.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <sys/time.h>
 #include <unistd.h>
 #endif
 
@@ -340,171 +335,37 @@ void print_usage(const char* executable) {
 		<< "  --no-start       Forward arguments without starting Tauon\n";
 }
 
-std::string urlsafe_base64(std::string_view input) {
-	constexpr std::string_view alphabet =
-		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
-	std::string encoded;
-	encoded.reserve(((input.size() + 2) / 3) * 4);
-	for (std::size_t offset = 0; offset < input.size(); offset += 3) {
-		const auto first = static_cast<unsigned char>(input[offset]);
-		const auto second = offset + 1 < input.size() ? static_cast<unsigned char>(input[offset + 1]) : 0;
-		const auto third = offset + 2 < input.size() ? static_cast<unsigned char>(input[offset + 2]) : 0;
-		const unsigned int value = (static_cast<unsigned int>(first) << 16U)
-			| (static_cast<unsigned int>(second) << 8U)
-			| static_cast<unsigned int>(third);
-		encoded.push_back(alphabet[(value >> 18U) & 0x3fU]);
-		encoded.push_back(alphabet[(value >> 12U) & 0x3fU]);
-		encoded.push_back(offset + 1 < input.size() ? alphabet[(value >> 6U) & 0x3fU] : '=');
-		encoded.push_back(offset + 2 < input.size() ? alphabet[value & 0x3fU] : '=');
-	}
-	return encoded;
-}
-
-#if defined(_WIN32)
-using SocketHandle = SOCKET;
-constexpr SocketHandle kInvalidSocket = INVALID_SOCKET;
-
-void close_socket(SocketHandle socket_handle) {
-	closesocket(socket_handle);
-}
-#else
-using SocketHandle = int;
-constexpr SocketHandle kInvalidSocket = -1;
-
-void close_socket(SocketHandle socket_handle) {
-	close(socket_handle);
-}
-#endif
-
-bool send_controller_request(std::string_view endpoint) {
-#if defined(_WIN32)
-	WSADATA winsock_data {};
-	if (WSAStartup(MAKEWORD(2, 2), &winsock_data) != 0) {
-		std::cerr << "Tauon: unable to initialise local IPC networking\n";
-		return false;
-	}
-#endif
-	const SocketHandle socket_handle = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
-	if (socket_handle == kInvalidSocket) {
-		std::cerr << "Tauon: unable to create local IPC socket\n";
-#if defined(_WIN32)
-		WSACleanup();
-#endif
-		return false;
-	}
-
-#if defined(_WIN32)
-	const DWORD timeout_ms = 2000;
-	setsockopt(
-		socket_handle,
-		SOL_SOCKET,
-		SO_RCVTIMEO,
-		reinterpret_cast<const char*>(&timeout_ms),
-		static_cast<int>(sizeof(timeout_ms))
-	);
-	setsockopt(
-		socket_handle,
-		SOL_SOCKET,
-		SO_SNDTIMEO,
-		reinterpret_cast<const char*>(&timeout_ms),
-		static_cast<int>(sizeof(timeout_ms))
-	);
-#else
-	const timeval timeout {2, 0};
-	setsockopt(socket_handle, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
-	setsockopt(socket_handle, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-#endif
-
-	sockaddr_in address {};
-	address.sin_family = AF_INET;
-	address.sin_port = htons(7813);
-	address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-	if (connect(
-		socket_handle,
-		reinterpret_cast<const sockaddr*>(&address),
-		static_cast<int>(sizeof(address))
-	) != 0) {
-		close_socket(socket_handle);
-#if defined(_WIN32)
-		WSACleanup();
-#endif
-		std::cerr << "Tauon: could not connect to the running instance on 127.0.0.1:7813\n";
-		return false;
-	}
-
-	const std::string request =
-		"GET /" + std::string(endpoint) + " HTTP/1.0\r\n"
-		"Host: 127.0.0.1:7813\r\n"
-		"Connection: close\r\n\r\n";
-	std::size_t sent_bytes = 0;
-	while (sent_bytes < request.size()) {
-		const int sent = send(
-			socket_handle,
-			request.data() + sent_bytes,
-			static_cast<int>(request.size() - sent_bytes),
-			0
-		);
-		if (sent <= 0) {
-			close_socket(socket_handle);
-#if defined(_WIN32)
-			WSACleanup();
-#endif
-			std::cerr << "Tauon: failed to send a request to the running instance\n";
-			return false;
-		}
-		sent_bytes += static_cast<std::size_t>(sent);
-	}
-
-	std::string response;
-	char response_buffer[1024];
-	while (response.size() < 8192) {
-		const int received = recv(socket_handle, response_buffer, static_cast<int>(sizeof(response_buffer)), 0);
-		if (received <= 0) {
-			break;
-		}
-		response.append(response_buffer, static_cast<std::size_t>(received));
-	}
-	close_socket(socket_handle);
-#if defined(_WIN32)
-	WSACleanup();
-#endif
-
-	const std::size_t first_space = response.find(' ');
-	if (first_space == std::string::npos || response.size() < first_space + 4) {
-		std::cerr << "Tauon: the running instance returned an invalid IPC response\n";
-		return false;
-	}
-	const int status = std::strtol(response.c_str() + first_space + 1, nullptr, 10);
-	if (status < 200 || status >= 300) {
-		std::cerr << "Tauon: the running instance returned HTTP status " << status << '\n';
-		return false;
-	}
-	return true;
-}
-
-int forward_arguments(int argc, char** argv) {
-	std::vector<std::string> endpoints;
-	for (int index = 1; index < argc; ++index) {
-		if (argv[index] == nullptr) {
-			continue;
-		}
-		const std::string_view argument(argv[index]);
-		if (const std::optional<std::string_view> endpoint = controller_endpoint(argument)) {
-			endpoints.emplace_back(*endpoint);
+// Sends commands and paths to the instance owning user_data_directory. The
+// arguments exclude the program name.
+int forward_arguments(const std::filesystem::path& user_data_directory, const std::vector<std::string>& arguments) {
+	std::vector<std::pair<std::string_view, std::string_view>> requests;
+	for (const std::string& argument : arguments) {
+		if (const std::optional<std::string_view> command = controller_endpoint(argument)) {
+			requests.emplace_back(*command, std::string_view{});
 		} else if (is_open_argument(argument)) {
-			endpoints.emplace_back("open/" + urlsafe_base64(argument));
+			requests.emplace_back("open", argument);
 		}
 	}
-	if (argc <= 1) {
-		endpoints.emplace_back("raise");
+	if (arguments.empty()) {
+		requests.emplace_back("raise", std::string_view{});
 	}
 
-	for (const std::string& endpoint : endpoints) {
-		if (!send_controller_request(endpoint)) {
+	for (const auto& [command, argument] : requests) {
+		if (!ipc_send(user_data_directory, command, argument)) {
 			return 1;
 		}
 	}
 	return 0;
+}
+
+std::vector<std::string> arguments_after_program(int argc, char** argv) {
+	std::vector<std::string> arguments;
+	for (int index = 1; index < argc; ++index) {
+		if (argv[index] != nullptr) {
+			arguments.emplace_back(argv[index]);
+		}
+	}
+	return arguments;
 }
 
 #if !defined(_WIN32) && !defined(__APPLE__)
@@ -1652,6 +1513,45 @@ PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
 	return PyLong_FromLong(choice);
 }
 
+PyObject* bridge_start_ipc_server(PyObject*, PyObject* handler) {
+	if (g_state == nullptr || g_state->user_data_directory.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's user data directory is unavailable");
+		return nullptr;
+	}
+	if (!PyCallable_Check(handler)) {
+		PyErr_SetString(PyExc_TypeError, "command handler must be callable");
+		return nullptr;
+	}
+	if (!ipc_start_server(g_state->user_data_directory, handler)) {
+		return nullptr;
+	}
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_forward_arguments(PyObject*, PyObject* argv) {
+	if (g_state == nullptr || g_state->user_data_directory.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's user data directory is unavailable");
+		return nullptr;
+	}
+	PyObject* sequence = PySequence_Fast(argv, "arguments must be a sequence of strings");
+	if (sequence == nullptr) return nullptr;
+	std::vector<std::string> arguments;
+	const Py_ssize_t count = PySequence_Fast_GET_SIZE(sequence);
+	for (Py_ssize_t index = 1; index < count; ++index) {
+		PyObject* encoded = PyUnicode_EncodeFSDefault(PySequence_Fast_GET_ITEM(sequence, index));
+		if (encoded == nullptr) {
+			Py_DECREF(sequence);
+			return nullptr;
+		}
+		arguments.emplace_back(PyBytes_AS_STRING(encoded), static_cast<std::size_t>(PyBytes_GET_SIZE(encoded)));
+		Py_DECREF(encoded);
+	}
+	Py_DECREF(sequence);
+	int exit_code = 0;
+	TAUON_WITHOUT_GIL(exit_code = forward_arguments(g_state->user_data_directory, arguments));
+	return PyLong_FromLong(exit_code);
+}
+
 PyMethodDef bridge_methods[] = {
 	{"is_active", bridge_is_active, METH_NOARGS, "Return whether Tauon is running under the native bootstrap."},
 	{"window_address", bridge_window_address, METH_NOARGS, "Return the transitional native SDL_Window address."},
@@ -1679,6 +1579,8 @@ PyMethodDef bridge_methods[] = {
 	{"get_clipboard_text", bridge_get_clipboard_text, METH_NOARGS, "Get UTF-8 text from the system clipboard."},
 	{"has_clipboard_text", bridge_has_clipboard_text, METH_NOARGS, "Return whether the clipboard contains text."},
 	{"show_error_message", bridge_show_error_message, METH_VARARGS, "Show a native error message box and return the index of the chosen button, or -1."},
+	{"start_ipc_server", bridge_start_ipc_server, METH_O, "Serve launcher commands, calling handler(command, argument) on a background thread."},
+	{"forward_arguments", bridge_forward_arguments, METH_O, "Send sys.argv style arguments to the running instance and return an exit code."},
 	{nullptr, nullptr, 0, nullptr},
 };
 
@@ -1905,6 +1807,7 @@ int run_python(NativeState& state, int argc, char** argv) {
 			exit_code = 1;
 		}
 	}
+	ipc_stop_server();
 	// Destroy SDL resources while Python callbacks are still valid.
 	shutdown_native_sdl(state);
 	g_state = nullptr;
@@ -1929,7 +1832,7 @@ int tauon_main(int argc, char** argv) {
 	}
 	// Controller commands never start a new player
 	if (has_controller_argument(argc, argv)) {
-		return forward_arguments(argc, argv);
+		return forward_arguments(user_data_directory(argc > 0 ? argv[0] : nullptr), arguments_after_program(argc, argv));
 	}
 
 	NativeState state;
@@ -1943,8 +1846,10 @@ int tauon_main(int argc, char** argv) {
 	configure_bundled_environment(state.executable_path);
 	g_state = &state;
 	const InstanceLockResult instance_lock = acquire_instance_lock(state, argv[0]);
-	if (instance_lock == InstanceLockResult::AlreadyRunning || has_argument(argc, argv, "--no-start")) {
-		const int exit_code = forward_arguments(argc, argv);
+	const char* forward_only = std::getenv("TAUON_FORWARD_ARGS_ONLY");
+	if (instance_lock == InstanceLockResult::AlreadyRunning || has_argument(argc, argv, "--no-start")
+		|| (forward_only != nullptr && std::string_view(forward_only) == "1")) {
+		const int exit_code = forward_arguments(state.user_data_directory, arguments_after_program(argc, argv));
 		shutdown_native_app(state);
 		g_state = nullptr;
 		return exit_code;

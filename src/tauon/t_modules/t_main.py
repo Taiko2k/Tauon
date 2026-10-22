@@ -311,7 +311,7 @@ from tauon.t_modules.t_windows_blur import WindowsBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
 	VorbisMonitor,
 	authserve,
-	controller,
+	remote_command_handler,
 	stream_proxy,
 	webserve,
 	webserve2,
@@ -58712,9 +58712,10 @@ def main(holder: Holder) -> None:
 		webThread.daemon = True
 		webThread.start()
 
-	ctlThread = threading.Thread(target=controller, args=[tauon])
-	ctlThread.daemon = True
-	ctlThread.start()
+	try:
+		sdl3.start_ipc_server(remote_command_handler(tauon))
+	except Exception:
+		logging.exception("Failed to start the command server, launcher commands won't reach this instance")
 
 	if prefs.enable_remote:
 		tauon.start_remote()

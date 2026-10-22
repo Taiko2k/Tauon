@@ -38,6 +38,7 @@ endif()
 # Native launcher
 
 add_executable(tauon-native
+	src/tauon_native/ipc.cpp
 	src/tauon_native/main.cpp
 	src/tauon_native/native_render.cpp
 )
@@ -49,6 +50,7 @@ target_compile_definitions(tauon-native PRIVATE
 target_link_libraries(tauon-native PRIVATE
 	Python3::Python
 	SDL3::SDL3
+	Threads::Threads
 )
 
 if(MSVC)
@@ -65,7 +67,7 @@ if(WIN32)
 		@ONLY
 	)
 	target_sources(tauon-native PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/tauon.rc")
-	target_link_libraries(tauon-native PRIVATE shell32 ws2_32)
+	target_link_libraries(tauon-native PRIVATE shell32 advapi32 user32)
 	set_target_properties(tauon-native PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 

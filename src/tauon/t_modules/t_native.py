@@ -357,6 +357,7 @@ start_text_input = tauon_native.start_text_input
 stop_text_input = tauon_native.stop_text_input
 set_text_input_area = tauon_native.set_text_input_area
 get_display_refresh_rate = tauon_native.get_display_refresh_rate
+start_ipc_server = tauon_native.start_ipc_server
 
 
 def create_tray(icon: ImageData, tooltip) -> int:

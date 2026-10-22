@@ -41,82 +41,6 @@ logging.basicConfig(
 )
 logging.getLogger().handlers[0].setFormatter(CustomLoggingFormatter())
 
-# Remote control commands, mapped to their endpoint on the controller server.
-# Leading dashes are optional and hyphens within a command are ignored, so
-# --play-pause, --playpause and playpause are all equivalent.
-COMMANDS = {
-	"play": "play",
-	"pause": "pause",
-	"playpause": "playpause",
-	"stop": "stop",
-	"next": "next",
-	"advance": "next",
-	"previous": "previous",
-	"prev": "previous",
-	"back": "previous",
-	"raise": "raise",
-	"shuffle": "shuffle",
-	"repeat": "repeat",
-	"reloadtheme": "reloadtheme",
-}
-
-
-def resolve_command(item: str) -> str | None:
-	"""Return the endpoint for a command argument, or None if it isn't one"""
-	return COMMANDS.get(item.removeprefix("--").replace("-", ""))
-
-
-def is_file_argument(item: str) -> bool:
-	"""Whether an argument names a file to open rather than a command"""
-	return (
-		not item.endswith(".py")
-		and not item.startswith("-")
-		and not item.endswith("exe")
-		and (item.startswith("file://") or Path(item).exists())
-	)
-
-
-def transfer_args_and_exit() -> None:
-	"""Hand our arguments to the already running instance and exit"""
-	import urllib.error
-	import urllib.request
-
-	base = "http://localhost:7813/"
-
-	def send(path: str) -> None:
-		try:
-			urllib.request.urlopen(base + path)
-		except urllib.error.URLError:
-			logging.error("Could not connect to Tauon. Make sure Tauon is running.")  # noqa: TRY400
-			sys.exit(1)
-
-	if len(sys.argv) <= 1:
-		send("raise/")
-
-	for item in sys.argv[1:]:
-		# An existing path is a file to open, even if it looks like a command
-		if is_file_argument(item):
-			import base64
-
-			send("open/" + base64.urlsafe_b64encode(item.encode()).decode())
-			continue
-
-		command = resolve_command(item)
-		if command is not None:
-			send(command + "/")
-
-	sys.exit()
-
-
-# A remote control command, or an explicit --no-start, means we talk to the
-# already running instance instead of starting up ourselves
-if "--no-start" in sys.argv or os.environ.get("TAUON_FORWARD_ARGS_ONLY") == "1" or any(
-	resolve_command(item) is not None and not is_file_argument(item) for item in sys.argv[1:]
-):
-	transfer_args_and_exit()
-
-# Everything below is only needed to actually start up, so keep it after the
-# remote control path above - a command like --playpause must not pay for it.
 import subprocess  # noqa: E402
 
 from tauon.t_modules.t_bootstrap import Holder  # noqa: E402
@@ -134,6 +58,13 @@ native_bootstrap = bool(
 )
 if not native_bootstrap:
 	raise RuntimeError("Tauon must be launched through the tauon-native executable")
+
+
+def transfer_args_and_exit() -> None:
+	"""Hand our arguments to the already running instance and exit"""
+	sys.exit(_tauon_native.forward_arguments(sys.argv))
+
+
 portable_mode = bool(_tauon_native.portable_mode())
 
 # https://docs.python.org/3/library/warnings.html

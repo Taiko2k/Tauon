@@ -12,6 +12,7 @@ Changelog
  - Added copy option to track details widget
  - Added embed art for transcode
  - Switched to native exe launcher
+ - Remote control commands now use a private local socket instead of port 7813
  - Redesigned settings box
  - Redesigned smart playlist editor
  - Improved edit mode UI

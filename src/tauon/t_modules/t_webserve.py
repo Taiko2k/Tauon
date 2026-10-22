@@ -1222,66 +1222,39 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 		discovery_publisher.stop()
 
 
-def controller(tauon: Tauon) -> None:
-	import base64
+def remote_command_handler(tauon: Tauon) -> Callable[[str, str | None], bool]:
+	"""Handler for commands the native launcher forwards from other invocations"""
 
-	class Server(BaseHTTPRequestHandler):
-		def log_message(self, format, *args) -> None:
-			logging.info(format % args)
+	def reload_theme() -> None:
+		tauon.gui.reload_theme = True
+		tauon.gui.request_frame()
 
-		def do_GET(self) -> None:
-			path = self.path
-			if not path.startswith("/open/"):
-				path = path.rstrip("/")
+	commands: dict[str, Callable[[], object]] = {
+		"raise": tauon.request_raise,
+		"reloadtheme": reload_theme,
+		"playpause": tauon.pctl.play_pause,
+		"play": tauon.pctl.play,
+		"pause": tauon.pctl.pause_only,
+		"stop": tauon.pctl.stop,
+		"next": tauon.pctl.advance,
+		"previous": tauon.pctl.back,
+		"shuffle": tauon.toggle_random,
+		"repeat": tauon.toggle_repeat,
+	}
 
-			if path == "/raise":
-				tauon.request_raise()
-			if path == "/reloadtheme":
-				tauon.gui.reload_theme = True
-				tauon.gui.request_frame()
-			if path == "/playpause":
-				tauon.pctl.play_pause()
-			if path == "/play":
-				tauon.pctl.play()
-			if path == "/pause":
-				tauon.pctl.pause_only()
-			if path == "/stop":
-				tauon.pctl.stop()
-			if path == "/next":
-				tauon.pctl.advance()
-			if path == "/previous":
-				tauon.pctl.back()
-			if path == "/shuffle":
-				tauon.toggle_random()
-			if path == "/repeat":
-				tauon.toggle_repeat()
-			if path.startswith("/open/"):
-				rest = path[6:]
-				try:
-					path = base64.urlsafe_b64decode(rest.encode()).decode()
-				except Exception:
-					logging.exception("Invalid /open/ payload")
-					self.send_response(400)
-					self.end_headers()
-					return
-				tauon.open_uri(path)
-
-			self.send_response(200)
-			self.end_headers()
-			tauon.wake()
-
-	logging.info("Start controller server")
-	try:
-		httpd = HTTPServer(("127.0.0.1", 7813), Server)
-		httpd.serve_forever()
-		httpd.server_close()
-	except OSError as e:
-		if str(e) == "[Errno 98] Address already in use":
-			logging.error("Not starting controller webserver, is another Tauon instance already running?")
+	def handle(command: str, argument: str | None) -> bool:
+		logging.info(f"Remote command: {command}")
+		if command == "open" and argument:
+			tauon.open_uri(argument)
+		elif command in commands and argument is None:
+			commands[command]()
 		else:
-			logging.exception("Unknown OSError starting controller server!")
-	except Exception:
-		logging.exception("Failed starting controller server!")
+			logging.warning(f"Ignoring unknown remote command: {command}")
+			return False
+		tauon.wake()
+		return True
+
+	return handle
 
 
 def authserve(tauon: Tauon) -> None:
