@@ -2266,6 +2266,9 @@ def player4(tauon: Tauon) -> None:
 						)
 						while aud.get_result() == 0:
 							time.sleep(0.01)
+						# If the player was paused, keep the audio paused
+						if tauon.player4_state == PlayerState.PAUSED:
+							aud.pause()
 					else:
 						aud.seek(int((pctl.new_time + pctl.start_time_target) * 1000), prefs.pa_fast_seek)
 
