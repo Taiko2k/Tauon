@@ -41,6 +41,7 @@
 #if !defined(_WIN32)
 #include <dlfcn.h>
 #include <fcntl.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #endif
 
@@ -369,10 +370,19 @@ std::vector<std::string> arguments_after_program(int argc, char** argv) {
 }
 
 #if !defined(_WIN32) && !defined(__APPLE__)
+bool owned_by_current_user(const std::filesystem::path& path) {
+	struct stat info {};
+	return stat(path.c_str(), &info) == 0 && info.st_uid == geteuid();
+}
+
 std::filesystem::path source_checkout_root(const std::filesystem::path& executable) {
 	std::error_code error;
 	for (std::filesystem::path directory = executable.parent_path(); !directory.empty(); directory = directory.parent_path()) {
-		if (std::filesystem::is_regular_file(directory / "pyproject.toml", error)
+		// Someone else's directory, such as /tmp, could plant a fake checkout
+		// and so choose where our user data (and its pickles) is read from
+		if (owned_by_current_user(directory)
+			&& owned_by_current_user(directory / "pyproject.toml")
+			&& std::filesystem::is_regular_file(directory / "pyproject.toml", error)
 			&& std::filesystem::is_regular_file(directory / "src" / "tauon" / "__main__.py", error)) {
 			return directory;
 		}
@@ -510,7 +520,7 @@ InstanceLockResult acquire_instance_lock(NativeState& state, const char* executa
 	}
 
 	const std::filesystem::path lock_path = state.user_data_directory / "program.pid";
-	state.instance_lock_fd = open(lock_path.c_str(), O_WRONLY | O_CREAT, 0600);
+	state.instance_lock_fd = open(lock_path.c_str(), O_WRONLY | O_CREAT | O_NOFOLLOW | O_CLOEXEC, 0600);
 	if (state.instance_lock_fd == -1) {
 		std::cerr << "Tauon: unable to open instance lock " << lock_path << ": " << std::strerror(errno) << '\n';
 		return InstanceLockResult::Unavailable;
@@ -1068,6 +1078,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		return false;
 	}
 
+	set_launcher_owned(state.window.get(), state.renderer.get());
 	SDL_SetRenderDrawBlendMode(state.renderer.get(), SDL_BLENDMODE_BLEND);
 	SDL_SetRenderVSync(state.renderer.get(), 1);
 	if (!state.hidden) {
@@ -1101,6 +1112,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 }
 
 void shutdown_native_sdl(NativeState& state) {
+	set_launcher_owned(nullptr, nullptr);
 #if defined(_WIN32)
 	// SDL and GTK can have background DLL callbacks still in flight while the
 	// process is shutting down. Destroying the SDL objects here can race those
@@ -1143,7 +1155,7 @@ PyObject* bridge_window_address(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's native window is unavailable");
 		return nullptr;
 	}
-	return PyCapsule_New(g_state->window.get(), "tauon_native.Window", nullptr);
+	return native_window_handle(g_state->window.get());
 }
 
 PyObject* bridge_renderer_address(PyObject*, PyObject*) {
@@ -1151,7 +1163,7 @@ PyObject* bridge_renderer_address(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's native renderer is unavailable");
 		return nullptr;
 	}
-	return PyCapsule_New(g_state->renderer.get(), "tauon_native.Renderer", nullptr);
+	return native_renderer_handle(g_state->renderer.get());
 }
 
 PyObject* bridge_window_size(PyObject*, PyObject*) {
@@ -1477,11 +1489,13 @@ PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
 	std::vector<SDL_MessageBoxButtonData> buttons;
 	PyObject* sequence = nullptr;
 	if (labels != nullptr && labels != Py_None) {
-		sequence = PySequence_Fast(labels, "message box buttons must be a sequence of strings");
+		// A tuple, so the label strings outlive the dialog even if another
+		// thread changes the caller's list while the GIL is released
+		sequence = PySequence_Tuple(labels);
 		if (sequence == nullptr) return nullptr;
-		const Py_ssize_t count = PySequence_Fast_GET_SIZE(sequence);
+		const Py_ssize_t count = PyTuple_GET_SIZE(sequence);
 		for (Py_ssize_t index = 0; index < count; ++index) {
-			const char* text = PyUnicode_AsUTF8(PySequence_Fast_GET_ITEM(sequence, index));
+			const char* text = PyUnicode_AsUTF8(PyTuple_GET_ITEM(sequence, index));
 			if (text == nullptr) {
 				Py_DECREF(sequence);
 				return nullptr;
@@ -1882,6 +1896,9 @@ std::string utf8_from_wide(const wchar_t* value) {
 }
 
 int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int) {
+	// Drop the working directory from the DLL search order. Opening a file
+	// from Explorer starts us in its folder, which may hold planted DLLs.
+	SetDllDirectoryW(L"");
 	int argc = 0;
 	LPWSTR* wide_argv = CommandLineToArgvW(GetCommandLineW(), &argc);
 	if (wide_argv == nullptr) {

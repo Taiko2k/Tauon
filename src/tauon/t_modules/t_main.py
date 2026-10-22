@@ -7517,6 +7517,10 @@ class Tauon:
 		self.dl_use: int                          = 0
 		self.latest_db_version: int                    = bag.latest_db_version
 		self.g_tc_notify: Notify.Notification | None                          = None
+		# libnotify aborts on calls after Notify.uninit(), which shutdown can
+		# reach while a notification thread is still waiting to show or close
+		self.notify_lock: threading.Lock                = threading.Lock()
+		self.notify_uninitialised: bool                 = False
 		# Setting various timers
 		self.track_box_path_tool_timer: Timer    = Timer()
 		self.message_box_min_timer: Timer        = Timer()
@@ -19659,13 +19663,17 @@ class Tauon:
 
 	def notify_song_fire(self, notification, delay: float, id) -> None:
 		time.sleep(delay)
-		notification.show()
+		with self.notify_lock:
+			if self.notify_uninitialised:
+				return
+			notification.show()
 		if id is None:
 			return
 
 		time.sleep(8)
-		if id == self.gui.notify_main_id:
-			notification.close()
+		with self.notify_lock:
+			if id == self.gui.notify_main_id and not self.notify_uninitialised:
+				notification.close()
 
 	#def get_backend_time(self, path):
 	#	self.pctl.time_to_get = path
@@ -65681,12 +65689,20 @@ def main(holder: Holder) -> None:
 			except Exception:
 				logging.exception("Failed to stop macOS Now Playing helper")
 	elif tauon.de_notify_support:
-		try:
-			tauon.song_notification.close()
-			tauon.g_tc_notify.close()
-			Notify.uninit()
-		except Exception:
-			logging.exception("uninit notification error")
+		# A notification call stuck on D-Bus shouldn't hold up exit; skipping
+		# uninit is harmless as the process is ending anyway
+		if tauon.notify_lock.acquire(timeout=2):
+			try:
+				tauon.notify_uninitialised = True
+				tauon.song_notification.close()
+				tauon.g_tc_notify.close()
+				Notify.uninit()
+			except Exception:
+				logging.exception("uninit notification error")
+			finally:
+				tauon.notify_lock.release()
+		else:
+			logging.warning("Skipping notification cleanup, a notification call is still running")
 
 	if tauon.instance_lock is not None:
 		tauon.instance_lock.close()

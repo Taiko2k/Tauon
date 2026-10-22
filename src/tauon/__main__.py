@@ -158,7 +158,8 @@ elif dev_mode:
 	logging.warning("Dev mode, ignoring single instancing")
 elif sys.platform != "win32":
 	pid_file = user_directory / "program.pid"
-	fp = pid_file.open("w")
+	# Don't follow a planted symlink, or truncate before holding the lock
+	fp = os.fdopen(os.open(pid_file, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW | os.O_CLOEXEC, 0o600), "w")
 	try:
 		fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
 	except OSError:

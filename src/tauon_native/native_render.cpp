@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <cstdint>
+#include <cstring>
 #include <unordered_map>
 #include <vector>
 
@@ -12,22 +13,19 @@ namespace {
 
 PyObject* hit_test_callback = nullptr;
 std::unordered_map<SDL_TrayEntry*, PyObject*> tray_callbacks;
+SDL_Window* launcher_window = nullptr;
+SDL_Renderer* launcher_renderer = nullptr;
 
-void python_tray_callback(void* userdata, SDL_TrayEntry* entry) {
-	PyObject* callback = static_cast<PyObject*>(userdata);
-	if (callback == nullptr) return;
-	const PyGILState_STATE gil_state = PyGILState_Ensure();
-	PyObject* entry_handle = PyCapsule_New(entry, "tauon_native.TrayEntry", nullptr);
-	PyObject* result = entry_handle != nullptr
-		? PyObject_CallFunctionObjArgs(callback, Py_None, entry_handle, nullptr)
-		: nullptr;
-	Py_XDECREF(entry_handle);
-	if (result == nullptr) {
-		PyErr_WriteUnraisable(callback);
-	} else {
-		Py_DECREF(result);
+// One capsule per live native object, so destroying through any handle
+// invalidates every reference Python holds. Entries are borrowed.
+std::unordered_map<void*, PyObject*> live_handles;
+constexpr const char* kDestroyedName = "tauon_native.Destroyed";
+
+void forget_handle(PyObject* capsule) {
+	const auto existing = live_handles.find(PyCapsule_GetPointer(capsule, PyCapsule_GetName(capsule)));
+	if (existing != live_handles.end() && existing->second == capsule) {
+		live_handles.erase(existing);
 	}
-	PyGILState_Release(gil_state);
 }
 
 SDL_Surface* surface_from_rgba(int width, int height, Py_buffer& pixels) {
@@ -87,13 +85,57 @@ PyObject* pointer_to_python(T* pointer) {
 	if (pointer == nullptr) {
 		Py_RETURN_NONE;
 	}
-	return PyCapsule_New(pointer, capsule_name<T>(), nullptr);
+	const auto existing = live_handles.find(pointer);
+	if (existing != live_handles.end()) {
+		if (std::strcmp(PyCapsule_GetName(existing->second), capsule_name<T>()) == 0) {
+			return Py_NewRef(existing->second);
+		}
+		// SDL freed the old object implicitly and reused its address
+		live_handles.erase(existing);
+	}
+	PyObject* capsule = PyCapsule_New(pointer, capsule_name<T>(), forget_handle);
+	if (capsule != nullptr) {
+		live_handles[pointer] = capsule;
+	}
+	return capsule;
 }
 
 PyObject* invalidate_handle(PyObject* value) {
-	if (value != Py_None && PyCapsule_SetName(value, "tauon_native.Destroyed") != 0) return nullptr;
+	if (value == Py_None) Py_RETURN_NONE;
+	forget_handle(value);
+	if (PyCapsule_SetName(value, kDestroyedName) != 0) return nullptr;
 	Py_RETURN_NONE;
 }
+
+// Handles to objects SDL frees along with their owner
+void invalidate_handles_named(const char* name) {
+	for (auto entry = live_handles.begin(); entry != live_handles.end();) {
+		if (std::strcmp(PyCapsule_GetName(entry->second), name) == 0) {
+			PyCapsule_SetName(entry->second, kDestroyedName);
+			entry = live_handles.erase(entry);
+		} else {
+			++entry;
+		}
+	}
+}
+
+void python_tray_callback(void* userdata, SDL_TrayEntry* entry) {
+	PyObject* callback = static_cast<PyObject*>(userdata);
+	if (callback == nullptr) return;
+	const PyGILState_STATE gil_state = PyGILState_Ensure();
+	PyObject* entry_handle = pointer_to_python(entry);
+	PyObject* result = entry_handle != nullptr
+		? PyObject_CallFunctionObjArgs(callback, Py_None, entry_handle, nullptr)
+		: nullptr;
+	Py_XDECREF(entry_handle);
+	if (result == nullptr) {
+		PyErr_WriteUnraisable(callback);
+	} else {
+		Py_DECREF(result);
+	}
+	PyGILState_Release(gil_state);
+}
+
 
 template<typename Rectangle, typename Convert>
 bool parse_rectangle(PyObject* value, Rectangle& rectangle, Convert convert) {
@@ -380,7 +422,15 @@ PyObject* native_update_texture(PyObject*, PyObject* args) {
 		return nullptr;
 	}
 	// SDL reads every row of the region from the buffer, so a short buffer
-	// would upload whatever memory follows it
+	// would upload whatever memory follows it. A negative pitch would read
+	// before it, and planar formats need a per-plane size check.
+	const auto format = static_cast<SDL_PixelFormat>(SDL_GetNumberProperty(
+		SDL_GetTextureProperties(texture), SDL_PROP_TEXTURE_FORMAT_NUMBER, SDL_PIXELFORMAT_UNKNOWN));
+	if (pitch < 0 || SDL_ISPIXELFORMAT_FOURCC(format)) {
+		PyBuffer_Release(&pixels);
+		PyErr_SetString(PyExc_ValueError, "texture updates need a non-negative pitch and a packed pixel format");
+		return nullptr;
+	}
 	int width = rectangle.w;
 	int height = rectangle.h;
 	if (rectangle_pointer == nullptr) {
@@ -390,9 +440,7 @@ PyObject* native_update_texture(PyObject*, PyObject* args) {
 		width = static_cast<int>(texture_width);
 		height = static_cast<int>(texture_height);
 	}
-	const auto format = static_cast<SDL_PixelFormat>(SDL_GetNumberProperty(
-		SDL_GetTextureProperties(texture), SDL_PROP_TEXTURE_FORMAT_NUMBER, SDL_PIXELFORMAT_UNKNOWN));
-	if (width > 0 && height > 0 && !SDL_ISPIXELFORMAT_FOURCC(format)) {
+	if (width > 0 && height > 0) {
 		const Py_ssize_t required = static_cast<Py_ssize_t>(height - 1) * pitch
 			+ static_cast<Py_ssize_t>(width) * SDL_BYTESPERPIXEL(format);
 		if (pixels.len < required) {
@@ -547,6 +595,10 @@ PyObject* native_create_renderer(PyObject*, PyObject* args) {
 PyObject* native_destroy_renderer(PyObject*, PyObject* value) {
 	SDL_Renderer* renderer = pointer_from_python<SDL_Renderer>(value, "renderer", true);
 	if (PyErr_Occurred()) return nullptr;
+	if (renderer != nullptr && renderer == launcher_renderer) {
+		PyErr_SetString(PyExc_ValueError, "the main renderer belongs to the launcher");
+		return nullptr;
+	}
 	TAUON_WITHOUT_GIL(SDL_DestroyRenderer(renderer));
 	return invalidate_handle(value);
 }
@@ -554,6 +606,10 @@ PyObject* native_destroy_renderer(PyObject*, PyObject* value) {
 PyObject* native_destroy_window(PyObject*, PyObject* value) {
 	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window", true);
 	if (PyErr_Occurred()) return nullptr;
+	if (window != nullptr && window == launcher_window) {
+		PyErr_SetString(PyExc_ValueError, "the main window belongs to the launcher");
+		return nullptr;
+	}
 	TAUON_WITHOUT_GIL(SDL_DestroyWindow(window));
 	return invalidate_handle(value);
 }
@@ -690,6 +746,15 @@ PyObject* native_create_texture_from_cairo(PyObject*, PyObject* args) {
 	if (renderer == nullptr) {
 		PyBuffer_Release(&pixels);
 		return nullptr;
+	}
+	// Non-positive sizes fall through to SDL, which rejects them
+	if (width > 0 && height > 0) {
+		const Py_ssize_t row_size = static_cast<Py_ssize_t>(width) * 4;
+		if (pitch < row_size || pixels.len < static_cast<Py_ssize_t>(height - 1) * pitch + row_size) {
+			PyBuffer_Release(&pixels);
+			PyErr_SetString(PyExc_ValueError, "pixel buffer is smaller than its pitch, width and height need");
+			return nullptr;
+		}
 	}
 	const SDL_PixelFormat format = alpha ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_XRGB8888;
 	SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, format, pixels.buf, pitch);
@@ -859,6 +924,11 @@ PyObject* native_create_color_cursor(PyObject*, PyObject* args) {
 	int hot_x = 0;
 	int hot_y = 0;
 	if (!PyArg_ParseTuple(args, "iiy*ii", &width, &height, &pixels, &hot_x, &hot_y)) return nullptr;
+	if (width > 0 && height > 0 && pixels.len < static_cast<Py_ssize_t>(width) * height * 4) {
+		PyBuffer_Release(&pixels);
+		PyErr_SetString(PyExc_ValueError, "ARGB buffer is smaller than width * height * 4");
+		return nullptr;
+	}
 	SDL_Surface* surface = SDL_CreateSurfaceFrom(width, height, SDL_PIXELFORMAT_ARGB8888, pixels.buf, width * 4);
 	SDL_Cursor* cursor = surface != nullptr ? SDL_CreateColorCursor(surface, hot_x, hot_y) : nullptr;
 	SDL_DestroySurface(surface);
@@ -1005,6 +1075,8 @@ PyObject* native_destroy_tray(PyObject*, PyObject* value) {
 	TAUON_WITHOUT_GIL(SDL_DestroyTray(tray));
 	for (auto& item : tray_callbacks) Py_DECREF(item.second);
 	tray_callbacks.clear();
+	invalidate_handles_named(capsule_name<SDL_TrayMenu>());
+	invalidate_handles_named(capsule_name<SDL_TrayEntry>());
 	return invalidate_handle(value);
 }
 
@@ -1288,6 +1360,19 @@ PyMethodDef native_render_methods[] = {
 };
 
 }  // namespace
+
+PyObject* native_window_handle(SDL_Window* window) {
+	return pointer_to_python(window);
+}
+
+PyObject* native_renderer_handle(SDL_Renderer* renderer) {
+	return pointer_to_python(renderer);
+}
+
+void set_launcher_owned(SDL_Window* window, SDL_Renderer* renderer) {
+	launcher_window = window;
+	launcher_renderer = renderer;
+}
 
 int add_native_render_methods(PyObject* module) {
 	return PyModule_AddFunctions(module, native_render_methods);

@@ -70,7 +70,9 @@ migrated.
 ## Migration boundary
 
 SDL resources cross the Python boundary as opaque, type-checked capsules; raw
-pointer integers are not part of the Python API. The one exception is
+pointer integers are not part of the Python API. Each live object has a single
+capsule, so destroying it through any handle invalidates them all, and the
+launcher's main window and renderer refuse to be destroyed from Python. The one exception is
 `get_window_pointer_property()`, which hands platform window handles to the
 compositor integrations (background blur) that must call platform APIs.
 
