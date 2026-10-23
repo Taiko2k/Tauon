@@ -405,6 +405,9 @@ jobs:
           noto_cjk=https://github.com/notofonts/noto-cjk/raw/f8d157532fbfaeda587e826d4cd5b21a49186f7c/Sans/OTF/Japanese
           fetch lrclib-solver.exe "${extras}/lrclib-solver-windows-x64.exe" 95c874e516bffaeac6d5f17260c088938e411a0b1dcf90699c77cec2adf2a7a4
           fetch TauonSMTC.dll     "${extras}/TauonSMTC.dll"                 98a19392d17c3da3ae0e04b99d5d1a1ea54d377a762d6b8bde3d0c6154e254dd
+          # bin/ffmpeg.exe from GyanD's static ffmpeg-8.0.1-essentials_build.zip
+          fetch ffmpeg.exe        "${extras}/ffmpeg-8.0.1-windows-x64.exe"  5af82a0d4fe2b9eae211b967332ea97edfc51c6b328ca35b827e73eac560dc0d # 99MB
+          fetch ffmpeg-LICENSE.txt "${extras}/ffmpeg-8.0.1-LICENSE.txt"     8ceb4b9ee5adedde47b31e975c1d90c73ad27b6b165a1dcd80c7c545eb65b903 # GPLv3, from the same zip
           mkdir fonts
           fetch fonts/NotoSans-ExtraCondensed.ttf     "${noto}/NotoSans-ExtraCondensed.ttf"     378c95db3ac074e5ffdb5491cfe4c4b5eadb431b71281164f974a3d4e70ac3ba # 800KB
           fetch fonts/NotoSans-ExtraCondensedBold.ttf "${noto}/NotoSans-ExtraCondensedBold.ttf" cc63d525eee76665becc0c8bdebb4b4c6e9e4764215f9949576ea81062ea1f79 # 800KB

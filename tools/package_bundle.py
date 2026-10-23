@@ -226,6 +226,9 @@ def copy_application_extras(tauon_package: Path, platform_name: str) -> None:
 
 	if platform_name == "windows":
 		copy_optional_file(REPO_ROOT / "TauonSMTC.dll", tauon_package / "lib" / "TauonSMTC.dll")
+		# Static build, so it needs no DLLs from the build environment
+		copy_optional_file(REPO_ROOT / "ffmpeg.exe", tauon_package / "ffmpeg.exe", executable=True)
+		copy_optional_file(REPO_ROOT / "ffmpeg-LICENSE.txt", tauon_package / "ffmpeg-LICENSE.txt")
 	elif platform_name == "macos":
 		copy_tree(
 			REPO_ROOT / "src" / "nowplaying" / "build" / "TauonNowPlaying.app",

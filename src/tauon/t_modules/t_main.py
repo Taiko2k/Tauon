@@ -22575,6 +22575,11 @@ class Tauon:
 		if self.windows and path.is_file():
 			return path
 
+		# Bundled with Windows builds
+		path = self.install_directory / "ffmpeg.exe"
+		if self.windows and path.is_file():
+			return path
+
 		# macOS
 		path = self.install_directory / "ffmpeg"
 		if path.is_file():
@@ -22592,6 +22597,11 @@ class Tauon:
 
 	def get_ffprobe(self) -> Path | None:
 		path = self.user_directory / "ffprobe.exe"
+		if self.windows and path.is_file():
+			return path
+
+		# Bundled with Windows builds
+		path = self.install_directory / "ffprobe.exe"
 		if self.windows and path.is_file():
 			return path
 
