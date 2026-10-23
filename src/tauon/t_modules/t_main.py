@@ -65152,7 +65152,8 @@ def main(holder: Holder) -> None:
 					i_x, i_y = tauon.input_sdl.mouse()
 					gui.set_label_point = (0, 0)
 
-					w = ddt.get_text_w(gui.pl_st[gui.set_label_hold][0], 212)
+					label = _(gui.pl_st[gui.set_label_hold][0])
+					w = ddt.get_text_w(label, 212)
 					w = max(w, 45 * gui.scale)
 					ddt.rect(
 						(i_x + 25 * gui.scale, i_y + 1 * gui.scale, w + int(20 * gui.scale), int(15 * gui.scale)),
@@ -65160,7 +65161,7 @@ def main(holder: Holder) -> None:
 					)
 					ddt.text(
 						(i_x + 25 * gui.scale + w + int(20 * gui.scale) - 4 * gui.scale, i_y - 0 * gui.scale, 1),
-						gui.pl_st[gui.set_label_hold][0],
+						label,
 						ColourRGBA(30, 30, 30, 255),
 						212,
 						bg=ColourRGBA(240, 240, 240, 255),
