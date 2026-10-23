@@ -67,7 +67,7 @@ if(WIN32)
 		@ONLY
 	)
 	target_sources(tauon-native PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/tauon.rc")
-	target_link_libraries(tauon-native PRIVATE shell32 advapi32 user32)
+	target_link_libraries(tauon-native PRIVATE shell32 advapi32 user32 gdi32 ole32 uuid)
 	set_target_properties(tauon-native PROPERTIES WIN32_EXECUTABLE TRUE)
 endif()
 

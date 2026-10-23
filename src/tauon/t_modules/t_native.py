@@ -353,6 +353,11 @@ def set_window_icon(window, icon: ImageData) -> None:
 
 set_window_progress_state = tauon_native.set_window_progress_state
 set_window_progress_value = tauon_native.set_window_progress_value
+# Windows only: taskbar thumbnail toolbar buttons
+thumbbar_create = getattr(tauon_native, "thumbbar_create", None)
+thumbbar_set_buttons = getattr(tauon_native, "thumbbar_set_buttons", None)
+thumbbar_icon_size = getattr(tauon_native, "thumbbar_icon_size", None)
+thumbbar_destroy = getattr(tauon_native, "thumbbar_destroy", None)
 start_text_input = tauon_native.start_text_input
 stop_text_input = tauon_native.stop_text_input
 set_text_input_area = tauon_native.set_text_input_area

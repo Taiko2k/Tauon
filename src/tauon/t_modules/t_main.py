@@ -2404,12 +2404,16 @@ class WinTask:
 		self.tauon: Tauon = tauon
 		self.start: float = time.time()
 		self.updated_state = 0
+		self.sent_percent = -1
+		self.send_timer = Timer()
 
-	def update(self) -> None:
+	def update(self, force: bool = False) -> None:
+		"""Called every player tick; force sends immediately (seek, track change)"""
 
 		# URL streams have no known duration, so show no progress for them either
 		if self.pctl.playing_state in (PlayingState.STOPPED, PlayingState.URL_STREAM) and self.updated_state != 0:
 			self.updated_state = 0
+			self.sent_percent = -1
 			sdl3.set_window_progress_value(self.tauon.t_window, 0.0)
 			sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NONE)
 
@@ -2418,6 +2422,7 @@ class WinTask:
 			if self.pctl.playing_state == PlayingState.PLAYING:
 				if self.updated_state != 1:
 					sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_NORMAL)
+					force = True
 
 				self.updated_state = 1
 				if self.pctl.playing_length > 1.1:
@@ -2426,11 +2431,114 @@ class WinTask:
 					frac = 0.0
 
 				frac = min(max(frac, 0.0), 1.0)
-				sdl3.set_window_progress_value(self.tauon.t_window, frac)
+				percent = int(frac * 100)
+				# Each update is a message to Explorer; at the player's tick rate it freezes the Windows 11 taskbar
+				if force or (percent != self.sent_percent and self.send_timer.get() >= 1):
+					self.sent_percent = percent
+					self.send_timer.set()
+					sdl3.set_window_progress_value(self.tauon.t_window, frac)
 
 			elif self.pctl.playing_state == PlayingState.PAUSED and self.updated_state != 2:
 				self.updated_state = 2
 				sdl3.set_window_progress_state(self.tauon.t_window, sdl3.SDL_PROGRESS_STATE_PAUSED)
+
+
+def draw_thumbbar_icon(kind: str, size: int) -> bytes:
+	"""White media glyph as RGBA bytes, drawn at 4x and scaled down for smooth edges"""
+	big = size * 4
+	image = Image.new("RGBA", (big, big), (0, 0, 0, 0))
+	draw = ImageDraw.Draw(image)
+
+	def box(x0: float, y0: float, x1: float, y1: float) -> None:
+		draw.rectangle((x0 * big, y0 * big, x1 * big, y1 * big), fill=(255, 255, 255, 255))
+
+	def triangle(*points: tuple[float, float]) -> None:
+		draw.polygon([(x * big, y * big) for x, y in points], fill=(255, 255, 255, 255))
+
+	if kind == "play":
+		triangle((0.28, 0.18), (0.28, 0.82), (0.82, 0.5))
+	elif kind == "pause":
+		box(0.24, 0.2, 0.42, 0.8)
+		box(0.58, 0.2, 0.76, 0.8)
+	elif kind == "next":
+		triangle((0.2, 0.2), (0.2, 0.8), (0.64, 0.5))
+		box(0.66, 0.2, 0.8, 0.8)
+	elif kind == "previous":
+		triangle((0.8, 0.2), (0.8, 0.8), (0.36, 0.5))
+		box(0.2, 0.2, 0.34, 0.8)
+	return image.resize((size, size), Image.Resampling.LANCZOS).tobytes()
+
+
+class WinThumbBar:
+	"""Previous, Play/Pause and Next buttons under the Windows taskbar thumbnail"""
+
+	PREVIOUS = 1
+	PLAY_PAUSE = 2
+	NEXT = 3
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon: Tauon = tauon
+		self.started: bool = False
+		self.failed: bool = False
+		self.shown_playing: bool | None = None
+		self.icon_size: int = 0
+		self.icons: dict[str, bytes] = {}
+
+	def update(self) -> None:
+		"""Runs every frame on the UI thread; only calls into the taskbar when the play state changes"""
+		if not self.tauon.windows or self.failed or not self.tauon.prefs.taskbar_buttons:
+			return
+		if not self.started:
+			self.started = True
+			try:
+				self.failed = not sdl3.thumbbar_create(self.tauon.t_window, self.clicked)
+				self.icon_size = sdl3.thumbbar_icon_size(self.tauon.t_window)
+			except Exception:
+				logging.exception("Failed to set up taskbar thumbnail buttons")
+				self.failed = True
+			if self.failed:
+				logging.warning("Taskbar thumbnail buttons are unavailable")
+				return
+
+		playing = self.tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+		if playing == self.shown_playing:
+			return
+		self.shown_playing = playing
+
+		strings = self.tauon.strings
+		buttons = (
+			(self.PREVIOUS, "previous", strings.menu_previous),
+			(self.PLAY_PAUSE, "pause" if playing else "play", strings.thumb_pause if playing else strings.thumb_play),
+			(self.NEXT, "next", strings.menu_next),
+		)
+		try:
+			sdl3.thumbbar_set_buttons([
+				(button_id, self.icon_size, self.icon_size, self.icon(kind), tooltip, True)
+				for button_id, kind, tooltip in buttons
+			])
+		except Exception:
+			logging.exception("Failed to update taskbar thumbnail buttons")
+			self.failed = True
+
+	def icon(self, kind: str) -> bytes:
+		if kind not in self.icons:
+			self.icons[kind] = draw_thumbbar_icon(kind, self.icon_size)
+		return self.icons[kind]
+
+	def clicked(self, button_id: int) -> None:
+		pctl = self.tauon.pctl
+		if button_id == self.PREVIOUS:
+			pctl.back()
+		elif button_id == self.PLAY_PAUSE:
+			pctl.play_pause()
+		elif button_id == self.NEXT:
+			pctl.advance()
+		self.tauon.gui.request_frame()
+		self.tauon.wake()
+
+	def destroy(self) -> None:
+		if self.started and not self.failed:
+			sdl3.thumbbar_destroy()
 
 
 class PlayerCtl:
@@ -3298,7 +3406,7 @@ class PlayerCtl:
 		if self.prefs.art_bg or (self.gui.mode == GuiMode.MINI and self.prefs.mini_mode_mode == MiniModeMode.SLATE):
 			self.tauon.thread_manager.ready("style")
 
-		self.windows_progress.update()
+		self.windows_progress.update(force=True)
 
 	def get_url(self, track_object: TrackClass) -> tuple[list[str] | str | None, dict[str, str] | None]:
 		if track_object.file_ext == "TIDAL":
@@ -4024,7 +4132,7 @@ class PlayerCtl:
 			self.playerCommandReady = True
 			self.playing_time = self.new_time
 
-			self.windows_progress.update()
+			self.windows_progress.update(force=True)
 
 			if self.mpris is not None:
 				self.mpris.seek_do(self.playing_time)
@@ -5910,6 +6018,8 @@ class Strings:
 		self.menu_next = _("Next Track")
 		self.menu_previous = _("Previous Track")
 		self.menu_quit = _("Quit")
+		self.thumb_play = _("Play")
+		self.thumb_pause = _("Pause")
 
 class Chunker:
 
@@ -7830,6 +7940,7 @@ class Tauon:
 		self._tray_playpause_cb = None
 		self._tray_next_cb = None
 		self._tray_prev_cb = None
+		self.thumbbar: WinThumbBar = WinThumbBar(self)
 
 	def tray_quit_callback(self, userdata, entry) -> None:
 		"""Called when the 'Quit' tray entry is clicked."""
@@ -53650,6 +53761,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
 	cf.update_value("taskbar-status", prefs.taskbar_progress)
+	cf.update_value("taskbar-buttons", prefs.taskbar_buttons)
 
 	cf.update_value("discogs-personal-access-token", prefs.discogs_pat)
 	cf.update_value("listenbrainz-token", prefs.lb_token)
@@ -54102,6 +54214,8 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.taskbar_progress = cf.sync_add("bool", "taskbar-status", prefs.taskbar_progress,
 		"When enabled, show playback progress on taskbar (supported DE only)")
+	prefs.taskbar_buttons = cf.sync_add("bool", "taskbar-buttons", prefs.taskbar_buttons,
+		"When enabled, show previous, play/pause and next buttons in the taskbar thumbnail preview (Windows only)")
 
 	cf.br()
 	cf.add_text("[tokens]")
@@ -60628,6 +60742,7 @@ def main(holder: Holder) -> None:
 		loop_pace_timer.set()
 
 		tauon.update_sdl_tray()
+		tauon.thumbbar.update()
 		# bm.get('main')
 		# time.sleep(100)
 
@@ -65681,6 +65796,7 @@ def main(holder: Holder) -> None:
 			logging.exception("Failed to close radio server")
 
 	if sys.platform == "win32":
+		tauon.thumbbar.destroy()
 		if pctl.smtc:
 			pctl.sm.unload()
 	elif sys.platform == "darwin":

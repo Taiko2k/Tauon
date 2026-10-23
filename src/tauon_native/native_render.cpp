@@ -4,8 +4,18 @@
 
 #include <cstdint>
 #include <cstring>
+#include <iterator>
+#include <string>
 #include <unordered_map>
 #include <vector>
+
+#if defined(_WIN32)
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <windows.h>
+#include <shobjidl.h>
+#endif
 
 #include "native_render.h"
 
@@ -1115,6 +1125,252 @@ PyObject* native_set_window_progress_value(PyObject*, PyObject* args) {
 	return sdl_result(SDL_SetWindowProgressValue(window, value));
 }
 
+#if defined(_WIN32)
+// Taskbar thumbnail toolbar: buttons under the window's taskbar preview.
+// Windows only allows adding them once per taskbar button, so the button set
+// is kept here and re-added whenever Explorer recreates the taskbar button.
+struct ThumbButton {
+	UINT id = 0;
+	HICON icon = nullptr;
+	std::wstring tooltip;
+	bool enabled = true;
+};
+
+struct ThumbBar {
+	HWND hwnd = nullptr;
+	WNDPROC previous_proc = nullptr;
+	ITaskbarList3* taskbar = nullptr;
+	UINT button_created_message = 0;
+	bool added = false;
+	bool com_initialized = false;
+	PyObject* callback = nullptr;
+	std::vector<ThumbButton> buttons;
+};
+
+ThumbBar thumbbar;
+
+void destroy_thumb_icons(std::vector<ThumbButton>& buttons) {
+	for (ThumbButton& button : buttons) {
+		if (button.icon != nullptr) DestroyIcon(button.icon);
+		button.icon = nullptr;
+	}
+}
+
+HICON icon_from_rgba(int width, int height, const std::uint8_t* rgba) {
+	BITMAPV5HEADER header{};
+	header.bV5Size = sizeof(header);
+	header.bV5Width = width;
+	header.bV5Height = -height;  // top-down
+	header.bV5Planes = 1;
+	header.bV5BitCount = 32;
+	header.bV5Compression = BI_BITFIELDS;
+	header.bV5RedMask = 0x00FF0000;
+	header.bV5GreenMask = 0x0000FF00;
+	header.bV5BlueMask = 0x000000FF;
+	header.bV5AlphaMask = 0xFF000000;
+	void* bits = nullptr;
+	HDC screen = GetDC(nullptr);
+	HBITMAP color = CreateDIBSection(screen, reinterpret_cast<BITMAPINFO*>(&header), DIB_RGB_COLORS, &bits, nullptr, 0);
+	ReleaseDC(nullptr, screen);
+	if (color == nullptr) return nullptr;
+	auto* out = static_cast<std::uint8_t*>(bits);
+	for (int i = 0; i < width * height; ++i) {
+		out[i * 4 + 0] = rgba[i * 4 + 2];
+		out[i * 4 + 1] = rgba[i * 4 + 1];
+		out[i * 4 + 2] = rgba[i * 4 + 0];
+		out[i * 4 + 3] = rgba[i * 4 + 3];
+	}
+	HBITMAP mask = CreateBitmap(width, height, 1, 1, nullptr);
+	ICONINFO info{};
+	info.fIcon = TRUE;
+	info.hbmMask = mask;
+	info.hbmColor = color;
+	HICON icon = mask != nullptr ? CreateIconIndirect(&info) : nullptr;
+	DeleteObject(color);
+	if (mask != nullptr) DeleteObject(mask);
+	return icon;
+}
+
+// Adds the buttons the first time, updates them after that
+void thumbbar_apply() {
+	if (thumbbar.taskbar == nullptr || thumbbar.buttons.empty()) return;
+	std::vector<THUMBBUTTON> native(thumbbar.buttons.size());
+	for (std::size_t i = 0; i < thumbbar.buttons.size(); ++i) {
+		const ThumbButton& button = thumbbar.buttons[i];
+		THUMBBUTTON& item = native[i];
+		item.dwMask = static_cast<THUMBBUTTONMASK>(THB_ICON | THB_TOOLTIP | THB_FLAGS);
+		item.iId = button.id;
+		item.hIcon = button.icon;
+		wcsncpy(item.szTip, button.tooltip.c_str(), std::size(item.szTip) - 1);
+		item.dwFlags = button.enabled ? THBF_ENABLED : THBF_DISABLED;
+	}
+	const UINT count = static_cast<UINT>(native.size());
+	if (!thumbbar.added) {
+		// Fails until the taskbar button exists; TaskbarButtonCreated retries
+		thumbbar.added = SUCCEEDED(thumbbar.taskbar->ThumbBarAddButtons(thumbbar.hwnd, count, native.data()));
+	} else {
+		thumbbar.taskbar->ThumbBarUpdateButtons(thumbbar.hwnd, count, native.data());
+	}
+}
+
+LRESULT CALLBACK thumbbar_window_proc(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam) {
+	if (thumbbar.button_created_message != 0 && message == thumbbar.button_created_message) {
+		// A new taskbar button (first show, or Explorer restarted) has no thumbnail buttons
+		const LRESULT result = CallWindowProcW(thumbbar.previous_proc, hwnd, message, wparam, lparam);
+		thumbbar.added = false;
+		thumbbar_apply();
+		return result;
+	}
+	if (message == WM_COMMAND && HIWORD(wparam) == THBN_CLICKED && thumbbar.callback != nullptr) {
+		const PyGILState_STATE gil_state = PyGILState_Ensure();
+		PyObject* result = PyObject_CallFunction(thumbbar.callback, "i", static_cast<int>(LOWORD(wparam)));
+		if (result == nullptr) {
+			PyErr_WriteUnraisable(thumbbar.callback);
+		} else {
+			Py_DECREF(result);
+		}
+		PyGILState_Release(gil_state);
+		return 0;
+	}
+	return CallWindowProcW(thumbbar.previous_proc, hwnd, message, wparam, lparam);
+}
+
+HWND window_hwnd(SDL_Window* window) {
+	return static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+}
+
+std::wstring wide_from_utf8(const char* text) {
+	const int length = MultiByteToWideChar(CP_UTF8, 0, text, -1, nullptr, 0);
+	if (length <= 1) return {};
+	std::wstring result(static_cast<std::size_t>(length - 1), L'\0');
+	MultiByteToWideChar(CP_UTF8, 0, text, -1, result.data(), length);
+	return result;
+}
+
+void thumbbar_release() {
+	if (thumbbar.hwnd != nullptr && thumbbar.previous_proc != nullptr
+		&& GetWindowLongPtrW(thumbbar.hwnd, GWLP_WNDPROC) == reinterpret_cast<LONG_PTR>(thumbbar_window_proc)) {
+		SetWindowLongPtrW(thumbbar.hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(thumbbar.previous_proc));
+	}
+	if (thumbbar.taskbar != nullptr) thumbbar.taskbar->Release();
+	destroy_thumb_icons(thumbbar.buttons);
+	Py_CLEAR(thumbbar.callback);
+	if (thumbbar.com_initialized) CoUninitialize();
+	thumbbar = ThumbBar{};
+}
+
+// thumbbar_create(window, callback) -> bool; callback(button_id) runs on the main thread
+PyObject* native_thumbbar_create(PyObject*, PyObject* args) {
+	PyObject* window_value = nullptr;
+	PyObject* callback = nullptr;
+	if (!PyArg_ParseTuple(args, "OO", &window_value, &callback)) return nullptr;
+	SDL_Window* window = pointer_from_python<SDL_Window>(window_value, "window");
+	if (window == nullptr) return nullptr;
+	if (!PyCallable_Check(callback)) {
+		PyErr_SetString(PyExc_TypeError, "thumbbar callback must be callable");
+		return nullptr;
+	}
+	if (thumbbar.hwnd != nullptr) Py_RETURN_TRUE;
+	HWND hwnd = window_hwnd(window);
+	if (hwnd == nullptr) Py_RETURN_FALSE;
+
+	const HRESULT init = CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+	thumbbar.com_initialized = SUCCEEDED(init);
+	ITaskbarList3* taskbar = nullptr;
+	if (FAILED(CoCreateInstance(CLSID_TaskbarList, nullptr, CLSCTX_INPROC_SERVER, IID_ITaskbarList3,
+			reinterpret_cast<void**>(&taskbar))) || FAILED(taskbar->HrInit())) {
+		if (taskbar != nullptr) taskbar->Release();
+		thumbbar_release();
+		Py_RETURN_FALSE;
+	}
+	thumbbar.hwnd = hwnd;
+	thumbbar.taskbar = taskbar;
+	thumbbar.button_created_message = RegisterWindowMessageW(L"TaskbarButtonCreated");
+	// Let Explorer reach us even if Tauon runs elevated
+	ChangeWindowMessageFilterEx(hwnd, thumbbar.button_created_message, MSGFLT_ALLOW, nullptr);
+	ChangeWindowMessageFilterEx(hwnd, WM_COMMAND, MSGFLT_ALLOW, nullptr);
+	Py_INCREF(callback);
+	thumbbar.callback = callback;
+	thumbbar.previous_proc = reinterpret_cast<WNDPROC>(
+		SetWindowLongPtrW(hwnd, GWLP_WNDPROC, reinterpret_cast<LONG_PTR>(thumbbar_window_proc)));
+	if (thumbbar.previous_proc == nullptr) {
+		thumbbar_release();
+		Py_RETURN_FALSE;
+	}
+	Py_RETURN_TRUE;
+}
+
+// thumbbar_set_buttons([(id, width, height, rgba, tooltip, enabled), ...])
+// The number of buttons must stay the same after the first call.
+PyObject* native_thumbbar_set_buttons(PyObject*, PyObject* value) {
+	if (thumbbar.taskbar == nullptr) {
+		PyErr_SetString(PyExc_RuntimeError, "thumbbar_create has not succeeded");
+		return nullptr;
+	}
+	PyObject* sequence = PySequence_Fast(value, "buttons must be a sequence");
+	if (sequence == nullptr) return nullptr;
+	const Py_ssize_t count = PySequence_Fast_GET_SIZE(sequence);
+	if (count < 1 || count > 7) {
+		Py_DECREF(sequence);
+		PyErr_SetString(PyExc_ValueError, "the taskbar allows 1 to 7 thumbnail buttons");
+		return nullptr;
+	}
+	std::vector<ThumbButton> buttons;
+	for (Py_ssize_t i = 0; i < count; ++i) {
+		unsigned int id = 0;
+		int width = 0;
+		int height = 0;
+		Py_buffer pixels{};
+		const char* tooltip = nullptr;
+		int enabled = 1;
+		if (!PyArg_ParseTuple(PySequence_Fast_GET_ITEM(sequence, i), "Iiiy*sp", &id, &width, &height, &pixels, &tooltip, &enabled)) {
+			destroy_thumb_icons(buttons);
+			Py_DECREF(sequence);
+			return nullptr;
+		}
+		if (width <= 0 || height <= 0 || pixels.len < static_cast<Py_ssize_t>(width) * height * 4) {
+			PyBuffer_Release(&pixels);
+			destroy_thumb_icons(buttons);
+			Py_DECREF(sequence);
+			PyErr_SetString(PyExc_ValueError, "RGBA buffer is smaller than width * height * 4");
+			return nullptr;
+		}
+		ThumbButton button;
+		button.id = id;
+		button.icon = icon_from_rgba(width, height, static_cast<const std::uint8_t*>(pixels.buf));
+		button.tooltip = wide_from_utf8(tooltip);
+		button.enabled = enabled != 0;
+		PyBuffer_Release(&pixels);
+		buttons.push_back(std::move(button));
+	}
+	Py_DECREF(sequence);
+	if (!thumbbar.buttons.empty() && buttons.size() != thumbbar.buttons.size()) {
+		destroy_thumb_icons(buttons);
+		PyErr_SetString(PyExc_ValueError, "the number of thumbnail buttons cannot change");
+		return nullptr;
+	}
+	// The taskbar copies the icons, so the old ones can go once it has the new ones
+	std::vector<ThumbButton> old = std::move(thumbbar.buttons);
+	thumbbar.buttons = std::move(buttons);
+	thumbbar_apply();
+	destroy_thumb_icons(old);
+	return PyBool_FromLong(thumbbar.added ? 1 : 0);
+}
+
+PyObject* native_thumbbar_icon_size(PyObject*, PyObject* value) {
+	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window");
+	if (window == nullptr) return nullptr;
+	HWND hwnd = window_hwnd(window);
+	const UINT dpi = hwnd != nullptr ? GetDpiForWindow(hwnd) : 96;
+	return PyLong_FromLong(GetSystemMetricsForDpi(SM_CXSMICON, dpi != 0 ? dpi : 96));
+}
+
+PyObject* native_thumbbar_destroy(PyObject*, PyObject*) {
+	thumbbar_release();
+	Py_RETURN_NONE;
+}
+#endif
+
 PyObject* native_video_driver(PyObject*, PyObject*) {
 	const char* driver = SDL_GetCurrentVideoDriver();
 	if (driver == nullptr) Py_RETURN_NONE;
@@ -1356,6 +1612,12 @@ PyMethodDef native_render_methods[] = {
 	NATIVE_METHOD("get_render_clip_rect", native_get_render_clip_rect, METH_O),
 	NATIVE_METHOD("set_window_fullscreen_desktop_mode", native_set_window_fullscreen_desktop_mode, METH_O),
 	NATIVE_METHOD("get_window_pointer_property", native_get_window_pointer_property, METH_VARARGS),
+#if defined(_WIN32)
+	NATIVE_METHOD("thumbbar_create", native_thumbbar_create, METH_VARARGS),
+	NATIVE_METHOD("thumbbar_set_buttons", native_thumbbar_set_buttons, METH_O),
+	NATIVE_METHOD("thumbbar_icon_size", native_thumbbar_icon_size, METH_O),
+	NATIVE_METHOD("thumbbar_destroy", native_thumbbar_destroy, METH_NOARGS),
+#endif
 	{nullptr, nullptr, 0, nullptr},
 };
 

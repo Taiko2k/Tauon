@@ -492,3 +492,4 @@ class Prefs:
 	milk_favorite_presets: list[str] = field(default_factory=list)
 
 	taskbar_progress: bool = True
+	taskbar_buttons: bool = True
