@@ -444,7 +444,7 @@ int flac_got_rate = 0;
 	struct spa_hook registry_listener;
 	struct spa_hook core_listener;
 	struct pw_stream *global_stream;
-	int enum_done = 0;
+	volatile int enum_done = 0;  // 1 once the device list is in, -1 if PipeWire could not be reached
 	int pipe_set_samplerate = 48000;
 	// Layout the device negotiated for a DSD stream. `interleave` follows the
 	// SPA convention: magnitude is how many bytes of one channel are grouped,
@@ -3771,6 +3771,27 @@ int get_audio(int max_frames, float* buff) {
 		.param_changed = on_param_changed,
 	};
 
+	#define PIPE_READY_TIMEOUT_MS 5000
+
+	// The thread gave up, typically because no PipeWire server is running.
+	// Flag it so nothing waits on the device list or invokes on a dead loop.
+	static void *pipe_thread_failed(void *thread_id) {
+		pw_running = false;
+		enum_done = -1;
+		return thread_id;
+	}
+
+	// Wait for the PipeWire thread's initial device list. Returns 1 when ready.
+	static int pipe_wait_ready() {
+		for (int waited = 0; enum_done == 0 && waited < PIPE_READY_TIMEOUT_MS; waited += 10) usleep(10000);
+		return enum_done == 1;
+	}
+
+	// A blocking invoke never returns if the loop is not running
+	static int pipe_invoke(spa_invoke_func_t func) {
+		if (!pw_running) return -EPIPE;
+		return pw_loop_invoke(pw_main_loop_get_loop(loop), func, SPA_ID_INVALID, NULL, 0, true, NULL);
+	}
 
 	void *pipewire_main_loop_thread(void *thread_id) {
 
@@ -3781,7 +3802,7 @@ int get_audio(int max_frames, float* buff) {
 		loop = pw_main_loop_new(NULL /* properties */);
 		if (loop == NULL) {
 			log_msg(LOG_ERROR, "Error: Failed to create main loop");
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 		context = pw_context_new(
@@ -3790,7 +3811,7 @@ int get_audio(int max_frames, float* buff) {
 			0 /* user_data size */);
 		if (context == NULL) {
 			log_msg(LOG_ERROR, "Error: Failed to create context");
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 		core = pw_context_connect(
@@ -3799,14 +3820,14 @@ int get_audio(int max_frames, float* buff) {
 			0 /* user_data size */);
 		if (core == NULL) {
 			log_msg(LOG_ERROR, "Error: Failed to connect to PipeWire");
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 		registry = pw_core_get_registry(core, PW_VERSION_REGISTRY,
 						0 /* user_data size */);
 		if (registry == NULL) {
 			log_msg(LOG_ERROR, "Error: Failed to get registry");
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 		spa_zero(registry_listener);
@@ -3815,13 +3836,13 @@ int get_audio(int max_frames, float* buff) {
 
 		if (res < 0) {
 			log_msg(LOG_ERROR, "Error: Failed to add registry listener: %s", spa_strerror(res));
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 		res = pw_core_add_listener(core, &core_listener, &core_events, NULL);
 		if (res < 0) {
 			log_msg(LOG_ERROR, "Error: Failed to add core listener: %s", spa_strerror(res));
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 		pw_core_sync(core, PW_ID_CORE, 0);
 
@@ -3839,14 +3860,14 @@ int get_audio(int max_frames, float* buff) {
 		);
 		if (global_stream == NULL) {
 			log_msg(LOG_ERROR, "Error: Failed to create stream");
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 		//log_msg(LOG_INFO, "Run pipewire main loop...");
 		res = pw_main_loop_run(loop);
 
 		if (res < 0) {
 			log_msg(LOG_ERROR, "Error: Main loop run failed: %s", spa_strerror(res));
-			return thread_id;
+			return pipe_thread_failed(thread_id);
 		}
 
 
@@ -4026,7 +4047,7 @@ int disconnect_pulse() {
 		#endif
 
 		#ifdef PIPE
-			pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_disconnect, SPA_ID_INVALID, NULL, 0, true, NULL);
+			pipe_invoke(pipe_disconnect);
 		#endif
 
 	}
@@ -4332,6 +4353,11 @@ void connect_pulse() {
 	#endif
 
 	#ifdef PIPE
+		if (!pw_running) {
+			log_msg(LOG_ERROR, "ph: PipeWire is not available, try the PulseAudio audio stack");
+			mode = STOPPED;
+			return;
+		}
 		if (sample_rate_src > 0) pipe_set_samplerate = sample_rate_src;
 		log_msg(LOG_INFO, "SET PIPE SAMPLERATE: %d", pipe_set_samplerate);
 		sample_rate_out = pipe_set_samplerate;
@@ -4342,7 +4368,7 @@ void connect_pulse() {
 		// pipe_update used since it has additional guards in case the stream is ERROR but still connected
 		// meanwhile, pipe_connect only accepts an unconnected one
 		pre_roll_wait_for_format();
-		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+		pipe_invoke(pipe_update);
 	#endif
 
 	if (decoder_allocated == 1 && current_sample_rate > 0 &&
@@ -5183,7 +5209,7 @@ void pump_decode() {
 			pipe_apply_output_rate(sample_rate_src);
 		}
 		pre_roll_wait_for_format();
-		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+		pipe_invoke(pipe_update);
 		return;
 	}
 
@@ -5238,7 +5264,7 @@ void pump_decode() {
 		// settles on a different rate.
 		pre_roll_wait_for_format();
 		pipe_apply_output_rate(sample_rate_src);
-		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_update, SPA_ID_INVALID, NULL, 0, true, NULL);
+		pipe_invoke(pipe_update);
 	}
 	#endif
 
@@ -5602,10 +5628,8 @@ void *main_loop(void *thread_id) {
 				return thread_id;
 		}
 		log_msg(LOG_INFO, "Done Pipewire prep, wait for ready event...");
-		while (enum_done != 1) {
-			usleep(10000);
-		}
-		log_msg(LOG_INFO, "Pipewire load done.");
+		if (pipe_wait_ready()) log_msg(LOG_INFO, "Pipewire load done.");
+		else log_msg(LOG_ERROR, "PipeWire is not available, try the PulseAudio audio stack");
 	#endif
 	//int test1 = 0;
 	// Main loop ---------------------------------------------------------------
@@ -5643,7 +5667,7 @@ void *main_loop(void *thread_id) {
 					log_msg(LOG_ERROR, "Failed to restart PipeWire thread");
 				} else {
 					// Wait for new core sync
-					while (enum_done != 1) usleep(10000);
+					if (!pipe_wait_ready()) log_msg(LOG_ERROR, "PipeWire did not come back");
 				}
 				if (mode == PLAYING || mode == RAMP_DOWN) {
 					log_msg(LOG_ERROR, "Reconnecting output after PipeWire restart");
@@ -5949,7 +5973,7 @@ void *main_loop(void *thread_id) {
 	#endif
 
 	#ifdef PIPE
-		pw_loop_invoke(pw_main_loop_get_loop(loop), pipe_exit, SPA_ID_INVALID, NULL, 0, true, NULL);
+		pipe_invoke(pipe_exit);
 	#endif
 	command = NONE;
 	log_msg(LOG_INFO, "Exit PHAzOR");
@@ -5972,9 +5996,7 @@ EXPORT int scan_devices() {
 	#endif
 
 	#ifdef PIPE
-		while (enum_done != 1) {
-			usleep(10000);
-		}
+		pipe_wait_ready();
 		return pipe_devices.device_count;
 	#endif
 }
