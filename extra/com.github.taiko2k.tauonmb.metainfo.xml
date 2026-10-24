@@ -97,6 +97,21 @@
 
   <releases>
 
+    <release version="13.1.1" date="2026-10-24">
+      <description>
+        <ul>
+          <li>Added support for ARTISTS tags and settings for multi-artist separators</li>
+          <li>Bundled FFmpeg in Windows builds</li>
+          <li>Reworked Windows taskbar integration</li>
+          <li>Fixed a hang when PipeWire can't be reached</li>
+          <li>Fixed a Windows startup crash with non-ASCII user data paths</li>
+          <li>Fixed window resizing issues on Wayland and COSMIC</li>
+          <li>Fixed the tray setting</li>
+          <li>Fixed a sorting deadzone</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="13.1.0" date="2026-10-19">
       <description>
         <ul>

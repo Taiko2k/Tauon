@@ -2,6 +2,17 @@
 Changelog
 ---------
 
+### v13.1.1
+
+ - Added support for ARTISTS tags and settings for multi-artist separators
+ - Bundled FFmpeg in Windows builds
+ - Reworked Windows taskbar integration
+ - Fixed a hang when PipeWire can't be reached
+ - Fixed a Windows startup crash with non-ASCII user data paths
+ - Fixed window resizing issues on Wayland and COSMIC
+ - Fixed the tray setting
+ - Fixed a sorting deadzone
+
 ### v13.1.0
 
  - Added waveform setting to bottom bar
