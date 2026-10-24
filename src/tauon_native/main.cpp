@@ -174,6 +174,29 @@ void set_environment_variable(const char* name, const std::string& value) {
 #endif
 }
 
+// Narrow getenv on Windows uses the ANSI code page, which can't hold every path
+std::optional<std::filesystem::path> environment_path(const char* name) {
+#if defined(_WIN32)
+	const std::wstring wide_name(name, name + std::strlen(name));
+	const DWORD size = GetEnvironmentVariableW(wide_name.c_str(), nullptr, 0);
+	if (size == 0) {
+		return std::nullopt;
+	}
+	std::wstring value(size, L'\0');
+	const DWORD length = GetEnvironmentVariableW(wide_name.c_str(), value.data(), size);
+	if (length == 0 || length >= size) {
+		return std::nullopt;
+	}
+	value.resize(length);
+	return std::filesystem::path(value);
+#else
+	if (const char* value = std::getenv(name)) {
+		return std::filesystem::path(value);
+	}
+	return std::nullopt;
+#endif
+}
+
 void prepend_environment_path(const char* name, const std::filesystem::path& directory) {
 	if (directory.empty() || !std::filesystem::exists(directory)) {
 		return;
@@ -433,8 +456,8 @@ void migrate_legacy_portable_user_data(const std::filesystem::path& executable) 
 }
 
 std::filesystem::path user_data_directory(const char* executable_argument) {
-	if (const char* override_path = std::getenv("TAUON_USER_DATA_DIR")) {
-		return std::filesystem::path(override_path);
+	if (const auto override_path = environment_path("TAUON_USER_DATA_DIR")) {
+		return *override_path;
 	}
 
 	const std::filesystem::path executable = current_executable_path(executable_argument);
@@ -443,11 +466,11 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 	}
 
 #if defined(_WIN32)
-	if (const char* local_app_data = std::getenv("LOCALAPPDATA")) {
-		return std::filesystem::path(local_app_data) / "TauonMusicBox";
+	if (const auto local_app_data = environment_path("LOCALAPPDATA")) {
+		return *local_app_data / "TauonMusicBox";
 	}
-	if (const char* app_data = std::getenv("APPDATA")) {
-		return std::filesystem::path(app_data) / "TauonMusicBox";
+	if (const auto app_data = environment_path("APPDATA")) {
+		return *app_data / "TauonMusicBox";
 	}
 #elif !defined(__APPLE__)
 	// A launcher inside a source checkout (its build tree or virtual
@@ -461,11 +484,11 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 	}
 #endif
 
-	if (const char* xdg_data_home = std::getenv("XDG_DATA_HOME")) {
-		return std::filesystem::path(xdg_data_home) / "TauonMusicBox";
+	if (const auto xdg_data_home = environment_path("XDG_DATA_HOME")) {
+		return *xdg_data_home / "TauonMusicBox";
 	}
-	if (const char* home = std::getenv("HOME")) {
-		return std::filesystem::path(home) / ".local" / "share" / "TauonMusicBox";
+	if (const auto home = environment_path("HOME")) {
+		return *home / ".local" / "share" / "TauonMusicBox";
 	}
 	return std::filesystem::current_path() / "user-data";
 }
@@ -1193,11 +1216,21 @@ PyObject* bridge_renderer_name(PyObject*, PyObject*) {
 	return PyUnicode_FromString(name);
 }
 
+// path::string() on Windows is the ANSI code page, but Python expects UTF-8
+PyObject* python_path(const std::filesystem::path& path) {
+#if defined(_WIN32)
+	const std::wstring& text = path.native();
+	return PyUnicode_FromWideChar(text.c_str(), static_cast<Py_ssize_t>(text.size()));
+#else
+	return PyUnicode_DecodeFSDefault(path.c_str());
+#endif
+}
+
 PyObject* bridge_sdl_library_path(PyObject*, PyObject*) {
 	if (g_state == nullptr || g_state->sdl_library_path.empty()) {
 		Py_RETURN_NONE;
 	}
-	return PyUnicode_DecodeFSDefault(g_state->sdl_library_path.string().c_str());
+	return python_path(g_state->sdl_library_path);
 }
 
 PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
@@ -1205,7 +1238,7 @@ PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's user data directory is unavailable");
 		return nullptr;
 	}
-	return PyUnicode_DecodeFSDefault(g_state->user_data_directory.string().c_str());
+	return python_path(g_state->user_data_directory);
 }
 
 PyObject* bridge_executable_directory(PyObject*, PyObject*) {
@@ -1213,14 +1246,14 @@ PyObject* bridge_executable_directory(PyObject*, PyObject*) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's executable directory is unavailable");
 		return nullptr;
 	}
-	return PyUnicode_DecodeFSDefault(g_state->executable_path.parent_path().string().c_str());
+	return python_path(g_state->executable_path.parent_path());
 }
 
 PyObject* bridge_bundled_library_directory(PyObject*, PyObject*) {
 	if (g_state == nullptr || !is_bundled_install(g_state->executable_path)) {
 		Py_RETURN_NONE;
 	}
-	return PyUnicode_DecodeFSDefault(bundled_library_directory(g_state->executable_path).string().c_str());
+	return python_path(bundled_library_directory(g_state->executable_path));
 }
 
 PyObject* bridge_portable_mode(PyObject*, PyObject*) {
@@ -1638,7 +1671,7 @@ bool prepend_python_path(const std::filesystem::path& directory) {
 		return true;
 	}
 	PyObject* sys_path = PySys_GetObject("path");
-	PyObject* path = PyUnicode_DecodeFSDefault(directory.string().c_str());
+	PyObject* path = python_path(directory);
 	if (sys_path == nullptr || path == nullptr) {
 		Py_XDECREF(path);
 		return false;
