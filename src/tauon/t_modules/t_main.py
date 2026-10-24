@@ -61485,6 +61485,10 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_EXPOSED:
 					# logging.info("expose")
 					gui.lowered = False
+					# Wayland holds interactive-resize configures until the next frame
+					# callback and sends EXPOSED to prompt one. Without a present the
+					# size stays frozen until the drag ends.
+					gui.request_frame()
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_MINIMIZED:
 					gui.lowered = True
