@@ -60446,7 +60446,8 @@ def main(holder: Holder) -> None:
 				box = (start + run, rect[1], item[1], rect[3])
 				grip = (start + run, rect[1], 3 * gui.scale, rect[3])
 				m_grip = (grip[0] - 4 * gui.scale, grip[1], grip[2] + 8 * gui.scale, grip[3])
-				l_grip = (grip[0] + 9 * gui.scale, grip[1], box[2] - 14 * gui.scale, grip[3])
+				# Abuts this column's m_grip and the next one's, leaving no dead zone
+				l_grip = (grip[0] + 7 * gui.scale, grip[1], box[2] - 11 * gui.scale, grip[3])
 				tauon.fields.add(m_grip)
 
 				if tauon.coll(l_grip):
