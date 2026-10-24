@@ -265,6 +265,25 @@ class Prefs:
 
 	artist_list_prefer_album_artist: bool = True
 
+	# Multi-artist tags, applied when tags are scanned
+	artist_joiner:           str = "; "
+	artist_split_semicolon:  bool = True
+	artist_split_middle_dot: bool = False
+	artist_split_bullet:     bool = False
+
+	@property
+	def artist_split_separators(self) -> list[str]:
+		"""Separators that split single-value artist tags."""
+		return [
+			separator
+			for separator, enabled in (
+				(";", self.artist_split_semicolon),
+				("·", self.artist_split_middle_dot),
+				("•", self.artist_split_bullet),
+			)
+			if enabled
+		]
+
 	mini_mode_mode = MiniModeMode.MINI
 
 	download_dir1 = ""

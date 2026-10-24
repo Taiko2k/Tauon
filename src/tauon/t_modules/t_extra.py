@@ -1305,9 +1305,10 @@ def get_artist_strip_feat(track_object: TrackClass) -> str:
 
 def get_artist_safe(track: TrackClass | None) -> str:
 	if track:
-		artist = track.album_artist
-		if not artist:
-			artist = track.artist
+		artists = track.album_artists if track.album_artist else track.artists
+		artist = track.album_artist or track.artist
+		if artists:
+			artist = artists[0]
 		artist = filename_safe(artist)
 		artist = artist.split("feat")[0]
 		artist = artist.split(", ")[0]
@@ -1318,7 +1319,7 @@ def get_artist_safe(track: TrackClass | None) -> str:
 def get_first_artist(artist: str) -> str:
 	if not artist:
 		return ""
-	for sep in ("ft. ", "feat. ", "feat(", " & ", " &", " ; ", ";", ", ", ","):
+	for sep in ("ft. ", "feat. ", "feat(", " & ", " &", " ; ", ";", ", ", ",", " · ", " • "):
 		idx = artist.find(sep)
 		if idx != -1:
 			artist = artist[:idx]

@@ -113,7 +113,7 @@ from tauon.t_modules import t_native as sdl3
 
 builtins._ = lambda x: x
 
-from tauon.t_modules import t_topchart  # noqa: E402
+from tauon.t_modules import t_tagscan, t_topchart  # noqa: E402
 from tauon.t_modules.t_activity import ActivityPopover  # noqa: E402
 from tauon.t_modules.t_menu_disc import MenuDisc  # noqa: E402
 from tauon.t_modules.t_art_anim import AnimatedArt, fits_texture_budget, frame_at, read_animation  # noqa: E402
@@ -301,6 +301,7 @@ from tauon.t_modules.t_tagscan import (  # noqa: E402
 	Wav,
 	lyrics_are_synced,
 	parse_picture_block,
+	split_artist_text,
 )
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
@@ -20028,6 +20029,7 @@ class Tauon:
 
 			for _mk in _MISC_TO_FIELD.values():
 				setattr(nt, _mk, None)
+			t_tagscan.artist_joiner = self.prefs.artist_joiner
 			nt.file_ext = os.path.splitext(os.path.basename(nt.fullpath))[1][1:].upper()
 			nt.label = ""
 
@@ -20280,16 +20282,12 @@ class Tauon:
 					raise
 
 
-			# Parse any multiple artists into list
-			artists = nt.artist.split(";")
-			if len(artists) > 1:
-				for a in artists:
-					a = a.strip()
-					if a:
-						if nt.artists is None:
-							nt.artists = []
-						if a not in nt.artists:
-							nt.artists.append(a)
+			# Split single-value artist text when the tags gave no list
+			separators = self.prefs.artist_split_separators
+			if nt.artists is None:
+				nt.artists = split_artist_text(nt.artist, separators)
+			if nt.album_artists is None:
+				nt.album_artists = split_artist_text(nt.album_artist, separators)
 			find_synced_lyric_data(nt, reload=True) # populates track.synced if it succeeds
 		except Exception:
 			try:
@@ -30078,6 +30076,8 @@ class Over:
 		self.theme_editor_list_scroll = 0.0
 		self.theme_editor_list_scroll_bar = ScrollBox(tauon=tauon, pctl=tauon.pctl)
 		self.theme_editor_title_box: TextBox2 = TextBox2(tauon=tauon)
+		self.artist_joiner_box: TextBox2 = TextBox2(tauon=tauon)
+		self.artist_joiner_custom = False
 		self.theme_editor_original_colours: ColoursClass | None = None
 		self.theme_editor_draft_colours: ColoursClass | None = None
 		self.theme_editor_original_theme_name = ""
@@ -32431,6 +32431,7 @@ class Over:
 			SettingsGroup("library", _("Library"), ColourRGBA(255, 148, 102, 255), [
 				SettingsSection("playlists", _("Playlists"), self.settings_body_playlists),
 				SettingsSection("imports", _("Imports"), self.settings_body_imports),
+				SettingsSection("artists", _("Multiple artists"), self.settings_body_artists),
 				SettingsSection("transcode", _("Transcode"), self.settings_body_transcode),
 				SettingsSection("lyrics", _("Lyrics"), self.settings_body_lyrics),
 				SettingsSection("sync", _("Sync to device"), self.settings_body_sync),
@@ -32512,6 +32513,10 @@ class Over:
 			_("Trash archive after extraction"): "delete remove trash archive zip after extract cleanup",
 			_("Always extract to Music folder"): "music folder destination extract location",
 			_("Record radio"): "record radio stream capture save split internet radio recording",
+			_("Display separator"): "artist artists multiple multi value join joiner separator delimiter semicolon dot bullet",
+			_("Split on semicolon"): "artist artists multiple split separator delimiter semicolon tag scan",
+			_("Split on middle dot"): "artist artists multiple split separator delimiter dot interpunct tag scan",
+			_("Split on bullet"): "artist artists multiple split separator delimiter dot bullet tag scan",
 			_("Codec"): "codec format encode encoder convert conversion flac opus ogg vorbis mp3 transcode",
 			_("Save opus as .ogg"): "opus ogg extension file type transcode",
 			_("Bitrate"): "bitrate quality kbps size compression transcode",
@@ -33471,6 +33476,39 @@ class Over:
 				_("Tracks will now be recorded. Restart any playback for change to take effect."),
 				_("Tracks will be saved to \"Saved Radio Tracks\" playlist."),
 				mode="info")
+
+	def settings_body_artists(self, rows: SettingsRows) -> None:
+		prefs = self.prefs
+		presets = ("; ", " · ", " • ")
+		custom = self.artist_joiner_custom or prefs.artist_joiner not in presets
+
+		def set_joiner(joiner: str) -> None:
+			self.artist_joiner_custom = False
+			prefs.artist_joiner = joiner
+
+		def set_custom() -> None:
+			self.artist_joiner_custom = True
+
+		rows.segmented(
+			_("Display separator"),
+			(
+				*((f"A{joiner}B", not custom and prefs.artist_joiner == joiner, functools.partial(set_joiner, joiner)) for joiner in presets),
+				(_("Custom"), custom, set_custom),
+			),
+			hint=_("Joins multi-value artist tags"),
+		)
+		if custom:
+			text = rows.text_field(_("Custom separator"), self.artist_joiner_box, prefs.artist_joiner)
+			if text:
+				prefs.artist_joiner = text
+			rows.note(_("Preview: {example}").format(example=prefs.artist_joiner.join((_("Artist A"), _("Artist B")))))
+		prefs.artist_split_semicolon = rows.switch(
+			prefs.artist_split_semicolon, _("Split on semicolon"), _("Splits single-value tags like \"A; B\""))
+		prefs.artist_split_middle_dot = rows.switch(
+			prefs.artist_split_middle_dot, _("Split on middle dot"), _("Splits single-value tags like \"A · B\""))
+		prefs.artist_split_bullet = rows.switch(
+			prefs.artist_split_bullet, _("Split on bullet"), _("Splits single-value tags like \"A • B\""))
+		rows.note(_("ARTISTS tags are used when present. Changes apply after Rescan Tags."))
 
 	def settings_body_transcode(self, rows: SettingsRows) -> None:
 		prefs = self.prefs
@@ -43080,13 +43118,10 @@ class ArtistList:
 
 				if track.artists is not None:
 					artists = track.artists
+				elif self.prefs.artist_list_prefer_album_artist and track.album_artist:
+					artists = track.album_artists or [track.album_artist.strip()]
 				else:
-					if self.prefs.artist_list_prefer_album_artist and track.album_artist:
-						artists = track.album_artist
-					else:
-						artists = get_artist_strip_feat(track)
-
-					artists = [x.strip() for x in artists.split(";")]
+					artists = [get_artist_strip_feat(track).strip()]
 
 				pp = 0
 				if self.prefs.artist_list_sort_mode == "play":
@@ -53735,6 +53770,11 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("import-auto-sort", prefs.auto_sort)
 
+	cf.update_value("artist-display-separator", prefs.artist_joiner)
+	cf.update_value("artist-split-semicolon", prefs.artist_split_semicolon)
+	cf.update_value("artist-split-middle-dot", prefs.artist_split_middle_dot)
+	cf.update_value("artist-split-bullet", prefs.artist_split_bullet)
+
 	cf.update_value("encode-output-dir", prefs.custom_encoder_output)
 	cf.update_value("sync-device-music-dir", prefs.sync_target)
 	cf.update_value("add_download_directory", prefs.download_dir1)
@@ -53919,6 +53959,22 @@ def load_prefs(bag: Bag) -> None:
 	prefs.sep_genre_multi = cf.sync_add(
 		"bool", "separate-multi-genre", prefs.sep_genre_multi,
 		"If true, the standard genre result will exclude results from multi-value tags. These will be included in a separate result.")
+
+	cf.br()
+	cf.add_text("[tag-scan]")
+	cf.add_comment("Changes apply to tracks when their tags are rescanned.")
+	prefs.artist_joiner = cf.sync_add(
+		"string", "artist-display-separator", prefs.artist_joiner,
+		"Joins multi-value artist tags for display. Default: \"; \"")
+	prefs.artist_split_semicolon = cf.sync_add(
+		"bool", "artist-split-semicolon", prefs.artist_split_semicolon,
+		"Split single-value artist tags on a semicolon followed by a space.")
+	prefs.artist_split_middle_dot = cf.sync_add(
+		"bool", "artist-split-middle-dot", prefs.artist_split_middle_dot,
+		"Split single-value artist tags on a middle dot with spaces either side.")
+	prefs.artist_split_bullet = cf.sync_add(
+		"bool", "artist-split-bullet", prefs.artist_split_bullet,
+		"Split single-value artist tags on a bullet with spaces either side.")
 
 	cf.br()
 	cf.add_text("[tag-editor]")
