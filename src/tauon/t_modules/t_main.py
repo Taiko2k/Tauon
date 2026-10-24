@@ -7669,6 +7669,7 @@ class Tauon:
 		self.sync_file_update_timer: Timer       = Timer(1000)
 		self.restore_ignore_timer: Timer         = Timer()
 		self.restore_ignore_timer.force_set(100)
+		self.window_minimum_size: tuple[int, int] | None = None
 		self.fields: Fields = Fields(self)
 		# Create top menu
 		self.view_menu: Menu             = Menu(self, 170)
@@ -15776,7 +15777,7 @@ class Tauon:
 			self.ddt.rect((tx - 5 * self.gui.scale, ty, w + 20 * self.gui.scale, 24 * self.gui.scale), ColourRGBA(35, 35, 35, 255))
 			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), name, ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
-	def update_window_minimum_size(self) -> None:
+	def update_window_minimum_size(self, only_if_changed: bool = False) -> None:
 		"""Set the main window's minimum size from the current UI scale and display density."""
 		if self.bag.phone or self.gui.mode != GuiMode.MAIN:
 			return
@@ -15784,7 +15785,14 @@ class Tauon:
 		logical_w = sdl3.get_window_size(self.t_window)[0]
 		pixel_w = sdl3.get_window_size_in_pixels(self.t_window)[0]
 		factor = self.prefs.scale_want * logical_w / pixel_w if logical_w and pixel_w else self.prefs.scale_want
-		sdl3.set_window_minimum_size(self.t_window, round(560 * factor), round(330 * factor))
+		min_size = (round(560 * factor), round(330 * factor))
+		# SDL_SetWindowMinimumSize also re-requests the window's stored floating size,
+		# which isn't updated while the compositor reports the window as tiled (COSMIC).
+		# Calling it mid-drag would snap the window back.
+		if only_if_changed and min_size == self.window_minimum_size:
+			return
+		self.window_minimum_size = min_size
+		sdl3.set_window_minimum_size(self.t_window, min_size[0], min_size[1])
 
 	def reload_scale(self, skip_render: bool = False) -> None:
 		auto_scale(self.bag)
@@ -61450,7 +61458,7 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 					window_size[:] = sdl3.get_window_size_in_pixels(t_window)
 					auto_scale(bag)
-					tauon.update_window_minimum_size()
+					tauon.update_window_minimum_size(only_if_changed=True)
 					gui.update_layout = True
 					gui.request_frame()
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
