@@ -33377,11 +33377,11 @@ class Over:
 		prefs = self.prefs
 		tauon = self.tauon
 		rows.switch(tauon.toggle_use_tray, _("Show icon in system tray"))
-		rows.switch(tauon.toggle_min_tray, _("Close to tray"))
+		rows.switch(tauon.toggle_min_tray, _("Close to tray"), disabled=not prefs.use_tray)
 		rows.switch(tauon.toggle_start_in_tray, _("Start in tray"), disabled=not prefs.use_tray)
-		rows.switch(tauon.toggle_text_tray, _("Show title text"))
+		rows.switch(tauon.toggle_text_tray, _("Show title text"), disabled=not prefs.use_tray)
 		old_theme = prefs.tray_theme
-		mono = rows.switch(prefs.tray_theme == "gray", _("Monochrome tray icon"), restart=True)
+		mono = rows.switch(prefs.tray_theme == "gray", _("Monochrome tray icon"), restart=True, disabled=not prefs.use_tray)
 		prefs.tray_theme = "gray" if mono else "pink"
 		if prefs.tray_theme != old_theme:
 			tauon.set_tray_icons(force=True)
