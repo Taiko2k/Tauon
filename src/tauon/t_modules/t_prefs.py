@@ -264,6 +264,8 @@ class Prefs:
 	discogs_pat = ""
 
 	artist_list_prefer_album_artist: bool = True
+	# Sort "The Beatles" under B in artist sorts and the artist list
+	sort_ignore_the: bool = True
 
 	# Multi-artist tags, applied when tags are scanned
 	artist_joiner:           str = "; "

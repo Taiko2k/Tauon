@@ -11674,6 +11674,36 @@ class Tauon:
 		self.reload_albums()
 		self.tree_view_box.clear_target_pl(pl)
 
+	def sort_by_artist(
+		self, pl: int, custom_list: list[int] | None = None, *, album_artist: bool = False, reverse: bool = False,
+	) -> None:
+		"""Stable sort by artist, or album artist falling back to artist. Tracks keep their order within an artist."""
+		key = self.key_album_artist_sort if album_artist else self.key_artist_sort
+		if custom_list is not None:
+			custom_list.sort(key=key, reverse=reverse)
+			return
+
+		if self.pl_is_locked(pl):
+			self.show_message(_("Playlist is locked"))
+			return
+
+		playlist = self.pctl.multi_playlist[pl]
+		self.undo.bk_order(pl)
+		if not playlist.pre_sort_ids:
+			playlist.pre_sort_ids = playlist.playlist_ids[:]
+		playlist.playlist_ids.sort(key=key, reverse=reverse)
+
+		self.reload_albums()
+		self.tree_view_box.clear_target_pl(pl)
+		self.gui.request_tracklist_redraw()
+		self.pctl.notify_database_changed()
+
+	def sort_by_artist_menu(self, pl: int) -> None:
+		self.sort_by_artist(pl)
+
+	def sort_by_album_artist_menu(self, pl: int) -> None:
+		self.sort_by_artist(pl, album_artist=True)
+
 	def year_sort(self, pl: int, custom_list: list[int] | None = None) -> list[int] | None:
 		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 		plt: list[tuple[list[int], str, str]] = []
@@ -14162,6 +14192,20 @@ class Tauon:
 	def key_album_artist(self, index: int) -> str:
 		return self.pctl.master_library[index].album_artist.lower()
 
+	def artist_sort_name(self, name: str) -> str:
+		"""Lowercased name for sorting, minus a leading "The " when prefs.sort_ignore_the is on."""
+		name = name.strip().lower()
+		if self.prefs.sort_ignore_the and name.startswith("the ") and name[4:].strip():
+			return name[4:].lstrip()
+		return name
+
+	def key_artist_sort(self, index: int) -> str:
+		return self.artist_sort_name(self.pctl.master_library[index].artist)
+
+	def key_album_artist_sort(self, index: int) -> str:
+		track = self.pctl.master_library[index]
+		return self.artist_sort_name(track.album_artist or track.artist)
+
 	def key_composer(self, index: int) -> str:
 		return self.pctl.master_library[index].composer.lower()
 
@@ -15471,6 +15515,13 @@ class Tauon:
 	def aa_sort_play(self) -> None:
 		self.prefs.artist_list_sort_mode = "play"
 		self.artist_list_box.saves.clear()
+
+	def toggle_sort_ignore_the(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.sort_ignore_the
+		self.prefs.sort_ignore_the ^= True
+		self.artist_list_box.saves.clear()
+		return None
 
 	def toggle_artist_list_style(self) -> None:
 		if self.prefs.artist_list_style == 1:
@@ -17853,6 +17904,12 @@ class Tauon:
 
 			elif cm == "path":
 				self.sort_path_pl(0, custom_list=playlist)
+
+			elif cm in ("ar>", "ar<"):
+				self.sort_by_artist(0, custom_list=playlist, reverse=cm[-1] == "<")
+
+			elif cm in ("aa>", "aa<"):
+				self.sort_by_artist(0, custom_list=playlist, album_artist=True, reverse=cm[-1] == "<")
 
 			elif cm == "pa>":
 				playlist = self.gen_folder_top(0, custom_list=playlist)
@@ -32508,6 +32565,7 @@ class Over:
 			# Library
 			_("Auto fetch artist data"): "artist info biography bio wikipedia fetch download panel",
 			_("Auto reload playlists"): "reload refresh rescan watch folder generator update",
+			_("Ignore \"The\" when sorting artists"): "the article prefix sort order artist album artist list alphabetical",
 			_("Extract archives"): "zip rar 7z archive extract unzip unpack drag drop import",
 			_("Enable download monitor"): "downloads folder watch monitor bandcamp import new music",
 			_("Trash archive after extraction"): "delete remove trash archive zip after extract cleanup",
@@ -33460,6 +33518,9 @@ class Over:
 		rows.switch(self.tauon.toggle_auto_artist_dl, _("Auto fetch artist data"), _("Fetch artist data while the panel is open."))
 		prefs.always_auto_update_playlists = rows.switch(
 			prefs.always_auto_update_playlists, _("Auto reload playlists"), _("Rescan playlists when you return to them."))
+		rows.switch(
+			self.tauon.toggle_sort_ignore_the, _("Ignore \"The\" when sorting artists"),
+			_("Sorts \"The Beatles\" under B, including in the artist list."))
 
 	def settings_body_imports(self, rows: SettingsRows) -> None:
 		tauon = self.tauon
@@ -43161,7 +43222,7 @@ class ArtistList:
 			elif self.prefs.artist_list_sort_mode == "play":
 				all.sort(key=play_time.get, reverse=True)
 			else:
-				all.sort(key=lambda y: y.lower().removeprefix("the "))
+				all.sort(key=self.tauon.artist_sort_name)
 		except Exception:
 			logging.exception("Album scan failure")
 			time.sleep(4)
@@ -43192,13 +43253,8 @@ class ArtistList:
 			return
 
 		letter = text[0].lower()
-		letter_upper = letter.upper()
 		for i, item in enumerate(self.current_artists):
-			if item.startswith(("the ", "The ")):
-				if len(item) > 4 and (item[4] == letter or item[4] == letter_upper):
-					self.scroll_position = i
-					break
-			elif item and (item[0] == letter or item[0] == letter_upper):
+			if self.tauon.artist_sort_name(item).startswith(letter):
 				self.scroll_position = i
 				break
 
@@ -53729,6 +53785,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("synced-lyrics-time-offset", prefs.sync_lyrics_time_offset)
 
 	cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
+	cf.update_value("sort-ignore-the", prefs.sort_ignore_the)
 	cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
 	cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
 	cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
@@ -54079,6 +54136,9 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "artist-list-prefers-album-artist",
 		prefs.artist_list_prefer_album_artist,
 		"May require restart for change to take effect.")
+	prefs.sort_ignore_the = cf.sync_add(
+		"bool", "sort-ignore-the", prefs.sort_ignore_the,
+		"Ignore a leading \"The\" when sorting artists.")
 	prefs.meta_persists_stop = cf.sync_add(
 		"bool", "side-panel-info-persists", prefs.meta_persists_stop,
 		"Show album art and metadata of last played track when stopped.")
@@ -58423,6 +58483,8 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), tauon.imported_sort, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), tauon.imported_sort_folders, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), tauon.standard_sort, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Artist A-Z"), tauon.sort_by_artist_menu, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Album Artist A-Z"), tauon.sort_by_album_artist_menu, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), tauon.year_sort, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), tauon.make_auto_sorting, pass_ref=True))

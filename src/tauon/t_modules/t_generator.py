@@ -231,6 +231,24 @@ def _sort_kind(
 	)
 
 
+def _alpha_sort_kind(kind_id: str, prefix: str, name: Callable[[], str]) -> Kind:
+	"""A sort that runs A-Z with > and Z-A with <."""
+
+	def order(v: Values) -> str:
+		return _("A-Z") if v.get("dir") == ">" else _("Z-A")
+
+	return Kind(
+		id=kind_id, category=SORT,
+		pattern=_p(rf"{re.escape(prefix)}(?P<dir>[<>])"),
+		key=lambda _v: _("Sort"),
+		value=lambda v: f"{name()}, {order(v)}",
+		say=lambda v: [(_("sort by"), False), (f"{name().lower()}, {order(v)}", True)],
+		build=lambda v: f"{prefix}{v.get('dir', '>')}",
+		edit="direction",
+		directions=(lambda: _("A-Z"), lambda: _("Z-A")),
+	)
+
+
 def _fixed_kind(  # noqa: PLR0917
 	kind_id: str, category: str, codes: tuple[str, ...], key: Callable[[], str], value: Callable[[], str],
 	words: Callable[[], str],
@@ -383,6 +401,8 @@ KINDS: list[Kind] = [
 	_sort_kind("sort_album_length", "ad", lambda: _("Album length"), lambda: _("longest"), lambda: _("shortest")),
 	_sort_kind("sort_modified", "m", lambda: _("Modified"), lambda: _("newest"), lambda: _("oldest")),
 	_sort_kind("sort_imported", "ia", lambda: _("Imported"), lambda: _("newest"), lambda: _("oldest")),
+	_alpha_sort_kind("sort_artist", "ar", lambda: _("Artist")),
+	_alpha_sort_kind("sort_album_artist", "aa", lambda: _("Album artist")),
 	Kind(
 		id="sort_column", category=SORT, pattern=_p(r"\"(?P<v>[^\"]+)\"(?P<dir>[<>])"),
 		key=lambda _v: _("Sort"),
@@ -600,6 +620,8 @@ THEN_MENU: tuple[AddItem | AddGroup | None, ...] = (
 		AddItem(lambda: _("Modified"), "m>", edit=True),
 		AddItem(lambda: _("Imported"), "ia>", edit=True),
 		None,
+		AddItem(lambda: _("Artist"), "ar>", edit=True),
+		AddItem(lambda: _("Album artist"), "aa>", edit=True),
 		AddItem(lambda: _("Track number"), "tn"),
 		AddItem(lambda: _("File path"), "path"),
 		AddItem(lambda: _("Year per artist"), "ypa"),
