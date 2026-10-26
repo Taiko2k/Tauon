@@ -451,6 +451,8 @@ class Prefs:
 	discord_enable: bool = False
 	stop_end_queue: bool = False
 	auto_queue: bool = False
+	# Queued tracks play at track end even with repeat on
+	queue_overrides_repeat: bool = True
 
 	block_suspend: bool = False
 	smart_bypass: bool = True

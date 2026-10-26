@@ -4326,12 +4326,13 @@ class PlayerCtl:
 							self.stop(run=True)
 							stopped = True
 				if stopped is True:
-					if self.force_queue or (not self.force_queue and not self.random_mode and not self.repeat_mode):
+					queue_wins = self.force_queue and (self.prefs.queue_overrides_repeat or not self.repeat_mode)
+					if queue_wins or (not self.random_mode and not self.repeat_mode):
 						self.advance(play=False)
 					self.gui.request_frame()
 					return
 
-			if self.force_queue and not self.pause_queue:
+			if self.queue_plays_at_end():
 				id = self.advance(end=True, quiet=True, dry=True)
 				if id is not None:
 					self.start_commit(id)
@@ -4468,6 +4469,11 @@ class PlayerCtl:
 		if repeat:
 			self.playerSubCommand = "repeat"
 		self.playerCommandReady = True
+
+	def queue_plays_at_end(self) -> bool:
+		"""Whether the queue picks the next track when one ends, rather than repeat."""
+		return bool(self.force_queue) and not self.pause_queue and (
+			self.prefs.queue_overrides_repeat or not self.repeat_mode)
 
 	def advance(
 		self, rr: bool = False, quiet: bool = False, inplace: bool = False, end: bool = False,
@@ -44468,6 +44474,7 @@ class QueueBox:
 
 		self.queue_menu.add(MenuItem(_("Pause Queue"), self.toggle_pause, tauon.queue_pause_deco, show_test=self.queue_pause_show))
 		self.queue_menu.add(MenuItem(_("Auto Queue"), self.toggle_auto_queue, check_test=lambda: self.prefs.auto_queue))
+		self.queue_menu.add(MenuItem(_("Override Repeat"), self.toggle_override_repeat, check_test=lambda: self.prefs.queue_overrides_repeat))
 		self.queue_menu.add(MenuItem(_("Clear Queue"), tauon.clear_queue, tauon.queue_deco, show_test=self.queue_items_show, hint="Alt+Shift+Q"))
 
 		self.queue_menu.add(MenuItem(_("↳ Except for This"), self.clear_queue_crop, show_test=self.except_for_this_show_test))
@@ -44976,6 +44983,9 @@ class QueueBox:
 
 	def toggle_pause(self) -> None:
 		self.pctl.pause_queue ^= True
+
+	def toggle_override_repeat(self) -> None:
+		self.prefs.queue_overrides_repeat ^= True
 
 	def control_rect(self, x: int, yy: int, w: int, *, child: bool = False) -> tuple[int, int, int, int]:
 		scale = self.gui.scale
@@ -53786,6 +53796,7 @@ def save_prefs(bag: Bag) -> None:
 
 	cf.update_value("artist-list-prefers-album-artist", prefs.artist_list_prefer_album_artist)
 	cf.update_value("sort-ignore-the", prefs.sort_ignore_the)
+	cf.update_value("queue-overrides-repeat", prefs.queue_overrides_repeat)
 	cf.update_value("side-panel-info-persists", prefs.meta_persists_stop)
 	cf.update_value("side-panel-info-selected", prefs.meta_shows_selected)
 	cf.update_value("side-panel-info-selected-always", prefs.meta_shows_selected_always)
@@ -54139,6 +54150,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.sort_ignore_the = cf.sync_add(
 		"bool", "sort-ignore-the", prefs.sort_ignore_the,
 		"Ignore a leading \"The\" when sorting artists.")
+	prefs.queue_overrides_repeat = cf.sync_add(
+		"bool", "queue-overrides-repeat", prefs.queue_overrides_repeat,
+		"Play queued tracks next even when repeat is on. If false, repeat holds the queue until it's turned off.")
 	prefs.meta_persists_stop = cf.sync_add(
 		"bool", "side-panel-info-persists", prefs.meta_persists_stop,
 		"Show album art and metadata of last played track when stopped.")

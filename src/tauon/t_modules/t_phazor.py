@@ -2029,7 +2029,7 @@ def player4(tauon: Tauon) -> None:
 								if tr and tr2 and (tr.parent_folder_path, tr.album) != (tr2.parent_folder_path, tr2.album):
 									abort_gapless = True
 
-							queue_override = pctl.force_queue and not pctl.pause_queue
+							queue_override = pctl.queue_plays_at_end()
 							deterministic_next = queue_override or not pctl.random_mode
 							if not abort_gapless and pctl.commit and deterministic_next:
 								next_commit = pctl.advance(quiet=True, end=True, dry=True)
@@ -2037,7 +2037,7 @@ def player4(tauon: Tauon) -> None:
 									subcommand == "repeat"
 									and pctl.commit == loaded_track.index
 									and target_object.index == loaded_track.index
-									and not (pctl.force_queue and not pctl.pause_queue)
+									and not queue_override
 								)
 								if next_commit != pctl.commit and not repeat_self_commit:
 									abort_gapless = True
