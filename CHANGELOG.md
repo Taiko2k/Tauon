@@ -5,6 +5,7 @@ Changelog
 ### v13.1.1
 
  - Added support for ARTISTS tags and settings for multi-artist separators
+ - Added artist/album sort functions
  - Bundled FFmpeg in Windows builds
  - Reworked Windows taskbar integration
  - Fixed a hang when PipeWire can't be reached
