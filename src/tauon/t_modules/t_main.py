@@ -11683,10 +11683,18 @@ class Tauon:
 	def sort_by_artist(
 		self, pl: int, custom_list: list[int] | None = None, *, album_artist: bool = False, reverse: bool = False,
 	) -> None:
-		"""Stable sort by artist, or album artist falling back to artist. Tracks keep their order within an artist."""
+		"""Sort by artist (or album artist, falling back to artist), then album A-Z within each artist.
+
+		Stable, so tracks keep their order within an album. reverse flips the artist order only.
+		"""
 		key = self.key_album_artist_sort if album_artist else self.key_artist_sort
+
+		def sort_ids(ids: list[int]) -> None:
+			ids.sort(key=self.key_album)
+			ids.sort(key=key, reverse=reverse)
+
 		if custom_list is not None:
-			custom_list.sort(key=key, reverse=reverse)
+			sort_ids(custom_list)
 			return
 
 		if self.pl_is_locked(pl):
@@ -11697,7 +11705,7 @@ class Tauon:
 		self.undo.bk_order(pl)
 		if not playlist.pre_sort_ids:
 			playlist.pre_sort_ids = playlist.playlist_ids[:]
-		playlist.playlist_ids.sort(key=key, reverse=reverse)
+		sort_ids(playlist.playlist_ids)
 
 		self.reload_albums()
 		self.tree_view_box.clear_target_pl(pl)
@@ -58497,8 +58505,8 @@ def main(holder: Holder) -> None:
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Tracks"), tauon.imported_sort, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Imported Folders"), tauon.imported_sort_folders, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort by Filepath"), tauon.standard_sort, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort by Artist A-Z"), tauon.sort_by_artist_menu, pass_ref=True))
-	tab_menu.add_to_sub(1, MenuItem(_("Sort by Album Artist A-Z"), tauon.sort_by_album_artist_menu, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Artist | Album A-Z"), tauon.sort_by_artist_menu, pass_ref=True))
+	tab_menu.add_to_sub(1, MenuItem(_("Sort by Album Artist | Album A-Z"), tauon.sort_by_album_artist_menu, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Track Numbers"), tauon.sort_track_2, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Sort Year per Artist"), tauon.year_sort, pass_ref=True))
 	tab_menu.add_to_sub(1, MenuItem(_("Make Playlist Auto-Sorting"), tauon.make_auto_sorting, pass_ref=True))

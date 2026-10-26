@@ -8,7 +8,7 @@ import pytest
 from tauon.t_modules import t_generator as gen
 from tauon.t_modules.t_main import PlayerCtl, Tauon
 
-LIBRARY = [5, 1, 4, 2, 6, 3]
+LIBRARY = [5, 7, 1, 4, 2, 6, 3]
 
 
 def make_tauon(code: str = "", *, ignore_the: bool = True) -> Tauon:
@@ -21,15 +21,17 @@ def make_tauon(code: str = "", *, ignore_the: bool = True) -> Tauon:
 	]
 	tauon.pctl.gen_codes = {200: code}
 	tauon.pctl.master_library = {}
-	for track_id, artist, album_artist in (
-		(1, "The Beatles", ""),
-		(2, "abba", ""),
-		(3, "Guest", "Various Artists"),
-		(4, "Cream", ""),
-		(5, "Theatre of Tragedy", ""),
-		(6, "The Beatles", ""),
+	for track_id, artist, album_artist, album in (
+		(1, "The Beatles", "", "Revolver"),
+		(2, "abba", "", "Arrival"),
+		(3, "Guest", "Various Artists", "Hits"),
+		(4, "Cream", "", "Disraeli Gears"),
+		(5, "Theatre of Tragedy", "", "Velvet Darkness"),
+		(6, "The Beatles", "", "Abbey Road"),
+		(7, "The Beatles", "", "abbey road"),
 	):
-		tauon.pctl.master_library[track_id] = SimpleNamespace(index=track_id, artist=artist, album_artist=album_artist)
+		tauon.pctl.master_library[track_id] = SimpleNamespace(
+			index=track_id, artist=artist, album_artist=album_artist, album=album)
 	tauon.gui = SimpleNamespace(request_tracklist_redraw=Mock())
 	tauon.generator_box = SimpleNamespace(active=False)
 	tauon.tree_view_box = SimpleNamespace(clear_target_pl=Mock())
@@ -49,15 +51,16 @@ def regenerate(code: str, *, ignore_the: bool = True) -> list[int]:
 
 
 @pytest.mark.parametrize(("code", "ignore_the", "expected"), [
-	# Beatles under B; 1 and 6 keep their source order
-	("ar>", True, [2, 1, 6, 4, 3, 5]),
-	("ar<", True, [5, 3, 4, 1, 6, 2]),
+	# Beatles under B, Abbey Road before Revolver; 7 and 6 share an album so keep their source order
+	("ar>", True, [2, 7, 6, 1, 4, 3, 5]),
+	# Z-A flips the artists only; albums stay A-Z
+	("ar<", True, [5, 3, 4, 7, 6, 1, 2]),
 	# "Theatre" is not "The ", so it stays under T either way
-	("ar>", False, [2, 4, 3, 1, 6, 5]),
+	("ar>", False, [2, 4, 3, 7, 6, 1, 5]),
 	# Track 3 sorts by its album artist; the rest fall back to artist
-	("aa>", True, [2, 1, 6, 4, 5, 3]),
-	("aa<", True, [3, 5, 4, 1, 6, 2]),
-	("aa>", False, [2, 4, 1, 6, 5, 3]),
+	("aa>", True, [2, 7, 6, 1, 4, 5, 3]),
+	("aa<", True, [3, 5, 4, 7, 6, 1, 2]),
+	("aa>", False, [2, 4, 7, 6, 1, 5, 3]),
 ])
 def test_artist_sort_codes(code: str, ignore_the: bool, expected: list[int]) -> None:
 	assert regenerate(code, ignore_the=ignore_the) == expected
@@ -77,7 +80,7 @@ def test_menu_sort_is_one_off() -> None:
 	tauon = make_tauon()
 	tauon.sort_by_album_artist_menu(0)
 	playlist = tauon.pctl.multi_playlist[0]
-	assert playlist.playlist_ids == [2, 1, 6, 4, 5, 3]
+	assert playlist.playlist_ids == [2, 7, 6, 1, 4, 5, 3]
 	assert playlist.pre_sort_ids == LIBRARY
 	assert 100 not in tauon.pctl.gen_codes
 	tauon.undo.bk_order.assert_called_once_with(0)
@@ -101,9 +104,9 @@ def test_toggle_refreshes_artist_list() -> None:
 
 
 @pytest.mark.parametrize(("token", "kind_id", "value"), [
-	("ar>", "sort_artist", "Artist, A-Z"),
-	("ar<", "sort_artist", "Artist, Z-A"),
-	("aa>", "sort_album_artist", "Album artist, A-Z"),
+	("ar>", "sort_artist", "Artist | Album, A-Z"),
+	("ar<", "sort_artist", "Artist | Album, Z-A"),
+	("aa>", "sort_album_artist", "Album artist | Album, A-Z"),
 ])
 def test_editor_knows_artist_sorts(token: str, kind_id: str, value: str) -> None:
 	step = gen.parse_step(token)
