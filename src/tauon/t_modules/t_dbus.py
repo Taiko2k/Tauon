@@ -44,11 +44,6 @@ class MPRIS(dbus.service.Object):
 		self.tauon: Tauon = tauon
 		self.gui: GuiVar = tauon.gui
 		self.pctl: PlayerCtl = tauon.pctl
-		bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
-		self.bus_name = dbus.service.BusName("org.mpris.MediaPlayer2.tauon", bus)  # This object must be kept alive
-
-		# dbus.service.Object.__init__(self, bus_name, object_path)
-		dbus.service.Object.__init__(self, bus, object_path, bus_name=self.bus_name)
 
 		self.playing_index = -1
 		self.last_playing_time: float = 0.0
@@ -90,6 +85,12 @@ class MPRIS(dbus.service.Object):
 			"CanControl": True,
 			"Metadata": dbus.Dictionary({}, signature="sv"),
 		}
+
+		# Export last: the main thread dispatches incoming calls as soon as the
+		# name is claimed, so every property must already exist
+		bus = dbus.Bus(dbus.Bus.TYPE_SESSION)
+		self.bus_name = dbus.service.BusName("org.mpris.MediaPlayer2.tauon", bus)  # This object must be kept alive
+		dbus.service.Object.__init__(self, bus, object_path, bus_name=self.bus_name)
 
 	def update(self, force: bool = False) -> None:
 		changed = {}
@@ -549,9 +550,15 @@ class Gnome:
 						self.resume_playback = False
 						if pctl.playing_state == PlayingState.URL_STREAM:
 							pctl.playing_state = PlayingState.STOPPED
-							time.sleep(4)
-							pctl.play()
-							logging.info("Resume Radio")
+
+							def resume_radio() -> bool:
+								pctl.play()
+								logging.info("Resume Radio")
+								return False
+
+							# Give the network time to come back. This runs on the main
+							# thread, so wait on a GLib timer rather than blocking it.
+							GLib.timeout_add_seconds(4, resume_radio)
 						else:
 							pctl.play()
 
@@ -604,7 +611,7 @@ class Gnome:
 		# The main thread dispatches the D-Bus sources (see dispatch). It idles
 		# for up to a second when nothing is playing, so wake it as soon as a bus
 		# socket has data, for prompt media keys and MPRIS calls.
-		fds = []
+		poller = select.poll()
 		for get_bus in (dbus.SystemBus, dbus.SessionBus):
 			try:
 				fd = get_bus().get_unix_fd()
@@ -612,10 +619,15 @@ class Gnome:
 				logging.exception("Could not get the bus socket to watch")
 				continue
 			if fd is not None:
-				fds.append(fd)
+				poller.register(fd, select.POLLIN)
 		while not self.stopping:
-			readable, _, _ = select.select(fds, [], [], 0.5)
-			if readable:
+			events = poller.poll(500)
+			if events:
+				for fd, flags in events:
+					# A closed socket stays readable forever, stop watching it
+					if flags & (select.POLLHUP | select.POLLERR | select.POLLNVAL):
+						logging.warning("Lost a D-Bus connection, no longer watching it")
+						poller.unregister(fd)
 				tauon.wake()
 				# Let the main thread drain the socket before looking again
 				time.sleep(0.03)

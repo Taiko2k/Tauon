@@ -65887,9 +65887,8 @@ def main(holder: Holder) -> None:
 	tauon.macos_blur.shutdown()
 	tauon.windows_blur.shutdown()
 
-	# Stop the D-Bus thread's GLib loop first: it dispatches the tray's GTK and
-	# D-Bus menu objects, which destroying the tray (here, or SDL_Quit in the
-	# launcher) frees from this thread.
+	# Stop the D-Bus thread's bus socket watcher. GLib's default context,
+	# which the tray's GTK objects use, is only dispatched on this thread.
 	if not macos and not tauon.windows:
 		tauon.gnome.stop()
 
