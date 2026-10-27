@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import math
 
+# Boosts limited by the peak tag stop 1 dB short of full scale, leaving room for
+# resampling and decoder overshoot that the tag does not record.
+PEAK_HEADROOM = 10 ** (-1 / 20)
+
 
 def parse_replaygain_db(value: bytes | str) -> float:
 	"""Parse a conventional ReplayGain value, including decimal-comma tags."""
@@ -29,7 +33,9 @@ def replaygain_multiplier(
 
 	Preamp is global, so missing or malformed gain metadata uses the implicit
 	0 dB fallback. When compression is disabled, missing or invalid peak
-	metadata is treated as full scale. With compression enabled, the full
+	metadata is treated as full scale, and boosts stop where the peak would
+	reach -1 dBFS. The headroom never cuts below unity, so a track that already
+	peaks near full scale plays as recorded. With compression enabled, the full
 	requested gain is returned and the native output compressor controls peaks.
 	"""
 	if gain_db is None or not math.isfinite(gain_db):
@@ -39,4 +45,5 @@ def replaygain_multiplier(
 	if allow_compression:
 		return multiplier
 	valid_peak = peak if peak is not None and math.isfinite(peak) and peak > 0 else 1.0
-	return min(multiplier, 1 / valid_peak)
+	ceiling = max(PEAK_HEADROOM / valid_peak, min(1.0, 1 / valid_peak))
+	return min(multiplier, ceiling)
