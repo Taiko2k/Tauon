@@ -369,6 +369,8 @@ float limiter_release_coeff = 0.0f;
 int limiter_coeff_sample_rate = 0;
 // Shared output compressor for ReplayGain and positive EQ boosts.
 int rg_compressor_enabled = 0;
+// Set when disabled mid gain ramp; the compressor stays on until it ends.
+int rg_compressor_disable_pending = 0;
 int rg_compressor_active = 0;
 float rg_compressor_gain = 1.0f;
 float rg_compressor_release_coeff = 0.0f;
@@ -3095,6 +3097,11 @@ static inline void rg_apply_live_correction(float *frame) {
 }
 
 static inline void rg_compressor_process(float *frame, int channels) {
+	if (rg_compressor_disable_pending && rg_output_correction_ramp_remaining == 0) {
+		rg_compressor_enabled = 0;
+		rg_compressor_disable_pending = 0;
+		rg_compressor_reset_state();
+	}
 	if (!rg_compressor_enabled) return;
 
 	if (current_sample_rate > 0 && rg_compressor_coeff_sample_rate != current_sample_rate) {
@@ -6175,8 +6182,18 @@ EXPORT void replaygain_set_pending(float multiplier) {
 
 EXPORT void replaygain_set_compressor(int enabled) {
 	pthread_mutex_lock(&buffer_mutex);
-	rg_compressor_enabled = enabled != 0;
-	if (!rg_compressor_enabled) rg_compressor_reset_state();
+	// The gain is lowered before the compressor is disabled, so keep
+	// compressing until that ramp completes or it clips meanwhile.
+	if (enabled) {
+		rg_compressor_enabled = 1;
+		rg_compressor_disable_pending = 0;
+	} else if (rg_compressor_enabled && rg_output_correction_ramp_remaining > 0) {
+		rg_compressor_disable_pending = 1;
+	} else {
+		rg_compressor_enabled = 0;
+		rg_compressor_disable_pending = 0;
+		rg_compressor_reset_state();
+	}
 	pthread_mutex_unlock(&buffer_mutex);
 }
 
