@@ -20,6 +20,7 @@
 from __future__ import annotations
 
 import logging
+import select
 import threading
 import time
 import urllib.parse
@@ -448,22 +449,30 @@ class Gnome:
 		self.tauon: Tauon = tauon
 		self.resume_playback: bool = False
 		self.thread: threading.Thread | None = None
-		self.mainloop: GLib.MainLoop | None = None
 		self.stopping: bool = False
 
 	def stop(self, timeout: float = 2.0) -> None:
-		"""Stop the D-Bus main loop and wait for its thread to finish.
-
-		The loop runs GLib's default main context, which also dispatches the
-		tray's GTK and D-Bus menu objects. Stop it before those are destroyed,
-		so the two threads don't race on objects being freed.
-		"""
+		"""Stop the D-Bus thread and wait for it to finish."""
 		self.stopping = True
-		self.tauon.tray_setup_done.set()
-		if self.mainloop is not None:
-			self.mainloop.quit()
 		if self.thread is not None and self.thread is not threading.current_thread():
 			self.thread.join(timeout)
+
+	def dispatch(self) -> None:
+		"""Dispatch GLib's default main context. Main thread only.
+
+		dbus-python's connections and the tray's GTK objects all run on this
+		context, and GTK is only safe on the thread that dispatches it. SDL's
+		tray pumps GTK from the main thread and assumes the context is driven
+		there, so the main loop calls this every iteration instead of a second
+		thread running GLib.MainLoop (which dispatched GTK off the main thread
+		and crashed in cairo).
+		"""
+		context = GLib.MainContext.default()
+		# A D-Bus message takes two passes: the socket watch reads it, then the
+		# connection's dispatch source delivers it.
+		for _ in range(8):
+			if not context.iteration(False):
+				break
 
 	def focus(self) -> None:
 		if self.bus_object is not None:
@@ -592,9 +601,21 @@ class Gnome:
 			except Exception:
 				logging.exception("MPRIS2 CONNECT FAILED")
 
-		# Let the main thread finish setting up the tray's GTK display first,
-		# see Tauon.tray_setup_done
-		self.mainloop = GLib.MainLoop()
-		tauon.tray_setup_done.wait()
-		if not self.stopping:
-			self.mainloop.run()
+		# The main thread dispatches the D-Bus sources (see dispatch). It idles
+		# for up to a second when nothing is playing, so wake it as soon as a bus
+		# socket has data, for prompt media keys and MPRIS calls.
+		fds = []
+		for get_bus in (dbus.SystemBus, dbus.SessionBus):
+			try:
+				fd = get_bus().get_unix_fd()
+			except Exception:
+				logging.exception("Could not get the bus socket to watch")
+				continue
+			if fd is not None:
+				fds.append(fd)
+		while not self.stopping:
+			readable, _, _ = select.select(fds, [], [], 0.5)
+			if readable:
+				tauon.wake()
+				# Let the main thread drain the socket before looking again
+				time.sleep(0.03)

@@ -7933,12 +7933,6 @@ class Tauon:
 		self.requested_raise: bool = False
 		self.requested_tray: bool = False
 		self.requested_tray_destruct: bool = False
-		# SDL's Linux tray initialises GTK, which hooks the display into GLib's
-		# default main context. The D-Bus thread runs that same context, and if it
-		# is already running during GTK's setup the two threads race on the
-		# half-open display (a hang or crash at startup). The D-Bus thread waits
-		# for this before running its main loop.
-		self.tray_setup_done: threading.Event = threading.Event()
 		self.sdl_tray: sdl3.LP_SDL_Tray | None = None
 		self.sdl_tray_state: PlayingState = PlayingState.STOPPED
 		self.sdl_tray_launched: bool = False
@@ -60885,8 +60879,6 @@ def main(holder: Holder) -> None:
 	tauon.set_tray_icons()
 	if prefs.use_tray or "--tray" in sys.argv:
 		tauon.show_tray()
-	else:
-		tauon.tray_setup_done.set()
 
 	if (prefs.start_in_tray and prefs.use_tray) or "--tray" in sys.argv:
 		tauon.min_to_tray()
@@ -60901,6 +60893,8 @@ def main(holder: Holder) -> None:
 		loop_pace_timer.set()
 
 		tauon.update_sdl_tray()
+		if not macos and not tauon.windows:
+			tauon.gnome.dispatch()
 		tauon.thumbbar.update()
 		# bm.get('main')
 		# time.sleep(100)
@@ -61813,10 +61807,7 @@ def main(holder: Holder) -> None:
 			tauon.requested_tray_destruct = False
 		if tauon.requested_tray:
 			#logging.debug("Creating tray as it was requested")
-			try:
-				tauon.init_sdl_tray()
-			finally:
-				tauon.tray_setup_done.set()
+			tauon.init_sdl_tray()
 			tauon.requested_tray = False
 
 		# Keep the frame body (seek-bar time tick, housekeeping) running while
