@@ -60893,7 +60893,7 @@ def main(holder: Holder) -> None:
 		loop_pace_timer.set()
 
 		tauon.update_sdl_tray()
-		if not macos and not tauon.windows:
+		if not tauon.macos and not tauon.windows:
 			tauon.gnome.dispatch()
 		tauon.thumbbar.update()
 		# bm.get('main')
