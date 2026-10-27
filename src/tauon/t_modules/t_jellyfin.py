@@ -171,14 +171,37 @@ class Jellyfin(RemotePlaylistSource):
 			"X-Application": "Tauon/1.0",
 			"Authorization": self._get_jellyfin_auth(),
 		}
-		params = {}
-		base_url = f"{self.server_url}/Items/{track.art_url_key}/Images/Primary"
-		response = requests.get(base_url, headers=headers, params=params, timeout=10)
-
+		response = requests.get(f"{self.server_url}/Items/{track.art_url_key}/Images/Primary", headers=headers, timeout=10)
 		if response.status_code == HTTPStatus.OK:
 			return io.BytesIO(response.content)
+
+		# An embedded image Jellyfin never extracted 404s, so try the album's cover
+		if response.status_code == HTTPStatus.NOT_FOUND and track.art_url_key == track.url_key:
+			album_id = self._album_cover_id(track.url_key, headers)
+			if album_id:
+				response = requests.get(f"{self.server_url}/Items/{album_id}/Images/Primary", headers=headers, timeout=10)
+				if response.status_code == HTTPStatus.OK:
+					return io.BytesIO(response.content)
+
 		logging.error(f"Jellyfin album art api error: {response.status_code} {response.text}")
 		return None
+
+	def _album_cover_id(self, item_id: str, headers: dict[str, str]) -> str | None:
+		"""Album id of an item, if that album has a cover."""
+		try:
+			response = requests.get(
+				f"{self.server_url}/Items",
+				headers=headers,
+				params={"userId": self.userId, "ids": item_id, "enableImageTypes": ["Primary"]},
+				timeout=10,
+			)
+			items = response.json().get("Items") if response.status_code == HTTPStatus.OK else None
+		except Exception:
+			logging.exception("Error looking up Jellyfin album cover")
+			return None
+		if not items or not items[0].get("AlbumPrimaryImageTag"):
+			return None
+		return items[0].get("AlbumId")
 
 	def _timestamp_from_ticks(self, ticks: int) -> str:
 		seconds, ticks = divmod(max(0, ticks), 10000000)
