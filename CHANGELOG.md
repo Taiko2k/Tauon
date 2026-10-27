@@ -12,6 +12,7 @@ Changelog
  - Fixed a Windows startup crash with non-ASCII user data paths
  - Fixed window resizing issues on Wayland and COSMIC
  - Fixed the tray setting
+ - Fixed a crash from GTK being dispatched off the main thread while the tray is on
  - Fixed a sorting deadzone
 
 ### v13.1.0
