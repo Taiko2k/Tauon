@@ -314,6 +314,8 @@ std::optional<std::string_view> controller_endpoint(std::string_view argument) {
 		{"back", "previous"},
 		{"raise", "raise"},
 		{"shuffle", "shuffle"},
+		{"randomalbum", "randomalbum"},
+		{"togglerandomalbums", "togglerandomalbums"},
 		{"repeat", "repeat"},
 		{"reloadtheme", "reloadtheme"},
 	};
@@ -348,6 +350,9 @@ void print_usage(const char* executable) {
 		<< "  --raise          Bring the Tauon window to the front\n"
 		<< "  --reloadtheme    Reload the active UI theme\n"
 		<< "  --shuffle        Toggle shuffle mode\n"
+		<< "  --random-album   Jump to a random album in the playing playlist\n"
+		<< "  --toggle-random-albums\n"
+		<< "                   Toggle random albums shuffle mode\n"
 		<< "  --repeat         Toggle repeat mode\n\n"
 		<< "The leading dashes are optional and hyphens within a command are ignored,\n"
 		<< "so --playpause, --play-pause and playpause are equivalent. prev and back are\n"

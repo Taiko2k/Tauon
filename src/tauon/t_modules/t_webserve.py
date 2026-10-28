@@ -1239,6 +1239,8 @@ def remote_command_handler(tauon: Tauon) -> Callable[[str, str | None], bool]:
 		"next": tauon.pctl.advance,
 		"previous": tauon.pctl.back,
 		"shuffle": tauon.toggle_random,
+		"randomalbum": tauon.random_album,
+		"togglerandomalbums": tauon.toggle_album_random,
 		"repeat": tauon.toggle_repeat,
 	}
 

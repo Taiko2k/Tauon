@@ -9652,6 +9652,13 @@ class Tauon:
 		if self.pctl.mpris is not None:
 			self.pctl.mpris.update_shuffle()
 
+	def toggle_album_random(self) -> None:
+		self.gui.request_frame()
+		if self.pctl.random_mode and self.pctl.album_shuffle_mode:
+			self.menu_shuffle_off()
+		else:
+			self.menu_album_random()
+
 	def toggle_shuffle_layout(self, albums: bool = False) -> None:
 		self.prefs.shuffle_lock ^= True
 		if self.prefs.shuffle_lock:
