@@ -51735,7 +51735,7 @@ class TimedLyricsEdit:
 		self.struct_track = track.index
 
 		if from_unsynced:
-			lyrics = self.text
+			lyrics = self.text.splitlines()
 		elif track.synced:
 			lyrics = find_synced_lyric_data(track)
 		elif track.lyrics:
