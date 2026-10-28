@@ -50,3 +50,7 @@ Fast syntax check:
 ```bash
 python3 -m py_compile src/tauon/t_modules/t_main.py
 ```
+
+## Testing
+
+Test files may not be up to date. Avoid running the full test suite.
