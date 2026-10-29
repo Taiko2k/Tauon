@@ -4,22 +4,27 @@ set -euo pipefail
 usage() {
   cat <<'EOF'
 Usage:
-  macos_resign_repack_notarize_dmg.sh --input-dmg PATH --identity "Developer ID Application: ..." [options]
+  macos_resign_repack_notarize_dmg.sh (--input-dmg PATH | --input-app PATH) --identity "Developer ID Application: ..." [options]
+  macos_resign_repack_notarize_dmg.sh --input-app PATH --output-dmg PATH --skip-sign
 
-Unpacks a CI-built DMG, signs nested code from the inside out, rebuilds the DMG
-using the same create-dmg layout settings used in
-.github/workflows/build_and_release.yaml, then notarizes and staples the rebuilt
-DMG.
+Signs nested code from the inside out, builds the DMG with the Tauon layout
+and background, then notarizes and staples it. The GitHub workflow builds every
+macOS DMG with this script, signed or not.
 
 Options:
-  --input-dmg PATH        Source DMG from CI (required)
-  --output-dmg PATH       Output DMG path (default: alongside input as *-signed.dmg)
+  --input-dmg PATH        Source DMG to unpack and re-sign
+  --input-app PATH        Source .app bundle; signed in place
+  --output-dmg PATH       Output DMG path (default: alongside input DMG as
+                          *-signed.dmg; required with --input-app)
   --identity NAME         Developer ID Application signing identity
                           (default: $CODESIGN_IDENTITY)
   --entitlements PATH     Entitlements plist for codesign
                           (default: $CODESIGN_ENTITLEMENTS or repo extra/entitlements.plist)
   --app-name NAME         App bundle name without .app (default: auto-detect from DMG)
+  --python PATH           Python with Pillow for the DMG background
+                          (default: $PYTHON or python3)
   --notary-profile NAME   notarytool keychain profile (default: $NOTARYTOOL_PROFILE)
+  --skip-sign             Package the app as it is; implies --skip-notarize
   --skip-notarize         Rebuild/sign only; skip notarization + stapling
   --keep-temp             Keep temp working directory for debugging
   --jobs N                Binaries to sign at once (default: 3)
@@ -27,14 +32,18 @@ Options:
 
 Notarization auth (choose one):
   1) --notary-profile / $NOTARYTOOL_PROFILE
-  2) Apple ID env vars for xcrun notarytool:
+  2) App Store Connect API key env vars:
+       APPLE_API_KEY_PATH (.p8 file)
+       APPLE_API_KEY_ID
+       APPLE_API_ISSUER_ID
+  3) Apple ID env vars for xcrun notarytool:
        APPLE_ID
        APPLE_TEAM_ID
        APPLE_APP_PASSWORD (or APPLE_APP_SPECIFIC_PASSWORD)
 
 Requirements:
   macOS command-line tools: hdiutil, codesign, xcrun, ditto, python3
-  create-dmg (same tool used by the GitHub workflow)
+  create-dmg
 EOF
 }
 
@@ -158,11 +167,14 @@ regularize_nested_bundle_symlinks() {
 }
 
 INPUT_DMG=""
+INPUT_APP=""
 OUTPUT_DMG=""
 IDENTITY="${CODESIGN_IDENTITY:-}"
 ENTITLEMENTS_PATH="${CODESIGN_ENTITLEMENTS:-}"
 APP_NAME=""
+PYTHON_BIN="${PYTHON:-python3}"
 NOTARY_PROFILE="${NOTARYTOOL_PROFILE:-}"
+SKIP_SIGN=0
 SKIP_NOTARIZE=0
 KEEP_TEMP=0
 # Each signature makes a request to Apple's timestamp server, so stay modest
@@ -173,6 +185,11 @@ while [[ $# -gt 0 ]]; do
     --input-dmg)
       [[ $# -ge 2 ]] || fail "--input-dmg requires a value"
       INPUT_DMG="$2"
+      shift 2
+      ;;
+    --input-app)
+      [[ $# -ge 2 ]] || fail "--input-app requires a value"
+      INPUT_APP="${2%/}"
       shift 2
       ;;
     --output-dmg)
@@ -195,10 +212,20 @@ while [[ $# -gt 0 ]]; do
       APP_NAME="$2"
       shift 2
       ;;
+    --python)
+      [[ $# -ge 2 ]] || fail "--python requires a value"
+      PYTHON_BIN="$2"
+      shift 2
+      ;;
     --notary-profile)
       [[ $# -ge 2 ]] || fail "--notary-profile requires a value"
       NOTARY_PROFILE="$2"
       shift 2
+      ;;
+    --skip-sign)
+      SKIP_SIGN=1
+      SKIP_NOTARIZE=1
+      shift
       ;;
     --skip-notarize)
       SKIP_NOTARIZE=1
@@ -223,9 +250,19 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
-[[ -n "$INPUT_DMG" ]] || fail "--input-dmg is required"
-[[ -f "$INPUT_DMG" ]] || fail "Input DMG not found: $INPUT_DMG"
-[[ -n "$IDENTITY" ]] || fail "Signing identity is required (--identity or \$CODESIGN_IDENTITY)"
+if [[ -n "$INPUT_DMG" && -n "$INPUT_APP" ]]; then
+  fail "Pass only one of --input-dmg and --input-app"
+elif [[ -n "$INPUT_DMG" ]]; then
+  [[ -f "$INPUT_DMG" ]] || fail "Input DMG not found: $INPUT_DMG"
+elif [[ -n "$INPUT_APP" ]]; then
+  [[ -d "$INPUT_APP" && "$INPUT_APP" == *.app ]] || fail "Input app bundle not found: $INPUT_APP"
+  [[ -n "$OUTPUT_DMG" ]] || fail "--output-dmg is required with --input-app"
+else
+  fail "--input-dmg or --input-app is required"
+fi
+if [[ $SKIP_SIGN -eq 0 ]]; then
+  [[ -n "$IDENTITY" ]] || fail "Signing identity is required (--identity or \$CODESIGN_IDENTITY)"
+fi
 
 require_cmd hdiutil
 require_cmd codesign
@@ -233,6 +270,7 @@ require_cmd xcrun
 require_cmd ditto
 require_cmd create-dmg
 require_cmd python3
+require_cmd "$PYTHON_BIN"
 
 [[ "$SIGN_JOBS" =~ ^[1-9][0-9]*$ ]] || fail "--jobs must be a positive integer"
 
@@ -281,87 +319,97 @@ trap cleanup EXIT
 
 mkdir -p "$MOUNT_DIR" "$STAGE_DIR" "$REPACK_DIR"
 
-log "Mounting input DMG: $INPUT_DMG"
-hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT_DIR" "$INPUT_DMG" >/dev/null
-ATTACHED=1
+if [[ -n "$INPUT_APP" ]]; then
+  # Signed in place so the caller can test the signed bundle
+  [[ -n "$APP_NAME" ]] || APP_NAME="$(basename "$INPUT_APP" .app)"
+  SIGNED_APP="$INPUT_APP"
+else
+  log "Mounting input DMG: $INPUT_DMG"
+  hdiutil attach -readonly -nobrowse -mountpoint "$MOUNT_DIR" "$INPUT_DMG" >/dev/null
+  ATTACHED=1
 
-if [[ -z "$APP_NAME" ]]; then
-  shopt -s nullglob
-  apps=( "$MOUNT_DIR"/*.app )
-  shopt -u nullglob
-  [[ ${#apps[@]} -gt 0 ]] || fail "No .app bundle found at DMG root"
-  [[ ${#apps[@]} -eq 1 ]] || fail "Multiple .app bundles found; pass --app-name"
-  APP_NAME="$(basename "${apps[0]}" .app)"
+  if [[ -z "$APP_NAME" ]]; then
+    shopt -s nullglob
+    apps=( "$MOUNT_DIR"/*.app )
+    shopt -u nullglob
+    [[ ${#apps[@]} -gt 0 ]] || fail "No .app bundle found at DMG root"
+    [[ ${#apps[@]} -eq 1 ]] || fail "Multiple .app bundles found; pass --app-name"
+    APP_NAME="$(basename "${apps[0]}" .app)"
+  fi
+
+  SRC_APP="$MOUNT_DIR/$APP_NAME.app"
+  [[ -d "$SRC_APP" ]] || fail "App bundle not found in DMG: $SRC_APP"
+
+  SIGNED_APP="$STAGE_DIR/$APP_NAME.app"
+  log "Copying app bundle out of DMG"
+  ditto "$SRC_APP" "$SIGNED_APP"
+
+  log "Detaching input DMG"
+  hdiutil detach "$MOUNT_DIR" >/dev/null
+  ATTACHED=0
 fi
 
-SRC_APP="$MOUNT_DIR/$APP_NAME.app"
-[[ -d "$SRC_APP" ]] || fail "App bundle not found in DMG: $SRC_APP"
+if [[ $SKIP_SIGN -eq 0 ]]; then
+  regularize_nested_bundle_symlinks "$SIGNED_APP"
 
-SIGNED_APP="$STAGE_DIR/$APP_NAME.app"
-log "Copying app bundle out of DMG"
-ditto "$SRC_APP" "$SIGNED_APP"
+  sign_code() {
+    local target="$1"
+    codesign \
+      --force \
+      --timestamp \
+      --options runtime \
+      --sign "$IDENTITY" \
+      "$target"
+  }
 
-log "Detaching input DMG"
-hdiutil detach "$MOUNT_DIR" >/dev/null
-ATTACHED=0
+  log "Signing bundle executables"
+  macho_files "$SIGNED_APP/Contents" executables \
+    | while IFS= read -r -d '' binary; do
+        sign_code "$binary"
+      done
 
-regularize_nested_bundle_symlinks "$SIGNED_APP"
+  # The remaining files each carry their own signature, so they can be signed in
+  # parallel; most of the time is spent waiting on Apple's timestamp server
+  log "Signing other Mach-O files ($SIGN_JOBS at a time)"
+  macho_files "$SIGNED_APP/Contents" others \
+    | xargs -0 -n 1 -P "$SIGN_JOBS" \
+      codesign --force --timestamp --options runtime --sign "$IDENTITY"
 
-sign_code() {
-  local target="$1"
-  codesign \
-    --force \
-    --timestamp \
-    --options runtime \
-    --sign "$IDENTITY" \
-    "$target"
-}
+  log "Signing nested bundles and frameworks"
+  while IFS= read -r bundle; do
+    sign_code "$bundle"
+  done < <(
+    find "$SIGNED_APP/Contents" -depth -type d \
+      \( -name '*.app' -o -name '*.framework' \) \
+      -print
+  )
 
-log "Signing bundle executables"
-macho_files "$SIGNED_APP/Contents" executables \
-  | while IFS= read -r -d '' binary; do
-      sign_code "$binary"
-    done
+  log "Signing app bundle: $SIGNED_APP"
+  codesign_cmd=(
+    codesign
+    --force
+    --timestamp
+    --options runtime
+    --sign "$IDENTITY"
+  )
+  if [[ -n "$ENTITLEMENTS_PATH" ]]; then
+    log "Using entitlements: $ENTITLEMENTS_PATH"
+    codesign_cmd+=( --entitlements "$ENTITLEMENTS_PATH" )
+  fi
+  codesign_cmd+=( "$SIGNED_APP" )
+  "${codesign_cmd[@]}"
 
-# The remaining files each carry their own signature, so they can be signed in
-# parallel; most of the time is spent waiting on Apple's timestamp server
-log "Signing other Mach-O files ($SIGN_JOBS at a time)"
-macho_files "$SIGNED_APP/Contents" others \
-  | xargs -0 -n 1 -P "$SIGN_JOBS" \
-    codesign --force --timestamp --options runtime --sign "$IDENTITY"
-
-log "Signing nested bundles and frameworks"
-while IFS= read -r bundle; do
-  sign_code "$bundle"
-done < <(
-  find "$SIGNED_APP/Contents" -depth -type d \
-    \( -name '*.app' -o -name '*.framework' \) \
-    -print
-)
-
-log "Signing app bundle: $SIGNED_APP"
-codesign_cmd=(
-  codesign
-  --force
-  --timestamp
-  --options runtime
-  --sign "$IDENTITY"
-)
-if [[ -n "$ENTITLEMENTS_PATH" ]]; then
-  log "Using entitlements: $ENTITLEMENTS_PATH"
-  codesign_cmd+=( --entitlements "$ENTITLEMENTS_PATH" )
+  log "Verifying code signature"
+  codesign --verify --deep --strict --verbose=2 "$SIGNED_APP"
+  codesign --display --verbose=2 "$SIGNED_APP" >/dev/null
+else
+  log "Skipping signing as requested"
 fi
-codesign_cmd+=( "$SIGNED_APP" )
-"${codesign_cmd[@]}"
-
-log "Verifying code signature"
-codesign --verify --deep --strict --verbose=2 "$SIGNED_APP"
-codesign --display --verbose=2 "$SIGNED_APP" >/dev/null
 
 log "Preparing DMG background"
 use_background=0
-if [[ -f "$GEN_BG_SCRIPT" ]] && command -v python3 >/dev/null 2>&1; then
-  if python3 "$GEN_BG_SCRIPT" "$BG_PATH"; then
+if [[ -f "$GEN_BG_SCRIPT" ]]; then
+  if "$PYTHON_BIN" "$GEN_BG_SCRIPT" "$BG_PATH"; then
     use_background=1
   else
     log "Background generation failed; rebuilding DMG without custom background"
@@ -371,6 +419,7 @@ else
 fi
 
 log "Rebuilding DMG: $OUTPUT_DMG"
+mkdir -p "$(dirname "$OUTPUT_DMG")"
 rm -f "$OUTPUT_DMG"
 ditto "$SIGNED_APP" "$REPACK_DIR/$APP_NAME.app"
 
@@ -411,6 +460,11 @@ until create_dmg_once; do
   log "create-dmg failed, retrying ($i/10)"
 done
 
+if [[ $SKIP_SIGN -eq 0 ]]; then
+  log "Signing DMG"
+  codesign --force --timestamp --sign "$IDENTITY" "$OUTPUT_DMG"
+fi
+
 if [[ $SKIP_NOTARIZE -eq 1 ]]; then
   log "Skipping notarization as requested"
   log "Finished: $OUTPUT_DMG"
@@ -422,6 +476,12 @@ notary_auth=()
 
 if [[ -n "$NOTARY_PROFILE" ]]; then
   notary_auth=( --keychain-profile "$NOTARY_PROFILE" )
+elif [[ -n "${APPLE_API_KEY_PATH:-}" && -n "${APPLE_API_KEY_ID:-}" && -n "${APPLE_API_ISSUER_ID:-}" ]]; then
+  notary_auth=(
+    --key "$APPLE_API_KEY_PATH"
+    --key-id "$APPLE_API_KEY_ID"
+    --issuer "$APPLE_API_ISSUER_ID"
+  )
 elif [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "$APPLE_PASSWORD" ]]; then
   notary_auth=(
     --apple-id "$APPLE_ID"
@@ -429,7 +489,7 @@ elif [[ -n "${APPLE_ID:-}" && -n "${APPLE_TEAM_ID:-}" && -n "$APPLE_PASSWORD" ]]
     --password "$APPLE_PASSWORD"
   )
 else
-  fail "No notarization credentials configured. Set --notary-profile / \$NOTARYTOOL_PROFILE or APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD"
+  fail "No notarization credentials configured. Set --notary-profile / \$NOTARYTOOL_PROFILE, APPLE_API_KEY_PATH + APPLE_API_KEY_ID + APPLE_API_ISSUER_ID, or APPLE_ID + APPLE_TEAM_ID + APPLE_APP_PASSWORD"
 fi
 
 log "Submitting DMG for notarization"

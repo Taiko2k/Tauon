@@ -287,6 +287,21 @@ from tauon.t_modules.t_relocate import (  # noqa: E402
 	normalise as relocate_normalise,
 	remainder as relocate_remainder,
 )
+from tauon.t_modules.t_scrobble_queue import (  # noqa: E402
+	LASTFM,
+	LIBREFM,
+	LISTENBRAINZ,
+	MALOJA,
+	QUEUE_FILENAME,
+	SERVICE_NAMES,
+	SUBSONIC,
+	Outcome,
+	PendingScrobble,
+	ScrobbleQueue,
+	http_outcome,
+	pending_from_track,
+	track_number_int,
+)
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
@@ -1573,6 +1588,21 @@ class Input:
 		self.media_key = "Previous"
 		self.gui.request_frame()
 
+KEY_LABELS = {
+	"left": "←", "right": "→", "up": "↑", "down": "↓",
+	"escape": "Esc", "return": "Enter", "pageup": "Page Up", "pagedown": "Page Down",
+}
+
+def key_label(name: str) -> str:
+	"""Display text for a key name as written in input.txt."""
+	if name == "MB4":
+		return _("Mouse back")
+	if name == "MB5":
+		return _("Mouse forward")
+	if len(name) == 1:
+		return name.upper()
+	return KEY_LABELS.get(name.lower(), name)
+
 class KeyMap:
 
 	def __init__(self, bag: Bag, inp: Input) -> None:
@@ -1580,8 +1610,13 @@ class KeyMap:
 		self.inp: Input = inp
 		self.hits: list[str | sdl3.SDL_Scancode] = []  # The keys hit this frame
 		self.maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}  # Loaded from input.txt
+		# The same bindings with the key names as written, for display
+		self.labels: dict[str, list[tuple[str, list[str]]]] = {}
 
 	def load(self) -> None:
+		# Built aside and swapped in so a reload never leaves half a keymap
+		maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}
+		labels: dict[str, list[tuple[str, list[str]]]] = {}
 		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
@@ -1612,10 +1647,23 @@ class KeyMap:
 					if len(items) > 3:
 						mod.append(items[3].lower())
 
-					if function in self.maps:
-						self.maps[function].append((key, mod))
-					else:
-						self.maps[function] = [(key, mod)]
+					maps.setdefault(function, []).append((key, mod))
+					labels.setdefault(function, []).append((items[1], mod))
+		self.maps = maps
+		self.labels = labels
+
+	def describe(self, function: str) -> list[list[str]]:
+		"""Each binding of a function as the keys to press, e.g. ["Ctrl", "Shift", "L"]."""
+		names = {"ctrl": "Cmd" if macos else "Ctrl", "shift": "Shift", "alt": "Alt"}
+		return [
+			[names[m] for m in ("ctrl", "shift", "alt") if m in mod] + [key_label(name)]
+			for name, mod in self.labels.get(function, [])
+		]
+
+	def hint(self, function: str) -> str | None:
+		"""The first binding as menu hint text, or None when unbound."""
+		bindings = self.describe(function)
+		return "+".join(bindings[0]) if bindings else None
 
 	def test(self, function: str) -> bool:
 		inp = self.inp
@@ -5377,66 +5425,67 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object: TrackClass, timestamp: int | None = None) -> bool:
+	def submit_scrobbles(self, items: list[PendingScrobble]) -> list[Outcome]:
+		"""Scrobble up to 50 plays in one request."""
 		if not self.last_fm_enable:
-			return True
-		if self.prefs.scrobble_hold:
-			return True
-		if self.enabled:
-			self.connect(False)
+			return [Outcome.DROP] * len(items)
+		self.connect(False)
+		if not self.connected:
+			return [Outcome.RETRY] * len(items)
 
-		if timestamp is None:
-			timestamp = int(time.time())
+		params: dict[str, str | int] = {}
+		for i, item in enumerate(items):
+			params[f"artist[{i}]"] = item.artist
+			params[f"track[{i}]"] = item.title
+			params[f"timestamp[{i}]"] = item.timestamp
+			if item.album:
+				params[f"album[{i}]"] = item.album
+				if item.album_artist and item.album_artist != item.artist:
+					params[f"albumArtist[{i}]"] = item.album_artist
+			if item.duration:
+				params[f"duration[{i}]"] = item.duration
+			if track_number := track_number_int(item.track_number):
+				params[f"trackNumber[{i}]"] = track_number
 
-		# lastfm_user = self.network.get_user(self.username)
-
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
-		album_artist = track_object.album_artist
-
-		logging.info("Submitting scrobble...")
-
-		# Act
+		logging.info(f"Submitting {len(items)} scrobble(s) to {self.name}")
 		try:
-			if title and artist:
-				if album:
-					if album_artist and album_artist != artist:
-						self.network.scrobble(
-							artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
-					else:
-						self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
-				else:
-					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-				# logging.info('Scrobbled')
+			# pylast's scrobble_many() discards the reply, which lists ignored scrobbles
+			doc = pylast._Request(self.network, "track.scrobble", params).execute()  # noqa: SLF001
+		except pylast.WSError as e:
+			# 2/3/5: bad request, 6: invalid parameters, 7: invalid resource, 13: invalid signature
+			if str(e.status) in ("2", "3", "5", "6", "7", "13"):
+				logging.warning(f"{self.name} rejected {len(items)} scrobble(s): {e}")
+				return [Outcome.DROP] * len(items)
+			logging.warning(f"{self.name} scrobble failed, will retry: {e}")
+			return [Outcome.RETRY] * len(items)
+		except pylast.NetworkError as e:
+			logging.warning(f"Could not reach {self.name}: {e}")
+			return [Outcome.RETRY] * len(items)
+		except Exception:
+			logging.exception(f"Error connecting to {self.name}")
+			return [Outcome.RETRY] * len(items)
 
-				# Pull loved status
-
-				self.sync_pull_love(track_object)
+		results: list[Outcome] = []
+		for item, node in zip(items, doc.getElementsByTagName("scrobble")):
+			ignored = node.getElementsByTagName("ignoredMessage")
+			code = ignored[0].getAttribute("code") if ignored else "0"
+			if code in ("", "0"):
+				results.append(Outcome.SENT)
+			elif code == "5":
+				# Daily scrobble limit, try again later
+				results.append(Outcome.RETRY)
 			else:
-				logging.warning("Not sent, incomplete metadata")
+				reason = {"1": "artist ignored", "2": "track ignored", "3": "timestamp too old", "4": "timestamp too new"}
+				logging.warning(f"{self.name} ignored {item.artist} - {item.title}: {reason.get(code, 'code ' + code)}")
+				results.append(Outcome.DROP)
+		results += [Outcome.SENT] * (len(items) - len(results))
 
-		except Exception as e:
-			logging.exception("Failed to Scrobble!")
-			if "retry" in str(e):
-				logging.warning("Retrying in a couple seconds...")
-				time.sleep(7)
-
-				try:
-					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-					# logging.info('Scrobbled')
-					return True
-				except Exception:
-					logging.exception("Failed to retry!")
-
-			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
-			logging.error(f"Error connecting to {self.name}")
-			self.tauon.scrobble_warning_timer.set()
-			self.gui.request_frame()
-			self.gui.delay_frame(5)
-
-			return False
-		return True
+		for item, result in zip(items, results):
+			if result is Outcome.SENT and item.track_id is not None:
+				track = self.pctl.master_library.get(item.track_id)
+				if track is not None and track.title == item.title:
+					self.sync_pull_love(track)
+		return results
 
 	def get_bio(self, artist: str) -> str:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
@@ -5698,59 +5747,49 @@ class ListenBrainz:
 		r.raise_for_status()
 		return True
 
-	def listen_full(self, track_object: TrackClass, time: int) -> bool | None:
-		if self.enable is False:
-			return True
-		if self.prefs.scrobble_hold is True:
-			return True
-		if self.prefs.lb_token is None:
-			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-			return None
+	def track_metadata(self, item: PendingScrobble) -> dict[str, object]:
+		metadata: dict[str, object] = {"track_name": item.title, "artist_name": item.artist}
+		if item.album:
+			metadata["release_name"] = item.album
 
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
+		additional: dict[str, object] = {}
+		if item.artist_mbids:
+			additional["artist_mbids"] = item.artist_mbids
+		if item.release_mbid:
+			additional["release_mbid"] = item.release_mbid
+		if item.recording_mbid:
+			additional["recording_mbid"] = item.recording_mbid
+		if item.track_mbid:
+			additional["track_mbid"] = item.track_mbid
+		if track_number := track_number_int(item.track_number):
+			additional["tracknumber"] = str(track_number)
+		if item.duration:
+			additional["duration"] = item.duration
+		additional["media_player"] = self.t_title
+		additional["submission_client"] = self.t_title
+		additional["media_player_version"] = str(self.n_version)
+		metadata["additional_info"] = additional
+		return metadata
 
-		if title == "" or artist == "":
-			return True
+	def submit_listens(self, items: list[PendingScrobble]) -> list[Outcome]:
+		"""Submit plays; a backlog goes in as an import."""
+		listen_type = "single" if len(items) == 1 and time.time() - items[0].timestamp < 600 else "import"
+		data = {
+			"listen_type": listen_type,
+			"payload": [{"listened_at": item.timestamp, "track_metadata": self.track_metadata(item)} for item in items],
+		}
+		try:
+			r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, json=data, timeout=10)
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach ListenBrainz: {e}")
+			return [Outcome.RETRY] * len(items)
 
-		data = {"listen_type": "single", "payload": []}
-		metadata = {
-			"track_name": title,
-			**({"release_name": album} if album else {}),
-			"artist_name": artist,
-			}
-
-		additional: dict[str, str] = {}
-
-		# MusicBrainz Artist IDs
-		if track_object.musicbrainz_artistids is not None:
-			additional["artist_mbids"] = track_object.musicbrainz_artistids
-
-		# MusicBrainz Release ID
-		if track_object.musicbrainz_albumid is not None:
-			additional["release_mbid"] = track_object.musicbrainz_albumid
-
-		# MusicBrainz Recording ID
-		if track_object.musicbrainz_recordingid is not None:
-			additional["recording_mbid"] = track_object.musicbrainz_recordingid
-
-		# MusicBrainz Track ID
-		if track_object.musicbrainz_trackid is not None:
-			additional["track_mbid"] = track_object.musicbrainz_trackid
-
-		if additional:
-			metadata["additional_info"] = additional
-
-		# logging.info(additional)
-		data["payload"].append({"track_metadata": metadata})
-		data["payload"][0]["listened_at"] = time
-
-		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
-		if r.status_code != 200:
-			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
-			return False
-		return True
+		outcome = http_outcome(r.status_code)
+		if outcome is not Outcome.SENT:
+			logging.warning(f"ListenBrainz answered {r.status_code}: {r.text}")
+			if r.status_code < 500 and r.status_code != 429:
+				self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+		return [outcome] * len(items)
 
 	def listen_playing(self, track_object: TrackClass) -> None:
 		if self.enable is False:
@@ -5759,55 +5798,11 @@ class ListenBrainz:
 			return
 		if self.prefs.lb_token is None:
 			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
-
-		if title == "" or artist == "":
+		item = pending_from_track(track_object, LISTENBRAINZ, 0)
+		if item.title == "" or item.artist == "":
 			return
 
-		data = {"listen_type": "playing_now", "payload": []}
-		metadata = {
-			"track_name": title,
-			**({"release_name": album} if album else {}),
-			"artist_name": artist,
-			}
-
-		additional: dict[str, str] = {}
-
-		# MusicBrainz Artist IDs
-		if track_object.musicbrainz_artistids is not None:
-			additional["artist_mbids"] = track_object.musicbrainz_artistids
-
-		# MusicBrainz Release ID
-		if track_object.musicbrainz_albumid is not None:
-			additional["release_mbid"] = track_object.musicbrainz_albumid
-
-		# MusicBrainz Recording ID
-		if track_object.musicbrainz_recordingid is not None:
-			additional["recording_mbid"] = track_object.musicbrainz_recordingid
-
-		# MusicBrainz Track ID
-		if track_object.musicbrainz_trackid is not None:
-			additional["track_mbid"] = track_object.musicbrainz_trackid
-
-		if track_object.track_number:
-			try:
-				additional["tracknumber"] = str(int(track_object.track_number))
-			except Exception:
-				logging.exception("Error trying to get track_number")
-
-		if track_object.length:
-			additional["duration"] = int(track_object.length)
-
-		additional["media_player"] = self.t_title
-		additional["submission_client"] = self.t_title
-		additional["media_player_version"] = str(self.n_version)
-
-		metadata["additional_info"] = additional
-		data["payload"].append({"track_metadata": metadata})
-		# data["payload"][0]["listened_at"] = int(time.time())
-
+		data = {"listen_type": "playing_now", "payload": [{"track_metadata": self.track_metadata(item)}]}
 		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
@@ -5848,7 +5843,17 @@ class LastScrob:
 		self.a_sc    = False
 		self.a_pt    = False
 		self.running = False
-		self.queue: list[tuple[TrackClass, int, str]] = []
+		self.queue = ScrobbleQueue(tauon.user_directory / QUEUE_FILENAME)
+		self.wake = threading.Event()
+		self.start_lock = threading.Lock()
+		self.sender: threading.Thread | None = None
+		# Per service: when it may be tried again, and the delay that set it
+		self.retry_at: dict[str, float] = {}
+		self.retry_delay: dict[str, float] = {}
+
+	RETRY_MIN_S = 60
+	RETRY_MAX_S = 15 * 60
+	LASTFM_MAX_AGE_S = 14 * 24 * 60 * 60
 
 	def scrobble_allowed(self, track_object: TrackClass) -> bool:
 		"""Whether Tauon may scrobble this track to Last.fm/ListenBrainz/Maloja.
@@ -5877,47 +5882,108 @@ class LastScrob:
 		return {tag: api for tag, api in services.items() if api.enabled and (api.connected or api.details_ready())}
 
 	def start_queue(self) -> None:
+		"""Wake the sender, starting it on first use."""
 		self.running = True
-		mini_t = threading.Thread(target=self.process_queue)
-		mini_t.daemon = True
-		mini_t.start()
+		with self.start_lock:
+			if self.sender is None:
+				self.sender = threading.Thread(target=self.process_queue, daemon=True)
+				self.sender.start()
+		self.wake.set()
 
 	def process_queue(self) -> None:
-		time.sleep(0.4)
-
-		while self.queue:
+		while True:
+			self.wake.wait(self.next_retry_in())
+			self.wake.clear()
 			try:
-				tr = self.queue.pop()
-
-				self.gui.request_tracklist_redraw()
-				logging.info(f"Submit Scrobble {tr[0].artist} - {tr[0].title}")
-
-				success = True
-
-				if tr[2] in ("lfm", "libre"):
-					api = self.scrobble_services().get(tr[2])
-					if api is not None:
-						success = api.scrobble(tr[0], tr[1])
-				elif tr[2] == "lb" and self.lb.enable:
-					success = self.lb.listen_full(tr[0], tr[1])
-				elif tr[2] == "maloja":
-					success = self.tauon.maloja_scrobble(tr[0], tr[1])
-				elif tr[2] == "air":
-					success = self.tauon.subsonic.listen(tr[0], submit=True)
-
-				if not success:
-					logging.info("Re-queue scrobble")
-					self.queue.append(tr)
-					time.sleep(10)
-					break
-
+				self.send_due()
 			except Exception:
 				logging.exception("SCROBBLE QUEUE ERROR")
+			self.running = False
+
+	def next_retry_in(self) -> float | None:
+		"""Seconds until the next backed-off service is due, None to sleep until woken."""
+		now = time.time()
+		due = [self.retry_at[service] - now for service in self.queue.services() if self.retry_at.get(service, 0) > now]
+		return min(due) if due else None
+
+	def send_due(self) -> None:
+		for service in self.queue.services():
+			if time.time() < self.retry_at.get(service, 0):
+				continue
+			if self.flush(service):
+				self.retry_at.pop(service, None)
+				self.retry_delay.pop(service, None)
+				continue
+			delay = min(self.RETRY_MAX_S, max(self.RETRY_MIN_S, self.retry_delay.get(service, 0) * 2))
+			self.retry_delay[service] = delay
+			self.retry_at[service] = time.time() + delay
+			logging.info(f"Unsent scrobbles for {SERVICE_NAMES.get(service, service)}, retrying in {delay}s")
+			self.tauon.scrobble_warning_timer.set()
 
 		if not self.queue:
 			self.tauon.scrobble_warning_timer.force_set(1000)
+		self.gui.request_frame()
 
-		self.running = False
+	def sender_for(self, service: str) -> tuple[Callable[[list[PendingScrobble]], list[Outcome]] | None, int]:
+		"""The submit function for a service and its batch size; None once it is switched off."""
+		if service in (LASTFM, LIBREFM):
+			api = self.scrobble_services().get(service)
+			return (api.submit_scrobbles if api else None), 50
+		if service == LISTENBRAINZ:
+			return (self.lb.submit_listens if self.lb.enable and self.prefs.lb_token else None), 100
+		if service == MALOJA:
+			if self.prefs.maloja_enable and self.prefs.maloja_url:
+				return (lambda items: [self.tauon.maloja_scrobble(items[0])]), 1
+		elif service == SUBSONIC and self.prefs.subsonic_server:
+			return (lambda items: [self.tauon.subsonic.submit_scrobble(items[0])]), 1
+		return None, 1
+
+	def flush(self, service: str) -> bool:
+		"""Send everything waiting for one service. False if some should be retried later."""
+		name = SERVICE_NAMES.get(service, service)
+		if service != SUBSONIC and self.prefs.scrobble_hold:
+			# Paused, keep them until scrobbling resumes
+			return True
+		send, batch_size = self.sender_for(service)
+		if send is None:
+			dropped = self.queue.pending(service)
+			logging.warning(f"Dropping {len(dropped)} unsent scrobble(s): {name} is no longer set up")
+			self.queue.remove(dropped)
+			return True
+
+		while batch := self.queue.pending(service, batch_size):
+			if service == LASTFM:
+				expired = [item for item in batch if time.time() - item.timestamp > self.LASTFM_MAX_AGE_S]
+				if expired:
+					logging.warning(f"Dropping {len(expired)} scrobble(s) older than Last.fm accepts")
+					self.queue.remove(expired)
+					continue
+			results = send(batch)
+			if len(batch) > 1 and all(result is Outcome.DROP for result in results):
+				# Find the play that got the whole batch rejected
+				results = [send([item])[0] for item in batch]
+			for item, result in zip(batch, results):
+				if result is Outcome.DROP:
+					logging.warning(f"{name} rejected {item.artist} - {item.title}, dropping it")
+			done = [item for item, result in zip(batch, results) if result is not Outcome.RETRY]
+			self.queue.remove(done)
+			self.gui.request_frame()
+			if len(done) < len(batch):
+				return False
+		return True
+
+	def clear_queue(self) -> None:
+		self.queue.clear()
+		self.tauon.scrobble_warning_timer.force_set(1000)
+		self.gui.request_frame()
+
+	def toggle_offline_queue(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.scrobble_offline_queue
+		self.prefs.scrobble_offline_queue ^= True
+		if self.prefs.scrobble_offline_queue:
+			self.queue.keep_all()
+		return None
 
 	def update(self, add_time: float) -> None:
 		if self.pctl.queue_step > len(self.pctl.track_queue) - 1:
@@ -5993,21 +6059,32 @@ class LastScrob:
 		# logging.info("SCROBBLE")
 		track_object.lfm_scrobbles += 1
 		self.gui.request_tracklist_redraw()
+		timestamp = int(time.time())
 
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
-				self.queue.append((track_object, int(time.time()), "air"))
+				self.enqueue(track_object, SUBSONIC, timestamp)
 
 		if not self.scrobble_allowed(track_object):
 			return
 
 		if not self.prefs.scrobble_hold:
 			for tag in self.scrobble_services():
-				self.queue.append((track_object, int(time.time()), tag))
+				self.enqueue(track_object, tag, timestamp)
 			if self.lb.enable:
-				self.queue.append((track_object, int(time.time()), "lb"))
+				self.enqueue(track_object, LISTENBRAINZ, timestamp)
 			if self.prefs.maloja_url and self.prefs.maloja_enable:
-				self.queue.append((track_object, int(time.time()), "maloja"))
+				self.enqueue(track_object, MALOJA, timestamp)
+
+	def enqueue(self, track_object: TrackClass, service: str, timestamp: int) -> None:
+		item = pending_from_track(track_object, service, timestamp)
+		if service != SUBSONIC and not (item.artist and item.title):
+			logging.warning(f"Not scrobbling to {SERVICE_NAMES[service]}, incomplete metadata")
+			return
+		self.queue.add(item, keep=self.prefs.scrobble_offline_queue)
+		# A new play gets an immediate try, even mid-backoff
+		self.retry_at.pop(service, None)
+		self.gui.request_frame()
 
 class Strings:
 
@@ -6121,6 +6198,10 @@ class MenuItem:
 		self.check_secondary_test = check_secondary_test
 		self.slider_get: Callable[[], float] | None = None
 		self.slider_set: Callable[[float], None] | None = None
+
+	def hint_text(self) -> str | None:
+		"""The hint to show; a callable hint is asked each time so it can follow the keymap."""
+		return self.hint() if callable(self.hint) else self.hint
 
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
@@ -6402,8 +6483,8 @@ class Menu:
 			elif item.slider_get is not None:
 				left = 12 * scale
 				right = 180 * scale
-			elif item.hint is not None:
-				right += self.ddt.get_text_w(item.hint, self.font) + 4 * scale
+			elif item.hint_text() is not None:
+				right += self.ddt.get_text_w(item.hint_text(), self.font) + 4 * scale
 			main_width = max(main_width, left + text_width(item) + right)
 
 		requested_sub_widths = [0] * len(self.subs)
@@ -6778,14 +6859,15 @@ class Menu:
 						self.clicked = False
 				else:
 					right_space = 22 * gui.scale if self.items[i].is_sub_menu else 9 * gui.scale
-					if self.items[i].hint is not None:
-						right_space += self.ddt.get_text_w(self.items[i].hint, self.font) + 4 * gui.scale
+					if self.items[i].hint_text() is not None:
+						right_space += self.ddt.get_text_w(self.items[i].hint_text(), self.font) + 4 * gui.scale
 					label_max_w = self.w - (x + right_space)
 				if self.items[i].slider_get is None:
 					ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 
 				# Render the items hint
-				if self.items[i].hint is not None and not self.items[i].incrementor:
+				hint = self.items[i].hint_text()
+				if hint is not None and not self.items[i].incrementor:
 
 					if self.background_is_light(bg):
 						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
@@ -6793,7 +6875,7 @@ class Menu:
 						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
 
 					# colo = alpha_blend(ColourRGBA(255, 255, 255, 50), bg)
-					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i].hint, hint_colour, self.font, bg=bg)
+					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), hint, hint_colour, self.font, bg=bg)
 
 				y_run += self.h
 
@@ -7634,6 +7716,7 @@ class Tauon:
 		self.flatpak_mode: bool                         = bag.flatpak_mode
 		self.core_use: int                        = 0
 		self.dl_use: int                          = 0
+		self.transcode_inplace_lock: threading.Lock = threading.Lock()
 		self.latest_db_version: int                    = bag.latest_db_version
 		self.g_tc_notify: Notify.Notification | None                          = None
 		# libnotify aborts on calls after Notify.uninit(), which shutdown can
@@ -7803,6 +7886,7 @@ class Tauon:
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.tracklist_layout_panel:              TracklistLayoutPanel = TracklistLayoutPanel(tauon=self)
 		self.add_music_box:                       AddMusicBox = AddMusicBox(tauon=self)
+		self.shortcuts_sheet:                     ShortcutsSheet = ShortcutsSheet(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
@@ -12957,6 +13041,20 @@ class Tauon:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	def reset_keymap(self) -> bool:
+		"""Replace input.txt with the default one, keeping the old file as
+		input.txt.bak, and load it straight away. Returns whether it worked."""
+		target = self.config_directory / "input.txt"
+		try:
+			if target.is_file():
+				shutil.copy(target, target.with_suffix(".txt.bak"))
+			shutil.copy(self.install_directory / "templates" / "input.txt", target)
+		except OSError:
+			logging.exception("Failed to reset the keymap")
+			return False
+		self.gui.keymaps.load()
+		return True
+
 	def open_file(self, target: str) -> None:
 		if not os.path.isfile(target):
 			self.show_message(_("Input file missing"))
@@ -16745,7 +16843,8 @@ class Tauon:
 			and not self.generator_box.active \
 			and not self.duplicate_import_box.active \
 			and not self.tracklist_layout_panel.active \
-			and not self.add_music_box.active
+			and not self.add_music_box.active \
+			and not self.shortcuts_sheet.active
 
 	def get_radio_art(self) -> None:
 		if self.radiobox.loaded_url in self.radiobox.websocket_source_urls:
@@ -19165,10 +19264,26 @@ class Tauon:
 
 	def transcode_single(self, item: list[tuple[int, str]], manual_directory: Path | None = None, manual_name: str | None = None) -> None:
 		if manual_directory is not None:
+			self.core_use += 1
+		done = False
+		try:
+			done = self._transcode_single(item, manual_directory, manual_name)
+		except Exception:
+			logging.exception("Transcode failed")
+			self.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
+		finally:
+			if manual_directory is None:
+				if done:
+					self.gui.transcoding_batch_done += 1
+				self.gui.transcoding_batch_active -= 1
+			self.core_use -= 1
+			self.gui.request_frame()
+
+	def _transcode_single(self, item: list[tuple[int, str]], manual_directory: Path | None, manual_name: str | None) -> bool:
+		if manual_directory is not None:
 			codec = "opus"
 			output = manual_directory
 			track = item
-			self.core_use += 1
 			bitrate = 48
 		else:
 			track = item[0]
@@ -19202,11 +19317,21 @@ class Tauon:
 
 		if not os.path.isfile(path):
 			self.show_message(_("Encoding warning: Missing one or more files"))
-			if manual_directory is None:
-				self.gui.transcoding_batch_active -= 1
-			self.core_use -= 1
-			return
+			return False
 
+		try:
+			self._encode_track(
+				t=t, track=track, path=path, codec=codec, output=output, bitrate=bitrate,
+				manual_directory=manual_directory, manual_name=manual_name)
+		finally:
+			if cleanup:
+				os.remove(path)
+		return True
+
+	def _encode_track(
+		self, *, t: TrackClass, track: int, path: str, codec: str, output: Path, bitrate: int,
+		manual_directory: Path | None, manual_name: str | None,
+	) -> None:
 		out_line = encode_track_name(t)
 
 		target_out = str(output / f"output{track}.{codec}")
@@ -19258,66 +19383,93 @@ class Tauon:
 
 		# logging.info(target_out)
 
-		if manual_name is None:
-			final_out = output / (out_line + "." + codec)
-			final_name = out_line + "." + codec
-			os.rename(target_out, final_out)
+		final_name = (out_line if manual_name is None else manual_name) + "." + codec
+		inplace = self.prefs.transcode_inplace and manual_directory is None and not t.is_network and not t.is_cue
+		if inplace:
+			# Keep the unique name, tracks sharing a base name would collide here
+			final_out = Path(target_out)
 		else:
-			final_out = output / (manual_name + "." + codec)
-			final_name = manual_name + "." + codec
+			final_out = output / final_name
 			os.rename(target_out, final_out)
 
 		if manual_directory is None and self.prefs.transcode_embed_art:
 			self.embed_transcode_art(t, final_out)
 
-		if self.prefs.transcode_inplace and not t.is_network and not t.is_cue:
+		if inplace:
 			logging.info("MOVE AND REPLACE!")
 			if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
-				new_name = os.path.join(t.parent_folder_path, final_name)
-				logging.info(new_name)
-				shutil.move(final_out, new_name)
+				self.replace_with_transcode(track, final_out, final_name, codec)
 
-				old_key  = self.star_store.key(track)
-				old_star = self.star_store.full_get(track)
+	def replace_with_transcode(self, track: int, final_out: Path, final_name: str, codec: str) -> None:
+		"""Swap a track's file for its transcode, keeping the original if any step fails."""
+		t = self.pctl.master_library[track]
+		old_path = t.fullpath
+		new_name = os.path.join(t.parent_folder_path, final_name)
+		staged = new_name + ".tauon-part"
+		logging.info(new_name)
 
+		# Transcode threads run in parallel and can target the same name
+		with self.transcode_inplace_lock:
+			# Don't clobber an unrelated file that already has the target name
+			if os.path.exists(new_name) and not os.path.samefile(new_name, old_path):
+				logging.error(f"In-place transcode target already exists, keeping original: {new_name}")
+				self.show_message(_("Encoding warning: A file with the output name already exists"), new_name, mode="warning")
+				return
+
+			# Copy in beside the original first, so a failed copy leaves it untouched
+			try:
+				shutil.move(final_out, staged)
+			except Exception:
+				logging.exception("Could not stage transcoded file, keeping original")
 				try:
-					send2trash(self.pctl.master_library[track].fullpath)
+					os.remove(staged)
+				except OSError:
+					pass
+				self.show_message(_("Encoding warning: Could not write transcoded file"), new_name, mode="warning")
+				return
+
+			old_key  = self.star_store.key(track)
+			old_star = self.star_store.full_get(track)
+
+			try:
+				send2trash(old_path)
+			except Exception:
+				logging.exception("File trash error")
+
+			if os.path.isfile(old_path):
+				try:
+					os.remove(old_path)
 				except Exception:
-					logging.exception("File trash error")
+					logging.exception("File delete error")
 
-				if os.path.isfile(self.pctl.master_library[track].fullpath):
-					try:
-						os.remove(self.pctl.master_library[track].fullpath)
-					except Exception:
-						logging.exception("File delete error")
+			if os.path.exists(old_path):
+				logging.error(f"Could not remove original, keeping it: {old_path}")
+				os.remove(staged)
+				self.show_message(_("Encoding warning: Could not remove original file"), old_path, mode="warning")
+				return
 
-				self.pctl.master_library[track].fullpath = new_name
-				self.pctl.master_library[track].file_ext = codec.upper()
+			# Same-folder rename, so it can't fail halfway
+			os.replace(staged, new_name)
 
-				# Update and merge playtimes
-				new_key = self.star_store.key(track)
-				if old_star and (new_key != old_key):
+		self.pctl.master_library[track].fullpath = new_name
+		self.pctl.master_library[track].file_ext = codec.upper()
 
-					new_star = self.star_store.full_get(track)
-					if new_star is None:
-						new_star = StarRecord()
+		# Update and merge playtimes
+		new_key = self.star_store.key(track)
+		if old_star and (new_key != old_key):
 
-					new_star.playtime += old_star.playtime
-					if old_star.rating > 0 and new_star.rating == 0:
-						new_star.rating = old_star.rating
+			new_star = self.star_store.full_get(track)
+			if new_star is None:
+				new_star = StarRecord()
 
-					if old_key in self.star_store.db:
-						del self.star_store.db[old_key]
+			new_star.playtime += old_star.playtime
+			if old_star.rating > 0 and new_star.rating == 0:
+				new_star.rating = old_star.rating
 
-					self.star_store.db[new_key] = new_star
+			if old_key in self.star_store.db:
+				del self.star_store.db[old_key]
 
-		if manual_directory is None:
-			self.gui.transcoding_batch_done += 1
-			self.gui.transcoding_batch_active -= 1
-		if cleanup:
-			os.remove(path)
-		self.core_use -= 1
-		self.gui.request_frame()
+			self.star_store.db[new_key] = new_star
 
 	def embed_transcode_art(self, track: TrackClass, path: Path) -> None:
 		try:
@@ -20050,11 +20202,8 @@ class Tauon:
 		self.lastfm.scanning_scrobbles = False
 		self.bg_save()
 
-	def maloja_scrobble(self, track: TrackClass, timestamp: int = int(time.time())) -> bool | None:
+	def maloja_scrobble(self, item: PendingScrobble) -> Outcome:
 		url = self.prefs.maloja_url
-
-		if not track.artist or not track.title:
-			return None
 
 		if not url.endswith("/newscrobble"):
 			if not url.endswith("/"):
@@ -20062,28 +20211,29 @@ class Tauon:
 			url += "apis/mlj_1/newscrobble"
 
 		d = {}
-		d["artists"] = [track.artist] # let Maloja parse/fix artists
-		d["title"] = track.title
+		d["artists"] = [item.artist] # let Maloja parse/fix artists
+		d["title"] = item.title
 
-		if track.album:
-			d["album"] = track.album
-		if track.album_artist:
-			d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
+		if item.album:
+			d["album"] = item.album
+		if item.album_artist:
+			d["albumartists"] = [item.album_artist] # let Maloja parse/fix artists
 
-		d["length"] = int(track.length)
-		d["time"] = timestamp
+		d["length"] = item.duration
+		d["time"] = item.timestamp
 		d["key"] = self.prefs.maloja_key
 
 		try:
 			r = requests.post(url, json=d, timeout=10)
-			if r.status_code != 200:
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach the Maloja server: {e}")
+			return Outcome.RETRY
+		outcome = http_outcome(r.status_code)
+		if outcome is not Outcome.SENT:
+			logging.warning(f"Maloja answered {r.status_code}: {r.text}")
+			if r.status_code < 500 and r.status_code != 429:
 				self.show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
-				return False
-		except Exception:
-			logging.exception("There was an error submitting data to Maloja server")
-			self.show_message(_("There was an error submitting data to Maloja server"), mode="warning")
-			return False
-		return True
+		return outcome
 
 	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
 		if track_object.file_ext == "RADIO":
@@ -22958,8 +23108,13 @@ class PlexService:
 		if not self.connected:
 			self.connect()
 
-		# return self.resource.url(location, True)
-		return self.resource.library.fetchItem(location).getStreamURL()
+		item = self.resource.library.fetchItem(location)
+		# Serve the original file when phazor can decode it: it has a real length
+		# and supports range requests, unlike Plex's live mp3 transcode
+		media = item.media[0] if item.media else None
+		if media and media.parts and media.audioCodec in ("mp3", "flac", "vorbis", "opus"):
+			return self.resource.url(media.parts[0].key, True)
+		return item.getStreamURL()
 
 	def resolve_thumbnail(self, location: str):
 		if not self.connected:
@@ -23011,59 +23166,61 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.music_section().albums()
+		# Fetch all tracks in one paged listing instead of one request per album
+		section = self.music_section()
+		albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
+		tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
 		self.gui.to_got = 0
 
-		for album in albums:
-			year = album.year
-			album_artist = album.parentTitle
-			album_title = album.title
+		for track in tracks:
+			if not track.duration:
+				logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
+				continue
+
+			album = albums.get(track.parentRatingKey)
+			year = album.year if album else None
+			album_artist = album.parentTitle if album else track.grandparentTitle
+			album_title = track.parentTitle
 
 			parent = (album_artist + " - " + album_title).strip("- ")
 
-			for track in album.tracks():
-				if not track.duration:
-					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
-					continue
+			id = existing.get(track.key)
+			if id is None:
+				id = allocate_track_id(self.pctl)
 
-				id = existing.get(track.key)
-				if id is None:
-					id = allocate_track_id(self.pctl)
+			nt = TrackClass()
+			nt.index = id
+			nt.track_number = track.index
+			nt.file_ext = "PLEX"
+			nt.parent_folder_path = parent
+			nt.parent_folder_name = parent
+			nt.album_artist = album_artist
+			nt.artist = track.grandparentTitle
+			nt.title = track.title
+			nt.album = album_title
+			nt.length = track.duration / 1000
+			if hasattr(track, "locations") and track.locations:
+				nt.fullpath = track.locations[0]
 
-				title = track.title
-				track_artist = track.grandparentTitle
-				duration = track.duration / 1000
+			nt.is_network = True
 
-				nt = TrackClass()
-				nt.index = id
-				nt.track_number = track.index
-				nt.file_ext = "PLEX"
-				nt.parent_folder_path = parent
-				nt.parent_folder_name = parent
-				nt.album_artist = album_artist
-				nt.artist = track_artist
-				nt.title = title
-				nt.album = album_title
-				nt.length = duration
-				if hasattr(track, "locations") and track.locations:
-					nt.fullpath = track.locations[0]
+			if track.thumb:
+				nt.art_url_key = track.thumb
 
-				nt.is_network = True
+			nt.url_key = track.key
+			nt.date = str(year)
 
-				if track.thumb:
-					nt.art_url_key = track.thumb
+			self.pctl.master_library[id] = nt
 
-				nt.url_key = track.key
-				nt.date = str(year)
-
-				self.pctl.master_library[id] = nt
-
-				playlist.append(nt.index)
+			playlist.append(nt.index)
 
 			self.gui.to_got += 1
-			self.gui.request_frame()
-			self.gui.request_tracklist_redraw()
+			if self.gui.to_got % 500 == 0:
+				self.gui.request_frame()
+				self.gui.request_tracklist_redraw()
 
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		self.scanning = False
 
 		if return_list:
@@ -29748,6 +29905,9 @@ class SettingsSection:
 	title: str
 	body: Callable[[SettingsRows], None]
 	card: bool = True
+	# Hidden while this is False; reveal() makes it show for a search result
+	shown: Callable[[], bool] | None = None
+	reveal: Callable[[], None] | None = None
 
 
 @dataclass
@@ -30211,6 +30371,7 @@ class Over:
 		# Change tracking and search, keyed "group/section title/control title"
 		self.settings_baseline: dict[str, object] = {}
 		self.settings_needs_survey = True
+		self.settings_surveying = False
 		self.settings_index: dict[str, SettingsEntry] = {}
 		self.settings_row_offsets: dict[str, float] = {}
 		self.settings_section_offsets: dict[tuple[str, str], float] = {}
@@ -32630,7 +32791,10 @@ class Over:
 			]),
 			SettingsGroup("connect", _("Connect"), ColourRGBA(92, 201, 181, 255), [
 				SettingsSection("services", _("Services"), self.settings_body_services),
-				SettingsSection("account", _("Account"), self.settings_body_account, card=False),
+				SettingsSection("account", _("Account"), self.settings_body_account, card=False, shown=lambda: bool(self.account_view)),
+				SettingsSection(
+					"scrobbling", _("Scrobbling"), self.settings_body_scrobbling,
+					shown=lambda: self.account_view in self.SCROBBLE_VIEWS, reveal=self.show_scrobble_service),
 				SettingsSection("sharing", _("Sharing"), self.settings_body_sharing),
 			]),
 			SettingsGroup("system", _("System"), ColourRGBA(170, 165, 187, 255), [
@@ -32668,6 +32832,9 @@ class Over:
 			_("Use persistent network cache"): "cache stream streaming offline jellyfin subsonic plex keep download",
 			_("Wait for entire file"): "download buffer stream streaming network full file before playing",
 			_("Cache size"): "cache disk space storage limit gb size",
+			# Connect
+			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
+			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
 			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
@@ -34048,6 +34215,41 @@ class Over:
 		h = self.render_settings_service_detail(self.account_view, rows.x, rows.y, rows.w, rows.accent, draw=True)
 		rows.gap(h)
 
+	# Last.fm, Libre.fm, ListenBrainz and Maloja
+	SCROBBLE_VIEWS = (1, 13, 2, 9)
+
+	def show_scrobble_service(self) -> None:
+		"""Open a scrobbling service, preferring one that is switched on."""
+		views = self.SCROBBLE_VIEWS
+		self.select_account_view(next((view for view in views if self.settings_service_status(view)[0]), views[0]))
+
+	def settings_body_scrobbling(self, rows: SettingsRows) -> None:
+		scrobbler = self.tauon.lfm_scrobbler
+		rows.switch(
+			scrobbler.toggle_offline_queue, _("Keep scrobbles while offline"),
+			_("Send them when the service is back, even after a restart."))
+		waiting = len(scrobbler.queue)
+		if not waiting:
+			status = _("No scrobbles waiting")
+		elif waiting == 1:
+			status = _("1 scrobble waiting")
+		else:
+			status = _("{N} scrobbles waiting").format(N=waiting)
+		rows.readout(_("Queue"), status)
+		if waiting:
+			breakdown = ", ".join(
+				f"{SERVICE_NAMES.get(service, service)} {count}" for service, count in scrobbler.queue.counts().items())
+			rows.action(
+				_("Discard waiting scrobbles"), ((_("Clear"), self.confirm_clear_scrobble_queue, False),), hint=breakdown)
+
+	def confirm_clear_scrobble_queue(self) -> None:
+		waiting = len(self.tauon.lfm_scrobbler.queue)
+		self.gui.message_box_confirm_callback = self.tauon.lfm_scrobbler.clear_queue
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = ()
+		text = _("Discard 1 waiting scrobble?") if waiting == 1 else _("Discard {N} waiting scrobbles?").format(N=waiting)
+		self.show_message(text, _("They will not be sent."), mode="confirm")
+
 	def settings_body_sharing(self, rows: SettingsRows) -> None:
 		gui = self.gui
 		prefs = self.prefs
@@ -34239,6 +34441,10 @@ class Over:
 		gap = round(8 * s)
 		line = max(1, round(1 * s))
 		for section in group.sections:
+			# The off-screen survey still draws hidden sections, so search can find them
+			if section.shown is not None and not section.shown() and not self.settings_surveying:
+				self.settings_section_offsets.pop((group.key, section.key), None)
+				continue
 			self.settings_section_offsets[(group.key, section.key)] = yy - self.settings_doc_origin
 			self.settings_track_section = section.title
 			self.settings_track_section_key = section.key
@@ -34271,11 +34477,13 @@ class Over:
 		self.coll = lambda _rect: False
 		self.settings_clip = None
 		self.settings_doc_origin = 0
+		self.settings_surveying = True
 		try:
 			for group in self.settings_groups:
 				self.render_settings_group(group, x, 0, w)
 		finally:
 			self.click, self.right_click, self.coll, self.settings_clip, self.settings_doc_origin, self.settings_text_seen = saved
+			self.settings_surveying = False
 			self.settings_needs_survey = False
 
 	@staticmethod
@@ -34361,7 +34569,8 @@ class Over:
 			if len(title) < 3 or title.isdigit() or (title, where) in seen:
 				return
 			seen.add((title, where))
-			hint = item.hint if isinstance(item.hint, str) else ""
+			hint = item.hint_text()
+			hint = hint if isinstance(hint, str) else ""
 			entries.append((f"menu/{where}/{title}", SettingsEntry(title, "", hint, "menus", "", _("Menus"), where)))
 
 		for menu, place in self.settings_menu_places():
@@ -34412,6 +34621,9 @@ class Over:
 		self.settings_text_focus = None
 		if entry.action is not None:
 			entry.action()
+		section = next((section for section in self.settings_group(entry.group).sections if section.key == entry.section), None)
+		if section is not None and section.reveal is not None and not section.shown():
+			section.reveal()
 		self.settings_pending_scroll = (entry.group, "row", key)
 		self.settings_flash_key = key
 		self.settings_flash_timer.set()
@@ -34634,7 +34846,7 @@ class Over:
 			if not active:
 				continue
 			for section in group.sections:
-				if section.key == "account" and not self.account_view:
+				if section.shown is not None and not section.shown():
 					continue
 				srect = (item_x + round(10 * s), yy, item_w - round(10 * s), round(22 * s))
 				shover = self.coll((srect[0], srect[1], srect[2], srect[3] - 1))
@@ -42488,7 +42700,7 @@ class AddMusicBox:
 
 	def options(self) -> list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]]:
 		"""(label, icon painter, action) per tile; the first is the main one."""
-		options = [(_("Add music folder…"), self._paint_folder, self._add_folder)]
+		options = [(_("Pick folder…"), self._paint_folder, self._add_folder)]
 		if self.tauon.music_directory is not None:
 			options.append((self.music_label(), self._paint_note, self._import_music))
 		if self.smart_available():
@@ -42630,6 +42842,415 @@ class AddMusicBox:
 		if chosen is not None:
 			self.close()
 			chosen()
+
+class ShortcutsSheet:
+	"""Full-window sheet of the keyboard shortcuts in effect, read from the
+	loaded keymap, and the mouse gestures. Opens from the main menu or its own
+	key; Esc, the key again or a click closes it."""
+
+	# Keys handled in code rather than input.txt
+	FIXED: dict[str, list[list[str]]] = {
+		"_enter":      [["Enter"]],
+		"_up":         [["↑"]],
+		"_down":       [["↓"]],
+		"_delete":     [["Delete"]],
+		"_select-all": [["Ctrl", "A"]],
+		"_copy":       [["Ctrl", "C"]],
+		"_cut":        [["Ctrl", "X"]],
+		"_paste":      [["Ctrl", "V"]],
+		"_undo":       [["Ctrl", "Z"]],
+	}
+	BG       = ColourRGBA(12, 12, 12, 255)
+	TITLE    = ColourRGBA(242, 242, 242, 255)
+	LABEL    = ColourRGBA(226, 226, 230, 255)
+	HOW      = ColourRGBA(239, 229, 122, 255)
+	NOTE     = ColourRGBA(160, 158, 166, 255)
+	SEP      = ColourRGBA(150, 148, 156, 255)
+	CAP_FILL = ColourRGBA(31, 30, 35, 255)
+	CAP_EDGE = ColourRGBA(85, 82, 92, 255)
+	CAP_TEXT = ColourRGBA(238, 238, 238, 255)
+	WARN     = ColourRGBA(255, 150, 120, 255)
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.inp         = tauon.inp
+		self.ddt         = tauon.ddt
+		self.fields      = tauon.fields
+		self.window_size = tauon.window_size
+		self.active = False
+		self.scroll = 0
+		self._mouse = (0.0, 0.0)
+		self._click = False
+		self._right_click = False
+		self._wheel = 0
+		# Arrow key presses, down positive
+		self._step = 0
+		# Reset to defaults takes a second click before this time
+		self._reset_armed_until = 0.0
+		# Footer message after a reset, shown until this time
+		self._status = ""
+		self._status_until = 0.0
+
+	def open(self) -> None:
+		inp = self.inp
+		self.active = True
+		self._reset_armed_until = 0.0
+		self._status_until = 0.0
+		self.scroll = 0
+		self._click = False
+		self._right_click = False
+		self._wheel = 0
+		self._step = 0
+		self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		self.active = False
+		self.gui.request_frame()
+
+	def handle_input(self) -> None:
+		"""Take the pointer, wheel and arrow keys so nothing under the sheet reacts."""
+		if not self.active:
+			return
+		inp = self.inp
+		if inp.mouse_position[0] > -2000:
+			self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		self._click = self._click or inp.mouse_click
+		self._right_click = self._right_click or inp.right_click
+		self._wheel += inp.mouse_wheel
+		self._step += inp.key_down_press - inp.key_up_press
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.input_text = ""
+		inp.key_return_press = False
+		inp.key_tab_press = False
+		inp.key_del = False
+		inp.key_up_press = False
+		inp.key_down_press = False
+		inp.key_left_press = False
+		inp.key_right_press = False
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def _reset(self) -> None:
+		now = time.monotonic()
+		if now >= self._reset_armed_until:
+			# The first click only arms it
+			self._reset_armed_until = now + 4
+			self.gui.delay_frame(4.1)
+			return
+		self._reset_armed_until = 0.0
+		if self.tauon.reset_keymap():
+			self._status = _("Shortcuts reset to defaults. The old file is input.txt.bak")
+		else:
+			self._status = _("Couldn't reset the shortcuts")
+		self._status_until = now + 5
+		self.gui.delay_frame(5.1)
+
+	def sections(self) -> list[tuple[str, ColourRGBA, list[tuple]]]:
+		"""(title, colour, rows) per group. A key row is (label, functions) or
+		(label, functions, joiner); a gesture row is (label, how)."""
+		tauon = self.tauon
+		search: list[tuple] = []
+		if tauon.prefs.search_on_letter:
+			search.append((_("Search the library"), _("Start typing")))
+		mouse: list[tuple] = [
+			(_("Play a track"), _("Double-click it")),
+			(_("Add to queue"), _("Middle-click a track or album")),
+			(_("More menu items"), _("Shift + right-click")),
+			(_("Delete a playlist"), _("Middle-click its tab")),
+			(_("Switch playlists"), _("Scroll over the tabs")),
+			(_("Merge playlists"), _("Shift-drag a tab onto another")),
+			(_("Last left panel"), _("Middle-click the side-panel button")),
+			(_("Jump to a position"), _("Right-click the scroll bar")),
+			(_("Widen past the art"), _("Shift-drag the side-panel edge")),
+			(_("Seek"), _("Scroll over the seek bar")),
+			(_("Toggle repeat"), _("Right-click Back")),
+			(_("Toggle shuffle"), _("Right-click Forward")),
+			(_("Stop after track or album"), _("Right-click Stop")),
+			(_("More shuffle and repeat modes"), _("Right-click their buttons")),
+		]
+		# Only shown in debug mode
+		advanced: list[tuple] = []
+		if (tauon.user_directory / "debug").exists():
+			advanced.append((_("Transfer play counts"), ("transfer-playtime-to",)))
+			advanced.append((_("Delete playlist even if locked"), ("delete-playlist-force",)))
+		# The two playback panels differ in a few gestures
+		if tauon.feux_panel_showing():
+			mouse.append((_("Pause"), _("Right-click the seek bar")))
+		else:
+			mouse.extend((
+				(_("Time cursor"), _("Middle-click the seek bar")),
+				(_("Back to the skipped track"), _("Middle-click Back")),
+				(_("Radio Random"), _("Middle-click Forward")),
+			))
+		return [
+			(_("Playback"), ColourRGBA(196, 160, 255, 255), [
+				(_("Play / pause"), ("playpause",)),
+				(_("Play"), ("play",)),
+				(_("Pause"), ("pause",)),
+				(_("Stop"), ("stop",)),
+				(_("Play the selected track"), ("_enter",)),
+				(_("Seek back / forward"), ("seek-back", "seek-forward")),
+				(_("Previous track"), ("previous",)),
+				(_("Next track"), ("advance",)),
+				(_("Restart the track"), ("start",)),
+				(_("Toggle shuffle"), ("toggle-shuffle",)),
+				(_("Toggle repeat"), ("toggle-repeat",)),
+				(_("Random track"), ("random-track",)),
+				(_("Random album"), ("random-album",)),
+				(_("Radio Random"), ("random-track-start",)),
+				(_("Back to the skipped track"), ("revert",)),
+				(_("Volume down / up"), ("vol-down", "vol-up")),
+				(_("Mute"), ("toggle-mute",)),
+			]),
+			(_("Navigation"), ColourRGBA(116, 224, 224, 255), [
+				(_("Switch playlist"), ("cycle-playlist-left", "cycle-playlist-right")),
+				(_("Go to playlist 1 to 9"), ("jump-playlist-1", "jump-playlist-9"), "…"),
+				(_("Show the playing track"), ("goto-playing",)),
+				(_("Show the previous track"), ("goto-previous",)),
+				(_("Move the selection"), ("_up", "_down")),
+				(_("Extend the selection"), ("shift-up", "shift-down")),
+				(_("Playlist top / bottom"), ("goto-top", "goto-bottom")),
+				(_("Page up / down"), ("pageup", "pagedown")),
+				(_("Find the playing artist"), ("find-playing-artist",)),
+				(_("Close / go back"), ("escape",)),
+			]),
+			(_("Search"), ColourRGBA(255, 162, 122, 255), [
+				*search,
+				(_("Global search"), ("global-search",)),
+				(_("Find in this playlist"), ("quick-find",)),
+				(_("Search lyrics for the selected track"), ("search-lyrics-selected",)),
+				(_("Lyrics substitute search"), ("substitute-search-selected",)),
+			]),
+			(_("Tracks & playlists"), ColourRGBA(240, 140, 224, 255), [
+				(_("Select all"), ("_select-all",)),
+				(_("Copy / paste"), ("_copy", "_paste")),
+				(_("Cut"), ("_cut",)),
+				(_("Remove from the playlist"), ("_delete",)),
+				(_("Undo"), ("_undo",)),
+				(_("Love the selected track"), ("love-selected",)),
+				(_("Love the playing track"), ("love-playing",)),
+				(_("Add to queue"), ("add-to-queue",)),
+				(_("Clear the queue"), ("clear-queue",)),
+				(_("Track info"), ("info-show",)),
+				(_("Playing track info"), ("info-playing",)),
+				(_("New playlist"), ("new-playlist",)),
+				(_("Rename playlist"), ("rename-playlist",)),
+				(_("Delete playlist"), ("delete-playlist",)),
+				(_("New smart playlist"), ("new-generator-playlist",)),
+				(_("Edit smart playlist"), ("edit-generator",)),
+				(_("Regenerate playlist"), ("regenerate-playlist",)),
+				(_("Toggle album headings"), ("playlist-toggle-breaks",)),
+			]),
+			(_("View"), ColourRGBA(157, 186, 255, 255), [
+				(_("Next layout"), ("cycle-layouts",)),
+				(_("Previous layout"), ("cycle-layouts-reverse",)),
+				(_("Gallery"), ("toggle-gallery",)),
+				(_("Gallery with keyboard control"), ("toggle-gallery-keycontrol",)),
+				(_("Art + Lyrics"), ("toggle-showcase",)),
+				(_("Left panel"), ("toggle-left-panel",)),
+				(_("Last left panel"), ("toggle-last-left-panel",)),
+				(_("Side panel"), ("toggle-right-panel",)),
+				(_("Side panel art"), ("toggle-show-art",)),
+				(_("Columns"), ("toggle-columns",)),
+				(_("Artist info"), ("toggle-artistinfo",)),
+				(_("Mini mode"), ("toggle-minimode",)),
+				(_("Full screen"), ("toggle-fullscreen",)),
+				(_("Next / previous theme"), ("cycle-theme", "cycle-theme-reverse")),
+				(_("Auto theme from album art"), ("toggle-auto-theme",)),
+				(_("Reload theme"), ("reload-theme",)),
+				(_("Window opacity up / down"), ("opacity-up", "opacity-down")),
+			]),
+			(_("Other"), ColourRGBA(200, 200, 205, 255), [
+				(_("Keyboard Shortcuts"), ("show-shortcuts",)),
+				(_("Open the transcode folder"), ("show-encode-folder",)),
+				(_("Console"), ("toggle-console",)),
+				(_("Quit"), ("quit",)),
+			]),
+			(_("Advanced"), ColourRGBA(170, 165, 187, 255), advanced),
+			(_("Mouse"), ColourRGBA(239, 229, 122, 255), mouse),
+		]
+
+	def bindings(self, function: str) -> list[list[str]]:
+		if function.startswith("_"):
+			ctrl = "Cmd" if macos else "Ctrl"
+			return [[ctrl if key == "Ctrl" else key for key in keys] for keys in self.FIXED[function]]
+		return self.gui.keymaps.describe(function)
+
+	def row_tokens(self, functions: tuple[str, ...], joiner: str) -> list[tuple[bool, str]]:
+		"""Keycaps (True) and separators (False) for a row; empty when nothing is bound."""
+		groups = [found for found in (self.bindings(function) for function in functions) if found]
+		tokens: list[tuple[bool, str]] = []
+		for g, group in enumerate(groups):
+			if g:
+				tokens.append((False, joiner))
+			for b, keys in enumerate(group):
+				if b:
+					tokens.append((False, "/"))
+				for k, key in enumerate(keys):
+					if k:
+						tokens.append((False, "+"))
+					tokens.append((True, key))
+		return tokens
+
+	def _token_w(self, cap: bool, text: str) -> int:
+		s = self.gui.scale
+		if cap:
+			return max(round(19 * s), self.ddt.get_text_w(text, 312) + round(10 * s))
+		return self.ddt.get_text_w(text, 12) + round(8 * s)
+
+	def _draw_tokens(self, tokens: list[tuple[bool, str]], right: int, y: int) -> int:
+		"""Draw a row's keys ending at right; returns their width."""
+		s = self.gui.scale
+		ddt = self.ddt
+		line = max(1, round(s))
+		cap_h = round(19 * s)
+		widths = [self._token_w(cap, text) for cap, text in tokens]
+		x = right - sum(widths)
+		for (cap, text), tw in zip(tokens, widths, strict=True):
+			if cap:
+				ddt.rect((x, y, tw, cap_h), self.CAP_EDGE)
+				ddt.rect((x + line, y + line, tw - line * 2, cap_h - line * 3), self.CAP_FILL)
+				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.CAP_TEXT, 312, bg=self.CAP_FILL)
+			else:
+				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.SEP, 12, bg=self.BG)
+			x += tw
+		return sum(widths)
+
+	@staticmethod
+	def _flow(groups: list[list[tuple]], cols: int, col_h: int, row_h: int, head_h: int) -> list[tuple[tuple, int, int]] | None:
+		"""Place whole groups (a heading and its rows) down the columns in
+		order, or None if they need more than cols."""
+		placed = []
+		col = 0
+		y = 0
+		for group in groups:
+			group_h = head_h + row_h * (len(group) - 1)
+			if y and y + group_h > col_h:
+				col += 1
+				y = 0
+				if col == cols:
+					return None
+			for item in group:
+				placed.append((item, col, y))
+				y += head_h if item[0] == "head" else row_h
+		return placed
+
+	def render(self) -> None:
+		gui = self.gui
+		ddt = self.ddt
+		s = gui.scale
+		w, h = self.window_size[0], self.window_size[1]
+		bg = self.BG
+		ddt.rect((0, 0, w, h), ColourRGBA(3, 3, 3, 235))
+		ddt.text_background_colour = bg
+
+		row_h = round(22 * s)
+		head_h = round(32 * s)
+		gap = round(32 * s)
+		margin = round(40 * s)
+		top = round(66 * s)
+		bottom = h - round(40 * s)
+		view_h = max(row_h * 4, bottom - top)
+		cols = max(1, (w - margin * 2 + gap) // (round(290 * s) + gap))
+		col_w = min(round(400 * s), (w - margin * 2 - gap * (cols - 1)) // cols)
+		block_w = col_w * cols + gap * (cols - 1)
+		left = (w - block_w) // 2
+
+		# Each group is its heading then its bound rows; unbound rows are left out
+		groups: list[list[tuple]] = []
+		for title, colour, rows in self.sections():
+			group: list[tuple] = [("head", title, colour)]
+			for row in rows:
+				if isinstance(row[1], str):
+					group.append(("row", row[0], [], row[1]))
+				else:
+					tokens = self.row_tokens(row[1], row[2] if len(row) > 2 else "/")
+					if tokens:
+						group.append(("row", row[0], tokens, ""))
+			if len(group) > 1:
+				groups.append(group)
+		total = sum(head_h + row_h * (len(group) - 1) for group in groups)
+		col_h = max(view_h, -(-total // cols))
+		placed = self._flow(groups, cols, col_h, row_h, head_h)
+		while placed is None:
+			col_h += row_h
+			placed = self._flow(groups, cols, col_h, row_h, head_h)
+		content_h = max((y + (head_h if item[0] == "head" else row_h) for item, _col, y in placed), default=0)
+		max_scroll = max(0, content_h - view_h)
+
+		self.scroll += (self._step - self._wheel) * row_h * 3
+		self.scroll = max(0, min(self.scroll, max_scroll))
+		self._wheel = 0
+		self._step = 0
+
+		for item, col, y in placed:
+			x = left + col * (col_w + gap)
+			yy = top + y - self.scroll
+			size = head_h if item[0] == "head" else row_h
+			if yy < top or yy + size > bottom:
+				continue
+			if item[0] == "head":
+				ddt.text((x, yy + head_h - round(22 * s)), item[1].upper(), item[2], 212, bg=bg)
+				continue
+			_kind, label, tokens, how = item
+			if tokens:
+				used = self._draw_tokens(tokens, x + col_w, yy + round(1 * s))
+			else:
+				used = min(ddt.get_text_w(how, 12), col_w * 2 // 3)
+				ddt.text((x + col_w, yy + round(3 * s), 1), how, self.HOW, 12, bg=bg, max_w=used)
+			ddt.text((x, yy + round(2 * s)), label, self.LABEL, 13, bg=bg, max_w=col_w - used - round(12 * s))
+
+		if max_scroll:
+			bar_x = min(left + block_w + round(14 * s), w - round(8 * s))
+			ddt.rect((bar_x, top, round(3 * s), view_h), ColourRGBA(255, 255, 255, 20))
+			thumb_h = max(round(24 * s), view_h * view_h // content_h)
+			thumb_y = top + (view_h - thumb_h) * self.scroll // max_scroll
+			ddt.rect((bar_x, thumb_y, round(3 * s), thumb_h), ColourRGBA(255, 255, 255, 90))
+
+		# Title, with the links on the right
+		title_y = round(24 * s)
+		ddt.text((left, title_y), _("Keyboard Shortcuts"), self.TITLE, 217, bg=bg)
+		link_colour = readable_text_colour(self.tauon.colours.link_text, bg)
+		chosen = None
+		link_x = left + block_w
+		armed = time.monotonic() < self._reset_armed_until
+		links = (
+			(_("Online Manual"), self.tauon.open_manual_link, link_colour),
+			(_("Open keymap file"), self.tauon.open_keymap_file, link_colour),
+			(_("Click again to reset") if armed else _("Reset to defaults"), self._reset, self.WARN if armed else link_colour),
+		)
+		for text, action, colour in links:
+			tw = ddt.get_text_w(text, 13)
+			link_x -= tw
+			rect = (link_x, title_y, tw, round(22 * s))
+			self.fields.add(rect)
+			ddt.text((link_x, title_y + round(3 * s)), text, colour, 13, bg=bg)
+			if coll_point(self._mouse, rect):
+				ddt.rect((link_x, title_y + round(18 * s), tw, max(1, round(s))), colour)
+				if self._click:
+					chosen = action
+			link_x -= round(24 * s)
+
+		note_y = h - round(28 * s)
+		if time.monotonic() < self._status_until:
+			ddt.text((left, note_y), self._status, self.TITLE, 12, bg=bg, max_w=block_w * 2 // 3)
+		else:
+			ddt.text((left, note_y), _("Keys come from input.txt; edits apply after a restart."), self.NOTE, 12, bg=bg, max_w=block_w // 2)
+		ddt.text((left + block_w, note_y, 1), _("Esc to close"), self.NOTE, 12, bg=bg)
+
+		close = self._click or self._right_click
+		self._click = False
+		self._right_click = False
+		if chosen is not None:
+			chosen()
+		elif close:
+			self.close()
 
 class PlaylistBox:
 
@@ -54065,6 +54686,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
 	cf.update_value("scrobble-radios", prefs.scrobble_radios)
+	cf.update_value("scrobble-offline-queue", prefs.scrobble_offline_queue)
 	cf.update_value("scrobble-jellyfin", prefs.scrobble_jellyfin)
 	cf.update_value("scrobble-tidal", prefs.scrobble_tidal)
 	cf.update_value("scrobble-subsonic", prefs.scrobble_subsonic)
@@ -54735,6 +55357,9 @@ def load_prefs(bag: Bag) -> None:
 	cf.br()
 	cf.add_text("[scrobbling]")
 	prefs.scrobble_radios = cf.sync_add("bool", "scrobble-radios", prefs.scrobble_radios)
+	prefs.scrobble_offline_queue = cf.sync_add(
+		"bool", "scrobble-offline-queue", prefs.scrobble_offline_queue,
+		"Save scrobbles that could not be sent and retry them later, including after a restart")
 	cf.add_comment(
 		"Allow Tauon to scrobble tracks played from a streaming service. Disable for "
 		"services that already scrobble on their own to avoid double scrobbles.")
@@ -56356,9 +56981,9 @@ def worker1(tauon: Tauon) -> None:
 				output_dir = prefs.encoder_output / folder_name
 				if prefs.transcode_inplace:
 					try:
-						output_dir.unlink()
-					except Exception:
-						logging.exception("Encode folder not removed")
+						output_dir.rmdir()
+					except OSError:
+						logging.info(f"Encode folder kept, some files were not moved: {output_dir}")
 					tauon.reload_metadata(folder_items[0])
 				elif prefs.transcode_copy_art:
 					tauon.album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
@@ -57940,6 +58565,11 @@ def main(holder: Holder) -> None:
 	# Drops links that expired while closed, so they re-upload on demand
 	tauon.litterbox.load()
 
+	# Retry scrobbles left unsent last session
+	tauon.lfm_scrobbler.queue.load()
+	if tauon.lfm_scrobbler.queue:
+		tauon.lfm_scrobbler.start_queue()
+
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
 			try:
@@ -59307,7 +59937,8 @@ def main(holder: Holder) -> None:
 	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
 	#x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
-	x_menu.add(MenuItem(_("Online Manual"), tauon.open_manual_link))
+	# The manual link lives in the sheet now
+	x_menu.add(MenuItem(_("Keyboard Shortcuts"), tauon.shortcuts_sheet.open, hint=lambda: gui.keymaps.hint("show-shortcuts")))
 	x_menu.add(MenuItem(_("Show Release Notes"), tauon.nagbox.show))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
@@ -62312,11 +62943,14 @@ def main(holder: Holder) -> None:
 			or tauon.export_playlist_box.active
 			or tauon.generator_box.active
 			or tauon.milk_choose.active
+			or tauon.shortcuts_sheet.active
 		)
 
 		if inp.k_input and inp.key_focused == 0:
 			if text_entry_shortcuts_blocked and keymaps.hits:
-				escape_pressed = keymaps.test("escape")
+				# The sheet's own key closes it like Esc
+				escape_pressed = keymaps.test("escape") or (
+					tauon.shortcuts_sheet.active and keymaps.test("show-shortcuts"))
 				keymaps.hits.clear()
 				if escape_pressed:
 					inp.key_esc_press = True
@@ -62394,6 +63028,10 @@ def main(holder: Holder) -> None:
 
 			if inp.key_esc_press and tauon.add_music_box.active:
 				tauon.add_music_box.close()
+				inp.key_esc_press = False
+
+			if inp.key_esc_press and tauon.shortcuts_sheet.active:
+				tauon.shortcuts_sheet.close()
 				inp.key_esc_press = False
 
 			if gui.fullscreen and inp.key_esc_press:
@@ -62496,6 +63134,9 @@ def main(holder: Holder) -> None:
 				tauon.album_art_gen.toggle_art_theme_algorithm()
 
 			if gui.mode == GuiMode.MAIN:
+				if keymaps.test("show-shortcuts") and tauon.is_level_zero():
+					tauon.shortcuts_sheet.open()
+
 				if keymaps.test("toggle-auto-theme"):
 					# Background styles are mutually exclusive; go through the
 					# setters so the other modes get cleared
@@ -62625,6 +63266,8 @@ def main(holder: Holder) -> None:
 			# other consumer so clicks never leak through the overlay.
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			tauon.shortcuts_sheet.handle_input()
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
@@ -63233,6 +63876,8 @@ def main(holder: Holder) -> None:
 
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			tauon.shortcuts_sheet.handle_input()
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
@@ -65443,6 +66088,9 @@ def main(holder: Holder) -> None:
 
 			if tauon.add_music_box.active:
 				tauon.add_music_box.render()
+
+			if tauon.shortcuts_sheet.active:
+				tauon.shortcuts_sheet.render()
 
 			# Render Menus-------------------------------
 			tauon.draw_popup_menus()

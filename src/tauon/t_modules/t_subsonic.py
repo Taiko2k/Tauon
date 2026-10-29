@@ -37,6 +37,7 @@ import requests
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
+from tauon.t_modules.t_scrobble_queue import Outcome
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -44,6 +45,7 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
+	from tauon.t_modules.t_scrobble_queue import PendingScrobble
 
 # Some broken servers send invalid JSON with control chars, see https://github.com/Taiko2k/Tauon/issues/1112
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
@@ -667,6 +669,28 @@ class SubsonicService(RemotePlaylistSource):
 		except Exception:
 			logging.exception("Error connecting for scrobble on airsonic")
 		return True
+
+	def submit_scrobble(self, item: PendingScrobble) -> Outcome:
+		"""Count a play on the server at the time it happened."""
+		try:
+			response = self.r(
+				"scrobble", p={"id": item.server_id, "submission": "true", "time": str(item.timestamp * 1000)},
+				show_errors=False)
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach the Subsonic server: {e}")
+			return Outcome.RETRY
+		except Exception:
+			logging.exception("Error connecting for scrobble on airsonic")
+			return Outcome.RETRY
+		if not response:
+			return Outcome.RETRY
+		subsonic_response = response["subsonic-response"]
+		if subsonic_response.get("status") == "ok":
+			return Outcome.SENT
+		error = subsonic_response.get("error", {})
+		logging.warning(f"Subsonic scrobble failed: {error}")
+		# 10: missing parameter, 70: song no longer on the server
+		return Outcome.DROP if error.get("code") in (10, 70) else Outcome.RETRY
 
 	def set_rating(self, track_object: TrackClass, rating: int) -> bool:
 		try:
