@@ -42668,7 +42668,7 @@ class AddMusicBox:
 
 	def options(self) -> list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]]:
 		"""(label, icon painter, action) per tile; the first is the main one."""
-		options = [(_("Add music folder…"), self._paint_folder, self._add_folder)]
+		options = [(_("Pick folder…"), self._paint_folder, self._add_folder)]
 		if self.tauon.music_directory is not None:
 			options.append((self.music_label(), self._paint_note, self._import_music))
 		if self.smart_available():
