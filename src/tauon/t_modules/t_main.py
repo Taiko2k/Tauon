@@ -1249,6 +1249,8 @@ class GuiVar:
 		self.radio_view: bool = False
 		self.window_size = self.bag.window_size
 		self.box_over: bool = False
+		# Left press began over a box; stays off level zero until released
+		self.press_off_level_zero: bool = False
 		self.suggest_clean_db: bool = False
 		self.style_worker_timer: Timer = Timer()
 
@@ -16834,7 +16836,8 @@ class Tauon:
 				if menu.active:
 					return False
 
-		return not self.gui.rename_folder_box \
+		return not self.gui.press_off_level_zero \
+			and not self.gui.rename_folder_box \
 			and not self.gui.track_box \
 			and not self.rename_track_box.active \
 			and not self.radiobox.active \
@@ -36292,7 +36295,8 @@ class BottomBarType1:
 			self.seek_down = False
 			self.seek_hit = True
 
-		if (self.inp.mouse_up and self.coll(self.seek_bar_position + self.seek_bar_size) \
+		if (self.inp.mouse_up and self.tauon.is_level_zero(include_menus=False) \
+		and self.coll(self.seek_bar_position + self.seek_bar_size) \
 		and coll_point(self.inp.last_click_location, self.seek_bar_position + self.seek_bar_size) \
 		and coll_point(self.inp.click_location, self.seek_bar_position + self.seek_bar_size)) \
 		or (self.inp.mouse_up and self.volume_hit) or self.seek_hit:
@@ -62870,6 +62874,11 @@ def main(holder: Holder) -> None:
 				inp.mouse_down = False
 				inp.mouse_up = True
 				inp.quick_drag = False
+
+		if inp.mouse_click or not (inp.mouse_down or inp.mouse_up):
+			gui.press_off_level_zero = False
+		if inp.mouse_click and not tauon.is_level_zero(include_menus=False):
+			gui.press_off_level_zero = True
 
 		# logging.info(window_size)
 		# if window_size[0] / window_size[1] == 16 / 9:
