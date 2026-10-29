@@ -42796,6 +42796,7 @@ class ShortcutsSheet:
 		advanced: list[tuple] = []
 		if (tauon.user_directory / "debug").exists():
 			advanced.append((_("Transfer play counts"), ("transfer-playtime-to",)))
+			advanced.append((_("Delete playlist even if locked"), ("delete-playlist-force",)))
 		# The two playback panels differ in a few gestures
 		if tauon.feux_panel_showing():
 			mouse.append((_("Pause"), _("Right-click the seek bar")))
@@ -63052,6 +63053,9 @@ def main(holder: Holder) -> None:
 
 			if keymaps.test("delete-playlist"):
 				pctl.delete_playlist(pctl.active_playlist_viewing)
+
+			if keymaps.test("delete-playlist-force"):
+				pctl.delete_playlist(pctl.active_playlist_viewing, force=True)
 
 			if keymaps.test("rename-playlist"):
 				if gui.radio_view:
