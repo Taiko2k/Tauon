@@ -220,7 +220,7 @@ class Prefs:
 
 	gst_output = "rgvolume pre-amp=-2 fallback-gain=-6 ! autoaudiosink"
 
-	art_bg: bool = False
+	art_bg: bool = True
 	art_bg_stronger = 1
 	art_bg_opacity = 10
 	art_bg_blur = 9
@@ -236,7 +236,7 @@ class Prefs:
 	feux_panel_art: bool = True
 	# Whether the Feux panel's scrub bar shows the playing track's waveform
 	# as needles (see t_waveform). Scanned with FFmpeg, kept in memory only.
-	feux_panel_waveform: bool = False
+	feux_panel_waveform: bool = True
 	# Width of the Feux panel's now-playing pod -- the art and title, up to the
 	# hairline the user drags. Stored unscaled (see FeuxBar.POD1_W, the default)
 	# so a chosen width holds its proportions across a UI scale change; the
