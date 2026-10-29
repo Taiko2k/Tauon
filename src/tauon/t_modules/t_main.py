@@ -7716,6 +7716,7 @@ class Tauon:
 		self.flatpak_mode: bool                         = bag.flatpak_mode
 		self.core_use: int                        = 0
 		self.dl_use: int                          = 0
+		self.transcode_inplace_lock: threading.Lock = threading.Lock()
 		self.latest_db_version: int                    = bag.latest_db_version
 		self.g_tc_notify: Notify.Notification | None                          = None
 		# libnotify aborts on calls after Notify.uninit(), which shutdown can
@@ -19263,10 +19264,26 @@ class Tauon:
 
 	def transcode_single(self, item: list[tuple[int, str]], manual_directory: Path | None = None, manual_name: str | None = None) -> None:
 		if manual_directory is not None:
+			self.core_use += 1
+		done = False
+		try:
+			done = self._transcode_single(item, manual_directory, manual_name)
+		except Exception:
+			logging.exception("Transcode failed")
+			self.show_message(_("Transcode failed."), _("An error was encountered."), mode="error")
+		finally:
+			if manual_directory is None:
+				if done:
+					self.gui.transcoding_batch_done += 1
+				self.gui.transcoding_batch_active -= 1
+			self.core_use -= 1
+			self.gui.request_frame()
+
+	def _transcode_single(self, item: list[tuple[int, str]], manual_directory: Path | None, manual_name: str | None) -> bool:
+		if manual_directory is not None:
 			codec = "opus"
 			output = manual_directory
 			track = item
-			self.core_use += 1
 			bitrate = 48
 		else:
 			track = item[0]
@@ -19300,11 +19317,21 @@ class Tauon:
 
 		if not os.path.isfile(path):
 			self.show_message(_("Encoding warning: Missing one or more files"))
-			if manual_directory is None:
-				self.gui.transcoding_batch_active -= 1
-			self.core_use -= 1
-			return
+			return False
 
+		try:
+			self._encode_track(
+				t=t, track=track, path=path, codec=codec, output=output, bitrate=bitrate,
+				manual_directory=manual_directory, manual_name=manual_name)
+		finally:
+			if cleanup:
+				os.remove(path)
+		return True
+
+	def _encode_track(
+		self, *, t: TrackClass, track: int, path: str, codec: str, output: Path, bitrate: int,
+		manual_directory: Path | None, manual_name: str | None,
+	) -> None:
 		out_line = encode_track_name(t)
 
 		target_out = str(output / f"output{track}.{codec}")
@@ -19356,66 +19383,93 @@ class Tauon:
 
 		# logging.info(target_out)
 
-		if manual_name is None:
-			final_out = output / (out_line + "." + codec)
-			final_name = out_line + "." + codec
-			os.rename(target_out, final_out)
+		final_name = (out_line if manual_name is None else manual_name) + "." + codec
+		inplace = self.prefs.transcode_inplace and manual_directory is None and not t.is_network and not t.is_cue
+		if inplace:
+			# Keep the unique name, tracks sharing a base name would collide here
+			final_out = Path(target_out)
 		else:
-			final_out = output / (manual_name + "." + codec)
-			final_name = manual_name + "." + codec
+			final_out = output / final_name
 			os.rename(target_out, final_out)
 
 		if manual_directory is None and self.prefs.transcode_embed_art:
 			self.embed_transcode_art(t, final_out)
 
-		if self.prefs.transcode_inplace and not t.is_network and not t.is_cue:
+		if inplace:
 			logging.info("MOVE AND REPLACE!")
 			if os.path.isfile(final_out) and os.path.getsize(final_out) > 1000:
-				new_name = os.path.join(t.parent_folder_path, final_name)
-				logging.info(new_name)
-				shutil.move(final_out, new_name)
+				self.replace_with_transcode(track, final_out, final_name, codec)
 
-				old_key  = self.star_store.key(track)
-				old_star = self.star_store.full_get(track)
+	def replace_with_transcode(self, track: int, final_out: Path, final_name: str, codec: str) -> None:
+		"""Swap a track's file for its transcode, keeping the original if any step fails."""
+		t = self.pctl.master_library[track]
+		old_path = t.fullpath
+		new_name = os.path.join(t.parent_folder_path, final_name)
+		staged = new_name + ".tauon-part"
+		logging.info(new_name)
 
+		# Transcode threads run in parallel and can target the same name
+		with self.transcode_inplace_lock:
+			# Don't clobber an unrelated file that already has the target name
+			if os.path.exists(new_name) and not os.path.samefile(new_name, old_path):
+				logging.error(f"In-place transcode target already exists, keeping original: {new_name}")
+				self.show_message(_("Encoding warning: A file with the output name already exists"), new_name, mode="warning")
+				return
+
+			# Copy in beside the original first, so a failed copy leaves it untouched
+			try:
+				shutil.move(final_out, staged)
+			except Exception:
+				logging.exception("Could not stage transcoded file, keeping original")
 				try:
-					send2trash(self.pctl.master_library[track].fullpath)
+					os.remove(staged)
+				except OSError:
+					pass
+				self.show_message(_("Encoding warning: Could not write transcoded file"), new_name, mode="warning")
+				return
+
+			old_key  = self.star_store.key(track)
+			old_star = self.star_store.full_get(track)
+
+			try:
+				send2trash(old_path)
+			except Exception:
+				logging.exception("File trash error")
+
+			if os.path.isfile(old_path):
+				try:
+					os.remove(old_path)
 				except Exception:
-					logging.exception("File trash error")
+					logging.exception("File delete error")
 
-				if os.path.isfile(self.pctl.master_library[track].fullpath):
-					try:
-						os.remove(self.pctl.master_library[track].fullpath)
-					except Exception:
-						logging.exception("File delete error")
+			if os.path.exists(old_path):
+				logging.error(f"Could not remove original, keeping it: {old_path}")
+				os.remove(staged)
+				self.show_message(_("Encoding warning: Could not remove original file"), old_path, mode="warning")
+				return
 
-				self.pctl.master_library[track].fullpath = new_name
-				self.pctl.master_library[track].file_ext = codec.upper()
+			# Same-folder rename, so it can't fail halfway
+			os.replace(staged, new_name)
 
-				# Update and merge playtimes
-				new_key = self.star_store.key(track)
-				if old_star and (new_key != old_key):
+		self.pctl.master_library[track].fullpath = new_name
+		self.pctl.master_library[track].file_ext = codec.upper()
 
-					new_star = self.star_store.full_get(track)
-					if new_star is None:
-						new_star = StarRecord()
+		# Update and merge playtimes
+		new_key = self.star_store.key(track)
+		if old_star and (new_key != old_key):
 
-					new_star.playtime += old_star.playtime
-					if old_star.rating > 0 and new_star.rating == 0:
-						new_star.rating = old_star.rating
+			new_star = self.star_store.full_get(track)
+			if new_star is None:
+				new_star = StarRecord()
 
-					if old_key in self.star_store.db:
-						del self.star_store.db[old_key]
+			new_star.playtime += old_star.playtime
+			if old_star.rating > 0 and new_star.rating == 0:
+				new_star.rating = old_star.rating
 
-					self.star_store.db[new_key] = new_star
+			if old_key in self.star_store.db:
+				del self.star_store.db[old_key]
 
-		if manual_directory is None:
-			self.gui.transcoding_batch_done += 1
-			self.gui.transcoding_batch_active -= 1
-		if cleanup:
-			os.remove(path)
-		self.core_use -= 1
-		self.gui.request_frame()
+			self.star_store.db[new_key] = new_star
 
 	def embed_transcode_art(self, track: TrackClass, path: Path) -> None:
 		try:
@@ -56895,9 +56949,9 @@ def worker1(tauon: Tauon) -> None:
 				output_dir = prefs.encoder_output / folder_name
 				if prefs.transcode_inplace:
 					try:
-						output_dir.unlink()
-					except Exception:
-						logging.exception("Encode folder not removed")
+						output_dir.rmdir()
+					except OSError:
+						logging.info(f"Encode folder kept, some files were not moved: {output_dir}")
 					tauon.reload_metadata(folder_items[0])
 				elif prefs.transcode_copy_art:
 					tauon.album_art_gen.save_thumb(pctl.get_track(folder_items[0]), (1080, 1080), str(output_dir / "cover"))
