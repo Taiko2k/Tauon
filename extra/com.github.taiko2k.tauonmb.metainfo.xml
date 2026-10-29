@@ -6,18 +6,19 @@
   <developer id="com.github.taiko2k">
     <name>Taiko2k</name>
   </developer>
-  <summary>Play your music with style</summary>
-  <summary xml:lang="ja">音楽をスタイリッシュに再生</summary>
-  <summary xml:lang="de">Spiele deine Musik mit Stil</summary>
-  <summary xml:lang="pt_BR">Reproduza suas músicas com estilo</summary>
+  <summary>Play the music you own</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/Tauon/issues</url>
-  <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
-  <url type="help">https://tauonmusicbox.rocks/#manual</url>
+  <url type="faq">https://tauonmusicbox.rocks/manual/faq/</url>
+  <url type="help">https://tauonmusicbox.rocks/manual/overview/</url>
   <url type="donation">https://github.com/sponsors/Taiko2k</url>
+  <url type="translate">https://github.com/Taiko2k/Tauon/blob/master/CONTRIBUTING.md#translations</url>
+  <url type="contact">https://github.com/Taiko2k/Tauon/discussions</url>
+  <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
+  <url type="contribute">https://github.com/Taiko2k/Tauon/blob/master/CONTRIBUTING.md</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#aa94c4</color>
@@ -35,20 +36,18 @@
   </recommends>
 
   <description>
-    <p>Tauon is a modern, comfortable and streamlined music player for the playback of your music collection.</p>
-    <p>Packed with features while maintaining simplicity. Use drag and drop for easy file importing and playlist management. Groups albums by folder and allows you to manage your music with built-in functions such as file and folder renaming, cover art downloading and file deleting.</p>
-    <p>Features:</p>
+    <p>Tauon is a desktop player for local music libraries. It stays fast with libraries of tens of thousands of tracks: start typing to search everything instantly, or browse your albums as a grid of cover art.</p>
+    <p>Your music can live on disk or on a server. Tauon also plays from Jellyfin, Navidrome, other Subsonic servers, and Plex.</p>
     <ul>
-      <li>Playback local audio files including MP3, FLAC and OGG</li>
-      <li>Add network tracks from Jellyfin, Airsonic and Plex servers</li>
-      <li>Gapless playback</li>
-      <li>Automatic CUE sheet detection</li>
-      <li>Lookup artists on Rate Your Music and Bandcamp</li>
-      <li>Support for last.fm and Listenbrainz</li>
-      <li>Import downloaded music archives in one click</li>
-      <li>Large album art and gallery layouts</li>
-      <li>Support for lyrics including synced lrc files and guitar chords</li>
-      <li>Multiple preset colour themes</li>
+      <li>Gapless playback, CUE sheets and tracker formats such as MOD and XM</li>
+      <li>Colours that adapt to the playing album's art</li>
+      <li>Synced lyrics, with an editor for timing your own</li>
+      <li>Smart playlists and playlist folders</li>
+      <li>Scrobbling to Last.fm, Libre.fm and ListenBrainz</li>
+      <li>Custom layouts built from widgets</li>
+      <li>MilkDrop visualisations</li>
+      <li>Built-in tag editor</li>
+      <li>One-click import of downloaded music archives</li>
     </ul>
   </description>
 
@@ -93,6 +92,8 @@
   <categories>
     <category>AudioVideo</category>
     <category>Audio</category>
+    <category>Player</category>
+    <category>Music</category>
   </categories>
 
   <releases>

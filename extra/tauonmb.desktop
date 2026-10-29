@@ -1,9 +1,6 @@
 [Desktop Entry]
 Version=1.1
-Comment=Play your music with style
-Comment[ja]=音楽をスタイリッシュに再生
-Comment[de]=Spiele deine Musik mit Stil
-Comment[pt_BR]=Reproduza suas músicas com estilo
+Comment=Play the music you own
 GenericName=Audio Player
 GenericName[ja]=音楽プレイヤー
 GenericName[zh_CN]=音乐播放器
@@ -20,7 +17,7 @@ StartupNotify=false
 StartupWMClass=Tauon Music Box
 Terminal=false
 Type=Application
-Categories=AudioVideo;Player;Audio;
+Categories=AudioVideo;Audio;Player;Music;
 Actions=PlayPause;Previous;Next;Stop
 X-GNOME-UsesNotifications=true
 
