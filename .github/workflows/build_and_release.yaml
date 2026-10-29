@@ -164,6 +164,8 @@ jobs:
     env:
       # Pinned projectM master for the Milkdrop visualiser library
       PROJECTM_COMMIT: 149bfc43963e54e397ccdb42f27019d22b659098
+      # Developer ID sign and notarize master pushes only; other builds stay ad-hoc signed
+      MACOS_SIGN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.repository == 'Taiko2k/Tauon' && secrets.MACOS_CERT_P12 != '' }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v7
@@ -282,37 +284,57 @@ jobs:
           ! find "dist/package/Tauon.app" -type f -exec otool -L {} \; 2>/dev/null \
             | grep -E '/opt/homebrew|/usr/local|/Users/runner/work'
 
-      - name: Generate DMG background image
+      - name: Import signing certificate and notary key
+        if: env.MACOS_SIGN == 'true'
+        env:
+          MACOS_CERT_P12: ${{ secrets.MACOS_CERT_P12 }}
+          MACOS_CERT_PASSWORD: ${{ secrets.MACOS_CERT_PASSWORD }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
         run: |
-          .venv/bin/python extra/generate_dmg_background.py dist/dmg-background.png
+          KEYCHAIN="${RUNNER_TEMP}/signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -base64 32)"
+          echo "::add-mask::${KEYCHAIN_PASSWORD}"
+          printf '%s' "${MACOS_CERT_P12}" | base64 --decode > "${RUNNER_TEMP}/cert.p12"
+          security create-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+          security set-keychain-settings -lut 21600 "${KEYCHAIN}"
+          security unlock-keychain -p "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}"
+          security import "${RUNNER_TEMP}/cert.p12" -k "${KEYCHAIN}" -P "${MACOS_CERT_PASSWORD}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${KEYCHAIN_PASSWORD}" "${KEYCHAIN}" >/dev/null
+          security list-keychains -d user -s "${KEYCHAIN}" $(security list-keychains -d user | tr -d '"')
+          rm "${RUNNER_TEMP}/cert.p12"
+          printf '%s\n' "${APPLE_API_KEY_P8}" > "${RUNNER_TEMP}/notary_key.p8"
 
-      - name: Create DMG
+      # FIXME: The script retries create-dmg because of
+      #        https://github.com/actions/runner-images/issues/7522
+      - name: Sign, package and notarize DMG
+        env:
+          CODESIGN_IDENTITY: ${{ secrets.MACOS_SIGN_IDENTITY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER_ID: ${{ secrets.APPLE_API_ISSUER_ID }}
         run: |
-          mkdir -p dist/dmg
-          APP_NAME="Tauon"
-          APP_PATH="dist/package/${APP_NAME}.app"
-          DMG_PATH="dist/dmg/${APP_NAME}.dmg"
+          args=(
+            --input-app dist/package/Tauon.app
+            --output-dmg dist/dmg/Tauon.dmg
+            --python .venv/bin/python
+          )
+          if [[ "${MACOS_SIGN}" == "true" ]]; then
+            export APPLE_API_KEY_PATH="${RUNNER_TEMP}/notary_key.p8"
+          else
+            args+=(--skip-sign)
+          fi
+          bash extra/macos_resign_repack_notarize_dmg.sh "${args[@]}"
 
-          # FIXME: Undo this overengineered crap once the following issue gets figured out:
-          #        https://github.com/actions/runner-images/issues/7522
-          i=0
-          until create-dmg \
-            --volname "${APP_NAME}" \
-            --background "dist/dmg-background.png" \
-            --window-pos 200 120 \
-            --window-size 540 400 \
-            --icon-size 100 \
-            --icon "${APP_NAME}.app" 150 170 \
-            --hide-extension "${APP_NAME}.app" \
-            --app-drop-link 390 170 \
-            "${DMG_PATH}" \
-            "${APP_PATH}"; do
-            if [[ ${i} -eq 10 ]]; then
-              echo "Error: create-dmg did not succeed even after 10 tries."
-              exit 1
-            fi
-            i=$((i+1))
-          done
+      - name: Smoke test signed macOS app
+        if: env.MACOS_SIGN == 'true'
+        run: |
+          "dist/package/Tauon.app/Contents/MacOS/Tauon" --tray --native-smoke-test
+          spctl --assess --type open --context context:primary-signature --verbose=2 dist/dmg/Tauon.dmg
+
+      - name: Remove signing keychain and notary key
+        if: always() && env.MACOS_SIGN == 'true'
+        run: |
+          security delete-keychain "${RUNNER_TEMP}/signing.keychain-db" || true
+          rm -f "${RUNNER_TEMP}/notary_key.p8"
 
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v7
