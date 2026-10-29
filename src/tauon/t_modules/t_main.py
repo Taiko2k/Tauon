@@ -2356,6 +2356,8 @@ class LoadClass:
 		self.force_scan:        bool = False
 		self.drop_action: DropImportAction | None = None
 		self.preserve_order: bool = False
+		# Count the tracks into the "Imported N tracks" toast when done
+		self.toast:             bool = False
 
 class MOD(Structure):
 	"""Access functions from libopenmpt for scanning tracker files"""
@@ -7800,6 +7802,7 @@ class Tauon:
 		self.rename_text_area:                    TextBox = TextBox(tauon=self)
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.tracklist_layout_panel:              TracklistLayoutPanel = TracklistLayoutPanel(tauon=self)
+		self.add_music_box:                       AddMusicBox = AddMusicBox(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
@@ -7864,6 +7867,11 @@ class Tauon:
 		self.whicher                              = whicher
 		self.load_orders:         list[LoadClass] = []
 		self.drop_import_action: DropImportAction | None = None
+		# Folder picker: uuid of the playlist a requested picker imports into,
+		# then of the one an open picker imports into
+		self.folder_dialog_request: int | None = None
+		self.folder_dialog_target:  int | None = None
+		self.import_toast_count:    int = 0
 		self.switch_playlist                      = self.pctl.switch_playlist
 		self.album_info_cache: dict[int, tuple[bool, list[int], bool]] = {}
 		self.album_info_cache_key: tuple[int, TrackClass | None, int] = (-1, None, -1)
@@ -11339,26 +11347,123 @@ class Tauon:
 		self.clear_playlist(self.pctl.active_playlist_viewing)
 
 	def import_folder_to_current_playlist(self, path: str) -> None:
-		pl = self.pctl.active_playlist_viewing
+		self.import_folder_to_playlist(path, self.pctl.active_playlist_viewing)
+
+	def is_untitled_empty(self, pl: int) -> bool:
+		"""An empty playlist still called Default, which an import may take over."""
+		playlist = self.pctl.multi_playlist[pl]
+		return (
+			not playlist.playlist_ids
+			and playlist.title == "Default"
+			and not playlist.locked
+			and playlist.uuid_int not in self.pctl.gen_codes)
+
+	def import_folder_to_playlist(self, path: str, pl: int, toast: bool = False, title: str = "") -> bool:
+		"""Queue a folder import into playlist index pl. An untitled empty
+		playlist is renamed after the folder, or to title."""
 		if self.pl_is_locked(pl):
 			self.show_message(_("Playlist is locked"))
-			return
+			return False
 
 		target = path.replace("\\", "/")
 		if not os.path.isdir(target):
 			self.show_message(_("Folder not found"), mode="warning")
-			return
+			return False
+
+		playlist = self.pctl.multi_playlist[pl]
+		name = title or os.path.basename(target.rstrip("/"))
+		if name and self.is_untitled_empty(pl):
+			self.rename_playlist_references(playlist.title, name)
+			playlist.title = name
 
 		load_order = LoadClass()
 		load_order.target = target
-		load_order.playlist = self.pctl.multi_playlist[pl].uuid_int
+		load_order.playlist = playlist.uuid_int
+		load_order.toast = toast
 
 		self.quick_import_done.append(load_order.target)
-		self.pctl.multi_playlist[pl].last_folder.append(load_order.target)
-		reduce_paths(self.pctl.multi_playlist[pl].last_folder)
+		playlist.last_folder.append(load_order.target)
+		reduce_paths(playlist.last_folder)
 
-		self.load_orders.append(copy.deepcopy(load_order))
+		self.load_orders.append(load_order)
 		self.gui.request_frame()
+		return True
+
+	def request_folder_dialog(self) -> None:
+		"""Ask for the system folder picker for the current playlist. The main
+		loop opens it, so this is safe from menus and the macOS menu bar."""
+		if not self.pctl.multi_playlist:
+			return
+		pl = self.pctl.active_playlist_viewing
+		if self.pl_is_locked(pl):
+			self.show_message(_("Playlist is locked"))
+			return
+		self.folder_dialog_request = self.pctl.multi_playlist[pl].uuid_int
+		self.gui.request_frame()
+
+	def update_folder_dialog(self) -> None:
+		"""Open a requested folder picker and import what an open one returned."""
+		if self.folder_dialog_request is not None and self.folder_dialog_target is None:
+			self.folder_dialog_target = self.folder_dialog_request
+			location = str(self.music_directory) if self.music_directory else None
+			try:
+				sdl3.show_open_folder_dialog(location, True, _("Add Music Folder"), _("Add"))
+			except Exception:
+				logging.exception("Failed to open the folder picker")
+				self.folder_dialog_target = None
+				self.show_message(_("Could not open a folder picker"), mode="error")
+		self.folder_dialog_request = None
+		if self.folder_dialog_target is None:
+			return
+		for paths, error in sdl3.take_folder_dialog_results():
+			pl = self.pctl.id_to_pl(self.folder_dialog_target)
+			self.folder_dialog_target = None
+			if error:
+				logging.error(f"Folder picker failed: {error}")
+				self.show_message(_("Could not open a folder picker"), error, mode="error")
+			elif paths and pl is not None:
+				self.import_picked_folders(paths, pl)
+			self.gui.request_frame()
+
+	def import_picked_folders(self, paths: list[str], pl: int) -> None:
+		"""Import folders from the picker. Under Flatpak the portal hands back
+		document-portal paths, which get the same checks as dropped files."""
+		if self.flatpak_mode:
+			found = [path for path in paths if os.path.exists(path)]
+			if len(found) < len(paths):
+				self.show_message(
+					_("Could not access! Possible insufficient Flatpak permissions."),
+					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
+					mode="bubble")
+			paths = found
+			if any(path.startswith("/run/user/") for path in paths):
+				playlist_id = self.pctl.multi_playlist[pl].uuid_int
+
+				def confirm() -> None:
+					target = self.pctl.id_to_pl(playlist_id)
+					if target is not None:
+						for path in paths:
+							self.import_folder_to_playlist(path, target, toast=True)
+
+				self.gui.message_box_confirm_reference = ()
+				self.gui.message_box_confirm_callback = confirm
+				self.gui.message_box_no_callback = lambda: self.show_message(
+					_("The target may be lost on reboot without necessary Flatpak permissions."),
+					_(" For details, see {link}").format(link="https://github.com/Taiko2k/TauonMusicBox/wiki/Flatpak-Extra-Steps"),
+					mode="bubble")
+				self.show_message(_("Path may be transient! Continue? Press \"No\" for more information."), mode="confirm")
+				return
+		for path in paths:
+			self.import_folder_to_playlist(path, pl, toast=True)
+
+	def toast_imported(self, count: int) -> None:
+		if count == 0:
+			text = _("No music found")
+		elif count == 1:
+			text = _("Imported 1 track")
+		else:
+			text = _("Imported {N} tracks").format(N=count)
+		self.toast(text, duration=2.5)
 
 	def convert_playlist(self, pl: int, get_list: bool = False) -> list[list[int]] | None:
 		if not self.test_ffmpeg():
@@ -16639,7 +16744,8 @@ class Tauon:
 			and not self.trans_edit_box.active \
 			and not self.generator_box.active \
 			and not self.duplicate_import_box.active \
-			and not self.tracklist_layout_panel.active
+			and not self.tracklist_layout_panel.active \
+			and not self.add_music_box.active
 
 	def get_radio_art(self) -> None:
 		if self.radiobox.loaded_url in self.radiobox.websocket_source_urls:
@@ -16905,19 +17011,6 @@ class Tauon:
 
 	def clean_db_deco(self) -> Decorator:
 		return Decorator(self.colours.menu_text, ColourRGBA(30, 150, 120, 255), _("Clean Database!"))
-
-	def show_import_music(self, _: int) -> bool:
-		return self.music_directory is not None
-
-	def import_music(self) -> None:
-		pl = self.pl_gen(_("Music"))
-		pl.last_folder = [str(self.music_directory)]
-		self.pctl.multi_playlist.append(pl)
-		load_order = LoadClass()
-		load_order.target = str(self.music_directory)
-		load_order.playlist = pl.uuid_int
-		self.load_orders.append(load_order)
-		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
 	def clip_aar_al(self, index: int) -> None:
 		if self.pctl.master_library[index].album_artist == "":
@@ -38147,6 +38240,8 @@ class StandardPlaylist:
 		self.tauon         = tauon
 		self.pl_bg         = pl_bg
 		self._clip_rect    = None  # set per full_render(rect) to clip the texture blit
+		# Centre x and top of the Add files… button while the empty notice shows
+		self.empty_notice_anchor: tuple[int, int] | None = None
 		self.gui           = tauon.gui
 		self.inp           = tauon.inp
 		self.ddt           = tauon.ddt
@@ -38870,8 +38965,10 @@ class StandardPlaylist:
 		align_tracklist_to_row = False
 
 		# Show notice if playlist empty
+		self.empty_notice_anchor = None
 		if len(pctl.default_playlist) == 0:
-			colour = alpha_mod(colours.index_text, 200)  # colours.playlist_text_missing
+			background = colours.playlist_panel_background
+			colour = readable_text_colour(alpha_blend(alpha_mod(colours.index_text, 200), background), background)
 
 			top_a = gui.panelY
 			if gui.artist_info_panel:
@@ -38879,19 +38976,17 @@ class StandardPlaylist:
 
 			b = window_size[1] - top_a - gui.panelBY
 			half = int(top_a + (b * 0.60))
+			centre = left + int(width / 2) + round(10 * gui.scale)
 
 			if pl_bg:
 				rect = (
-					left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale, 190 * gui.scale, 60 * gui.scale)
+					left + int(width / 2) - 80 * gui.scale, half - 10 * gui.scale, 190 * gui.scale, 70 * gui.scale)
 				ddt.pretty_rect = rect
 				ddt.alpha_bg = True
 
-			ddt.text(
-				(left + int(width / 2) + 10 * gui.scale, half, 2),
-				_("Playlist is empty"), colour, 213, bg=colours.playlist_panel_background)
-			ddt.text(
-				(left + int(width / 2) + 10 * gui.scale, half + 30 * gui.scale, 2),
-				_("Drag and drop files to import"), colour, 13, bg=colours.playlist_panel_background)
+			ddt.text((centre, half, 2), _("Playlist is empty"), colour, 213, bg=background)
+			# The Add files… button below is drawn per frame by the main loop
+			self.empty_notice_anchor = (centre, half + round(28 * gui.scale))
 
 			ddt.pretty_rect = None
 			ddt.alpha_bg = False
@@ -42299,6 +42394,217 @@ class TracklistLayoutPanel:
 			yy += row_h
 
 		self.click = False
+
+class AddMusicBox:
+	"""Centred overlay with the ways to get music into the current playlist.
+	Opens by itself on a fresh profile and from the empty playlist's Add
+	files… button. A click outside or Esc closes it."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.ddt         = tauon.ddt
+		self.coll        = tauon.coll
+		self.fields      = tauon.fields
+		self.colours     = tauon.colours
+		self.window_size = tauon.window_size
+		bag = tauon.bag
+		self.folder_icon = asset_loader(bag, bag.loaded_asset_dc, "folder.png", True)
+		self.filter_icon = asset_loader(bag, bag.loaded_asset_dc, "filter.png", True)
+		self.active = False
+		self.welcome = False
+		# Set by the main loop when a left click lands inside the box
+		self.click = False
+		self.playlist_id = 0
+		self.rect = (0, 0, 0, 0)
+		self._bg = ColourRGBA(0, 0, 0, 255)
+		self._text = ColourRGBA(255, 255, 255, 255)
+		self._accent = ColourRGBA(255, 255, 255, 255)
+		self._line_px = 1
+
+	def open(self, welcome: bool = False) -> None:
+		pctl = self.tauon.pctl
+		if not pctl.multi_playlist:
+			return
+		self.playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
+		self.welcome = welcome
+		self.active = True
+		self.click = False
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		self.active = False
+		self.click = False
+		self.gui.request_frame()
+
+	def inside(self) -> bool:
+		return self.active and self.coll(self.rect)
+
+	# --- Options ---
+
+	def _target(self) -> int | None:
+		return self.tauon.pctl.id_to_pl(self.playlist_id)
+
+	def music_label(self) -> str:
+		path = self.tauon.music_directory
+		shown = str(path)
+		if sys.platform != "win32":
+			try:
+				shown = "~/" + path.relative_to(Path.home()).as_posix()
+			except ValueError:
+				pass
+		return _("Import {path}").format(path=shown)
+
+	def smart_available(self) -> bool:
+		"""Whether another playlist has tracks for a smart playlist to draw on."""
+		return any(
+			playlist.playlist_ids for playlist in self.tauon.pctl.multi_playlist
+			if playlist.uuid_int != self.playlist_id)
+
+	def options(self) -> list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]]:
+		"""(label, icon painter, action) per tile; the first is the main one."""
+		options = [(_("Add music folder…"), self._paint_folder, self._add_folder)]
+		if self.tauon.music_directory is not None:
+			options.append((self.music_label(), self._paint_note, self._import_music))
+		if self.smart_available():
+			options.append((_("Smart Playlist"), self._paint_smart, self._smart_playlist))
+		return options
+
+	def _add_folder(self) -> None:
+		self.tauon.request_folder_dialog()
+
+	def _import_music(self) -> None:
+		pl = self._target()
+		if pl is not None:
+			self.tauon.import_folder_to_playlist(str(self.tauon.music_directory), pl, toast=True, title=_("Music"))
+
+	def _smart_playlist(self) -> None:
+		pl = self._target()
+		if pl is not None:
+			self.tauon.edit_generator_box(pl)
+
+	# --- Drawing ---
+
+	def _mix(self, alpha: int, over: ColourRGBA | None = None) -> ColourRGBA:
+		return alpha_blend(alpha_mod(self._text, alpha), over or self._bg)
+
+	def _ink(self, alpha: int, over: ColourRGBA | None = None) -> ColourRGBA:
+		over = over or self._bg
+		return readable_text_colour(self._mix(alpha, over), over)
+
+	def _paint_folder(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self.folder_icon.render(cx - self.folder_icon.w // 2, cy - self.folder_icon.h // 2, colour)
+
+	def _paint_smart(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self.filter_icon.render(cx - self.filter_icon.w // 2, cy - self.filter_icon.h // 2, colour)
+
+	def _paint_note(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		# Two beamed quavers
+		s = self.gui.scale
+		x = cx - round(7 * s)
+		y = cy - round(7 * s)
+		head_w = round(5 * s)
+		head_h = round(4 * s)
+		offset = round(9 * s)
+		stem = max(1, round(1.5 * s))
+		for hx in (x, x + offset):
+			self.ddt.rect((hx, y + round(10 * s), head_w, head_h), colour)
+			self.ddt.rect((hx + head_w - stem, y, stem, round(12 * s)), colour)
+		self.ddt.rect((x + head_w - stem, y, offset + stem, round(3 * s)), colour)
+
+	def _tile(
+		self, rect: tuple[int, int, int, int], label: str, primary: bool,
+		painter: Callable[[int, int, ColourRGBA], None],
+	) -> bool:
+		x, y, w, h = rect
+		s = self.gui.scale
+		bg = self._bg
+		hover = self.coll(rect)
+		if primary:
+			fill = alpha_blend(alpha_mod(self._accent, 60 if hover else 40), bg)
+			border = alpha_blend(alpha_mod(self._accent, 170), bg)
+		elif hover:
+			fill = self.colours.menu_highlight_background
+			border = self._mix(90)
+		else:
+			fill = bg
+			border = self._mix(60)
+		self.ddt.bordered_rect(rect, fill, border, self._line_px)
+		painter(x + w // 2, y + round(28 * s), self._accent if primary else self._mix(170, fill))
+		text_colour = readable_text_colour(self._text if primary or hover else self._mix(215, fill), fill)
+		self.ddt.text((x + w // 2, y + round(44 * s), 2), label, text_colour, 313, bg=fill, max_w=w - round(16 * s))
+		if primary:
+			self.ddt.rect((x, y + h - round(2 * s), w, round(2 * s)), self._accent)
+		self.fields.add(rect)
+		return hover and self.click
+
+	def render(self) -> None:
+		if self.tauon.load_orders or self._target() is None:
+			# An import started some other way, such as a drop
+			self.close()
+			return
+		gui = self.gui
+		s = gui.scale
+		colours = self.colours
+		self._bg = bg = colours.menu_background
+		self._text = colours.menu_text
+		self._accent = colours.toggle_box_on
+		self._line_px = max(1, round(s))
+		options = self.options()
+
+		pad = round(18 * s)
+		gap = round(8 * s)
+		tile_h = round(80 * s)
+		inner = max(round(384 * s), len(options) * round(172 * s) + (len(options) - 1) * gap)
+		tile_w = (inner - gap * (len(options) - 1)) // len(options)
+		footer_h = round(18 * s)
+		w = inner + pad * 2
+		h = pad + round(56 * s) + tile_h + round(25 * s) + footer_h + round(14 * s)
+		x = (self.window_size[0] - w) // 2
+		y = (self.window_size[1] - h) // 2
+		self.rect = (x, y, w, h)
+
+		border = rgb_add_hls(bg, 0, -0.12, -0.1) if Menu.background_is_light(bg) else rgb_add_hls(bg, 0, 0.1, 0)
+		self.ddt.bordered_rect(self.rect, bg, border, self._line_px)
+		self.ddt.text_background_colour = bg
+		self.fields.add(self.rect)
+
+		left = x + pad
+		yy = y + pad
+		title = _("Welcome to Tauon") if self.welcome else _("Add music")
+		self.ddt.text((left, yy), title, readable_text_colour(self._text, bg), 215, bg=bg, max_w=inner)
+		yy += round(24 * s)
+		self.ddt.text(
+			(left, yy), _("Add a folder to import contents to current playlist"),
+			self._ink(170), 13, bg=bg, max_w=inner)
+		yy += round(32 * s)
+
+		chosen = None
+		for i, (label, painter, action) in enumerate(options):
+			if self._tile((left + i * (tile_w + gap), yy, tile_w, tile_h), label, i == 0, painter):
+				chosen = action
+		yy += tile_h + round(14 * s)
+
+		self.ddt.rect((left, yy, inner, self._line_px), self._mix(35))
+		yy += round(11 * s)
+		manual = _("Manual")
+		manual_w = self.ddt.get_text_w(manual, 12)
+		self.ddt.text(
+			(left, yy), _("Or drag files and folders into this window"),
+			self._ink(160), 12, bg=bg, max_w=inner - manual_w - gap * 2)
+		link = (left + inner - manual_w, yy, manual_w, footer_h)
+		link_colour = readable_text_colour(colours.link_text, bg)
+		self.ddt.text((link[0], yy), manual, link_colour, 12, bg=bg)
+		self.fields.add(link)
+		if self.coll(link):
+			self.ddt.rect((link[0], yy + footer_h - round(2 * s), manual_w, self._line_px), link_colour)
+			if self.click:
+				self.tauon.open_manual_link()
+
+		self.click = False
+		if chosen is not None:
+			self.close()
+			chosen()
 
 class PlaylistBox:
 
@@ -58816,11 +59122,13 @@ def main(holder: Holder) -> None:
 
 	x_menu.add(MenuItem(_("New Playlist"), tauon.new_playlist, tauon.new_playlist_deco, icon=gui.add_icon))
 
+	add_folder_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "folder.png", True))
+	add_folder_icon.colour = ColourRGBA(90, 210, 210, 255)
+	x_menu.add(MenuItem(_("Add Folder…"), tauon.add_music_box.open, icon=add_folder_icon))
+
 	x_menu.add(MenuItem(_("Clean Database!"), tauon.clean_db_fast, tauon.clean_db_deco, show_test=tauon.clean_db_show_test))
 
 	# x_menu.add(_("Internet Radio…"), activate_radio_box)
-
-	x_menu.add(MenuItem(_("Import Music Folder"), tauon.import_music, show_test=tauon.show_import_music))
 
 	x_menu.br()
 
@@ -59085,6 +59393,9 @@ def main(holder: Holder) -> None:
 			and not item.startswith("-")
 		):
 			tauon.open_uri(item)
+
+	if not state_loaded and not tauon.load_orders:
+		tauon.add_music_box.open(welcome=True)
 
 	sdl_version = sdl3.get_version()
 	logging.info(f"Using SDL version: {sdl_version!s}")
@@ -61743,6 +62054,10 @@ def main(holder: Holder) -> None:
 				gui.request_frame()
 				run_frame = True
 
+		# Before the idle check: a picked folder queues an import, which keeps
+		# frames running until it lands in the playlist
+		tauon.update_folder_dialog()
+
 		if tauon.animate_monitor_timer.get() < 1 or tauon.load_orders:
 			if tauon.cursor_blink_timer.get() > 0.65:
 				tauon.cursor_blink_timer.set()
@@ -62052,6 +62367,10 @@ def main(holder: Holder) -> None:
 				tauon.tracklist_layout_panel.close()
 				inp.key_esc_press = False
 
+			if inp.key_esc_press and tauon.add_music_box.active:
+				tauon.add_music_box.close()
+				inp.key_esc_press = False
+
 			if gui.fullscreen and inp.key_esc_press:
 				gui.fullscreen = False
 				sdl3.set_window_fullscreen(t_window, 0)
@@ -62326,6 +62645,20 @@ def main(holder: Holder) -> None:
 
 			if inp.right_click:
 				inp.level_2_right_click = True
+
+			music_box = tauon.add_music_box
+			music_box.click = False
+			if music_box.active:
+				if music_box.inside():
+					if inp.mouse_click:
+						music_box.click = True
+						inp.mouse_click = False
+					inp.right_click = False
+					inp.mouse_wheel = 0
+				elif inp.mouse_click or inp.right_click:
+					inp.mouse_click = False
+					inp.right_click = False
+					music_box.close()
 
 			layout_panel = tauon.tracklist_layout_panel
 			layout_panel.click = False
@@ -63117,6 +63450,12 @@ def main(holder: Holder) -> None:
 
 							del tauon.load_orders[i]
 
+							if order.toast:
+								tauon.import_toast_count += len(order.tracks)
+								if not any(item.toast for item in tauon.load_orders):
+									tauon.toast_imported(tauon.import_toast_count)
+									tauon.import_toast_count = 0
+
 							# Are there more orders for this playlist?
 							# If not, decide on a name for the playlist
 							for item in tauon.load_orders:
@@ -63799,6 +64138,14 @@ def main(holder: Holder) -> None:
 
 				if tauon.tracklist_layout_panel.active:
 					tauon.tracklist_layout_panel.render()
+
+				anchor = playlist_render.empty_notice_anchor
+				if anchor is not None and not pctl.default_playlist and not tauon.add_music_box.active:
+					label = _("Add files…")
+					button_w = ddt.get_text_w(label, 212) + round(28 * gui.scale)
+					if tauon.draw.button(label, anchor[0] - button_w // 2, anchor[1], w=button_w, h=round(26 * gui.scale)):
+						inp.mouse_click = False
+						tauon.add_music_box.open()
 
 				if gui.preview_artist:
 					border = round(4 * gui.scale)
@@ -65068,6 +65415,9 @@ def main(holder: Holder) -> None:
 				tauon.top_panel.activity.render()
 			else:
 				tauon.top_panel.activity.close()
+
+			if tauon.add_music_box.active:
+				tauon.add_music_box.render()
 
 			# Render Menus-------------------------------
 			tauon.draw_popup_menus()

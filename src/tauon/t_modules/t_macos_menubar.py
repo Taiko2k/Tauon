@@ -461,26 +461,8 @@ class MacMenuBar:
 			item.setTitle_(title)
 
 	def import_folder_to_current_playlist(self) -> None:
-		panel = AppKit.NSOpenPanel.openPanel()
-		panel.setCanChooseFiles_(False)
-		panel.setCanChooseDirectories_(True)
-		panel.setAllowsMultipleSelection_(False)
-		panel.setCanCreateDirectories_(False)
-		panel.setMessage_("Choose a folder to import into the current playlist.")
-		panel.setPrompt_("Import")
-		panel.setDirectoryURL_(AppKit.NSURL.fileURLWithPath_(str(self.tauon.music_directory)))
-		if panel.runModal() != AppKit.NSModalResponseOK:
-			return
-
-		url = panel.URL()
-		if url is None:
-			return
-		path = url.path()
-		if not path:
-			return
-
-		self.tauon.import_folder_to_current_playlist(path)
-		self.refresh_states()
+		# Shares the SDL folder picker (an NSOpenPanel sheet) with the other platforms
+		self.tauon.request_folder_dialog()
 
 	def clear_current_playlist(self) -> None:
 		self.tauon.clear_current_playlist()

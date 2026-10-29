@@ -24,6 +24,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <mutex>
 #include <optional>
 #include <random>
 #include <string>
@@ -1565,6 +1566,93 @@ PyObject* bridge_show_error_message(PyObject*, PyObject* args) {
 	return PyLong_FromLong(choice);
 }
 
+// Folder dialog outcomes. SDL may run the callback on any thread, so it only
+// queues the result and wakes the event loop; Python drains the queue.
+struct FolderDialogResult {
+	std::vector<std::string> paths;  // Empty when cancelled
+	std::string error;
+};
+
+std::mutex folder_dialog_mutex;
+std::vector<FolderDialogResult> folder_dialog_results;
+
+void SDLCALL folder_dialog_done(void*, const char* const* filelist, int) {
+	FolderDialogResult result;
+	if (filelist == nullptr) {
+		result.error = SDL_GetError();
+		if (result.error.empty()) result.error = "Folder dialog failed";
+	} else {
+		for (const char* const* entry = filelist; *entry != nullptr; ++entry) {
+			result.paths.emplace_back(*entry);
+		}
+	}
+	{
+		const std::lock_guard<std::mutex> lock(folder_dialog_mutex);
+		folder_dialog_results.push_back(std::move(result));
+	}
+	SDL_Event event{};
+	event.type = SDL_EVENT_USER;
+	SDL_PushEvent(&event);
+}
+
+PyObject* bridge_show_open_folder_dialog(PyObject*, PyObject* args) {
+	const char* location = nullptr;
+	int many = 0;
+	const char* title = nullptr;
+	const char* accept = nullptr;
+	if (!PyArg_ParseTuple(args, "|zpzz", &location, &many, &title, &accept)) return nullptr;
+
+	const SDL_PropertiesID props = SDL_CreateProperties();
+	if (props == 0) {
+		PyErr_SetString(PyExc_RuntimeError, SDL_GetError());
+		return nullptr;
+	}
+	if (g_state != nullptr) SDL_SetPointerProperty(props, SDL_PROP_FILE_DIALOG_WINDOW_POINTER, g_state->window.get());
+	if (location != nullptr) SDL_SetStringProperty(props, SDL_PROP_FILE_DIALOG_LOCATION_STRING, location);
+	SDL_SetBooleanProperty(props, SDL_PROP_FILE_DIALOG_MANY_BOOLEAN, many != 0);
+	if (title != nullptr) SDL_SetStringProperty(props, SDL_PROP_FILE_DIALOG_TITLE_STRING, title);
+	if (accept != nullptr) SDL_SetStringProperty(props, SDL_PROP_FILE_DIALOG_ACCEPT_STRING, accept);
+	// SDL copies what it needs before returning
+	TAUON_WITHOUT_GIL(SDL_ShowFileDialogWithProperties(SDL_FILEDIALOG_OPENFOLDER, folder_dialog_done, nullptr, props));
+	SDL_DestroyProperties(props);
+	Py_RETURN_NONE;
+}
+
+PyObject* bridge_take_folder_dialog_results(PyObject*, PyObject*) {
+	std::vector<FolderDialogResult> results;
+	{
+		const std::lock_guard<std::mutex> lock(folder_dialog_mutex);
+		results.swap(folder_dialog_results);
+	}
+	PyObject* list = PyList_New(0);
+	if (list == nullptr) return nullptr;
+	for (const FolderDialogResult& result : results) {
+		PyObject* paths = PyList_New(0);
+		if (paths == nullptr) {
+			Py_DECREF(list);
+			return nullptr;
+		}
+		for (const std::string& path : result.paths) {
+			PyObject* text = PyUnicode_DecodeUTF8(path.data(), static_cast<Py_ssize_t>(path.size()), "surrogateescape");
+			if (text == nullptr || PyList_Append(paths, text) != 0) {
+				Py_XDECREF(text);
+				Py_DECREF(paths);
+				Py_DECREF(list);
+				return nullptr;
+			}
+			Py_DECREF(text);
+		}
+		PyObject* item = Py_BuildValue("(Ns)", paths, result.error.c_str());
+		if (item == nullptr || PyList_Append(list, item) != 0) {
+			Py_XDECREF(item);
+			Py_DECREF(list);
+			return nullptr;
+		}
+		Py_DECREF(item);
+	}
+	return list;
+}
+
 PyObject* bridge_start_ipc_server(PyObject*, PyObject* handler) {
 	if (g_state == nullptr || g_state->user_data_directory.empty()) {
 		PyErr_SetString(PyExc_RuntimeError, "Tauon's user data directory is unavailable");
@@ -1631,6 +1719,8 @@ PyMethodDef bridge_methods[] = {
 	{"get_clipboard_text", bridge_get_clipboard_text, METH_NOARGS, "Get UTF-8 text from the system clipboard."},
 	{"has_clipboard_text", bridge_has_clipboard_text, METH_NOARGS, "Return whether the clipboard contains text."},
 	{"show_error_message", bridge_show_error_message, METH_VARARGS, "Show a native error message box and return the index of the chosen button, or -1."},
+	{"show_open_folder_dialog", bridge_show_open_folder_dialog, METH_VARARGS, "Open the system folder picker; the outcome arrives via take_folder_dialog_results."},
+	{"take_folder_dialog_results", bridge_take_folder_dialog_results, METH_NOARGS, "Return and clear finished folder dialogs as (paths, error) tuples."},
 	{"start_ipc_server", bridge_start_ipc_server, METH_O, "Serve launcher commands, calling handler(command, argument) on a background thread."},
 	{"forward_arguments", bridge_forward_arguments, METH_O, "Send sys.argv style arguments to the running instance and return an exit code."},
 	{nullptr, nullptr, 0, nullptr},

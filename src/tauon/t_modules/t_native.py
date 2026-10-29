@@ -363,6 +363,10 @@ stop_text_input = tauon_native.stop_text_input
 set_text_input_area = tauon_native.set_text_input_area
 get_display_refresh_rate = tauon_native.get_display_refresh_rate
 start_ipc_server = tauon_native.start_ipc_server
+# show_open_folder_dialog(location, many, title, accept) returns at once; each
+# closed dialog later shows up in take_folder_dialog_results() as (paths, error)
+show_open_folder_dialog = tauon_native.show_open_folder_dialog
+take_folder_dialog_results = tauon_native.take_folder_dialog_results
 
 
 def create_tray(icon: ImageData, tooltip) -> int:
