@@ -180,6 +180,7 @@ class Prefs:
 	plex_library = ""
 
 	auto_lyrics: bool = False  # Function has been disabled
+	search_lyrics: bool = False  # Include lyrics text in global search
 	jelly_username: str = ""
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"

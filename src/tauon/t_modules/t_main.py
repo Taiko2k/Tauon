@@ -402,6 +402,10 @@ except Exception:
 CJK_SEARCH_PATTERN = re.compile(
 	r"[\u4e00-\u9fff\u3400-\u4dbf\u20000-\u2a6df\u2a700-\u2b73f\u2b740-\u2b81f\u2b820-\u2ceaf\uf900-\ufaff\u2f800-\u2fa1f]"
 )
+# LRC timestamps, meta tags and section markers, stripped before lyrics are searched
+LRC_TAG_PATTERN = re.compile(r"\[[^\]\n]*\]|<\d+:\d+(?:[.:]\d+)?>")
+# Bump when the persisted search strings change shape; older ones are dropped on load
+SEARCH_CACHE_FORMAT = 2
 
 try:
 	from tauon.t_modules.t_chrome import Chrome
@@ -7683,8 +7687,10 @@ class Tauon:
 		self.device: str                       = socket.gethostname()
 		self.search_string_cache:     dict[int, str] = {}
 		self.search_dia_string_cache: dict[int, str] = {}
-		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
-		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str, str]] = {}
+		self.search_field_cache:      dict[int, tuple[str, str, str, str, str, str, str, str, str, str, str, str, str]] = {}
+		self.search_dia_field_cache:  dict[int, tuple[str, str, str, str, str, str, str, str]] = {}
+		# track id -> (lyrics, synced, searchable text); validated by identity, so no invalidation needed
+		self.search_lyrics_cache:     dict[int, tuple[str, str, str]] = {}
 		self.albums:            list[int] = []
 		self.added:             list[int] = []
 		self.album_dex:         list[int] = []
@@ -17314,6 +17320,16 @@ class Tauon:
 		# return True
 		return self.prefs.backend == Backend.GSTREAMER
 
+	def _lyrics_search_text(self, track: TrackClass) -> str:
+		"""Lowercased lyrics without LRC tags, for global search. Prefers static lyrics over synced."""
+		cached = self.search_lyrics_cache.get(track.index)
+		if cached is not None and cached[0] is track.lyrics and cached[1] is track.synced:
+			return cached[2]
+		source = track.lyrics or track.synced
+		text = LRC_TAG_PATTERN.sub(" ", source).lower().replace("-", "") if source else ""
+		self.search_lyrics_cache[track.index] = (track.lyrics, track.synced, text)
+		return text
+
 	def _build_search_results(
 		self,
 		query_text: str,
@@ -17390,6 +17406,23 @@ class Tauon:
 		searched = set()
 		s_text_nospace = s_text.replace(" ", "")
 
+		# Short queries fuzzy-match nearly every lyric, so lyrics need a few characters
+		lyrics_on = (
+			self.prefs.search_lyrics and len(s_text) >= 4
+			and not (artist_mode or album_mode or composer_mode or label_mode or year_mode))
+		lyrics_text = self._lyrics_search_text
+
+		def match_lyrics(track_id: int, t: TrackClass, pl_id: int) -> None:
+			if t in tracks or not (t.lyrics or t.synced):
+				return
+			text = lyrics_text(t)
+			if not text or not search_magic_any_local(s_text, text):
+				return
+			val = search_magic_beefy(s_text, text)
+			if val > 90:
+				temp_results.append([9, t.title, track_id, pl_id, val - 100])
+				tracks.add(t)
+
 		for playlist in multi_playlist:
 			for track in playlist.playlist_ids:
 				if track in searched:
@@ -17417,12 +17450,12 @@ class Tauon:
 
 				if dia_mode:
 					cache_string = search_dia_string_cache.get(track)
-					if cache_string is not None and not search_magic_any_local(s_text, cache_string):
-						continue
 				else:
 					cache_string = search_string_cache.get(track)
-					if cache_string is not None and not search_magic_any_local(s_text, cache_string):
-						continue
+				if cache_string is not None and not search_magic_any_local(s_text, cache_string):
+					if lyrics_on:
+						match_lyrics(track, master_library[track], playlist.uuid_int)
+					continue
 
 				t = master_library[track]
 				fields = search_field_cache.get(track)
@@ -17440,7 +17473,6 @@ class Tauon:
 					sartist = (t.artist_sort if t.artist_sort is not None else "").lower()
 					stem_raw = os.path.dirname(t.parent_folder_path)
 					stem_search = stem_raw.lower().replace("-", "")
-					lyrics = t.lyrics.lower().replace("-", "") + " " + t.synced.lower().replace("-", "")
 					search_field_cache[track] = (
 						title,
 						artist,
@@ -17454,15 +17486,14 @@ class Tauon:
 						sartist,
 						stem_search,
 						stem_raw,
-						lyrics,
 						label,
 					)
 				else:
-					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, lyrics, label = fields
+					title, artist, album_artist, composer, date, album, genre, genre_nospace, filename, sartist, stem_search, stem_raw, label = fields
 
 				if cache_string is None:
 					if not dia_mode:
-						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics + label
+						search_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + label
 
 					if cn_mode:
 						cache_string = search_string_cache.get(track)
@@ -17486,7 +17517,6 @@ class Tauon:
 						d_album = unidecode(album)
 						d_filename = unidecode(filename)
 						d_sartist = unidecode(sartist)
-						d_lyrics = unidecode(lyrics)
 						d_label = unidecode(label)
 						search_dia_field_cache[track] = (
 							d_title,
@@ -17496,11 +17526,10 @@ class Tauon:
 							d_album,
 							d_filename,
 							d_sartist,
-							d_lyrics,
 							d_label,
 						)
 					else:
-						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_lyrics, d_label = dia_fields
+						d_title, d_artist, d_album_artist, d_composer, d_album, d_filename, d_sartist, d_label = dia_fields
 
 					title = d_title
 					artist = d_artist
@@ -17509,11 +17538,10 @@ class Tauon:
 					album = d_album
 					filename = d_filename
 					sartist = d_sartist
-					lyrics = d_lyrics
 					label = d_label
 
 					if cache_string is None:
-						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + lyrics + label
+						search_dia_string_cache[track] = title + artist + album_artist + composer + date + album + genre + sartist + filename + stem_search + label
 
 				if len(s_text) > 2 and s_text in stem_search:
 					if stem_raw in metas:
@@ -17659,12 +17687,8 @@ class Tauon:
 					elif t not in tracks:
 						temp_results.append([2, t.title, track, playlist.uuid_int, 1])
 						tracks.add(t)
-				else:
-					val = search_magic_beefy(s_text, lyrics)
-					if val > 90:
-						if t not in tracks:
-							temp_results.append([9, t.title, track, playlist.uuid_int, val-100])
-							tracks.add(t)
+				elif lyrics_on:
+					match_lyrics(track, t, playlist.uuid_int)
 
 				br += 1
 				if br > 800:
@@ -21436,6 +21460,7 @@ class Tauon:
 			prefs.libre_fm_token,  # 207
 			prefs.libre_fm_username,  # 208
 			prefs.auto_libre_fm,  # 209
+			SEARCH_CACHE_FORMAT,  # 210
 		]
 
 		for slot, value in db_snapshot.items():
@@ -32906,6 +32931,7 @@ class Over:
 			_("Keep idle"): "discord rich presence idle paused status",
 			_("Upload to catbox.moe"): "discord rich presence cover art image upload catbox litterbox",
 			_("Auto-search lyrics"): "lyrics search fetch automatic download words karaoke",
+			_("Search within lyrics"): "lyrics global search find words slow lag performance",
 			_("Enable scrobbling"): "scrobble scrobbling lastfm last.fm listenbrainz maloja history",
 			_("Allow local scrobbling"): "scrobble scrobbling local plex jellyfin tidal duplicate",
 			_("Scrobble Radios"): "scrobble radio stream internet radio",
@@ -34319,6 +34345,10 @@ class Over:
 	def settings_body_lyrics(self, rows: SettingsRows) -> None:
 		prefs = self.prefs
 		prefs.auto_lyrics = rows.switch(prefs.auto_lyrics, _("Auto-search lyrics"), _("Auto-search when lyrics enabled"))
+		search_lyrics = rows.switch(prefs.search_lyrics, _("Search within lyrics"), _("Global search also matches lyrics text"))
+		if search_lyrics != prefs.search_lyrics:
+			prefs.search_lyrics = search_lyrics
+			self.tauon.search_lyrics_cache.clear()
 		source_names = [name for name in lyric_sources if name != "Genius"]
 		if "Genius" in lyric_sources:
 			source_names.append("Genius")
@@ -54846,6 +54876,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("discord-keep-idle",            prefs.discord_keep_idle)
 	cf.update_value("discord-litterbox-upload",     prefs.discord_litterbox_upload)
 	cf.update_value("auto-search-lyrics", prefs.auto_lyrics)
+	cf.update_value("search-lyrics", prefs.search_lyrics)
 	cf.update_value("shortcuts-ignore-keymap", prefs.use_scancodes)
 	cf.update_value("alpha_key_activate_search", prefs.search_on_letter)
 	cf.update_value("taskbar-status", prefs.taskbar_progress)
@@ -55315,6 +55346,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.auto_lyrics = cf.sync_add(
 		"bool", "auto-search-lyrics", prefs.auto_lyrics,
 		"Automatically search internet for lyrics when display is wanted")
+	prefs.search_lyrics = cf.sync_add(
+		"bool", "search-lyrics", prefs.search_lyrics,
+		"Include lyrics text in global search results. Can slow search on large libraries")
 
 	prefs.use_scancodes = cf.sync_add(
 		"bool", "shortcuts-ignore-keymap", prefs.use_scancodes,
@@ -58313,6 +58347,10 @@ def main(holder: Holder) -> None:
 				prefs.libre_fm_username = save[208]
 			if len(save) > 209 and save[209] is not None:
 				prefs.auto_libre_fm = save[209]
+			if len(save) <= 210 or save[210] != SEARCH_CACHE_FORMAT:
+				# Older search strings embedded lyrics text
+				search_string_cache = {}
+				search_dia_string_cache = {}
 
 			del save
 			state_loaded = True
