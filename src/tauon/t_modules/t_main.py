@@ -22958,8 +22958,13 @@ class PlexService:
 		if not self.connected:
 			self.connect()
 
-		# return self.resource.url(location, True)
-		return self.resource.library.fetchItem(location).getStreamURL()
+		item = self.resource.library.fetchItem(location)
+		# Serve the original file when phazor can decode it: it has a real length
+		# and supports range requests, unlike Plex's live mp3 transcode
+		media = item.media[0] if item.media else None
+		if media and media.parts and media.audioCodec in ("mp3", "flac", "vorbis", "opus"):
+			return self.resource.url(media.parts[0].key, True)
+		return item.getStreamURL()
 
 	def resolve_thumbnail(self, location: str):
 		if not self.connected:
