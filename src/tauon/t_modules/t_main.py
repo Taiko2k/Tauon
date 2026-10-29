@@ -23123,7 +23123,32 @@ class PlexService:
 			return self.resource.url(location, True)
 		return None
 
+	def music_section(self):
+		"""Return the configured music library, or the only one on the server if none is set"""
+		if self.prefs.plex_library:
+			return self.resource.library.section(self.prefs.plex_library)
+		sections = [s for s in self.resource.library.sections() if s.type == "artist"]
+		if len(sections) == 1:
+			return sections[0]
+		if not sections:
+			raise LookupError(_("No music library found on the server"))
+		raise LookupError(
+			_("Several music libraries found, set one in settings: {names}").format(
+				names=", ".join(s.title for s in sections)))
+
 	def get_albums(self, return_list: bool = False) -> list[int] | None:
+		# Always clear the scanning flag, or the UI stays on "Accessing PLEX library..."
+		try:
+			return self._get_albums(return_list)
+		except Exception as e:
+			logging.exception("Error importing PLEX library")
+			self.show_message(_("Error importing PLEX library"), str(e), mode="error")
+			return [] if return_list else None
+		finally:
+			self.scanning = False
+			self.gui.request_frame()
+
+	def _get_albums(self, return_list: bool) -> list[int] | None:
 		self.gui.request_frame()
 		self.scanning = True
 
@@ -23142,7 +23167,7 @@ class PlexService:
 				existing[track.url_key] = track_id
 
 		# Fetch all tracks in one paged listing instead of one request per album
-		section = self.resource.library.section(self.prefs.plex_library)
+		section = self.music_section()
 		albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
 		tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
 		self.gui.to_got = 0
