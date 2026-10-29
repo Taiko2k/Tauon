@@ -105,7 +105,7 @@ def test_toast_imported(count: int, text: str) -> None:
 def test_box_offers_smart_playlist_only_with_other_tracks(music: Path) -> None:
 	tauon = make_tauon([playlist(1), playlist(2, title="Empty")], music)
 	box = make_box(tauon)
-	assert [label for label, _painter, _action in box.options()] == ["Add music folder…", f"Import {music}"]
+	assert [label for label, _painter, _action in box.options()] == ["Pick folder…", f"Import {music}"]
 	tauon.pctl.multi_playlist[1].playlist_ids = [7]
 	assert [label for label, _painter, _action in box.options()][-1] == "Smart Playlist"
 	tauon.music_directory = None
