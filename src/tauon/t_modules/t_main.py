@@ -22986,59 +22986,61 @@ class PlexService:
 			if track.is_network and track.file_ext == "PLEX":
 				existing[track.url_key] = track_id
 
-		albums = self.resource.library.section(self.prefs.plex_library).albums()
+		# Fetch all tracks in one paged listing instead of one request per album
+		section = self.resource.library.section(self.prefs.plex_library)
+		albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
+		tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
 		self.gui.to_got = 0
 
-		for album in albums:
-			year = album.year
-			album_artist = album.parentTitle
-			album_title = album.title
+		for track in tracks:
+			if not track.duration:
+				logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
+				continue
+
+			album = albums.get(track.parentRatingKey)
+			year = album.year if album else None
+			album_artist = album.parentTitle if album else track.grandparentTitle
+			album_title = track.parentTitle
 
 			parent = (album_artist + " - " + album_title).strip("- ")
 
-			for track in album.tracks():
-				if not track.duration:
-					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
-					continue
+			id = existing.get(track.key)
+			if id is None:
+				id = allocate_track_id(self.pctl)
 
-				id = existing.get(track.key)
-				if id is None:
-					id = allocate_track_id(self.pctl)
+			nt = TrackClass()
+			nt.index = id
+			nt.track_number = track.index
+			nt.file_ext = "PLEX"
+			nt.parent_folder_path = parent
+			nt.parent_folder_name = parent
+			nt.album_artist = album_artist
+			nt.artist = track.grandparentTitle
+			nt.title = track.title
+			nt.album = album_title
+			nt.length = track.duration / 1000
+			if hasattr(track, "locations") and track.locations:
+				nt.fullpath = track.locations[0]
 
-				title = track.title
-				track_artist = track.grandparentTitle
-				duration = track.duration / 1000
+			nt.is_network = True
 
-				nt = TrackClass()
-				nt.index = id
-				nt.track_number = track.index
-				nt.file_ext = "PLEX"
-				nt.parent_folder_path = parent
-				nt.parent_folder_name = parent
-				nt.album_artist = album_artist
-				nt.artist = track_artist
-				nt.title = title
-				nt.album = album_title
-				nt.length = duration
-				if hasattr(track, "locations") and track.locations:
-					nt.fullpath = track.locations[0]
+			if track.thumb:
+				nt.art_url_key = track.thumb
 
-				nt.is_network = True
+			nt.url_key = track.key
+			nt.date = str(year)
 
-				if track.thumb:
-					nt.art_url_key = track.thumb
+			self.pctl.master_library[id] = nt
 
-				nt.url_key = track.key
-				nt.date = str(year)
-
-				self.pctl.master_library[id] = nt
-
-				playlist.append(nt.index)
+			playlist.append(nt.index)
 
 			self.gui.to_got += 1
-			self.gui.request_frame()
-			self.gui.request_tracklist_redraw()
+			if self.gui.to_got % 500 == 0:
+				self.gui.request_frame()
+				self.gui.request_tracklist_redraw()
 
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		self.scanning = False
 
 		if return_list:
