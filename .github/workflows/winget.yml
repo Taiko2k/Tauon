@@ -1,12 +1,27 @@
 name: Publish to WinGet
 on:
-  release:
-    types: [released]
+  # Wait for attach-to-release, the installer isn't on the release until then
+  workflow_run:
+    workflows: [attach-to-release]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to submit, e.g. v13.1.0
+        required: true
 jobs:
   publish:
+    # Version tags only (skips Extras, Pre-release-* and -rc style tags)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       startsWith(github.event.workflow_run.head_branch, 'v') &&
+       !contains(github.event.workflow_run.head_branch, '-'))
     runs-on: ubuntu-latest
     steps:
       - uses: vedantmgoyal9/winget-releaser@main
         with:
           identifier: Taiko2k.TauonMusicBox
+          release-tag: ${{ inputs.tag || github.event.workflow_run.head_branch }}
+          installers-regex: 'windows-installer\.exe$'
           token: ${{ secrets.WINGET_TOKEN }}
