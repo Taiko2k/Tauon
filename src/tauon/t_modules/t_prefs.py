@@ -429,6 +429,8 @@ class Prefs:
 
 	scrobble_hold: bool = False
 	scrobble_radios: bool = True
+	# Save unsent scrobbles to disk and retry them, including after a restart
+	scrobble_offline_queue: bool = True
 
 	# Allow Tauon to scrobble tracks played from a given streaming service.
 	# Useful to disable when the service scrobbles to Last.fm/ListenBrainz on its own.

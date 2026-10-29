@@ -287,6 +287,21 @@ from tauon.t_modules.t_relocate import (  # noqa: E402
 	normalise as relocate_normalise,
 	remainder as relocate_remainder,
 )
+from tauon.t_modules.t_scrobble_queue import (  # noqa: E402
+	LASTFM,
+	LIBREFM,
+	LISTENBRAINZ,
+	MALOJA,
+	QUEUE_FILENAME,
+	SERVICE_NAMES,
+	SUBSONIC,
+	Outcome,
+	PendingScrobble,
+	ScrobbleQueue,
+	http_outcome,
+	pending_from_track,
+	track_number_int,
+)
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
@@ -5410,66 +5425,67 @@ class LastFMapi:
 		except Exception:
 			logging.exception("Failed to pull love")
 
-	def scrobble(self, track_object: TrackClass, timestamp: int | None = None) -> bool:
+	def submit_scrobbles(self, items: list[PendingScrobble]) -> list[Outcome]:
+		"""Scrobble up to 50 plays in one request."""
 		if not self.last_fm_enable:
-			return True
-		if self.prefs.scrobble_hold:
-			return True
-		if self.enabled:
-			self.connect(False)
+			return [Outcome.DROP] * len(items)
+		self.connect(False)
+		if not self.connected:
+			return [Outcome.RETRY] * len(items)
 
-		if timestamp is None:
-			timestamp = int(time.time())
+		params: dict[str, str | int] = {}
+		for i, item in enumerate(items):
+			params[f"artist[{i}]"] = item.artist
+			params[f"track[{i}]"] = item.title
+			params[f"timestamp[{i}]"] = item.timestamp
+			if item.album:
+				params[f"album[{i}]"] = item.album
+				if item.album_artist and item.album_artist != item.artist:
+					params[f"albumArtist[{i}]"] = item.album_artist
+			if item.duration:
+				params[f"duration[{i}]"] = item.duration
+			if track_number := track_number_int(item.track_number):
+				params[f"trackNumber[{i}]"] = track_number
 
-		# lastfm_user = self.network.get_user(self.username)
-
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
-		album_artist = track_object.album_artist
-
-		logging.info("Submitting scrobble...")
-
-		# Act
+		logging.info(f"Submitting {len(items)} scrobble(s) to {self.name}")
 		try:
-			if title and artist:
-				if album:
-					if album_artist and album_artist != artist:
-						self.network.scrobble(
-							artist=artist, title=title, album=album, album_artist=album_artist, timestamp=timestamp)
-					else:
-						self.network.scrobble(artist=artist, title=title, album=album, timestamp=timestamp)
-				else:
-					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-				# logging.info('Scrobbled')
+			# pylast's scrobble_many() discards the reply, which lists ignored scrobbles
+			doc = pylast._Request(self.network, "track.scrobble", params).execute()  # noqa: SLF001
+		except pylast.WSError as e:
+			# 2/3/5: bad request, 6: invalid parameters, 7: invalid resource, 13: invalid signature
+			if str(e.status) in ("2", "3", "5", "6", "7", "13"):
+				logging.warning(f"{self.name} rejected {len(items)} scrobble(s): {e}")
+				return [Outcome.DROP] * len(items)
+			logging.warning(f"{self.name} scrobble failed, will retry: {e}")
+			return [Outcome.RETRY] * len(items)
+		except pylast.NetworkError as e:
+			logging.warning(f"Could not reach {self.name}: {e}")
+			return [Outcome.RETRY] * len(items)
+		except Exception:
+			logging.exception(f"Error connecting to {self.name}")
+			return [Outcome.RETRY] * len(items)
 
-				# Pull loved status
-
-				self.sync_pull_love(track_object)
+		results: list[Outcome] = []
+		for item, node in zip(items, doc.getElementsByTagName("scrobble")):
+			ignored = node.getElementsByTagName("ignoredMessage")
+			code = ignored[0].getAttribute("code") if ignored else "0"
+			if code in ("", "0"):
+				results.append(Outcome.SENT)
+			elif code == "5":
+				# Daily scrobble limit, try again later
+				results.append(Outcome.RETRY)
 			else:
-				logging.warning("Not sent, incomplete metadata")
+				reason = {"1": "artist ignored", "2": "track ignored", "3": "timestamp too old", "4": "timestamp too new"}
+				logging.warning(f"{self.name} ignored {item.artist} - {item.title}: {reason.get(code, 'code ' + code)}")
+				results.append(Outcome.DROP)
+		results += [Outcome.SENT] * (len(items) - len(results))
 
-		except Exception as e:
-			logging.exception("Failed to Scrobble!")
-			if "retry" in str(e):
-				logging.warning("Retrying in a couple seconds...")
-				time.sleep(7)
-
-				try:
-					self.network.scrobble(artist=artist, title=title, timestamp=timestamp)
-					# logging.info('Scrobbled')
-					return True
-				except Exception:
-					logging.exception("Failed to retry!")
-
-			# self.show_message(_("Error: Could not scrobble. ", str(e), mode='warning')
-			logging.error(f"Error connecting to {self.name}")
-			self.tauon.scrobble_warning_timer.set()
-			self.gui.request_frame()
-			self.gui.delay_frame(5)
-
-			return False
-		return True
+		for item, result in zip(items, results):
+			if result is Outcome.SENT and item.track_id is not None:
+				track = self.pctl.master_library.get(item.track_id)
+				if track is not None and track.title == item.title:
+					self.sync_pull_love(track)
+		return results
 
 	def get_bio(self, artist: str) -> str:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
@@ -5731,59 +5747,49 @@ class ListenBrainz:
 		r.raise_for_status()
 		return True
 
-	def listen_full(self, track_object: TrackClass, time: int) -> bool | None:
-		if self.enable is False:
-			return True
-		if self.prefs.scrobble_hold is True:
-			return True
-		if self.prefs.lb_token is None:
-			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-			return None
+	def track_metadata(self, item: PendingScrobble) -> dict[str, object]:
+		metadata: dict[str, object] = {"track_name": item.title, "artist_name": item.artist}
+		if item.album:
+			metadata["release_name"] = item.album
 
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
+		additional: dict[str, object] = {}
+		if item.artist_mbids:
+			additional["artist_mbids"] = item.artist_mbids
+		if item.release_mbid:
+			additional["release_mbid"] = item.release_mbid
+		if item.recording_mbid:
+			additional["recording_mbid"] = item.recording_mbid
+		if item.track_mbid:
+			additional["track_mbid"] = item.track_mbid
+		if track_number := track_number_int(item.track_number):
+			additional["tracknumber"] = str(track_number)
+		if item.duration:
+			additional["duration"] = item.duration
+		additional["media_player"] = self.t_title
+		additional["submission_client"] = self.t_title
+		additional["media_player_version"] = str(self.n_version)
+		metadata["additional_info"] = additional
+		return metadata
 
-		if title == "" or artist == "":
-			return True
+	def submit_listens(self, items: list[PendingScrobble]) -> list[Outcome]:
+		"""Submit plays; a backlog goes in as an import."""
+		listen_type = "single" if len(items) == 1 and time.time() - items[0].timestamp < 600 else "import"
+		data = {
+			"listen_type": listen_type,
+			"payload": [{"listened_at": item.timestamp, "track_metadata": self.track_metadata(item)} for item in items],
+		}
+		try:
+			r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, json=data, timeout=10)
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach ListenBrainz: {e}")
+			return [Outcome.RETRY] * len(items)
 
-		data = {"listen_type": "single", "payload": []}
-		metadata = {
-			"track_name": title,
-			**({"release_name": album} if album else {}),
-			"artist_name": artist,
-			}
-
-		additional: dict[str, str] = {}
-
-		# MusicBrainz Artist IDs
-		if track_object.musicbrainz_artistids is not None:
-			additional["artist_mbids"] = track_object.musicbrainz_artistids
-
-		# MusicBrainz Release ID
-		if track_object.musicbrainz_albumid is not None:
-			additional["release_mbid"] = track_object.musicbrainz_albumid
-
-		# MusicBrainz Recording ID
-		if track_object.musicbrainz_recordingid is not None:
-			additional["recording_mbid"] = track_object.musicbrainz_recordingid
-
-		# MusicBrainz Track ID
-		if track_object.musicbrainz_trackid is not None:
-			additional["track_mbid"] = track_object.musicbrainz_trackid
-
-		if additional:
-			metadata["additional_info"] = additional
-
-		# logging.info(additional)
-		data["payload"].append({"track_metadata": metadata})
-		data["payload"][0]["listened_at"] = time
-
-		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
-		if r.status_code != 200:
-			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
-			return False
-		return True
+		outcome = http_outcome(r.status_code)
+		if outcome is not Outcome.SENT:
+			logging.warning(f"ListenBrainz answered {r.status_code}: {r.text}")
+			if r.status_code < 500 and r.status_code != 429:
+				self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+		return [outcome] * len(items)
 
 	def listen_playing(self, track_object: TrackClass) -> None:
 		if self.enable is False:
@@ -5792,55 +5798,11 @@ class ListenBrainz:
 			return
 		if self.prefs.lb_token is None:
 			self.show_message(_("ListenBrainz is enabled but there is no token."), _("How did this even happen."), mode="error")
-		title = track_object.title
-		album = track_object.album
-		artist = get_artist_strip_feat(track_object)
-
-		if title == "" or artist == "":
+		item = pending_from_track(track_object, LISTENBRAINZ, 0)
+		if item.title == "" or item.artist == "":
 			return
 
-		data = {"listen_type": "playing_now", "payload": []}
-		metadata = {
-			"track_name": title,
-			**({"release_name": album} if album else {}),
-			"artist_name": artist,
-			}
-
-		additional: dict[str, str] = {}
-
-		# MusicBrainz Artist IDs
-		if track_object.musicbrainz_artistids is not None:
-			additional["artist_mbids"] = track_object.musicbrainz_artistids
-
-		# MusicBrainz Release ID
-		if track_object.musicbrainz_albumid is not None:
-			additional["release_mbid"] = track_object.musicbrainz_albumid
-
-		# MusicBrainz Recording ID
-		if track_object.musicbrainz_recordingid is not None:
-			additional["recording_mbid"] = track_object.musicbrainz_recordingid
-
-		# MusicBrainz Track ID
-		if track_object.musicbrainz_trackid is not None:
-			additional["track_mbid"] = track_object.musicbrainz_trackid
-
-		if track_object.track_number:
-			try:
-				additional["tracknumber"] = str(int(track_object.track_number))
-			except Exception:
-				logging.exception("Error trying to get track_number")
-
-		if track_object.length:
-			additional["duration"] = int(track_object.length)
-
-		additional["media_player"] = self.t_title
-		additional["submission_client"] = self.t_title
-		additional["media_player_version"] = str(self.n_version)
-
-		metadata["additional_info"] = additional
-		data["payload"].append({"track_metadata": metadata})
-		# data["payload"][0]["listened_at"] = int(time.time())
-
+		data = {"listen_type": "playing_now", "payload": [{"track_metadata": self.track_metadata(item)}]}
 		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
 			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
@@ -5881,7 +5843,17 @@ class LastScrob:
 		self.a_sc    = False
 		self.a_pt    = False
 		self.running = False
-		self.queue: list[tuple[TrackClass, int, str]] = []
+		self.queue = ScrobbleQueue(tauon.user_directory / QUEUE_FILENAME)
+		self.wake = threading.Event()
+		self.start_lock = threading.Lock()
+		self.sender: threading.Thread | None = None
+		# Per service: when it may be tried again, and the delay that set it
+		self.retry_at: dict[str, float] = {}
+		self.retry_delay: dict[str, float] = {}
+
+	RETRY_MIN_S = 60
+	RETRY_MAX_S = 15 * 60
+	LASTFM_MAX_AGE_S = 14 * 24 * 60 * 60
 
 	def scrobble_allowed(self, track_object: TrackClass) -> bool:
 		"""Whether Tauon may scrobble this track to Last.fm/ListenBrainz/Maloja.
@@ -5910,47 +5882,108 @@ class LastScrob:
 		return {tag: api for tag, api in services.items() if api.enabled and (api.connected or api.details_ready())}
 
 	def start_queue(self) -> None:
+		"""Wake the sender, starting it on first use."""
 		self.running = True
-		mini_t = threading.Thread(target=self.process_queue)
-		mini_t.daemon = True
-		mini_t.start()
+		with self.start_lock:
+			if self.sender is None:
+				self.sender = threading.Thread(target=self.process_queue, daemon=True)
+				self.sender.start()
+		self.wake.set()
 
 	def process_queue(self) -> None:
-		time.sleep(0.4)
-
-		while self.queue:
+		while True:
+			self.wake.wait(self.next_retry_in())
+			self.wake.clear()
 			try:
-				tr = self.queue.pop()
-
-				self.gui.request_tracklist_redraw()
-				logging.info(f"Submit Scrobble {tr[0].artist} - {tr[0].title}")
-
-				success = True
-
-				if tr[2] in ("lfm", "libre"):
-					api = self.scrobble_services().get(tr[2])
-					if api is not None:
-						success = api.scrobble(tr[0], tr[1])
-				elif tr[2] == "lb" and self.lb.enable:
-					success = self.lb.listen_full(tr[0], tr[1])
-				elif tr[2] == "maloja":
-					success = self.tauon.maloja_scrobble(tr[0], tr[1])
-				elif tr[2] == "air":
-					success = self.tauon.subsonic.listen(tr[0], submit=True)
-
-				if not success:
-					logging.info("Re-queue scrobble")
-					self.queue.append(tr)
-					time.sleep(10)
-					break
-
+				self.send_due()
 			except Exception:
 				logging.exception("SCROBBLE QUEUE ERROR")
+			self.running = False
+
+	def next_retry_in(self) -> float | None:
+		"""Seconds until the next backed-off service is due, None to sleep until woken."""
+		now = time.time()
+		due = [self.retry_at[service] - now for service in self.queue.services() if self.retry_at.get(service, 0) > now]
+		return min(due) if due else None
+
+	def send_due(self) -> None:
+		for service in self.queue.services():
+			if time.time() < self.retry_at.get(service, 0):
+				continue
+			if self.flush(service):
+				self.retry_at.pop(service, None)
+				self.retry_delay.pop(service, None)
+				continue
+			delay = min(self.RETRY_MAX_S, max(self.RETRY_MIN_S, self.retry_delay.get(service, 0) * 2))
+			self.retry_delay[service] = delay
+			self.retry_at[service] = time.time() + delay
+			logging.info(f"Unsent scrobbles for {SERVICE_NAMES.get(service, service)}, retrying in {delay}s")
+			self.tauon.scrobble_warning_timer.set()
 
 		if not self.queue:
 			self.tauon.scrobble_warning_timer.force_set(1000)
+		self.gui.request_frame()
 
-		self.running = False
+	def sender_for(self, service: str) -> tuple[Callable[[list[PendingScrobble]], list[Outcome]] | None, int]:
+		"""The submit function for a service and its batch size; None once it is switched off."""
+		if service in (LASTFM, LIBREFM):
+			api = self.scrobble_services().get(service)
+			return (api.submit_scrobbles if api else None), 50
+		if service == LISTENBRAINZ:
+			return (self.lb.submit_listens if self.lb.enable and self.prefs.lb_token else None), 100
+		if service == MALOJA:
+			if self.prefs.maloja_enable and self.prefs.maloja_url:
+				return (lambda items: [self.tauon.maloja_scrobble(items[0])]), 1
+		elif service == SUBSONIC and self.prefs.subsonic_server:
+			return (lambda items: [self.tauon.subsonic.submit_scrobble(items[0])]), 1
+		return None, 1
+
+	def flush(self, service: str) -> bool:
+		"""Send everything waiting for one service. False if some should be retried later."""
+		name = SERVICE_NAMES.get(service, service)
+		if service != SUBSONIC and self.prefs.scrobble_hold:
+			# Paused, keep them until scrobbling resumes
+			return True
+		send, batch_size = self.sender_for(service)
+		if send is None:
+			dropped = self.queue.pending(service)
+			logging.warning(f"Dropping {len(dropped)} unsent scrobble(s): {name} is no longer set up")
+			self.queue.remove(dropped)
+			return True
+
+		while batch := self.queue.pending(service, batch_size):
+			if service == LASTFM:
+				expired = [item for item in batch if time.time() - item.timestamp > self.LASTFM_MAX_AGE_S]
+				if expired:
+					logging.warning(f"Dropping {len(expired)} scrobble(s) older than Last.fm accepts")
+					self.queue.remove(expired)
+					continue
+			results = send(batch)
+			if len(batch) > 1 and all(result is Outcome.DROP for result in results):
+				# Find the play that got the whole batch rejected
+				results = [send([item])[0] for item in batch]
+			for item, result in zip(batch, results):
+				if result is Outcome.DROP:
+					logging.warning(f"{name} rejected {item.artist} - {item.title}, dropping it")
+			done = [item for item, result in zip(batch, results) if result is not Outcome.RETRY]
+			self.queue.remove(done)
+			self.gui.request_frame()
+			if len(done) < len(batch):
+				return False
+		return True
+
+	def clear_queue(self) -> None:
+		self.queue.clear()
+		self.tauon.scrobble_warning_timer.force_set(1000)
+		self.gui.request_frame()
+
+	def toggle_offline_queue(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return self.prefs.scrobble_offline_queue
+		self.prefs.scrobble_offline_queue ^= True
+		if self.prefs.scrobble_offline_queue:
+			self.queue.keep_all()
+		return None
 
 	def update(self, add_time: float) -> None:
 		if self.pctl.queue_step > len(self.pctl.track_queue) - 1:
@@ -6026,21 +6059,32 @@ class LastScrob:
 		# logging.info("SCROBBLE")
 		track_object.lfm_scrobbles += 1
 		self.gui.request_tracklist_redraw()
+		timestamp = int(time.time())
 
 		if track_object.is_network:
 			if track_object.file_ext == "SUB":
-				self.queue.append((track_object, int(time.time()), "air"))
+				self.enqueue(track_object, SUBSONIC, timestamp)
 
 		if not self.scrobble_allowed(track_object):
 			return
 
 		if not self.prefs.scrobble_hold:
 			for tag in self.scrobble_services():
-				self.queue.append((track_object, int(time.time()), tag))
+				self.enqueue(track_object, tag, timestamp)
 			if self.lb.enable:
-				self.queue.append((track_object, int(time.time()), "lb"))
+				self.enqueue(track_object, LISTENBRAINZ, timestamp)
 			if self.prefs.maloja_url and self.prefs.maloja_enable:
-				self.queue.append((track_object, int(time.time()), "maloja"))
+				self.enqueue(track_object, MALOJA, timestamp)
+
+	def enqueue(self, track_object: TrackClass, service: str, timestamp: int) -> None:
+		item = pending_from_track(track_object, service, timestamp)
+		if service != SUBSONIC and not (item.artist and item.title):
+			logging.warning(f"Not scrobbling to {SERVICE_NAMES[service]}, incomplete metadata")
+			return
+		self.queue.add(item, keep=self.prefs.scrobble_offline_queue)
+		# A new play gets an immediate try, even mid-backoff
+		self.retry_at.pop(service, None)
+		self.gui.request_frame()
 
 class Strings:
 
@@ -20104,11 +20148,8 @@ class Tauon:
 		self.lastfm.scanning_scrobbles = False
 		self.bg_save()
 
-	def maloja_scrobble(self, track: TrackClass, timestamp: int = int(time.time())) -> bool | None:
+	def maloja_scrobble(self, item: PendingScrobble) -> Outcome:
 		url = self.prefs.maloja_url
-
-		if not track.artist or not track.title:
-			return None
 
 		if not url.endswith("/newscrobble"):
 			if not url.endswith("/"):
@@ -20116,28 +20157,29 @@ class Tauon:
 			url += "apis/mlj_1/newscrobble"
 
 		d = {}
-		d["artists"] = [track.artist] # let Maloja parse/fix artists
-		d["title"] = track.title
+		d["artists"] = [item.artist] # let Maloja parse/fix artists
+		d["title"] = item.title
 
-		if track.album:
-			d["album"] = track.album
-		if track.album_artist:
-			d["albumartists"] = [track.album_artist] # let Maloja parse/fix artists
+		if item.album:
+			d["album"] = item.album
+		if item.album_artist:
+			d["albumartists"] = [item.album_artist] # let Maloja parse/fix artists
 
-		d["length"] = int(track.length)
-		d["time"] = timestamp
+		d["length"] = item.duration
+		d["time"] = item.timestamp
 		d["key"] = self.prefs.maloja_key
 
 		try:
 			r = requests.post(url, json=d, timeout=10)
-			if r.status_code != 200:
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach the Maloja server: {e}")
+			return Outcome.RETRY
+		outcome = http_outcome(r.status_code)
+		if outcome is not Outcome.SENT:
+			logging.warning(f"Maloja answered {r.status_code}: {r.text}")
+			if r.status_code < 500 and r.status_code != 429:
 				self.show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
-				return False
-		except Exception:
-			logging.exception("There was an error submitting data to Maloja server")
-			self.show_message(_("There was an error submitting data to Maloja server"), mode="warning")
-			return False
-		return True
+		return outcome
 
 	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
 		if track_object.file_ext == "RADIO":
@@ -29777,6 +29819,9 @@ class SettingsSection:
 	title: str
 	body: Callable[[SettingsRows], None]
 	card: bool = True
+	# Hidden while this is False; reveal() makes it show for a search result
+	shown: Callable[[], bool] | None = None
+	reveal: Callable[[], None] | None = None
 
 
 @dataclass
@@ -30240,6 +30285,7 @@ class Over:
 		# Change tracking and search, keyed "group/section title/control title"
 		self.settings_baseline: dict[str, object] = {}
 		self.settings_needs_survey = True
+		self.settings_surveying = False
 		self.settings_index: dict[str, SettingsEntry] = {}
 		self.settings_row_offsets: dict[str, float] = {}
 		self.settings_section_offsets: dict[tuple[str, str], float] = {}
@@ -32659,7 +32705,10 @@ class Over:
 			]),
 			SettingsGroup("connect", _("Connect"), ColourRGBA(92, 201, 181, 255), [
 				SettingsSection("services", _("Services"), self.settings_body_services),
-				SettingsSection("account", _("Account"), self.settings_body_account, card=False),
+				SettingsSection("account", _("Account"), self.settings_body_account, card=False, shown=lambda: bool(self.account_view)),
+				SettingsSection(
+					"scrobbling", _("Scrobbling"), self.settings_body_scrobbling,
+					shown=lambda: self.account_view in self.SCROBBLE_VIEWS, reveal=self.show_scrobble_service),
 				SettingsSection("sharing", _("Sharing"), self.settings_body_sharing),
 			]),
 			SettingsGroup("system", _("System"), ColourRGBA(170, 165, 187, 255), [
@@ -32697,6 +32746,9 @@ class Over:
 			_("Use persistent network cache"): "cache stream streaming offline jellyfin subsonic plex keep download",
 			_("Wait for entire file"): "download buffer stream streaming network full file before playing",
 			_("Cache size"): "cache disk space storage limit gb size",
+			# Connect
+			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
+			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
 			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
@@ -34077,6 +34129,41 @@ class Over:
 		h = self.render_settings_service_detail(self.account_view, rows.x, rows.y, rows.w, rows.accent, draw=True)
 		rows.gap(h)
 
+	# Last.fm, Libre.fm, ListenBrainz and Maloja
+	SCROBBLE_VIEWS = (1, 13, 2, 9)
+
+	def show_scrobble_service(self) -> None:
+		"""Open a scrobbling service, preferring one that is switched on."""
+		views = self.SCROBBLE_VIEWS
+		self.select_account_view(next((view for view in views if self.settings_service_status(view)[0]), views[0]))
+
+	def settings_body_scrobbling(self, rows: SettingsRows) -> None:
+		scrobbler = self.tauon.lfm_scrobbler
+		rows.switch(
+			scrobbler.toggle_offline_queue, _("Keep scrobbles while offline"),
+			_("Send them when the service is back, even after a restart."))
+		waiting = len(scrobbler.queue)
+		if not waiting:
+			status = _("No scrobbles waiting")
+		elif waiting == 1:
+			status = _("1 scrobble waiting")
+		else:
+			status = _("{N} scrobbles waiting").format(N=waiting)
+		rows.readout(_("Queue"), status)
+		if waiting:
+			breakdown = ", ".join(
+				f"{SERVICE_NAMES.get(service, service)} {count}" for service, count in scrobbler.queue.counts().items())
+			rows.action(
+				_("Discard waiting scrobbles"), ((_("Clear"), self.confirm_clear_scrobble_queue, False),), hint=breakdown)
+
+	def confirm_clear_scrobble_queue(self) -> None:
+		waiting = len(self.tauon.lfm_scrobbler.queue)
+		self.gui.message_box_confirm_callback = self.tauon.lfm_scrobbler.clear_queue
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = ()
+		text = _("Discard 1 waiting scrobble?") if waiting == 1 else _("Discard {N} waiting scrobbles?").format(N=waiting)
+		self.show_message(text, _("They will not be sent."), mode="confirm")
+
 	def settings_body_sharing(self, rows: SettingsRows) -> None:
 		gui = self.gui
 		prefs = self.prefs
@@ -34268,6 +34355,10 @@ class Over:
 		gap = round(8 * s)
 		line = max(1, round(1 * s))
 		for section in group.sections:
+			# The off-screen survey still draws hidden sections, so search can find them
+			if section.shown is not None and not section.shown() and not self.settings_surveying:
+				self.settings_section_offsets.pop((group.key, section.key), None)
+				continue
 			self.settings_section_offsets[(group.key, section.key)] = yy - self.settings_doc_origin
 			self.settings_track_section = section.title
 			self.settings_track_section_key = section.key
@@ -34300,11 +34391,13 @@ class Over:
 		self.coll = lambda _rect: False
 		self.settings_clip = None
 		self.settings_doc_origin = 0
+		self.settings_surveying = True
 		try:
 			for group in self.settings_groups:
 				self.render_settings_group(group, x, 0, w)
 		finally:
 			self.click, self.right_click, self.coll, self.settings_clip, self.settings_doc_origin, self.settings_text_seen = saved
+			self.settings_surveying = False
 			self.settings_needs_survey = False
 
 	@staticmethod
@@ -34442,6 +34535,9 @@ class Over:
 		self.settings_text_focus = None
 		if entry.action is not None:
 			entry.action()
+		section = next((section for section in self.settings_group(entry.group).sections if section.key == entry.section), None)
+		if section is not None and section.reveal is not None and not section.shown():
+			section.reveal()
 		self.settings_pending_scroll = (entry.group, "row", key)
 		self.settings_flash_key = key
 		self.settings_flash_timer.set()
@@ -34664,7 +34760,7 @@ class Over:
 			if not active:
 				continue
 			for section in group.sections:
-				if section.key == "account" and not self.account_view:
+				if section.shown is not None and not section.shown():
 					continue
 				srect = (item_x + round(10 * s), yy, item_w - round(10 * s), round(22 * s))
 				shover = self.coll((srect[0], srect[1], srect[2], srect[3] - 1))
@@ -54504,6 +54600,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 
 	cf.update_value("scrobble-radios", prefs.scrobble_radios)
+	cf.update_value("scrobble-offline-queue", prefs.scrobble_offline_queue)
 	cf.update_value("scrobble-jellyfin", prefs.scrobble_jellyfin)
 	cf.update_value("scrobble-tidal", prefs.scrobble_tidal)
 	cf.update_value("scrobble-subsonic", prefs.scrobble_subsonic)
@@ -55174,6 +55271,9 @@ def load_prefs(bag: Bag) -> None:
 	cf.br()
 	cf.add_text("[scrobbling]")
 	prefs.scrobble_radios = cf.sync_add("bool", "scrobble-radios", prefs.scrobble_radios)
+	prefs.scrobble_offline_queue = cf.sync_add(
+		"bool", "scrobble-offline-queue", prefs.scrobble_offline_queue,
+		"Save scrobbles that could not be sent and retry them later, including after a restart")
 	cf.add_comment(
 		"Allow Tauon to scrobble tracks played from a streaming service. Disable for "
 		"services that already scrobble on their own to avoid double scrobbles.")
@@ -58378,6 +58478,11 @@ def main(holder: Holder) -> None:
 
 	# Drops links that expired while closed, so they re-upload on demand
 	tauon.litterbox.load()
+
+	# Retry scrobbles left unsent last session
+	tauon.lfm_scrobbler.queue.load()
+	if tauon.lfm_scrobbler.queue:
+		tauon.lfm_scrobbler.start_queue()
 
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
