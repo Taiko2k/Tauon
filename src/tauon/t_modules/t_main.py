@@ -40552,14 +40552,11 @@ class ArtBox:
 		elif inp.right_click and self.coll(rect) and target_track:
 			self.tauon.picture_menu.activate(in_reference=target_track)
 
-		# Draw picture metadata
+		# Draw picture metadata; keep it up while the art's own menus are open
+		art_menu_open = tauon.picture_menu.active or tauon.milky_menu.active
 		if showc is not None and self.coll(border) \
-			and tauon.rename_track_box.active is False \
-			and tauon.radiobox.active is False \
-			and tauon.pref_box.enabled is False \
-			and gui.rename_playlist_box is False \
+			and (tauon.is_level_zero() or (art_menu_open and tauon.is_level_zero(include_menus=False))) \
 			and gui.message_box is False \
-			and gui.track_box is False \
 			and gui.layer_focus == 0:
 
 			padding = 6 * gui.scale
