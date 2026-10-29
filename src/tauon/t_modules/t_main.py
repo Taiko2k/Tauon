@@ -1573,6 +1573,21 @@ class Input:
 		self.media_key = "Previous"
 		self.gui.request_frame()
 
+KEY_LABELS = {
+	"left": "←", "right": "→", "up": "↑", "down": "↓",
+	"escape": "Esc", "return": "Enter", "pageup": "Page Up", "pagedown": "Page Down",
+}
+
+def key_label(name: str) -> str:
+	"""Display text for a key name as written in input.txt."""
+	if name == "MB4":
+		return _("Mouse back")
+	if name == "MB5":
+		return _("Mouse forward")
+	if len(name) == 1:
+		return name.upper()
+	return KEY_LABELS.get(name.lower(), name)
+
 class KeyMap:
 
 	def __init__(self, bag: Bag, inp: Input) -> None:
@@ -1580,8 +1595,13 @@ class KeyMap:
 		self.inp: Input = inp
 		self.hits: list[str | sdl3.SDL_Scancode] = []  # The keys hit this frame
 		self.maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}  # Loaded from input.txt
+		# The same bindings with the key names as written, for display
+		self.labels: dict[str, list[tuple[str, list[str]]]] = {}
 
 	def load(self) -> None:
+		# Built aside and swapped in so a reload never leaves half a keymap
+		maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}
+		labels: dict[str, list[tuple[str, list[str]]]] = {}
 		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
@@ -1612,10 +1632,23 @@ class KeyMap:
 					if len(items) > 3:
 						mod.append(items[3].lower())
 
-					if function in self.maps:
-						self.maps[function].append((key, mod))
-					else:
-						self.maps[function] = [(key, mod)]
+					maps.setdefault(function, []).append((key, mod))
+					labels.setdefault(function, []).append((items[1], mod))
+		self.maps = maps
+		self.labels = labels
+
+	def describe(self, function: str) -> list[list[str]]:
+		"""Each binding of a function as the keys to press, e.g. ["Ctrl", "Shift", "L"]."""
+		names = {"ctrl": "Cmd" if macos else "Ctrl", "shift": "Shift", "alt": "Alt"}
+		return [
+			[names[m] for m in ("ctrl", "shift", "alt") if m in mod] + [key_label(name)]
+			for name, mod in self.labels.get(function, [])
+		]
+
+	def hint(self, function: str) -> str | None:
+		"""The first binding as menu hint text, or None when unbound."""
+		bindings = self.describe(function)
+		return "+".join(bindings[0]) if bindings else None
 
 	def test(self, function: str) -> bool:
 		inp = self.inp
@@ -6122,6 +6155,10 @@ class MenuItem:
 		self.slider_get: Callable[[], float] | None = None
 		self.slider_set: Callable[[float], None] | None = None
 
+	def hint_text(self) -> str | None:
+		"""The hint to show; a callable hint is asked each time so it can follow the keymap."""
+		return self.hint() if callable(self.hint) else self.hint
+
 class ThreadManager:
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -6402,8 +6439,8 @@ class Menu:
 			elif item.slider_get is not None:
 				left = 12 * scale
 				right = 180 * scale
-			elif item.hint is not None:
-				right += self.ddt.get_text_w(item.hint, self.font) + 4 * scale
+			elif item.hint_text() is not None:
+				right += self.ddt.get_text_w(item.hint_text(), self.font) + 4 * scale
 			main_width = max(main_width, left + text_width(item) + right)
 
 		requested_sub_widths = [0] * len(self.subs)
@@ -6778,14 +6815,15 @@ class Menu:
 						self.clicked = False
 				else:
 					right_space = 22 * gui.scale if self.items[i].is_sub_menu else 9 * gui.scale
-					if self.items[i].hint is not None:
-						right_space += self.ddt.get_text_w(self.items[i].hint, self.font) + 4 * gui.scale
+					if self.items[i].hint_text() is not None:
+						right_space += self.ddt.get_text_w(self.items[i].hint_text(), self.font) + 4 * gui.scale
 					label_max_w = self.w - (x + right_space)
 				if self.items[i].slider_get is None:
 					ddt.text((x_run + x, y_run + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
 
 				# Render the items hint
-				if self.items[i].hint is not None and not self.items[i].incrementor:
+				hint = self.items[i].hint_text()
+				if hint is not None and not self.items[i].incrementor:
 
 					if self.background_is_light(bg):
 						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
@@ -6793,7 +6831,7 @@ class Menu:
 						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
 
 					# colo = alpha_blend(ColourRGBA(255, 255, 255, 50), bg)
-					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), self.items[i].hint, hint_colour, self.font, bg=bg)
+					ddt.text((x_run + self.w - 5, y_run + ytoff, 1), hint, hint_colour, self.font, bg=bg)
 
 				y_run += self.h
 
@@ -7803,6 +7841,7 @@ class Tauon:
 		self.rename_playlist_box:                 RenamePlaylistBox = RenamePlaylistBox(tauon=self)
 		self.tracklist_layout_panel:              TracklistLayoutPanel = TracklistLayoutPanel(tauon=self)
 		self.add_music_box:                       AddMusicBox = AddMusicBox(tauon=self)
+		self.shortcuts_sheet:                     ShortcutsSheet = ShortcutsSheet(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.duplicate_import_box = DuplicateImportBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
@@ -12957,6 +12996,20 @@ class Tauon:
 		else:
 			subprocess.call(["xdg-open", target])
 
+	def reset_keymap(self) -> bool:
+		"""Replace input.txt with the default one, keeping the old file as
+		input.txt.bak, and load it straight away. Returns whether it worked."""
+		target = self.config_directory / "input.txt"
+		try:
+			if target.is_file():
+				shutil.copy(target, target.with_suffix(".txt.bak"))
+			shutil.copy(self.install_directory / "templates" / "input.txt", target)
+		except OSError:
+			logging.exception("Failed to reset the keymap")
+			return False
+		self.gui.keymaps.load()
+		return True
+
 	def open_file(self, target: str) -> None:
 		if not os.path.isfile(target):
 			self.show_message(_("Input file missing"))
@@ -16745,7 +16798,8 @@ class Tauon:
 			and not self.generator_box.active \
 			and not self.duplicate_import_box.active \
 			and not self.tracklist_layout_panel.active \
-			and not self.add_music_box.active
+			and not self.add_music_box.active \
+			and not self.shortcuts_sheet.active
 
 	def get_radio_art(self) -> None:
 		if self.radiobox.loaded_url in self.radiobox.websocket_source_urls:
@@ -34336,7 +34390,8 @@ class Over:
 			if len(title) < 3 or title.isdigit() or (title, where) in seen:
 				return
 			seen.add((title, where))
-			hint = item.hint if isinstance(item.hint, str) else ""
+			hint = item.hint_text()
+			hint = hint if isinstance(hint, str) else ""
 			entries.append((f"menu/{where}/{title}", SettingsEntry(title, "", hint, "menus", "", _("Menus"), where)))
 
 		for menu, place in self.settings_menu_places():
@@ -42605,6 +42660,414 @@ class AddMusicBox:
 		if chosen is not None:
 			self.close()
 			chosen()
+
+class ShortcutsSheet:
+	"""Full-window sheet of the keyboard shortcuts in effect, read from the
+	loaded keymap, and the mouse gestures. Opens from the main menu or its own
+	key; Esc, the key again or a click closes it."""
+
+	# Keys handled in code rather than input.txt
+	FIXED: dict[str, list[list[str]]] = {
+		"_enter":      [["Enter"]],
+		"_up":         [["↑"]],
+		"_down":       [["↓"]],
+		"_delete":     [["Delete"]],
+		"_select-all": [["Ctrl", "A"]],
+		"_copy":       [["Ctrl", "C"]],
+		"_cut":        [["Ctrl", "X"]],
+		"_paste":      [["Ctrl", "V"]],
+		"_undo":       [["Ctrl", "Z"]],
+	}
+	BG       = ColourRGBA(12, 12, 12, 255)
+	TITLE    = ColourRGBA(242, 242, 242, 255)
+	LABEL    = ColourRGBA(226, 226, 230, 255)
+	HOW      = ColourRGBA(239, 229, 122, 255)
+	NOTE     = ColourRGBA(160, 158, 166, 255)
+	SEP      = ColourRGBA(150, 148, 156, 255)
+	CAP_FILL = ColourRGBA(31, 30, 35, 255)
+	CAP_EDGE = ColourRGBA(85, 82, 92, 255)
+	CAP_TEXT = ColourRGBA(238, 238, 238, 255)
+	WARN     = ColourRGBA(255, 150, 120, 255)
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.inp         = tauon.inp
+		self.ddt         = tauon.ddt
+		self.fields      = tauon.fields
+		self.window_size = tauon.window_size
+		self.active = False
+		self.scroll = 0
+		self._mouse = (0.0, 0.0)
+		self._click = False
+		self._right_click = False
+		self._wheel = 0
+		# Arrow key presses, down positive
+		self._step = 0
+		# Reset to defaults takes a second click before this time
+		self._reset_armed_until = 0.0
+		# Footer message after a reset, shown until this time
+		self._status = ""
+		self._status_until = 0.0
+
+	def open(self) -> None:
+		inp = self.inp
+		self.active = True
+		self._reset_armed_until = 0.0
+		self._status_until = 0.0
+		self.scroll = 0
+		self._click = False
+		self._right_click = False
+		self._wheel = 0
+		self._step = 0
+		self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		self.active = False
+		self.gui.request_frame()
+
+	def handle_input(self) -> None:
+		"""Take the pointer, wheel and arrow keys so nothing under the sheet reacts."""
+		if not self.active:
+			return
+		inp = self.inp
+		if inp.mouse_position[0] > -2000:
+			self._mouse = (inp.mouse_position[0], inp.mouse_position[1])
+		self._click = self._click or inp.mouse_click
+		self._right_click = self._right_click or inp.right_click
+		self._wheel += inp.mouse_wheel
+		self._step += inp.key_down_press - inp.key_up_press
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.input_text = ""
+		inp.key_return_press = False
+		inp.key_tab_press = False
+		inp.key_del = False
+		inp.key_up_press = False
+		inp.key_down_press = False
+		inp.key_left_press = False
+		inp.key_right_press = False
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def _reset(self) -> None:
+		now = time.monotonic()
+		if now >= self._reset_armed_until:
+			# The first click only arms it
+			self._reset_armed_until = now + 4
+			self.gui.delay_frame(4.1)
+			return
+		self._reset_armed_until = 0.0
+		if self.tauon.reset_keymap():
+			self._status = _("Shortcuts reset to defaults. The old file is input.txt.bak")
+		else:
+			self._status = _("Couldn't reset the shortcuts")
+		self._status_until = now + 5
+		self.gui.delay_frame(5.1)
+
+	def sections(self) -> list[tuple[str, ColourRGBA, list[tuple]]]:
+		"""(title, colour, rows) per group. A key row is (label, functions) or
+		(label, functions, joiner); a gesture row is (label, how)."""
+		tauon = self.tauon
+		search: list[tuple] = []
+		if tauon.prefs.search_on_letter:
+			search.append((_("Search the library"), _("Start typing")))
+		mouse: list[tuple] = [
+			(_("Play a track"), _("Double-click it")),
+			(_("Add to queue"), _("Middle-click a track or album")),
+			(_("More menu items"), _("Shift + right-click")),
+			(_("Delete a playlist"), _("Middle-click its tab")),
+			(_("Switch playlists"), _("Scroll over the tabs")),
+			(_("Merge playlists"), _("Shift-drag a tab onto another")),
+			(_("Last left panel"), _("Middle-click the side-panel button")),
+			(_("Jump to a position"), _("Right-click the scroll bar")),
+			(_("Widen past the art"), _("Shift-drag the side-panel edge")),
+			(_("Seek"), _("Scroll over the seek bar")),
+			(_("Toggle repeat"), _("Right-click Back")),
+			(_("Toggle shuffle"), _("Right-click Forward")),
+			(_("Stop after track or album"), _("Right-click Stop")),
+			(_("More shuffle and repeat modes"), _("Right-click their buttons")),
+		]
+		# Only shown in debug mode
+		advanced: list[tuple] = []
+		if (tauon.user_directory / "debug").exists():
+			advanced.append((_("Transfer play counts"), ("transfer-playtime-to",)))
+		# The two playback panels differ in a few gestures
+		if tauon.feux_panel_showing():
+			mouse.append((_("Pause"), _("Right-click the seek bar")))
+		else:
+			mouse.extend((
+				(_("Time cursor"), _("Middle-click the seek bar")),
+				(_("Back to the skipped track"), _("Middle-click Back")),
+				(_("Radio Random"), _("Middle-click Forward")),
+			))
+		return [
+			(_("Playback"), ColourRGBA(196, 160, 255, 255), [
+				(_("Play / pause"), ("playpause",)),
+				(_("Play"), ("play",)),
+				(_("Pause"), ("pause",)),
+				(_("Stop"), ("stop",)),
+				(_("Play the selected track"), ("_enter",)),
+				(_("Seek back / forward"), ("seek-back", "seek-forward")),
+				(_("Previous track"), ("previous",)),
+				(_("Next track"), ("advance",)),
+				(_("Restart the track"), ("start",)),
+				(_("Toggle shuffle"), ("toggle-shuffle",)),
+				(_("Toggle repeat"), ("toggle-repeat",)),
+				(_("Random track"), ("random-track",)),
+				(_("Random album"), ("random-album",)),
+				(_("Radio Random"), ("random-track-start",)),
+				(_("Back to the skipped track"), ("revert",)),
+				(_("Volume down / up"), ("vol-down", "vol-up")),
+				(_("Mute"), ("toggle-mute",)),
+			]),
+			(_("Navigation"), ColourRGBA(116, 224, 224, 255), [
+				(_("Switch playlist"), ("cycle-playlist-left", "cycle-playlist-right")),
+				(_("Go to playlist 1 to 9"), ("jump-playlist-1", "jump-playlist-9"), "…"),
+				(_("Show the playing track"), ("goto-playing",)),
+				(_("Show the previous track"), ("goto-previous",)),
+				(_("Move the selection"), ("_up", "_down")),
+				(_("Extend the selection"), ("shift-up", "shift-down")),
+				(_("Playlist top / bottom"), ("goto-top", "goto-bottom")),
+				(_("Page up / down"), ("pageup", "pagedown")),
+				(_("Find the playing artist"), ("find-playing-artist",)),
+				(_("Close / go back"), ("escape",)),
+			]),
+			(_("Search"), ColourRGBA(255, 162, 122, 255), [
+				*search,
+				(_("Global search"), ("global-search",)),
+				(_("Find in this playlist"), ("quick-find",)),
+				(_("Search lyrics for the selected track"), ("search-lyrics-selected",)),
+				(_("Lyrics substitute search"), ("substitute-search-selected",)),
+			]),
+			(_("Tracks & playlists"), ColourRGBA(240, 140, 224, 255), [
+				(_("Select all"), ("_select-all",)),
+				(_("Copy / paste"), ("_copy", "_paste")),
+				(_("Cut"), ("_cut",)),
+				(_("Remove from the playlist"), ("_delete",)),
+				(_("Undo"), ("_undo",)),
+				(_("Love the selected track"), ("love-selected",)),
+				(_("Love the playing track"), ("love-playing",)),
+				(_("Add to queue"), ("add-to-queue",)),
+				(_("Clear the queue"), ("clear-queue",)),
+				(_("Track info"), ("info-show",)),
+				(_("Playing track info"), ("info-playing",)),
+				(_("New playlist"), ("new-playlist",)),
+				(_("Rename playlist"), ("rename-playlist",)),
+				(_("Delete playlist"), ("delete-playlist",)),
+				(_("New smart playlist"), ("new-generator-playlist",)),
+				(_("Edit smart playlist"), ("edit-generator",)),
+				(_("Regenerate playlist"), ("regenerate-playlist",)),
+				(_("Toggle album headings"), ("playlist-toggle-breaks",)),
+			]),
+			(_("View"), ColourRGBA(157, 186, 255, 255), [
+				(_("Next layout"), ("cycle-layouts",)),
+				(_("Previous layout"), ("cycle-layouts-reverse",)),
+				(_("Gallery"), ("toggle-gallery",)),
+				(_("Gallery with keyboard control"), ("toggle-gallery-keycontrol",)),
+				(_("Art + Lyrics"), ("toggle-showcase",)),
+				(_("Left panel"), ("toggle-left-panel",)),
+				(_("Last left panel"), ("toggle-last-left-panel",)),
+				(_("Side panel"), ("toggle-right-panel",)),
+				(_("Side panel art"), ("toggle-show-art",)),
+				(_("Columns"), ("toggle-columns",)),
+				(_("Artist info"), ("toggle-artistinfo",)),
+				(_("Mini mode"), ("toggle-minimode",)),
+				(_("Full screen"), ("toggle-fullscreen",)),
+				(_("Next / previous theme"), ("cycle-theme", "cycle-theme-reverse")),
+				(_("Auto theme from album art"), ("toggle-auto-theme",)),
+				(_("Reload theme"), ("reload-theme",)),
+				(_("Window opacity up / down"), ("opacity-up", "opacity-down")),
+			]),
+			(_("Other"), ColourRGBA(200, 200, 205, 255), [
+				(_("Keyboard Shortcuts"), ("show-shortcuts",)),
+				(_("Open the transcode folder"), ("show-encode-folder",)),
+				(_("Console"), ("toggle-console",)),
+				(_("Quit"), ("quit",)),
+			]),
+			(_("Advanced"), ColourRGBA(170, 165, 187, 255), advanced),
+			(_("Mouse"), ColourRGBA(239, 229, 122, 255), mouse),
+		]
+
+	def bindings(self, function: str) -> list[list[str]]:
+		if function.startswith("_"):
+			ctrl = "Cmd" if macos else "Ctrl"
+			return [[ctrl if key == "Ctrl" else key for key in keys] for keys in self.FIXED[function]]
+		return self.gui.keymaps.describe(function)
+
+	def row_tokens(self, functions: tuple[str, ...], joiner: str) -> list[tuple[bool, str]]:
+		"""Keycaps (True) and separators (False) for a row; empty when nothing is bound."""
+		groups = [found for found in (self.bindings(function) for function in functions) if found]
+		tokens: list[tuple[bool, str]] = []
+		for g, group in enumerate(groups):
+			if g:
+				tokens.append((False, joiner))
+			for b, keys in enumerate(group):
+				if b:
+					tokens.append((False, "/"))
+				for k, key in enumerate(keys):
+					if k:
+						tokens.append((False, "+"))
+					tokens.append((True, key))
+		return tokens
+
+	def _token_w(self, cap: bool, text: str) -> int:
+		s = self.gui.scale
+		if cap:
+			return max(round(19 * s), self.ddt.get_text_w(text, 312) + round(10 * s))
+		return self.ddt.get_text_w(text, 12) + round(8 * s)
+
+	def _draw_tokens(self, tokens: list[tuple[bool, str]], right: int, y: int) -> int:
+		"""Draw a row's keys ending at right; returns their width."""
+		s = self.gui.scale
+		ddt = self.ddt
+		line = max(1, round(s))
+		cap_h = round(19 * s)
+		widths = [self._token_w(cap, text) for cap, text in tokens]
+		x = right - sum(widths)
+		for (cap, text), tw in zip(tokens, widths, strict=True):
+			if cap:
+				ddt.rect((x, y, tw, cap_h), self.CAP_EDGE)
+				ddt.rect((x + line, y + line, tw - line * 2, cap_h - line * 3), self.CAP_FILL)
+				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.CAP_TEXT, 312, bg=self.CAP_FILL)
+			else:
+				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.SEP, 12, bg=self.BG)
+			x += tw
+		return sum(widths)
+
+	@staticmethod
+	def _flow(groups: list[list[tuple]], cols: int, col_h: int, row_h: int, head_h: int) -> list[tuple[tuple, int, int]] | None:
+		"""Place whole groups (a heading and its rows) down the columns in
+		order, or None if they need more than cols."""
+		placed = []
+		col = 0
+		y = 0
+		for group in groups:
+			group_h = head_h + row_h * (len(group) - 1)
+			if y and y + group_h > col_h:
+				col += 1
+				y = 0
+				if col == cols:
+					return None
+			for item in group:
+				placed.append((item, col, y))
+				y += head_h if item[0] == "head" else row_h
+		return placed
+
+	def render(self) -> None:
+		gui = self.gui
+		ddt = self.ddt
+		s = gui.scale
+		w, h = self.window_size[0], self.window_size[1]
+		bg = self.BG
+		ddt.rect((0, 0, w, h), ColourRGBA(3, 3, 3, 235))
+		ddt.text_background_colour = bg
+
+		row_h = round(22 * s)
+		head_h = round(32 * s)
+		gap = round(32 * s)
+		margin = round(40 * s)
+		top = round(66 * s)
+		bottom = h - round(40 * s)
+		view_h = max(row_h * 4, bottom - top)
+		cols = max(1, (w - margin * 2 + gap) // (round(290 * s) + gap))
+		col_w = min(round(400 * s), (w - margin * 2 - gap * (cols - 1)) // cols)
+		block_w = col_w * cols + gap * (cols - 1)
+		left = (w - block_w) // 2
+
+		# Each group is its heading then its bound rows; unbound rows are left out
+		groups: list[list[tuple]] = []
+		for title, colour, rows in self.sections():
+			group: list[tuple] = [("head", title, colour)]
+			for row in rows:
+				if isinstance(row[1], str):
+					group.append(("row", row[0], [], row[1]))
+				else:
+					tokens = self.row_tokens(row[1], row[2] if len(row) > 2 else "/")
+					if tokens:
+						group.append(("row", row[0], tokens, ""))
+			if len(group) > 1:
+				groups.append(group)
+		total = sum(head_h + row_h * (len(group) - 1) for group in groups)
+		col_h = max(view_h, -(-total // cols))
+		placed = self._flow(groups, cols, col_h, row_h, head_h)
+		while placed is None:
+			col_h += row_h
+			placed = self._flow(groups, cols, col_h, row_h, head_h)
+		content_h = max((y + (head_h if item[0] == "head" else row_h) for item, _col, y in placed), default=0)
+		max_scroll = max(0, content_h - view_h)
+
+		self.scroll += (self._step - self._wheel) * row_h * 3
+		self.scroll = max(0, min(self.scroll, max_scroll))
+		self._wheel = 0
+		self._step = 0
+
+		for item, col, y in placed:
+			x = left + col * (col_w + gap)
+			yy = top + y - self.scroll
+			size = head_h if item[0] == "head" else row_h
+			if yy < top or yy + size > bottom:
+				continue
+			if item[0] == "head":
+				ddt.text((x, yy + head_h - round(22 * s)), item[1].upper(), item[2], 212, bg=bg)
+				continue
+			_kind, label, tokens, how = item
+			if tokens:
+				used = self._draw_tokens(tokens, x + col_w, yy + round(1 * s))
+			else:
+				used = min(ddt.get_text_w(how, 12), col_w * 2 // 3)
+				ddt.text((x + col_w, yy + round(3 * s), 1), how, self.HOW, 12, bg=bg, max_w=used)
+			ddt.text((x, yy + round(2 * s)), label, self.LABEL, 13, bg=bg, max_w=col_w - used - round(12 * s))
+
+		if max_scroll:
+			bar_x = min(left + block_w + round(14 * s), w - round(8 * s))
+			ddt.rect((bar_x, top, round(3 * s), view_h), ColourRGBA(255, 255, 255, 20))
+			thumb_h = max(round(24 * s), view_h * view_h // content_h)
+			thumb_y = top + (view_h - thumb_h) * self.scroll // max_scroll
+			ddt.rect((bar_x, thumb_y, round(3 * s), thumb_h), ColourRGBA(255, 255, 255, 90))
+
+		# Title, with the links on the right
+		title_y = round(24 * s)
+		ddt.text((left, title_y), _("Keyboard Shortcuts"), self.TITLE, 217, bg=bg)
+		link_colour = readable_text_colour(self.tauon.colours.link_text, bg)
+		chosen = None
+		link_x = left + block_w
+		armed = time.monotonic() < self._reset_armed_until
+		links = (
+			(_("Online Manual"), self.tauon.open_manual_link, link_colour),
+			(_("Open keymap file"), self.tauon.open_keymap_file, link_colour),
+			(_("Click again to reset") if armed else _("Reset to defaults"), self._reset, self.WARN if armed else link_colour),
+		)
+		for text, action, colour in links:
+			tw = ddt.get_text_w(text, 13)
+			link_x -= tw
+			rect = (link_x, title_y, tw, round(22 * s))
+			self.fields.add(rect)
+			ddt.text((link_x, title_y + round(3 * s)), text, colour, 13, bg=bg)
+			if coll_point(self._mouse, rect):
+				ddt.rect((link_x, title_y + round(18 * s), tw, max(1, round(s))), colour)
+				if self._click:
+					chosen = action
+			link_x -= round(24 * s)
+
+		note_y = h - round(28 * s)
+		if time.monotonic() < self._status_until:
+			ddt.text((left, note_y), self._status, self.TITLE, 12, bg=bg, max_w=block_w * 2 // 3)
+		else:
+			ddt.text((left, note_y), _("Keys come from input.txt; edits apply after a restart."), self.NOTE, 12, bg=bg, max_w=block_w // 2)
+		ddt.text((left + block_w, note_y, 1), _("Esc to close"), self.NOTE, 12, bg=bg)
+
+		close = self._click or self._right_click
+		self._click = False
+		self._right_click = False
+		if chosen is not None:
+			chosen()
+		elif close:
+			self.close()
 
 class PlaylistBox:
 
@@ -59282,7 +59745,8 @@ def main(holder: Holder) -> None:
 	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
 	#x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
-	x_menu.add(MenuItem(_("Online Manual"), tauon.open_manual_link))
+	# The manual link lives in the sheet now
+	x_menu.add(MenuItem(_("Keyboard Shortcuts"), tauon.shortcuts_sheet.open, hint=lambda: gui.keymaps.hint("show-shortcuts")))
 	x_menu.add(MenuItem(_("Show Release Notes"), tauon.nagbox.show))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
@@ -62287,11 +62751,14 @@ def main(holder: Holder) -> None:
 			or tauon.export_playlist_box.active
 			or tauon.generator_box.active
 			or tauon.milk_choose.active
+			or tauon.shortcuts_sheet.active
 		)
 
 		if inp.k_input and inp.key_focused == 0:
 			if text_entry_shortcuts_blocked and keymaps.hits:
-				escape_pressed = keymaps.test("escape")
+				# The sheet's own key closes it like Esc
+				escape_pressed = keymaps.test("escape") or (
+					tauon.shortcuts_sheet.active and keymaps.test("show-shortcuts"))
 				keymaps.hits.clear()
 				if escape_pressed:
 					inp.key_esc_press = True
@@ -62369,6 +62836,10 @@ def main(holder: Holder) -> None:
 
 			if inp.key_esc_press and tauon.add_music_box.active:
 				tauon.add_music_box.close()
+				inp.key_esc_press = False
+
+			if inp.key_esc_press and tauon.shortcuts_sheet.active:
+				tauon.shortcuts_sheet.close()
 				inp.key_esc_press = False
 
 			if gui.fullscreen and inp.key_esc_press:
@@ -62471,6 +62942,9 @@ def main(holder: Holder) -> None:
 				tauon.album_art_gen.toggle_art_theme_algorithm()
 
 			if gui.mode == GuiMode.MAIN:
+				if keymaps.test("show-shortcuts") and tauon.is_level_zero():
+					tauon.shortcuts_sheet.open()
+
 				if keymaps.test("toggle-auto-theme"):
 					# Background styles are mutually exclusive; go through the
 					# setters so the other modes get cleared
@@ -62579,9 +63053,6 @@ def main(holder: Holder) -> None:
 			if keymaps.test("delete-playlist"):
 				pctl.delete_playlist(pctl.active_playlist_viewing)
 
-			if keymaps.test("delete-playlist-force"):
-				pctl.delete_playlist(pctl.active_playlist_viewing, force=True)
-
 			if keymaps.test("rename-playlist"):
 				if gui.radio_view:
 					tauon.rename_playlist(pctl.radio_playlist_viewing)
@@ -62600,6 +63071,8 @@ def main(holder: Holder) -> None:
 			# other consumer so clicks never leak through the overlay.
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			tauon.shortcuts_sheet.handle_input()
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
@@ -63208,6 +63681,8 @@ def main(holder: Holder) -> None:
 
 			if tauon.milk_choose.active:
 				tauon.milk_choose.handle_input()
+
+			tauon.shortcuts_sheet.handle_input()
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
@@ -65418,6 +65893,9 @@ def main(holder: Holder) -> None:
 
 			if tauon.add_music_box.active:
 				tauon.add_music_box.render()
+
+			if tauon.shortcuts_sheet.active:
+				tauon.shortcuts_sheet.render()
 
 			# Render Menus-------------------------------
 			tauon.draw_popup_menus()
