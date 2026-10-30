@@ -6,19 +6,19 @@
   <developer id="com.github.taiko2k">
     <name>Taiko2k</name>
   </developer>
-  <summary>Play the music you own</summary>
+  <summary>Play your music with style</summary>
+  <summary xml:lang="ja">音楽をスタイリッシュに再生</summary>
+  <summary xml:lang="de">Spiele deine Musik mit Stil</summary>
+  <summary xml:lang="pt_BR">Reproduza suas músicas com estilo</summary>
   <launchable type="desktop-id">com.github.taiko2k.tauonmb.desktop</launchable>
   <metadata_license>CC0-1.0</metadata_license>
   <project_license>GPL-3.0-or-later</project_license>
   <url type="homepage">https://tauonmusicbox.rocks/</url>
   <url type="bugtracker">https://github.com/Taiko2k/Tauon/issues</url>
+  <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
   <url type="faq">https://tauonmusicbox.rocks/manual/faq/</url>
   <url type="help">https://tauonmusicbox.rocks/manual/overview/</url>
   <url type="donation">https://github.com/sponsors/Taiko2k</url>
-  <url type="translate">https://github.com/Taiko2k/Tauon/blob/master/CONTRIBUTING.md#translations</url>
-  <url type="contact">https://github.com/Taiko2k/Tauon/discussions</url>
-  <url type="vcs-browser">https://github.com/Taiko2k/Tauon</url>
-  <url type="contribute">https://github.com/Taiko2k/Tauon/blob/master/CONTRIBUTING.md</url>
 
   <branding>
     <color type="primary" scheme_preference="light">#aa94c4</color>
