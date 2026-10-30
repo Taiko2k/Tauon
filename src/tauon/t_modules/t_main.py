@@ -23207,8 +23207,10 @@ class PlexService:
 
 			album = albums.get(track.parentRatingKey)
 			year = album.year if album else None
-			album_artist = album.parentTitle if album else track.grandparentTitle
-			album_title = track.parentTitle
+			# Plex leaves untagged titles as None
+			track_artist = track.grandparentTitle or ""
+			album_artist = (album.parentTitle if album else None) or track_artist
+			album_title = track.parentTitle or ""
 
 			parent = (album_artist + " - " + album_title).strip("- ")
 
@@ -23223,8 +23225,8 @@ class PlexService:
 			nt.parent_folder_path = parent
 			nt.parent_folder_name = parent
 			nt.album_artist = album_artist
-			nt.artist = track.grandparentTitle
-			nt.title = track.title
+			nt.artist = track_artist
+			nt.title = track.title or ""
 			nt.album = album_title
 			nt.length = track.duration / 1000
 			if hasattr(track, "locations") and track.locations:
@@ -23236,7 +23238,7 @@ class PlexService:
 				nt.art_url_key = track.thumb
 
 			nt.url_key = track.key
-			nt.date = str(year)
+			nt.date = str(year) if year else ""
 
 			self.pctl.master_library[id] = nt
 
