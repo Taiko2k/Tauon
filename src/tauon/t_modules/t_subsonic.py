@@ -93,6 +93,46 @@ class SubsonicService(RemotePlaylistSource):
 		except (TypeError, ValueError):
 			return 0
 
+	def _float(self, value: object) -> float | None:
+		try:
+			number = float(value)
+		except (TypeError, ValueError):
+			return None
+		return number if math.isfinite(number) else None
+
+	def _replaygain_pair(self, gain: object, peak: object) -> tuple[float | None, float | None]:
+		gain = self._float(gain)
+		peak = self._float(peak)
+		if peak is not None and peak <= 0:
+			peak = None
+		# Some servers send zeros for untagged files instead of omitting them
+		if gain == 0 and peak is None:
+			gain = None
+		return gain, peak
+
+	def _apply_song_extras(self, nt: TrackClass, song: dict) -> None:
+		"""Copy OpenSubsonic comment, MBIDs and ReplayGain from a song onto a track."""
+		comment = song.get("comment")
+		if isinstance(comment, str) and comment:
+			nt.comment = comment
+
+		mbid = song.get("musicBrainzId")
+		if isinstance(mbid, str) and mbid:
+			nt.musicbrainz_recordingid = mbid
+		artist_ids = [
+			artist["musicBrainzId"] for artist in self._as_list(song.get("artists"))
+			if isinstance(artist, dict) and isinstance(artist.get("musicBrainzId"), str) and artist["musicBrainzId"]
+		]
+		if artist_ids:
+			nt.musicbrainz_artistids = artist_ids
+
+		rg = song.get("replayGain")
+		if isinstance(rg, dict):
+			nt.replaygain_track_gain, nt.replaygain_track_peak = self._replaygain_pair(
+				rg.get("trackGain"), rg.get("trackPeak"))
+			nt.replaygain_album_gain, nt.replaygain_album_peak = self._replaygain_pair(
+				rg.get("albumGain"), rg.get("albumPeak"))
+
 	def _separate_albums(self, tracks: list[tuple[TrackClass, object]]) -> None:
 		"""Give each album its own parent_folder_path, as Tauon groups albums by folder.
 
@@ -372,6 +412,7 @@ class SubsonicService(RemotePlaylistSource):
 			nt.url_key = song["id"]
 			nt.subsonic_folder_id = song.get("parent")
 			nt.is_network = True
+			self._apply_song_extras(nt, song)
 
 			album_ids[song["id"]] = song.get("albumId") or (nt.parent_folder_path, name)
 			songs.append((nt, name, song["id"], int(song.get("userRating", 0))))
@@ -929,6 +970,7 @@ class SubsonicService(RemotePlaylistSource):
 				nt.url_key = song["id"]
 				nt.subsonic_folder_id = folder_id
 				nt.is_network = True
+				self._apply_song_extras(nt, song)
 
 				rating = 0
 				if "userRating" in song:
@@ -972,6 +1014,9 @@ class SubsonicService(RemotePlaylistSource):
 
 				album = d["subsonic-response"]["album"]
 				album_artist = album.get("artist", "")
+				album_mbid = album.get("musicBrainzId")
+				if not isinstance(album_mbid, str):
+					album_mbid = ""
 				# Only albums carry genres here, tracks don't, so every track takes the album's
 				genre_names = [
 					g["name"] for g in self._as_list(album.get("genres"))
@@ -1019,6 +1064,9 @@ class SubsonicService(RemotePlaylistSource):
 					# ids aren't interchangeable with it, so album star/rating cleanly no-op instead
 					# of acting on an unrelated item.
 					nt.is_network = True
+					self._apply_song_extras(nt, song)
+					if album_mbid:
+						nt.musicbrainz_albumid = album_mbid
 
 					songsets[index].append((nt, name, song["id"], 0))
 			except Exception:
