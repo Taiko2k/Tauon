@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from tauon.t_modules.t_db_state import allocate_track_id
+from tauon.t_modules.t_remote_playlists import RemotePlaylist
 
 allow_tidal = False
 try:
@@ -95,6 +96,39 @@ class Tidal:
 				logging.error("Failed to load TIDAL login")
 				self.tauon.show_message(_("Failed to load TIDAL login, please try log in again"))
 				os.remove(self.save_path)
+
+	def available(self) -> bool:
+		"""Whether there's a saved login to use."""
+		return allow_tidal and os.path.isfile(self.save_path)
+
+	def ping(self) -> bool:
+		"""Check the saved login still works, for the Add music box."""
+		try:
+			self.try_load()
+			return bool(self.session and self.session.check_login())
+		except Exception:
+			logging.exception("Error checking TIDAL login")
+			return False
+
+	def list_playlists(self) -> list[RemotePlaylist] | None:
+		"""The user's own and followed playlists, or None if they couldn't be fetched."""
+		try:
+			self.try_load()
+			if not self.session:
+				return None
+			user = self.session.user
+			playlists = list(user.playlists()) + list(Favorites(self.session, user.id).playlists())
+		except Exception:
+			logging.exception("Error listing TIDAL playlists")
+			return None
+		seen: set[str] = set()
+		result = []
+		for p in playlists:
+			if p.id in seen:
+				continue
+			seen.add(p.id)
+			result.append(RemotePlaylist(id=str(p.id), name=p.name or str(p.id), count=p.num_tracks or 0))
+		return result
 
 	def save_session(self) -> None:
 		if self.session:

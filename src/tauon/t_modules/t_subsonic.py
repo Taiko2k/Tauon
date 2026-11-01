@@ -217,7 +217,7 @@ class SubsonicService(RemotePlaylistSource):
 		logging.error(f"Giving up on {point}, rate limited after waiting {waited}s")
 		return None
 
-	def _list_albums(self) -> list[tuple[str, str]]:
+	def _list_albums(self, scope: dict[str, str] | None = None) -> list[tuple[str, str]]:
 		"""Page through every album on the server via getAlbumList2.
 
 		Used in place of folder browsing on servers without getMusicDirectory.
@@ -232,7 +232,7 @@ class SubsonicService(RemotePlaylistSource):
 			# Everything here is guarded, as escaping this would leave the scan flag stuck on
 			try:
 				result = self._request_with_retry(
-					"getAlbumList2", p={"type": "alphabeticalByName", "size": size, "offset": offset},
+					"getAlbumList2", p={"type": "alphabeticalByName", "size": size, "offset": offset, **(scope or {})},
 				)
 				if result is None:
 					self.show_message(
@@ -290,7 +290,7 @@ class SubsonicService(RemotePlaylistSource):
 
 		return albums
 
-	def _search3_songs(self) -> list[tuple[TrackClass, str, str, int]] | None:
+	def _search3_songs(self, scope: dict[str, str] | None = None) -> list[tuple[TrackClass, str, str, int]] | None:
 		"""Fetch every song with an empty search3 query. Returns None if that doesn't work on this server."""
 		songs: list[tuple[TrackClass, str, str, int]] = []
 		seen: set[str] = set()
@@ -300,7 +300,10 @@ class SubsonicService(RemotePlaylistSource):
 			try:
 				result = self._request_with_retry(
 					"search3",
-					p={"query": '""', "songCount": count, "songOffset": offset, "artistCount": 0, "albumCount": 0},
+					p={
+						"query": '""', "songCount": count, "songOffset": offset, "artistCount": 0, "albumCount": 0,
+						**(scope or {}),
+					},
 				)
 			except Exception:
 				logging.exception("Error paging songs with search3")
@@ -452,11 +455,11 @@ class SubsonicService(RemotePlaylistSource):
 			return None
 		if response is None:
 			return None
-		entries = [
-			e for e in self._as_list((response.get("playlist") or {}).get("entry"))
-			if isinstance(e, dict) and e.get("id")
-		]
+		return self._song_ids(self._as_list((response.get("playlist") or {}).get("entry")))
 
+	def _song_ids(self, entries: list) -> list[int]:
+		"""Tauon track ids for song entries, adding any that aren't in the library yet."""
+		entries = [e for e in entries if isinstance(e, dict) and e.get("id")]
 		existing: dict[str, int] = {}
 		for track_id, track in self.pctl.master_library.items():
 			if track.is_network and track.file_ext == "SUB":
@@ -474,6 +477,58 @@ class SubsonicService(RemotePlaylistSource):
 				self.star_store.set_rating(nt.index, rating * 2)
 
 		return [existing[e["id"]] for e in entries]
+
+	def ping(self) -> bool:
+		"""Quietly check the server and login, for the Add music box."""
+		try:
+			return self._response(self.r("ping", show_errors=False)) is not None
+		except Exception:
+			logging.exception("Error pinging Subsonic server")
+			return False
+
+	def list_libraries(self) -> list[RemotePlaylist] | None:
+		"""The server's music folders, or None if they couldn't be fetched."""
+		response = self._response(self.r("getMusicFolders", show_errors=False))
+		if response is None:
+			return None
+		return [
+			RemotePlaylist(id=str(f["id"]), name=f.get("name") or str(f["id"]))
+			for f in self._as_list((response.get("musicFolders") or {}).get("musicFolder"))
+			if isinstance(f, dict) and f.get("id") is not None
+		]
+
+	def _starred(self) -> dict | None:
+		try:
+			response = self._response(self.r("getStarred2", show_errors=False))
+		except Exception:
+			logging.exception("Error fetching Subsonic starred items")
+			return None
+		return None if response is None else response.get("starred2") or {}
+
+	def favourite_tracks(self) -> list[int] | None:
+		"""Track ids for the airfav generator code."""
+		starred = self._starred()
+		if starred is None:
+			return None
+		return self._song_ids(self._as_list(starred.get("song")))
+
+	def favourite_albums(self) -> list[int] | None:
+		"""Track ids for the airfavalb generator code."""
+		starred = self._starred()
+		if starred is None:
+			return None
+		songs: list = []
+		for album in self._as_list(starred.get("album")):
+			if not isinstance(album, dict) or album.get("id") is None:
+				continue
+			try:
+				response = self._response(self.r("getAlbum", p={"id": album["id"]}, show_errors=False))
+			except Exception:
+				logging.exception("Error fetching Subsonic album")
+				continue
+			if response is not None:
+				songs.extend(self._as_list((response.get("album") or {}).get("song")))
+		return self._song_ids(songs)
 
 	def r(
 		self,
@@ -806,7 +861,9 @@ class SubsonicService(RemotePlaylistSource):
 				logging.exception("Error connect for star Album on airsonic")
 		return True
 
-	def get_music3(self, return_list: bool = False) -> list[int] | None:
+	def get_music3(self, return_list: bool = False, music_folder: str | None = None) -> list[int] | None:
+		"""Import the whole library, or only the music folder with that id."""
+		scope = {"musicFolderId": music_folder} if music_folder else {}
 		self.scanning = True
 		self.gui.to_got = 0
 
@@ -817,15 +874,15 @@ class SubsonicService(RemotePlaylistSource):
 				existing[track.url_key] = track_id
 
 		try:
-			a = self.r("getIndexes")
+			a = self.r("getIndexes", p=scope)
 		except Exception:
 			logging.exception("Error connecting to Airsonic server")
-			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.show_message(_("Error connecting to Subsonic server"), mode="error")
 			self.scanning = False
 			return []
 		if not a or "subsonic-response" not in a:
 			logging.error("Invalid response from Airsonic getIndexes")
-			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.show_message(_("Error connecting to Subsonic server"), mode="error")
 			self.scanning = False
 			return []
 
@@ -835,7 +892,7 @@ class SubsonicService(RemotePlaylistSource):
 			if "error" in a["subsonic-response"]:
 				logging.debug(a["subsonic-response"])
 				self.show_message(
-					_("Error connecting to Airsonic server"),
+					_("Error connecting to Subsonic server"),
 					f"{a['subsonic-response']['error']['code']}: {a['subsonic-response']['error']['message']}",
 					mode="error",
 				)
@@ -843,7 +900,7 @@ class SubsonicService(RemotePlaylistSource):
 			logging.critical("Failed to find expected key 'indexes', report a bug with the log below!")
 			logging.critical(a["subsonic-response"])
 			self.show_message(
-				_("Error connecting to Airsonic server"), "See console log for more details", mode="error"
+				_("Error connecting to Subsonic server"), "See console log for more details", mode="error"
 			)
 			return None
 
@@ -864,7 +921,7 @@ class SubsonicService(RemotePlaylistSource):
 		# OpenSubsonic servers return the whole library for an empty search3 query
 		search3_songs = None
 		if a["subsonic-response"].get("openSubsonic"):
-			search3_songs = self._search3_songs()
+			search3_songs = self._search3_songs(scope)
 		if search3_songs is not None:
 			logging.info(f"Read {len(search3_songs)} songs with search3")
 			folders = []
@@ -875,7 +932,7 @@ class SubsonicService(RemotePlaylistSource):
 		tag_mode = bool(folders) and not self._endpoint_exists("getMusicDirectory", p={"id": folders[0][0]})
 		if tag_mode:
 			logging.info("Server has no getMusicDirectory, falling back to scanning albums by tag")
-			folders = self._list_albums()
+			folders = self._list_albums(scope)
 
 		playlist: list[int] = []
 		songsets: list[tuple[TrackClass, str, str, int]] = []
@@ -900,7 +957,7 @@ class SubsonicService(RemotePlaylistSource):
 				logging.exception("Error reading Airsonic directory")
 				if not inner:
 					statuses[index] = 2
-				self.show_message(_("Error reading Airsonic directory!"), mode="warning")
+				self.show_message(_("Error reading Subsonic directory!"), mode="warning")
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
@@ -1098,7 +1155,7 @@ class SubsonicService(RemotePlaylistSource):
 			a = self.r("getStarred2")
 		except Exception:
 			logging.exception("Error connecting to Airsonic server")
-			self.show_message(_("Error connecting to Airsonic server"), mode="error")
+			self.show_message(_("Error connecting to Subsonic server"), mode="error")
 			self.scanning = False
 			return []
 
@@ -1143,11 +1200,12 @@ class SubsonicService(RemotePlaylistSource):
 		set_favs(liked_track_ids)
 
 		self.scanning = False
-		self.last_music = playlist
+		if not music_folder:
+			self.last_music = playlist
 		if return_list:
 			return playlist
 
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Airsonic Collection"), playlist_ids=playlist))
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=_("Subsonic Collection"), playlist_ids=playlist))
 		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "air"
 		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 		return None

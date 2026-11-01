@@ -320,6 +320,7 @@ from tauon.t_modules.t_tagscan import (  # noqa: E402
 )
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
+from tauon.t_modules.t_remote_playlists import RemotePlaylist  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
 from tauon.t_modules.t_waveform import WaveformCache  # noqa: E402
 from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
@@ -433,7 +434,6 @@ if TYPE_CHECKING:
 
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS, SuspendInhibitor
-	from tauon.t_modules.t_remote_playlists import RemotePlaylistSource
 	from tauon.t_modules.t_logging import LogHistoryHandler
 	from collections.abc import Callable, Sequence
 	from subprocess import Popen
@@ -17916,7 +17916,48 @@ class Tauon:
 				track_ids = self.subsonic.playlist_track_ids(quote)
 				if track_ids is None:
 					fetch_failed = True
-					self.show_message(_("Error fetching Airsonic playlist"), mode="warning")
+					self.show_message(_("Error fetching Subsonic playlist"), mode="warning")
+				else:
+					playlist.extend(track_ids)
+
+			elif cm.startswith("airlib\""):
+				if not self.subsonic.scanning:
+					playlist.extend(self.subsonic.get_music3(return_list=True, music_folder=quote) or [])
+
+			elif cm in ("airfav", "airfavalb"):
+				track_ids = self.subsonic.favourite_tracks() if cm == "airfav" else self.subsonic.favourite_albums()
+				if track_ids is None:
+					fetch_failed = True
+				else:
+					playlist.extend(track_ids)
+
+			elif cm.startswith("jellylib\""):
+				if not self.jellyfin.scanning:
+					playlist.extend(self.jellyfin.ingest_library(return_list=True, parent_id=quote) or [])
+
+			elif cm == "jellyfav":
+				if not self.jellyfin.scanning:
+					playlist.extend(self.jellyfin.favourite_tracks())
+
+			elif cm == "jellyfavalb":
+				if not self.jellyfin.scanning:
+					playlist.extend(self.jellyfin.favourite_albums())
+
+			elif cm.startswith("plexlib\""):
+				if not self.plex.scanning:
+					playlist.extend(self.plex.get_albums(return_list=True, section_key=quote) or [])
+
+			elif cm.startswith("plexpl\""):
+				track_ids = self.plex.playlist_track_ids(quote)
+				if track_ids is None:
+					fetch_failed = True
+				else:
+					playlist.extend(track_ids)
+
+			elif cm.startswith("tau\""):
+				track_ids = self.tau.playlist_track_ids(quote)
+				if track_ids is None:
+					fetch_failed = True
 				else:
 					playlist.extend(track_ids)
 
@@ -19880,6 +19921,10 @@ class Tauon:
 			"jelly"  not in cmds and
 			"tau"    not in cmds and
 			"air"    not in cmds and
+			"tft"    not in cmds and
+			"tfa"    not in cmds and
+			# shlex drops the quotes, so airlib"<id>" arrives as airlib<id>
+			not any(c.startswith(("airlib", "airfav", "jellylib", "jellyfav", "plexlib", "plexpl", "tau")) for c in cmds) and
 			"sal"    not in cmds and
 			"slt"    not in cmds and
 			"spl\""  not in code and
@@ -20283,19 +20328,6 @@ class Tauon:
 			return url
 		return None
 
-	def jellyfin_get_library_thread(self) -> None:
-		self.pref_box.close()
-		save_prefs(bag=self.bag)
-		if self.jellyfin.scanning:
-			self.inp.mouse_click = False
-			self.show_message(_("Job already in progress!"))
-			return
-
-		self.jellyfin.scanning = True
-		shoot_dl = threading.Thread(target=self.jellyfin.ingest_library)
-		shoot_dl.daemon = True
-		shoot_dl.start()
-
 	def plex_cancel_two_factor(self) -> None:
 		self.plex.two_factor_required = False
 		self.text_plex_2fa.text = ""
@@ -20304,45 +20336,47 @@ class Tauon:
 		self.plex.scanning = False
 		self.gui.request_frame()
 
-	def plex_get_album_thread(self) -> None:
+	def plex_test_connection(self) -> None:
 		if self.plex.scanning:
-			self.inp.mouse_click = False
 			self.show_message(_("Already scanning!"))
 			return
-
-		# If the user has 2FA enabled, Plex may require a verification code.
-		# In that case we keep the settings window open and prompt for the code.
+		code = None
+		# With 2FA on, Plex wants the verification code with the login
 		if self.plex.two_factor_required:
 			code = self.text_plex_2fa.text.strip()
 			if not code:
 				self.show_message(_("Enter two-factor code"), mode="warning")
 				return
-			if not self.plex.connect(code=code):
-				return
-			self.text_plex_2fa.text = ""
-		elif not self.plex.connect():
-			return
-
-		self.pref_box.close()
 		save_prefs(bag=self.bag)
-		self.plex.scanning = True
 
-		shoot_dl = threading.Thread(target=self.plex.get_albums)
-		shoot_dl.daemon = True
-		shoot_dl.start()
+		def test() -> None:
+			if self.plex.connect(code=code):
+				self.text_plex_2fa.text = ""
+				self.show_message(_("Connection and authorisation successful"), mode="done")
 
-	def sub_get_album_thread(self) -> None:
-		self.pref_box.close()
+		shooter(test)
+
+	def subsonic_test_connection(self) -> None:
 		save_prefs(bag=self.bag)
-		if self.subsonic.scanning:
-			self.inp.mouse_click = False
-			self.show_message(_("Already scanning!"))
-			return
-		self.subsonic.scanning = True
 
-		shoot_dl = threading.Thread(target=self.subsonic.get_music3)
-		shoot_dl.daemon = True
-		shoot_dl.start()
+		def test() -> None:
+			if self.subsonic.ping():
+				self.show_message(_("Connection and authorisation successful"), mode="done")
+			else:
+				self.show_message(_("Could not connect to the server"), _("Check the server URL, username and password."), mode="warning")
+
+		shooter(test)
+
+	def tau_test_connection(self) -> None:
+		def test() -> None:
+			if self.tau.ping():
+				self.show_message(_("Connected to the other Tauon"), mode="done")
+			else:
+				self.show_message(
+					_("Could not connect to the server"),
+					_("Check the IP, and that the other Tauon has its web server on."), mode="warning")
+
+		shooter(test)
 
 	def track_number_process(self, line: str) -> str:
 		line = str(line).split("/", 1)[0].lstrip("0")
@@ -23085,9 +23119,10 @@ class PlexService:
 		self.scanning:  bool = False
 		self.two_factor_required: bool = False
 
-	def connect(self, code: str | None = None) -> bool:
+	def connect(self, code: str | None = None, quiet: bool = False) -> bool:
 		if not self.prefs.plex_username or not self.prefs.plex_password or not self.prefs.plex_servername:
-			self.show_message(_("Missing username, password and/or server name"), mode="warning")
+			if not quiet:
+				self.show_message(_("Missing username, password and/or server name"), mode="warning")
 			self.scanning = False
 			return False
 
@@ -23115,21 +23150,34 @@ class PlexService:
 			self.connected = False
 			self.resource = None
 			self.two_factor_required = True
-			self.show_message(
-				_("Two-factor authentication required"),
-				_("Enter the verification code and try again."),
-				mode="warning",
-			)
+			if not quiet:
+				self.show_message(
+					_("Two-factor authentication required"),
+					_("Enter the verification code and try again."),
+					mode="warning",
+				)
 			self.gui.request_frame()
 			self.scanning = False
 			return False
 		except Exception:
 			logging.exception("Error connecting to PLEX server, check login credentials and server accessibility.")
-			self.show_message(
-				_("Error connecting to PLEX server"),
-				_("Try checking login credentials and that the server is accessible."), mode="error")
+			if not quiet:
+				self.show_message(
+					_("Error connecting to PLEX server"),
+					_("Try checking login credentials and that the server is accessible."), mode="error")
 			self.scanning = False
 			return False
+
+	def ping(self) -> bool:
+		"""Quietly check the login and server, for the Add music box."""
+		if self.connected and self.resource is not None:
+			try:
+				self.resource.library.sections()
+				return True
+			except Exception:
+				logging.exception("PLEX server stopped responding")
+				self.connected = False
+		return self.connect(quiet=True)
 
 	def resolve_stream(self, location: str):
 		logging.info("Get plex stream")
@@ -23151,23 +23199,102 @@ class PlexService:
 			return self.resource.url(location, True)
 		return None
 
-	def music_section(self):
-		"""Return the configured music library, or the only one on the server if none is set"""
-		if self.prefs.plex_library:
-			return self.resource.library.section(self.prefs.plex_library)
+	def music_sections(self, section_key: str | None = None) -> list:
+		"""Every music library on the server, or just the one with section_key."""
+		if section_key:
+			return [self.resource.library.sectionByID(int(section_key))]
 		sections = [s for s in self.resource.library.sections() if s.type == "artist"]
-		if len(sections) == 1:
-			return sections[0]
 		if not sections:
 			raise LookupError(_("No music library found on the server"))
-		raise LookupError(
-			_("Several music libraries found, set one in settings: {names}").format(
-				names=", ".join(s.title for s in sections)))
+		return sections
 
-	def get_albums(self, return_list: bool = False) -> list[int] | None:
+	def list_libraries(self) -> list[RemotePlaylist] | None:
+		if not self.connected and not self.connect(quiet=True):
+			return None
+		libraries = []
+		for section in self.resource.library.sections():
+			if section.type != "artist":
+				continue
+			try:
+				count = section.totalViewSize(libtype="track")
+			except Exception:
+				logging.exception("Error counting PLEX library tracks")
+				count = 0
+			libraries.append(RemotePlaylist(id=str(section.key), name=section.title, count=count))
+		return libraries
+
+	def list_playlists(self) -> list[RemotePlaylist] | None:
+		if not self.connected and not self.connect(quiet=True):
+			return None
+		return [
+			RemotePlaylist(id=str(p.ratingKey), name=p.title, count=p.leafCount or 0, smart=bool(p.smart))
+			for p in self.resource.playlists(playlistType="audio")
+		]
+
+	def playlist_track_ids(self, playlist_key: str) -> list[int] | None:
+		"""Track ids for the plexpl"<key>" generator code, or None if it couldn't be fetched."""
+		try:
+			if not self.connected and not self.connect():
+				return None
+			items = self.resource.fetchItem(int(playlist_key)).items()
+		except Exception:
+			logging.exception("Error fetching PLEX playlist")
+			return None
+		existing = self._existing()
+		playlist = []
+		for track in items:
+			if getattr(track, "type", "") != "track" or not track.duration:
+				continue
+			artist = track.grandparentTitle or ""
+			nt = self._store_track(track, existing, artist, artist, getattr(track, "parentYear", None))
+			existing[track.key] = nt.index
+			playlist.append(nt.index)
+		return playlist
+
+	def _existing(self) -> dict[str, int]:
+		existing = {}
+		for track_id, track in self.pctl.master_library.items():
+			if track.is_network and track.file_ext == "PLEX":
+				existing[track.url_key] = track_id
+		return existing
+
+	def _store_track(self, track, existing: dict[str, int], album_artist: str, track_artist: str, year) -> TrackClass:
+		album_title = track.parentTitle or ""
+		parent = (album_artist + " - " + album_title).strip("- ")
+
+		id = existing.get(track.key)
+		if id is None:
+			id = allocate_track_id(self.pctl)
+
+		nt = TrackClass()
+		nt.index = id
+		nt.track_number = track.index
+		nt.file_ext = "PLEX"
+		nt.parent_folder_path = parent
+		nt.parent_folder_name = parent
+		nt.album_artist = album_artist
+		nt.artist = track_artist
+		nt.title = track.title or ""
+		nt.album = album_title
+		nt.length = track.duration / 1000
+		if hasattr(track, "locations") and track.locations:
+			nt.fullpath = track.locations[0]
+
+		nt.is_network = True
+
+		if track.thumb:
+			nt.art_url_key = track.thumb
+
+		nt.url_key = track.key
+		nt.date = str(year) if year else ""
+
+		self.pctl.master_library[id] = nt
+		return nt
+
+	def get_albums(self, return_list: bool = False, section_key: str | None = None) -> list[int] | None:
 		# Always clear the scanning flag, or the UI stays on "Accessing PLEX library..."
 		try:
-			return self._get_albums(return_list)
+			return self._get_albums(return_list, section_key)
 		except Exception as e:
 			logging.exception("Error importing PLEX library")
 			self.show_message(_("Error importing PLEX library"), str(e), mode="error")
@@ -23176,7 +23303,7 @@ class PlexService:
 			self.scanning = False
 			self.gui.request_frame()
 
-	def _get_albums(self, return_list: bool) -> list[int] | None:
+	def _get_albums(self, return_list: bool, section_key: str | None) -> list[int] | None:
 		self.gui.request_frame()
 		self.scanning = True
 
@@ -23188,66 +23315,30 @@ class PlexService:
 			return []
 
 		playlist: list[int] = []
-
-		existing = {}
-		for track_id, track in self.pctl.master_library.items():
-			if track.is_network and track.file_ext == "PLEX":
-				existing[track.url_key] = track_id
-
-		# Fetch all tracks in one paged listing instead of one request per album
-		section = self.music_section()
-		albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
-		tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
+		existing = self._existing()
 		self.gui.to_got = 0
 
-		for track in tracks:
-			if not track.duration:
-				logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
-				continue
+		for section in self.music_sections(section_key):
+			# Fetch all tracks in one paged listing instead of one request per album
+			albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
+			tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
 
-			album = albums.get(track.parentRatingKey)
-			year = album.year if album else None
-			# Plex leaves untagged titles as None
-			track_artist = track.grandparentTitle or ""
-			album_artist = (album.parentTitle if album else None) or track_artist
-			album_title = track.parentTitle or ""
+			for track in tracks:
+				if not track.duration:
+					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
+					continue
 
-			parent = (album_artist + " - " + album_title).strip("- ")
+				album = albums.get(track.parentRatingKey)
+				# Plex leaves untagged titles as None
+				track_artist = track.grandparentTitle or ""
+				album_artist = (album.parentTitle if album else None) or track_artist
+				nt = self._store_track(track, existing, album_artist, track_artist, album.year if album else None)
+				playlist.append(nt.index)
 
-			id = existing.get(track.key)
-			if id is None:
-				id = allocate_track_id(self.pctl)
-
-			nt = TrackClass()
-			nt.index = id
-			nt.track_number = track.index
-			nt.file_ext = "PLEX"
-			nt.parent_folder_path = parent
-			nt.parent_folder_name = parent
-			nt.album_artist = album_artist
-			nt.artist = track_artist
-			nt.title = track.title or ""
-			nt.album = album_title
-			nt.length = track.duration / 1000
-			if hasattr(track, "locations") and track.locations:
-				nt.fullpath = track.locations[0]
-
-			nt.is_network = True
-
-			if track.thumb:
-				nt.art_url_key = track.thumb
-
-			nt.url_key = track.key
-			nt.date = str(year) if year else ""
-
-			self.pctl.master_library[id] = nt
-
-			playlist.append(nt.index)
-
-			self.gui.to_got += 1
-			if self.gui.to_got % 500 == 0:
-				self.gui.request_frame()
-				self.gui.request_tracklist_redraw()
+				self.gui.to_got += 1
+				if self.gui.to_got % 500 == 0:
+					self.gui.request_frame()
+					self.gui.request_tracklist_redraw()
 
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
@@ -23276,7 +23367,7 @@ class TauService:
 	def resolve_picture(self, key: str) -> str:
 		return "http://" + self.prefs.sat_url + ":7814/api1/pic/medium/" + key
 
-	def get(self, point: str):
+	def get(self, point: str, quiet: bool = False):
 		url = "http://" + self.prefs.sat_url + ":7814/api1/"
 		data = None
 		try:
@@ -23284,8 +23375,29 @@ class TauService:
 			data = r.json()
 		except Exception as e:
 			logging.exception("Network error")
-			self.show_message(_("Network error"), str(e), mode="error")
+			if not quiet:
+				self.show_message(_("Network error"), str(e), mode="error")
 		return data
+
+	def ping(self) -> bool:
+		data = self.get("version", quiet=True)
+		return isinstance(data, dict) and "version" in data
+
+	def list_playlists(self) -> list[RemotePlaylist] | None:
+		data = self.get("playlists", quiet=True)
+		if not isinstance(data, dict):
+			return None
+		return [
+			RemotePlaylist(id=str(p["id"]), name=p.get("name") or str(p["id"]), count=p.get("count") or 0)
+			for p in data.get("playlists", []) if p.get("id")
+		]
+
+	def playlist_track_ids(self, playlist_id: str) -> list[int] | None:
+		"""Track ids for the tau"<id>" generator code, or None if it couldn't be fetched."""
+		t = self.get("tracklist/" + playlist_id, quiet=True)
+		if not isinstance(t, dict) or "tracks" not in t:
+			return None
+		return self._store_tracks(t["tracks"])
 
 	def get_playlist(self, playlist_name: str | None = None, return_list: bool = False) -> list[int] | None:
 		p = self.get("playlists")
@@ -23317,8 +23429,20 @@ class TauService:
 		except Exception:
 			logging.exception("error getting tracklist")
 			return []
-		at = t["tracks"]
+		playlist = self._store_tracks(t["tracks"])
 
+		if return_list:
+			self.processing = False
+			return playlist
+
+		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
+		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "tau path tn"
+		self.tauon.standard_sort(len(self.pctl.multi_playlist) - 1)
+		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
+		self.processing = False
+		return None
+
+	def _store_tracks(self, at: list[dict]) -> list[int]:
 		exist = {}
 		for k, v in self.pctl.master_library.items():
 			if v.is_network and v.file_ext == "TAU":
@@ -23353,17 +23477,7 @@ class TauService:
 			self.pctl.master_library[id] = nt
 
 			playlist.append(nt.index)
-
-		if return_list:
-			self.processing = False
-			return playlist
-
-		self.pctl.multi_playlist.append(self.tauon.pl_gen(title=name, playlist_ids=playlist))
-		self.pctl.gen_codes[self.pctl.pl_to_id(len(self.pctl.multi_playlist) - 1)] = "tau path tn"
-		self.tauon.standard_sort(len(self.pctl.multi_playlist) - 1)
-		self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
-		self.processing = False
-		return None
+		return playlist
 
 class GStats:
 	def __init__(self, tauon: Tauon) -> None:
@@ -28888,6 +29002,7 @@ class SearchOverlay:
 					not control_down and not self.tauon.radiobox.active and not self.tauon.rename_track_box.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
+					and not self.tauon.add_music_box.active \
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now \
 					and not (gui.radio_view and self.tauon.radiobox.tab == 1):
 
@@ -31556,101 +31671,6 @@ class Over:
 		self.pctl.playerCommand = "seteq"
 		self.pctl.playerCommandReady = True
 
-	def settings_server_playlists_height(self, service: RemotePlaylistSource) -> int:
-		s = self.gui.scale
-		h = round(116 * s)
-		if self.settings_server_playlists_status(service):
-			h += round(28 * s)
-		if service.remote_playlists:
-			h += round(6 * s) + len(service.remote_playlists) * round(42 * s)
-		return h
-
-	def settings_server_playlists_status(self, service: RemotePlaylistSource) -> str:
-		if service.remote_playlists_error:
-			return service.remote_playlists_error
-		if service.remote_playlists_loading and not service.remote_playlists:
-			return _("Loading playlists…")
-		if service.remote_playlists == []:
-			return _("No playlists on this server.")
-		return ""
-
-	def render_settings_server_playlists(
-		self, service: RemotePlaylistSource, x: int, y: int, w: int, *, accent: ColourRGBA,
-	) -> int:
-		"""Card listing a server's playlists, each importable on its own, plus Import all."""
-		s = self.gui.scale
-		h = self.settings_server_playlists_height(service)
-		inner_x, inner_y, inner_w, _inner_h = self.draw_settings_section(
-			(x, y, w, h), _("Playlists"), _("Pick playlists to import, or import them all."), accent)
-		bg = self.ddt.text_background_colour
-
-		if service.remote_playlists_loading:
-			list_label, list_callback = _("Loading…"), None
-		elif service.remote_playlists is None:
-			list_label, list_callback = _("Show playlists"), service.start_fetch_playlist_list
-		else:
-			list_label, list_callback = _("Refresh list"), service.start_fetch_playlist_list
-		self.draw_settings_action_row(
-			(inner_x, inner_y, inner_w, round(36 * s)),
-			[
-				(list_label, list_callback, False),
-				(_("Import all"), service.start_import_all_playlists, True),
-			],
-			accent,
-		)
-		inner_y += round(42 * s)
-
-		status = self.settings_server_playlists_status(service)
-		if status:
-			colour = self.colours.box_text_label
-			if service.remote_playlists_error:
-				colour = self.settings_readable_colour(ColourRGBA(255, 120, 100, 255), bg, 3.0)
-			self.ddt.text((inner_x + round(12 * s), inner_y + round(4 * s)), status, colour, 12, bg=bg, max_w=inner_w)
-			inner_y += round(28 * s)
-
-		if not service.remote_playlists:
-			return h
-
-		# One pass over the generator codes, rather than one per row
-		codes = "\n".join(self.pctl.gen_codes.values())
-		row_h = round(42 * s)
-		button_w = round(96 * s)
-		button_h = round(26 * s)
-		line = max(1, round(1 * s))
-		for i, playlist in enumerate(service.remote_playlists):
-			row = (inner_x, inner_y + i * row_h, inner_w, row_h)
-			if i:
-				self.ddt.rect((row[0], row[1], row[2], line), self.settings_overlay(bg, 12))
-			fill = bg
-			if self.coll(row):
-				fill = self.settings_surface(bg, 5)
-				self.ddt.rect((row[0], row[1] + line, row[2], row[3] - line), fill)
-			self.ddt.text_background_colour = fill
-
-			imported = service.playlist_code(playlist.id) in codes
-			busy = playlist.id in service.remote_playlists_busy
-			details = []
-			if playlist.smart:
-				details.append(_("Smart playlist"))
-			if playlist.count:
-				details.append(_("1 track") if playlist.count == 1 else _("{count} tracks").format(count=playlist.count))
-			if imported:
-				details.append(_("Imported"))
-			self.settings_row_label(
-				row, "", playlist.name, " · ".join(details), accent,
-				changed=False, restart=False, disabled=False, control_w=button_w, flash=False)
-
-			if busy:
-				label, callback = _("Importing…"), None
-			else:
-				label = _("Update") if imported else _("Import")
-				callback = functools.partial(service.start_import_playlists, [playlist])
-			self.settings_small_button(
-				(row[0] + row[2] - round(12 * s) - button_w, row[1] + (row_h - button_h) // 2, button_w, button_h),
-				label, callback, emphasis=not imported and not busy)
-		self.ddt.text_background_colour = bg
-		return h
-
 	def render_settings_service_detail(
 		self,
 		view: int,
@@ -31920,7 +31940,7 @@ class Over:
 
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
-			card1_h = round(122 * gui.scale) if two_factor else round(266 * gui.scale)
+			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
 			card2_h = round(206 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -31964,27 +31984,18 @@ class Over:
 					accent,
 				)
 
-				inner_y += field_h + row_gap
-				prefs.plex_library = self.settings_text_input(
-					(inner_x, inner_y, inner_w, field_h),
-					_("Library name"),
-					tauon.text_plex_ser,
-					prefs.plex_library,
-					accent,
-				)
-
 			rect = (x, y + card1_h + card_gap, w, card2_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				_("Actions"),
-				_("Import from Plex."),
+				_("Add music from this server, or check the connection."),
 				accent,
 			)
 			if two_factor:
 				self.draw_settings_action_row(
 					(inner_x, inner_y, inner_w, action_h),
 					[
-						(_("Continue"), tauon.plex_get_album_thread, True),
+						(_("Continue"), tauon.plex_test_connection, True),
 						(_("Cancel"), tauon.plex_cancel_two_factor, False),
 					],
 					accent,
@@ -31993,7 +32004,8 @@ class Over:
 				self.draw_settings_action_row(
 					(inner_x, inner_y, inner_w, action_h),
 					[
-						(_("Import music to playlist"), tauon.plex_get_album_thread, True),
+						(_("Add music…"), lambda: tauon.add_music_box.open_server("plex"), True),
+						(_("Test connectivity"), tauon.plex_test_connection, False),
 					],
 					accent,
 				)
@@ -32010,14 +32022,14 @@ class Over:
 		if view == 7:
 			card1_h = round(218 * gui.scale)
 			card2_h = round(260 * gui.scale)
-			total_h = card1_h + card_gap + card2_h + card_gap + self.settings_server_playlists_height(tauon.subsonic)
+			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
 
 			rect = (x, y, w, card1_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
-				_("Airsonic / Subsonic"),
+				"Subsonic / OpenSubsonic",
 				_("Connect to a Subsonic-compatible server."),
 				accent,
 			)
@@ -32080,12 +32092,11 @@ class Over:
 			self.draw_settings_action_row(
 				(inner_x, inner_y, inner_w, action_h),
 				[
-					(_("Import music to playlist"), tauon.sub_get_album_thread, True),
+					(_("Add music…"), lambda: tauon.add_music_box.open_server("subsonic"), True),
+					(_("Test connectivity"), tauon.subsonic_test_connection, False),
 				],
 				accent,
 			)
-			self.render_settings_server_playlists(
-				tauon.subsonic, x, y + card1_h + card_gap + card2_h + card_gap, w, accent=accent)
 			return total_h
 
 		if view == 9:
@@ -32203,7 +32214,7 @@ class Over:
 		if view == 10:
 			card1_h = round(266 * gui.scale)
 			card2_h = round(116 * gui.scale)
-			total_h = card1_h + card_gap + card2_h + card_gap + self.settings_server_playlists_height(tauon.jellyfin)
+			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
 
@@ -32251,23 +32262,21 @@ class Over:
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				_("Actions"),
-				_("Import the music library."),
+				_("Add music from this server, or check the connection."),
 				accent,
 			)
 			self.draw_settings_action_row(
 				(inner_x, inner_y, inner_w, action_h),
 				[
-					(_("Import music"), tauon.jellyfin_get_library_thread, True),
-					(_("Test connectivity"), tauon.jellyfin.test, False),
+					(_("Add music…"), lambda: tauon.add_music_box.open_server("jellyfin"), True),
+					(_("Test connectivity"), lambda: shooter(tauon.jellyfin.test), False),
 				],
 				accent,
 			)
-			self.render_settings_server_playlists(
-				tauon.jellyfin, x, y + card1_h + card_gap + card2_h + card_gap, w, accent=accent)
 			return total_h
 
 		if view == 11:
-			card1_h = round(170 * gui.scale)
+			card1_h = round(122 * gui.scale)
 			card2_h = round(116 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -32277,7 +32286,7 @@ class Over:
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				"Tauon",
-				_("Fetch a playlist from another Tauon instance."),
+				_("Stream playlists from another Tauon instance."),
 				accent,
 			)
 			prefs.sat_url = self.settings_text_input(
@@ -32287,33 +32296,19 @@ class Over:
 				prefs.sat_url,
 				accent,
 			).strip()
-			inner_y += field_h + row_gap
-			playlist_name = self.settings_text_input(
-				(inner_x, inner_y, inner_w, field_h),
-				_("Playlist name"),
-				tauon.text_sat_playlist,
-				tauon.text_sat_playlist.text,
-				accent,
-			)
-			tauon.text_sat_playlist.text = playlist_name
-
-			def load_remote_playlist() -> None:
-				if tauon.tau.processing:
-					self.show_message(_("An operation is already running"))
-				else:
-					shooter(tauon.tau.get_playlist)
 
 			rect = (x, y + card1_h + card_gap, w, card2_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				_("Actions"),
-				_("Fetch the named playlist."),
+				_("Add music from this server, or check the connection."),
 				accent,
 			)
 			self.draw_settings_action_row(
 				(inner_x, inner_y, inner_w, action_h),
 				[
-					(_("Get playlist"), load_remote_playlist, True),
+					(_("Add music…"), lambda: tauon.add_music_box.open_server("tau"), True),
+					(_("Test connectivity"), tauon.tau_test_connection, False),
 				],
 				accent,
 			)
@@ -32323,8 +32318,7 @@ class Over:
 			logged_in = os.path.isfile(tauon.tidal.save_path)
 			waiting_for_redirect = tauon.tidal.login_stage != 0 and not logged_in
 			card1_h = round(224 * gui.scale) if waiting_for_redirect else round(216 * gui.scale)
-			card2_h = round(116 * gui.scale) if logged_in else 0
-			total_h = card1_h + (card_gap + card2_h if card2_h else 0)
+			total_h = card1_h
 			if not draw:
 				return total_h
 
@@ -32338,7 +32332,7 @@ class Over:
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
 				rect,
 				"TIDAL",
-				_("Authorise TIDAL and import favourites."),
+				_("Sign in to TIDAL."),
 				accent,
 			)
 			self.draw_settings_note((inner_x, inner_y, inner_w, note_h), subtitle, accent, _("Status"))
@@ -32347,7 +32341,8 @@ class Over:
 				self.draw_settings_action_row(
 					(inner_x, inner_y, inner_w, action_h),
 					[
-						(_("Logout"), tauon.tidal.logout, True),
+						(_("Add music…"), lambda: tauon.add_music_box.open_server("tidal"), True),
+						(_("Logout"), tauon.tidal.logout, False),
 					],
 					accent,
 				)
@@ -32383,22 +32378,6 @@ class Over:
 					accent,
 				)
 
-			if logged_in:
-				rect = (x, y + card1_h + card_gap, w, card2_h)
-				inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
-					rect,
-					_("Imports"),
-					_("Pull favourites into Tauon."),
-					accent,
-				)
-				self.draw_settings_action_row(
-					(inner_x, inner_y, inner_w, action_h),
-					[
-						(_("Import albums"), lambda: shooter(tauon.tidal.fav_albums), True),
-						(_("Import tracks"), lambda: shooter(tauon.tidal.fav_tracks), False),
-					],
-					accent,
-				)
 			return total_h
 
 		card1_h = round(164 * gui.scale)
@@ -34157,7 +34136,7 @@ class Over:
 			(9, "Maloja"),
 			(10, "Jellyfin"),
 			(12, "TIDAL"),
-			(7, "Airsonic"),
+			(7, "Subsonic"),
 			(5, "PLEX"),
 			(11, "Tauon"),
 			(4, "fanart.tv"),
@@ -42665,10 +42644,34 @@ class TracklistLayoutPanel:
 
 		self.click = False
 
+@dataclass
+class RemoteServer:
+	"""A server the Add music box can pull from, and the generator codes it offers."""
+	key: str
+	name: str
+	# Its tile in Settings › Services
+	view: int
+	configured: Callable[[], bool]
+	ping: Callable[[], bool]
+	# Symbolic icon, rendered from assets/svg
+	icon: str = ""
+	everything: str = ""
+	libraries: Callable[[], list[RemotePlaylist] | None] | None = None
+	library_code: str = ""
+	playlists: Callable[[], list[RemotePlaylist] | None] | None = None
+	playlist_code: str = ""
+	# (label, generator code)
+	favourites: list[tuple[str, str]] = field(default_factory=list)
+
 class AddMusicBox:
 	"""Centred overlay with the ways to get music into the current playlist.
 	Opens by itself on a fresh profile and from the empty playlist's Add
-	files… button. A click outside or Esc closes it."""
+	files… button. A click outside closes it; Esc goes back a page.
+
+	Pages: main, servers (each configured one is pinged on entry), server
+	(Everything, library, playlist and favourites) and picker."""
+
+	ROWS = 8
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon       = tauon
@@ -42679,12 +42682,17 @@ class AddMusicBox:
 		self.colours     = tauon.colours
 		self.window_size = tauon.window_size
 		bag = tauon.bag
-		self.folder_icon = asset_loader(bag, bag.loaded_asset_dc, "folder.png", True)
-		self.filter_icon = asset_loader(bag, bag.loaded_asset_dc, "filter.png", True)
+		self.folder_icon   = asset_loader(bag, bag.loaded_asset_dc, "folder.png", True)
+		self.playlist_icon = asset_loader(bag, bag.loaded_asset_dc, "source-playlist.png", True)
+		self.library_icon  = asset_loader(bag, bag.loaded_asset_dc, "folder-list.png", True)
+		self.heart_icon    = asset_loader(bag, bag.loaded_asset_dc, "heart-menu.png", True)
+		self.back_icon     = asset_loader(bag, bag.loaded_asset_dc, "nav-back.png", True)
 		self.active = False
 		self.welcome = False
 		# Set by the main loop when a left click lands inside the box
 		self.click = False
+		# Wheel movement over the box, also from the main loop
+		self.wheel = 0
 		self.playlist_id = 0
 		self.rect = (0, 0, 0, 0)
 		self._bg = ColourRGBA(0, 0, 0, 255)
@@ -42692,23 +42700,78 @@ class AddMusicBox:
 		self._accent = ColourRGBA(255, 255, 255, 255)
 		self._line_px = 1
 
+		self.page: Literal["main", "servers", "server", "picker"] = "main"
+		self._servers: list[RemoteServer] | None = None
+		self.server: RemoteServer | None = None
+		# Per server key: "setup", "checking", "ok" or "fail"
+		self.status: dict[str, str] = {}
+		# Libraries fetched with the ping, for the library picker
+		self.libraries: dict[str, list[RemotePlaylist] | None] = {}
+		# Bumped on each page 2 visit and picker load, so stale thread results are dropped
+		self._generation = 0
+		self.picker_kind: Literal["library", "playlist"] = "playlist"
+		# The picker opened straight from page 2, so back skips page 3
+		self.picker_direct = False
+		self.items: list[RemotePlaylist] | None = None
+		self.loading = False
+		self.scroll = 0.0
+		self._filter_box: TextBox2 | None = None
+
 	def open(self, welcome: bool = False) -> None:
 		pctl = self.tauon.pctl
 		if not pctl.multi_playlist:
 			return
 		self.playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 		self.welcome = welcome
+		self.page = "main"
 		self.active = True
 		self.click = False
 		self.gui.request_frame()
 
+	def open_server(self, key: str) -> None:
+		"""Open on one server's page, from its Add music… button in settings."""
+		tauon = self.tauon
+		server = next(server for server in self.servers() if server.key == key)
+		if not server.configured():
+			tauon.show_message(_("Fill in the server details first"))
+			return
+		save_prefs(bag=tauon.bag)
+		tauon.pref_box.close()
+		self.open()
+		if not self.active:
+			return
+		self._generation += 1
+		# Fetches the libraries ahead of the picker
+		self.status[key] = "checking"
+		self.libraries.pop(key, None)
+		threading.Thread(target=self._check, args=(server, self._generation), daemon=True).start()
+		self._open_server(server)
+
 	def close(self) -> None:
 		self.active = False
 		self.click = False
+		self._generation += 1
+		self.gui.request_frame()
+
+	def back(self) -> None:
+		if self.page == "picker" and not self.picker_direct:
+			self.page = "server"
+			self._generation += 1
+		elif self.page in ("server", "picker"):
+			# Check every server again, as page 2 always does on entry
+			self._open_servers()
+		elif self.page == "servers":
+			self.page = "main"
+		else:
+			self.close()
 		self.gui.request_frame()
 
 	def inside(self) -> bool:
 		return self.active and self.coll(self.rect)
+
+	def typing(self) -> bool:
+		"""Whether the picker's filter field is taking keys."""
+		return self.active and self.page == "picker" and self._filter_shown()
 
 	# --- Options ---
 
@@ -42725,33 +42788,223 @@ class AddMusicBox:
 				pass
 		return _("Import {path}").format(path=shown)
 
-	def smart_available(self) -> bool:
-		"""Whether another playlist has tracks for a smart playlist to draw on."""
-		return any(
-			playlist.playlist_ids for playlist in self.tauon.pctl.multi_playlist
-			if playlist.uuid_int != self.playlist_id)
-
 	def options(self) -> list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]]:
 		"""(label, icon painter, action) per tile; the first is the main one."""
 		options = [(_("Pick folder…"), self._paint_folder, self._add_folder)]
 		if self.tauon.music_directory is not None:
 			options.append((self.music_label(), self._paint_note, self._import_music))
-		if self.smart_available():
-			options.append((_("Smart Playlist"), self._paint_smart, self._smart_playlist))
+		options.append((_("Remote server"), self._paint_server, self._open_servers))
 		return options
 
 	def _add_folder(self) -> None:
+		self.close()
 		self.tauon.request_folder_dialog()
 
 	def _import_music(self) -> None:
+		self.close()
 		pl = self._target()
 		if pl is not None:
 			self.tauon.import_folder_to_playlist(str(self.tauon.music_directory), pl, toast=True, title=_("Music"))
 
-	def _smart_playlist(self) -> None:
+	# --- Remote servers ---
+
+	def servers(self) -> list[RemoteServer]:
+		# Built on first use, as the services are created after this box
+		if self._servers is None:
+			tauon = self.tauon
+			prefs = tauon.prefs
+			favourites = [(_("Favourite tracks"), "fav"), (_("Favourite albums"), "favalb")]
+			self._servers = [
+				RemoteServer(
+					"jellyfin", "Jellyfin", 10,
+					lambda: bool(prefs.jelly_username and prefs.jelly_server_url), tauon.jellyfin.ping,
+					icon="server-jellyfin.png", everything="jelly",
+					libraries=tauon.jellyfin.list_libraries, library_code="jellylib",
+					playlists=tauon.jellyfin._list_playlists, playlist_code="jelly",
+					favourites=[(label, "jelly" + code) for label, code in favourites]),
+				RemoteServer(
+					"subsonic", "Subsonic", 7,
+					lambda: bool(prefs.subsonic_user and prefs.subsonic_server), tauon.subsonic.ping,
+					icon="server-subsonic.png", everything="air",
+					libraries=tauon.subsonic.list_libraries, library_code="airlib",
+					playlists=tauon.subsonic._list_playlists, playlist_code="air",
+					favourites=[(label, "air" + code) for label, code in favourites]),
+				RemoteServer(
+					"plex", "PLEX", 5,
+					lambda: bool(prefs.plex_username and prefs.plex_password and prefs.plex_servername),
+					tauon.plex.ping,
+					icon="server-plex.png", everything="plex",
+					libraries=tauon.plex.list_libraries, library_code="plexlib",
+					playlists=tauon.plex.list_playlists, playlist_code="plexpl"),
+				RemoteServer(
+					"tidal", "TIDAL", 12, tauon.tidal.available, tauon.tidal.ping,
+					icon="server-tidal.png", playlists=tauon.tidal.list_playlists, playlist_code="tpl",
+					favourites=[(favourites[0][0], "tft"), (favourites[1][0], "tfa")]),
+				RemoteServer(
+					"tau", "Tauon", 11, lambda: bool(prefs.sat_url), tauon.tau.ping,
+					icon="server-tauon.png", playlists=tauon.tau.list_playlists, playlist_code="tau"),
+			]
+		return self._servers
+
+	def _open_servers(self) -> None:
+		self.page = "servers"
+		self._generation += 1
+		generation = self._generation
+		for server in self.servers():
+			if not server.configured():
+				self.status[server.key] = "setup"
+				continue
+			self.status[server.key] = "checking"
+			self.libraries.pop(server.key, None)
+			threading.Thread(target=self._check, args=(server, generation), daemon=True).start()
+
+	def _check(self, server: RemoteServer, generation: int) -> None:
+		try:
+			ok = server.ping()
+		except Exception:
+			logging.exception(f"Error checking {server.name}")
+			ok = False
+		# Fetched now so the library picker opens straight away
+		libraries = None
+		if ok and server.libraries is not None:
+			try:
+				libraries = server.libraries()
+			except Exception:
+				logging.exception(f"Error listing {server.name} libraries")
+		if generation != self._generation:
+			return
+		self.libraries[server.key] = libraries
+		self.status[server.key] = "ok" if ok else "fail"
+		self.gui.request_frame()
+		self.tauon.wake()
+
+	def _pick_server(self, server: RemoteServer) -> None:
+		state = self.status.get(server.key)
+		# Opens while still being checked; the picker reports a server that isn't there
+		if state in ("checking", "ok"):
+			self._open_server(server)
+		else:
+			self._open_settings(server)
+
+	def _open_settings(self, server: RemoteServer) -> None:
+		self.close()
+		pref_box = self.tauon.pref_box
+		pref_box.open()
+		pref_box.show_settings_section("connect", "account")
+		pref_box.select_account_view(server.view)
+
+	def server_options(self, server: RemoteServer) -> list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]]:
+		options = []
+		if server.everything:
+			options.append((
+				_("Everything"), self._paint_stack,
+				functools.partial(self._add, server.everything, server.name)))
+		# Shown even with one library or none; the picker says so
+		if server.libraries is not None:
+			options.append((_("Pick library…"), self._paint_library, functools.partial(self._open_picker, "library")))
+		if server.playlists is not None:
+			options.append((_("Pick playlist…"), self._paint_playlist, functools.partial(self._open_picker, "playlist")))
+		for label, code in server.favourites:
+			options.append((
+				label, self._paint_heart,
+				functools.partial(self._add, code, f"{server.name} · {label}")))
+		return options
+
+	def _open_server(self, server: RemoteServer) -> None:
+		self.server = server
+		options = self.server_options(server)
+		if len(options) == 1 and server.playlists is not None and not server.everything and not server.favourites:
+			# Nothing to choose between, so go straight to the list
+			self._open_picker("playlist", direct=True)
+			return
+		self.page = "server"
+
+	def _open_picker(self, kind: Literal["library", "playlist"], direct: bool = False) -> None:
+		server = self.server
+		if server is None:
+			return
+		self.page = "picker"
+		self.picker_kind = kind
+		self.picker_direct = direct
+		self.scroll = 0.0
+		if self._filter_box is not None:
+			self._filter_box.text = ""
+		self._generation += 1
+		cached = self.libraries.get(server.key) if kind == "library" else None
+		if cached is not None:
+			self.items = cached
+			self.loading = False
+			return
+		self.items = None
+		self.loading = True
+		lister = server.libraries if kind == "library" else server.playlists
+		threading.Thread(target=self._load_items, args=(lister, self._generation), daemon=True).start()
+
+	def _load_items(self, lister: Callable[[], list[RemotePlaylist] | None], generation: int) -> None:
+		try:
+			items = lister()
+		except Exception:
+			logging.exception("Error listing server items")
+			items = None
+		if generation != self._generation:
+			return
+		self.items = items
+		self.loading = False
+		self.gui.request_frame()
+		self.tauon.wake()
+
+	def _retry(self) -> None:
+		self._open_picker(self.picker_kind, self.picker_direct)
+
+	def item_code(self, item: RemotePlaylist) -> str:
+		server = self.server
+		prefix = server.library_code if self.picker_kind == "library" else server.playlist_code
+		return f'{prefix}"{item.id}"'
+
+	def _add_item(self, item: RemotePlaylist) -> None:
+		title = item.name
+		if self.picker_kind == "library":
+			title = f"{self.server.name} · {item.name}"
+		self._add(self.item_code(item), title)
+
+	def _add(self, code: str, title: str) -> None:
+		"""Fill the current playlist from a generator code, or a new one if it isn't empty."""
+		tauon = self.tauon
+		pctl = tauon.pctl
+		self.close()
+		# Pulled in before: show that playlist and refresh it
+		for i, playlist in enumerate(pctl.multi_playlist):
+			if pctl.gen_codes.get(playlist.uuid_int) == code:
+				pctl.switch_playlist(i)
+				self.gui.regen_single_id = playlist.uuid_int
+				tauon.wake()
+				return
 		pl = self._target()
-		if pl is not None:
-			self.tauon.edit_generator_box(pl)
+		if pl is None:
+			return
+		playlist = pctl.multi_playlist[pl]
+		if playlist.playlist_ids or playlist.locked or playlist.uuid_int in pctl.gen_codes:
+			pctl.multi_playlist.append(tauon.pl_gen(title=tauon.gen_unique_pl_title(title)))
+			pctl.switch_playlist(len(pctl.multi_playlist) - 1)
+			playlist = pctl.multi_playlist[-1]
+		elif tauon.is_untitled_empty(pl) or playlist.title.startswith(_("New Playlist")):
+			tauon.rename_playlist_references(playlist.title, title)
+			playlist.title = title
+		pctl.gen_codes[playlist.uuid_int] = code
+		# The worker thread fetches it, the same way later refreshes do
+		self.gui.regen_single_id = playlist.uuid_int
+		self.gui.request_frame()
+		tauon.wake()
+
+	def filtered_items(self) -> list[RemotePlaylist]:
+		items = self.items or []
+		query = self._filter_box.text.strip().lower() if self._filter_shown() and self._filter_box else ""
+		if not query:
+			return items
+		return [item for item in items if query in item.name.lower()]
+
+	def _filter_shown(self) -> bool:
+		return bool(self.items) and len(self.items) > self.ROWS
 
 	# --- Drawing ---
 
@@ -42762,11 +43015,26 @@ class AddMusicBox:
 		over = over or self._bg
 		return readable_text_colour(self._mix(alpha, over), over)
 
-	def _paint_folder(self, cx: int, cy: int, colour: ColourRGBA) -> None:
-		self.folder_icon.render(cx - self.folder_icon.w // 2, cy - self.folder_icon.h // 2, colour)
+	def _paint_asset(self, asset, cx: int, cy: int, colour: ColourRGBA) -> None:
+		asset.render(cx - asset.w // 2, cy - asset.h // 2, colour)
 
-	def _paint_smart(self, cx: int, cy: int, colour: ColourRGBA) -> None:
-		self.filter_icon.render(cx - self.filter_icon.w // 2, cy - self.filter_icon.h // 2, colour)
+	def _paint_folder(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self._paint_asset(self.folder_icon, cx, cy, colour)
+
+	def _paint_playlist(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self._paint_asset(self.playlist_icon, cx, cy, colour)
+
+	def _paint_library(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self._paint_asset(self.library_icon, cx, cy, colour)
+
+	def _paint_heart(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		self._paint_asset(self.heart_icon, cx, cy, colour)
+
+	def server_painter(self, server: RemoteServer) -> Callable[[int, int, ColourRGBA], None]:
+		if not server.icon:
+			return self._paint_server
+		bag = self.tauon.bag
+		return functools.partial(self._paint_asset, asset_loader(bag, bag.loaded_asset_dc, server.icon, True))
 
 	def _paint_note(self, cx: int, cy: int, colour: ColourRGBA) -> None:
 		# Two beamed quavers
@@ -42782,9 +43050,30 @@ class AddMusicBox:
 			self.ddt.rect((hx + head_w - stem, y, stem, round(12 * s)), colour)
 		self.ddt.rect((x + head_w - stem, y, offset + stem, round(3 * s)), colour)
 
+	def _paint_server(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		# Two rack units, each with a light
+		s = self.gui.scale
+		w = round(18 * s)
+		h = round(6 * s)
+		gap = round(2 * s)
+		light = max(1, round(2 * s))
+		x = cx - w // 2
+		for y in (cy - h - gap // 2, cy + gap - gap // 2):
+			self.ddt.rect((x, y, w, h), colour)
+			self.ddt.rect((x + w - light * 3, y + (h - light) // 2, light, light), self._bg)
+
+	def _paint_stack(self, cx: int, cy: int, colour: ColourRGBA) -> None:
+		s = self.gui.scale
+		h = round(3 * s)
+		step = round(5 * s)
+		for i, w in enumerate((12, 16, 20)):
+			w = round(w * s)
+			self.ddt.rect((cx - w // 2, cy - round(7 * s) + i * step, w, h), colour)
+
 	def _tile(
 		self, rect: tuple[int, int, int, int], label: str, primary: bool,
 		painter: Callable[[int, int, ColourRGBA], None],
+		status: tuple[str, ColourRGBA] | None = None, dim: bool = False,
 	) -> bool:
 		x, y, w, h = rect
 		s = self.gui.scale
@@ -42800,13 +43089,206 @@ class AddMusicBox:
 			fill = bg
 			border = self._mix(60)
 		self.ddt.bordered_rect(rect, fill, border, self._line_px)
-		painter(x + w // 2, y + round(28 * s), self._accent if primary else self._mix(170, fill))
-		text_colour = readable_text_colour(self._text if primary or hover else self._mix(215, fill), fill)
-		self.ddt.text((x + w // 2, y + round(44 * s), 2), label, text_colour, 313, bg=fill, max_w=w - round(16 * s))
+		top = y + (round(28 * s) if status is None else round(24 * s))
+		icon = self._accent if primary else self._mix(110 if dim else 170, fill)
+		painter(x + w // 2, top, icon)
+		if primary or hover:
+			text_colour = readable_text_colour(self._text, fill)
+		else:
+			text_colour = readable_text_colour(self._mix(140 if dim else 215, fill), fill)
+		self.ddt.text((x + w // 2, top + round(16 * s), 2), label, text_colour, 313, bg=fill, max_w=w - round(16 * s))
+		if status is not None:
+			self.ddt.text(
+				(x + w // 2, top + round(34 * s), 2), status[0], readable_text_colour(status[1], fill), 11,
+				bg=fill, max_w=w - round(12 * s))
 		if primary:
 			self.ddt.rect((x, y + h - round(2 * s), w, round(2 * s)), self._accent)
 		self.fields.add(rect)
 		return hover and self.click
+
+	def _server_status(self, server: RemoteServer) -> tuple[tuple[str, ColourRGBA], bool]:
+		"""Status line and whether the tile is dimmed."""
+		state = self.status.get(server.key, "setup")
+		if state == "ok":
+			return (_("● Connected"), ColourRGBA(110, 205, 125, 255)), False
+		if state == "checking":
+			return (_("Checking…"), self._mix(150)), False
+		if state == "fail":
+			return (_("Not reachable · Set up…"), ColourRGBA(235, 165, 70, 255)), True
+		return (_("Set up…"), self._mix(150)), True
+
+	def _header(
+		self, left: int, y: int, inner: int, title: str,
+		painter: Callable[[int, int, ColourRGBA], None] | None = None,
+	) -> None:
+		"""Back chevron, an optional icon and the title, for pages after the first."""
+		s = self.gui.scale
+		bg = self._bg
+		icon = self.back_icon
+		# Middle of the title's capitals
+		mid = y + round(8 * s)
+		title_x = left + icon.w + round(10 * s)
+		if painter is not None:
+			glyph = round(18 * s)
+			painter(title_x + glyph // 2, mid, self._mix(200))
+			title_x += glyph + round(8 * s)
+		title_w = self.ddt.get_text_w(title, 215)
+		hit = (left - round(8 * s), y - round(6 * s), title_x - left + title_w + round(16 * s), round(28 * s))
+		hover = self.coll(hit)
+		if hover:
+			self.ddt.rect((left - round(6 * s), mid - round(12 * s), icon.w + round(12 * s), round(24 * s)), self.colours.menu_highlight_background)
+		colour = readable_text_colour(self._text if hover else self._mix(170), bg)
+		icon.render(left, mid - icon.h // 2, colour)
+		self.ddt.text((title_x, y), title, readable_text_colour(self._text, bg), 215, bg=bg, max_w=inner - (title_x - left))
+		self.fields.add(hit)
+		if hover and self.click:
+			self.click = False
+			self.back()
+
+	def _render_tiles(
+		self, left: int, y: int, inner: int,
+		options: list[tuple[str, Callable[[int, int, ColourRGBA], None], Callable[[], None]]],
+		statuses: list[tuple[tuple[str, ColourRGBA], bool]] | None = None, primary: bool = True,
+	) -> tuple[int, Callable[[], None] | None]:
+		"""Lay options out up to four to a row. Returns the height used and a clicked action."""
+		s = self.gui.scale
+		gap = round(8 * s)
+		tile_h = round(88 * s) if statuses else round(80 * s)
+		columns = len(options) if len(options) <= 4 else 3
+		tile_w = (inner - gap * (columns - 1)) // columns
+		chosen = None
+		for i, (label, painter, action) in enumerate(options):
+			row, column = divmod(i, columns)
+			rect = (left + column * (tile_w + gap), y + row * (tile_h + gap), tile_w, tile_h)
+			status, dim = statuses[i] if statuses else (None, False)
+			if self._tile(rect, label, primary and i == 0, painter, status, dim):
+				chosen = action
+		rows = math.ceil(len(options) / columns)
+		return rows * tile_h + (rows - 1) * gap, chosen
+
+	def _render_picker(self, left: int, y: int, inner: int, draw: bool) -> int:
+		"""The list of libraries or playlists. Returns its height."""
+		s = self.gui.scale
+		bg = self._bg
+		ddt = self.ddt
+		yy = y
+		if self.loading or not self.items:
+			h = round(86 * s)
+			if not draw:
+				return h
+			cy = y + h // 2
+			if self.loading:
+				label = _("Loading libraries…") if self.picker_kind == "library" else _("Loading playlists…")
+				ddt.text((left + inner // 2, cy - round(8 * s), 2), label, self._ink(170), 13, bg=bg)
+				self.gui.delay_frame(0.5)
+			elif self.items is None:
+				ddt.text(
+					(left + inner // 2, cy - round(18 * s), 2), _("Couldn't connect to the server"),
+					readable_text_colour(ColourRGBA(255, 120, 100, 255), bg), 13, bg=bg)
+				retry = _("Retry")
+				w = ddt.get_text_w(retry, 12) + round(24 * s)
+				button = (left + (inner - w) // 2, cy + round(4 * s), w, round(24 * s))
+				hover = self.coll(button)
+				fill = self.colours.menu_highlight_background if hover else bg
+				ddt.bordered_rect(button, fill, self._mix(90), self._line_px)
+				ddt.text((button[0] + w // 2, button[1] + round(4 * s), 2), retry, self._ink(220, fill), 12, bg=fill)
+				self.fields.add(button)
+				if hover and self.click:
+					self.click = False
+					self._retry()
+			else:
+				label = _("No libraries on this server") if self.picker_kind == "library" else _("No playlists on this server")
+				ddt.text((left + inner // 2, cy - round(8 * s), 2), label, self._ink(170), 13, bg=bg)
+			return h
+
+		field_h = round(28 * s)
+		if self._filter_shown():
+			if draw:
+				if self._filter_box is None:
+					self._filter_box = TextBox2(self.tauon)
+				box = (left, yy, inner, field_h)
+				ddt.bordered_rect(box, bg, self._mix(90), self._line_px)
+				text_x = left + round(10 * s)
+				if not self._filter_box.text:
+					ddt.text((text_x, yy + round(6 * s)), _("Filter"), self._ink(110), 13, bg=bg)
+				self._filter_box.draw(
+					text_x, yy + round(6 * s), self._ink(230), active=True, font=13,
+					width=inner - round(20 * s), click=self.click and self.coll(box))
+			yy += field_h + round(8 * s)
+
+		items = self.filtered_items()
+		row_h = round(30 * s)
+		# Sized from the whole list, so the box doesn't shrink while filtering
+		visible = max(1, min(self.ROWS, len(self.items)))
+		list_h = visible * row_h
+		if not draw:
+			return yy - y + list_h
+
+		list_rect = (left, yy, inner, list_h)
+		ddt.bordered_rect(list_rect, bg, self._mix(45), self._line_px)
+		if not items:
+			ddt.text((left + inner // 2, yy + round(7 * s), 2), _("No matches"), self._ink(150), 13, bg=bg)
+			return yy - y + list_h
+
+		max_scroll = max(0, len(items) - visible)
+		shown = min(visible, len(items))
+		if self.wheel and self.coll(list_rect):
+			# Trackpads send fractions, so keep the remainder
+			self.scroll -= self.wheel
+		self.scroll = max(0.0, min(self.scroll, max_scroll))
+		first = int(self.scroll)
+
+		codes = set(self.tauon.pctl.gen_codes.values())
+		smart_colour = ColourRGBA(165, 140, 240, 255)
+		done_colour = ColourRGBA(110, 205, 125, 255)
+		painter = self._paint_library if self.picker_kind == "library" else self._paint_playlist
+		chosen = None
+		for i, item in enumerate(items[first:first + shown]):
+			row = (left + self._line_px, yy + i * row_h, inner - self._line_px * 2, row_h)
+			hover = self.coll(row)
+			fill = self.colours.menu_highlight_background if hover else bg
+			if hover:
+				ddt.rect(row, fill)
+			if i:
+				ddt.rect((row[0], row[1], row[2], self._line_px), self._mix(30))
+			text_y = row[1] + round(7 * s)
+			painter(row[0] + round(18 * s), row[1] + row_h // 2, self._mix(150, fill))
+			right = row[0] + row[2] - round(12 * s)
+			if item.count:
+				count = f"{item.count:,}"
+				ddt.text((right, text_y, 1), count, self._ink(130, fill), 12, bg=fill)
+				right -= ddt.get_text_w(count, 12) + round(10 * s)
+			for badge, colour, show in (
+				(_("Imported"), done_colour, self.item_code(item) in codes),
+				(_("Smart"), smart_colour, item.smart),
+			):
+				if not show:
+					continue
+				w = ddt.get_text_w(badge, 11) + round(10 * s)
+				right -= w
+				pill = (right, row[1] + round(7 * s), w, round(16 * s))
+				pill_fill = alpha_blend(alpha_mod(colour, 45), fill)
+				ddt.rect(pill, pill_fill)
+				ddt.text((right + w // 2, pill[1] + round(1 * s), 2), badge, readable_text_colour(colour, pill_fill), 11, bg=pill_fill)
+				right -= round(6 * s)
+			name_x = row[0] + round(40 * s)
+			ddt.text(
+				(name_x, text_y), item.name, readable_text_colour(self._text if hover else self._mix(220, fill), fill),
+				13, bg=fill, max_w=max(right - name_x - round(6 * s), round(40 * s)))
+			self.fields.add(row)
+			if hover and self.click:
+				chosen = item
+
+		if max_scroll:
+			track_h = list_h - round(8 * s)
+			bar_h = max(round(16 * s), track_h * visible // len(items))
+			bar_y = yy + round(4 * s) + (track_h - bar_h) * first // max_scroll
+			ddt.rect((left + inner - round(5 * s), bar_y, max(2, round(3 * s)), bar_h), self._mix(90))
+
+		if chosen is not None:
+			self.click = False
+			self._add_item(chosen)
+		return yy - y + list_h
 
 	def render(self) -> None:
 		if self.tauon.load_orders or self._target() is None:
@@ -42820,16 +43302,34 @@ class AddMusicBox:
 		self._text = colours.menu_text
 		self._accent = colours.toggle_box_on
 		self._line_px = max(1, round(s))
-		options = self.options()
 
 		pad = round(18 * s)
 		gap = round(8 * s)
-		tile_h = round(80 * s)
-		inner = max(round(384 * s), len(options) * round(172 * s) + (len(options) - 1) * gap)
-		tile_w = (inner - gap * (len(options) - 1)) // len(options)
-		footer_h = round(18 * s)
+		inner = max(round(300 * s), min(round(712 * s), self.window_size[0] - pad * 2 - round(32 * s)))
+		page = self.page
+		options = []
+		statuses = None
+		if page == "main":
+			options = self.options()
+			body_h = round(80 * s)
+		elif page == "servers":
+			servers = self.servers()
+			options = [(server.name, self.server_painter(server), functools.partial(self._pick_server, server)) for server in servers]
+			statuses = [self._server_status(server) for server in servers]
+		elif page == "server":
+			options = self.server_options(self.server)
+		if page == "picker":
+			body_h = self._render_picker(0, 0, inner, draw=False)
+		elif page != "main":
+			columns = len(options) if len(options) <= 4 else 3
+			rows = math.ceil(len(options) / columns)
+			tile_h = round(88 * s) if statuses else round(80 * s)
+			body_h = rows * tile_h + (rows - 1) * gap
+
+		head_h = round(56 * s) if page == "main" else round(40 * s)
+		footer_h = round(39 * s) if page == "main" else 0
 		w = inner + pad * 2
-		h = pad + round(56 * s) + tile_h + round(25 * s) + footer_h + round(14 * s)
+		h = pad + head_h + body_h + footer_h + pad
 		x = (self.window_size[0] - w) // 2
 		y = (self.window_size[1] - h) // 2
 		self.rect = (x, y, w, h)
@@ -42841,40 +43341,46 @@ class AddMusicBox:
 
 		left = x + pad
 		yy = y + pad
-		title = _("Welcome to Tauon") if self.welcome else _("Add music")
-		self.ddt.text((left, yy), title, readable_text_colour(self._text, bg), 215, bg=bg, max_w=inner)
-		yy += round(24 * s)
-		self.ddt.text(
-			(left, yy), _("Add a folder to import contents to current playlist"),
-			self._ink(170), 13, bg=bg, max_w=inner)
-		yy += round(32 * s)
+		if page == "main":
+			title = _("Welcome to Tauon") if self.welcome else _("Add music")
+			self.ddt.text((left, yy), title, readable_text_colour(self._text, bg), 215, bg=bg, max_w=inner)
+			self.ddt.text(
+				(left, yy + round(24 * s)), _("Add a folder to import contents to current playlist"),
+				self._ink(170), 13, bg=bg, max_w=inner)
+		elif page == "servers":
+			self._header(left, yy, inner, _("Remote server"))
+		elif page == "server":
+			self._header(left, yy, inner, self.server.name, self.server_painter(self.server))
+		else:
+			kind = _("Libraries") if self.picker_kind == "library" else _("Playlists")
+			self._header(left, yy, inner, f"{self.server.name}  ›  {kind}", self.server_painter(self.server))
+		if self.page != page:
+			# The back button was clicked
+			self.click = False
+			self.wheel = 0
+			gui.request_frame()
+			return
+		yy += head_h
 
 		chosen = None
-		for i, (label, painter, action) in enumerate(options):
-			if self._tile((left + i * (tile_w + gap), yy, tile_w, tile_h), label, i == 0, painter):
-				chosen = action
-		yy += tile_h + round(14 * s)
+		if page == "picker":
+			self._render_picker(left, yy, inner, draw=True)
+		else:
+			_used, chosen = self._render_tiles(left, yy, inner, options, statuses, primary=page != "servers")
+		yy += body_h
 
-		self.ddt.rect((left, yy, inner, self._line_px), self._mix(35))
-		yy += round(11 * s)
-		manual = _("Manual")
-		manual_w = self.ddt.get_text_w(manual, 12)
-		self.ddt.text(
-			(left, yy), _("Or drag files and folders into this window"),
-			self._ink(160), 12, bg=bg, max_w=inner - manual_w - gap * 2)
-		link = (left + inner - manual_w, yy, manual_w, footer_h)
-		link_colour = readable_text_colour(colours.link_text, bg)
-		self.ddt.text((link[0], yy), manual, link_colour, 12, bg=bg)
-		self.fields.add(link)
-		if self.coll(link):
-			self.ddt.rect((link[0], yy + footer_h - round(2 * s), manual_w, self._line_px), link_colour)
-			if self.click:
-				self.tauon.open_manual_link()
+		if page == "main":
+			yy += round(14 * s)
+			self.ddt.rect((left, yy, inner, self._line_px), self._mix(35))
+			yy += round(11 * s)
+			self.ddt.text(
+				(left, yy), _("Or drag files and folders into this window"), self._ink(160), 12, bg=bg, max_w=inner)
 
 		self.click = False
+		self.wheel = 0
 		if chosen is not None:
-			self.close()
 			chosen()
+			gui.request_frame()
 
 class ShortcutsSheet:
 	"""Full-window sheet of the keyboard shortcuts in effect, read from the
@@ -62990,6 +63496,7 @@ def main(holder: Holder) -> None:
 			or tauon.generator_box.active
 			or tauon.milk_choose.active
 			or tauon.shortcuts_sheet.active
+			or tauon.add_music_box.typing()
 		)
 
 		if inp.k_input and inp.key_focused == 0:
@@ -63073,7 +63580,7 @@ def main(holder: Holder) -> None:
 				inp.key_esc_press = False
 
 			if inp.key_esc_press and tauon.add_music_box.active:
-				tauon.add_music_box.close()
+				tauon.add_music_box.back()
 				inp.key_esc_press = False
 
 			if inp.key_esc_press and tauon.shortcuts_sheet.active:
@@ -63368,6 +63875,7 @@ def main(holder: Holder) -> None:
 						music_box.click = True
 						inp.mouse_click = False
 					inp.right_click = False
+					music_box.wheel += inp.mouse_wheel
 					inp.mouse_wheel = 0
 				elif inp.mouse_click or inp.right_click:
 					inp.mouse_click = False

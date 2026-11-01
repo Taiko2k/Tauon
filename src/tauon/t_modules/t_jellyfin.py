@@ -90,7 +90,7 @@ class Jellyfin(RemotePlaylistSource):
 			auth_str += f", Token={self.accessToken}"
 		return auth_str
 
-	def _authenticate(self, debug: bool = False) -> None:
+	def _authenticate(self, debug: bool = False, quiet: bool = False) -> None:
 		username = self.prefs.jelly_username
 		password = self.prefs.jelly_password
 		server = self.server_url
@@ -110,11 +110,12 @@ class Jellyfin(RemotePlaylistSource):
 			logging.exception(
 				f"{_('Could not establish connection to server.')} {_('Check server is running and URL is correct.')}"
 			)
-			self.show_message(
-				_("Could not establish connection to server."),
-				_("Check server is running and URL is correct."),
-				mode="error",
-			)
+			if not quiet:
+				self.show_message(
+					_("Could not establish connection to server."),
+					_("Check server is running and URL is correct."),
+					mode="error",
+				)
 			return
 
 		if response.status_code == HTTPStatus.OK:
@@ -124,6 +125,8 @@ class Jellyfin(RemotePlaylistSource):
 			self.connected = True
 			if debug:
 				self.show_message(_("Connection and authorisation successful"), mode="done")
+		elif quiet:
+			logging.warning(f"Jellyfin auth failed: {response.status_code}")
 		elif response.status_code == HTTPStatus.UNAUTHORIZED:
 			self.show_message(_("401 Authentication failed"), _("Check username and password."), mode="warning")
 		else:
@@ -131,6 +134,32 @@ class Jellyfin(RemotePlaylistSource):
 
 	def test(self) -> None:
 		self._authenticate(debug=True)
+
+	def ping(self) -> bool:
+		"""Quietly check the server and login, for the Add music box."""
+		self.connected = False
+		self._authenticate(quiet=True)
+		return self.connected
+
+	def list_libraries(self) -> list[RemotePlaylist] | None:
+		"""The user's music libraries, or None if they couldn't be fetched."""
+		if not self.connected or not self.accessToken:
+			self._authenticate(quiet=True)
+		if not self.connected:
+			return None
+		response = requests.get(
+			f"{self.server_url}/UserViews", headers=self._headers(), params={"userId": self.userId}, timeout=(5, 30))
+		if response.status_code == HTTPStatus.NOT_FOUND:
+			# Servers before 10.9
+			response = requests.get(f"{self.server_url}/Users/{self.userId}/Views", headers=self._headers(), timeout=(5, 30))
+		if response.status_code != HTTPStatus.OK:
+			logging.error(f"Error listing Jellyfin libraries: [{response.status_code}] {response.reason}")
+			return None
+		return [
+			RemotePlaylist(id=item["Id"], name=item.get("Name") or item["Id"])
+			for item in response.json().get("Items", [])
+			if item.get("Id") and item.get("CollectionType") == "music"
+		]
 
 	def resolve_stream(self, stream_id: str) -> str | tuple[str, dict]:
 		if not self.connected or not self.accessToken:
@@ -563,7 +592,44 @@ class Jellyfin(RemotePlaylistSource):
 		self.pctl.master_library[track_id] = nt
 		return nt
 
-	def ingest_library(self, return_list: bool = False) -> list[int] | None:
+	def favourite_tracks(self) -> list[int]:
+		"""Track ids for the jellyfav generator code."""
+		return self.ingest_library(return_list=True, extra={"filters": "IsFavorite"}) or []
+
+	def favourite_albums(self) -> list[int]:
+		"""Track ids for the jellyfavalb generator code."""
+		if not self.connected or not self.accessToken:
+			self._authenticate()
+		if not self.connected:
+			return []
+		try:
+			response = requests.get(
+				f"{self.server_url}/Items",
+				headers=self._headers(),
+				params={
+					"userId": self.userId, "includeItemTypes": ["MusicAlbum"],
+					"recursive": True, "filters": "IsFavorite",
+				},
+				timeout=(5, 30),
+			)
+		except Exception:
+			logging.exception("Error listing Jellyfin favourite albums")
+			return []
+		if response.status_code != HTTPStatus.OK:
+			logging.error(f"Error listing Jellyfin favourite albums: [{response.status_code}] {response.reason}")
+			return []
+		album_ids = [item["Id"] for item in response.json().get("Items", []) if item.get("Id")]
+		tracks: list[int] = []
+		# Chunked to keep the query string a sane length
+		for i in range(0, len(album_ids), 100):
+			chunk = ",".join(album_ids[i:i + 100])
+			tracks.extend(self.ingest_library(return_list=True, extra={"albumIds": chunk}) or [])
+		return tracks
+
+	def ingest_library(
+		self, return_list: bool = False, parent_id: str | None = None, extra: dict[str, str] | None = None,
+	) -> list[int] | None:
+		"""Import every track, or only those in the library parent_id, or matching the extra query."""
 		self.gui.request_frame()
 		self.scanning = True
 		self.gui.to_got = 0
@@ -593,6 +659,24 @@ class Jellyfin(RemotePlaylistSource):
 		start_index = 0
 
 		while True:
+			params = {
+				"userId": self.userId,
+				"fields": TRACK_FIELDS,
+				"enableImages": True,
+				"enableImageTypes": ["Primary"],
+				"includeItemTypes": ["Audio"],
+				"recursive": True,
+				# Pages must come back in a stable order, otherwise items
+				# could be missed or duplicated between requests
+				"sortBy": "SortName",
+				"sortOrder": "Ascending",
+				"startIndex": start_index,
+				"limit": ITEM_PAGE_SIZE,
+			}
+			if parent_id:
+				params["parentId"] = parent_id
+			if extra:
+				params.update(extra)
 			try:
 				response = requests.get(
 					f"{self.server_url}/Items",
@@ -601,20 +685,7 @@ class Jellyfin(RemotePlaylistSource):
 						"X-Application": "Tauon/1.0",
 						"Authorization": self._get_jellyfin_auth(),
 					},
-					params={
-						"userId": self.userId,
-						"fields": TRACK_FIELDS,
-						"enableImages": True,
-						"enableImageTypes": ["Primary"],
-						"includeItemTypes": ["Audio"],
-						"recursive": True,
-						# Pages must come back in a stable order, otherwise items
-						# could be missed or duplicated between requests
-						"sortBy": "SortName",
-						"sortOrder": "Ascending",
-						"startIndex": start_index,
-						"limit": ITEM_PAGE_SIZE,
-					},
+					params=params,
 					timeout=ITEM_FETCH_TIMEOUT,
 				)
 

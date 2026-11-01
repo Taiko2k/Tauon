@@ -122,7 +122,7 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 			_("{N} remaining").format(N=len(tauon.to_scan)), progress=rescan_progress))
 	for key, service, title, colour in (
 		("plex", tauon.plex, _("Accessing PLEX library…"), ColourRGBA(229, 160, 13, 255)),
-		("subsonic", tauon.subsonic, _("Accessing AIRSONIC library…"), ColourRGBA(58, 194, 224, 255)),
+		("subsonic", tauon.subsonic, _("Accessing Subsonic library…"), ColourRGBA(58, 194, 224, 255)),
 		("jellyfin", tauon.jellyfin, _("Accessing JELLYFIN library…"), ColourRGBA(90, 170, 240, 255)),
 	):
 		if service.scanning:
