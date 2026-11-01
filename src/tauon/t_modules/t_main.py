@@ -35310,6 +35310,11 @@ class TopPanel:
 				self.tauon.lsp_menu.activate(position=(rect[0], gui.panelY))
 				self.tauon.update_layout_do()
 
+			if not self.tauon.lsp_menu.active:
+				ox, oy = inp.view_offset
+				tip = _("Back") if gui.combo_mode else _("Side panel, Right-click: Choose panel")
+				tauon.tool_tip.test(rect[0] + ox, rect[1] + rect[3] + 4 * gui.scale + oy, tip)
+
 		colour = colours.corner_button  # [230, 230, 230, 255]
 
 		if gui.lsp or self.coll(rect):
@@ -35340,6 +35345,9 @@ class TopPanel:
 			if self.coll(lrect) and inp.mouse_click and not self.tauon.layout_menu.click_dismissed:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
+			if self.coll(lrect) and not self.tauon.layout_menu.active:
+				ox, oy = inp.view_offset
+				tauon.tool_tip.test(lrect[0] + ox, lrect[1] + lrect[3] + 4 * gui.scale + oy, _("Layouts"))
 			lcol = colours.corner_button_active if self.tauon.layout_menu.active or self.coll(lrect) else colours.corner_button
 			lcol = self.tauon.style_overlay.tint_from_background(
 				lcol, wwx + 53 * gui.scale, yy + 16 * gui.scale, 0.2,
@@ -36622,7 +36630,7 @@ class BottomBarType1:
 						else:
 							pctl.play()
 						inp.mouse_click = False
-					tauon.tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, RC: Go to playing"))
+					tauon.tool_tip2.test(33 * gui.scale, y - 35 * gui.scale, _("Play, Right-click: Go to playing"))
 
 					if inp.right_click:
 						pctl.show_current(highlight=True)
@@ -36731,7 +36739,7 @@ class BottomBarType1:
 					pctl.revert()
 					gui.tool_tip_lock_off_b = True
 				if not gui.tool_tip_lock_off_b:
-					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Back, RC: Toggle repeat, MC: Revert"))
+					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Back, Right-click: Toggle repeat, Middle-click: Revert"))
 			else:
 				gui.tool_tip_lock_off_b = False
 
@@ -37206,7 +37214,7 @@ class BottomBarType_ao1:
 						else:
 							self.pctl.play()
 						self.inp.mouse_click = False
-					self.tauon.tool_tip2.test(33 * self.gui.scale, y - 35 * self.gui.scale, _("Play, RC: Go to playing"))
+					self.tauon.tool_tip2.test(33 * self.gui.scale, y - 35 * self.gui.scale, _("Play, Right-click: Go to playing"))
 
 					if self.inp.right_click:
 						self.pctl.show_current(highlight=True)
