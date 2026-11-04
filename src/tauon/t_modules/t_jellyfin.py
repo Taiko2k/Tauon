@@ -224,8 +224,8 @@ class Jellyfin(RemotePlaylistSource):
 			if item.get("Id") and item.get("CollectionType") == "music"
 		]
 
-	def resolve_stream(self, stream_id: str, bitrate: int = 0) -> str | tuple[str, dict]:
-		"""The stream's url and params: the original file, or an mp3 at bitrate kbps."""
+	def resolve_stream(self, stream_id: str, bitrate: int = 0, stream_format: str = "mp3") -> str | tuple[str, dict]:
+		"""The stream's url and params: the original file, or stream_format at bitrate kbps."""
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 
@@ -240,10 +240,12 @@ class Jellyfin(RemotePlaylistSource):
 		}
 
 		if bitrate:
-			base_url += ".mp3"
+			base_url += ".ogg" if stream_format == "opus" else ".mp3"
 			del params["static"]
-			# The session id keeps the server from reusing its last conversion at another quality
-			params.update({"audioCodec": "mp3", "audioBitRate": bitrate * 1000, "playSessionId": f"tauon-{bitrate}"})
+			# The server reuses a conversion by session id alone, whatever the track or quality
+			params.update({
+				"audioCodec": stream_format, "audioBitRate": bitrate * 1000,
+				"playSessionId": f"tauon-{stream_id}-{stream_format}-{bitrate}"})
 
 		if not self.session_thread_active:
 			shoot = threading.Thread(target=self.session)

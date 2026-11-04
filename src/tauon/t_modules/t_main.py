@@ -3493,11 +3493,16 @@ class PlayerCtl:
 		# Already this small, so converting it would only cost quality
 		return 0 if 0 < track_object.bitrate <= bitrate else bitrate
 
+	def transcode_format(self, track_object: TrackClass) -> str:
+		setting = STREAM_FORMAT_PREFS.get(track_object.file_ext)
+		return "opus" if setting and getattr(self.prefs, setting) == "opus" else "mp3"
+
 	def get_url(
 		self, track_object: TrackClass, transcode: bool = False,
 	) -> tuple[list[str] | str | None, dict[str, str] | None]:
-		"""The url and params to fetch a track. transcode applies the server's Stream quality setting."""
+		"""The url and params to fetch a track. transcode applies the server's stream settings."""
 		bitrate = self.transcode_bitrate(track_object) if transcode else 0
+		stream_format = self.transcode_format(track_object) if bitrate else "mp3"
 		if track_object.file_ext == "TIDAL":
 			return self.tauon.tidal.resolve_stream(track_object), None
 		if track_object.file_ext == "PLEX":
@@ -3505,11 +3510,11 @@ class PlayerCtl:
 
 		if track_object.file_ext == "JELY":
 			self.tauon.jellyfin.scan_lyrics(track_object)
-			return self.tauon.jellyfin.resolve_stream(track_object.url_key, bitrate)
+			return self.tauon.jellyfin.resolve_stream(track_object.url_key, bitrate, stream_format)
 
 		if track_object.file_ext == "SUB":
 			self.tauon.subsonic.scan_lyrics(track_object)
-			return self.tauon.subsonic.resolve_stream(track_object.url_key, bitrate)
+			return self.tauon.subsonic.resolve_stream(track_object.url_key, bitrate, stream_format)
 
 		if track_object.file_ext == "TAU":
 			return self.tauon.tau.resolve_stream(track_object.url_key), None
@@ -23175,6 +23180,9 @@ PLEX_PAGE_SIZE = 1000
 # The setting holding each server's transcode kbps, and the kbps offered
 STREAM_BITRATE_PREFS = {"JELY": "jelly_stream_bitrate", "SUB": "subsonic_stream_bitrate", "PLEX": "plex_stream_bitrate"}
 STREAM_BITRATES = (320, 192, 128, 96)
+DEFAULT_STREAM_BITRATE = 192
+# Plex only offers mp3 here
+STREAM_FORMAT_PREFS = {"JELY": "jelly_stream_format", "SUB": "subsonic_stream_format"}
 
 
 class PlexService:
@@ -32222,7 +32230,7 @@ class Over:
 		if view == 5:
 			two_factor = tauon.plex.two_factor_required
 			card1_h = round(122 * gui.scale) if two_factor else round(218 * gui.scale)
-			card2_h = round(206 * gui.scale)
+			card2_h = round((254 if prefs.plex_stream_bitrate > 0 else 206) * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -32299,12 +32307,13 @@ class Over:
 				accent,
 			)
 			inner_y += info_row_h + row_gap
-			self.settings_stream_quality_row((inner_x, inner_y, inner_w, info_row_h), "plex_stream_bitrate", accent)
+			self.settings_stream_rows(
+				(inner_x, inner_y, inner_w, info_row_h), row_gap, "plex", [("MP3", "mp3")], accent)
 			return total_h
 
 		if view == 7:
 			card1_h = round(218 * gui.scale)
-			card2_h = round(308 * gui.scale)
+			card2_h = round((356 if prefs.subsonic_stream_bitrate > 0 else 308) * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
 				return total_h
@@ -32372,8 +32381,9 @@ class Over:
 				accent,
 			)
 			inner_y += info_row_h + row_gap
-			self.settings_stream_quality_row((inner_x, inner_y, inner_w, info_row_h), "subsonic_stream_bitrate", accent)
-			inner_y += info_row_h + row_gap
+			inner_y = self.settings_stream_rows(
+				(inner_x, inner_y, inner_w, info_row_h), row_gap, "subsonic", [("MP3", "mp3"), ("Opus", "opus")], accent,
+			) + row_gap
 			self.draw_settings_action_row(
 				(inner_x, inner_y, inner_w, action_h),
 				[
@@ -32497,7 +32507,7 @@ class Over:
 			return total_h
 
 		if view == 10:
-			card1_h = round(314 * gui.scale)
+			card1_h = round((362 if prefs.jelly_stream_bitrate > 0 else 314) * gui.scale)
 			card2_h = round(116 * gui.scale)
 			total_h = card1_h + card_gap + card2_h
 			if not draw:
@@ -32543,7 +32553,8 @@ class Over:
 				accent,
 			)
 			inner_y += info_row_h + row_gap
-			self.settings_stream_quality_row((inner_x, inner_y, inner_w, info_row_h), "jelly_stream_bitrate", accent)
+			self.settings_stream_rows(
+				(inner_x, inner_y, inner_w, info_row_h), row_gap, "jelly", [("MP3", "mp3"), ("Opus", "opus")], accent)
 
 			rect = (x, y + card1_h + card_gap, w, card2_h)
 			inner_x, inner_y, inner_w, inner_h = self.draw_settings_section(
@@ -33355,25 +33366,50 @@ class Over:
 			return True
 		return False
 
-	def settings_stream_quality_row(self, rect: tuple[int, int, int, int], setting: str, accent: ColourRGBA) -> None:
-		"""Which kbps this server should transcode streams to, or the original files."""
+	def settings_stream_rows(
+		self, rect: tuple[int, int, int, int], gap: int, server: str, formats: Sequence[tuple[str, str]], accent: ColourRGBA,
+	) -> int:
+		"""A server's stream format, then its bitrate if transcoding. Returns the bottom of the last row."""
+		prefs = self.prefs
+		bitrate_setting = f"{server}_stream_bitrate"
+		format_setting = f"{server}_stream_format"
+		bitrate = getattr(prefs, bitrate_setting)
+		x, y, w, h = rect
+
+		def choose_format(stream_format: str) -> Callable[[], None]:
+			def choose() -> None:
+				setattr(prefs, format_setting, stream_format)
+				if getattr(prefs, bitrate_setting) <= 0:
+					setattr(prefs, bitrate_setting, DEFAULT_STREAM_BITRATE)
+			return choose
+
+		current_format = getattr(prefs, format_setting)
+		options = [(_("Original"), bitrate <= 0, lambda: setattr(prefs, bitrate_setting, 0))]
+		options += [
+			(label, bitrate > 0 and current_format == value, choose_format(value)) for label, value in formats]
+		self.settings_stream_row(rect, format_setting, _("Stream format"), _("Original plays files as they are."), options, accent)
+		if bitrate <= 0:
+			return y + h
+		y += h + gap
+		options = [
+			(str(kbps), bitrate == kbps, lambda kbps=kbps: setattr(prefs, bitrate_setting, kbps))
+			for kbps in STREAM_BITRATES]
+		self.settings_stream_row((x, y, w, h), bitrate_setting, _("Stream bitrate"), _("Kbps, converted by the server."), options, accent)
+		return y + h
+
+	def settings_stream_row(
+		self, rect: tuple[int, int, int, int], setting: str, title: str, hint: str,
+		options: list[tuple[str, bool, Callable[[], None]]], accent: ColourRGBA,
+	) -> None:
 		s = self.gui.scale
 		x, y, w, h = (round(v) for v in rect)
-		title = _("Stream quality")
-		hint = _("Kbps, converted by the server.")
-		current = getattr(self.prefs, setting)
-
-		def choose(bitrate: int) -> Callable[[], None]:
-			return lambda: setattr(self.prefs, setting, bitrate)
-
-		options = [(_("Original"), current == 0, choose(0))]
-		options += [(str(bitrate), current == bitrate, choose(bitrate)) for bitrate in STREAM_BITRATES]
+		current = next((label for label, active, _callback in options if active), "")
 		font = 211
 		bar_h = round(24 * s)
 		pad = round(9 * s)
 		bar_w = sum(self.ddt.get_text_w(label, font) + pad * 2 for label, _active, _callback in options)
 		key = self.settings_track_key(f"{title} {setting}")
-		self.settings_track(key, current, title, hint, "transcode bitrate", False, y)
+		self.settings_track(key, current, title, hint, "transcode bitrate format codec", False, y)
 		self.settings_row_label(rect, key, title, hint, accent, self.settings_is_changed(key, current), False, False, bar_w)
 		self.settings_segmented_bar(
 			(x + w - pad - bar_w, y + (h - bar_h) // 2), options, accent, height=bar_h, font=font)
@@ -55544,6 +55580,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("jelly-password", prefs.jelly_password)
 	cf.update_value("jelly-server-url", prefs.jelly_server_url)
 	cf.update_value("jelly-stream-bitrate", prefs.jelly_stream_bitrate)
+	cf.update_value("jelly-stream-format", prefs.jelly_stream_format)
+	cf.update_value("subsonic-stream-format", prefs.subsonic_stream_format)
 	cf.update_value("plex-stream-bitrate", prefs.plex_stream_bitrate)
 
 	cf.update_value("scrobble-radios", prefs.scrobble_radios)
@@ -56276,12 +56314,18 @@ def load_prefs(bag: Bag) -> None:
 	prefs.jelly_stream_bitrate = cf.sync_add(
 		"int", "jelly-stream-bitrate", prefs.jelly_stream_bitrate,
 		"Kbps that Jellyfin should transcode streams to. Set to 0 to play the original files.")
+	prefs.jelly_stream_format = cf.sync_add(
+		"string", "jelly-stream-format", prefs.jelly_stream_format,
+		"Format that Jellyfin should transcode streams to: mp3 or opus.")
 
 	cf.br()
 	cf.add_text("[network]")
 	prefs.subsonic_stream_bitrate = cf.sync_add(
 		"int", "stream-bitrate", prefs.subsonic_stream_bitrate,
 		"Kbps that a Subsonic server should transcode streams to (the server may need to be configured for this). Set to 0 to play the original files.")
+	prefs.subsonic_stream_format = cf.sync_add(
+		"string", "subsonic-stream-format", prefs.subsonic_stream_format,
+		"Format that a Subsonic server should transcode streams to: mp3 or opus (the server needs to be configured for opus).")
 
 	cf.br()
 	cf.add_text("[listenalong]")

@@ -21,7 +21,9 @@ builtins.__dict__.setdefault("_", lambda text: text)
 
 def make_pctl(setting: int) -> PlayerCtl:
 	pctl = PlayerCtl.__new__(PlayerCtl)
-	pctl.prefs = SimpleNamespace(jelly_stream_bitrate=setting, subsonic_stream_bitrate=setting, plex_stream_bitrate=setting)
+	pctl.prefs = SimpleNamespace(
+		jelly_stream_bitrate=setting, subsonic_stream_bitrate=setting, plex_stream_bitrate=setting,
+		jelly_stream_format="mp3", subsonic_stream_format="mp3")
 	return pctl
 
 
@@ -77,6 +79,12 @@ def test_jellyfin_asks_for_a_new_conversion_per_quality() -> None:
 	assert params["playSessionId"] != jellyfin.resolve_stream("song", 96)[1]["playSessionId"]
 
 
+def test_jellyfin_asks_for_a_new_conversion_per_track() -> None:
+	jellyfin = make_jellyfin()
+	first = jellyfin.resolve_stream("first", 128)[1]["playSessionId"]
+	assert first != jellyfin.resolve_stream("second", 128)[1]["playSessionId"]
+
+
 def test_jellyfin_original_is_static() -> None:
 	url, params = make_jellyfin().resolve_stream("song")
 	assert url == "https://jf.example/Audio/song/stream"
@@ -90,11 +98,37 @@ def test_subsonic_asks_for_mp3_in_kbps() -> None:
 	assert service.resolve_stream("song")[1] == {"id": "song"}
 
 
+def test_format_defaults_to_mp3_and_is_per_server() -> None:
+	assert Prefs.jelly_stream_format == Prefs.subsonic_stream_format == "mp3"
+	pctl = make_pctl(128)
+	pctl.prefs.jelly_stream_format = "opus"
+	assert pctl.transcode_format(track("JELY")) == "opus"
+	assert pctl.transcode_format(track("SUB")) == "mp3"
+	assert pctl.transcode_format(track("PLEX")) == "mp3"
+	# A hand edited config can't request anything else
+	pctl.prefs.jelly_stream_format = "wav"
+	assert pctl.transcode_format(track("JELY")) == "mp3"
+
+
+def test_jellyfin_opus_is_ogg_with_its_own_conversion() -> None:
+	jellyfin = make_jellyfin()
+	url, params = jellyfin.resolve_stream("song", 96, "opus")
+	assert url == "https://jf.example/Audio/song/stream.ogg"
+	assert params["audioCodec"] == "opus"
+	assert params["playSessionId"] != jellyfin.resolve_stream("song", 96, "mp3")[1]["playSessionId"]
+
+
+def test_subsonic_asks_for_the_chosen_format() -> None:
+	service = SubsonicService.__new__(SubsonicService)
+	service.r = lambda _point, p, **_kwargs: ("url", p)
+	assert service.resolve_stream("song", 96, "opus")[1] == {"id": "song", "format": "opus", "maxBitRate": 96}
+
+
 def test_only_the_download_path_transcodes() -> None:
 	pctl = make_pctl(128)
 	seen: list[int] = []
 	pctl.tauon = SimpleNamespace(jellyfin=SimpleNamespace(
-		scan_lyrics=lambda _track: None, resolve_stream=lambda _key, bitrate: seen.append(bitrate) or ("u", {})))
+		scan_lyrics=lambda _track: None, resolve_stream=lambda _key, bitrate, _format: seen.append(bitrate) or ("u", {})))
 	pctl.get_url(track())
 	pctl.get_url(track(), transcode=True)
 	assert seen == [0, 128]
@@ -110,7 +144,9 @@ def test_cache_keeps_each_quality_apart_and_prefers_the_original() -> None:
 	low = cache.get_key(item)
 	cache.pctl.prefs.jelly_stream_bitrate = 96
 	lower = cache.get_key(item)
-	assert len({original, low, lower}) == 3
+	cache.pctl.prefs.jelly_stream_format = "opus"
+	opus = cache.get_key(item)
+	assert len({original, low, lower, opus}) == 4
 	cache.files = [original]
 	assert cache.get_key(item) == original
 
@@ -125,6 +161,7 @@ def test_a_failed_transcode_is_reported_and_not_cached(
 	messages: list[tuple] = []
 	cache = Cachement.__new__(Cachement)
 	cache.direc, cache.files, cache.list, cache.error = str(tmp_path), [], [], None
+	cache.ready = None
 	cache.gui = SimpleNamespace(buffering_text="", request_frame=lambda: None)
 	cache.prefs = SimpleNamespace(jump_start=True)
 	cache.show_message = lambda *args, **_kwargs: messages.append(args)
@@ -140,3 +177,17 @@ def test_a_failed_transcode_is_reported_and_not_cached(
 	assert cache.files == []
 	assert "transcode" in messages[0][0]
 	assert list(tmp_path.iterdir()) == []
+
+
+def test_a_new_download_forgets_an_earlier_one_was_ready(tmp_path: Path) -> None:
+	cache = Cachement.__new__(Cachement)
+	cache.direc, cache.files, cache.error, cache.get_now = str(tmp_path), [], None, None
+	cache.running = True
+	cache.pctl = make_pctl(128)
+	cache.tauon = SimpleNamespace(encode_folder_name=lambda _track: "a", encode_track_name=lambda _track: "b")
+	cache.prefs = SimpleNamespace(encoder_output=str(tmp_path))
+	item = track()
+	cache.ready = item
+	assert cache.get_file(item)[0] == 1
+	assert cache.ready is None
+	assert cache.get_now is item

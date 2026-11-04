@@ -185,7 +185,10 @@ class Prefs:
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"
 	jelly_stream_bitrate: int = 0
+	jelly_stream_format: str = "mp3"
+	subsonic_stream_format: str = "mp3"
 	plex_stream_bitrate: int = 0
+	plex_stream_format: str = "mp3"  # Plex only converts to mp3 here, so this isn't saved
 
 	auto_lyrics_checked: list = field(default_factory=list)
 

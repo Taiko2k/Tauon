@@ -735,7 +735,7 @@ class Cachement:
 			bitrate = self.pctl.transcode_bitrate(track)
 			# Each quality is cached apart, but an original copy is always better
 			if bitrate and key not in self.files:
-				return hashlib.sha256(f"{name}|{bitrate}".encode()).hexdigest()
+				return hashlib.sha256(f"{name}|{self.pctl.transcode_format(track)}|{bitrate}".encode()).hexdigest()
 			return key
 		return hashlib.sha256(track.fullpath.encode()).hexdigest()
 
@@ -799,6 +799,9 @@ class Cachement:
 				logging.info("Found transcode")
 				return 0, idea
 
+		# Left over from another download of this track, such as at another quality
+		if self.ready == track:
+			self.ready = None
 		self.get_now = track
 		if not self.running:
 			shoot_dl = threading.Thread(target=self.run)
@@ -964,7 +967,7 @@ class Cachement:
 				if bitrate:
 					self.show_message(
 						_("The server could not transcode this track"),
-						_("Try setting Stream quality to Original in this server's settings."), mode="error")
+						_("Try setting Stream format to Original in this server's settings."), mode="error")
 				else:
 					self.show_message("Server Error", mode="error")
 				self.error = track

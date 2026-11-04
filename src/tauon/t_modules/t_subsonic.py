@@ -983,11 +983,13 @@ class SubsonicService(RemotePlaylistSource):
 
 		return io.BytesIO(response)
 
-	def resolve_stream(self, key: str, bitrate: int = 0) -> tuple[str, dict[str, str]] | bytes | Any | None:
-		"""The stream's url and params: the original file, or an mp3 at bitrate kbps."""
+	def resolve_stream(
+		self, key: str, bitrate: int = 0, stream_format: str = "mp3",
+	) -> tuple[str, dict[str, str]] | bytes | Any | None:
+		"""The stream's url and params: the original file, or stream_format at bitrate kbps."""
 		p = {"id": key}
 		if bitrate:
-			p.update({"format": "mp3", "maxBitRate": bitrate})
+			p.update({"format": stream_format, "maxBitRate": bitrate})
 
 		return self.r("stream", p=p, get_url=True)
 		# logging.info(response.content)
