@@ -155,6 +155,8 @@ class SubsonicService(RemotePlaylistSource):
 				rg.get("albumGain"), rg.get("albumPeak"))
 
 		nt.server_plays = self._number(song.get("playCount"))
+		nt.bitrate = self._number(song.get("bitRate"))
+		nt.samplerate = self._number(song.get("samplingRate"))
 
 	def _separate_albums(self, tracks: list[tuple[TrackClass, object]]) -> None:
 		"""Give each album its own parent_folder_path, as Tauon groups albums by folder.
@@ -981,10 +983,11 @@ class SubsonicService(RemotePlaylistSource):
 
 		return io.BytesIO(response)
 
-	def resolve_stream(self, key: str) -> tuple[str, dict[str, str]] | bytes | Any | None:
+	def resolve_stream(self, key: str, bitrate: int = 0) -> tuple[str, dict[str, str]] | bytes | Any | None:
+		"""The stream's url and params: the original file, or an mp3 at bitrate kbps."""
 		p = {"id": key}
-		if self.prefs.network_stream_bitrate > 0:
-			p["maxBitRate"] = self.prefs.network_stream_bitrate
+		if bitrate:
+			p.update({"format": "mp3", "maxBitRate": bitrate})
 
 		return self.r("stream", p=p, get_url=True)
 		# logging.info(response.content)

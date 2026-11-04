@@ -184,6 +184,8 @@ class Prefs:
 	jelly_username: str = ""
 	jelly_password: str = ""
 	jelly_server_url: str = "http://localhost:8096"
+	jelly_stream_bitrate: int = 0
+	plex_stream_bitrate: int = 0
 
 	auto_lyrics_checked: list = field(default_factory=list)
 
@@ -357,7 +359,7 @@ class Prefs:
 
 	folder_tree_codec_colours: bool = False
 
-	network_stream_bitrate = 0  # 0 is off
+	subsonic_stream_bitrate = 0  # Kbps to transcode streams to. 0 is off, for all three of these
 
 	show_side_lyrics_art_panel: bool = True
 

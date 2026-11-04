@@ -85,6 +85,7 @@ def iso_time(timestamp: float) -> str:
 
 class Jellyfin(RemotePlaylistSource):
 	code_prefix = "jelly"
+	_auth_lock = threading.Lock()
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon: Tauon = tauon
@@ -128,6 +129,20 @@ class Jellyfin(RemotePlaylistSource):
 		return auth_str
 
 	def _authenticate(self, debug: bool = False, quiet: bool = False) -> None:
+		with self._auth_lock:
+			# Logged in by another thread while this one waited. A second login would revoke its token.
+			if not debug and self.connected and self.accessToken:
+				return
+			self._login(debug, quiet)
+
+	def _relogin(self, stale_token: str | None) -> None:
+		"""Replace a token the server refused, unless another thread already has."""
+		with self._auth_lock:
+			if self.accessToken == stale_token:
+				self.connected = False
+				self._login(quiet=True)
+
+	def _login(self, debug: bool = False, quiet: bool = False) -> None:
 		# Typed without http:// or https://, fill it in so the settings field shows what's used
 		self.prefs.jelly_server_url = with_url_scheme(self.prefs.jelly_server_url, 8096)
 		username = self.prefs.jelly_username
@@ -176,8 +191,17 @@ class Jellyfin(RemotePlaylistSource):
 
 	def ping(self) -> bool:
 		"""Quietly check the server and login, for the Add music box."""
-		self.connected = False
-		self._authenticate(quiet=True)
+		token = self.accessToken
+		if self.connected and token:
+			try:
+				response = requests.get(f"{self.server_url}/Users/Me", headers=self._headers(), timeout=(5, 10))
+				if response.status_code == HTTPStatus.OK:
+					return True
+			except requests.RequestException:
+				logging.debug("Jellyfin ping failed")
+		self._relogin(token)
+		if not self.connected:
+			self._authenticate(quiet=True)
 		return self.connected
 
 	def list_libraries(self) -> list[RemotePlaylist] | None:
@@ -200,7 +224,8 @@ class Jellyfin(RemotePlaylistSource):
 			if item.get("Id") and item.get("CollectionType") == "music"
 		]
 
-	def resolve_stream(self, stream_id: str) -> str | tuple[str, dict]:
+	def resolve_stream(self, stream_id: str, bitrate: int = 0) -> str | tuple[str, dict]:
+		"""The stream's url and params: the original file, or an mp3 at bitrate kbps."""
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 
@@ -214,8 +239,11 @@ class Jellyfin(RemotePlaylistSource):
 			"api_key": self.accessToken,
 		}
 
-		if self.prefs.network_stream_bitrate > 0:
-			params["MaxStreamingBitrate"] = self.prefs.network_stream_bitrate
+		if bitrate:
+			base_url += ".mp3"
+			del params["static"]
+			# The session id keeps the server from reusing its last conversion at another quality
+			params.update({"audioCodec": "mp3", "audioBitRate": bitrate * 1000, "playSessionId": f"tauon-{bitrate}"})
 
 		if not self.session_thread_active:
 			shoot = threading.Thread(target=self.session)
@@ -844,16 +872,26 @@ class Jellyfin(RemotePlaylistSource):
 			logging.debug("No Date header from Jellyfin, using our own clock")
 			return time.time()
 
+	def _get_items(self, params: dict[str, object]) -> requests.Response:
+		"""GET /Items, logging in again once if the token was revoked, as every login on this device id does."""
+		token = self.accessToken
+		response = requests.get(
+			f"{self.server_url}/Items", headers=self._headers(), params=params, timeout=ITEM_FETCH_TIMEOUT)
+		if response.status_code == HTTPStatus.UNAUTHORIZED:
+			self._relogin(token)
+			response = requests.get(
+				f"{self.server_url}/Items", headers=self._headers(), params=params, timeout=ITEM_FETCH_TIMEOUT)
+		return response
+
 	def _parallel_items(self, params: dict[str, object], page_size: int) -> list[dict]:
 		"""Fetch every page, a few at a time, counting them in the activity row. Raises OSError if one can't be fetched."""
 
 		def fetch(start_index: int, count: bool) -> dict:
 			if self.cancel_scan:
 				raise ScanCancelledError
-			response = requests.get(
-				f"{self.server_url}/Items", headers=self._headers(), timeout=ITEM_FETCH_TIMEOUT,
-				# Counting the whole library is slow on big ones, so only the first page asks
-				params={**params, "startIndex": start_index, "limit": page_size, "enableTotalRecordCount": count})
+			# Counting the whole library is slow on big ones, so only the first page asks
+			response = self._get_items(
+				{**params, "startIndex": start_index, "limit": page_size, "enableTotalRecordCount": count})
 			if response.status_code != HTTPStatus.OK:
 				raise OSError(f"[{response.status_code}] {response.reason}")
 			return response.json()
@@ -887,8 +925,7 @@ class Jellyfin(RemotePlaylistSource):
 			# Only the first page counts the total, which is slow on big libraries
 			page_params = {"sortBy": "SortName", "sortOrder": "Ascending", **params,
 				"startIndex": start_index, "limit": page_size, "enableTotalRecordCount": start_index == 0}
-			response = requests.get(
-				f"{self.server_url}/Items", headers=self._headers(), params=page_params, timeout=ITEM_FETCH_TIMEOUT)
+			response = self._get_items(page_params)
 			if response.status_code != HTTPStatus.OK:
 				raise OSError(f"Jellyfin returned [{response.status_code}] {response.reason}")
 			data = response.json()

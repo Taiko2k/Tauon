@@ -396,6 +396,9 @@ class StreamFeeder:
 			track = self._prefetch_target
 			if track is None or not getattr(track, "is_network", False):
 				return
+			# Would start a conversion on the server, and these aren't streamed anyway
+			if self.pctl.transcode_bitrate(track):
+				return
 			self._prefetching = True
 		shoot = threading.Thread(target=self._prefetch_worker, args=(track,))
 		shoot.daemon = True
@@ -727,7 +730,13 @@ class Cachement:
 
 	def get_key(self, track: TrackClass) -> str:
 		if track.is_network:
-			return hashlib.sha256((str(track.index) + track.url_key).encode()).hexdigest()
+			name = str(track.index) + track.url_key
+			key = hashlib.sha256(name.encode()).hexdigest()
+			bitrate = self.pctl.transcode_bitrate(track)
+			# Each quality is cached apart, but an original copy is always better
+			if bitrate and key not in self.files:
+				return hashlib.sha256(f"{name}|{bitrate}".encode()).hexdigest()
+			return key
 		return hashlib.sha256(track.fullpath.encode()).hexdigest()
 
 	def get_file_cached_only(self, track: TrackClass) -> str | None:
@@ -891,10 +900,11 @@ class Cachement:
 			self.list.append(key)
 			return 0
 
+		bitrate = self.pctl.transcode_bitrate(track)
 		try:
 			logging.info("Download file")
 
-			network_url, params = self.pctl.get_url(track)
+			network_url, params = self.pctl.get_url(track, transcode=True)
 			if not network_url:
 				logging.info("No URL")
 				return 1
@@ -948,8 +958,15 @@ class Cachement:
 				self.show_message("Server: File not found", mode="error")
 				self.error = track
 				return 1
-			if part.status_code != HTTPStatus.OK:
-				self.show_message("Server Error", mode="error")
+			# Subsonic reports errors, such as a track it can't convert, in a normal response
+			is_error = part.headers.get("Content-Type", "").startswith(("application/json", "text/xml", "application/xml"))
+			if part.status_code != HTTPStatus.OK or is_error:
+				if bitrate:
+					self.show_message(
+						_("The server could not transcode this track"),
+						_("Try setting Stream quality to Original in this server's settings."), mode="error")
+				else:
+					self.show_message("Server Error", mode="error")
 				self.error = track
 				return 1
 
@@ -965,6 +982,11 @@ class Cachement:
 		if cl:
 			length = int(cl)
 			self.gui.buffering_text = "0%"
+		elif bitrate:
+			# A live transcode has no length. Seeking waits on this estimate.
+			length = bitrate * 125 * int(track.length)
+		# Enough to start playing: about 10 seconds of a transcode
+		start_kb = bitrate * 125 * 10 // 1024 if bitrate else 3000
 
 		timer = Timer()
 		try:
@@ -972,15 +994,15 @@ class Cachement:
 				for chunk in part.iter_content(chunk_size=1024):
 					if chunk:  # filter out keep-alive new chunks
 						a += 1
-						if a == 3000 and self.prefs.jump_start:  # kilobyes~
+						if a == start_kb and self.prefs.jump_start:  # kilobyes~
 							self.ready = track
 						if a % 32 == 0:
 							# time.sleep(0.03)
 							# logging.info(f"Downloading file @ {round(32 / timer.hit())} kbps")
 							if length:
 								self.gui.request_frame()
-								self.pctl.buffering_percent = round(a * 1000 / length * 100)
-								self.gui.buffering_text = str(round(a * 1000 / length * 100)) + "%"
+								self.pctl.buffering_percent = min(round(a * 1000 / length * 100), 100)
+								self.gui.buffering_text = f"{self.pctl.buffering_percent}%"
 
 						if self.get_now is not None and self.get_now != track:
 							logging.warning("Aborted loading track!")
@@ -1756,8 +1778,10 @@ def player4(tauon: Tauon) -> None:
 					# Prefer an already complete local copy (cache or transcode)
 					instant = cachement.get_local_instant(target_object)
 
+					# A live transcode can't take range requests, so it's downloaded while playing
 					if instant is None and feeder.enabled and prefs.network_stream \
-							and target_object.index not in stream_unsupported:
+							and target_object.index not in stream_unsupported \
+							and not pctl.transcode_bitrate(target_object):
 						try:
 							network_url, params = pctl.get_url(target_object)
 						except Exception:

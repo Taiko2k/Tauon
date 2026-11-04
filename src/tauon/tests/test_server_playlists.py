@@ -62,7 +62,7 @@ def _tauon(library: dict[int, FakeTrack]) -> SimpleNamespace:
 			to_got=0, update_layout=False, request_frame=lambda: None, request_tracklist_redraw=lambda: None),
 		pctl=pctl,
 		prefs=SimpleNamespace(
-			jelly_server_url="https://jellyfin.example/", subsonic_user="", network_stream_bitrate=0),
+			jelly_server_url="https://jellyfin.example/", subsonic_user=""),
 		t_title="Tauon",
 		device="Test",
 		t_version="test",

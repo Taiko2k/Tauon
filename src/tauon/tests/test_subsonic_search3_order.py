@@ -77,7 +77,7 @@ def _import(songs: list[dict[str, Any]]) -> tuple[list[int], dict[int, FakeTrack
 	tauon = SimpleNamespace(
 		gui=SimpleNamespace(to_got=0, request_frame=lambda: None),
 		pctl=SimpleNamespace(master_library={}, master_count=1),
-		prefs=SimpleNamespace(subsonic_playlists=[], network_stream_bitrate=0),
+		prefs=SimpleNamespace(subsonic_playlists=[]),
 		t_title="Tauon",
 		star_store=FakeStarStore(),
 		server_sync=SimpleNamespace(pending=lambda *_args: set()),
