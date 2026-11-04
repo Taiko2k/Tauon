@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v13.2.1
+### v13.2.0
 
  - Reworked server sync and library add
  - Added transcode for remote servers
