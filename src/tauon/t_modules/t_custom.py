@@ -58,6 +58,7 @@ from tauon.t_modules.t_extra import (
 	get_display_time,
 	get_samplerate_string,
 	hls_pull_contrast,
+	hls_to_rgb,
 	rgb_add_hls,
 	rgb_to_hls,
 	test_lumi,
@@ -1204,6 +1205,26 @@ class PlaybackPanelWidget(Widget):
 			tauon.gui.panelBY = panel_by
 
 
+def buffering_stripes(
+	x: int, y: int, w: int, h: int, period: int, phase: float, row: int = 1,
+) -> Iterator[tuple[int, int, int, int]]:
+	"""Spans of 45 degree stripes filling a rect, row pixels high, half a period wide and moved along by phase (0 to 1)."""
+	if w <= 0 or h <= 0 or period <= 0:
+		return
+	width = period // 2
+	offset = round(phase * period)
+	for top in range(0, h, row):
+		height = min(row, h - top)
+		# Leans right going up, like the classic panel's shard
+		start = offset + (h - height - top)
+		start -= (start + width) // period * period + period
+		while start < w:
+			left, right = max(start, 0), min(start + width, w)
+			if right > left:
+				yield (x + left, y + top, right - left, height)
+			start += period
+
+
 class FeuxBar:
 	"""Renderer for the "Playback panel: Feux" widget.
 
@@ -1243,6 +1264,7 @@ class FeuxBar:
 	STOP_D  = 28
 	VOL_W   = 88
 	BAR_H   = 7
+	BUFFER_LIFT = 0.05  # how far buffering stripes sit from the bar's lightness, as on the classic panel
 
 	# Glint: a band of light crossing the disc on every transport state
 	# change (see _draw_glint). SWAP is the fraction of the sweep at which
@@ -1862,8 +1884,28 @@ class FeuxBar:
 			ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
 			if progress > 0:
 				ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
+		if self.tauon.radiobox.load_connecting or gui.buffering:
+			self._draw_buffering(bar_x, bar_y, bar_w, bar_h, round(bar_w * progress), seek_bg, backdrop)
 		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
 		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
+
+	def _draw_buffering(self, x: int, y: int, w: int, h: int, filled: int, bg: ColourRGBA, backdrop: ColourRGBA) -> None:
+		"""Diagonal stripes drifting along the unplayed part of the bar, as on the classic panel."""
+		period = h * 2
+		# In steps like the classic panel's, one period a second
+		phase = math.floor(self.tauon.core_timer.get() % 1 * 13) / 13
+		hue, l, s = rgb_to_hls(bg.r, bg.g, bg.b)
+		lift = 1 if rgb_to_hls(backdrop.r, backdrop.g, backdrop.b)[1] < 0.5 else -1
+		colour = hls_to_rgb(hue, min(1, max(0, l + lift * self.BUFFER_LIFT)), s)
+		colour.a = bg.a
+		row = max(1, round(self.gui.scale))
+		for rect in buffering_stripes(x + filled, y, w - filled, h, period, phase, row):
+			self.ddt.rect(rect, colour)
+		self.gui.delay_frame(1 / 13)
+		percent = self.pctl.buffering_percent
+		if self.gui.buffering and percent:
+			line = max(1, self._s(2))
+			self.ddt.rect((x, y + h - line, round(w * min(percent, 100) / 100), line), alpha_mod(self.colours.seek_bar_fill, 90))
 
 	def _needle_reach(self, panel_h: int) -> float:
 		"""Half height of the loudest needle; grows a little with the panel."""

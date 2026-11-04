@@ -183,12 +183,6 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 		rows.append(Activity("lastfm", _("Scanning: ") + tauon.lastfm.scanning_username, ColourRGBA(200, 150, 240, 255)))
 	if tauon.lastfm.scanning_scrobbles:
 		rows.append(Activity("scrobbles", _("Scanning Scrobbles…"), ColourRGBA(219, 88, 18, 255)))
-	if gui.buffering:
-		try:
-			progress = fraction(float(gui.buffering_text.rstrip("%")), 100) if gui.buffering_text.endswith("%") else None
-		except ValueError:
-			progress = None
-		rows.append(Activity("buffering", _("Buffering…"), ColourRGBA(18, 180, 180, 255), progress=progress))
 	if tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
 		rows.append(Activity("scrobble-error", _("Scrobbling"), ColourRGBA(250, 90, 90, 255),
 			_("Network error. Will try again later."), busy=False))
