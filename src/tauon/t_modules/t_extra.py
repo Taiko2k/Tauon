@@ -22,6 +22,7 @@ TODO(Martin): Rewrite all tuple[int, int, int, int] things into actual ColorWhat
 from __future__ import annotations
 
 import colorsys
+import ipaddress
 import locale
 import logging
 import math
@@ -1086,6 +1087,29 @@ def is_stream_url(url: str) -> bool:
 
 def is_http_url(url: str) -> bool:
 	return url.lower().startswith(("http://", "https://"))
+
+
+def with_url_scheme(url: str, default_port: int) -> str:
+	"""Add the scheme a server URL was typed without.
+
+	http for servers on this machine or the local network, or on the server's own default port,
+	which is plain http. https for anything else, as remote servers sit behind a TLS proxy and
+	guessing http there would send the password unencrypted.
+	"""
+	url = url.strip()
+	if not url or "://" in url:
+		return url
+	try:
+		parts = urllib.parse.urlsplit("//" + url)
+		host, port = (parts.hostname or "").lower(), parts.port
+	except ValueError:
+		return url
+	# A bare name like "nas" only resolves on the local network
+	local = port == default_port or host == "localhost" or host.endswith(".local") or "." not in host.strip("[]")
+	with suppress(ValueError):
+		address = ipaddress.ip_address(host)
+		local = local or address.is_private or address.is_loopback or address.is_link_local
+	return ("http://" if local else "https://") + url
 
 
 def normalise_stream_url(url: str) -> str:

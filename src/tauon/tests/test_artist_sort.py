@@ -13,6 +13,7 @@ LIBRARY = [5, 7, 1, 4, 2, 6, 3]
 
 def make_tauon(code: str = "", *, ignore_the: bool = True) -> Tauon:
 	tauon = Tauon.__new__(Tauon)
+	tauon.server_sync = SimpleNamespace(background=set())
 	tauon.prefs = SimpleNamespace(sort_ignore_the=ignore_the)
 	tauon.pctl = PlayerCtl.__new__(PlayerCtl)
 	tauon.pctl.multi_playlist = [

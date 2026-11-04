@@ -293,16 +293,32 @@ from tauon.t_modules.t_scrobble_queue import (  # noqa: E402
 	LISTENBRAINZ,
 	MALOJA,
 	QUEUE_FILENAME,
+	SERVER_PLAYS,
 	SERVICE_NAMES,
-	SUBSONIC,
 	Outcome,
 	PendingScrobble,
+	RetryBackoff,
 	ScrobbleQueue,
 	http_outcome,
 	pending_from_track,
 	track_number_int,
 )
 from tauon.t_modules.t_search import bandcamp_search  # noqa: E402
+from tauon.t_modules.t_server_sync import (  # noqa: E402
+	LOVE,
+	PLEX,
+	RATING,
+	SERVICE_NAMES as SYNC_SERVICE_NAMES,
+	SYNC_FILENAME,
+	LibraryCache,
+	PlaylistGoneError,
+	RemotePlaylistState,
+	ScanCancelledError,
+	ServerEdit,
+	ServerSync,
+	parse_link,
+	uses_server,
+)
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
 from tauon.t_modules.t_svgout import render_icons  # noqa: E402
@@ -435,7 +451,7 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_bootstrap import Holder
 	from tauon.t_modules.t_dbus import MPRIS, SuspendInhibitor
 	from tauon.t_modules.t_logging import LogHistoryHandler
-	from collections.abc import Callable, Sequence
+	from collections.abc import Callable, Iterator, Sequence
 	from subprocess import Popen
 
 	from pylast import LastFMNetwork, SessionKeyGenerator
@@ -1338,8 +1354,8 @@ class StarStore:
 			return self.db[key].rating
 		return 0
 
-	def set_rating(self, index: int, value: int, write: bool = False) -> None:
-		"""Sets the track user rating"""
+	def set_rating(self, index: int, value: int, write: bool = False, push: bool = False) -> None:
+		"""Sets the track user rating. push sends it to the track's server, for ratings the user made."""
 		key = self.key(index)
 		if key not in self.db:
 			self.db[key] = StarRecord()
@@ -1347,8 +1363,10 @@ class StarStore:
 
 		tr = self.pctl.get_track(index)
 		if tr.file_ext == "SUB":
+			# Subsonic only has whole stars
 			self.db[key].rating = math.ceil(value / 2) * 2
-			shooter(self.tauon.subsonic.set_rating, (tr, value))
+		if push:
+			self.tauon.server_sync.queue_edit(tr, RATING, value)
 
 		if self.prefs.write_ratings and write:
 			logging.info("Writing rating..")
@@ -2256,7 +2274,7 @@ class TrackClass:
 		"artist", "album_artist", "title", "composer", "label", "length", "bitrate", "samplerate", "bit_depth",
 		"album", "date", "track_number", "track_total", "start_time", "is_cue", "is_embed_cue",
 		"cue_sheet", "genre", "found", "skips", "comment", "disc_number", "disc_total", "lyrics", "synced",
-		"lfm_friend_likes", "lfm_scrobbles",
+		"lfm_friend_likes", "lfm_scrobbles", "server_plays",
 		"album_artists", "artists", "artist_sort", "codec", "container", "FMPS_Rating", "genres",
 		"musicbrainz_albumid", "musicbrainz_artistids", "musicbrainz_recordingid",
 		"musicbrainz_releasegroupid", "musicbrainz_trackid", "parent_length", "parent_size", "POPM",
@@ -2307,6 +2325,7 @@ class TrackClass:
 
 		self.lfm_friend_likes   = set()
 		self.lfm_scrobbles: int = 0
+		self.server_plays:  int = 0  # Play count on the Jellyfin/Subsonic/Plex server
 
 		self.album_artists = None
 		self.artists = None
@@ -5854,11 +5873,10 @@ class LastScrob:
 		self.start_lock = threading.Lock()
 		self.sender: threading.Thread | None = None
 		# Per service: when it may be tried again, and the delay that set it
-		self.retry_at: dict[str, float] = {}
-		self.retry_delay: dict[str, float] = {}
+		self.backoff = RetryBackoff()
+		self.retry_at = self.backoff.retry_at
+		self.retry_delay = self.backoff.retry_delay
 
-	RETRY_MIN_S = 60
-	RETRY_MAX_S = 15 * 60
 	LASTFM_MAX_AGE_S = 14 * 24 * 60 * 60
 
 	def scrobble_allowed(self, track_object: TrackClass) -> bool:
@@ -5908,21 +5926,16 @@ class LastScrob:
 
 	def next_retry_in(self) -> float | None:
 		"""Seconds until the next backed-off service is due, None to sleep until woken."""
-		now = time.time()
-		due = [self.retry_at[service] - now for service in self.queue.services() if self.retry_at.get(service, 0) > now]
-		return min(due) if due else None
+		return self.backoff.next_in(self.queue.services())
 
 	def send_due(self) -> None:
 		for service in self.queue.services():
-			if time.time() < self.retry_at.get(service, 0):
+			if self.backoff.waiting(service):
 				continue
 			if self.flush(service):
-				self.retry_at.pop(service, None)
-				self.retry_delay.pop(service, None)
+				self.backoff.succeeded(service)
 				continue
-			delay = min(self.RETRY_MAX_S, max(self.RETRY_MIN_S, self.retry_delay.get(service, 0) * 2))
-			self.retry_delay[service] = delay
-			self.retry_at[service] = time.time() + delay
+			delay = self.backoff.failed(service)
 			logging.info(f"Unsent scrobbles for {SERVICE_NAMES.get(service, service)}, retrying in {delay}s")
 			self.tauon.scrobble_warning_timer.set()
 
@@ -5940,14 +5953,16 @@ class LastScrob:
 		if service == MALOJA:
 			if self.prefs.maloja_enable and self.prefs.maloja_url:
 				return (lambda items: [self.tauon.maloja_scrobble(items[0])]), 1
-		elif service == SUBSONIC and self.prefs.subsonic_server:
-			return (lambda items: [self.tauon.subsonic.submit_scrobble(items[0])]), 1
+		elif service in SERVER_PLAYS:
+			target = self.tauon.server_sync.service(SERVER_PLAYS[service])
+			if target.sync_configured():
+				return (lambda items: [target.submit_scrobble(items[0])]), 1
 		return None, 1
 
 	def flush(self, service: str) -> bool:
 		"""Send everything waiting for one service. False if some should be retried later."""
 		name = SERVICE_NAMES.get(service, service)
-		if service != SUBSONIC and self.prefs.scrobble_hold:
+		if service not in SERVER_PLAYS and self.prefs.scrobble_hold:
 			# Paused, keep them until scrobbling resumes
 			return True
 		send, batch_size = self.sender_for(service)
@@ -6068,8 +6083,11 @@ class LastScrob:
 		timestamp = int(time.time())
 
 		if track_object.is_network:
-			if track_object.file_ext == "SUB":
-				self.enqueue(track_object, SUBSONIC, timestamp)
+			for service, ext in SERVER_PLAYS.items():
+				if track_object.file_ext == ext:
+					# Shown straight away, the next refresh brings the server's own count
+					track_object.server_plays += 1
+					self.enqueue(track_object, service, timestamp)
 
 		if not self.scrobble_allowed(track_object):
 			return
@@ -6084,12 +6102,12 @@ class LastScrob:
 
 	def enqueue(self, track_object: TrackClass, service: str, timestamp: int) -> None:
 		item = pending_from_track(track_object, service, timestamp)
-		if service != SUBSONIC and not (item.artist and item.title):
+		if service not in SERVER_PLAYS and not (item.artist and item.title):
 			logging.warning(f"Not scrobbling to {SERVICE_NAMES[service]}, incomplete metadata")
 			return
 		self.queue.add(item, keep=self.prefs.scrobble_offline_queue)
 		# A new play gets an immediate try, even mid-backoff
-		self.retry_at.pop(service, None)
+		self.backoff.retry_now(service)
 		self.gui.request_frame()
 
 class Strings:
@@ -8021,11 +8039,14 @@ class Tauon:
 		self.tidal: Tidal       = Tidal(self)
 		self.plex: PlexService  = PlexService(self)
 		self.jellyfin: Jellyfin = Jellyfin(self)
+		self.server_sync: ServerSync = ServerSync(self, self.user_directory / SYNC_FILENAME)
 		self.tau: TauService    = TauService(self)
 		self.album_star_store: AlbumStarStore = AlbumStarStore(self)
 		self.subsonic: SubsonicService = self.album_star_store.subsonic
 
 		self.playlist_autoscan = False
+		# A regenerate the server sync started, shown as background activity
+		self.regen_background = False
 		self.dropped_playlist = -1
 
 		self.now_searching: Literal["off", "searching", "errored", "success"] = "off"
@@ -12011,7 +12032,7 @@ class Tauon:
 		value = self.pctl.gen_codes.get(id)
 
 		line_colour = self.colours.menu_text if value else self.colours.menu_text_disabled
-		return Decorator(line_colour, self.colours.menu_background, None)
+		return Decorator(line_colour, self.colours.menu_background, _("Sync with Server") if parse_link(value) else None)
 
 	def auto_sync_thread(self, pl: int) -> None:
 		if self.prefs.transcode_inplace:
@@ -12335,9 +12356,11 @@ class Tauon:
 
 	def key_playcount(self, index: int) -> float:
 		# key = self.pctl.master_library[index].title + self.pctl.master_library[index].filename
-		if self.pctl.master_library[index].length < 1:
-			return 0
-		return self.star_store.get(index) / self.pctl.master_library[index].length
+		track = self.pctl.master_library[index]
+		if track.length < 1:
+			return track.server_plays
+		# A server's count includes plays from other apps
+		return max(self.star_store.get(index) / track.length, track.server_plays)
 		# if key in self.pctl.star_library:
 		#	 return self.pctl.star_library[key] / self.pctl.master_library[index].length
 		# else:
@@ -17782,6 +17805,14 @@ class Tauon:
 		self._opencc_local.t2s = t2s
 		return s2t, t2s
 
+	@staticmethod
+	def extend_or_fail(playlist: list[int], track_ids: list[int] | None) -> bool:
+		"""Add a server's tracks to a generator's result, returning True if the fetch failed or was cancelled."""
+		if track_ids is None:
+			return True
+		playlist.extend(track_ids)
+		return False
+
 	def regenerate_playlist(self, pl: int = -1, silent: bool = False, id: int | None = None) -> None:
 		if id is None and pl == -1:
 			return
@@ -17807,6 +17838,9 @@ class Tauon:
 		if inquote:
 			self.gui.gen_code_errors = "close"
 			return
+
+		# A lone server playlist is linked: regenerating merges it with the server both ways
+		link = parse_link(string)
 
 		playlist = []
 		selections: list[list[int]] = []
@@ -17845,6 +17879,9 @@ class Tauon:
 		#logging.info(quotes)
 
 		self.pctl.regen_in_progress = True
+		# Asked for by the server sync rather than the user
+		self.regen_background = id in self.server_sync.background
+		self.server_sync.background.discard(id)
 
 		for i, cm in enumerate(cmds):
 			quote = quotes[i]
@@ -17887,11 +17924,11 @@ class Tauon:
 
 			elif cm == "plex":
 				if not self.plex.scanning:
-					playlist.extend(self.plex.get_albums(return_list=True))
+					fetch_failed |= self.extend_or_fail(playlist, self.plex.library_ids(cm))
 
 			elif cm.startswith("jelly\""):
 				if not self.jellyfin.scanning:
-					track_ids = self.jellyfin.get_playlist(quote)
+					track_ids = self.server_sync.sync_playlist(pl, *link) if link else self.jellyfin.get_playlist(quote)
 					if track_ids is None:
 						fetch_failed = True
 					else:
@@ -17899,7 +17936,7 @@ class Tauon:
 
 			elif cm == "jelly":
 				if not self.jellyfin.scanning:
-					playlist.extend(self.jellyfin.ingest_library(return_list=True))
+					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.library_ids(cm))
 
 			elif cm == "tau":
 				if not self.tau.processing:
@@ -17910,19 +17947,23 @@ class Tauon:
 						and self.generator_box.active:
 					playlist.extend(self.subsonic.last_music)
 				elif not self.subsonic.scanning:
-					playlist.extend(self.subsonic.get_music3(return_list=True))
+					fetch_failed |= self.extend_or_fail(playlist, self.subsonic.library_ids(cm))
 
 			elif cm.startswith("air\""):
-				track_ids = self.subsonic.playlist_track_ids(quote)
+				if link:
+					track_ids = self.server_sync.sync_playlist(pl, *link)
+				else:
+					track_ids = self.subsonic.playlist_track_ids(quote)
+					if track_ids is None:
+						self.show_message(_("Error fetching Subsonic playlist"), mode="warning")
 				if track_ids is None:
 					fetch_failed = True
-					self.show_message(_("Error fetching Subsonic playlist"), mode="warning")
 				else:
 					playlist.extend(track_ids)
 
 			elif cm.startswith("airlib\""):
 				if not self.subsonic.scanning:
-					playlist.extend(self.subsonic.get_music3(return_list=True, music_folder=quote) or [])
+					fetch_failed |= self.extend_or_fail(playlist, self.subsonic.library_ids(cm, music_folder=quote))
 
 			elif cm in ("airfav", "airfavalb"):
 				track_ids = self.subsonic.favourite_tracks() if cm == "airfav" else self.subsonic.favourite_albums()
@@ -17933,22 +17974,22 @@ class Tauon:
 
 			elif cm.startswith("jellylib\""):
 				if not self.jellyfin.scanning:
-					playlist.extend(self.jellyfin.ingest_library(return_list=True, parent_id=quote) or [])
+					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.library_ids(cm, parent_id=quote))
 
 			elif cm == "jellyfav":
 				if not self.jellyfin.scanning:
-					playlist.extend(self.jellyfin.favourite_tracks())
+					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.favourite_tracks())
 
 			elif cm == "jellyfavalb":
 				if not self.jellyfin.scanning:
-					playlist.extend(self.jellyfin.favourite_albums())
+					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.favourite_albums())
 
 			elif cm.startswith("plexlib\""):
 				if not self.plex.scanning:
-					playlist.extend(self.plex.get_albums(return_list=True, section_key=quote) or [])
+					fetch_failed |= self.extend_or_fail(playlist, self.plex.library_ids(cm, section_key=quote))
 
 			elif cm.startswith("plexpl\""):
-				track_ids = self.plex.playlist_track_ids(quote)
+				track_ids = self.server_sync.sync_playlist(pl, *link) if link else self.plex.playlist_track_ids(quote)
 				if track_ids is None:
 					fetch_failed = True
 				else:
@@ -18575,6 +18616,7 @@ class Tauon:
 
 		self.tree_view_box.clear_target_pl(0, id)
 		self.pctl.regen_in_progress = False
+		self.regen_background = False
 		self.gui.request_tracklist_redraw()
 		self.reload()
 		self.dropped_playlist = pl
@@ -18588,13 +18630,28 @@ class Tauon:
 			_("OK. This playlist will automatically sort on import from now on"),
 			_("You can remove or edit this behavior with \"Smart Playlist…\" in the playlist tab menu"), mode="done")
 
-	def jellyfin_show_test(self, _: int) -> bool:
-		return bool(self.prefs.jelly_password and self.prefs.jelly_username)
+	def upload_server_show_test(self, pl: int) -> bool:
+		return not self.server_sync.is_linked(pl) and self.server_sync.upload_service(pl) is not None
 
-	def upload_jellyfin_playlist(self, pl: int) -> None:
-		if self.jellyfin.scanning:
-			return
-		shooter(self.jellyfin.upload_playlist, [pl])
+	def upload_server_deco(self, pl: int) -> Decorator:
+		service = self.server_sync.upload_service(pl)
+		text = _("Upload to {service}").format(service=SYNC_SERVICE_NAMES[service]) if service else None
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
+
+	def upload_server_playlist(self, pl: int) -> None:
+		shooter(self.server_sync.upload_playlist, [pl])
+
+	def server_linked_show_test(self, pl: int) -> bool:
+		return self.server_sync.is_linked(pl)
+
+	def server_push_enabled(self, pl: int) -> bool:
+		return self.pctl.multi_playlist[pl].uuid_int not in self.server_sync.no_push
+
+	def server_refresh_show_test(self, pl: int) -> bool:
+		return uses_server(self.pctl.gen_codes.get(self.pctl.pl_to_id(pl)))
+
+	def server_refresh_enabled(self, pl: int) -> bool:
+		return self.pctl.multi_playlist[pl].uuid_int not in self.server_sync.no_refresh
 
 	def regen_playlist_async(self, pl: int) -> None:
 		if self.pctl.regen_in_progress:
@@ -19236,7 +19293,7 @@ class Tauon:
 				elif album:
 					self.album_star_store.set_rating(n_track, rat)
 				else:
-					self.star_store.set_rating(n_track.index, rat, write=True)
+					self.star_store.set_rating(n_track.index, rat, write=True, push=True)
 				display_rat = rat
 
 		# bg = self.colours.grey(40)
@@ -20893,10 +20950,7 @@ class Tauon:
 							_("Maybe check your internet connection and try again?"), mode="error")
 
 				self.lb_love(track_id, True)
-				if self.pctl.master_library[track_id].file_ext == "JELY":
-					self.jellyfin.favorite(self.pctl.master_library[track_id])
-				if self.pctl.master_library[track_id].file_ext == "SUB":
-					self.subsonic.star_track(self.pctl.master_library[track_id])
+				self.server_sync.queue_edit(self.pctl.master_library[track_id], LOVE, 1)
 		else:
 			time.sleep(delay)
 			self.gui.request_frame()
@@ -20915,10 +20969,7 @@ class Tauon:
 						star.loved = True
 						self.star_store.insert(track_id, star)
 				self.lb_love(track_id, False)
-				if self.pctl.master_library[track_id].file_ext == "JELY":
-					self.jellyfin.favorite(self.pctl.master_library[track_id], un=True)
-				if self.pctl.master_library[track_id].file_ext == "SUB":
-					self.subsonic.unstar_track(self.pctl.master_library[track_id])
+				self.server_sync.queue_edit(self.pctl.master_library[track_id], LOVE, 0)
 
 		self.gui.request_tracklist_redraw()
 		self.gui.request_frame()
@@ -23106,6 +23157,10 @@ class Tauon:
 
 		tauon_native.wake_event_loop()
 
+# Tracks per request when listing a PLEX library
+PLEX_PAGE_SIZE = 1000
+
+
 class PlexService:
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -23117,6 +23172,10 @@ class PlexService:
 		self.connected: bool = False
 		self.resource        = None
 		self.scanning:  bool = False
+		# Set from the activity popover, the scan stops at its next page
+		self.cancel_scan = False
+		# Tracks the running scan expects, for the activity row's progress; 0 when unknown
+		self.scan_total = 0
 		self.two_factor_required: bool = False
 
 	def connect(self, code: str | None = None, quiet: bool = False) -> bool:
@@ -23234,22 +23293,176 @@ class PlexService:
 	def playlist_track_ids(self, playlist_key: str) -> list[int] | None:
 		"""Track ids for the plexpl"<key>" generator code, or None if it couldn't be fetched."""
 		try:
-			if not self.connected and not self.connect():
-				return None
-			items = self.resource.fetchItem(int(playlist_key)).items()
+			remote = self.fetch_remote_playlist(playlist_key)
+		except PlaylistGoneError:
+			return None
+		return None if remote is None else remote.track_ids
+
+	def sync_configured(self) -> bool:
+		return bool(self.prefs.plex_username and self.prefs.plex_password and self.prefs.plex_servername)
+
+	def _ready(self) -> bool:
+		return (self.connected and self.resource is not None) or self.connect(quiet=True)
+
+	@staticmethod
+	def _rating_key(url_key: str) -> str:
+		"""The ratingKey from a track key like /library/metadata/123."""
+		return url_key.rstrip("/").rsplit("/", 1)[-1]
+
+	def _library_action(self, point: str, put: bool = False) -> Outcome:
+		if not self._ready():
+			return Outcome.RETRY
+		from plexapi.exceptions import BadRequest, NotFound, Unauthorized
+		try:
+			self.resource.query(point, method=self.resource._session.put if put else None)  # noqa: SLF001
+		except (NotFound, BadRequest):
+			return Outcome.DROP
+		except Unauthorized:
+			self.connected = False
+			return Outcome.RETRY
+		except Exception as e:
+			logging.warning(f"Could not reach the PLEX server: {e}")
+			return Outcome.RETRY
+		return Outcome.SENT
+
+	def push_edit(self, edit: ServerEdit) -> Outcome:
+		"""Send a rating, which Plex keeps on the same 0 to 10 scale."""
+		if edit.kind != RATING:
+			return Outcome.DROP
+		# -1 clears it
+		rating = edit.value or -1
+		return self._library_action(
+			f"/:/rate?key={self._rating_key(edit.server_id)}&identifier=com.plexapp.plugins.library&rating={rating}",
+			put=True)
+
+	def submit_scrobble(self, item: PendingScrobble) -> Outcome:
+		"""Mark a track played, adding to its play count. Plex can't take the time it was played."""
+		return self._library_action(
+			f"/:/scrobble?key={self._rating_key(item.server_id)}&identifier=com.plexapp.plugins.library")
+
+	def fetch_remote_playlist(self, remote_id: str) -> RemotePlaylistState | None:
+		"""A playlist and its tracks, adding any that aren't in the library yet. None if it couldn't be fetched."""
+		if not self._ready():
+			return None
+		from plexapi.exceptions import NotFound
+		try:
+			playlist = self.resource.fetchItem(int(remote_id))
+			items = playlist.items()
+		except NotFound:
+			raise PlaylistGoneError from None
 		except Exception:
 			logging.exception("Error fetching PLEX playlist")
 			return None
 		existing = self._existing()
-		playlist = []
+		ratings = self._rating_sync()
+		server_ids: list[str] = []
+		track_ids: list[int] = []
+		kept: list[str] = []
 		for track in items:
 			if getattr(track, "type", "") != "track" or not track.duration:
+				# Tauon can't hold it, but a write mustn't remove it
+				kept.append(track.key)
 				continue
 			artist = track.grandparentTitle or ""
-			nt = self._store_track(track, existing, artist, artist, getattr(track, "parentYear", None))
+			nt = self._store_track(track, existing, artist, artist, getattr(track, "parentYear", None), ratings)
 			existing[track.key] = nt.index
-			playlist.append(nt.index)
-		return playlist
+			server_ids.append(track.key)
+			track_ids.append(nt.index)
+		self._send_ratings(ratings)
+		updated = playlist.updatedAt.timestamp() if playlist.updatedAt else 0
+		return RemotePlaylistState(
+			server_ids, track_ids, f"{updated}:{playlist.leafCount}", playlist.title or "", bool(playlist.smart),
+			kept)
+
+	def write_remote_playlist(
+		self, remote_id: str, current: RemotePlaylistState, server_ids: list[str], name: str | None,
+	) -> bool:
+		"""Make a playlist match server_ids with item removals, additions and moves."""
+		if not self._ready():
+			return False
+		session = self.resource._session  # noqa: SLF001
+		try:
+			playlist = self.resource.fetchItem(int(remote_id))
+			# Entries Tauon skipped stay where they are
+			wanted = set(server_ids) | set(current.kept)
+			present: set[str] = set()
+			for item in playlist.items():
+				# By entry id, so each copy of a duplicate goes on its own
+				if item.key not in wanted or item.key in present:
+					self.resource.query(f"{playlist.key}/items/{item.playlistItemID}", method=session.delete)
+				present.add(item.key)
+			missing = [key for key in server_ids if key not in present]
+			for i in range(0, len(missing), 100):
+				playlist.addItems(self.resource.fetchItems([int(self._rating_key(k)) for k in missing[i:i + 100]]))
+
+			# Then put them in order
+			playlist = self.resource.fetchItem(int(remote_id))
+			items = {item.key: item for item in playlist.items()}
+			order = list(items)
+			for i, key in enumerate(server_ids):
+				if key not in items or (i < len(order) and order[i] == key):
+					continue
+				point = f"{playlist.key}/items/{items[key].playlistItemID}/move"
+				if i:
+					point += f"?after={items[server_ids[i - 1]].playlistItemID}"
+				self.resource.query(point, method=session.put)
+				order.remove(key)
+				order.insert(i, key)
+			if name:
+				playlist.editTitle(name)
+		except Exception:
+			logging.exception("Error updating PLEX playlist")
+			return False
+		return True
+
+	def create_remote_playlist(self, name: str, server_ids: list[str]) -> str | None:
+		"""Create a playlist, returning its id."""
+		if not self._ready() or not server_ids:
+			# Plex can't make an empty one
+			return None
+		try:
+			keys = [int(self._rating_key(k)) for k in server_ids]
+			playlist = self.resource.createPlaylist(name, items=self.resource.fetchItems(keys[:100]))
+			for i in range(100, len(keys), 100):
+				playlist.addItems(self.resource.fetchItems(keys[i:i + 100]))
+		except Exception:
+			logging.exception("Error creating PLEX playlist")
+			return None
+		return str(playlist.ratingKey)
+
+	def library_stamp(self, section_key: str | None = None) -> str | None:
+		"""Changes whenever the library might have, or None when it can't be read."""
+		try:
+			return " ".join(
+				f"{s.key}:{s.updatedAt.timestamp() if s.updatedAt else 0}:{s.totalViewSize(libtype='track')}"
+				for s in self.music_sections(section_key))
+		except Exception:
+			logging.exception("Error checking the PLEX library for changes")
+			return None
+
+	def library_ids(self, code: str, section_key: str | None = None) -> list[int] | None:
+		"""Track ids for a library generator code, reusing the last listing while the server reports no changes.
+
+		None if it failed or was cancelled, so the playlist keeps what it has.
+		"""
+		sync = self.tauon.server_sync
+		server = f"{self.prefs.plex_servername}|{self.prefs.plex_username}"
+		cache = sync.library_cache(code, server)
+		stamp = self.library_stamp(section_key) if self._ready() else None
+		if stamp and cache is not None and cache.stamp == stamp:
+			track_ids = sync.library_ids(PLEX, cache.server_ids)
+			if track_ids is not None:
+				logging.info("PLEX library unchanged, reusing the last listing")
+				return track_ids
+
+		track_ids = self.get_albums(return_list=True, section_key=section_key)
+		if not track_ids:
+			return None
+		server_ids = [self.pctl.master_library[t].url_key for t in track_ids]
+		if cache is not None and not section_key:
+			sync.purge_removed(PLEX, cache.server_ids, server_ids)
+		sync.store_library(code, LibraryCache(stamp or "", server_ids, server=server))
+		return track_ids
 
 	def _existing(self) -> dict[str, int]:
 		existing = {}
@@ -23258,7 +23471,32 @@ class PlexService:
 				existing[track.url_key] = track_id
 		return existing
 
-	def _store_track(self, track, existing: dict[str, int], album_artist: str, track_artist: str, year) -> TrackClass:
+	def _section_tracks(self, section) -> Iterator:
+		"""Every track in a section, a page at a time so a cancel takes effect between pages."""
+		start = 0
+		while True:
+			if self.cancel_scan:
+				raise ScanCancelledError
+			page = section.searchTracks(
+				sort="artist.titleSort,album.titleSort,track.index",
+				container_start=start, container_size=PLEX_PAGE_SIZE, maxresults=PLEX_PAGE_SIZE)
+			yield from page
+			start += len(page)
+			if len(page) < PLEX_PAGE_SIZE:
+				return
+
+	def _rating_sync(self) -> tuple[set[str], list[tuple[TrackClass, str, int]]]:
+		"""For one fetch: tracks with an unsent rating, and a list gathering ratings to send up."""
+		return self.tauon.server_sync.pending(PLEX, RATING), []
+
+	def _send_ratings(self, ratings: tuple[set[str], list[tuple[TrackClass, str, int]]]) -> None:
+		if ratings[1]:
+			self.tauon.server_sync.queue_edits(ratings[1])
+
+	def _store_track(
+		self, track, existing: dict[str, int], album_artist: str, track_artist: str, year,
+		ratings: tuple[set[str], list[tuple[TrackClass, str, int]]],
+	) -> TrackClass:
 		album_title = track.parentTitle or ""
 		parent = (album_artist + " - " + album_title).strip("- ")
 
@@ -23287,20 +23525,38 @@ class PlexService:
 
 		nt.url_key = track.key
 		nt.date = str(year) if year else ""
+		nt.server_plays = int(getattr(track, "viewCount", 0) or 0)
 
 		self.pctl.master_library[id] = nt
+
+		# Ratings are 0 to 10 on both sides. One made here is kept until it's been sent.
+		pending, send_up = ratings
+		if track.key not in pending:
+			rating = getattr(track, "userRating", None)
+			local = self.tauon.star_store.get_rating(id)
+			if rating is not None:
+				if round(rating) != local:
+					self.tauon.star_store.set_rating(id, round(rating))
+			elif local:
+				# Rated here before ratings were synced
+				send_up.append((nt, RATING, local))
 		return nt
 
 	def get_albums(self, return_list: bool = False, section_key: str | None = None) -> list[int] | None:
 		# Always clear the scanning flag, or the UI stays on "Accessing PLEX library..."
 		try:
 			return self._get_albums(return_list, section_key)
+		except ScanCancelledError:
+			logging.info("PLEX library scan cancelled")
+			return None
 		except Exception as e:
 			logging.exception("Error importing PLEX library")
 			self.show_message(_("Error importing PLEX library"), str(e), mode="error")
 			return [] if return_list else None
 		finally:
 			self.scanning = False
+			self.cancel_scan = False
+			self.scan_total = 0
 			self.gui.request_frame()
 
 	def _get_albums(self, return_list: bool, section_key: str | None) -> list[int] | None:
@@ -23316,14 +23572,16 @@ class PlexService:
 
 		playlist: list[int] = []
 		existing = self._existing()
+		ratings = self._rating_sync()
 		self.gui.to_got = 0
+		sections = self.music_sections(section_key)
+		self.scan_total = sum(section.totalViewSize(libtype="track") for section in sections)
 
-		for section in self.music_sections(section_key):
+		for section in sections:
 			# Fetch all tracks in one paged listing instead of one request per album
 			albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
-			tracks = section.searchTracks(sort="artist.titleSort,album.titleSort,track.index", container_size=1000)
 
-			for track in tracks:
+			for track in self._section_tracks(section):
 				if not track.duration:
 					logging.warning(f"Skipping track with invalid duration - {track.title} - {track.grandparentTitle}")
 					continue
@@ -23332,14 +23590,16 @@ class PlexService:
 				# Plex leaves untagged titles as None
 				track_artist = track.grandparentTitle or ""
 				album_artist = (album.parentTitle if album else None) or track_artist
-				nt = self._store_track(track, existing, album_artist, track_artist, album.year if album else None)
+				nt = self._store_track(
+					track, existing, album_artist, track_artist, album.year if album else None, ratings)
 				playlist.append(nt.index)
 
 				self.gui.to_got += 1
-				if self.gui.to_got % 500 == 0:
+				if self.gui.to_got % 100 == 0:
 					self.gui.request_frame()
 					self.gui.request_tracklist_redraw()
 
+		self._send_ratings(ratings)
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 		self.scanning = False
@@ -38928,6 +39188,7 @@ class StandardPlaylist:
 				if n_track.length > 15:
 					total += 2
 				ratio = total / (n_track.length - 1)
+			ratio = max(ratio, n_track.server_plays)
 			text = str(int(ratio))
 			if text == "0":
 				text = ""
@@ -40225,6 +40486,7 @@ class StandardPlaylist:
 								if n_track.length > 15:
 									total += 2
 								ratio = total / (n_track.length - 1)
+							ratio = max(ratio, n_track.server_plays)
 
 							text = str(int(ratio))
 							if text == "0":
@@ -59125,6 +59387,11 @@ def main(holder: Holder) -> None:
 	if tauon.lfm_scrobbler.queue:
 		tauon.lfm_scrobbler.start_queue()
 
+	# Send waiting loves/ratings, watch linked playlists and refresh server playlists
+	tauon.server_sync.load()
+	tauon.server_sync.startup_pending = True
+	tauon.server_sync.start()
+
 	try:
 		if tauon.prefs.discord_enable and tauon.prefs.discord_allow:
 			try:
@@ -59980,11 +60247,6 @@ def main(holder: Holder) -> None:
 	tauon.radio_tab_menu.add(MenuItem(_("Delete"),
 		pctl.delete_playlist_force, pass_ref=True, hint="Ctrl+W", icon=gui.delete_icon, disable_test=tauon.test_pl_tab_locked, pass_ref_deco=True))
 
-	service_asset = asset_loader(bag, bag.loaded_asset_dc, "playlist.png", True)
-	jell_icon = MenuIcon(service_asset)
-	jell_icon.colour = ColourRGBA(190, 100, 210, 255)
-	jell_icon.xoff = 5
-	jell_icon.yoff = 2
 
 	tab_menu.br()
 
@@ -60007,8 +60269,12 @@ def main(holder: Holder) -> None:
 	playlist_folder_menu.br()
 	playlist_folder_menu.add(MenuItem(_("Delete Folder"), tauon.delete_playlist_folder, pass_ref=True, icon=gui.delete_icon))
 
-	tab_menu.add(MenuItem(_("Upload"),
-		tauon.upload_jellyfin_playlist, pass_ref=True, pass_ref_deco=True, icon=jell_icon, show_test=tauon.jellyfin_show_test))
+	tab_menu.add(MenuItem(_("Upload to Server"), tauon.upload_server_playlist, tauon.upload_server_deco,
+		pass_ref=True, pass_ref_deco=True, show_test=tauon.upload_server_show_test))
+	tab_menu.add(MenuItem(_("Send Edits to Server"), tauon.server_sync.toggle_push, pass_ref=True,
+		show_test=tauon.server_linked_show_test, check_test=lambda: tauon.server_push_enabled(tab_menu.reference)))
+	tab_menu.add(MenuItem(_("Refresh at Startup"), tauon.server_sync.toggle_refresh, pass_ref=True,
+		show_test=tauon.server_refresh_show_test, check_test=lambda: tauon.server_refresh_enabled(tab_menu.reference)))
 
 	tab_menu.add(MenuItem(_("Regenerate"), tauon.regen_playlist_async, tauon.regenerate_deco, pass_ref=True, pass_ref_deco=True, hint="Alt+R"))
 	tab_menu.add_sub(_("Derive…"), 150)
@@ -65840,6 +66106,7 @@ def main(holder: Holder) -> None:
 
 						if total > 0 and pctl.master_library[gui.track_box_track_id].length > 1:
 							ratio = total / (tc.length - 1)
+						ratio = max(ratio, tc.server_plays)
 
 						ddt.text((x1, y1), _("Play count"), key_colour_off, 212, max_w=70 * gui.scale)
 						ddt.text((x2, y1), str(int(ratio)), value_colour, value_font)

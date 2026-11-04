@@ -69,6 +69,7 @@ def _tauon(library: dict[int, FakeTrack]) -> SimpleNamespace:
 		TrackClass=FakeTrack,
 		star_store=SimpleNamespace(set_rating=lambda *_args: None, full_get=lambda _index: None),
 		album_art_gen=SimpleNamespace(source_cache={}),
+		server_sync=SimpleNamespace(pending=lambda *_args: set()),
 		show_message=lambda *args, **_kwargs: messages.append(args),
 		messages=messages,
 		wake=lambda: None,
@@ -261,7 +262,10 @@ def test_jellyfin_lists_audio_playlists(monkeypatch: pytest.MonkeyPatch) -> None
 def test_jellyfin_playlist_no_longer_needs_the_library_imported(monkeypatch: pytest.MonkeyPatch) -> None:
 	library: dict[int, FakeTrack] = {}
 	_existing(library, 5, "b", "JELY")
-	service = _jellyfin(monkeypatch, library, {"Playlists/p1/Items": [_item("a"), _item("b"), {"Id": "v", "Type": "Video"}]})
+	service = _jellyfin(monkeypatch, library, {
+		"Items": [{"Id": "p1", "Name": "Road trip", "Etag": "e1"}],
+		"Playlists/p1/Items": [_item("a"), _item("b"), {"Id": "v", "Type": "Video"}],
+	})
 
 	track_ids = service.playlist_track_ids("p1")
 

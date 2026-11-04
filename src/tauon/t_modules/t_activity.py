@@ -13,6 +13,7 @@ from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, alpha_mod
 from tauon.t_modules.t_menu_disc import bake, smoothstep, texture_from_pixels
+from tauon.t_modules.t_server_sync import SCAN_CHANGES, SCAN_PROCESSING
 
 if TYPE_CHECKING:
 	from collections.abc import Callable
@@ -35,11 +36,15 @@ class Activity:
 	folder_progress: float | None = None
 	folder_count: str = ""
 	overall_count: str = ""
+	# Started by Tauon in the background rather than by the user
+	implicit: bool = False
 
 
 SPINNER_PX = 14
 SPINNER_IN = 0.72  # inner radius of the ring, as a fraction of its outer radius
 SPINNER_RPS = 1.1  # turns per second
+IMPLICIT_RPS = 0.4  # for background work, which shouldn't draw the eye
+IMPLICIT_COLOUR = ColourRGBA(105, 105, 110, 255)
 
 
 def shade_spinner(x: float, y: float) -> tuple[float, float, float, float]:
@@ -110,7 +115,7 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 		rows.append(Activity("scan", _("Scanning Tags…"), green,
 			_("{N} remaining").format(N=len(tauon.after_scan)), progress=scan_progress))
 	if tauon.playlist_autoscan:
-		rows.append(Activity("playlists", _("Auto-importing playlists…"), green))
+		rows.append(Activity("playlists", _("Auto-importing playlists…"), IMPLICIT_COLOUR, implicit=True))
 	if tauon.move_in_progress:
 		rows.append(Activity("copy", _("File copy in progress…"), tauon.colours.status_info_text))
 	if tauon.cm_clean_db:
@@ -120,16 +125,34 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 	if tauon.to_scan:
 		rows.append(Activity("rescan", _("Rescanning Tags…"), green,
 			_("{N} remaining").format(N=len(tauon.to_scan)), progress=rescan_progress))
-	for key, service, title, colour in (
-		("plex", tauon.plex, _("Accessing PLEX library…"), ColourRGBA(229, 160, 13, 255)),
-		("subsonic", tauon.subsonic, _("Accessing Subsonic library…"), ColourRGBA(58, 194, 224, 255)),
-		("jellyfin", tauon.jellyfin, _("Accessing JELLYFIN library…"), ColourRGBA(90, 170, 240, 255)),
+	for key, service, title, background_title, colour in (
+		("plex", tauon.plex, _("Accessing PLEX library…"), _("Updating PLEX library…"), ColourRGBA(229, 160, 13, 255)),
+		("subsonic", tauon.subsonic, _("Accessing Subsonic library…"), _("Updating Subsonic library…"),
+			ColourRGBA(58, 194, 224, 255)),
+		("jellyfin", tauon.jellyfin, _("Accessing JELLYFIN library…"), _("Updating JELLYFIN library…"),
+			ColourRGBA(90, 170, 240, 255)),
 	):
 		if service.scanning:
 			detail = ""
-			if count is not None and count > 0:
-				detail = (_("{N} albums scanned") if key == "plex" else _("{N} tracks scanned")).format(N=count)
-			rows.append(Activity(key, title, colour, detail))
+			stage = getattr(service, "scan_stage", "")
+			processing = stage == SCAN_PROCESSING
+			total = service.scan_total if count is not None and not processing else 0
+			if service.cancel_scan:
+				detail = _("Stopping…")
+			elif processing:
+				detail = _("Processing tracks…")
+			elif total and stage == SCAN_CHANGES:
+				detail = _("{N} of {total} changed tracks").format(N=min(count, total), total=total)
+			elif total:
+				detail = _("{N} of {total} tracks").format(N=min(count, total), total=total)
+			elif count is not None and count > 0:
+				detail = _("{N} tracks scanned").format(N=count)
+			# A refresh at startup or after an edit here, rather than an import the user asked for
+			implicit = tauon.regen_background
+			rows.append(Activity(
+				key, background_title if implicit else title, IMPLICIT_COLOUR if implicit else colour, detail,
+				progress=fraction(count, total) if total else None,
+				cancel=not service.cancel_scan and not processing, implicit=implicit))
 	if tauon.chrome_mode:
 		rows.append(Activity("chromecast", _("Chromecast Mode"), ColourRGBA(207, 94, 219, 255), busy=False))
 	if gui.sync_progress:
@@ -169,6 +192,10 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 	if tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
 		rows.append(Activity("scrobble-error", _("Scrobbling"), ColourRGBA(250, 90, 90, 255),
 			_("Network error. Will try again later."), busy=False))
+	stalled = tauon.server_sync.stalled()
+	if stalled:
+		rows.append(Activity("server-edits", _("Loves and ratings waiting"), ColourRGBA(250, 90, 90, 255),
+			_("Can't reach {servers}. Will try again later.").format(servers=", ".join(stalled)), busy=False))
 	listeners = sum(timer.get() < 6 for timer in tuple(tauon.listen_alongers.values()))
 	if listeners:
 		rows.append(Activity("listeners", _("{N} listening along").format(N=listeners),
@@ -188,6 +215,9 @@ class ActivityPopover:
 		self.button_drawn = False
 		self.spinner = None
 		self.spinner_size = 0
+		# Turned by elapsed time, so changing speed doesn't make it jump
+		self.spinner_angle = 0.0
+		self.spinner_time = time.monotonic()
 
 	def refresh(self) -> None:
 		self.rows = collect_activities(self.tauon)
@@ -207,6 +237,11 @@ class ActivityPopover:
 		gui = tauon.gui
 		if key == "import":
 			gui.im_cancel = True
+		elif key in ("plex", "subsonic", "jellyfin"):
+			# The playlist being fetched keeps what it had
+			getattr(tauon, key).cancel_scan = True
+			if tauon.regen_background:
+				tauon.server_sync.refresh_cancelled = True
 		elif key in ("sync", "transcode"):
 			if key == "transcode" or gui.sync_transcode_folder:
 				del tauon.transcode_list[1:]
@@ -272,7 +307,9 @@ class ActivityPopover:
 		tauon.fields.add(rect)
 		hover = tauon.coll(rect) and (self.open or tauon.is_level_zero())
 		bg = tauon.colours.top_panel_background
-		colour = self.readable_colour(self.rows[0].colour, bg, 3)
+		# Anything the user started outranks background work
+		lead = next((row for row in self.rows if not row.implicit), self.rows[0])
+		colour = self.readable_colour(lead.colour, bg, 3)
 		if self.open or hover:
 			ddt.rect(rect, alpha_blend(alpha_mod(colour, 24), bg))
 		if hover and not self.open:
@@ -281,13 +318,13 @@ class ActivityPopover:
 			self.open = not self.open
 			self.consume_pointer()
 			gui.request_frame()
-		self.draw_spinner(x + 12 * scale, y + 9 * scale, colour)
+		self.draw_spinner(x + 12 * scale, y + 9 * scale, colour, IMPLICIT_RPS if lead.implicit else SPINNER_RPS)
 		if len(self.rows) > 1:
 			ddt.text((x + 24 * scale, y + scale), str(len(self.rows)), colour, 311, bg=bg)
 		self.animate()
 		return width
 
-	def draw_spinner(self, cx: float, cy: float, colour: ColourRGBA) -> None:
+	def draw_spinner(self, cx: float, cy: float, colour: ColourRGBA, rps: float = SPINNER_RPS) -> None:
 		"""The comet ring, baked once per size and turned on the GPU."""
 		renderer = self.tauon.renderer
 		size = round(SPINNER_PX * self.tauon.gui.scale)
@@ -300,7 +337,10 @@ class ActivityPopover:
 			return
 		sdl3.set_texture_color_mod(self.spinner, colour.r, colour.g, colour.b)
 		sdl3.set_texture_alpha_mod(self.spinner, colour.a)
-		angle = time.monotonic() * SPINNER_RPS * 360 % 360
+		now = time.monotonic()
+		self.spinner_angle = (self.spinner_angle + (now - self.spinner_time) * rps * 360) % 360
+		self.spinner_time = now
+		angle = self.spinner_angle
 		dst = sdl3.FRect(round(cx - size / 2), round(cy - size / 2), size, size)
 		sdl3.render_texture_rotated(renderer, self.spinner, None, dst, angle, None, sdl3.SDL_FLIP_NONE)
 

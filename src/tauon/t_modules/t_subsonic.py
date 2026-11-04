@@ -35,9 +35,18 @@ from typing import TYPE_CHECKING
 import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
-from tauon.t_modules.t_extra import StarRecord
+from tauon.t_modules.t_extra import StarRecord, with_url_scheme
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome
+from tauon.t_modules.t_server_sync import (
+	LOVE,
+	RATING,
+	SUBSONIC,
+	LibraryCache,
+	PlaylistGoneError,
+	RemotePlaylistState,
+	ScanCancelledError,
+)
 
 if TYPE_CHECKING:
 	from io import BytesIO
@@ -46,9 +55,12 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_main import AlbumStarStore, GuiVar, PlayerCtl, StarStore, Tauon, TrackClass
 	from tauon.t_modules.t_prefs import Prefs
 	from tauon.t_modules.t_scrobble_queue import PendingScrobble
+	from tauon.t_modules.t_server_sync import ServerEdit
 
 # Some broken servers send invalid JSON with control chars, see https://github.com/Taiko2k/Tauon/issues/1112
 CONTROL_CHAR_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+# Songs per playlist request when the server can't take a POST body, keeping the URL short
+PLAYLIST_CHUNK = 100
 
 
 class SubsonicService(RemotePlaylistSource):
@@ -64,7 +76,16 @@ class SubsonicService(RemotePlaylistSource):
 		self.album_star_store: AlbumStarStore = album_star_store
 		self.show_message = tauon.show_message
 		self.scanning: bool = False
+		# Set from the activity popover, the scan stops after the folders being read
+		self.cancel_scan = False
+		# Tracks the running scan expects, for the activity row's progress; 0 when unknown
+		self.scan_total = 0
+		# Songs on the server, from Navidrome's scan status
+		self.server_song_count = 0
 		self.last_music: list[int] | None = None
+		# Whether the last full import read everything
+		self.import_complete = False
+		self.form_post: bool | None = None
 		self.lyrics_scan_lock = threading.Lock()
 		self.lyrics_scan_pending: set[str] = set()
 		self.lyrics_scan_checked: set[str] = set()
@@ -132,6 +153,8 @@ class SubsonicService(RemotePlaylistSource):
 				rg.get("trackGain"), rg.get("trackPeak"))
 			nt.replaygain_album_gain, nt.replaygain_album_peak = self._replaygain_pair(
 				rg.get("albumGain"), rg.get("albumPeak"))
+
+		nt.server_plays = self._number(song.get("playCount"))
 
 	def _separate_albums(self, tracks: list[tuple[TrackClass, object]]) -> None:
 		"""Give each album its own parent_folder_path, as Tauon groups albums by folder.
@@ -343,6 +366,8 @@ class SubsonicService(RemotePlaylistSource):
 				self.gui.request_frame()
 				if done:
 					break
+				if self.cancel_scan:
+					raise ScanCancelledError
 				pages = list(pool.map(lambda o: fetch(o, stride), [offset + n * stride for n in range(4)]))
 				if any(page is None for page in pages):
 					return None
@@ -449,13 +474,216 @@ class SubsonicService(RemotePlaylistSource):
 
 	def playlist_track_ids(self, playlist_id: str) -> list[int] | None:
 		try:
-			response = self._response(self.r("getPlaylist", p={"id": playlist_id}, show_errors=False))
+			remote = self.fetch_remote_playlist(playlist_id)
+		except PlaylistGoneError:
+			return None
+		return None if remote is None else remote.track_ids
+
+	def sync_configured(self) -> bool:
+		return bool(self.prefs.subsonic_server and self.prefs.subsonic_user)
+
+	def _outcome(self, point: str, p: dict[str, object]) -> Outcome:
+		try:
+			d = self.r(point, p=p, show_errors=False)
+		except requests.RequestException as e:
+			logging.warning(f"Could not reach the Subsonic server: {e}")
+			return Outcome.RETRY
+		except Exception:
+			logging.exception(f"Error sending {point} to Subsonic")
+			return Outcome.RETRY
+		response = d.get("subsonic-response") if isinstance(d, dict) else None
+		if not isinstance(response, dict):
+			return Outcome.RETRY
+		if response.get("status") == "ok":
+			return Outcome.SENT
+		error = response.get("error") or {}
+		logging.warning(f"Subsonic {point} failed: {error}")
+		# 10: missing parameter, 70: not found
+		return Outcome.DROP if error.get("code") in (10, 70) else Outcome.RETRY
+
+	def push_edit(self, edit: ServerEdit) -> Outcome:
+		"""Send a love as a star, or a rating in whole stars."""
+		if edit.kind == LOVE:
+			return self._outcome("star" if edit.value else "unstar", {"id": edit.server_id})
+		return self._outcome("setRating", {"id": edit.server_id, "rating": math.ceil(edit.value / 2)})
+
+	def _supports_form_post(self) -> bool:
+		"""Whether the server takes parameters in a POST body (OpenSubsonic formPost)."""
+		if self.form_post is None:
+			try:
+				response = self._response(self.r("getOpenSubsonicExtensions", show_errors=False)) or {}
+			except Exception:
+				logging.exception("Error listing OpenSubsonic extensions")
+				return False
+			self.form_post = any(
+				isinstance(e, dict) and e.get("name") == "formPost"
+				for e in self._as_list(response.get("openSubsonicExtensions")))
+		return self.form_post
+
+	def fetch_remote_playlist(self, remote_id: str) -> RemotePlaylistState | None:
+		"""A playlist and its songs, adding any that aren't in the library yet. None if it couldn't be fetched."""
+		try:
+			d = self.r("getPlaylist", p={"id": remote_id}, show_errors=False)
 		except Exception:
 			logging.exception("Error fetching Subsonic playlist")
 			return None
-		if response is None:
+		response = d.get("subsonic-response") if isinstance(d, dict) else None
+		if not isinstance(response, dict):
 			return None
-		return self._song_ids(self._as_list((response.get("playlist") or {}).get("entry")))
+		if response.get("status") != "ok":
+			if (response.get("error") or {}).get("code") == 70:
+				raise PlaylistGoneError
+			logging.error(f"Error fetching Subsonic playlist: {response.get('error')}")
+			return None
+		playlist = response.get("playlist") or {}
+		entries = [e for e in self._as_list(playlist.get("entry")) if isinstance(e, dict) and e.get("id")]
+		owner = playlist.get("owner")
+		# Navidrome marks smart playlists and other users' playlists read-only
+		# Logins aren't case sensitive, so neither is the owner
+		readonly = playlist.get("readonly") is True or bool(playlist.get("validUntil")) or bool(
+			owner and str(owner).casefold() != self.prefs.subsonic_user.casefold())
+		return RemotePlaylistState(
+			[str(e["id"]) for e in entries], self._song_ids(entries), str(playlist.get("changed") or ""),
+			playlist.get("name") or "", readonly)
+
+	def _update_playlist(self, p: dict[str, object], post: bool = False) -> bool:
+		try:
+			return self._response(self.r("updatePlaylist", p=p, show_errors=False, post=post)) is not None
+		except Exception:
+			logging.exception("Error updating Subsonic playlist")
+			return False
+
+	def write_remote_playlist(
+		self, remote_id: str, current: RemotePlaylistState, server_ids: list[str], name: str | None,
+	) -> bool:
+		"""Replace a playlist's songs by removing every entry and adding the new list, as there's no reorder."""
+		count = len(current.server_ids)
+		if self._supports_form_post():
+			p: dict[str, object] = {
+				"playlistId": remote_id, "songIndexToRemove": [str(i) for i in range(count)], "songIdToAdd": server_ids}
+			if name:
+				p["name"] = name
+			return self._update_playlist(p, post=True)
+
+		# Removing from the end keeps the earlier indexes valid between requests
+		batches: list[dict[str, object]] = [
+			{"songIndexToRemove": [str(i) for i in range(max(0, end - PLAYLIST_CHUNK), end)]}
+			for end in range(count, 0, -PLAYLIST_CHUNK)]
+		batches += [
+			{"songIdToAdd": server_ids[i:i + PLAYLIST_CHUNK]} for i in range(0, len(server_ids), PLAYLIST_CHUNK)]
+		if name:
+			batches.insert(0, {"name": name})
+		return all(self._update_playlist({"playlistId": remote_id, **batch}) for batch in batches)
+
+	def create_remote_playlist(self, name: str, server_ids: list[str]) -> str | None:
+		"""Create a playlist, returning its id."""
+		post = self._supports_form_post()
+		first, rest = (server_ids, []) if post else (server_ids[:PLAYLIST_CHUNK], server_ids[PLAYLIST_CHUNK:])
+		try:
+			response = self._response(
+				self.r("createPlaylist", p={"name": name, "songId": first}, show_errors=False, post=post))
+			if response is None:
+				return None
+			playlist_id = (response.get("playlist") or {}).get("id")
+			if not playlist_id:
+				# Before API 1.14 the new playlist isn't returned, so find the newest with that name
+				listed = self._response(self.r("getPlaylists", show_errors=False)) or {}
+				matches = [
+					p for p in self._as_list((listed.get("playlists") or {}).get("playlist"))
+					if isinstance(p, dict) and p.get("name") == name and p.get("id") is not None]
+				if not matches:
+					return None
+				playlist_id = max(matches, key=lambda p: str(p.get("created") or ""))["id"]
+		except Exception:
+			logging.exception("Error creating Subsonic playlist")
+			return None
+		for i in range(0, len(rest), PLAYLIST_CHUNK):
+			if not self._update_playlist({"playlistId": playlist_id, "songIdToAdd": rest[i:i + PLAYLIST_CHUNK]}):
+				return None
+		return str(playlist_id)
+
+	def library_stamp(self) -> str | None:
+		"""Changes whenever the library might have, or None when the server can't tell."""
+		try:
+			d = self.r("getScanStatus", show_errors=False)
+			response = d.get("subsonic-response") if isinstance(d, dict) else None
+			status = (response or {}).get("scanStatus") or {}
+			if status.get("scanning"):
+				return None
+			self.server_song_count = self._number(status.get("count"))
+			if status.get("lastScan"):
+				# Navidrome
+				return f"scan:{status['lastScan']}:{status.get('count')}"
+			d = self.r("getIndexes", show_errors=False)
+			response = d.get("subsonic-response") if isinstance(d, dict) else None
+			modified = ((response or {}).get("indexes") or {}).get("lastModified")
+		except Exception:
+			logging.exception("Error checking the Subsonic library for changes")
+			return None
+		return f"index:{modified}" if modified else None
+
+	def library_ids(self, code: str, music_folder: str | None = None) -> list[int] | None:
+		"""Track ids for a library generator code, reusing the last listing while the server reports no changes.
+
+		None if it failed or was cancelled, so the playlist keeps what it has.
+		"""
+		try:
+			return self._library_ids(code, music_folder)
+		except ScanCancelledError:
+			logging.info("Subsonic library scan cancelled")
+			return None
+		finally:
+			self.scanning = False
+			self.cancel_scan = False
+			self.scan_total = 0
+			self.gui.request_frame()
+
+	def _library_ids(self, code: str, music_folder: str | None) -> list[int] | None:
+		sync = self.tauon.server_sync
+		stamp = self.library_stamp()
+		# After library_stamp, as connecting fills in a missing scheme
+		server = f"{self.prefs.subsonic_server}|{self.prefs.subsonic_user}"
+		cache = sync.library_cache(code, server)
+		if stamp and cache is not None and cache.stamp == stamp:
+			track_ids = sync.library_ids(SUBSONIC, cache.server_ids)
+			if track_ids is not None:
+				logging.info("Subsonic library unchanged, reusing the last listing")
+				starred = self._starred()
+				if starred is not None:
+					self._apply_stars(track_ids, {str(s.get("id")) for s in self._as_list(starred.get("song"))})
+				if not music_folder:
+					self.last_music = track_ids
+				return track_ids
+
+		# The server's count covers every folder
+		self.scan_total = 0 if music_folder else self.server_song_count
+		track_ids = self.get_music3(return_list=True, music_folder=music_folder)
+		if not track_ids:
+			return None
+		if not self.import_complete:
+			return track_ids
+		server_ids = [self.pctl.master_library[t].url_key for t in track_ids]
+		if cache is not None and not music_folder:
+			sync.purge_removed(SUBSONIC, cache.server_ids, server_ids)
+		sync.store_library(code, LibraryCache(stamp or "", server_ids, server=server))
+		return track_ids
+
+	def _apply_stars(self, track_ids: list[int], starred: set[str]) -> None:
+		"""Match loves to the server's stars, except where an unsent edit made here is newer."""
+		pending = self.tauon.server_sync.pending(SUBSONIC, LOVE)
+		for track_id in track_ids:
+			track = self.pctl.master_library[track_id]
+			if track.url_key in pending:
+				continue
+			star = self.star_store.full_get(track_id)
+			if track.url_key in starred:
+				if star is None:
+					star = StarRecord()
+				if not star.loved:
+					star.loved = True
+					self.star_store.insert(track_id, star)
+			elif star is not None and star.loved:
+				self.star_store.insert(track_id, StarRecord(star.playtime, star.rating))
 
 	def _song_ids(self, entries: list) -> list[int]:
 		"""Tauon track ids for song entries, adding any that aren't in the library yet."""
@@ -537,8 +765,11 @@ class SubsonicService(RemotePlaylistSource):
 		binary: bool = False,
 		get_url: bool = False,
 		show_errors: bool = True,
+		post: bool = False,
 	):
 		salt = secrets.token_hex(8)
+		# Typed without http:// or https://, fill it in so the settings field shows what's used. 4533 is Navidrome's.
+		self.prefs.subsonic_server = with_url_scheme(self.prefs.subsonic_server, 4533)
 		server = self.prefs.subsonic_server.rstrip("/") + "/"
 
 		params = {
@@ -564,7 +795,7 @@ class SubsonicService(RemotePlaylistSource):
 		if get_url:
 			return url, params
 
-		response = requests.get(url, params=params, timeout=10)
+		response = requests.post(url, data=params, timeout=30) if post else requests.get(url, params=params, timeout=10)
 
 		if binary:
 			return response.content
@@ -788,13 +1019,6 @@ class SubsonicService(RemotePlaylistSource):
 		# 10: missing parameter, 70: song no longer on the server
 		return Outcome.DROP if error.get("code") in (10, 70) else Outcome.RETRY
 
-	def set_rating(self, track_object: TrackClass, rating: int) -> bool:
-		try:
-			a = self.r("setRating", p={"id": track_object.url_key, "rating": math.ceil(rating / 2)})
-		except Exception:
-			logging.exception("Error connect for set rating on airsonic")
-		return True
-
 	def set_album_rating(self, track_object: TrackClass, rating: int) -> bool:
 		id = track_object.subsonic_folder_id
 		if id is not None:
@@ -802,54 +1026,6 @@ class SubsonicService(RemotePlaylistSource):
 				a = self.r("setRating", p={"id": id, "rating": math.ceil(rating / 2)})
 			except Exception:
 				logging.exception("Error connect for set rating on airsonic")
-		return True
-
-	def star_track(self, track_object: TrackClass) -> bool:
-		try:
-			response = self.r("star", p={"id": track_object.url_key})
-		except Exception:
-			logging.exception("Error connect for star track on airsonic")
-			return False
-
-		if not response:
-			logging.error(f"Airsonic star request returned no response for track id={track_object.url_key!r}")
-			return False
-
-		subsonic_response = response.get("subsonic-response", {})
-		if subsonic_response.get("status") != "ok":
-			error = subsonic_response.get("error", {})
-			logging.error(
-				"Airsonic star request failed for track id=%r code=%r message=%r",
-				track_object.url_key,
-				error.get("code"),
-				error.get("message"),
-			)
-			return False
-
-		return True
-
-	def unstar_track(self, track_object: TrackClass) -> bool:
-		try:
-			response = self.r("unstar", p={"id": track_object.url_key})
-		except Exception:
-			logging.exception("Error connect for unstar track on airsonic")
-			return False
-
-		if not response:
-			logging.error(f"Airsonic unstar request returned no response for track id={track_object.url_key!r}")
-			return False
-
-		subsonic_response = response.get("subsonic-response", {})
-		if subsonic_response.get("status") != "ok":
-			error = subsonic_response.get("error", {})
-			logging.error(
-				"Airsonic unstar request failed for track id=%r code=%r message=%r",
-				track_object.url_key,
-				error.get("code"),
-				error.get("message"),
-			)
-			return False
-
 		return True
 
 	def star_album(self, track_object: TrackClass) -> bool:
@@ -865,6 +1041,7 @@ class SubsonicService(RemotePlaylistSource):
 		"""Import the whole library, or only the music folder with that id."""
 		scope = {"musicFolderId": music_folder} if music_folder else {}
 		self.scanning = True
+		self.import_complete = False
 		self.gui.to_got = 0
 
 		existing: dict[str, int] = {}
@@ -941,7 +1118,8 @@ class SubsonicService(RemotePlaylistSource):
 		if search3_songs is not None:
 			songsets.append(search3_songs)
 		statuses = [0] * len(folders)
-		liked_track_ids: list[int] = []
+		# Folders that couldn't be read, so the import is incomplete
+		unread: list[str] = []
 
 		def getsongs(
 			index: int, folder_id: str, name: str, inner: bool = False, parent: dict[str, str | int] | None = None
@@ -955,12 +1133,14 @@ class SubsonicService(RemotePlaylistSource):
 
 			except json.decoder.JSONDecodeError:
 				logging.exception("Error reading Airsonic directory")
+				unread.append(folder_id)
 				if not inner:
 					statuses[index] = 2
 				self.show_message(_("Error reading Subsonic directory!"), mode="warning")
 				return
 			except Exception:
 				logging.exception("Unknown Error reading Airsonic directory")
+				unread.append(folder_id)
 				if not inner:
 					statuses[index] = 2
 				return
@@ -1139,14 +1319,19 @@ class SubsonicService(RemotePlaylistSource):
 			i += 1
 			while statuses.count(1) > 3:
 				time.sleep(0.1)
+			if self.cancel_scan:
+				break
 
 			statuses[i] = 1
 			t = threading.Thread(target=fetch, args=([i, folder_id, name]))
 			t.daemon = True
 			t.start()
 
-		while statuses.count(2) != len(statuses):
+		# Once cancelled, only wait for the folders already being read
+		while statuses.count(1) or (not self.cancel_scan and statuses.count(2) != len(statuses)):
 			time.sleep(0.1)
+		if self.cancel_scan:
+			raise ScanCancelledError
 
 		if tag_mode:
 			self._separate_albums([(song[0], folders[i][0]) for i, sset in enumerate(songsets) for song in sset])
@@ -1159,12 +1344,13 @@ class SubsonicService(RemotePlaylistSource):
 			self.scanning = False
 			return []
 
-		liked_tracks: set[str] = set()
-		starred2 = a.get("subsonic-response", {}).get("starred2", {})
-		for song in self._as_list(starred2.get("song")):
-			song_id = song.get("id")
-			if song_id:
-				liked_tracks.add(song_id)
+		# None when the stars couldn't be read, so loves are left alone
+		liked_tracks: set[str] | None = None
+		starred2 = a.get("subsonic-response", {}).get("starred2") if isinstance(a, dict) else None
+		if isinstance(starred2, dict):
+			liked_tracks = {song["id"] for song in self._as_list(starred2.get("song")) if song.get("id")}
+		# An unsent rating made here is newer than the server's
+		pending_ratings = self.tauon.server_sync.pending(SUBSONIC, RATING)
 
 		for sset in songsets:
 			for nt, name, song_id, rating in sset:
@@ -1175,30 +1361,17 @@ class SubsonicService(RemotePlaylistSource):
 				nt.index = id
 				self.pctl.master_library[id] = nt
 
-				if nt.url_key in liked_tracks:
-					liked_track_ids.append(nt.index)
-
 				playlist.append(nt.index)
 
-				if self.star_store.get_rating(nt.index) == 0 and rating == 0:
+				if nt.url_key in pending_ratings or (self.star_store.get_rating(nt.index) == 0 and rating == 0):
 					pass
 				else:
 					self.star_store.set_rating(nt.index, rating * 2)
 
-		def set_favs(d: list[int]) -> None:
-			for track_id in d:
-				if track_id == 0:
-					continue
+		if liked_tracks is not None:
+			self._apply_stars(playlist, liked_tracks)
 
-				star = self.tauon.star_store.full_get(track_id)
-				if star is None:
-					star = StarRecord()
-				if not star.loved:
-					star.loved = True
-				self.tauon.star_store.insert(track_id, star)
-
-		set_favs(liked_track_ids)
-
+		self.import_complete = not failed_albums and not unread
 		self.scanning = False
 		if not music_folder:
 			self.last_music = playlist

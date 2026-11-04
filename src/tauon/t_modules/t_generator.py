@@ -327,11 +327,28 @@ KINDS: list[Kind] = [
 
 	# Service sources
 	_fixed_kind("plex", ADD, ("plex",), lambda: "", lambda: "Plex", lambda: _("take the Plex library")),
+	_text_kind("plex_lib", ADD, ("plexlib",), lambda _v: _("Plex library"), "text", lambda: _("take Plex library")),
+	_text_kind("plex_pl", ADD, ("plexpl",), lambda _v: _("Plex playlist"), "text", lambda: _("take Plex playlist")),
 	_fixed_kind("jelly", ADD, ("jelly",), lambda: "", lambda: "Jellyfin", lambda: _("take the Jellyfin library")),
 	_text_kind("jelly_pl", ADD, ("jelly",), lambda _v: _("Jellyfin playlist"), "text", lambda: _("take Jellyfin playlist")),
+	_text_kind("jelly_lib", ADD, ("jellylib",), lambda _v: _("Jellyfin library"), "text", lambda: _("take Jellyfin library")),
+	_fixed_kind(
+		"jelly_fav", ADD, ("jellyfav",), lambda: "", lambda: _("Jellyfin favourite tracks"),
+		lambda: _("take Jellyfin favourite tracks")),
+	_fixed_kind(
+		"jelly_favalb", ADD, ("jellyfavalb",), lambda: "", lambda: _("Jellyfin favourite albums"),
+		lambda: _("take Jellyfin favourite albums")),
 	_fixed_kind("tau", ADD, ("tau",), lambda: "", lambda: "Tauon Satellite", lambda: _("take the Satellite playlist")),
+	_text_kind("tau_pl", ADD, ("tau",), lambda _v: _("Satellite playlist"), "text", lambda: _("take Satellite playlist")),
 	_fixed_kind("air", ADD, ("air",), lambda: "", lambda: "Subsonic", lambda: _("take the Subsonic library")),
 	_text_kind("air_pl", ADD, ("air",), lambda _v: _("Subsonic playlist"), "text", lambda: _("take Subsonic playlist")),
+	_text_kind("air_lib", ADD, ("airlib",), lambda _v: _("Subsonic library"), "text", lambda: _("take Subsonic library")),
+	_fixed_kind(
+		"air_fav", ADD, ("airfav",), lambda: "", lambda: _("Subsonic favourite tracks"),
+		lambda: _("take Subsonic favourite tracks")),
+	_fixed_kind(
+		"air_favalb", ADD, ("airfavalb",), lambda: "", lambda: _("Subsonic favourite albums"),
+		lambda: _("take Subsonic favourite albums")),
 	_text_kind("tidal_pl", ADD, ("tpl",), lambda _v: _("Tidal playlist"), "text", lambda: _("take Tidal playlist")),
 	_fixed_kind("tidal_albums", ADD, ("tfa",), lambda: "", lambda: _("Tidal albums"), lambda: _("take Tidal favourite albums")),
 	_fixed_kind("tidal_tracks", ADD, ("tft",), lambda: "", lambda: _("Tidal tracks"), lambda: _("take Tidal favourite tracks")),

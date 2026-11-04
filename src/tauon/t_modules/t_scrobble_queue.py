@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import logging
 import threading
+import time
 from contextlib import suppress
 from dataclasses import asdict, dataclass, field, fields
 from enum import Enum, auto
@@ -29,9 +30,14 @@ LIBREFM = "libre"
 LISTENBRAINZ = "lb"
 MALOJA = "maloja"
 SUBSONIC = "air"
+JELLYFIN = "jelly"
+PLEX = "plex"
+# Play counts on the track's own server rather than scrobbles
+SERVER_PLAYS = {SUBSONIC: "SUB", JELLYFIN: "JELY", PLEX: "PLEX"}
 
 SERVICE_NAMES = {
-	LASTFM: "Last.fm", LIBREFM: "Libre.fm", LISTENBRAINZ: "ListenBrainz", MALOJA: "Maloja", SUBSONIC: "Subsonic"}
+	LASTFM: "Last.fm", LIBREFM: "Libre.fm", LISTENBRAINZ: "ListenBrainz", MALOJA: "Maloja", SUBSONIC: "Subsonic",
+	JELLYFIN: "Jellyfin", PLEX: "Plex"}
 
 
 class Outcome(Enum):
@@ -56,7 +62,7 @@ class PendingScrobble:
 	release_mbid: str = ""
 	recording_mbid: str = ""
 	track_mbid: str = ""
-	server_id: str = ""  # Subsonic song id
+	server_id: str = ""  # Song id on the track's server, for SERVER_PLAYS services
 	track_id: int | None = None  # Library index, for syncing loves after sending
 	saved: bool = field(default=False, compare=False, repr=False)  # Mirrored to disk
 
@@ -92,7 +98,7 @@ def pending_from_track(track: TrackClass, service: str, timestamp: int) -> Pendi
 		release_mbid=track.musicbrainz_albumid or "",
 		recording_mbid=track.musicbrainz_recordingid or "",
 		track_mbid=track.musicbrainz_trackid or "",
-		server_id=track.url_key if service == SUBSONIC else "",
+		server_id=track.url_key if service in SERVER_PLAYS else "",
 		track_id=track.index,
 	)
 
@@ -111,6 +117,41 @@ def http_outcome(status: int) -> Outcome:
 	if status in (401, 403, 408, 429) or status >= 500:
 		return Outcome.RETRY
 	return Outcome.DROP
+
+
+class RetryBackoff:
+	"""Per-service retry times, doubling from RETRY_MIN_S up to RETRY_MAX_S while sends keep failing."""
+
+	RETRY_MIN_S = 60
+	RETRY_MAX_S = 15 * 60
+
+	def __init__(self) -> None:
+		self.retry_at: dict[str, float] = {}
+		self.retry_delay: dict[str, float] = {}
+
+	def waiting(self, service: str) -> bool:
+		return time.time() < self.retry_at.get(service, 0)
+
+	def succeeded(self, service: str) -> None:
+		self.retry_at.pop(service, None)
+		self.retry_delay.pop(service, None)
+
+	def failed(self, service: str) -> float:
+		"""Back off further, returning the new delay."""
+		delay = min(self.RETRY_MAX_S, max(self.RETRY_MIN_S, self.retry_delay.get(service, 0) * 2))
+		self.retry_delay[service] = delay
+		self.retry_at[service] = time.time() + delay
+		return delay
+
+	def retry_now(self, service: str) -> None:
+		"""Allow an immediate try, keeping the delay so another failure backs off further."""
+		self.retry_at.pop(service, None)
+
+	def next_in(self, services: Iterable[str]) -> float | None:
+		"""Seconds until the first of these services is due, None if none are waiting."""
+		now = time.time()
+		due = [self.retry_at[s] - now for s in services if self.retry_at.get(s, 0) > now]
+		return min(due) if due else None
 
 
 class ScrobbleQueue:
