@@ -16,8 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import faulthandler
 import logging
 import os
+import signal
 import sys
 from pathlib import Path
 
@@ -149,6 +151,16 @@ if debug:
 	file_handler.setFormatter(formatter)
 	logging.getLogger().addHandler(file_handler)
 	logging.info(f"Debug mode enabled - saving log to {user_directory / 'tauon.log'}")
+
+# Bundled builds leave SIGPIPE at its default action, which kills the process
+# without a trace. Dump the stacks first, then die as before (#2407).
+sigpipe_log = None
+if hasattr(signal, "SIGPIPE") and signal.getsignal(signal.SIGPIPE) == signal.SIG_DFL:
+	try:
+		sigpipe_log = (user_directory / "tauon-sigpipe.log").open("a", encoding="utf-8")
+		faulthandler.register(signal.SIGPIPE, file=sigpipe_log, all_threads=True, chain=True)
+	except OSError:
+		logging.exception("Failed to set up the SIGPIPE stack dump")
 
 fp = None
 dev_mode = (install_directory / ".dev").is_file()
