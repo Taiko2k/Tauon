@@ -593,6 +593,8 @@ class StreamFeeder:
 					pass  # previous chunk is still waiting to be accepted
 				elif resp is None or offset != want:
 					# (Re)open the request at the wanted offset
+					if resp is not None:
+						logging.debug(f"Stream: player moved from byte {offset} to {want}, reopening")
 					close_response()
 					if no_range and want > 0:
 						logging.error("Stream: server does not support range requests")
@@ -651,6 +653,10 @@ class StreamFeeder:
 						continue
 					if not chunk:
 						# End of response body
+						if size < 0 or offset >= size:
+							logging.debug(f"Stream: server finished at byte {offset}")
+						else:
+							logging.debug(f"Stream: server ended the response early at byte {offset} of {size}")
 						close_response()
 						if size < 0 or offset >= size:
 							aud.net_eof(gen)
@@ -674,6 +680,7 @@ class StreamFeeder:
 				fed = aud.net_feed(gen, offset, pending, len(pending))
 				if fed in (-1, -2):
 					# Stream gone, or a seek redirected the wanted offset
+					logging.debug(f"Stream: player refused byte {offset} ({fed}), closing")
 					close_response()
 					continue
 				if fed == 0:

@@ -1144,7 +1144,9 @@ static int64_t bs_make_space_locked() {
 	int64_t free_space = bs.capacity - bs.filled;
 	if (free_space > 0) return free_space;
 	int64_t discard = (bs.read_pos - bs_keep_behind()) - bs.win_start;
-	if (discard > 0) {
+	// Wait until a good amount can go, so a full buffer refills in steps
+	// rather than a small read at a time
+	if (discard >= bs_keep_behind()) {
 		bs_discard_front_locked(discard);
 		free_space = bs.capacity - bs.filled;
 	}
