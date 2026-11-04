@@ -60757,14 +60757,15 @@ def main(holder: Holder) -> None:
 	#x_menu.add(_("Cast…"), cast_search, cast_deco)
 
 
-	mode_menu.add(MenuItem(_("Tab"), tauon.set_mini_mode_D))
-	mode_menu.add(MenuItem(_("Mini"), tauon.set_mini_mode_A1))
-	# mode_menu.add(_('Mini Mode Large'), tauon.set_mini_mode_A2)
-	mode_menu.add(MenuItem(_("Signal"), tauon.set_mini_mode_E))
-	mode_menu.add(MenuItem(_("Slate"), tauon.set_mini_mode_C1))
-	mode_menu.add(MenuItem(_("Square"), tauon.set_mini_mode_B1))
-	mode_menu.add(MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
-	mode_menu.add(MenuItem(_("Lyrics Drawer"), tauon.toggle_mini_mode_lyrics, check_test=lambda: prefs.mini_mode_lyrics))
+	mode_menu.add_sub(_("Mini Mode"), 175)
+	mode_menu.add_to_sub(0, MenuItem(_("Tab"), tauon.set_mini_mode_D))
+	mode_menu.add_to_sub(0, MenuItem(_("Mini"), tauon.set_mini_mode_A1))
+	# mode_menu.add_to_sub(0, MenuItem(_("Mini Mode Large"), tauon.set_mini_mode_A2))
+	mode_menu.add_to_sub(0, MenuItem(_("Signal"), tauon.set_mini_mode_E))
+	mode_menu.add_to_sub(0, MenuItem(_("Slate"), tauon.set_mini_mode_C1))
+	mode_menu.add_to_sub(0, MenuItem(_("Square"), tauon.set_mini_mode_B1))
+	mode_menu.add_to_sub(0, MenuItem(_("Square Large"), tauon.set_mini_mode_B2))
+	mode_menu.add_to_sub(0, MenuItem(_("Lyrics Drawer"), tauon.toggle_mini_mode_lyrics, check_test=lambda: prefs.mini_mode_lyrics))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Switch to Compact Panel"), tauon.toggle_panel_type, tauon.panel_type_deco))
