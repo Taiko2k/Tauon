@@ -2,6 +2,11 @@
 Changelog
 ---------
 
+### v13.2.1
+
+ - Reworked server sync and library add
+ - Added transcode for remote servers
+
 ### v13.1.1
 
  - Added support for ARTISTS tags and settings for multi-artist separators
