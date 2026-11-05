@@ -52,7 +52,7 @@ See [BUILDING.md](BUILDING.md) for local development and native packaging instru
 
 <a href='https://flathub.org/apps/details/com.github.taiko2k.tauonmb'><img width='240' alt='Download on Flathub' src='https://dl.flathub.org/assets/badges/flathub-badge-en.png'/></a>
 
-Flatpak uses sandboxing, see [here](https://github.com/Taiko2k/TauonMusicBox/wiki/Sandboxing-Quirks) for notes.
+Flatpak uses sandboxing, [follow these steps after installing the Flatpak](https://github.com/Taiko2k/Tauon/wiki/Flatpak-Extra-Steps) to get Tauon working.
 
 There is also a 3rd party AppImage available [here](https://github.com/pkgforge-dev/Tauon-AppImage).
 
