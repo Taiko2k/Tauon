@@ -2984,6 +2984,8 @@ class PlayerCtl:
 		self.playlist_view_position = self.multi_playlist[self.active_playlist_viewing].position
 		self.selected_in_playlist = self.multi_playlist[self.active_playlist_viewing].selected
 		logging.debug("Position changed by playlist change")
+		if self.multi_playlist[self.active_playlist_viewing].uuid_int != self.gui.previous_playlist_id:
+			self.tauon.align_tracklist()
 		self.gui.shift_selection = [self.selected_in_playlist]
 
 		code = self.gen_codes.get(id)
@@ -3151,6 +3153,7 @@ class PlayerCtl:
 			self.default_playlist = self.multi_playlist[self.active_playlist_viewing].playlist_ids
 			self.playlist_view_position = self.multi_playlist[self.active_playlist_viewing].position
 			logging.debug("Position reset by playlist delete")
+			self.tauon.align_tracklist()
 			self.selected_in_playlist = self.multi_playlist[self.active_playlist_viewing].selected
 			self.gui.shift_selection = [self.selected_in_playlist]
 
@@ -7793,6 +7796,7 @@ class Tauon:
 		self.lyric_txt_checked: set[int]         = set()  # tracks already looked at for a .txt this session
 		self.lyric_sidecar_cache: tuple[int, float, tuple[Path | None, Path | None]] | None = None
 		self.scroll_hide_timer: Timer            = Timer(100)
+		self.tracklist_align_due: float          = 0  # monotonic time, 0 when nothing is scheduled
 		self.scroll_gallery_hide_timer: Timer    = Timer(100)
 		self.get_lfm_wait_timer: Timer           = Timer(10)
 		self.lyrics_fetch_timer: Timer           = Timer(10)
@@ -23149,6 +23153,25 @@ class Tauon:
 		sdl3.pump_events()
 		self.pctl.running = False
 		self.wake()
+
+	def align_tracklist(self) -> None:
+		"""Snap a part-scrolled tracklist to its top row. Only call when the snap can't be seen."""
+		self.smooth_scroll.reset_motion("playlist")
+		if self.gui.playlist_scroll_pixels:
+			self.gui.playlist_scroll_pixels = 0
+			self.gui.request_tracklist_redraw()
+
+	def schedule_tracklist_align(self) -> None:
+		self.tracklist_align_due = time.monotonic() + TRACKLIST_ALIGN_DELAY
+
+	def run_due_tracklist_align(self) -> None:
+		if not self.tracklist_align_due or time.monotonic() < self.tracklist_align_due:
+			return
+		self.tracklist_align_due = 0
+		# Read the live flags: the window may have come back during the delay
+		out_of_sight = sdl3.SDL_WINDOW_HIDDEN | sdl3.SDL_WINDOW_MINIMIZED | sdl3.SDL_WINDOW_OCCLUDED
+		if sdl3.get_window_flags(self.t_window) & out_of_sight:
+			self.align_tracklist()
 
 	def min_to_tray(self) -> None:
 		sdl3.hide_window(self.t_window)
@@ -39569,8 +39592,6 @@ class StandardPlaylist:
 			tauon.scroll_hide_timer.set()
 			gui.frame_callback_list.append(TestTimer(0.9))
 
-		align_tracklist_to_row = False
-
 		# Show notice if playlist empty
 		self.empty_notice_anchor = None
 		if len(pctl.default_playlist) == 0:
@@ -39721,7 +39742,6 @@ class StandardPlaylist:
 						if inp.d_mouse_click and track_position in self.gui.shift_selection and coll_point(
 							self.inp.last_click_location, (input_box)):
 							gui.click_time -= 1.5
-							align_tracklist_to_row = True
 							pctl.jump(track_id, track_position)
 							line_hit = False
 							inp.mouse_click = False
@@ -39835,7 +39855,6 @@ class StandardPlaylist:
 			if self.inp.key_shift_down is False and inp.d_mouse_click and line_hit and track_position == pctl.selected_in_playlist and coll_point(
 					self.inp.last_click_location, input_box):
 
-				align_tracklist_to_row = True
 				pctl.jump(track_id, track_position)
 
 				gui.click_time -= 1.5
@@ -40011,9 +40030,6 @@ class StandardPlaylist:
 		# `number` is rebound by the draw loop below, so keep the row count for empty-space hit testing
 		rows_used = number
 		# ---------------------------------------------------------------------------------------
-
-		if align_tracklist_to_row:
-			gui.playlist_scroll_pixels = 0
 
 		# For every track in view
 		# for i in range(gui.playlist_view_length + 1):
@@ -52642,6 +52658,7 @@ class XcursorImage(ctypes.Structure):
 		]
 
 
+TRACKLIST_ALIGN_DELAY = 1.0  # seconds, outlasts a minimise animation
 SCROLL_PHYSICS_WHEEL_VELOCITY = 16.0
 SCROLL_PHYSICS_PRECISE_WHEEL_PIXEL_MULTIPLIER = 0.11
 SCROLL_PHYSICS_TRACKLIST_PRECISE_SCALE = 1.0
@@ -63530,8 +63547,12 @@ def main(holder: Holder) -> None:
 					# size stays frozen until the drag ends.
 					gui.request_frame()
 
+				elif event.type in (sdl3.SDL_EVENT_WINDOW_HIDDEN, sdl3.SDL_EVENT_WINDOW_OCCLUDED):
+					tauon.schedule_tracklist_align()
+
 				elif event.type == sdl3.SDL_EVENT_WINDOW_MINIMIZED:
 					gui.lowered = True
+					tauon.schedule_tracklist_align()
 					# if prefs.min_to_tray:
 					# 	tray.down()
 					# tauon.thread_manager.sleep()
@@ -63568,6 +63589,7 @@ def main(holder: Holder) -> None:
 					gui.mouse_in_window = False
 					gui.request_frame()
 
+		tauon.run_due_tracklist_align()
 		tauon.queue_box.update_auto_queue()
 		tauon.dl_mon.scan()
 		if mouse_moved and tauon.fields.test():
