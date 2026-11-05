@@ -151,6 +151,9 @@ class Prefs:
 	show_notifications: bool = True
 
 	true_shuffle:      bool = True
+	ban_skip_shuffle:  bool = True
+	ban_skip_normal:   bool = False
+	banned_folders:    set[str] = field(default_factory=set[str])
 	append_total_time: bool = False
 	backend:           int  = 4  # 1 basslib(removed), 2 gstreamer, 4 phazor
 

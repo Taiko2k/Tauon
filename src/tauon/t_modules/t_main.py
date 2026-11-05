@@ -1191,11 +1191,14 @@ class GuiVar:
 		self.heart_row_icon          = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-track.png", True)
 		self.heart_notify_icon       = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-notify.png", True)
 		self.heart_notify_break_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-notify-break.png", True)
+		self.ban_row_icon            = asset_loader(self.bag, self.bag.loaded_asset_dc, "ban-track.png", True)
 		self.star_pc_icon            = asset_loader(self.bag, self.bag.loaded_asset_dc, "star-pc.png", True)
 		self.star_row_icon           = asset_loader(self.bag, self.bag.loaded_asset_dc, "star.png", True)
 		self.star_half_row_icon      = asset_loader(self.bag, self.bag.loaded_asset_dc, "star-half.png", True)
 
 		self.heartx_icon        = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-menu.png", True))
+		self.ban_icon           = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "ban-menu.png", True))
+		self.ban_folder_icon    = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "ban-menu.png", True))
 		self.transcode_icon     = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "transcode.png", True))
 		self.mod_folder_icon    = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "mod_folder.png", True))
 		self.settings_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "settings2.png", True))
@@ -1459,6 +1462,9 @@ class StarStore:
 		else:
 			self.db[key].playtime += record.playtime
 			self.db[key].rating = record.rating
+			if record.hated and not self.db[key].hated:
+				self.db[key].hated = True
+				self.db[key].hated_timestamp = record.hated_timestamp
 
 class AlbumStarStore:
 
@@ -3342,6 +3348,30 @@ class PlayerCtl:
 		self.shuffle_pools[pl_id] = new_pool
 		logging.info("Refill shuffle pool")
 
+	def is_banned(self, track_id: int) -> bool:
+		"""Whether the track, or the folder it's in, is banned."""
+		track = self.master_library.get(track_id)
+		if track is None:
+			return False
+		star = self.star_store.db.get(self.star_store.object_key(track))
+		return (star is not None and star.hated) or track.parent_folder_path in self.prefs.banned_folders
+
+	def skips_banned(self, playlist: list[int], shuffle: bool) -> bool:
+		"""Whether playback avoids bans. A playlist of nothing but bans still plays."""
+		enabled = self.prefs.ban_skip_shuffle if shuffle else self.prefs.ban_skip_normal
+		return enabled and not all(self.is_banned(track_id) for track_id in playlist)
+
+	def move_banned_folders(self, old: str, new: str) -> None:
+		"""Carry folder bans along when a folder moves on disk."""
+		banned = self.prefs.banned_folders
+		for path in list(banned):
+			if path == old:
+				banned.discard(path)
+				banned.add(new)
+			elif path.startswith(os.path.join(old, "")):
+				banned.discard(path)
+				banned.add(os.path.join(new, os.path.relpath(path, old)))
+
 	def refresh_now_playing_fire(self, force: bool = False) -> None:
 		if self.mpris is not None:
 			self.mpris.update(force=force)
@@ -4098,10 +4128,15 @@ class PlayerCtl:
 				if p is not None:
 					self.playlist_playing_position = p
 
-			self.playlist_playing_position -= 1
-			self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
-			self.queue_step = len(self.track_queue) - 1
-			self.play_target(jump=True, play=play)
+			position = self.playlist_playing_position - 1
+			if self.skips_banned(self.playing_playlist(), shuffle=False):
+				while position >= 0 and self.is_banned(self.playing_playlist()[position]):
+					position -= 1
+			if position >= 0:
+				self.playlist_playing_position = position
+				self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
+				self.queue_step = len(self.track_queue) - 1
+				self.play_target(jump=True, play=play)
 
 		elif self.random_mode is True and self.queue_step > 0:
 			self.queue_step -= 1
@@ -4447,15 +4482,16 @@ class PlayerCtl:
 					ti = self.get_track(pp[self.playlist_playing_position])
 
 					i = self.playlist_playing_position
+					skip_banned = self.skips_banned(pp, shuffle=self.random_mode)
 
-					# Test if next track is in same folder
-					if i + 1 < len(pp):
-						nt = self.get_track(pp[i + 1])
-						if ti.parent_folder_path == nt.parent_folder_path:
-							# The next track is in the same folder
-							# so advance normally
+					# Test if a following track to play is in same folder
+					following = i + 1
+					while following < len(pp) and self.get_track(pp[following]).parent_folder_path == ti.parent_folder_path:
+						if not (skip_banned and self.is_banned(pp[following])):
+							# It's in the same folder so advance normally
 							self.advance(quiet=True, end=True)
 							return
+						following += 1
 
 					# We need to backtrack to see where the folder begins
 					i -= 1
@@ -4466,6 +4502,14 @@ class PlayerCtl:
 							break
 						i -= 1
 					i = max(i, 0)
+
+					if skip_banned:
+						first = i
+						while first < len(pp) and self.get_track(pp[first]).parent_folder_path == ti.parent_folder_path:
+							if not self.is_banned(pp[first]):
+								i = first
+								break
+							first += 1
 
 					self.selected_in_playlist = i
 					self.gui.shift_selection = [i]
@@ -4514,7 +4558,8 @@ class PlayerCtl:
 					and self.master_library[pp[self.playlist_playing_position + 1]].filename == \
 					self.master_library[pp[self.playlist_playing_position]].filename and int(
 				self.master_library[pp[self.playlist_playing_position]].track_number) == int(
-				self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1:
+				self.master_library[pp[self.playlist_playing_position + 1]].track_number) - 1 and \
+					not (self.prefs.ban_skip_normal and self.is_banned(pp[self.playlist_playing_position + 1])):
 
 				#  not (self.force_queue and not self.pause_queue) and \
 
@@ -4839,6 +4884,7 @@ class PlayerCtl:
 			new_step = self.queue_step + 1
 
 			if new_step == len(self.track_queue):
+				skip_banned = self.skips_banned(self.playing_playlist(), shuffle=True)
 
 				if self.album_repeat_mode and self.repeat_mode:
 					# Album shuffle mode
@@ -4860,6 +4906,10 @@ class PlayerCtl:
 							matches.append((i, p))
 
 					if matches:
+						skip_banned = skip_banned and any(not self.is_banned(match[1]) for match in matches)
+						if skip_banned:
+							matches = [match for match in matches if not self.is_banned(match[1])]
+
 						# Avoid a repeat of same track
 						if len(matches) > 1 and (k, ti.index) in matches:
 							matches.remove((k, ti.index))
@@ -4877,6 +4927,8 @@ class PlayerCtl:
 										continue
 
 									ref = pool.pop()
+									if skip_banned and self.is_banned(ref[1]):
+										continue
 									if dry:
 										pool.append(ref)
 										return ref[1]
@@ -4913,6 +4965,8 @@ class PlayerCtl:
 									continue
 
 								ref = pool.pop()
+								if skip_banned and self.is_banned(ref):
+									continue
 								if dry:
 									pool.append(ref)
 									return ref
@@ -4928,7 +4982,10 @@ class PlayerCtl:
 							# Refill the pool
 							self.update_shuffle_pool(pl.uuid_int)
 					else:
-						random_jump = random.randrange(len(self.playing_playlist()))  # not used
+						positions = range(len(self.playing_playlist()))  # not used
+						if skip_banned:
+							positions = [i for i in positions if not self.is_banned(self.playing_playlist()[i])]
+						random_jump = random.choice(positions)
 
 					self.playlist_playing_position = random_jump
 					self.track_queue.append(self.playing_playlist()[random_jump])
@@ -4950,8 +5007,14 @@ class PlayerCtl:
 
 		# If not random mode, Step down 1 on the playlist
 		elif self.random_mode is False and len(self.playing_playlist()) > 0:
+			skip_banned = self.skips_banned(self.playing_playlist(), shuffle=False)
+			last_position = len(self.playing_playlist()) - 1
+			if skip_banned:
+				while self.is_banned(self.playing_playlist()[last_position]):
+					last_position -= 1
+
 			# Stop at end of playlist
-			if self.playlist_playing_position == len(self.playing_playlist()) - 1:
+			if last_position <= self.playlist_playing_position <= len(self.playing_playlist()) - 1:
 				if dry:
 					return None
 				if self.prefs.end_setting == "stop":
@@ -5023,9 +5086,16 @@ class PlayerCtl:
 				if len(self.playing_playlist()) == self.playlist_playing_position + 1:
 					return None
 
+				next_position = self.playlist_playing_position + 1
+				if skip_banned:
+					while next_position < len(self.playing_playlist()) and self.is_banned(self.playing_playlist()[next_position]):
+						next_position += 1
+					if next_position == len(self.playing_playlist()):
+						return None
+
 				if dry:
-					return self.playing_playlist()[self.playlist_playing_position + 1]
-				self.playlist_playing_position += 1
+					return self.playing_playlist()[next_position]
+				self.playlist_playing_position = next_position
 				self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 
 				# logging.info("standand advance")
@@ -5045,12 +5115,20 @@ class PlayerCtl:
 
 			# Checks
 			if po is not None and len(self.playing_playlist()) > 0:
+				pp = self.playing_playlist()
+				skip_banned = self.skips_banned(pp, shuffle=True)
+				next_position = self.playlist_playing_position + 1
+				if skip_banned:
+					# Step over banned tracks in this album
+					while next_position < len(pp) and self.is_banned(pp[next_position]) \
+							and self.get_track(pp[next_position]).parent_folder_path == po.parent_folder_path:
+						next_position += 1
+
 				# If we at end of playlist, we'll go to a new album
-				if len(self.playing_playlist()) == self.playlist_playing_position + 1:
+				if len(pp) <= next_position:
 					redraw = True
 				# If the next track is a new album, go to a new album
-				elif po.parent_folder_path != self.get_track(
-						self.playing_playlist()[self.playlist_playing_position + 1]).parent_folder_path:
+				elif po.parent_folder_path != self.get_track(pp[next_position]).parent_folder_path:
 					redraw = True
 				# Always redraw on press in album shuffle lockdown
 				if self.prefs.album_shuffle_lock_mode and not end:
@@ -5058,8 +5136,8 @@ class PlayerCtl:
 
 				if not redraw:
 					if dry:
-						return self.playing_playlist()[self.playlist_playing_position + 1]
-					self.playlist_playing_position += 1
+						return pp[next_position]
+					self.playlist_playing_position = next_position
 					self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
 					self.queue_step = len(self.track_queue) - 1
 					# self.queue_target = len(self.track_queue) - 1
@@ -5068,16 +5146,20 @@ class PlayerCtl:
 				else:
 					if dry:
 						return None
+					# Each album starts at its first track we can play, a fully banned one has none
 					albums: list[int] = []
 					current_folder = ""
-					for i in range(len(self.playing_playlist())):
-						if i == 0:
+					needs_start = False
+					for i, track_id in enumerate(pp):
+						folder = self.master_library[track_id].parent_folder_path
+						if i == 0 or folder != current_folder:
+							current_folder = folder
+							needs_start = True
+						if needs_start and not (skip_banned and self.is_banned(track_id)):
 							albums.append(i)
-							current_folder = self.master_library[self.playing_playlist()[i]].parent_folder_path
-						elif self.master_library[self.playing_playlist()[i]].parent_folder_path != current_folder:
-							current_folder = self.master_library[self.playing_playlist()[i]].parent_folder_path
-							albums.append(i)
+							needs_start = False
 
+					first_album = albums[0]
 					random.shuffle(albums)
 
 					for a in albums:
@@ -5091,7 +5173,7 @@ class PlayerCtl:
 							break
 					else:
 						# There was no different album; restart from the first album in the playlist.
-						a = 0
+						a = first_album
 						self.playlist_playing_position = a
 						self.track_queue.append(self.playing_playlist()[a])
 						self.queue_step = len(self.track_queue) - 1
@@ -13521,6 +13603,47 @@ class Tauon:
 		shoot_love.daemon = True
 		shoot_love.start()
 
+	def ban_track_menu_colour(self) -> ColourRGBA | None:
+		if self.get_ban_index(self.track_menu.reference.track_id):
+			return ColourRGBA(240, 85, 35, 255)
+		return None
+
+	def ban_folder_menu_colour(self) -> ColourRGBA | None:
+		if self.pctl.get_track(self.folder_menu.reference.track_id).parent_folder_path in self.prefs.banned_folders:
+			return ColourRGBA(240, 85, 35, 255)
+		return None
+
+	def get_ban_index(self, index: int) -> bool:
+		star = self.star_store.full_get(index)
+		return star is not None and star.hated
+
+	def ban_track_deco(self, ref: MenuTrackRef) -> Decorator:
+		if self.get_ban_index(ref.track_id):
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Un-Ban Track"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Ban Track"))
+
+	def toggle_track_ban(self, ref: MenuTrackRef) -> None:
+		star = self.star_store.full_get(ref.track_id)
+		if star is None:
+			star = StarRecord()
+		star.hated ^= True
+		star.hated_timestamp = time.time()
+		self.star_store.insert(ref.track_id, star)
+		self.queue_box.drop_banned_auto_items()
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
+
+	def ban_folder_deco(self, ref: MenuTrackRef) -> Decorator:
+		if self.pctl.get_track(ref.track_id).parent_folder_path in self.prefs.banned_folders:
+			return Decorator(self.colours.menu_text, self.colours.menu_background, _("Un-Ban Folder"))
+		return Decorator(self.colours.menu_text, self.colours.menu_background, _("Ban Folder"))
+
+	def toggle_folder_ban(self, ref: MenuTrackRef) -> None:
+		self.prefs.banned_folders ^= {self.pctl.get_track(ref.track_id).parent_folder_path}
+		self.queue_box.drop_banned_auto_items()
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
+
 	def add_to_queue(self, ref: MenuTrackRef) -> None:
 		self.pctl.add_to_queue(queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
 		self.queue_timer_set()
@@ -13598,15 +13721,27 @@ class Tauon:
 		self.pctl.force_queue.insert(0, queue_item_gen(ref.track_id, ref.position, ref.playlist_id))
 
 	def delete_track(self, ref: MenuTrackRef) -> None:
+		"""Asks before deleting the file, holding shift skips the question."""
 		tr = self.pctl.get_track(ref.track_id)
-		fullpath = tr.fullpath
-
-		if self.windows:
-			fullpath = fullpath.replace("/", "\\")
-
 		if tr.is_network:
 			self.show_message(_("Cannot delete a network track"))
 			return
+
+		if self.inp.key_shift_down or self.inp.key_shiftr_down:
+			self.delete_track_file(ref)
+			return
+
+		name = tr.filename if len(tr.filename) <= 60 else tr.filename[:57] + "…"
+		self.gui.message_box_confirm_callback = self.delete_track_file
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = (ref,)
+		self.show_message(_("Are you sure you want to delete file: {name}?").format(name=name), mode="confirm")
+
+	def delete_track_file(self, ref: MenuTrackRef) -> None:
+		fullpath = self.pctl.get_track(ref.track_id).fullpath
+
+		if self.windows:
+			fullpath = fullpath.replace("/", "\\")
 
 		removed_positions = [i for i, track_id in enumerate(self.pctl.default_playlist) if track_id == ref.track_id]
 		while ref.track_id in self.pctl.default_playlist:
@@ -13808,6 +13943,8 @@ class Tauon:
 				self.pctl.revert()
 			return
 
+		self.pctl.move_banned_folders(old, new_parent_path)
+
 		for key, track_object, parent_folder_name, parent_folder_path, fullpath in affected_tracks:
 			track_object.parent_folder_name = parent_folder_name
 			track_object.parent_folder_path = parent_folder_path
@@ -13892,6 +14029,7 @@ class Tauon:
 		# Fix any other tracks paths that contain the old path
 		old = track.parent_folder_path
 		new_parent_path = os.path.join(upper_folder, folder_name)
+		self.pctl.move_banned_folders(old, new_parent_path)
 		for key, object in self.pctl.master_library.items():
 			if os.path.normpath(object.fullpath)[:len(old)] == os.path.normpath(old) \
 					and os.path.normpath(object.fullpath)[len(old)] in ("/", "\\"):
@@ -13955,7 +14093,10 @@ class Tauon:
 		return found
 
 	def reset_play_count(self, index: int) -> None:
+		star = self.star_store.full_get(index)
 		self.star_store.remove(index)
+		if star is not None and star.hated:
+			self.star_store.insert(index, StarRecord(hated=True, hated_timestamp=star.hated_timestamp))
 
 	def vacuum_playtimes(self, ref: MenuTrackRef) -> None:
 		track_id = ref.track_id
@@ -13979,16 +14120,26 @@ class Tauon:
 					to_del.append(key)
 					total_playtime += value.playtime
 
+			banned = {key: self.star_store.db[key].hated_timestamp for key in to_del if self.star_store.db[key].hated}
+
 			for key in to_del:
 				del self.star_store.db[key]
 
 			key = self.star_store.object_key(tr)
 			value = StarRecord(playtime=total_playtime)
+			if key in banned:
+				value.hated = True
+				value.hated_timestamp = banned[key]
 			if key not in self.star_store.db:
 				logging.info("Saving value")
 				self.star_store.db[key] = value
 			else:
 				logging.error("KEY ALREADY HERE?")
+
+			# Other copies of the song keep their own ban
+			for other_key, timestamp in banned.items():
+				if other_key != key:
+					self.star_store.db[other_key] = StarRecord(hated=True, hated_timestamp=timestamp)
 
 	def intel_moji(self, ref: MenuTrackRef) -> None:
 		self.gui.request_tracklist_redraw()
@@ -14843,7 +14994,10 @@ class Tauon:
 	def random_track(self) -> None:
 		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_playing].playlist_ids
 		if playlist:
-			random_position = random.randrange(0, len(playlist))
+			positions = range(len(playlist))
+			if self.pctl.skips_banned(playlist, shuffle=True):
+				positions = [i for i in positions if not self.pctl.is_banned(playlist[i])]
+			random_position = random.choice(positions)
 			track_id = playlist[random_position]
 			self.pctl.jump(track_id, random_position)
 			self.pctl.show_current()
@@ -14852,7 +15006,10 @@ class Tauon:
 		folders = {}
 		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_playing].playlist_ids
 		if playlist:
+			skip_banned = self.pctl.skips_banned(playlist, shuffle=True)
 			for i, id in enumerate(playlist):
+				if skip_banned and self.pctl.is_banned(id):
+					continue
 				track = self.pctl.get_track(id)
 				if track.parent_folder_path not in folders:
 					folders[track.parent_folder_path] = (id, i)
@@ -16075,6 +16232,12 @@ class Tauon:
 			self.ddt.text((tx + 5 * self.gui.scale, ty + 4 * self.gui.scale), _("You"), ColourRGBA(250, 250, 250, 255), 13, bg=ColourRGBA(15, 15, 15, 255))
 
 		self.gui.heart_row_icon.render(x, yy, ColourRGBA(244, 100, 100, 255))
+
+	def display_ban_icon(self, x: int, yy: int) -> None:
+		self.gui.ban_row_icon.render(x, yy - 1 * self.gui.scale, ColourRGBA(70, 70, 70, 255))
+
+	def display_folder_ban_icon(self, x: int, yy: int) -> None:
+		self.gui.ban_row_icon.render(x, yy - 1 * self.gui.scale, self.colours.star_line)
 
 	def display_friend_heart(self, x: int, yy: int, name: str, just: int = 0) -> None:
 		self.gui.heart_row_icon.render(x, yy, self.heart_colours.get(name))
@@ -19612,6 +19775,9 @@ class Tauon:
 			new_star.playtime += old_star.playtime
 			if old_star.rating > 0 and new_star.rating == 0:
 				new_star.rating = old_star.rating
+			if old_star.hated and not new_star.hated:
+				new_star.hated = True
+				new_star.hated_timestamp = old_star.hated_timestamp
 
 			if old_key in self.star_store.db:
 				del self.star_store.db[old_key]
@@ -21163,6 +21329,15 @@ class Tauon:
 					count += 1
 					star_x += self.gui.heart_row_icon.w + spacing + 2
 
+			if self.get_ban_index(index):
+				yy = ry + (self.gui.playlist_row_height // 2) - (5 * self.gui.scale)
+				if self.gui.scale == 1.25:
+					yy += 1
+				xxx = star_x + 3 * self.gui.scale if star_x > 0 else 0
+				x = width + start_x - 53 * self.gui.scale - offset_font_extra - xxx
+				self.f_store.store(self.display_ban_icon, (x, yy))
+				star_x += 19 * self.gui.scale
+
 			# Draw track number/index
 			display_queue = False
 
@@ -21571,6 +21746,7 @@ class Tauon:
 			prefs.libre_fm_username,  # 208
 			prefs.auto_libre_fm,  # 209
 			SEARCH_CACHE_FORMAT,  # 210
+			sorted(prefs.banned_folders),  # 211
 		]
 
 		for slot, value in db_snapshot.items():
@@ -33153,6 +33329,8 @@ class Over:
 			_("End of playlist action"): "loop repeat advance continue next playlist cycle stop finish end autoplay",
 			_("Block suspend"): "inhibit sleep suspend screensaver standby keep awake caffeine power",
 			_("Resume on restart"): "restore continue startup launch open remember position session",
+			_("Skip bans in shuffle"): "ban banned block hate dislike exclude random album folder",
+			_("Skip bans in normal playback"): "ban banned block hate dislike exclude folder",
 			_("Resume from suspend"): "sleep wake continue laptop lid hibernate session",
 			_("Mode"): "replaygain replay gain loudness matching volume normalise normalize normalization louder quieter level r128 album track",
 			_("Pre-amp"): "preamp gain boost louder quieter volume db decibel replaygain",
@@ -33814,6 +33992,11 @@ class Over:
 			),
 		)
 		tauon = self.tauon
+		skip_old = (prefs.ban_skip_shuffle, prefs.ban_skip_normal)
+		prefs.ban_skip_shuffle = rows.switch(prefs.ban_skip_shuffle, _("Skip bans in shuffle"), _("Leave banned tracks and folders out of shuffle."))
+		prefs.ban_skip_normal = rows.switch(prefs.ban_skip_normal, _("Skip bans in normal playback"), _("Step over banned tracks and folders."))
+		if skip_old != (prefs.ban_skip_shuffle, prefs.ban_skip_normal):
+			tauon.queue_box.drop_banned_auto_items()
 		play_lock_old = prefs.block_suspend
 		prefs.block_suspend = rows.switch(prefs.block_suspend, _("Block suspend"), _("Keep the system awake during playback."))
 		if tauon.update_play_lock is None:
@@ -40139,6 +40322,10 @@ class StandardPlaylist:
 					tauon.style_overlay.tracklist_sample,
 					0.2, colours.playlist_panel_background)
 
+				folder_banned = tr.parent_folder_path in prefs.banned_folders
+				ban_w = round(18 * gui.scale) if folder_banned else 0
+				ban_y = height + 3 * gui.scale
+
 				star_offset = 0
 				if gui.show_album_ratings:
 					star_offset = round(72 * gui.scale)
@@ -40216,7 +40403,9 @@ class StandardPlaylist:
 							(ex - run, height, 1), tr.genre, colour,
 							gui.row_font_size + gui.pl_title_font_offset)
 
-					w2 = ddt.text((xx, height), title_line, folder_title_colour, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale) + folder_title_right_pad))
+					w2 = ddt.text((xx, height), title_line, folder_title_colour, gui.row_font_size + gui.pl_title_font_offset, max_w=ww - (start_offset + run + round(10 * gui.scale) + folder_title_right_pad + ban_w))
+					if folder_banned:
+						tauon.display_folder_ban_icon(xx + w2 + round(6 * gui.scale), ban_y)
 				else:
 					date_w = 0
 					if date:
@@ -40227,7 +40416,7 @@ class StandardPlaylist:
 						if qq > 1:
 							date_w -= 1 * gui.scale
 
-					aa = 0
+					aa = ban_w
 
 					ft_width = ddt.get_text_w(line, gui.row_font_size + gui.pl_title_font_offset)
 					left_align = highlight_width - date_w - 13 * gui.scale - light_offset
@@ -40242,11 +40431,15 @@ class StandardPlaylist:
 							folder_title_colour,
 							gui.row_font_size + gui.pl_title_font_offset,
 							highlight_width - date_w - extra - star_offset - folder_title_right_pad)
+						if folder_banned:
+							tauon.display_folder_ban_icon(left + gui.highlight_left + 8 * gui.scale, ban_y)
 					else:
 						ddt.text(
 							(ex - date_w, height, 1), line,
 							folder_title_colour,
 							gui.row_font_size + gui.pl_title_font_offset)
+						if folder_banned:
+							tauon.display_folder_ban_icon(ex - date_w - ft_width - ban_w, ban_y)
 
 				# -----
 
@@ -40559,6 +40752,10 @@ class StandardPlaylist:
 								if run < start + 100 * gui.scale:
 									j = 1  # justify left
 								self.tauon.display_you_heart(run + 6 * gui.scale, yy, j)
+								u += 18 * gui.scale
+
+							if tauon.get_ban_index(n_track.index):
+								tauon.display_ban_icon(run + u + 1 * gui.scale, yy)
 								u += 18 * gui.scale
 
 							count = 0
@@ -46387,6 +46584,28 @@ class QueueBox:
 		with DATABASE_LOCK, self.auto_queue_lock:
 			self._update_auto_queue(advanced=advanced)
 
+	def drop_banned_auto_items(self) -> None:
+		"""Take bans out of the automatic part of the queue, then top it back up."""
+		if not self.prefs.auto_queue:
+			return
+		pctl = self.pctl
+		with DATABASE_LOCK, self.auto_queue_lock:
+			if not pctl.skips_banned(pctl.playing_playlist(), pctl.random_mode):
+				return
+			kept = []
+			for item in pctl.force_queue:
+				if item.tracks is not None:
+					item.tracks[:] = [track for track in item.tracks if not (track.auto_queued and pctl.is_banned(track.track_id))]
+					if item.tracks or not item.auto_queued:
+						kept.append(item)
+				elif not (item.auto_queued and pctl.is_banned(item.track_id)):
+					kept.append(item)
+			if len(kept) != len(pctl.force_queue):
+				self.scroll_position = 0
+				self.dragging = None
+			pctl.force_queue[:] = kept
+			self._update_auto_queue()
+
 	def _update_auto_queue(self, *, advanced: bool = False) -> None:
 		if self.pctl.playing_state == PlayingState.URL_STREAM or self.pctl.pause_queue:
 			return
@@ -46423,7 +46642,10 @@ class QueueBox:
 		if needed > 0:
 			playlist = pctl.playing_playlist()
 			excluded = {track.track_id for track in queued}
+			skip_banned = pctl.skips_banned(playlist, pctl.random_mode)
 			if pctl.random_mode:
+				if skip_banned:
+					excluded.update(track_id for track_id in playlist if pctl.is_banned(track_id))
 				if playing is not None:
 					excluded.add(playing.index)
 				positions = {track_id: position for position, track_id in enumerate(playlist) if track_id in pctl.master_library}
@@ -46468,7 +46690,7 @@ class QueueBox:
 						position = 0
 					track_id = playlist[position]
 					self.auto_queue_position = (position, track_id)
-					if track_id not in pctl.master_library or (not repeat and track_id in excluded):
+					if track_id not in pctl.master_library or (not repeat and track_id in excluded) or (skip_banned and pctl.is_banned(track_id)):
 						continue
 					pctl.force_queue.append(queue_item_gen(track_id, position, playlist_id, auto_queued=True))
 					excluded.add(track_id)
@@ -55650,6 +55872,8 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("playback-follow-cursor", prefs.playback_follow_cursor)
 	cf.update_value("back-restarts", prefs.back_restarts)
 	cf.update_value("resume-on-advance", prefs.resume_on_jump)
+	cf.update_value("skip-banned-in-shuffle", prefs.ban_skip_shuffle)
+	cf.update_value("skip-banned-in-normal-playback", prefs.ban_skip_normal)
 	cf.update_value("end-queue-stop", prefs.stop_end_queue)
 	cf.update_value("block-suspend", prefs.block_suspend)
 	cf.update_value("allow-video-formats", prefs.allow_video_formats)
@@ -55957,6 +56181,12 @@ def load_prefs(bag: Bag) -> None:
 	prefs.resume_on_jump = cf.sync_add(
 		"bool", "resume-on-advance", prefs.resume_on_jump,
 		"When paused, pressing back or next button starts playback.")
+	prefs.ban_skip_shuffle = cf.sync_add(
+		"bool", "skip-banned-in-shuffle", prefs.ban_skip_shuffle,
+		"Shuffle and random albums leave out banned tracks and folders.")
+	prefs.ban_skip_normal = cf.sync_add(
+		"bool", "skip-banned-in-normal-playback", prefs.ban_skip_normal,
+		"Normal playback steps over banned tracks and folders.")
 	prefs.stop_end_queue = cf.sync_add(
 		"bool", "end-queue-stop", prefs.stop_end_queue,
 		"Queue will always enable auto-stop on last track")
@@ -59249,6 +59479,8 @@ def main(holder: Holder) -> None:
 				# Older search strings embedded lyrics text
 				search_string_cache = {}
 				search_dia_string_cache = {}
+			if len(save) > 211 and save[211] is not None:
+				prefs.banned_folders = set(save[211])
 
 			del save
 			state_loaded = True
@@ -60518,6 +60750,11 @@ def main(holder: Holder) -> None:
 	# Mark track as 'liked'
 	track_menu.add(MenuItem(_("Love"), tauon.love_index, tauon.love_decox, pass_ref=True, pass_ref_deco=True, icon=gui.heartx_icon))
 
+	gui.ban_icon.colour = ColourRGBA(55, 55, 55, 255)
+	gui.ban_icon.xoff = 2
+	gui.ban_icon.colour_callback = tauon.ban_track_menu_colour
+	track_menu.add(MenuItem(_("Ban Track"), tauon.toggle_track_ban, tauon.ban_track_deco, pass_ref=True, pass_ref_deco=True, icon=gui.ban_icon))
+
 	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
 
 	track_menu.add(MenuItem(_("↳ After Current Track"), tauon.add_to_queue_next, pass_ref=True, show_test=inp.test_shift))
@@ -60538,7 +60775,7 @@ def main(holder: Holder) -> None:
 
 	track_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
 
-	track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=True, icon=gui.delete_icon, show_test=inp.test_shift))
+	track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=True, icon=gui.delete_icon))
 
 	track_menu.br()
 
@@ -60571,6 +60808,11 @@ def main(holder: Holder) -> None:
 	# folder_menu.add(_("Add Album to Queue"), tauon.add_album_to_queue, pass_ref=True)
 	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True))
 	folder_menu.add(MenuItem(_("Enqueue Album Next"), tauon.add_album_to_queue_fc, pass_ref=True))
+
+	gui.ban_folder_icon.colour = ColourRGBA(55, 55, 55, 255)
+	gui.ban_folder_icon.xoff = 2
+	gui.ban_folder_icon.colour_callback = tauon.ban_folder_menu_colour
+	folder_menu.add(MenuItem(_("Ban Folder"), tauon.toggle_folder_ban, tauon.ban_folder_deco, pass_ref=True, pass_ref_deco=True, icon=gui.ban_folder_icon))
 
 	gallery_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
 
@@ -64127,11 +64369,15 @@ def main(holder: Holder) -> None:
 						new.rating = fr_s.rating
 						if to_s.rating > 0 and fr_s.rating == 0:
 							new.rating = to_s.rating  # keep target rating
+						new.hated = to_s.hated
+						new.hated_timestamp = to_s.hated_timestamp
 						to.lfm_scrobbles = fr.lfm_scrobbles
 
 						tauon.star_store.remove(fr.index)
 						tauon.star_store.remove(to.index)
-						if new.playtime or new.rating:
+						if fr_s.hated:
+							tauon.star_store.insert(fr.index, StarRecord(hated=True, hated_timestamp=fr_s.hated_timestamp))
+						if new.playtime or new.rating or new.hated:
 							tauon.star_store.insert(to.index, new)
 
 						tauon.copied_track = None

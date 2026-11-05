@@ -29,6 +29,7 @@ import secrets
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING
 
@@ -685,7 +686,7 @@ class SubsonicService(RemotePlaylistSource):
 					star.loved = True
 					self.star_store.insert(track_id, star)
 			elif star is not None and star.loved:
-				self.star_store.insert(track_id, StarRecord(star.playtime, star.rating))
+				self.star_store.insert(track_id, replace(star, loved=False, loved_timestamp=0))
 
 	def _song_ids(self, entries: list) -> list[int]:
 		"""Tauon track ids for song entries, adding any that aren't in the library yet."""
