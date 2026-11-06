@@ -1198,6 +1198,8 @@ class GuiVar:
 
 		self.heartx_icon        = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "heart-menu.png", True))
 		self.ban_icon           = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "ban-menu.png", True))
+		self.speed_slider_icon  = asset_loader(self.bag, self.bag.loaded_asset_dc, "playback-speed.png", True)
+		self.tempo_slider_icon  = asset_loader(self.bag, self.bag.loaded_asset_dc, "playback-tempo.png", True)
 		self.ban_folder_icon    = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "ban-menu.png", True))
 		self.transcode_icon     = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "transcode.png", True))
 		self.mod_folder_icon    = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "mod_folder.png", True))
@@ -2698,6 +2700,7 @@ class PlayerCtl:
 		self.queue_step: int = self.bag.playing_in_queue
 		self.playing_time: float = 0
 		self.playback_speed_supported: bool = False
+		self.playback_tempo_supported: bool = False
 		self.last_real_position: float = 0
 		self.playlist_playing_position: int = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
@@ -3831,6 +3834,15 @@ class PlayerCtl:
 	def set_playback_speed(self, value: float) -> None:
 		if math.isfinite(value):
 			self.prefs.playback_speed = round(max(0.1, min(3.0, value)), 2)
+			self.tauon.gui.request_frame()
+
+	@property
+	def playback_tempo(self) -> float:
+		return self.prefs.playback_tempo
+
+	def set_playback_tempo(self, value: float) -> None:
+		if math.isfinite(value):
+			self.prefs.playback_tempo = round(max(0.25, min(3.0, value)), 2)
 			self.tauon.gui.request_frame()
 
 	def clear_ab_repeat(self, update_gui: bool = True) -> None:
@@ -6287,6 +6299,9 @@ class MenuItem:
 		"check_secondary_test",
 		"slider_get",
 		"slider_set",
+		"slider_min",
+		"slider_max",
+		"slider_icon",
 	]
 	def __init__(
 		self, title: str, func, render_func: Callable[..., Decorator] | None = None, no_exit: bool = False, pass_ref: bool = False, hint=None, icon: MenuIcon | None = None, show_test: Callable[..., bool] | None = None,
@@ -6325,6 +6340,9 @@ class MenuItem:
 		self.check_secondary_test = check_secondary_test
 		self.slider_get: Callable[[], float] | None = None
 		self.slider_set: Callable[[float], None] | None = None
+		self.slider_min: float = 0.1
+		self.slider_max: float = 3.0
+		self.slider_icon: WhiteModImageAsset | LoadImageAsset | None = None
 
 	def hint_text(self) -> str | None:
 		"""The hint to show; a callable hint is asked each time so it can follow the keymap."""
@@ -6371,6 +6389,8 @@ class Menu:
 	count = switch + 1
 	instances: ClassVar[list[Menu]] = []
 	active = False
+	slider_editor: ClassVar[Menu | None] = None
+	slider_value_hold = 1.2
 
 	def rescale(self) -> None:
 		self.vertical_size = round(self.base_v_size * self.gui.scale)
@@ -6405,6 +6425,13 @@ class Menu:
 		self.click_dismissed: bool = False
 		self.clicked: bool = False
 		self.slider_held: MenuItem | None = None
+		self.slider_tip_item: MenuItem | None = None
+		self.slider_tip_timer = Timer()
+		self.slider_value_item: MenuItem | None = None
+		self.slider_value_timer = Timer()
+		self.slider_edit_item: MenuItem | None = None
+		self.slider_edit_text: str = ""
+		self.slider_edit_selected: bool = False
 		self.pos: list[float] = [0, 0]
 		self.rescale()
 
@@ -6540,11 +6567,18 @@ class Menu:
 		self.subs[sub_menu_index].append(item)
 		self._widths_dirty = True
 
-	def add_speed_slider(self, pctl: PlayerCtl) -> None:
-		item = MenuItem("", lambda: None, no_exit=True,
-			disable_test=lambda: not pctl.playback_speed_supported or self.tauon.chrome_mode)
-		item.slider_get = lambda: pctl.playback_speed
-		item.slider_set = pctl.set_playback_speed
+	def add_slider(
+		self, title: str, icon: WhiteModImageAsset | LoadImageAsset,
+		get_value: Callable[[], float], set_value: Callable[[float], None],
+		minimum: float, maximum: float, disable_test: Callable[[], bool],
+	) -> None:
+		"""Add a slider row, showing an icon with the title as its tooltip."""
+		item = MenuItem(title, lambda: None, no_exit=True, disable_test=disable_test)
+		item.slider_icon = icon
+		item.slider_get = get_value
+		item.slider_set = set_value
+		item.slider_min = minimum
+		item.slider_max = maximum
 		self.add(item)
 
 	def br(self) -> None:
@@ -6608,8 +6642,8 @@ class Menu:
 			if item.incrementor:
 				right = 2 * self.h + 32 * scale
 			elif item.slider_get is not None:
-				left = 12 * scale
-				right = 180 * scale
+				main_width = max(main_width, 195 * scale)
+				continue
 			elif item.hint_text() is not None:
 				right += self.ddt.get_text_w(item.hint_text(), self.font) + 4 * scale
 			main_width = max(main_width, left + text_width(item) + right)
@@ -6775,22 +6809,124 @@ class Menu:
 
 		return minus_x
 
-	def draw_speed_slider(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float) -> None:
+	def begin_slider_edit(self, item: MenuItem) -> None:
+		self.end_slider_edit(commit=True)
+		self.slider_edit_item = item
+		self.slider_edit_text = f"{item.slider_get():.2f}"
+		self.slider_edit_selected = True
+		Menu.slider_editor = self
+		self.gui.request_frame()
+
+	def end_slider_edit(self, commit: bool) -> None:
+		item = self.slider_edit_item
+		if item is None:
+			return
+		self.slider_edit_item = None
+		Menu.slider_editor = None
+		self.gui.request_frame()
+		if commit:
+			try:
+				value = float(self.slider_edit_text)
+			except ValueError:
+				return
+			item.slider_set(value)
+			self.show_slider_value(item)
+
+	def show_slider_value(self, item: MenuItem) -> None:
+		"""Keep a row's number on screen for a moment before its icon returns."""
+		self.slider_value_item = item
+		self.slider_value_timer.set()
+		self.gui.frame_callback_list.append(TestTimer(self.slider_value_hold))
+
+	@classmethod
+	def handle_slider_edit_keys(cls, inp: Input, keymaps: KeyMap) -> None:
+		"""Give typed keys to an open slider value field, hiding them from hotkeys."""
+		menu = cls.slider_editor
+		if menu is None:
+			return
+		if not menu.active:
+			menu.end_slider_edit(commit=True)
+			return
+		cancel = keymaps.test("escape")
+		commit = inp.key_return_press
+		typed = "".join(c for c in inp.input_text.replace(",", ".") if c.isascii() and (c.isdigit() or c == "."))
+		for _i in range(inp.backspace_press):
+			menu.slider_edit_text = "" if menu.slider_edit_selected else menu.slider_edit_text[:-1]
+			menu.slider_edit_selected = False
+		if typed:
+			if menu.slider_edit_selected:
+				menu.slider_edit_text = ""
+				menu.slider_edit_selected = False
+			menu.slider_edit_text = (menu.slider_edit_text + typed)[:5]
+
+		keymaps.hits.clear()
+		inp.input_text = ""
+		inp.backspace_press = 0
+		for attribute in (
+			"key_return_press", "key_esc_press", "key_tab_press", "key_left_press", "key_right_press",
+			"key_up_press", "key_down_press", "key_del", "key_home_press", "key_end_press",
+			"key_c_press", "key_v_press", "key_a_press", "key_s_press", "key_z_press", "key_x_press",
+			"key_backspace_press",
+		):
+			setattr(inp, attribute, False)
+
+		if cancel:
+			menu.end_slider_edit(commit=False)
+		elif commit:
+			menu.end_slider_edit(commit=True)
+
+	def draw_slider_tip(self, item: MenuItem, hovered: bool, x: float, y_run: float) -> None:
+		"""Name the row and its value after a short hover. Drawn by the menu so it works in popup windows too."""
+		if not hovered:
+			if self.slider_tip_item is item:
+				self.slider_tip_item = None
+			return
+		trigger = 0.6
+		if self.slider_tip_item is not item:
+			self.slider_tip_item = item
+			self.slider_tip_timer.set()
+			self.gui.frame_callback_list.append(TestTimer(trigger))
+		if self.slider_tip_timer.get() < trigger or self.slider_edit_item is item or self.slider_held is not None:
+			return
 		ddt = self.render_ddt
 		scale = self.gui.scale
-		slider_x = round(x_run + 60 * scale)
+		background = self.colours.box_button_background
+		text = f"{item.title} {item.slider_get():.2f}×"  # noqa: RUF001
+		w = ddt.get_text_w(text, self.font) + round(14 * scale)
+		h = round(20 * scale)
+		y = y_run - h - round(2 * scale)
+		ddt.rect((x, y, w, h), background)
+		ddt.text((x + round(w / 2), y + round(3 * scale), 2), text, self.colours.menu_text, self.font, bg=background)
+
+	def draw_slider(self, item: MenuItem, x_run: float, y_run: float, bg: ColourRGBA, ytoff: float) -> None:
+		ddt = self.render_ddt
+		scale = self.gui.scale
+		label_x = x_run + round(12 * scale)
+		icon = item.slider_icon
+		# The icon and number share a column, so the bar doesn't move between them.
+		column_w = max(icon.w, ddt.get_text_w("0.00×", self.font))  # noqa: RUF001
+		slider_x = round(label_x + column_w + 8 * scale)
 		slider_w = max(1, round(x_run + self.w - 12 * scale) - slider_x)
-		minimum = 0.1
-		maximum = 3.0
+		minimum = item.slider_min
+		maximum = item.slider_max
 		curvature = 3.0
 		centre_y = round(y_run + self.h / 2)
 		hit_rect = (slider_x - round(3 * scale), y_run, slider_w + round(6 * scale), self.h)
+		label_rect = (x_run, y_run, hit_rect[0] - x_run, self.h)
 		disabled = bool(self.is_item_disabled(item))
 		pointer = self.pointer
-		if not self.inp.mouse_down or disabled:
+		# Any row may see the release first, so this acts on the held row, not this one.
+		held = self.slider_held
+		if held is not None and (not self.inp.mouse_down or (disabled and held is item)):
+			self.show_slider_value(held)
 			self.slider_held = None
+		if self.slider_edit_item is item and (self.clicked or self.slider_held is not None) \
+				and not coll_point(pointer, label_rect):
+			self.end_slider_edit(commit=True)
 		if not disabled and self.clicked and coll_point(pointer, hit_rect):
 			self.slider_held = item
+		if not disabled and self.clicked and self.slider_edit_item is not item and coll_point(pointer, label_rect):
+			self.begin_slider_edit(item)
 		if self.slider_held is item and pointer[0] > -100000:
 			portion = max(0.0, min(1.0, (pointer[0] - slider_x) / max(1, slider_w)))
 			distance = abs(2 * portion - 1) ** curvature
@@ -6810,7 +6946,27 @@ class Menu:
 		ddt.rect((slider_x + round(slider_w / 2), centre_y - round(4 * scale), thickness, round(9 * scale)), track_colour)
 		grip_w = max(2, round(4 * scale))
 		ddt.rect((round(slider_x + slider_w * fraction - grip_w / 2), centre_y - round(5 * scale), grip_w, round(11 * scale)), colour)
-		ddt.text((x_run + round(12 * scale), y_run + ytoff), f"{value:.2f}×", colour, self.font, bg=bg)  # noqa: RUF001
+		showing_icon = False
+		if self.slider_edit_item is item:
+			text_w = ddt.get_text_w(self.slider_edit_text, self.font)
+			text_bg = bg
+			if self.slider_edit_selected:
+				ddt.rect((label_x - round(2 * scale), y_run + round(3 * scale), text_w + round(4 * scale), self.h - round(6 * scale)), track_colour)
+				text_bg = alpha_blend(track_colour, bg)
+			else:
+				ddt.rect((label_x + text_w + round(1 * scale), y_run + round(4 * scale), max(1, round(scale)), self.h - round(8 * scale)), colour)
+			ddt.text((label_x, y_run + ytoff), self.slider_edit_text, colour, self.font, bg=text_bg)
+		elif self.slider_held is item or (
+				self.slider_value_item is item and self.slider_value_timer.get() < self.slider_value_hold):
+			ddt.text((label_x, y_run + ytoff), f"{value:.2f}×", colour, self.font, bg=bg)  # noqa: RUF001
+		else:
+			showing_icon = True
+			lit = value != 1.0 or coll_point(pointer, (x_run, y_run, self.w, self.h - 1))
+			icon_colour = colour if lit and not disabled else self.icon_off_colour(bg)
+			icon.render(label_x, round(y_run + (self.h - icon.h) / 2), icon_colour, renderer=self.render_renderer)
+		# Hover time only counts once the icon is back.
+		show_tip = showing_icon and coll_point(pointer, label_rect)
+		self.draw_slider_tip(item, show_tip, label_x, y_run)
 		if coll_point(pointer, (x_run, y_run, self.w, self.h)) or self.slider_held is item:
 			self.clicked = False
 
@@ -6975,7 +7131,7 @@ class Menu:
 
 				# Render the items label (narrowed to clear the stepper for incrementors)
 				if self.items[i].slider_get is not None:
-					self.draw_speed_slider(self.items[i], x_run, y_run, bg, ytoff)
+					self.draw_slider(self.items[i], x_run, y_run, bg, ytoff)
 				elif self.items[i].incrementor:
 					left_bound = self.draw_incrementor(self.items[i], x_run, y_run, bg, ytoff, self.w)
 					label_max_w = max(1, int(left_bound - (x_run + x) - 6 * gui.scale))
@@ -7077,6 +7233,7 @@ class Menu:
 		self.sub_active = -1
 		self.popup_window = None
 		self.slider_held = None
+		self.slider_value_item = None
 		self.rescale()
 		self.update_widths()
 
@@ -55840,6 +55997,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("use-pipewire", prefs.pipewire)
 	cf.update_value("seek-interval", prefs.seek_interval)
 	cf.update_value("playback-speed", prefs.playback_speed)
+	cf.update_value("playback-tempo", prefs.playback_tempo)
 	cf.update_value("pause-fade-time", prefs.pause_fade_time)
 	cf.update_value("cross-fade-time", prefs.cross_fade_time)
 	cf.update_value("use-pre-roll", prefs.use_pre_roll)
@@ -56047,6 +56205,12 @@ def load_prefs(bag: Bag) -> None:
 	if not math.isfinite(prefs.playback_speed):
 		prefs.playback_speed = 1.0
 	prefs.playback_speed = round(max(0.1, min(3.0, prefs.playback_speed)), 2)
+	prefs.playback_tempo = cf.sync_add(
+		"float", "playback-tempo", 1.0,
+		"Playback tempo multiplier, keeps the pitch unchanged. Min: 0.25, Max: 3.0, Default: 1.0.")
+	if not math.isfinite(prefs.playback_tempo):
+		prefs.playback_tempo = 1.0
+	prefs.playback_tempo = round(max(0.25, min(3.0, prefs.playback_tempo)), 2)
 	# prefs.pause_fade_time = cf.sync_add("int", "pause-fade-time", prefs.pause_fade_time, "In milliseconds. Default is 400. (GStreamer Only)")
 
 	prefs.pause_fade_time = max(prefs.pause_fade_time, 100)
@@ -61080,7 +61244,12 @@ def main(holder: Holder) -> None:
 	extra_menu.add(MenuItem(_("Global Search"), tauon.activate_search_overlay, hint="Ctrl+G"))
 	extra_menu.add(MenuItem(_("Locate Artist"), tauon.locate_artist))
 	extra_menu.add(MenuItem(_("Go To Playing"), tauon.goto_playing_extra, hint="'"))
-	extra_menu.add_speed_slider(pctl)
+	extra_menu.add_slider(
+		_("Speed"), gui.speed_slider_icon, lambda: pctl.playback_speed, pctl.set_playback_speed, 0.1, 3.0,
+		lambda: not pctl.playback_speed_supported or tauon.chrome_mode)
+	extra_menu.add_slider(
+		_("Tempo"), gui.tempo_slider_icon, lambda: pctl.playback_tempo, pctl.set_playback_tempo, 0.25, 3.0,
+		lambda: not pctl.playback_tempo_supported or tauon.chrome_mode)
 
 	extra_menu.br()
 
@@ -64031,6 +64200,8 @@ def main(holder: Holder) -> None:
 		#     logging.info('OK')
 		# if window_size[0] / window_size[1] > 16 / 9:
 		#     logging.info("A")
+
+		Menu.handle_slider_edit_keys(inp, keymaps)
 
 		if inp.key_meta:
 			inp.input_text = ""

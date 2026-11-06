@@ -102,6 +102,7 @@
 #include "gme/gme.h"
 
 #include "pcm.h"
+#include "tempo.h"
 
 #include <Python.h>
 // Module method definitions (if any)
@@ -226,6 +227,10 @@ bool speed_engaged = false;
 bool speed_tail = false;
 bool speed_eof = false;
 uint16_t speed_mask = 0;
+
+float playback_tempo = 1.0f;
+tempo_stretcher tempo;
+bool tempo_engaged = false;
 
 int sample_rate_out = 44100;
 int sample_rate_src = 0;
@@ -944,6 +949,7 @@ void buff_reset() {
 	speed_engaged = false;
 	speed_tail = false;
 	speed_eof = false;
+	tempo_engaged = false;
 }
 
 // Fill of whichever buffer is actually feeding the device. Direct DSD has its
@@ -1940,7 +1946,7 @@ int dsd_direct_supported() {
 static int dsd_direct_wanted() {
 	// Once a device has refused a DSD stream, stop offering it. Turning the
 	// preference off and on again clears this, as does restarting.
-	if (!config_dsd_direct || !dsd_direct_supported() || dsd_runtime_disabled || playback_speed != 1.0f) return 0;
+	if (!config_dsd_direct || !dsd_direct_supported() || dsd_runtime_disabled || playback_speed != 1.0f || playback_tempo != 1.0f) return 0;
 	#ifdef PIPE
 		// The sink has to actually accept DSD. PipeWire will otherwise fixate
 		// the format on our side and then never open the device, which plays
@@ -2005,7 +2011,8 @@ void dsd_buff_reset() {
 }
 
 int pending_output_fill() {
-	return dsd_active ? dsd_buff_fill() : get_buff_fill() + (speed_tail ? 1 : 0);
+	if (dsd_active) return dsd_buff_fill();
+	return get_buff_fill() + (speed_tail ? 1 : 0) + (tempo_engaged && tempo_pending(&tempo) ? 1 : 0);
 }
 
 // Read a big endian 64 bit chunk length, as used by DSDIFF
@@ -3279,7 +3286,8 @@ static inline void eq_process_frame(float *frame) {
 }
 
 static inline void limiter_process(float *frame, int channels) {
-	if (!eq_enabled || !eq_active) return;
+	// Shifting phases can raise the peaks of a loud master, so tempo needs this too.
+	if ((!eq_enabled || !eq_active) && !tempo_engaged) return;
 
 	if (current_sample_rate > 0 && limiter_coeff_sample_rate != current_sample_rate) {
 		limiter_update_coefficients(current_sample_rate);
@@ -3362,35 +3370,80 @@ int get_dsd_audio(int max_bytes, void *dest, int interleave, int bitorder_lsb) {
 	return written;
 }
 
+// Reads the next ring frame without consuming it.
+static void ring_peek(float *frame, uint16_t *mask) {
+	if (reset_set && reset_set_byte == low) {
+		reset_set = false;
+		position_count = reset_set_value;
+	}
+	rg_update_boundary();
+	for (int c = 0; c < PCM_SPEAKERS; c++) frame[c] = pcm_buffer[c][low];
+	*mask = pcm_mask[low];
+	playing_kbps = (int) pcm_kbps[low];
+}
+
+static void ring_advance() {
+	low++;
+	buff_cycle();
+	position_count++;
+}
+
+// The tempo stage when engaged, otherwise the ring.
+static bool source_peek(float *frame, uint16_t *mask) {
+	if (playback_tempo != 1.0f && !tempo_engaged) {
+		tempo_reset(&tempo, sample_rate_out);
+		tempo_engaged = true;
+	}
+	if (tempo_engaged) tempo.rate = playback_tempo;
+	if (!tempo_engaged) {
+		if (get_buff_fill() <= 0) return false;
+		ring_peek(frame, mask);
+		return true;
+	}
+	if (tempo.drained) {
+		// A late gapless queue may arrive after the old track's tail has played.
+		if (get_buff_fill() <= 0) return false;
+		tempo_engaged = playback_tempo != 1.0f;
+		if (!tempo_engaged) {
+			ring_peek(frame, mask);
+			return true;
+		}
+		tempo_reset(&tempo, sample_rate_out);
+	}
+	while (tempo_wants_input(&tempo) && get_buff_fill() > 0) {
+		float input[PCM_SPEAKERS];
+		uint16_t input_mask;
+		ring_peek(input, &input_mask);
+		tempo_push(&tempo, input, input_mask);
+		ring_advance();
+	}
+	if (mode == ENDING && tempo_wants_input(&tempo)) tempo_finish(&tempo);
+	return tempo_peek(&tempo, frame, mask);
+}
+
+static void source_advance() {
+	if (tempo_engaged) tempo_advance(&tempo);
+	else ring_advance();
+}
+
 static bool read_playback_frame(float *frame, uint16_t *mask) {
 	if (playback_speed != 1.0f && speed_src != NULL) speed_engaged = true;
-	while (get_buff_fill() > 0 || (speed_engaged && speed_tail)) {
-		int available = speed_eof ? 0 : get_buff_fill();
+	while (true) {
 		float input[PCM_SPEAKERS] = {0};
-		if (available > 0) {
-			if (reset_set && reset_set_byte == low) {
-				reset_set = false;
-				position_count = reset_set_value;
-			}
-			rg_update_boundary();
-			for (int c = 0; c < PCM_SPEAKERS; c++) input[c] = pcm_buffer[c][low];
-			speed_mask = pcm_mask[low];
-			playing_kbps = (int) pcm_kbps[low];
-		}
+		bool has_input = !speed_eof && source_peek(input, &speed_mask);
+		if (!has_input && !(speed_engaged && speed_tail)) return false;
 		if (!speed_engaged) {
 			memcpy(frame, input, sizeof(input));
 			*mask = speed_mask;
-			low++;
-			buff_cycle();
-			position_count++;
+			source_advance();
 			return true;
 		}
 		// The ring is already at the device rate; this ratio only changes speed.
 		SRC_DATA transfer = {
 			.data_in = input, .data_out = frame,
-			.input_frames = available > 0 ? 1 : 0, .output_frames = 1,
+			.input_frames = has_input ? 1 : 0, .output_frames = 1,
 			.src_ratio = 1.0 / playback_speed,
-			.end_of_input = speed_eof || (mode == ENDING && available <= 1),
+			.end_of_input = speed_eof || (mode == ENDING && !has_input),
 		};
 		if (src_process(speed_src, &transfer) != 0) {
 			speed_tail = false;
@@ -3398,9 +3451,7 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 		}
 		if (transfer.end_of_input && transfer.input_frames_used == transfer.input_frames) speed_eof = true;
 		if (transfer.input_frames_used > 0) {
-			low++;
-			buff_cycle();
-			position_count++;
+			source_advance();
 			speed_tail = true;
 		}
 		if (transfer.output_frames_gen > 0) {
@@ -3420,7 +3471,6 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 			return false;
 		}
 	}
-	return false;
 }
 
 int get_audio(int max_frames, float* buff) {
@@ -5896,8 +5946,8 @@ void *main_loop(void *thread_id) {
 
 		}
 
-		// Speed adjustment requires PCM, including when a DSD track is paused.
-		if (dsd_active && playback_speed != 1.0f && command == NONE
+		// Speed and tempo adjustment require PCM, including when a DSD track is paused.
+		if (dsd_active && (playback_speed != 1.0f || playback_tempo != 1.0f) && command == NONE
 				&& (mode == PLAYING || mode == ENDING || mode == PAUSED)) {
 			bool paused = mode == PAUSED;
 			int resume_ms = get_position_ms();
@@ -5962,6 +6012,8 @@ void *main_loop(void *thread_id) {
 	src_delete(src);
 	src_delete(pcm_src);
 	speed_src = src_delete(speed_src);
+	tempo_free(&tempo);
+	tempo_engaged = false;
 	free(rbuf);
 	free(cbuf);
 	kiss_fftr_free(ffta);
@@ -6261,7 +6313,10 @@ EXPORT int get_position_ms() {
 		return (int) ((dsd_bytes_played / (double) (dsd_info.rate / 8)) * 1000.0);
 	}
 	if (command != START && command != LOAD && !reset_set && current_sample_rate > 0) {
-		return (int) ((position_count / (float) current_sample_rate) * 1000.0);
+		// Frames held by the tempo stage were counted but haven't been heard.
+		int heard = position_count - (tempo_engaged ? tempo_lookahead(&tempo) : 0);
+		if (heard < 0) heard = 0;
+		return (int) ((heard / (float) current_sample_rate) * 1000.0);
 	} else return 0;
 }
 
@@ -6278,6 +6333,18 @@ EXPORT int set_playback_speed(float speed) {
 	}
 	playback_speed = speed;
 	if (speed_src != NULL) src_set_ratio(speed_src, 1.0 / speed);
+	pthread_mutex_unlock(&buffer_mutex);
+	return 1;
+}
+
+EXPORT int set_playback_tempo(float value) {
+	if (!isfinite(value) || value < 0.25f || value > 3.0f) return 0;
+	pthread_mutex_lock(&buffer_mutex);
+	if (value != 1.0f && !tempo_init(&tempo)) {
+		pthread_mutex_unlock(&buffer_mutex);
+		return 0;
+	}
+	playback_tempo = value;
 	pthread_mutex_unlock(&buffer_mutex);
 	return 1;
 }
