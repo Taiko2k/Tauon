@@ -75,6 +75,8 @@ if not sys.warnoptions:
 	import warnings
 
 	warnings.simplefilter("default")
+	# PyGObject's bare catch_warnings() defeats dedupe, so this repeats on every GLib iteration
+	warnings.filterwarnings("ignore", message=r"'asyncio\.", category=DeprecationWarning, module=r"gi\.events")
 	os.environ["PYTHONWARNINGS"] = "default"  # Also affect subprocesses
 
 if sys.platform != "win32":

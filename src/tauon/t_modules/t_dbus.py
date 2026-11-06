@@ -471,9 +471,11 @@ class Gnome:
 		context = GLib.MainContext.default()
 		# A D-Bus message takes two passes: the socket watch reads it, then the
 		# connection's dispatch source delivers it.
-		for _ in range(8):
-			if not context.iteration(False):
+		for _step in range(8):
+			# pending() skips PyGObject's costly iteration() wrapper on idle passes
+			if not context.pending():
 				break
+			context.iteration(False)
 
 	def focus(self) -> None:
 		if self.bus_object is not None:
