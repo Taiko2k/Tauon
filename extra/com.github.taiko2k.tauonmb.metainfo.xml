@@ -98,6 +98,17 @@
 
   <releases>
 
+    <release version="13.2.0" date="2026-11-06">
+      <description>
+        <ul>
+          <li>Added track ban feature</li>
+          <li>Added tempo control</li>
+          <li>Reworked server sync and library add</li>
+          <li>Added transcode for remote servers</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="13.1.1" date="2026-10-24">
       <description>
         <ul>

@@ -5,6 +5,7 @@ Changelog
 ### v13.2.0
 
  - Added track ban feature
+ - Added tempo control
  - Reworked server sync and library add
  - Added transcode for remote servers
 
