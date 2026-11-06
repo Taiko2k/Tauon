@@ -26,9 +26,14 @@
 
 #define TEMPO_FFT_MS 85
 #define TEMPO_OVERLAP 4
-// How far an attack must rise above recent audio, in power
-#define TEMPO_ONSET_RATIO 6.0f
+// Attacks must rise this far in power above the recent peak. Sharp rises use
+// 2.5 ms blocks. Level rises use 12.5 ms blocks, which span bass cycles. Both
+// look back 75 ms.
+#define TEMPO_SHARP_RATIO 4.0f
 #define TEMPO_LEVEL_RATIO 3.0f
+#define TEMPO_SHARP_BLOCKS 30
+#define TEMPO_LEVEL_SPAN 5
+#define TEMPO_LEVEL_BLOCKS 6
 // A bin restarts its phase at an attack if it grew by this much
 #define TEMPO_RISE_RATIO 1.6f
 
@@ -73,9 +78,12 @@ typedef struct {
 	// Attack detector
 	float last[PCM_SPEAKERS];
 	float block_energy;
-	float slow_energy;
 	float block_level;
-	float slow_level;
+	float sharp_history[TEMPO_SHARP_BLOCKS];
+	float level_history[TEMPO_LEVEL_BLOCKS];
+	int sharp_at;
+	int level_at;
+	int level_fill;
 	int block_fill;
 	int block_size;
 	int64_t last_onset;
@@ -134,9 +142,12 @@ static void tempo_reset(tempo_stretcher *t, int sample_rate) {
 	t->finishing = false;
 	t->drained = false;
 	t->block_energy = 0;
-	t->slow_energy = 0;
 	t->block_level = 0;
-	t->slow_level = 0;
+	memset(t->sharp_history, 0, sizeof(t->sharp_history));
+	memset(t->level_history, 0, sizeof(t->level_history));
+	t->sharp_at = 0;
+	t->level_at = 0;
+	t->level_fill = 0;
 	t->block_fill = 0;
 	t->last_onset = INT64_MIN / 2;
 	t->onset_read = 0;
@@ -167,25 +178,45 @@ static int64_t tempo_refine_attack(const tempo_stretcher *t, int64_t block) {
 	return block;
 }
 
+// Compares short blocks with the loudest of the recent ones. An average would
+// let the swing within a bass note's cycle pass for a stream of attacks.
 static void tempo_detect_attack(tempo_stretcher *t, const float *frame) {
-	float energy = 0;
+	float rise_energy = 0;
 	float level = 0;
 	for (int c = 0; c < PCM_SPEAKERS; c++) {
 		float rise = frame[c] - t->last[c];
-		energy += rise * rise;
+		rise_energy += rise * rise;
 		level += frame[c] * frame[c];
 		t->last[c] = frame[c];
 	}
-	t->block_energy += energy;
+	t->block_energy += rise_energy;
 	t->block_level += level;
 	if (++t->block_fill < t->block_size) return;
-	float block = t->block_energy / t->block_size;
-	float loud = t->block_level / t->block_size;
+	float sharp_block = t->block_energy / t->block_size;
+	t->block_energy = 0;
+	t->block_fill = 0;
+
+	float recent_sharp = 0;
+	for (int i = 0; i < TEMPO_SHARP_BLOCKS; i++) recent_sharp = fmaxf(recent_sharp, t->sharp_history[i]);
+	t->sharp_history[t->sharp_at] = sharp_block;
+	t->sharp_at = (t->sharp_at + 1) % TEMPO_SHARP_BLOCKS;
+	bool sharp = sharp_block > 1e-6f && sharp_block > recent_sharp * TEMPO_SHARP_RATIO;
+
+	bool heavy = false;
+	if (++t->level_fill >= TEMPO_LEVEL_SPAN) {
+		float level_block = t->block_level / (t->block_size * TEMPO_LEVEL_SPAN);
+		t->block_level = 0;
+		t->level_fill = 0;
+		float recent_level = 0;
+		for (int i = 0; i < TEMPO_LEVEL_BLOCKS; i++) recent_level = fmaxf(recent_level, t->level_history[i]);
+		t->level_history[t->level_at] = level_block;
+		t->level_at = (t->level_at + 1) % TEMPO_LEVEL_BLOCKS;
+		heavy = level_block > 1e-4f && level_block > recent_level * TEMPO_LEVEL_RATIO;
+	}
+
 	int64_t at = t->written - t->block_size;
-	bool sharp = block > 1e-6f && block > t->slow_energy * TEMPO_ONSET_RATIO;
-	bool heavy = loud > 1e-4f && loud > t->slow_level * TEMPO_LEVEL_RATIO;
 	if (at > t->sample_rate / 10 && (sharp || heavy) && at - t->last_onset > t->sample_rate / 25) {
-		at = tempo_refine_attack(t, at);
+		at = tempo_refine_attack(t, heavy && !sharp ? t->written - t->block_size * (TEMPO_LEVEL_SPAN - 1) : at);
 		int next = (t->onset_write + 1) % TEMPO_MAX_ONSETS;
 		if (next != t->onset_read && at > t->last_onset) {
 			t->onsets[t->onset_write] = at;
@@ -193,11 +224,6 @@ static void tempo_detect_attack(tempo_stretcher *t, const float *frame) {
 		}
 		t->last_onset = at;
 	}
-	t->slow_energy += (block - t->slow_energy) * 0.15f;
-	t->slow_level += (loud - t->slow_level) * 0.15f;
-	t->block_energy = 0;
-	t->block_level = 0;
-	t->block_fill = 0;
 }
 
 static void tempo_push(tempo_stretcher *t, const float *frame, uint16_t mask) {
