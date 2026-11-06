@@ -16435,7 +16435,11 @@ class Tauon:
 		if only_if_changed and min_size == self.window_minimum_size:
 			return
 		self.window_minimum_size = min_size
+		size = sdl3.get_window_size(self.t_window)
 		sdl3.set_window_minimum_size(self.t_window, min_size[0], min_size[1])
+		# The re-request above shrinks a tiled window, so put its size back (Sway)
+		if sdl3.get_window_size(self.t_window) != size:
+			sdl3.set_window_size(self.t_window, size[0], size[1])
 
 	def reload_scale(self, skip_render: bool = False) -> None:
 		auto_scale(self.bag)
