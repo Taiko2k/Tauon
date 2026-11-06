@@ -364,7 +364,8 @@ def _upload(data: bytes, agent: str) -> str | None:
 		response = requests.post(
 			API_URL,
 			data={"reqtype": "fileupload", "time": RETENTION},
-			files={"fileToUpload": ("cover.jpg", data, "image/jpeg")},
+			# Litterbox rejects uploads named cover.jpg with 412 "No file!"
+			files={"fileToUpload": (hashlib.sha256(data).hexdigest()[:16] + ".jpg", data, "image/jpeg")},
 			headers={"User-Agent": agent},
 			timeout=30,
 		)
