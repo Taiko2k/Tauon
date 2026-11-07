@@ -9631,7 +9631,6 @@ class Tauon:
 									b["title"] = field.text
 								if "location" in field.tag and field.text:
 									loc = field.text
-									loc = str(urllib.parse.unquote(loc))
 									parsed_loc = urllib.parse.urlparse(loc)
 
 									# Preserve remote stream URLs; only normalize filesystem paths.
@@ -9643,6 +9642,9 @@ class Tauon:
 												loc = str(Path.from_uri(loc))
 											except Exception:
 												logging.exception("Unknown error getting Path from URI")
+										else:
+											# Locations without a scheme are percent-encoded, see export_xspf
+											loc = urllib.parse.unquote(loc)
 
 										if not Path(loc).is_absolute():
 											loc = str(Path(pl_dir / Path(loc)).resolve())
@@ -19085,7 +19087,7 @@ class Tauon:
 			load_order.playlist = self.pctl.multi_playlist[len(self.pctl.multi_playlist) - 1].uuid_int
 			self.pctl.switch_playlist(len(self.pctl.multi_playlist) - 1)
 
-		load_order.target = str(urllib.parse.unquote(uri)).replace("file:///", "/").replace("\r", "")
+		load_order.target = uri_parse(uri)
 
 		if self.gui.auto_play_import is False:
 			load_order.play = True
@@ -23153,7 +23155,7 @@ class Tauon:
 			clip = clip.split("\n")
 			for i, line in enumerate(clip):
 				if line.startswith(("file://", "/")):
-					target = str(urllib.parse.unquote(line)).replace("file://", "").replace("\r", "")
+					target = uri_parse(line)
 					load_order = LoadClass()
 					load_order.target = target
 					load_order.playlist = self.pctl.multi_playlist[self.pctl.active_playlist_viewing].uuid_int
@@ -63461,11 +63463,8 @@ def main(holder: Holder) -> None:
 				inp.mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
 				inp.mouse_position[1] = int(event.drop.y / logical_size[0] * window_size[0])
 				logging.info(f"Dropped data: {dropped_file_sdl}")
-				target = (
-					str(urllib.parse.unquote(dropped_file_sdl.decode("utf-8", errors="surrogateescape")))
-					.replace("file:///", "/")
-					.replace("\r", "")
-				)
+				# SDL has already converted any URI to a plain path
+				target = dropped_file_sdl.decode("utf-8", errors="surrogateescape")
 				# logging.info(target)
 				if not tauon.relocate_box.accept_drop(target) and not tauon.trans_edit_box.accept_image_drop(target) and not tauon.radiobox.accept_custom_image_drop(target):
 					tauon.drop_file(target)

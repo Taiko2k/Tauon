@@ -1514,8 +1514,10 @@ def clean_string(s: str) -> str:
 
 
 def uri_parse(s: str) -> str:
+	"""Return the path for a file:// URI. Plain paths may contain a literal %, so are not decoded."""
+	s = s.replace("\r", "")
 	if s.startswith("file://"):
-		s = str(urllib.parse.unquote(s)).replace("file://", "").replace("\r", "")
+		s = urllib.parse.unquote(s.removeprefix("file://"))
 	return s
 
 
