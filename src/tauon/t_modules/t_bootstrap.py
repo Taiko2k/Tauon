@@ -32,7 +32,7 @@ class Holder:
 	user_directory:         Path
 	phone:                  bool
 	window_default_size:    tuple[int, int] # X Y res
-	window_title:           bytes # t_title.encode("utf-8")
+	window_title:           str
 	fs_mode:                bool
 	t_title:                str # "Tauon"
 	n_version:              str # "7.9.0"

@@ -242,7 +242,7 @@ else:
 	logging.info("No window state file")
 
 
-window_title = t_title.encode("utf-8")
+window_title = t_title
 t_window = _tauon_native.window_address()
 sdl3.set_window_bordered(t_window, not draw_border)
 sdl3.set_window_size(t_window, logical_size[0], logical_size[1])

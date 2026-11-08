@@ -7927,7 +7927,7 @@ class Tauon:
 		self.t_id: str                            = holder.t_id
 		self.fs_mode: bool                        = holder.fs_mode
 		self.window_default_size: tuple[int, int] = holder.window_default_size
-		self.window_title: bytes                  = holder.window_title
+		self.window_title: str                    = holder.window_title
 		self.logical_size: list[int]              = bag.logical_size
 		self.window_size: list[int]               = bag.window_size
 		self.draw_border: bool                    = holder.draw_border
