@@ -6,6 +6,7 @@ Changelog
 
  - Added track ban feature
  - Added tempo control
+ - Added drag grip to settings
  - Reworked server sync and library add
  - Added transcode for remote servers
 

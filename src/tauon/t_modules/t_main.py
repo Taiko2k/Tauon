@@ -1295,6 +1295,7 @@ class GuiVar:
 		# (unlike cursor_top_side which is only NS on Windows/X11).
 		self.cursor_ns = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_NS_RESIZE)
 		self.cursor_text = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_TEXT)
+		self.cursor_move = sdl3.create_system_cursor(sdl3.SDL_SYSTEM_CURSOR_MOVE)
 
 		self.cursor_br_corner   = self.cursor_standard
 		self.cursor_right_side  = self.cursor_standard
@@ -31164,6 +31165,12 @@ class Over:
 		self.settings_group_key = "audio"
 		self.settings_search_box = TextBox2(tauon=tauon)
 		self.settings_close_icon = asset_loader(self.bag, self.bag.loaded_asset_dc, "ex.png", True)
+		# Where the window was dragged to, as an offset from centre; kept for the session
+		self.settings_window_offset: tuple[int, int] = (0, 0)
+		self.settings_window_dragging = False
+		self.settings_window_drag_start_mouse: tuple[int, int] = (0, 0)
+		self.settings_window_drag_start_offset: tuple[int, int] = (0, 0)
+		self.settings_window_click_timer = Timer(10)
 		# Change tracking and search, keyed "group/section title/control title"
 		self.settings_baseline: dict[str, object] = {}
 		self.settings_needs_survey = True
@@ -35417,8 +35424,24 @@ class Over:
 
 		full_w = max(min(round(640 * s), self.window_size[0] - round(40 * s)), round(360 * s))
 		full_h = max(min(round(660 * s), self.window_size[1] - round(60 * s)), round(300 * s))
-		x = int(self.window_size[0] / 2) - int(full_w / 2)
-		y = int(self.window_size[1] / 2) - int(full_h / 2)
+		header_h = round(46 * s)
+		centre_x = int(self.window_size[0] / 2) - int(full_w / 2)
+		centre_y = int(self.window_size[1] / 2) - int(full_h / 2)
+		offset_x, offset_y = self.settings_window_offset
+		if self.settings_window_dragging:
+			if inp.mouse_down:
+				offset_x = self.settings_window_drag_start_offset[0] + inp.mouse_position[0] - self.settings_window_drag_start_mouse[0]
+				offset_y = self.settings_window_drag_start_offset[1] + inp.mouse_position[1] - self.settings_window_drag_start_mouse[1]
+				self.tauon.input_sdl.mouse_capture_want = True
+				gui.cursor_want = 13
+				gui.request_frame()
+			else:
+				self.settings_window_dragging = False
+		# It may hang off the right or bottom, but the grip stays on screen
+		keep_w = min(full_w, round(160 * s))
+		x = max(min(centre_x + offset_x, self.window_size[0] - keep_w), 0)
+		y = min(max(centre_y + offset_y, 0), max(0, self.window_size[1] - header_h))
+		self.settings_window_offset = (x - centre_x, y - centre_y)
 		self.box_x = x
 		self.box_y = y
 		self.w = full_w
@@ -35436,23 +35459,49 @@ class Over:
 		ddt.rect((x, y, full_w, full_h), colours.box_background)
 		self.begin_settings_text_inputs()
 
-		header_h = round(46 * s)
 		rail_w = round(140 * s)
 		chrome = colours.sys_tab_bg
 		line = max(1, round(1 * s))
 		divider = self.settings_divider_colour(chrome)
 
-		# Header: search and close
+		# Header: drag grip, search and close
 		ddt.rect((x, y, full_w, header_h), chrome)
 		ddt.rect((x, y + header_h - line, full_w, line), divider)
 		ddt.text_background_colour = chrome
 		close_w = round(32 * s)
-		search_rect = (x + round(10 * s), y + round(9 * s), full_w - round(20 * s) - close_w - round(6 * s), round(28 * s))
+		close_rect = (x + full_w - round(8 * s) - close_w, y + (header_h - close_w) // 2, close_w, close_w)
+		grip_w = round(22 * s)
+		search_x = x + round(6 * s) + grip_w
+		search_rect = (search_x, y + round(9 * s), close_rect[0] - round(6 * s) - search_x, round(28 * s))
+		# Anywhere on the header outside the search box and close button drags the window
+		header_rect = (x, y, full_w, header_h)
+		drag_hover = self.coll(header_rect) and not self.coll(search_rect) and not self.coll(close_rect)
+		if drag_hover and not gui.message_box:
+			gui.cursor_want = 13
+			if self.click:
+				if self.settings_window_click_timer.get() < 0.35:
+					# Double click puts it back in the middle
+					self.settings_window_offset = (0, 0)
+					self.settings_window_click_timer.force_set(10)
+					gui.request_frame()
+				else:
+					self.settings_window_click_timer.set()
+					self.settings_window_dragging = True
+					self.settings_window_drag_start_mouse = (inp.mouse_position[0], inp.mouse_position[1])
+					self.settings_window_drag_start_offset = self.settings_window_offset
+					self.tauon.input_sdl.mouse_capture_want = True
+				self.click = False
+		grip_colour = colours.box_text if drag_hover or self.settings_window_dragging else colours.box_text_label
+		dot = max(2, round(2 * s))
+		grip_x = x + round(9 * s)
+		grip_y = y + header_h // 2 - round(6 * s)
+		for col in range(2):
+			for row in range(3):
+				ddt.rect((grip_x + col * round(5 * s), grip_y + row * round(5 * s), dot, dot), grip_colour)
 		self.draw_settings_text_field(
 			search_rect, self.settings_search_box, self.settings_page_accent(), placeholder=_("Search settings"))
 		self.settings_icon_button(
-			(x + full_w - round(8 * s) - close_w, y + (header_h - close_w) // 2, close_w, close_w),
-			self.close, draw_icon=self.draw_settings_close_icon, tooltip=_("Close"))
+			close_rect, self.close, draw_icon=self.draw_settings_close_icon, tooltip=_("Close"))
 		searching = bool(self.settings_search_box.text.strip())
 
 		body_y = y + header_h
@@ -35494,8 +35543,14 @@ class Over:
 		sdl3.set_render_target(self.renderer, current_target)
 		# A control on the page can close the window or drop the texture mid-frame
 		if self.settings_doc_texture is texture:
-			src_rect = sdl3.FRect(view_rect[0], view_rect[1], view_rect[2], view_rect[3])
-			sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
+			# Only the on-screen part, as the window can hang off an edge
+			left = max(view_rect[0], 0)
+			top = max(view_rect[1], 0)
+			right = min(view_rect[0] + view_rect[2], int(self.window_size[0]))
+			bottom = min(view_rect[1] + view_rect[3], int(self.window_size[1]))
+			if right > left and bottom > top:
+				src_rect = sdl3.FRect(left, top, right - left, bottom - top)
+				sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
 		else:
 			gui.request_frame()
 
@@ -67721,6 +67776,8 @@ def main(holder: Holder) -> None:
 				elif gui.cursor_is == 12:
 					# Vertical-resize cursor (NS) — used by the Custom Layout boundaries.
 					sdl3.set_cursor(gui.cursor_ns)
+				elif gui.cursor_is == 13:
+					sdl3.set_cursor(gui.cursor_move)
 
 			tauon.input_sdl.test_capture_mouse()
 			tauon.input_sdl.mouse_capture_want = False
