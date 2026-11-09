@@ -1022,6 +1022,7 @@ class GuiVar:
 
 		self.star_mode = "line"
 		self.heart_fields: list[list[float]] = [] # list of rectangles
+		self.heart_field_hover: bool = False
 		self.show_ratings: bool = False
 
 		self.web_running: bool = False
@@ -19637,7 +19638,7 @@ class Tauon:
 		)
 		if allow_input and input_in_bounds:
 			if isolated:
-				self.fields.add(rect)
+				self.fields.add(rect, self.gui.request_frame)
 			else:
 				self.gui.heart_fields.append(rect)
 
@@ -19650,18 +19651,22 @@ class Tauon:
 				rat = 0
 			elif pp > 70 * self.gui.scale:
 				rat = 10
+			elif self.prefs.rating_whole_stars:
+				# Any point on a star gives that many whole stars
+				rat = (pp // self.gui.star_row_icon.w + 1) * 2
 			else:
 				rat = pp // (self.gui.star_row_icon.w // 2)
 
+			rat = min(rat, 10)
+			# Hover previews the rating a click would set
+			display_rat = rat
 			if self.inp.mouse_click:
-				rat = min(rat, 10)
 				if isolated:
 					on_change(int(rat))
 				elif album:
 					self.album_star_store.set_rating(n_track, rat)
 				else:
 					self.star_store.set_rating(n_track.index, rat, write=True, push=True)
-				display_rat = rat
 
 		# bg = self.colours.grey(40)
 		bg = ColourRGBA(255, 255, 255, 17)
@@ -43105,6 +43110,10 @@ class TracklistLayoutPanel:
 		self.prefs.row_title_genre ^= True
 		self._redraw()
 
+	def _toggle_whole_stars(self) -> None:
+		self.prefs.rating_whole_stars ^= True
+		self._redraw()
+
 	def _toggle_full_album_art(self) -> None:
 		self.prefs.column_album_art_full_height ^= True
 		self.gui.playlist_scroll_pixels = 0
@@ -43164,6 +43173,9 @@ class TracklistLayoutPanel:
 				(_("Track ratings"), tauon.rating_toggle, lambda: bool(tauon.rating_toggle(1))),
 				(_("Star hints"), tauon.star_toggle, lambda: bool(tauon.star_toggle(1))),
 				(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
+			])],
+			[(_("Ratings"), "", [
+				(_("Whole stars only"), self._toggle_whole_stars, lambda: bool(prefs.rating_whole_stars)),
 			])],
 			[(_("Album titles"), "", [
 				(_("Year"), tauon.toggle_append_date, lambda: bool(tauon.toggle_append_date(1))),
@@ -56164,6 +56176,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("auto-show-playing", prefs.auto_goto_playing)
 	cf.update_value("notify-include-album", prefs.notify_include_album)
 	cf.update_value("show-rating-hint", prefs.rating_playtime_stars)
+	cf.update_value("rating-whole-stars", prefs.rating_whole_stars)
 	cf.update_value("drag-tab-to-unpin", prefs.drag_to_unpin)
 
 	cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
@@ -56560,6 +56573,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.rating_playtime_stars = cf.sync_add(
 		"bool", "show-rating-hint", prefs.rating_playtime_stars,
 		"Show playtime hint in stars")
+	prefs.rating_whole_stars = cf.sync_add(
+		"bool", "rating-whole-stars", prefs.rating_whole_stars,
+		"Only allow whole star ratings to be set")
 
 	prefs.drag_to_unpin = cf.sync_add(
 		"bool", "drag-tab-to-unpin", prefs.drag_to_unpin,
@@ -65639,6 +65655,11 @@ def main(holder: Holder) -> None:
 					if gui.heart_fields:
 						for field in gui.heart_fields:
 							tauon.fields.add(field, tauon.update_playlist_call)
+					# Redraw once the mouse leaves, so a hover preview clears
+					hovering = any(tauon.coll(field) for field in gui.heart_fields)
+					if gui.heart_field_hover and not hovering:
+						tauon.update_playlist_call()
+					gui.heart_field_hover = hovering
 
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False

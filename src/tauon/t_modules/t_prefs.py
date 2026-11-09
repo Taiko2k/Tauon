@@ -392,6 +392,7 @@ class Prefs:
 
 	write_ratings: bool = False
 	rating_playtime_stars: bool = False
+	rating_whole_stars: bool = False
 
 	lyrics_subs = {}
 
