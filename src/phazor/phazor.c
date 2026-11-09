@@ -251,6 +251,10 @@ int want_sample_rate = 0;
 int sample_change_byte = 0;
 
 bool reset_set = false;
+
+// Set by the device callback, logged by the main loop
+volatile int log_buffering_start = 0;
+volatile int log_buffering_done = 0;
 int reset_set_value = 0;
 int reset_set_byte = 0;
 
@@ -3498,9 +3502,11 @@ int get_audio(int max_frames, float* buff) {
 			}
 		}
 
+		// No log_msg in here: it takes the GIL, which can stall the device
+		// callback. The main loop logs these flags instead.
 		if (buffering == 1 && get_buff_fill() > config_min_buffer) {
 			buffering = 0;
-			log_msg(LOG_INFO, "pa: Buffering -> Playing");
+			log_buffering_done = 1;
 		}
 
 		// Streams can't be waited on the way a local file can, so an
@@ -3509,7 +3515,7 @@ int get_audio(int max_frames, float* buff) {
 		if (get_buff_fill() < 10 && (is_url(loaded_target_file) || codec == FEED)) {
 
 			if (mode == PLAYING) {
-				if (buffering == 0) log_msg(LOG_INFO, "pa: Buffering...");
+				if (buffering == 0) log_buffering_start = 1;
 				buffering = 1;
 			} else buffering = 0;
 		}
@@ -5693,6 +5699,15 @@ void *main_loop(void *thread_id) {
 	//int test1 = 0;
 	// Main loop ---------------------------------------------------------------
 	while (true) {
+
+		if (log_buffering_start) {
+			log_buffering_start = 0;
+			log_msg(LOG_INFO, "pa: Buffering...");
+		}
+		if (log_buffering_done) {
+			log_buffering_done = 0;
+			log_msg(LOG_INFO, "pa: Buffering -> Playing");
+		}
 
 //		test1++;
 //		if (test1 > 650) {
