@@ -7514,7 +7514,8 @@ class GallClass:
 		if self.search_over.active:
 			while self.quickthumbnail.queue:
 				img = self.quickthumbnail.queue.pop(0)
-				response = urllib.request.urlopen(img.url, context=self.tls_context)
+				response = urllib.request.urlopen(
+					urllib.request.Request(img.url, headers={"User-Agent": self.tauon.t_agent}), context=self.tls_context)
 				source_image = io.BytesIO(response.read())
 				img.read_and_thumbnail(source_image, img.size, img.size)
 				source_image.close()
@@ -11335,7 +11336,8 @@ class Tauon:
 						artlink = covers[0]["url"]
 						id = covers[0]["id"]
 
-						response = urllib.request.urlopen(artlink, context=self.tls_context)
+						response = urllib.request.urlopen(
+							urllib.request.Request(artlink, headers={"User-Agent": self.t_agent}), context=self.tls_context)
 						info = response.info()
 
 						t = io.BytesIO()
@@ -16178,7 +16180,8 @@ class Tauon:
 		else:
 			url = images[0]["uri"]
 
-		response = urllib.request.urlopen(url, context=self.tls_context)
+		response = urllib.request.urlopen(
+			urllib.request.Request(url, headers={"User-Agent": self.t_agent}), context=self.tls_context)
 		im = Image.open(response)
 
 		width, height = im.size
@@ -16214,7 +16217,8 @@ class Tauon:
 		if preview:
 			thumblink = thumblink.replace("/fanart/music", "/preview/music")
 
-		response = urllib.request.urlopen(thumblink, timeout=10, context=self.tls_context)
+		response = urllib.request.urlopen(
+			urllib.request.Request(thumblink, headers={"User-Agent": self.t_agent}), timeout=10, context=self.tls_context)
 		info = response.info()
 
 		t = io.BytesIO()
@@ -16354,7 +16358,8 @@ class Tauon:
 
 	def download_img(self, link: str, target_dir: str, track: TrackClass) -> None:
 		try:
-			response = urllib.request.urlopen(link, context=self.tls_context)
+			response = urllib.request.urlopen(
+				urllib.request.Request(link, headers={"User-Agent": self.t_agent}), context=self.tls_context)
 			info = response.info()
 			if info.get_content_maintype() == "image":
 				if info.get_content_subtype() == "jpeg":
@@ -26946,7 +26951,10 @@ class AlbumArt:
 					elif track.file_ext == "JELY":
 						source_image = self.tauon.jellyfin.get_cover(track)
 					else:
-						response = urllib.request.urlopen(self.tauon.get_network_thumbnail_url(track), context=self.tls_context)
+						response = urllib.request.urlopen(
+							urllib.request.Request(
+								self.tauon.get_network_thumbnail_url(track), headers={"User-Agent": self.tauon.t_agent}),
+							context=self.tls_context)
 						source_image = io.BytesIO(response.read())
 					if source_image:
 						with Path(cached_path).open("wb") as file:
@@ -27052,7 +27060,9 @@ class AlbumArt:
 			if not backgrounds:
 				logging.info(f"No fanart.tv background for: {artist}")
 			else:
-				response = urllib.request.urlopen(backgrounds[0]["url"], context=self.tls_context)
+				response = urllib.request.urlopen(
+					urllib.request.Request(backgrounds[0]["url"], headers={"User-Agent": self.tauon.t_agent}),
+					context=self.tls_context)
 				info = response.info()
 
 				assert info.get_content_maintype() == "image"

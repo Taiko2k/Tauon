@@ -90,6 +90,12 @@ if str(install_directory).startswith("/app/") or sys.platform == "darwin":
 	# Its Flatpak or macOS
 	t_id = "com.github.taiko2k.tauonmb"
 t_agent = f"{t_title}/" + n_version
+
+# Requests that don't set their own User-Agent identify as Tauon, not python-requests
+import requests.utils  # noqa: E402
+
+requests.utils.default_user_agent = lambda name="python-requests": t_agent
+
 t_creator = "Taiko2k"
 t_copyright = "Copyright 2015-2026 Taiko2k"
 t_url = "https://tauonmusicbox.rocks/"
