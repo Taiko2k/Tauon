@@ -3978,6 +3978,7 @@ class PlayerCtl:
 				self.jump_time = t
 
 		if play:
+			logging.info(f"Open requested: {target.title}")
 			self.playerCommand = "open"
 			if jump:  # and not prefs.use_jump_crossfade:
 				self.playerSubCommand = "now"

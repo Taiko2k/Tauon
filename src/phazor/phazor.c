@@ -255,6 +255,15 @@ bool reset_set = false;
 // Set by the device callback, logged by the main loop
 volatile int log_buffering_start = 0;
 volatile int log_buffering_done = 0;
+// Underrun diagnostics: frames of silence while playing, and old-track
+// fade audio appended because the new track wasn't ready
+volatile int log_short_frames = 0;
+volatile int log_short_calls = 0;
+volatile int log_fade_putback = 0;
+
+static int frames_to_ms(int frames) {
+	return current_sample_rate > 0 ? (int) ((int64_t) frames * 1000 / current_sample_rate) : 0;
+}
 int reset_set_value = 0;
 int reset_set_byte = 0;
 
@@ -3544,6 +3553,7 @@ int get_audio(int max_frames, float* buff) {
 				if (i >= max_frames) break;
 			}
 			buff_cycle();
+			log_fade_putback += i;
 			if (fade_position == fade_fill) {
 				fade_fill = 0;
 				fade_position = 0;
@@ -3645,12 +3655,20 @@ int get_audio(int max_frames, float* buff) {
 			if (b > 0) {
 				if (peak_roll_l > peak_l) peak_l = peak_roll_l;
 				if (peak_roll_r > peak_r) peak_r = peak_roll_r;
+				if (mode == PLAYING && b < max_frames) {
+					log_short_frames += max_frames - b;
+					log_short_calls++;
+				}
 				pthread_mutex_unlock(&buffer_mutex);
 				return b;
 
 			} // sent data
 
 		} // close if data
+		if (mode == PLAYING) {
+			log_short_frames += max_frames;
+			log_short_calls++;
+		}
 		pthread_mutex_unlock(&buffer_mutex);
 		return max_frames;
 }
@@ -5641,6 +5659,9 @@ void *main_loop(void *thread_id) {
 	bool using_fade = false;
 	int load_prepared = 0;     // target loaded, transition cutover pending
 	int preload_waited_ms = 0;
+	int64_t underrun_logged_ms = 0;
+	int64_t load_started_ms = 0;  // skip timing diagnostics
+	bool preload_logged = false;
 	int ramp_waited_ms = 0;    // how long we have been waiting for a ramp-down
 	int64_t paused_since_ms = 0;  // when the current pause began, 0 when not paused
 
@@ -5707,6 +5728,15 @@ void *main_loop(void *thread_id) {
 		if (log_buffering_done) {
 			log_buffering_done = 0;
 			log_msg(LOG_INFO, "pa: Buffering -> Playing");
+		}
+		if ((log_short_calls || log_fade_putback) && now_ms() - underrun_logged_ms >= 250) {
+			int frames = log_short_frames, calls = log_short_calls, putback = log_fade_putback;
+			log_short_frames -= frames;
+			log_short_calls -= calls;
+			log_fade_putback -= putback;
+			underrun_logged_ms = now_ms();
+			log_msg(LOG_INFO, "ph: Output short by %d ms over %d callbacks; %d ms of old-track fade appended",
+				frames_to_ms(frames), calls, frames_to_ms(putback));
 		}
 
 //		test1++;
@@ -5821,9 +5851,14 @@ void *main_loop(void *thread_id) {
 					// audio of the current track keeps playing out of the
 					// main buffer in the meantime
 					if (!load_prepared) {
+						load_started_ms = now_ms();
+						int left_before = frames_to_ms(get_buff_fill());
 						load_result = load_next();
 						load_prepared = 1;
 						preload_waited_ms = 0;
+						preload_logged = false;
+						log_msg(LOG_INFO, "ph: Skip load took %lld ms (result %d), old track buffered %d -> %d ms",
+							(long long) (now_ms() - load_started_ms), load_result, left_before, frames_to_ms(get_buff_fill()));
 					}
 
 					// For network streams, hold the transition until enough
@@ -5833,6 +5868,11 @@ void *main_loop(void *thread_id) {
 							&& preload_waited_ms < 1500 && !bs_decode_ready()) {
 						preload_waited_ms += 5;
 						break;
+					}
+					if (!preload_logged) {
+						preload_logged = true;
+						log_msg(LOG_INFO, "ph: Skip preload done at %lld ms (waited %d ms), old track buffered %d ms",
+							(long long) (now_ms() - load_started_ms), preload_waited_ms, frames_to_ms(get_buff_fill()));
 					}
 
 					if (command == START) {
@@ -5886,6 +5926,10 @@ void *main_loop(void *thread_id) {
 						}
 						pthread_mutex_unlock(&buffer_mutex);
 					}
+
+					log_msg(LOG_INFO, "ph: Skip cut at %lld ms: %s, old track buffered %d ms",
+						(long long) (now_ms() - load_started_ms), using_fade ? "crossfade" : "hard cut",
+						frames_to_ms(using_fade ? fade_fill : get_buff_fill()));
 
 					if (!using_fade) {
 						// Jump immediately

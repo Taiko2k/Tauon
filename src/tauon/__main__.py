@@ -156,7 +156,9 @@ if not user_directory.is_dir():
 if debug:
 	file_handler = logging.FileHandler(user_directory / "tauon.log")
 	file_handler.setLevel(logging.DEBUG)
-	file_handler.setFormatter(formatter)
+	# Millisecond times and thread names, for timing issues
+	file_handler.setFormatter(logging.Formatter(
+		"%(asctime)s.%(msecs)03d [%(levelname)s] [%(threadName)s] %(message)s", "%H:%M:%S"))
 	logging.getLogger().addHandler(file_handler)
 	logging.info(f"Debug mode enabled - saving log to {user_directory / 'tauon.log'}")
 
