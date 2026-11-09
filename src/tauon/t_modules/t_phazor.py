@@ -1627,6 +1627,19 @@ def player4(tauon: Tauon) -> None:
 			min_buffer_frames = frames
 			aud.config_set_min_buffer(frames)
 
+	def update_prefetch_target(opening: TrackClass | None = None) -> None:
+		"""Point the feeder at the track after the current one. Before a gapless
+		handover completes the queue hasn't moved on, so the track after the
+		current one can be the one opening; that is never worth prefetching."""
+		if not (feeder.enabled and prefs.network_stream):
+			return
+		try:
+			nxt = pctl.advance(dry=True)
+			track = pctl.get_track(nxt) if nxt is not None else None
+			feeder.set_prefetch(None if track is opening else track)
+		except Exception:
+			logging.exception("Failed to set prefetch target")
+
 	def set_native_output_compressor() -> None:
 		compressor_wanted = output_compressor_wanted()
 		pctl.output_compression_enabled = compressor_wanted
@@ -1994,12 +2007,7 @@ def player4(tauon: Tauon) -> None:
 
 				# Tell the feeder which track to prefetch next, so its start
 				# can be injected straight into the buffer when it plays
-				if feeder.enabled and prefs.network_stream:
-					try:
-						nxt = pctl.advance(dry=True)
-						feeder.set_prefetch(pctl.get_track(nxt) if nxt is not None else None)
-					except Exception:
-						logging.exception("Failed to set prefetch target")
+				update_prefetch_target(opening=target_object)
 
 				length: float = 0
 				remain: float = 0
@@ -2200,6 +2208,9 @@ def player4(tauon: Tauon) -> None:
 						if pctl.playerCommandReady and pctl.playerCommand == "open":
 							pctl.playerCommandReady = False
 							pctl.playerCommand = ""
+
+					# The queue has moved on now, so the real next track is known
+					update_prefetch_target()
 
 					loaded_track = target_object
 					loaded_track_streamed = stream_url is not None
