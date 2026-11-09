@@ -13363,7 +13363,20 @@ class Tauon:
 			subprocess.call(["xdg-open", target])
 
 	def open_data_directory(self) -> None:
-		target = str(self.user_directory)
+		self.open_directory(self.user_directory)
+
+	def open_layouts_directory(self) -> None:
+		self.custom.ensure_loaded()
+		folder = self.custom.layouts_dir()
+		# Never create it here: a missing folder means loading failed, and an
+		# empty one would skip the migration of the old layouts file.
+		if not folder.is_dir():
+			self.show_message(_("Layouts folder unavailable"), _("Custom layouts failed to load; see the log."), mode="warning")
+			return
+		self.open_directory(folder)
+
+	def open_directory(self, path: Path | str) -> None:
+		target = str(path)
 		if self.windows:
 			os.startfile(target)
 		elif self.macos:
@@ -21686,13 +21699,13 @@ class Tauon:
 		trackclass_jar = db_snapshot[162]
 
 		# Columns header-bar config is per custom-slot (stored in
-		# custom_layouts.json). Persist the PRESET columns to state.p — while a
+		# its layout file). Persist the PRESET columns to state.p — while a
 		# custom slot is active gui holds the slot's columns, so use the backup.
 		_custom = getattr(self, "custom", None)
 		if _custom is not None:
 			_pcols = _custom.preset_columns_snapshot()
 			if gui.custom_mode:
-				# Flush any live column edits to the slot's json too.
+				# Flush any live column edits to the slot's file too.
 				_custom.save_slots()
 		else:
 			_pcols = {"pl_st": gui.pl_st, "set_bar": gui.set_bar,
@@ -33534,6 +33547,7 @@ class Over:
 			_("Show title text"): "tray text title now playing label",
 			_("Monochrome tray icon"): "tray icon monochrome symbolic grey gray black white colour color",
 			_("Layout cycling order"): "layout layouts custom slot view order cycle new empty",
+			_("Layout files"): "layout layouts custom tlayout folder share import export files open",
 			_("Gallery thumbnail size and titles"): "gallery album art grid covers thumbnails bigger smaller size titles",
 			_("Tracklist columns, font size and row height"): "tracklist columns font text size row height bigger smaller density compact",
 			_("Track menu search links"): "wikipedia bandcamp genius sonemic rym search links context menu",
@@ -34534,6 +34548,9 @@ class Over:
 					lambda ref=ref: self.request_delete_layout(ref),
 					accent=accent, icon=gui.delete_icon, tooltip=_("Delete"))
 		rows.action(_("Layout cycling order"), ((_("New Empty Slot"), custom.add_slot, False),))
+		rows.action(
+			_("Layout files"), ((_("Open Layouts Folder"), self.tauon.open_layouts_directory, False),),
+			hint=_("Share a layout by copying its .tlayout file"))
 
 	def settings_body_elsewhere(self, rows: SettingsRows) -> None:
 		rows.pointer(_("Gallery thumbnail size and titles"), _("Right-click the gallery"), "album grid covers bigger smaller")

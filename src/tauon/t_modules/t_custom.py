@@ -29,7 +29,8 @@ Implemented here:
 * A widget registry of adapters over the real panel renderers (every entry is
   backed by real rendering; there are no placeholder widgets).
 * Window-controls fallback drawn on hover when no widget provides them.
-* A single custom layout persisted to ``custom_layouts.json``.
+* Custom layouts persisted one per ``layouts/<name>.tlayout`` file in the user
+  data folder (portable, shareable), with the order in ``layouts/order.json``.
 """
 from __future__ import annotations
 
@@ -37,10 +38,15 @@ import ctypes
 import json
 import logging
 import math
+import os
+import re
+import shutil
 import threading
 import time
 import webbrowser
 from collections.abc import Iterator
+from contextlib import suppress
+from pathlib import Path
 from queue import Empty, SimpleQueue
 from typing import TYPE_CHECKING, Callable
 
@@ -123,6 +129,37 @@ class Widget:
 
 	def set_config(self, d: dict) -> None:
 		pass
+
+	# Settings from the saved conf this version doesn't read (e.g. written by a
+	# newer Tauon); written back unchanged so they survive a save.
+	extra_conf: dict | None = None
+
+
+class UnknownWidget(Widget):
+	"""Placeholder for a widget kind or node type this version doesn't have,
+	e.g. from a layout made in a newer Tauon. Keeps the saved data so saving
+	the layout doesn't drop it; removing or replacing the widget discards it."""
+
+	name = N_("Unsupported Widget")
+	offscreen = False
+
+	def __init__(self, kind: str, conf: dict | None = None, node: dict | None = None) -> None:
+		self.kind = kind
+		self.conf = conf
+		# The whole saved node, for an unknown node type (it may hold children).
+		self.node = node
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
+		ddt = tauon.ddt
+		bg = ColourRGBA(40, 32, 20, 255)
+		ddt.rect((round(x), round(y), round(w), round(h)), bg)
+		ddt.text(
+			(round(x + w / 2), round(y + h / 2) - round(8 * tauon.gui.scale), 2),
+			_("Unsupported widget: %s") % self.kind, ColourRGBA(200, 170, 120, 255), 211,
+			max_w=round(w), bg=bg)
+
+	def get_config(self) -> dict | None:
+		return self.conf
 
 
 class ArtBoxWidget(Widget):
@@ -3944,10 +3981,13 @@ class Node:
 		# (equals rect when gutter is 0). Resize boundaries and drag math use
 		# this, so hot spots and behaviour don't shift when a gutter is set.
 		self.slot_rect: tuple[float, float, float, float] = (0, 0, 0, 0)
+		# Saved fields this version doesn't know, written back on save.
+		self.extra: dict = {}
 
 	# -- serialization --
 	def _base_dict(self) -> dict:
 		return {
+			**self.extra,
 			"weight": self.weight, "lock_v": self.lock_v, "lock_h": self.lock_h,
 			"fixed_w": self.fixed_w, "fixed_h": self.fixed_h, "aspect": self.aspect,
 			"square": self.square,
@@ -3968,6 +4008,7 @@ class Node:
 		self.border = d.get("border", False)
 		title = d.get("tab_title", "")
 		self.tab_title = title if isinstance(title, str) else ""
+		self.extra = {k: v for k, v in d.items() if k not in _NODE_KEYS}
 
 
 class Leaf(Node):
@@ -3990,11 +4031,14 @@ class Leaf(Node):
 		return self.widget.kind if self.widget else None
 
 	def to_dict(self) -> dict:
+		widget = self.widget
+		if isinstance(widget, UnknownWidget) and widget.node is not None:
+			return {**widget.node, **self._base_dict()}
 		d = self._base_dict()
 		d["type"] = "leaf"
 		d["kind"] = self.kind
-		if self.widget is not None:
-			conf = self.widget.get_config()
+		if widget is not None:
+			conf = {**(widget.extra_conf or {}), **(widget.get_config() or {})}
 			if conf:
 				d["conf"] = conf
 		return d
@@ -4002,11 +4046,24 @@ class Leaf(Node):
 	@staticmethod
 	def from_dict(d: dict) -> "Leaf":
 		kind = d.get("kind")
-		leaf = Leaf(make_widget(kind) if kind else None)
-		leaf._load_base(d)
 		conf = d.get("conf")
-		if leaf.widget is not None and isinstance(conf, dict):
-			leaf.widget.set_config(conf)
+		conf = conf if isinstance(conf, dict) else None
+		widget = make_widget(kind) if isinstance(kind, str) else None
+		if widget is None and isinstance(kind, str) and kind:
+			widget = UnknownWidget(kind, conf)
+		elif widget is not None and conf:
+			widget.set_config(conf)
+			known = widget.get_config() or {}
+			widget.extra_conf = {k: v for k, v in conf.items() if k not in known} or None
+		leaf = Leaf(widget)
+		leaf._load_base(d)
+		return leaf
+
+	@staticmethod
+	def unknown_node(d: dict) -> "Leaf":
+		"""A node of a type this version doesn't have, kept verbatim."""
+		leaf = Leaf(UnknownWidget(str(d.get("type")), node=d))
+		leaf._load_base(d)
 		return leaf
 
 
@@ -4071,12 +4128,23 @@ class TabStack(Node):
 		return tabs
 
 
+# Every saved node field this version reads; others are kept in Node.extra.
+_NODE_KEYS = frozenset((
+	"type", "weight", "lock_v", "lock_h", "fixed_w", "fixed_h", "aspect", "square",
+	"gutter", "padding", "border", "tab_title",
+	"kind", "conf", "orient", "resizable", "children", "active",
+))
+
+
 def node_from_dict(d: dict) -> Node:
-	if d.get("type") == "stack":
+	kind = d.get("type", "leaf")
+	if kind == "stack":
 		return Stack.from_dict(d)
-	if d.get("type") == "tabs":
+	if kind == "tabs":
 		return TabStack.from_dict(d)
-	return Leaf.from_dict(d)
+	if kind == "leaf":
+		return Leaf.from_dict(d)
+	return Leaf.unknown_node(d)
 
 
 # -- layout pass ------------------------------------------------------------
@@ -4410,6 +4478,36 @@ TEMPLATES = ["Blank", "Volcano", "Tracks + Gallery (Compact)"]
 # custom slots these can be reordered but never deleted.
 PRESET_LAYOUTS = ("side_normal", "side_reversed", "gallery1", "tracks", "lyrics", "radio")
 
+# Layout files: one self-contained JSON file per custom layout.
+LAYOUTS_DIR = "layouts"
+LAYOUT_EXT = ".tlayout"
+LAYOUT_ORDER_FILE = "order.json"
+LAYOUT_FORMAT = "tauon-layout"
+LAYOUT_VERSION = 1
+
+_BAD_FILENAME_CHARS = frozenset('<>:"/\\|?*')
+_WINDOWS_RESERVED = frozenset(
+	["CON", "PRN", "AUX", "NUL"] + [f"COM{i}" for i in range(1, 10)] + [f"LPT{i}" for i in range(1, 10)])
+_COPY_SUFFIX = re.compile(r" \(\d+\)$")
+
+
+def layout_file_stem(name: str) -> str:
+	"""A file name (without extension) for a layout name that is valid on
+	every platform, so layout files can be shared."""
+	stem = "".join("_" if c in _BAD_FILENAME_CHARS or ord(c) < 32 else c for c in name)
+	stem = stem.strip().lstrip(".")[:100].rstrip(" .")
+	if not stem:
+		stem = "Layout"
+	if stem.split(".")[0].upper() in _WINDOWS_RESERVED:
+		stem += "_"
+	return stem
+
+
+def _strip_copy_suffix(stem: str) -> str:
+	""""Name (2)" -> "Name" (the suffix added to keep file names unique)."""
+	return _COPY_SUFFIX.sub("", stem)
+
+
 
 class CustomLayout:
 	"""Owns the custom layout trees and drives them. Active only while
@@ -4446,8 +4544,12 @@ class CustomLayout:
 		# columns are stashed in _preset_columns while a slot is active so
 		# exiting custom mode restores them. _columns_owner tracks whose config
 		# gui currently holds (None = preset, else a slot index). Persisted in
-		# custom_layouts.json, not the global state.p.
+		# the slot's layout file, not the global state.p.
 		self.slot_columns: list[dict | None] = [None]
+		# Layout files this session owns, casefolded stem -> (stem, contents
+		# last read or written); unchanged files aren't rewritten on save.
+		self._written: dict[str, tuple[str, str]] = {}
+		self._order_written: str | None = None
 		self._preset_columns: dict | None = None
 		self._columns_owner: int | None = None
 
@@ -4664,86 +4766,243 @@ class CustomLayout:
 			cb()
 
 	# -- persistence ---------------------------------------------------------
+	#
+	# Each slot is its own self-contained, shareable file in
+	# <user data>/layouts/<name>.tlayout. App state that isn't part of any one
+	# layout (the shared preset/slot order and the active slot) lives in
+	# layouts/order.json, which refers to layouts by file stem. Files that fail
+	# to parse are left untouched and their names are never reused.
 
-	def _path(self):
+	def _legacy_path(self) -> Path:
 		return self.tauon.user_directory / "custom_layouts.json"
+
+	def layouts_dir(self) -> Path:
+		return self.tauon.user_directory / LAYOUTS_DIR
+
+	def _derived_title(self, tree: Node | None) -> str:
+		return _("Empty Slot") if self._is_blank_tree(tree) else _("Custom Layout")
 
 	def load_slots(self) -> None:
 		self._loaded = True
+		self._written = {}
+		self._order_written = None
 		try:
-			p = self._path()
-			if p.is_file():
-				data = json.loads(p.read_text(encoding="utf-8"))
-				# Slots are numbered keys "0".."n-1"; read consecutively so the
-				# count is whatever was saved (legacy files hold three).
-				slots: list[Node | None] = []
-				i = 0
-				while str(i) in data:
-					d = data[str(i)]
-					slots.append(node_from_dict(d) if d else None)
-					i += 1
-				if not slots:
-					slots = [None]
-				self.slots = slots
-				names = data.get("names")
-				self.slot_names = [
-					(names.get(str(i)) if isinstance(names, dict) else None) or None
-					for i in range(len(slots))
-				]
-				# Which slot was last active (so a restart into custom mode
-				# resumes the same layout).
-				a = data.get("active")
-				self.active_slot = a if isinstance(a, int) and 0 <= a < len(self.slots) else 0
-				# Per-slot columns header-bar config.
-				cols = data.get("columns")
-				self.slot_columns = [
-					(cols.get(str(i)) if isinstance(cols, dict) else None)
-					for i in range(len(slots))
-				]
-				self.slot_columns = [c if isinstance(c, dict) else None for c in self.slot_columns]
-				# The shared preset/slot order (missing in files written before
-				# the standard layouts joined the order — _normalise_order then
-				# seeds the default).
-				order = data.get("order")
-				self.layout_order = [str(k) for k in order] if isinstance(order, list) else []
+			folder = self.layouts_dir()
+			if folder.is_dir():
+				self._load_folder(folder)
 			else:
-				# First run (no saved layouts): seed ready-made layouts plus one
-				# empty slot.
-				self.slots = [
-					self.template("Volcano"),
-					self.template("Tracks + Gallery (Compact)"),
-					None,
-				]
-				self.slot_names = ["Volcano", "Tracks + Gallery (Compact)", None]
-				self.slot_columns = [None, None, None]
-				self.layout_order = []
+				# First run of folder storage: migrate the old single-file store
+				# if there is one, else seed the built-in layouts.
+				legacy = self._legacy_path()
+				if legacy.is_file():
+					self._load_legacy(legacy)
+					logging.info("Migrating custom layouts to %s", folder)
+				else:
+					self._seed_defaults()
+				self._normalise_order()
+				# Build the folder aside and move it into place, so a failed
+				# write can't leave a partial folder that hides the old file.
+				partial = folder.with_name(folder.name + ".partial")
+				shutil.rmtree(partial, ignore_errors=True)
+				self._write_files(partial)
+				os.replace(partial, folder)
 			self._normalise_order()
 			self._save_ok = True
 		except Exception:
-			# _save_ok stays False: the file may hold layouts we couldn't read,
+			# _save_ok stays False: the store may hold layouts we couldn't read,
 			# so refuse to overwrite it for the rest of the session.
 			logging.exception("Failed to load custom layouts")
 		self._refresh_layout_menu()
 
+	def _seed_defaults(self) -> None:
+		self.slots = [
+			self.template("Volcano"),
+			self.template("Tracks + Gallery (Compact)"),
+			None,
+		]
+		self.slot_names = ["Volcano", "Tracks + Gallery (Compact)", None]
+		self.slot_columns = [None, None, None]
+		self.active_slot = 0
+		self.layout_order = []
+
+	def _load_legacy(self, path: Path) -> None:
+		"""Read the pre-folder custom_layouts.json (slots keyed "0".."n-1")."""
+		data = json.loads(path.read_text(encoding="utf-8"))
+		slots: list[Node | None] = []
+		i = 0
+		while str(i) in data:
+			d = data[str(i)]
+			slots.append(node_from_dict(d) if d else None)
+			i += 1
+		if not slots:
+			slots = [None]
+		self.slots = slots
+		names = data.get("names")
+		self.slot_names = [
+			(names.get(str(i)) if isinstance(names, dict) else None) or None
+			for i in range(len(slots))
+		]
+		a = data.get("active")
+		self.active_slot = a if isinstance(a, int) and 0 <= a < len(slots) else 0
+		cols = data.get("columns")
+		self.slot_columns = [
+			(cols.get(str(i)) if isinstance(cols, dict) else None) for i in range(len(slots))
+		]
+		self.slot_columns = [c if isinstance(c, dict) else None for c in self.slot_columns]
+		order = data.get("order")
+		self.layout_order = [str(k) for k in order] if isinstance(order, list) else []
+
+	def _load_folder(self, folder: Path) -> None:
+		state: dict = {}
+		try:
+			raw = json.loads((folder / LAYOUT_ORDER_FILE).read_text(encoding="utf-8"))
+			if isinstance(raw, dict):
+				state = raw
+		except FileNotFoundError:
+			pass
+		except Exception:
+			logging.exception("Ignoring unreadable layout order file")
+
+		loaded: dict[str, tuple[Node | None, str | None, dict | None]] = {}
+		for path in sorted(folder.glob("*" + LAYOUT_EXT), key=lambda p: p.name.casefold()):
+			if path.name.startswith(".") or not path.is_file():
+				continue
+			stem = path.name[: -len(LAYOUT_EXT)]
+			try:
+				text = path.read_text(encoding="utf-8")
+				tree, name, cols = self._parse_layout_file(text, stem)
+			except Exception:
+				logging.exception("Skipping unreadable layout file %s", path.name)
+				continue
+			loaded[stem] = (tree, name, cols)
+			self._written[stem.casefold()] = (stem, text)
+
+		# Slot order: as listed in order.json, then any other files by name.
+		order = state.get("order")
+		order = [str(k) for k in order] if isinstance(order, list) else []
+		stems = [k[len("layout:"):] for k in order if k.startswith("layout:")]
+		stems = [s for s in dict.fromkeys(stems) if s in loaded]
+		stems += [s for s in loaded if s not in stems]
+
+		if stems:
+			self.slots = [loaded[s][0] for s in stems]
+			self.slot_names = [loaded[s][1] for s in stems]
+			self.slot_columns = [loaded[s][2] for s in stems]
+		else:
+			self.slots, self.slot_names, self.slot_columns = [None], [None], [None]
+		index = {s: i for i, s in enumerate(stems)}
+		self.layout_order = []
+		for k in order:
+			if k.startswith("layout:"):
+				if k[len("layout:"):] in index:
+					self.layout_order.append(f"slot:{index[k[len('layout:'):]]}")
+			else:
+				self.layout_order.append(k)
+		active = state.get("active")
+		self.active_slot = index.get(active, 0) if isinstance(active, str) else 0
+
+	def _parse_layout_file(self, text: str, stem: str) -> tuple[Node | None, str | None, dict | None]:
+		data = json.loads(text)
+		if not isinstance(data, dict) or data.get("format") != LAYOUT_FORMAT:
+			raise ValueError("not a Tauon layout file")
+		version = data.get("version")
+		if not isinstance(version, int) or version > LAYOUT_VERSION:
+			raise ValueError(f"unsupported layout version {version!r}")
+		tree = data.get("tree")
+		tree = node_from_dict(tree) if isinstance(tree, dict) else None
+		cols = data.get("columns")
+		cols = cols if isinstance(cols, dict) else None
+		name = data.get("name")
+		name = name.strip() if isinstance(name, str) and name.strip() else None
+		# The file name wins when the file was renamed by hand; the stored
+		# name keeps characters a file name can't hold.
+		base = _strip_copy_suffix(stem).casefold()
+		if name is not None:
+			if layout_file_stem(name).casefold() != base:
+				name = stem
+		elif layout_file_stem(self._derived_title(tree)).casefold() != base:
+			name = stem
+		return tree, name, cols
+
+	def _layout_file_text(self, i: int) -> str:
+		tree = self.slots[i]
+		return json.dumps({
+			"format": LAYOUT_FORMAT,
+			"version": LAYOUT_VERSION,
+			"name": self.slot_names[i],
+			"tree": tree.to_dict() if tree else None,
+			"columns": self.slot_columns[i],
+		}, indent=1)
+
+	def _slot_stems(self, folder: Path) -> list[str]:
+		"""Unique file stem per slot, from its title. Avoids names already used
+		by files this session doesn't own (unreadable or added externally)."""
+		taken: set[str] = set()
+		stems = []
+		for i in range(len(self.slots)):
+			base = layout_file_stem(self.slot_title(i))
+			stem, n = base, 1
+			while True:
+				key = stem.casefold()
+				foreign = key not in self._written and (folder / (stem + LAYOUT_EXT)).exists()
+				if key not in taken and not foreign:
+					break
+				n += 1
+				stem = f"{base} ({n})"
+			taken.add(key)
+			stems.append(stem)
+		return stems
+
 	def save_slots(self) -> None:
 		if not self._save_ok:
-			logging.warning("Refusing to save custom layouts: current file was never successfully loaded")
+			logging.warning("Refusing to save custom layouts: the store was never successfully loaded")
 			return
 		try:
 			# Capture the live columns into the active slot so edits made via the
 			# header bar (resize/reorder/hide) are persisted.
 			if self._columns_owner is not None and 0 <= self._columns_owner < len(self.slot_columns):
 				self.slot_columns[self._columns_owner] = self._capture_columns()
-			data = {str(i): (s.to_dict() if s else None) for i, s in enumerate(self.slots)}
-			data["active"] = self.active_slot
-			data["names"] = {str(i): n for i, n in enumerate(self.slot_names) if n}
-			data["columns"] = {str(i): c for i, c in enumerate(self.slot_columns) if c is not None}
-			self._normalise_order()
-			data["order"] = list(self.layout_order)
-			with atomic_save(self._path(), "w") as file:
-				file.write(json.dumps(data, indent=1))
+			self._write_files(self.layouts_dir())
 		except Exception:
 			logging.exception("Failed to save custom layouts")
+
+	def _write_files(self, folder: Path) -> None:
+		"""Write changed layout files and the order file into ``folder``, and
+		remove files of deleted or renamed slots."""
+		folder.mkdir(parents=True, exist_ok=True)
+		stems = self._slot_stems(folder)
+		keys = {s.casefold() for s in stems}
+
+		# Drop files of deleted or renamed slots (a case-only rename keeps its
+		# key and is handled below).
+		for key, (old, _text) in list(self._written.items()):
+			if key not in keys:
+				with suppress(FileNotFoundError):
+					(folder / (old + LAYOUT_EXT)).unlink()
+				del self._written[key]
+
+		for i, stem in enumerate(stems):
+			text = self._layout_file_text(i)
+			prev = self._written.get(stem.casefold())
+			if prev == (stem, text):
+				continue
+			if prev is not None and prev[0] != stem:
+				with suppress(FileNotFoundError):
+					(folder / (prev[0] + LAYOUT_EXT)).unlink()
+			with atomic_save(folder / (stem + LAYOUT_EXT), "w") as file:
+				file.write(text)
+			self._written[stem.casefold()] = (stem, text)
+
+		self._normalise_order()
+		order = [
+			f"layout:{stems[int(k[5:])]}" if k.startswith("slot:") else k
+			for k in self.layout_order
+		]
+		text = json.dumps({"order": order, "active": stems[self.active_slot]}, indent=1)
+		if text != self._order_written:
+			with atomic_save(folder / LAYOUT_ORDER_FILE, "w") as file:
+				file.write(text)
+			self._order_written = text
 
 	# -- per-slot columns config --------------------------------------------
 
