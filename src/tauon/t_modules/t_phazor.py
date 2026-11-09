@@ -84,6 +84,29 @@ def meter_level(peak: float) -> float:
 	return min(abs(peak), 1.0) * LEVEL_METER_SEGMENTS
 
 
+def audio_data_offset(buf: bytes | bytearray) -> int | None:
+	"""Where audio frames start, past an ID3v2 tag and FLAC metadata (cover
+	art can be megabytes). None if buf is too short to tell, 0 if unknown."""
+	pos = 0
+	if buf[:3] == b"ID3":
+		if len(buf) < 10:
+			return None
+		size = (buf[6] & 0x7F) << 21 | (buf[7] & 0x7F) << 14 | (buf[8] & 0x7F) << 7 | (buf[9] & 0x7F)
+		pos = 10 + size + (10 if buf[5] & 0x10 else 0)
+	if len(buf) < pos + 4:
+		return None
+	if buf[pos:pos + 4] != b"fLaC":
+		return pos
+	pos += 4
+	while True:
+		if len(buf) < pos + 4:
+			return None
+		last = buf[pos] & 0x80
+		pos += 4 + int.from_bytes(buf[pos + 1:pos + 4], "big")
+		if last:
+			return pos
+
+
 # FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
 # limited to these and downmixes anything else to the closest one.
 PCM_LAYOUTS = {
@@ -249,16 +272,23 @@ class StreamFeeder:
 		# Pending request to also save a fully-streamed track to the disk cache
 		self._cache_lock = threading.Lock()
 		self._cache_request: tuple[TrackClass, str] | None = None
-		# Prefetch of the upcoming track's first few MB
-		self.prefetch_bytes = 3 * 1000 * 1000
+		# Prefetch of the upcoming track's start, so skipping to it plays at once
+		self.prefetch_seconds = 10  # audio to fetch
+		self.prefetch_trigger_ahead = 10.0  # current track buffered this far ahead first
+		self.prefetch_fallback_bytes = 3 * 1000 * 1000  # when the bitrate is unknown
+		self.prefetch_max_bytes = 32 * 1000 * 1000
+		self.prefetch_max_age = 20 * 60  # signed stream URLs may expire
 		self._prefetch_session = requests.Session()  # separate from the main loop's
 		self._prefetch_lock = threading.Lock()
 		self._prefetch_target: TrackClass | None = None  # track to prefetch
 		self._prefetch_url: str | None = None  # url of the held prefetch data
 		self._prefetch_data: bytes = b""
 		self._prefetch_size: int = -1  # full file size if known
+		self._prefetch_time = 0.0
 		self._prefetch_done: bool = False
 		self._prefetching: bool = False
+		# Claimed prefetch (url, data, size, title) waiting for its stream to open
+		self._inject: tuple[str, bytes, int, str] | None = None
 		try:
 			aud.net_generation.restype = ctypes.c_int
 			aud.net_get_url.restype = ctypes.c_char_p
@@ -319,6 +349,32 @@ class StreamFeeder:
 			self._prefetch_size = -1
 			self._prefetch_done = False
 
+	def claim_prefetch(self, track: TrackClass) -> str | None:
+		"""If track's start is prefetched, hold it for the stream about to open
+		and return the URL it came from. Streaming from that same URL keeps the
+		bytes in line (Subsonic URLs carry a random salt, for one)."""
+		with self._prefetch_lock:
+			if self._prefetch_target is not track or not self._prefetch_done or not self._prefetch_data:
+				return None
+			if time.monotonic() - self._prefetch_time > self.prefetch_max_age:
+				return None
+			title = getattr(track, "title", None) or getattr(track, "filename", "?")
+			url = self._prefetch_url
+			self._inject = (url, self._prefetch_data, self._prefetch_size, title)
+			self._prefetch_target = None
+			self._prefetch_url = None
+			self._prefetch_data = b""
+			self._prefetch_size = -1
+			self._prefetch_done = False
+			return url
+
+	def _buffered_ahead(self, offset: int, size: int) -> float:
+		"""Rough seconds of the current stream buffered past the playhead"""
+		length = self.pctl.playing_length
+		if size <= 0 or length <= 0:
+			return 0.0
+		return offset / size * length - self.pctl.decode_time
+
 	def _resolve_stream_url(self, track: TrackClass) -> str | None:
 		"""Resolve a track to a single streamable http(s) URL, or None"""
 		try:
@@ -335,7 +391,7 @@ class StreamFeeder:
 		return network_url
 
 	def _prefetch_worker(self, track: TrackClass) -> None:
-		"""Fetch the first prefetch_bytes of the upcoming track into memory"""
+		"""Fetch the first prefetch_seconds of the upcoming track into memory"""
 		title = getattr(track, "title", None) or getattr(track, "filename", "?")
 		url = None
 		data = b""
@@ -350,9 +406,10 @@ class StreamFeeder:
 			if not url:
 				logging.info(f"Prefetch: skip '{title}' (no streamable URL)")
 				return
-			logging.info(f"Prefetch: start '{title}' (up to {self.prefetch_bytes // 1000} KB)")
+			logging.info(f"Prefetch: start '{title}' ({self.prefetch_seconds}s)")
+			# Open ended; the amount is settled once the size and header are known
 			resp = self._prefetch_session.get(
-				url, headers={"Range": f"bytes=0-{self.prefetch_bytes - 1}"}, stream=True, timeout=(5, 30))
+				url, headers={"Range": "bytes=0-"}, stream=True, timeout=(5, 30))
 			try:
 				if resp.status_code != HTTPStatus.PARTIAL_CONTENT:
 					# Without range support we cannot resume after the prefetch,
@@ -362,6 +419,9 @@ class StreamFeeder:
 				total = resp.headers.get("Content-Range", "").rpartition("/")[2]
 				if total.isdigit():
 					size = int(total)
+				length = getattr(track, "length", 0) or 0
+				bitrate = getattr(track, "bitrate", 0) or 0
+				want = None  # bytes to fetch
 				buf = bytearray()
 				for chunk in resp.iter_content(65536):
 					# Abandon if the target changed (queue edit / skip)
@@ -370,7 +430,19 @@ class StreamFeeder:
 							logging.info(f"Prefetch: abort '{title}' (target changed) after {len(buf) // 1000} KB")
 							return
 					buf += chunk
-					if len(buf) >= self.prefetch_bytes:
+					if want is None:
+						start = audio_data_offset(buf)
+						if start is not None:
+							if size > start and length > 0:
+								rate = (size - start) / length
+							else:
+								rate = bitrate * 125  # kbps to bytes/s
+							if rate > 0:
+								want = start + int(rate * self.prefetch_seconds) + 65536
+							else:
+								want = self.prefetch_fallback_bytes
+							want = min(want, self.prefetch_max_bytes)
+					if len(buf) >= (want or self.prefetch_max_bytes):
 						break
 				data = bytes(buf)
 			finally:
@@ -384,6 +456,7 @@ class StreamFeeder:
 					self._prefetch_url = url
 					self._prefetch_data = data
 					self._prefetch_size = size
+					self._prefetch_time = time.monotonic()
 					self._prefetch_done = True
 					logging.info(f"Prefetch: ready '{title}' ({len(data) // 1000} KB of {size // 1000 if size > 0 else '?'} KB)")
 				self._prefetching = False
@@ -391,6 +464,12 @@ class StreamFeeder:
 	def _maybe_start_prefetch(self) -> None:
 		"""Kick off a background prefetch of the upcoming track if pending"""
 		with self._prefetch_lock:
+			if self._prefetch_done and time.monotonic() - self._prefetch_time > self.prefetch_max_age:
+				# Its URL may have expired; fetch it again
+				self._prefetch_url = None
+				self._prefetch_data = b""
+				self._prefetch_size = -1
+				self._prefetch_done = False
 			if self._prefetching or self._prefetch_done:
 				return
 			track = self._prefetch_target
@@ -541,18 +620,15 @@ class StreamFeeder:
 							cache_offset = 0
 							cache_ok = True
 
-					# Inject prefetched bytes for this stream, if we have them
-					inj = None
+					# Inject the claimed prefetch if it's for this stream; any
+					# other claim is stale now
 					with self._prefetch_lock:
-						if self._prefetch_done and self._prefetch_data and self._prefetch_url == url0:
-							inj_title = getattr(self._prefetch_target, "title", None) or "?"
-							inj = (self._prefetch_data, self._prefetch_size)
-							self._prefetch_url = None
-							self._prefetch_data = b""
-							self._prefetch_done = False
-							self._prefetch_target = None
+						inj = self._inject
+						self._inject = None
+					if inj is not None and inj[0] != url0:
+						inj = None
 					if inj is not None:
-						pdata, psize = inj
+						_url, pdata, psize, inj_title = inj
 						if psize > 0:
 							aud.net_set_size(gen, psize)
 							size = psize
@@ -686,6 +762,7 @@ class StreamFeeder:
 				if fed == 0:
 					# Buffer is full, wait for the player to consume some
 					self._speed_tick(0)
+					self._maybe_start_prefetch()
 					time.sleep(0.05)
 					continue
 				# Tee contiguous bytes to the disk cache, if enabled. A seek
@@ -706,6 +783,9 @@ class StreamFeeder:
 				pending = pending[fed:] if fed < len(pending) else b""
 				if size > 0:
 					self.pctl.buffering_percent = min(100, int(offset * 100 / size))
+				# Enough of this track is safe; fetch the next one's start alongside
+				if self._buffered_ahead(offset, size) >= self.prefetch_trigger_ahead:
+					self._maybe_start_prefetch()
 			except Exception:
 				logging.exception("Stream feeder error")
 				close_response()
@@ -1808,12 +1888,15 @@ def player4(tauon: Tauon) -> None:
 					if instant is None and feeder.enabled and prefs.network_stream \
 							and target_object.index not in stream_unsupported \
 							and not pctl.transcode_bitrate(target_object):
-						try:
-							network_url, params = pctl.get_url(target_object)
-						except Exception:
-							logging.exception("Failed to resolve track URL")
-							network_url = None
-							params = None
+						# Prefetched start: stream from its URL so it can be injected
+						stream_url = feeder.claim_prefetch(target_object)
+						network_url = None
+						params = None
+						if stream_url is None:
+							try:
+								network_url, params = pctl.get_url(target_object)
+							except Exception:
+								logging.exception("Failed to resolve track URL")
 						# Multi-part urls (some Tidal tracks) use the download path
 						if isinstance(network_url, str) and network_url.startswith("http"):
 							if params:
