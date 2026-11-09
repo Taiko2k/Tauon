@@ -43170,18 +43170,18 @@ class TracklistLayoutPanel:
 		return [
 			[(_("Track rows"), "standard", [
 				(_("Loves"), tauon.heart_toggle, lambda: bool(tauon.heart_toggle(1))),
-				(_("Track ratings"), tauon.rating_toggle, lambda: bool(tauon.rating_toggle(1))),
-				(_("Star hints"), tauon.star_toggle, lambda: bool(tauon.star_toggle(1))),
 				(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
 			])],
 			[(_("Ratings"), "", [
+				(_("Track ratings"), tauon.rating_toggle, lambda: bool(tauon.rating_toggle(1))),
+				(_("Album ratings"), tauon.album_rating_toggle, lambda: bool(tauon.album_rating_toggle(1))),
+				(_("Star hints"), tauon.star_toggle, lambda: bool(tauon.star_toggle(1))),
 				(_("Whole stars only"), self._toggle_whole_stars, lambda: bool(prefs.rating_whole_stars)),
 			])],
 			[(_("Album titles"), "", [
 				(_("Year"), tauon.toggle_append_date, lambda: bool(tauon.toggle_append_date(1))),
 				(_("Duration"), tauon.toggle_append_total_time, lambda: bool(tauon.toggle_append_total_time(1))),
 				(_("Genre"), self._toggle_genre, lambda: bool(prefs.row_title_genre)),
-				(_("Album ratings"), tauon.album_rating_toggle, lambda: bool(tauon.album_rating_toggle(1))),
 				(_("Left align"), self._toggle_left_align, lambda: prefs.row_title_format == 2),
 			])],
 			[(_("Columns"), "columns", [

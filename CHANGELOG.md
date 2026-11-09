@@ -7,6 +7,7 @@ Changelog
  - Added track ban feature
  - Added tempo control
  - Added drag grip to settings
+ - Added whole star ratings setting
  - Reworked server sync and library add
  - Added transcode for remote servers
 
