@@ -191,3 +191,44 @@ def test_a_new_download_forgets_an_earlier_one_was_ready(tmp_path: Path) -> None
 	assert cache.get_file(item)[0] == 1
 	assert cache.ready is None
 	assert cache.get_now is item
+
+
+def test_a_failed_download_is_tried_again_when_asked_again(tmp_path: Path) -> None:
+	cache = Cachement.__new__(Cachement)
+	cache.direc, cache.files, cache.get_now, cache.ready = str(tmp_path), [], None, None
+	cache.running = True
+	cache.pctl = make_pctl(128)
+	cache.tauon = SimpleNamespace(encode_folder_name=lambda _track: "a", encode_track_name=lambda _track: "b")
+	cache.prefs = SimpleNamespace(encoder_output=str(tmp_path))
+	item = track()
+	# A download that failed, such as while the server couldn't be reached
+	cache.error = item
+	assert cache.get_file(item) == (2, None)
+	# Playing it again starts a new download rather than failing for the rest of the session
+	assert cache.get_file(item)[0] == 1
+	assert cache.get_now is item
+
+
+def test_the_download_in_flight_is_known_while_it_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+	cache = Cachement.__new__(Cachement)
+	cache.direc, cache.files, cache.list, cache.error = str(tmp_path), [], [], None
+	cache.ready = None
+	cache.gui = SimpleNamespace(buffering_text="", request_frame=lambda: None)
+	cache.prefs = SimpleNamespace(jump_start=True)
+	cache.show_message = lambda *_args, **_kwargs: None
+	cache.pctl = make_pctl(128)
+	cache.pctl.buffering_percent = 0
+	cache.pctl.get_url = lambda _track, transcode: ("http://server/stream", {})
+	item = track()
+	during: list[object] = []
+
+	def get(*_args: object, **_kwargs: object) -> SimpleNamespace:
+		during.append(cache.downloading)
+		return SimpleNamespace(status_code=500, headers={"Content-Type": "text/plain"})
+
+	monkeypatch.setattr("tauon.t_modules.t_phazor.requests.get", get)
+	assert cache.dl_file(item) == 1
+	# The player waits at the end of a file while its download runs, and stops waiting when
+	# it ends, however it ends
+	assert during == [item]
+	assert cache.downloading is None

@@ -267,6 +267,15 @@ class StreamFeeder:
 		self.session = requests.Session()
 		self.enabled = True
 		self.speed = 0.0  # measured download rate in bytes/sec, 0 when not downloading
+		# A stream that has started rides out connection trouble for this long, as
+		# there may be minutes of it buffered. One that hasn't gives up after
+		# start_attempts, so the player can fall back or report it promptly.
+		self.retry_window = 30.0
+		self.start_attempts = 3
+		self.retry_pause = 0.25  # grows with each failed try, up to 1 s
+		# Whether the last stream given up on failed for lack of a connection,
+		# rather than something about the stream itself
+		self.last_failure_transient = False
 		self._speed_bytes = 0
 		self._speed_t0 = time.monotonic()
 		# Pending request to also save a fully-streamed track to the disk cache
@@ -409,7 +418,7 @@ class StreamFeeder:
 			logging.info(f"Prefetch: start '{title}' ({self.prefetch_seconds}s)")
 			# Open ended; the amount is settled once the size and header are known
 			resp = self._prefetch_session.get(
-				url, headers={"Range": "bytes=0-"}, stream=True, timeout=(5, 30))
+				url, headers={"Range": "bytes=0-", "Accept-Encoding": "identity"}, stream=True, timeout=(5, 30))
 			try:
 				if resp.status_code != HTTPStatus.PARTIAL_CONTENT:
 					# Without range support we cannot resume after the prefetch,
@@ -528,7 +537,9 @@ class StreamFeeder:
 		size = -1
 		pending = b""
 		no_range = False
-		retries = 0
+		attempts = 0  # failed tries in a row
+		fail_since = 0.0
+		fed_any = False  # the player has taken some of this stream
 
 		# Disk-cache tee state for the current stream
 		cache_file = None
@@ -547,6 +558,25 @@ class StreamFeeder:
 					logging.exception("Stream: error closing response")
 				resp = None
 			pending = b""
+
+		def connection_failed() -> None:
+			"""Note a failed try, then wait a moment or give up on the stream."""
+			nonlocal attempts, fail_since
+			now = time.monotonic()
+			if attempts == 0:
+				fail_since = now
+			attempts += 1
+			if fed_any:
+				give_up = now - fail_since > self.retry_window
+			else:
+				give_up = attempts > self.start_attempts
+			if give_up:
+				logging.error(f"Stream: giving up after {attempts} failed tries")
+				self.last_failure_transient = True
+				aud.net_fail(gen)
+				attempts = 0
+			else:
+				time.sleep(min(1.0, self.retry_pause * attempts))
 
 		def cache_reset() -> None:
 			nonlocal cache_file, cache_temp, cache_final, cache_track, cache_offset, cache_ok
@@ -601,7 +631,9 @@ class StreamFeeder:
 					gen = g
 					size = -1
 					no_range = False
-					retries = 0
+					attempts = 0
+					fed_any = False
+					self.last_failure_transient = False
 					# Adopt a pending cache request if it matches this stream
 					req = None
 					with self._cache_lock:
@@ -646,6 +678,7 @@ class StreamFeeder:
 									cache_discard()
 							fpos += fed0
 						offset = fpos
+						fed_any = offset > 0
 						if offset > 0:
 							logging.info(f"Prefetch: used '{inj_title}' (injected {offset // 1000} KB into the stream)")
 
@@ -678,16 +711,13 @@ class StreamFeeder:
 						continue
 					url = aud.net_get_url().decode()
 					try:
+						# Read raw below, so the bytes must come as they are in the file
 						resp = self.session.get(
-							url, headers={"Range": f"bytes={want}-"}, stream=True, timeout=(5, 30))
-					except Exception:
-						logging.exception("Stream: request failed")
-						retries += 1
-						if retries > 3:
-							aud.net_fail(gen)
-							retries = 0
-						else:
-							time.sleep(0.5)
+							url, headers={"Range": f"bytes={want}-", "Accept-Encoding": "identity"},
+							stream=True, timeout=(5, 30))
+					except Exception as e:
+						logging.warning(f"Stream: request failed: {e}")
+						connection_failed()
 						continue
 					code = resp.status_code
 					if code == HTTPStatus.PARTIAL_CONTENT:
@@ -703,6 +733,12 @@ class StreamFeeder:
 						if cl.isdigit():
 							size = int(cl)
 							aud.net_set_size(gen, size)
+					elif code in (HTTPStatus.REQUEST_TIMEOUT, HTTPStatus.TOO_MANY_REQUESTS) or code >= 500:
+						# The server is busy or restarting
+						logging.warning(f"Stream: server returned status {code}")
+						close_response()
+						connection_failed()
+						continue
 					else:
 						logging.error(f"Stream: server returned status {code}")
 						close_response()
@@ -718,14 +754,10 @@ class StreamFeeder:
 				if not pending:
 					try:
 						chunk = resp.raw.read(65536)
-					except Exception:
-						logging.exception("Stream: read failed")
+					except Exception as e:
+						logging.warning(f"Stream: read failed at byte {offset}: {e}")
 						close_response()
-						retries += 1
-						if retries > 3:
-							aud.net_fail(gen)
-							retries = 0
-						time.sleep(0.2)
+						connection_failed()
 						continue
 					if not chunk:
 						# End of response body
@@ -743,14 +775,9 @@ class StreamFeeder:
 								cache_discard()
 						else:
 							# Connection ended early, resume from current offset
-							retries += 1
-							if retries > 3:
-								aud.net_fail(gen)
-								retries = 0
-							else:
-								time.sleep(0.2)
+							connection_failed()
 						continue
-					retries = 0
+					attempts = 0
 					pending = chunk
 
 				fed = aud.net_feed(gen, offset, pending, len(pending))
@@ -779,6 +806,7 @@ class StreamFeeder:
 					else:
 						cache_discard()
 				offset += fed
+				fed_any = True
 				self._speed_tick(fed)
 				pending = pending[fed:] if fed < len(pending) else b""
 				if size > 0:
@@ -814,6 +842,9 @@ class Cachement:
 		self.running = False
 		self.ready = None
 		self.error = None
+		# Track whose download is in flight. The player waits at the end of
+		# what's on disk for this one rather than taking it as the end of the track.
+		self.downloading: TrackClass | None = None
 
 	def get_key(self, track: TrackClass) -> str:
 		if track.is_network:
@@ -855,6 +886,8 @@ class Cachement:
 		# 1: file downloading
 		# 2: file not found
 		if self.error == track:
+			# Reported once, so playing the track again retries the download
+			self.error = None
 			return 2, None
 
 		key = self.get_key(track)
@@ -953,6 +986,13 @@ class Cachement:
 				break
 
 	def dl_file(self, track: TrackClass) -> int | None:
+		self.downloading = track
+		try:
+			return self._dl_file(track)
+		finally:
+			self.downloading = None
+
+	def _dl_file(self, track: TrackClass) -> int | None:
 		self.pctl.buffering_percent = 0
 		key = self.get_key(track)
 		path = Path(self.direc) / key
@@ -1440,7 +1480,7 @@ def player4(tauon: Tauon) -> None:
 		# Don't advance the clock while a network stream is (re)buffering, e.g.
 		# waiting on a seek's byte range — output is silent until it fills.
 		# player_timer was still hit above, so the gap isn't counted later.
-		if loaded_track_streamed and aud.is_buffering():
+		if (loaded_track_streamed or loaded_track_growing) and aud.is_buffering():
 			add_time = 0
 		pre_roll_status = getattr(aud, "is_pre_roll", None)
 		pre_rolling = pre_roll_status is not None and pre_roll_status()
@@ -1609,11 +1649,36 @@ def player4(tauon: Tauon) -> None:
 	feeder = StreamFeeder(tauon, aud)
 	tauon.stream_feeder = feeder  # the console graph reads download stats from here
 	stream_unsupported: set[int] = set()  # tracks that failed direct streaming this session
+	# Track whose stream failed for lack of a connection: its next open goes
+	# through the download path, which reports the problem, and later ones stream again
+	stream_skip_once: int | None = None
 	loaded_track_streamed = False
+	# The loaded file was still downloading when it was opened, so playback can
+	# catch up with the download and wait for it, as a stream does
+	loaded_track_growing = False
+	# PHAzOR hasn't been told yet that the download has finished
+	growing_unfinished = False
+	# Absent on PHAzOR builds that take the end of a partial file as the end of the track
+	set_growing = getattr(aud, "set_load_growing", None)
+	set_file_complete = getattr(aud, "set_file_complete", None)
+	if set_growing is not None and set_file_complete is not None:
+		set_growing.restype = None
+		set_growing.argtypes = (ctypes.c_int,)
+		set_file_complete.restype = None
+		set_file_complete.argtypes = ()
+	else:
+		set_growing = None
 
-	def set_load_net(n: int) -> None:
+	def set_load_net(n: int, growing: bool = False) -> bool:
+		"""Say how the next file given to PHAzOR is to be read: as a network
+		stream, or as a local file that is still downloading. Returns whether
+		PHAzOR will treat it as still downloading."""
 		if feeder.enabled:
 			aud.set_load_net(n)
+		if set_growing is None:
+			return False
+		set_growing(1 if growing else 0)
+		return growing
 
 	# How much decoded audio phazor holds back before starting, in frames.
 	# Radio gets a bigger cushion than the default: a live stream can't be
@@ -1694,6 +1759,11 @@ def player4(tauon: Tauon) -> None:
 			aud.stop()
 			aud.phazor_shutdown()
 			break
+
+		if growing_unfinished and cachement.downloading is not loaded_track:
+			# Finished or given up: what's on disk is all there will be
+			set_file_complete()
+			growing_unfinished = False
 
 		# Level meter
 		apply_playback_speed()
@@ -1886,6 +1956,8 @@ def player4(tauon: Tauon) -> None:
 					logging.exception("Failed to get extension - maybe file name does not have any dots?")
 
 				stream_url: str | None = None
+				# Whether the file is one still being downloaded
+				target_growing = False
 				if target_object.is_network:
 					if target_object.file_ext == "SPTY":
 						logging.warning("This network source is no longer supported")
@@ -1898,8 +1970,10 @@ def player4(tauon: Tauon) -> None:
 					instant = cachement.get_local_instant(target_object)
 
 					# A live transcode can't take range requests, so it's downloaded while playing
+					skip_stream = stream_skip_once == target_object.index
+					stream_skip_once = None
 					if instant is None and feeder.enabled and prefs.network_stream \
-							and target_object.index not in stream_unsupported \
+							and target_object.index not in stream_unsupported and not skip_stream \
 							and not pctl.transcode_bitrate(target_object):
 						# Prefetched start: stream from its URL so it can be injected
 						stream_url = feeder.claim_prefetch(target_object)
@@ -1961,6 +2035,7 @@ def player4(tauon: Tauon) -> None:
 							# pctl.advance(inplace=True, play=True)
 							continue
 						target_path = path
+						target_growing = status == 1 and cachement.downloading is target_object
 
 				elif prefs.precache:
 					timer = Timer()
@@ -2095,6 +2170,7 @@ def player4(tauon: Tauon) -> None:
 							run_levels()
 						aud.stop()
 
+					# Only complete files get this far, see target_gapless_ready
 					set_load_net(1 if stream_url else 0)
 					aud.next(
 						target_path.encode(),
@@ -2214,6 +2290,7 @@ def player4(tauon: Tauon) -> None:
 
 					loaded_track = target_object
 					loaded_track_streamed = stream_url is not None
+					loaded_track_growing = growing_unfinished = False
 					pctl.playing_time = pctl.jump_time
 				else:
 					if pctl.commit and subcommand != "repeat":
@@ -2234,7 +2311,7 @@ def player4(tauon: Tauon) -> None:
 						pctl.buffering_percent = 0
 						gui.request_frame()
 						tauon.wake()
-					set_load_net(1 if stream_url else 0)
+					target_growing = set_load_net(1 if stream_url else 0, growing=target_growing)
 					aud.start(
 						target_path.encode(errors="surrogateescape"),
 						int((pctl.start_time_target + pctl.jump_time) * 1000),
@@ -2243,6 +2320,7 @@ def player4(tauon: Tauon) -> None:
 					)
 					loaded_track = target_object
 					loaded_track_streamed = stream_url is not None
+					loaded_track_growing = growing_unfinished = target_growing
 					pctl.playing_time = pctl.jump_time
 					if pctl.jump_time:
 						while aud.get_result() == 0:
@@ -2264,7 +2342,10 @@ def player4(tauon: Tauon) -> None:
 								# Direct streaming didn't work out; fall back
 								# to the legacy download-to-cache path
 								logging.warning("Direct stream failed, falling back to download")
-								stream_unsupported.add(target_object.index)
+								if feeder.last_failure_transient:
+									stream_skip_once = target_object.index
+								else:
+									stream_unsupported.add(target_object.index)
 								pctl.playerCommand = "open"
 								pctl.playerCommandReady = True
 								stream_fallback = True
@@ -2279,7 +2360,7 @@ def player4(tauon: Tauon) -> None:
 								# 	if pctl.playerCommandReady:
 								# 		break
 								logging.info("Retry start file")
-								set_load_net(0)
+								loaded_track_growing = growing_unfinished = set_load_net(0, growing=target_growing)
 								aud.start(
 									target_path.encode(),
 									int((pctl.start_time_target + pctl.jump_time) * 1000),
@@ -2401,10 +2482,11 @@ def player4(tauon: Tauon) -> None:
 							continue
 
 						# The vorbis decoder doesn't like appended files
-						set_load_net(0)
+						loaded_track_growing = growing_unfinished = set_load_net(
+							0, growing=status == 1 and cachement.downloading is loaded_track)
 						aud.start(
 							path.encode(),
-							int(pctl.new_time + pctl.start_time_target) * 1000,
+							int((pctl.new_time + pctl.start_time_target) * 1000),
 							0,
 							ctypes.c_float(prepare_replaygain(loaded_track)),
 						)
@@ -2546,7 +2628,7 @@ def player4(tauon: Tauon) -> None:
 						pctl.stop()
 
 			if tauon.player4_state == PlayerState.PLAYING:
-				if loaded_track_streamed:
+				if loaded_track_streamed or loaded_track_growing:
 					# Surface buffering state if the network can't keep up
 					buffering = aud.is_buffering()
 					if gui.buffering != buffering:

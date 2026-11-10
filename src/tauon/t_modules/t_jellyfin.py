@@ -50,7 +50,7 @@ from tauon.t_modules.t_server_sync import (
 )
 
 if TYPE_CHECKING:
-	from collections.abc import Iterator
+	from collections.abc import Callable, Iterator
 	from io import BytesIO
 
 	from tauon.t_modules.t_extra import TauonPlaylist
@@ -111,6 +111,8 @@ class Jellyfin(RemotePlaylistSource):
 		self.session_item_id: int | None = None
 		self.session_update_timer: Timer = Timer()
 		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
+		# Item whose play the server counted when its session started, and when
+		self.session_counted: tuple[str, float] | None = None
 		self.init_remote_playlists()
 
 		self.lyrics_scan_lock = threading.Lock()
@@ -210,8 +212,8 @@ class Jellyfin(RemotePlaylistSource):
 			self._authenticate(quiet=True)
 		if not self.connected:
 			return None
-		response = requests.get(
-			f"{self.server_url}/UserViews", headers=self._headers(), params={"userId": self.userId}, timeout=(5, 30))
+		response = self._retrying(lambda: requests.get(
+			f"{self.server_url}/UserViews", headers=self._headers(), params={"userId": self.userId}, timeout=(5, 30)))
 		if response.status_code == HTTPStatus.NOT_FOUND:
 			# Servers before 10.9
 			response = requests.get(f"{self.server_url}/Users/{self.userId}/Views", headers=self._headers(), timeout=(5, 30))
@@ -248,6 +250,8 @@ class Jellyfin(RemotePlaylistSource):
 				"playSessionId": f"tauon-{stream_id}-{stream_format}-{bitrate}"})
 
 		if not self.session_thread_active:
+			# Set here rather than by the thread, so two tracks resolved together start one
+			self.session_thread_active = True
 			shoot = threading.Thread(target=self.session)
 			shoot.daemon = True
 			shoot.start()
@@ -381,6 +385,18 @@ class Jellyfin(RemotePlaylistSource):
 			self._authenticate(quiet=True)
 		return self.connected
 
+	def _retrying(self, send: Callable[[], requests.Response]) -> requests.Response:
+		"""Make a request, logging in again once if the token was revoked, as every login on this device id does.
+
+		send must build its headers when called, so the second try carries the new token.
+		"""
+		token = self.accessToken
+		response = send()
+		if response.status_code == HTTPStatus.UNAUTHORIZED:
+			self._relogin(token)
+			response = send()
+		return response
+
 	def _send(self, method: str, point: str, legacy: str | None = None, **kwargs: object) -> requests.Response:
 		"""Make a request, trying the pre-10.9 path when the server doesn't know the current one."""
 		response = requests.request(method, f"{self.server_url}/{point}", headers=self._headers(), timeout=(5, 30), **kwargs)
@@ -409,6 +425,11 @@ class Jellyfin(RemotePlaylistSource):
 
 	def submit_scrobble(self, item: PendingScrobble) -> Outcome:
 		"""Count a play on the server at the time it happened."""
+		counted = self.session_counted
+		if counted is not None and counted[0] == item.server_id and item.timestamp >= int(counted[1]):
+			# The server counted this play when its session started. Sent again it would count twice.
+			self.session_counted = None
+			return Outcome.SENT
 		if not self._ready():
 			return Outcome.RETRY
 		try:
@@ -425,18 +446,18 @@ class Jellyfin(RemotePlaylistSource):
 		if not self._ready():
 			return None
 		try:
-			info = requests.get(
+			info = self._retrying(lambda: requests.get(
 				f"{self.server_url}/Items", headers=self._headers(),
-				params={"userId": self.userId, "ids": remote_id, "fields": ["Etag"]}, timeout=(5, 30))
+				params={"userId": self.userId, "ids": remote_id, "fields": ["Etag"]}, timeout=(5, 30)))
 			if info.status_code != HTTPStatus.OK:
 				logging.error(f"Error fetching Jellyfin playlist: [{info.status_code}] {info.reason}")
 				return None
 			found = info.json().get("Items") or []
 			if not found:
 				raise PlaylistGoneError
-			response = requests.get(
+			response = self._retrying(lambda: requests.get(
 				f"{self.server_url}/Playlists/{remote_id}/Items", headers=self._headers(),
-				params={"userId": self.userId, "fields": TRACK_FIELDS}, timeout=(5, 60))
+				params={"userId": self.userId, "fields": TRACK_FIELDS}, timeout=(5, 60)))
 		except requests.RequestException:
 			logging.exception("Error fetching Jellyfin playlist")
 			return None
@@ -479,8 +500,8 @@ class Jellyfin(RemotePlaylistSource):
 		if name:
 			body["Name"] = name
 		try:
-			response = requests.post(
-				f"{self.server_url}/Playlists/{remote_id}", headers=self._headers(), json=body, timeout=(5, 60))
+			response = self._retrying(lambda: requests.post(
+				f"{self.server_url}/Playlists/{remote_id}", headers=self._headers(), json=body, timeout=(5, 60)))
 			if response.status_code in (HTTPStatus.NOT_FOUND, HTTPStatus.METHOD_NOT_ALLOWED):
 				# Servers before 10.9 can't replace a playlist: empty it and add everything back
 				return self._rewrite_playlist(remote_id, server_ids)
@@ -519,9 +540,9 @@ class Jellyfin(RemotePlaylistSource):
 		if not self._ready():
 			return None
 		try:
-			response = requests.post(
+			response = self._retrying(lambda: requests.post(
 				f"{self.server_url}/Playlists", headers=self._headers(),
-				json={"Name": name, "Ids": server_ids, "UserId": self.userId, "MediaType": "Audio"}, timeout=(5, 60))
+				json={"Name": name, "Ids": server_ids, "UserId": self.userId, "MediaType": "Audio"}, timeout=(5, 60)))
 		except requests.RequestException:
 			logging.exception("Error creating Jellyfin playlist")
 			return None
@@ -544,7 +565,7 @@ class Jellyfin(RemotePlaylistSource):
 		if not self.connected:
 			self.remote_playlists_error = _("Could not connect to the server")
 			return None
-		response = requests.get(
+		response = self._retrying(lambda: requests.get(
 			f"{self.server_url}/Items",
 			headers=self._headers(),
 			params={
@@ -556,7 +577,7 @@ class Jellyfin(RemotePlaylistSource):
 				"sortOrder": "Ascending",
 			},
 			timeout=(5, 30),
-		)
+		))
 		if response.status_code != HTTPStatus.OK:
 			logging.error(f"Error listing Jellyfin playlists: [{response.status_code}] {response.reason}")
 			self.remote_playlists_error = f"[{response.status_code}] {response.reason}"
@@ -609,9 +630,13 @@ class Jellyfin(RemotePlaylistSource):
 			nt.size = track.get("MediaSources")[0]["Size"]
 		except Exception:
 			logging.exception("Jelly exception on get size")
-		nt.modified_time = time.mktime(
-			time.strptime(track.get("DateCreated").rsplit(".", 1)[0], "%Y-%m-%dT%H:%M:%S")
-		)
+		try:
+			nt.modified_time = time.mktime(
+				time.strptime(track.get("DateCreated").rsplit(".", 1)[0], "%Y-%m-%dT%H:%M:%S")
+			)
+		except (AttributeError, ValueError):
+			# Some items have no creation date, which mustn't stop a playlist or library from loading
+			logging.debug("Jellyfin item without a usable DateCreated")
 
 		nt.is_network = True
 		nt.url_key = track.get("Id")
@@ -876,14 +901,8 @@ class Jellyfin(RemotePlaylistSource):
 
 	def _get_items(self, params: dict[str, object]) -> requests.Response:
 		"""GET /Items, logging in again once if the token was revoked, as every login on this device id does."""
-		token = self.accessToken
-		response = requests.get(
-			f"{self.server_url}/Items", headers=self._headers(), params=params, timeout=ITEM_FETCH_TIMEOUT)
-		if response.status_code == HTTPStatus.UNAUTHORIZED:
-			self._relogin(token)
-			response = requests.get(
-				f"{self.server_url}/Items", headers=self._headers(), params=params, timeout=ITEM_FETCH_TIMEOUT)
-		return response
+		return self._retrying(lambda: requests.get(
+			f"{self.server_url}/Items", headers=self._headers(), params=params, timeout=ITEM_FETCH_TIMEOUT))
 
 	def _parallel_items(self, params: dict[str, object], page_size: int) -> list[dict]:
 		"""Fetch every page, a few at a time, counting them in the activity row. Raises OSError if one can't be fetched."""
@@ -1089,11 +1108,17 @@ class Jellyfin(RemotePlaylistSource):
 		}
 
 	def session(self) -> None:
-		if not self.connected:
-			return
+		"""Report what's playing to the server until playback of its tracks stops."""
+		try:
+			if self.connected:
+				self._session_loop()
+		except Exception:
+			logging.exception("Jellyfin session reporting stopped")
+		finally:
+			# Left set, reporting would never start again
+			self.session_thread_active = False
 
-		self.session_thread_active = True
-
+	def _session_loop(self) -> None:
 		while True:
 			time.sleep(1)
 			track = self.pctl.playing_object()
@@ -1106,12 +1131,13 @@ class Jellyfin(RemotePlaylistSource):
 					data = self.session_last_item
 					self.session_send("Sessions/Playing/Stopped", data)
 					self.session_status = 0
-				self.session_thread_active = False
 				return
 
 			if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
 				data = self.session_item(track)
-				self.session_send("Sessions/Playing", data)
+				# The server counts a play when a session starts, so the scrobble queue mustn't send it another
+				started = time.time()
+				self.session_counted = (track.url_key, started) if self.session_send("Sessions/Playing", data) else None
 				self.session_update_timer.set()
 				self.session_status = 1
 				self.session_item_id = track.index
@@ -1138,15 +1164,21 @@ class Jellyfin(RemotePlaylistSource):
 				self.session_update_timer.set()
 				self.session_status = 1
 
-	def session_send(self, point: str, data: dict | None) -> None:
-		response = requests.post(
-			f"{self.server_url}/{point}",
-			data=json.dumps(data),
-			headers={
-				"Token": self.accessToken,
-				"X-Application": "Tauon/1.0",
-				"Authorization": self._get_jellyfin_auth(),
-				"Content-Type": "application/json",
-			},
-			timeout=10,
-		)
+	def session_send(self, point: str, data: dict | None) -> bool:
+		"""Post a session report, returning whether the server took it. A report that fails is skipped."""
+		try:
+			response = requests.post(
+				f"{self.server_url}/{point}",
+				data=json.dumps(data),
+				headers={
+					"Token": self.accessToken,
+					"X-Application": "Tauon/1.0",
+					"Authorization": self._get_jellyfin_auth(),
+					"Content-Type": "application/json",
+				},
+				timeout=10,
+			)
+		except requests.RequestException as e:
+			logging.warning(f"Could not report playback to the Jellyfin server: {e}")
+			return False
+		return response.ok

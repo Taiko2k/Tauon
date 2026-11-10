@@ -18183,6 +18183,15 @@ class Tauon:
 		return False
 
 	def regenerate_playlist(self, pl: int = -1, silent: bool = False, id: int | None = None) -> None:
+		try:
+			self._regenerate_playlist(pl, silent, id)
+		except Exception:
+			logging.exception("Error regenerating playlist")
+			# Left set, nothing else would regenerate and the server sync would wait on it for ever
+			self.pctl.regen_in_progress = False
+			self.regen_background = False
+
+	def _regenerate_playlist(self, pl: int, silent: bool, id: int | None) -> None:
 		if id is None and pl == -1:
 			return
 
@@ -18292,19 +18301,25 @@ class Tauon:
 				playlist.extend(self.tidal.mix(quote, return_list=True))
 
 			elif cm == "plex":
-				if not self.plex.scanning:
+				# Skipped while another scan runs: the playlist keeps what it has rather than emptying
+				if self.plex.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.plex.library_ids(cm))
 
 			elif cm.startswith("jelly\""):
+				track_ids = None
 				if not self.jellyfin.scanning:
 					track_ids = self.server_sync.sync_playlist(pl, *link) if link else self.jellyfin.get_playlist(quote)
-					if track_ids is None:
-						fetch_failed = True
-					else:
-						playlist.extend(track_ids)
+				if track_ids is None:
+					fetch_failed = True
+				else:
+					playlist.extend(track_ids)
 
 			elif cm == "jelly":
-				if not self.jellyfin.scanning:
+				if self.jellyfin.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.library_ids(cm))
 
 			elif cm == "tau":
@@ -18315,7 +18330,9 @@ class Tauon:
 				if self.prefs.subsonic_generator_cache and self.subsonic.last_music is not None \
 						and self.generator_box.active:
 					playlist.extend(self.subsonic.last_music)
-				elif not self.subsonic.scanning:
+				elif self.subsonic.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.subsonic.library_ids(cm))
 
 			elif cm.startswith("air\""):
@@ -18331,7 +18348,9 @@ class Tauon:
 					playlist.extend(track_ids)
 
 			elif cm.startswith("airlib\""):
-				if not self.subsonic.scanning:
+				if self.subsonic.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.subsonic.library_ids(cm, music_folder=quote))
 
 			elif cm in ("airfav", "airfavalb"):
@@ -18342,19 +18361,27 @@ class Tauon:
 					playlist.extend(track_ids)
 
 			elif cm.startswith("jellylib\""):
-				if not self.jellyfin.scanning:
+				if self.jellyfin.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.library_ids(cm, parent_id=quote))
 
 			elif cm == "jellyfav":
-				if not self.jellyfin.scanning:
+				if self.jellyfin.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.favourite_tracks())
 
 			elif cm == "jellyfavalb":
-				if not self.jellyfin.scanning:
+				if self.jellyfin.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.jellyfin.favourite_albums())
 
 			elif cm.startswith("plexlib\""):
-				if not self.plex.scanning:
+				if self.plex.scanning:
+					fetch_failed = True
+				else:
 					fetch_failed |= self.extend_or_fail(playlist, self.plex.library_ids(cm, section_key=quote))
 
 			elif cm.startswith("plexpl\""):
@@ -23815,15 +23842,20 @@ class PlexService:
 			playlist = self.resource.fetchItem(int(remote_id))
 			items = {item.key: item for item in playlist.items()}
 			order = list(items)
-			for i, key in enumerate(server_ids):
-				if key not in items or (i < len(order) and order[i] == key):
+			# Keys put in place so far. One the server didn't take is passed over, not moved after.
+			placed: list[str] = []
+			for key in server_ids:
+				if key not in items or key in placed:
 					continue
-				point = f"{playlist.key}/items/{items[key].playlistItemID}/move"
-				if i:
-					point += f"?after={items[server_ids[i - 1]].playlistItemID}"
-				self.resource.query(point, method=session.put)
-				order.remove(key)
-				order.insert(i, key)
+				i = len(placed)
+				if order[i] != key:
+					point = f"{playlist.key}/items/{items[key].playlistItemID}/move"
+					if placed:
+						point += f"?after={items[placed[-1]].playlistItemID}"
+					self.resource.query(point, method=session.put)
+					order.remove(key)
+					order.insert(i, key)
+				placed.append(key)
 			if name:
 				playlist.editTitle(name)
 		except Exception:

@@ -119,8 +119,8 @@ class LibraryCache:
 	server: str = ""  # Server and user it came from, so switching servers doesn't reuse it
 
 
-def merge_playlists(base: list[str], local: list[str], remote: list[str]) -> list[str]:
-	"""Three-way merge of server ids.
+def merge_playlists[T](base: list[T], local: list[T], remote: list[T]) -> list[T]:
+	"""Three-way merge of server ids, or of track ids.
 
 	Removals from either side win, additions from both are kept, and the local order wins.
 	A remote addition goes after the remote entry it follows, or at the end if it was added there.
@@ -133,7 +133,7 @@ def merge_playlists(base: list[str], local: list[str], remote: list[str]) -> lis
 	kept_after = [False] * len(remote)
 	for i in range(len(remote) - 2, -1, -1):
 		kept_after[i] = kept_after[i + 1] or remote[i + 1] in present
-	previous: str | None = None
+	previous: T | None = None
 	for i, x in enumerate(remote):
 		if x in present:
 			previous = x
@@ -419,6 +419,10 @@ class ServerSync:
 		playlist_id = playlist.uuid_int
 		target = self.service(service)
 		name = SERVICE_NAMES[service]
+		# Edits made here while the server is being asked are put back at the end
+		snapshot = list(playlist.playlist_ids)
+		# Asked for by the edit check or the startup refresh, which mustn't interrupt with messages
+		quiet = bool(getattr(self.tauon, "regen_background", False))
 
 		try:
 			remote = target.fetch_remote_playlist(remote_id)
@@ -430,10 +434,13 @@ class ServerSync:
 				_("It's kept here as an ordinary playlist."))
 			return None
 		if remote is None:
-			self.tauon.show_message(_("Error fetching {service} playlist").format(service=name), mode="warning")
+			if quiet:
+				logging.warning(f"Could not fetch playlist {playlist.title} from {name}")
+			else:
+				self.tauon.show_message(_("Error fetching {service} playlist").format(service=name), mode="warning")
 			return None
 
-		local_tracks = [pctl.get_track(t) for t in playlist.playlist_ids]
+		local_tracks = [pctl.get_track(t) for t in snapshot]
 		local = list(dict.fromkeys(t.url_key for t in local_tracks if t.file_ext == service and t.url_key))
 		foreign = {t.index for t in local_tracks if t.file_ext != service or not t.url_key}
 		known = {t.url_key: t.index for t in local_tracks if t.file_ext == service}
@@ -460,13 +467,17 @@ class ServerSync:
 		# Duplicates on the server aren't an edit: Tauon playlists can't hold them
 		if pushing and (merged != remote_ids or new_name):
 			if not target.write_remote_playlist(remote_id, remote, merged, new_name):
-				self.tauon.show_message(_("Couldn't update the playlist on {service}").format(service=name), mode="warning")
+				if quiet:
+					logging.warning(f"Could not update playlist {playlist.title} on {name}")
+				else:
+					self.tauon.show_message(
+						_("Couldn't update the playlist on {service}").format(service=name), mode="warning")
 				# The base stays put and the server's copy isn't trusted, so the next sync tries again
 				with self.lock:
 					link.unsure = True
 					self.save()
 				ids = [known[x] for x in merged if x in known]
-				return keep_foreign(playlist.playlist_ids, foreign, ids)
+				return self._with_later_edits(playlist, snapshot, keep_foreign(snapshot, foreign, ids))
 			logging.info(f"Sent playlist {playlist.title} to {name}")
 			# Fetch it back to take on whatever the server made of it, such as dropped duplicates
 			with suppress(PlaylistGoneError):
@@ -475,16 +486,27 @@ class ServerSync:
 					remote.kept)
 			known.update(zip(remote.server_ids, remote.track_ids, strict=True))
 			merged = list(dict.fromkeys(remote.server_ids))
+			# The server may have changed the name it was sent, or ignored it. Its name is the
+			# agreed one, or the difference would count as an edit made here for ever.
+			if new_name and remote.name:
+				playlist.title = remote.name
 
 		if remote.readonly:
 			playlist.locked = True
 		with self.lock:
 			self.links[playlist_id] = PlaylistLink(
 				service, remote_id, merged, remote.stamp, remote.name or playlist.title, remote.readonly)
-			self.tried.pop(playlist_id, None)
 			self.save()
 		ids = [known[x] for x in merged if x in known]
-		return keep_foreign(playlist.playlist_ids, foreign, ids)
+		return self._with_later_edits(playlist, snapshot, keep_foreign(snapshot, foreign, ids))
+
+	@staticmethod
+	def _with_later_edits(playlist: TauonPlaylist, snapshot: list[int], result: list[int]) -> list[int]:
+		"""Carry over edits made to a playlist while it was being synced, which the next check sends."""
+		current = list(playlist.playlist_ids)
+		if current == snapshot:
+			return result
+		return merge_playlists(snapshot, current, result)
 
 	def local_ids(self, playlist: TauonPlaylist, service: str) -> list[str]:
 		"""A playlist's tracks from one server, as server ids."""
@@ -506,15 +528,12 @@ class ServerSync:
 		with self.lock:
 			self.links[playlist.uuid_int] = link
 			self.save()
+		# The thread sleeps until woken while there's nothing linked
+		self.wake.set()
 		return link
 
-	def local_state(self, pl: int) -> tuple[tuple[int, ...], str]:
-		playlist = self.tauon.pctl.multi_playlist[pl]
-		return tuple(playlist.playlist_ids), playlist.title
-
-	def edited(self, pl: int, link: PlaylistLink) -> bool:
+	def edited(self, playlist: TauonPlaylist, link: PlaylistLink) -> bool:
 		"""Whether a linked playlist differs here from how it was left at the last sync."""
-		playlist = self.tauon.pctl.multi_playlist[pl]
 		return link.unsure or playlist.title != link.name or self.local_ids(playlist, link.service) != link.base
 
 	def check_edits(self) -> None:
@@ -523,7 +542,7 @@ class ServerSync:
 		pctl = tauon.pctl
 		if pctl.regen_in_progress or tauon.gui.regen_single_id is not None:
 			return
-		for pl, playlist in enumerate(pctl.multi_playlist):
+		for playlist in list(pctl.multi_playlist):
 			playlist_id = playlist.uuid_int
 			found = parse_link(pctl.gen_codes.get(playlist_id))
 			if found is None:
@@ -533,13 +552,14 @@ class ServerSync:
 				# Not synced yet, such as one imported before syncing existed
 				self.adopt(playlist, *found)
 				continue
-			if playlist_id in self.no_push:
+			# Nothing made here can be sent, and a read-only one takes the server's copy
+			if playlist_id in self.no_push or link.readonly:
 				continue
-			state = self.local_state(pl)
+			state = (tuple(playlist.playlist_ids), playlist.title)
 			last = self.seen.get(playlist_id)
 			self.seen[playlist_id] = state
 			# Wait until it stops changing, so a drag or a run of deletes goes as one
-			if state != last or not self.edited(pl, link):
+			if state != last or not self.edited(playlist, link):
 				continue
 			tried = self.tried.get(playlist_id)
 			if tried and tried[0] == state and time.time() - tried[1] < self.PUSH_RETRY_S:

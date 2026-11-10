@@ -464,7 +464,7 @@ def test_first_sync_takes_the_server_name_without_renaming_it(tmp_path: Path) ->
 	sync.sync_playlist(0, JELLYFIN, "P")
 	assert jellyfin.writes == []
 	assert playlist.title == "Server name"
-	assert not sync.edited(0, sync.links[1])
+	assert not sync.edited(playlist, sync.links[1])
 
 
 def test_unlinked_server_playlist_is_adopted_and_its_edits_sent(tmp_path: Path) -> None:
@@ -707,3 +707,245 @@ def test_jellyfin_ping_keeps_a_working_token(monkeypatch: pytest.MonkeyPatch) ->
 		"tauon.t_modules.t_jellyfin.requests.get", lambda *_args, **_kwargs: SimpleNamespace(status_code=200))
 	assert service.ping()
 	assert logins == []
+
+
+def asks_for_sync(sync: ServerSync, tauon: SimpleNamespace) -> bool:
+	"""Whether the edit check asks for a sync once things have settled."""
+	sync.check_edits()
+	sync.check_edits()
+	asked = tauon.gui.regen_single_id is not None
+	tauon.gui.regen_single_id = None
+	return asked
+
+
+def test_first_link_wakes_the_sync_thread(tmp_path: Path) -> None:
+	sync, tauon, jellyfin = make_sync(tmp_path)
+	# Nothing linked and nothing to send: the thread sleeps until woken
+	assert sync._next_wake() is None
+	jellyfin.playlists["P"] = {"ids": ["a"], "name": "Mix", "version": 1}
+	tauon.pctl.multi_playlist.append(make_playlist("Mix", []))
+	tauon.pctl.gen_codes[1] = 'jelly"P"'
+	sync.wake.clear()
+	sync.sync_playlist(0, JELLYFIN, "P")
+	assert sync.wake.is_set()
+	assert sync._next_wake() is not None
+
+
+def test_renamed_read_only_playlist_is_left_alone(tmp_path: Path) -> None:
+	sync, tauon, jellyfin, playlist = linked(tmp_path, ["a", "b"])
+	jellyfin.playlists["P"]["readonly"] = True
+	playlist.playlist_ids[:] = sync.sync_playlist(0, JELLYFIN, "P")
+	playlist.title = "Mine"
+	assert not asks_for_sync(sync, tauon)
+
+
+def test_a_name_the_server_changes_is_not_sent_again(tmp_path: Path) -> None:
+	sync, tauon, jellyfin, playlist = linked(tmp_path, ["a", "b"])
+	write = jellyfin.write_remote_playlist
+	jellyfin.write_remote_playlist = lambda remote_id, current, ids, name: write(
+		remote_id, current, ids, name.strip() if name else name)
+	playlist.title = "Renamed "
+	assert asks_for_sync(sync, tauon)
+	playlist.playlist_ids[:] = sync.sync_playlist(0, JELLYFIN, "P")
+	assert jellyfin.playlists["P"]["name"] == "Renamed"
+	assert playlist.title == "Renamed"
+	assert not asks_for_sync(sync, tauon)
+
+
+def test_a_sync_that_changes_nothing_is_not_repeated(tmp_path: Path) -> None:
+	sync, tauon, jellyfin, playlist = linked(tmp_path, ["a", "b"])
+	# A server that takes the write but keeps its own name
+	write = jellyfin.write_remote_playlist
+	jellyfin.write_remote_playlist = lambda remote_id, current, ids, _name: write(remote_id, current, ids, None)
+	playlist.title = "Renamed"
+	assert asks_for_sync(sync, tauon)
+	playlist.playlist_ids[:] = sync.sync_playlist(0, JELLYFIN, "P")
+	assert playlist.title == "Mix"
+	assert not asks_for_sync(sync, tauon)
+
+
+def test_an_edit_made_during_a_sync_is_kept(tmp_path: Path) -> None:
+	sync, tauon, jellyfin, playlist = linked(tmp_path, ["a", "b"])
+	jellyfin.playlists["P"]["ids"] = ["a", "b", "r"]
+	added, = tracks(tauon, "x")
+	fetch = jellyfin.fetch_remote_playlist
+
+	def slow_fetch(remote_id: str) -> RemotePlaylistState | None:
+		# The user drops a track in and removes one while the server answers
+		if added not in playlist.playlist_ids:
+			playlist.playlist_ids.append(added)
+			playlist.playlist_ids.pop(0)
+		return fetch(remote_id)
+
+	jellyfin.fetch_remote_playlist = slow_fetch
+	playlist.playlist_ids[:] = sync.sync_playlist(0, JELLYFIN, "P")
+	assert keys(tauon, playlist.playlist_ids) == ["b", "x", "r"]
+	# What the server has is what both sides agreed on, so the edit still counts as one
+	assert jellyfin.playlists["P"]["ids"] == ["a", "b", "r"]
+	assert asks_for_sync(sync, tauon)
+	playlist.playlist_ids[:] = sync.sync_playlist(0, JELLYFIN, "P")
+	assert jellyfin.playlists["P"]["ids"] == ["b", "x", "r"]
+
+
+def test_background_sync_failures_are_logged_not_shown(tmp_path: Path) -> None:
+	sync, tauon, jellyfin, playlist = linked(tmp_path, ["a", "b"])
+	tauon.regen_background = True
+	jellyfin.fetch_remote_playlist = lambda _remote_id: None
+	assert sync.sync_playlist(0, JELLYFIN, "P") is None
+	assert tauon.messages == []
+	# Asked for by the user, it says so
+	tauon.regen_background = False
+	assert sync.sync_playlist(0, JELLYFIN, "P") is None
+	assert tauon.messages
+
+
+def make_regenerator(code: str, track_ids: list[int]):  # noqa: ANN201
+	from unittest.mock import Mock
+
+	from tauon.t_modules.t_main import PlayerCtl, Tauon
+
+	tauon = Tauon.__new__(Tauon)
+	tauon.server_sync = SimpleNamespace(background=set(), sync_playlist=Mock(return_value=[9]))
+	tauon.pctl = PlayerCtl.__new__(PlayerCtl)
+	tauon.pctl.multi_playlist = [SimpleNamespace(uuid_int=100, title="Mix", playlist_ids=list(track_ids))]
+	tauon.pctl.gen_codes = {100: code}
+	tauon.pctl.master_library = {}
+	tauon.pctl.regen_in_progress = False
+	tauon.pctl.notify_database_changed = Mock()
+	tauon.gui = SimpleNamespace(request_tracklist_redraw=Mock(), gen_code_errors=False)
+	tauon.generator_box = SimpleNamespace(active=False)
+	tauon.tree_view_box = SimpleNamespace(clear_target_pl=Mock())
+	tauon.reload = Mock()
+	tauon.regen_background = False
+	tauon.jellyfin = SimpleNamespace(scanning=False)
+	tauon.subsonic = SimpleNamespace(scanning=False, last_music=None)
+	tauon.plex = SimpleNamespace(scanning=False)
+	tauon.prefs = SimpleNamespace(subsonic_generator_cache=False)
+	return tauon
+
+
+@pytest.mark.parametrize(
+	("code", "service"),
+	[('jelly"P"', "jellyfin"), ("jelly", "jellyfin"), ('jellylib"L"', "jellyfin"), ("jellyfav", "jellyfin"),
+		("air", "subsonic"), ('airlib"3"', "subsonic"), ("plex", "plex"), ('plexlib"2"', "plex")],
+)
+def test_regenerating_during_a_scan_keeps_the_playlist(code: str, service: str) -> None:
+	tauon = make_regenerator(code, [1, 2, 3])
+	getattr(tauon, service).scanning = True
+	tauon.regenerate_playlist(0)
+	# Emptied, a linked playlist would then be sent to the server empty
+	assert tauon.pctl.multi_playlist[0].playlist_ids == [1, 2, 3]
+	assert not tauon.pctl.regen_in_progress
+
+
+def test_a_regenerate_that_raises_does_not_stay_in_progress() -> None:
+	tauon = make_regenerator('jelly"P"', [1, 2, 3])
+	tauon.server_sync.sync_playlist.side_effect = KeyError("DateCreated")
+	tauon.regen_background = True
+	tauon.regenerate_playlist(0)
+	assert not tauon.pctl.regen_in_progress
+	assert not tauon.regen_background
+	assert tauon.pctl.multi_playlist[0].playlist_ids == [1, 2, 3]
+
+
+def test_a_linked_playlist_regenerates_through_the_sync() -> None:
+	tauon = make_regenerator('jelly"P"', [1, 2, 3])
+	tauon.regenerate_playlist(0)
+	assert tauon.pctl.multi_playlist[0].playlist_ids == [9]
+
+
+def test_jellyfin_playlist_fetch_logs_in_again_when_its_token_was_revoked(monkeypatch: pytest.MonkeyPatch) -> None:
+	service, logins, server = make_login_jellyfin(monkeypatch)
+	service.pctl = SimpleNamespace(master_library={})
+
+	def get(url: str, *, headers: dict[str, str], **_kwargs: object) -> SimpleNamespace:
+		if server["token"] not in headers["Authorization"]:
+			return SimpleNamespace(status_code=401, reason="Unauthorized")
+		items = [] if url.endswith("/Playlists/P/Items") else [{"Id": "P", "Name": "Mix", "Etag": "e"}]
+		return SimpleNamespace(status_code=200, json=lambda: {"Items": items})
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.requests.get", get)
+	remote = service.fetch_remote_playlist("P")
+	assert remote is not None
+	assert remote.name == "Mix"
+	assert logins == ["login"]
+
+
+def test_jellyfin_session_reporting_survives_a_failed_report(monkeypatch: pytest.MonkeyPatch) -> None:
+	import requests
+
+	service, _logins, _server = make_login_jellyfin(monkeypatch)
+
+	def post(_url: str, **_kwargs: object) -> SimpleNamespace:
+		raise requests.ConnectionError("down")
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.requests.post", post)
+	assert service.session_send("Sessions/Playing", {}) is False
+
+	# Whatever ends the thread, it can be started again
+	service.session_thread_active = True
+	service._session_loop = lambda: 1 / 0  # noqa: SLF001
+	service.session()
+	assert service.session_thread_active is False
+
+
+def test_jellyfin_play_counted_at_session_start_is_not_sent_again(monkeypatch: pytest.MonkeyPatch) -> None:
+	service, _logins, server = make_login_jellyfin(monkeypatch)
+	service.accessToken = server["token"]
+	sent: list[str] = []
+	monkeypatch.setattr(
+		"tauon.t_modules.t_jellyfin.requests.request",
+		lambda _method, url, **_kwargs: (sent.append(url), SimpleNamespace(status_code=200))[1])
+	play = SimpleNamespace(server_id="a", timestamp=1000)
+
+	# The server counted it when the session started
+	service.session_counted = ("a", 900.0)
+	assert service.submit_scrobble(play) is Outcome.SENT
+	assert sent == []
+	# The same track played again without a new session start, such as on repeat
+	assert service.submit_scrobble(play) is Outcome.SENT
+	assert len(sent) == 1
+	# A play from before that session, or of another track, is sent
+	service.session_counted = ("a", 2000.0)
+	assert service.submit_scrobble(play) is Outcome.SENT
+	service.session_counted = ("b", 900.0)
+	assert service.submit_scrobble(play) is Outcome.SENT
+	assert len(sent) == 3
+
+
+def test_plex_reorder_passes_over_a_track_the_server_did_not_take() -> None:
+	from tauon.t_modules.t_main import PlexService
+
+	class Playlist:
+		key = "/playlists/7"
+
+		def __init__(self, keys: list[str]) -> None:
+			self.keys = keys
+
+		def items(self) -> list[SimpleNamespace]:
+			return [SimpleNamespace(key=k, playlistItemID=f"e{k}") for k in self.keys]
+
+		def addItems(self, _items: list) -> None:  # noqa: N802
+			# The server takes 3 and quietly drops 9
+			self.keys.append("/library/metadata/3")
+
+	playlist = Playlist(["/library/metadata/1", "/library/metadata/2"])
+	moves: list[str] = []
+
+	def query(point: str, method: object = None) -> None:
+		moved, _, after = point.partition("/move")
+		key = moved.rsplit("/e", 1)[1]
+		playlist.keys.remove(key)
+		anchor = after.partition("=e")[2]
+		playlist.keys.insert(playlist.keys.index(anchor) + 1 if anchor else 0, key)
+		moves.append(point)
+
+	service = PlexService.__new__(PlexService)
+	service.connected = True
+	service.resource = SimpleNamespace(
+		_session=SimpleNamespace(put="put", delete="delete"), fetchItem=lambda _key: playlist,
+		fetchItems=lambda keys: keys, query=query)
+	wanted = ["/library/metadata/2", "/library/metadata/9", "/library/metadata/1", "/library/metadata/3"]
+	current = RemotePlaylistState(list(playlist.keys), [1, 2], "", "Mix")
+	assert service.write_remote_playlist("7", current, wanted, None)
+	assert playlist.keys == ["/library/metadata/2", "/library/metadata/1", "/library/metadata/3"]

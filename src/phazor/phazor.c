@@ -288,6 +288,13 @@ int load_target_net_pending = 0;
 int load_target_net = 0;
 int loaded_target_net = 0;
 
+// Marks a (pending/loaded) local target that is still being written, such as
+// a download in progress. Reaching the end of it means waiting for more, not
+// the end of the track, until set_file_complete() says it is all there.
+int load_target_growing_pending = 0;
+int load_target_growing = 0;
+volatile int loaded_target_growing = 0;
+
 // True for "scheme://..." targets (http, rtsp, rtmp, mms...), false for local paths
 static bool is_url(const char *target) {
 	const char *c = target;
@@ -1101,6 +1108,8 @@ static int uni_stat(const char *path, struct stat *st) {
 #define BS_DECODE_CONTINUE 32768         // bytes ahead needed to keep decoding once started
 #define BS_FORWARD_GAP (1024 * 1024)     // forward seeks within this of the tail wait rather than restart
 #define BS_STALL_TIMEOUT_MS 30000        // give up if no data arrives for this long
+#define BS_GROW_AHEAD 65536              // bytes ahead before (re)starting decode of a file still being written
+#define BS_GROW_POLL_MS 200              // how often such a file is checked for growth
 
 typedef struct {
 	unsigned char *buf;
@@ -1116,6 +1125,7 @@ typedef struct {
 	bool error;             // producer failed fatally
 	bool active;
 	bool net;               // true: fed by Python network feeder, false: local thread
+	bool growing;           // local file still being written: its end is not the end of the stream
 	bool abort;             // cancel all waits and shut the stream down
 	bool seek_ok;           // producer can supply arbitrary offsets (HTTP range support)
 	int generation;
@@ -1231,7 +1241,7 @@ static void *bs_local_thread(void *arg) {
 		if (bs.eof) {
 			// At end of file; poll for growth, the file may be a cache
 			// file that is still downloading
-			bs_wait_locked(1000);
+			bs_wait_locked(bs.growing ? BS_GROW_POLL_MS : 1000);
 			if (!bs.active || bs.abort || bs.want_restart) continue;
 			struct stat fst;
 			if (bs.file != NULL && fstat(fileno(bs.file), &fst) == 0
@@ -1332,10 +1342,11 @@ static void bs_reset_state_locked() {
 	bs.want_restart = false;
 	bs.want_offset = 0;
 	bs.seek_ok = true;
+	bs.growing = false;
 	bs.generation++;
 }
 
-static int bs_open_local(char *path) {
+static int bs_open_local(char *path, bool growing) {
 	bs_close();
 	if (bs_ensure_buffer() != 0) return 1;
 	FILE *f = uni_fopen(path);
@@ -1351,6 +1362,7 @@ static int bs_open_local(char *path) {
 	bs.net = false;
 	bs.file_size = size;
 	bs_reset_state_locked();
+	bs.growing = growing;
 	bs.active = true;
 	pthread_mutex_unlock(&bs.mut);
 	if (pthread_create(&bs.thread, NULL, bs_local_thread, NULL) != 0) {
@@ -1392,7 +1404,8 @@ static int bs_read(void *dst, int n) {
 			got = -1;
 			break;
 		}
-		if (bs.file_size >= 0 && bs.read_pos >= bs.file_size) {
+		// The size of a file still being written is only how far it has got
+		if (!bs.growing && bs.file_size >= 0 && bs.read_pos >= bs.file_size) {
 			got = 0;
 			break;
 		}
@@ -1405,7 +1418,7 @@ static int bs_read(void *dst, int n) {
 			pthread_cond_broadcast(&bs.cond);
 			break;
 		}
-		if (bs.eof && !bs.want_restart && bs.read_pos >= end) {
+		if (!bs.growing && bs.eof && !bs.want_restart && bs.read_pos >= end) {
 			got = 0;
 			break;
 		}
@@ -1473,28 +1486,45 @@ static bool bs_at_eof() {
 	pthread_mutex_lock(&bs.mut);
 	bool r = (bs.file_size >= 0 && bs.read_pos >= bs.file_size)
 		|| (bs.eof && !bs.want_restart && bs.read_pos >= bs.win_start + bs.filled);
+	if (bs.growing) r = false;
 	pthread_mutex_unlock(&bs.mut);
 	return r;
 }
 
-// Whether a network decode can proceed without risking a long block in
-// the decoder read callbacks. Keeps the main loop responsive to commands
-// while the network buffers. Uses hysteresis: after an open, seek or
-// underrun a larger amount must accumulate before decoding (re)starts,
-// then decoding continues as long as a small headroom remains.
+// Whether the stream is a local file that is still being written
+static bool bs_growing() {
+	pthread_mutex_lock(&bs.mut);
+	bool r = bs.active && !bs.net && bs.growing;
+	pthread_mutex_unlock(&bs.mut);
+	return r;
+}
+
+// Whether a decode of a network stream, or of a file still being written,
+// can proceed without risking a long block in the decoder read callbacks.
+// Keeps the main loop responsive to commands while the data arrives. Uses
+// hysteresis: after an open, seek or underrun a larger amount must
+// accumulate before decoding (re)starts, then decoding continues as long as
+// a small headroom remains.
 static int64_t bs_decode_need = BS_DECODE_AHEAD;
 
 static bool bs_decode_ready() {
-	if (!bs.active || !bs.net) return true;
+	if (!bs.active || (!bs.net && !bs.growing)) return true;
 	pthread_mutex_lock(&bs.mut);
 	bool ready = bs.abort || bs.error;
 	int64_t end = bs.win_start + bs.filled;
 	int64_t avail = 0;
 	if (bs.read_pos >= bs.win_start && bs.read_pos < end) avail = end - bs.read_pos;
-	if (avail < BS_DECODE_CONTINUE && !bs.eof) bs_decode_need = BS_DECODE_AHEAD;  // underrun, re-arm
+	// The end of a file still being written is only where the writer has got to
+	bool at_end = bs.eof && !bs.growing;
+	int64_t ahead = bs.net ? BS_DECODE_AHEAD : BS_GROW_AHEAD;
+	if (avail < BS_DECODE_CONTINUE && !at_end) bs_decode_need = ahead;  // underrun, re-arm
+	// Left over from a stream of the other kind
+	if (bs_decode_need > ahead) bs_decode_need = ahead;
 	if (avail >= bs_decode_need) ready = true;
-	if (bs.eof && !bs.want_restart && bs.read_pos >= bs.win_start) ready = true;
-	if (bs.file_size >= 0 && bs.read_pos >= bs.file_size) ready = true;
+	if (!bs.growing) {
+		if (bs.eof && !bs.want_restart && bs.read_pos >= bs.win_start) ready = true;
+		if (bs.file_size >= 0 && bs.read_pos >= bs.file_size) ready = true;
+	}
 	if (ready) bs_decode_need = BS_DECODE_CONTINUE;
 	pthread_mutex_unlock(&bs.mut);
 	return ready;
@@ -3521,7 +3551,7 @@ int get_audio(int max_frames, float* buff) {
 		// Streams can't be waited on the way a local file can, so an
 		// underrun means pausing to re-buffer. FEED is radio, which has no
 		// decoder of its own to report a stall.
-		if (get_buff_fill() < 10 && (is_url(loaded_target_file) || codec == FEED)) {
+		if (get_buff_fill() < 10 && (is_url(loaded_target_file) || codec == FEED || loaded_target_growing)) {
 
 			if (mode == PLAYING) {
 				if (buffering == 0) log_buffering_start = 1;
@@ -4494,6 +4524,7 @@ int load_next_inner() {
 
 	strcpy(loaded_target_file, load_target_file);
 	loaded_target_net = load_target_net;
+	loaded_target_growing = 0;
 
 	int channels;
 	int encoding;
@@ -4576,7 +4607,8 @@ int load_next_inner() {
 	if (is_net) {
 		if (bs_open_net(loaded_target_file) != 0) return 1;
 	} else {
-		if (bs_open_local(loaded_target_file) != 0) return 1;
+		if (bs_open_local(loaded_target_file, load_target_growing != 0) != 0) return 1;
+		loaded_target_growing = load_target_growing != 0;
 	}
 
 	// We need to identify the file type
@@ -5116,8 +5148,8 @@ int load_next_inner() {
 				}
 			}
 			// Scanning reads the whole file for an exact length, so only do
-			// it when the data is already on disk
-			if (!is_net) mpg123_scan(mh);
+			// it when all of the data is already on disk
+			if (!is_net && !loaded_target_growing) mpg123_scan(mh);
 			//log_msg(LOG_INFO, "pa: %lu. / %d. / %d", rate, channels, encoding);
 
 			pthread_mutex_lock(&buffer_mutex);
@@ -5464,7 +5496,11 @@ void pump_decode() {
 				// Check if file was appended to... (a local cache file that
 				// is still downloading). The stream producer re-stats on EOF,
 				// so a grown bs.file_size signals more data appeared.
+				bool growing = bs_growing();
 				if (bs.active && !bs.net && load_file_size != (off_t) bs_length()) {
+					// While it is being written, wait for a worthwhile amount
+					// rather than reopening for every few pages
+					if (growing && (int64_t) bs_length() - (int64_t) load_file_size < BS_GROW_AHEAD) return;
 					log_msg(LOG_WARNING, "pa: Ogg file size changed!");
 					int e = 0;
 					bs_seek_abs(0);
@@ -5481,7 +5517,11 @@ void pump_decode() {
 					} else {
 						log_msg(LOG_WARNING, "pa: Failed to reopen appended Opus stream (err %d)", e);
 					}
+					// Try again once more of it has arrived, not on every pass
+					if (growing) load_file_size = (off_t) bs_length();
 				}
+				// Still being written and nothing new yet
+				if (growing) return;
 
 				decoder_eos();
 			} else if (done < 0) {
@@ -5995,6 +6035,7 @@ void *main_loop(void *thread_id) {
 				// reload it at the seek point.
 				strcpy(load_target_file, loaded_target_file);
 				load_target_net = loaded_target_net;
+				load_target_growing = loaded_target_growing;
 				load_target_seek = seek_request_ms;
 				config_fade_jump = 0;
 				command = LOAD;
@@ -6012,6 +6053,7 @@ void *main_loop(void *thread_id) {
 			int resume_ms = get_position_ms();
 			strcpy(load_target_file, loaded_target_file);
 			load_target_net = loaded_target_net;
+			load_target_growing = loaded_target_growing;
 			stop_decoder();
 			load_target_seek = resume_ms;
 			if (load_next() != 0) mode = STOPPED;
@@ -6157,6 +6199,7 @@ EXPORT int start(char *filename, int start_ms, int fade, float rg) {
 	load_target_seek = start_ms;
 	strcpy(load_target_file, filename);
 	load_target_net = load_target_net_pending;
+	load_target_growing = load_target_growing_pending;
 
 	if (mode == PLAYING) {
 		if (fade == 1) command = LOAD;
@@ -6180,6 +6223,7 @@ EXPORT int next(char *filename, int start_ms, float rg) {
 		load_target_seek = start_ms;
 		strcpy(load_target_file, filename);
 		load_target_net = load_target_net_pending;
+		load_target_growing = load_target_growing_pending;
 		rg_value_pending = rg;
 		next_ready = 1;
 	}
@@ -6657,6 +6701,32 @@ EXPORT void config_set_stream_buffer(int mb) {
 // streamed through the byte stream (as opposed to a radio URL or local file)
 EXPORT void set_load_net(int n) {
 	load_target_net_pending = n;
+}
+
+// Mark whether the next start()/next() target is a local file that is still
+// being written, such as a download in progress
+EXPORT void set_load_growing(int n) {
+	load_target_growing_pending = n;
+}
+
+// The file being played has been written in full (or its writer gave up), so
+// its end is now the end of the track
+EXPORT void set_file_complete() {
+	pthread_mutex_lock(&bs.mut);
+	loaded_target_growing = 0;
+	if (bs.active && !bs.net && bs.growing) {
+		// Take its final size now rather than at the reader's next poll, or
+		// the decoder could be told it has ended short of the last part
+		struct stat fst;
+		if (bs.file != NULL && fstat(fileno(bs.file), &fst) == 0 && (int64_t) fst.st_size > bs.file_size) {
+			bs.file_size = (int64_t) fst.st_size;
+			bs.eof = false;
+			clearerr(bs.file);
+		}
+		bs.growing = false;
+		pthread_cond_broadcast(&bs.cond);
+	}
+	pthread_mutex_unlock(&bs.mut);
 }
 
 // Network feeder protocol -----------------------------------------------
