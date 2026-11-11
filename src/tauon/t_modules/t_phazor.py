@@ -85,27 +85,34 @@ def meter_level(peak: float) -> float:
 	return min(abs(peak), 1.0) * LEVEL_METER_SEGMENTS
 
 
-def audio_data_offset(buf: bytes | bytearray) -> int | None:
-	"""Where audio frames start, past an ID3v2 tag and FLAC metadata (cover
-	art can be megabytes). None if buf is too short to tell, 0 if unknown."""
+def metadata_extent(buf: bytes | bytearray) -> tuple[int, bool]:
+	"""How far an ID3v2 tag and FLAC metadata at the start of buf are known to
+	reach, and whether that is where they end."""
 	pos = 0
 	if buf[:3] == b"ID3":
 		if len(buf) < 10:
-			return None
+			return len(buf), False
 		size = (buf[6] & 0x7F) << 21 | (buf[7] & 0x7F) << 14 | (buf[8] & 0x7F) << 7 | (buf[9] & 0x7F)
 		pos = 10 + size + (10 if buf[5] & 0x10 else 0)
 	if len(buf) < pos + 4:
-		return None
+		return pos, False
 	if buf[pos:pos + 4] != b"fLaC":
-		return pos
+		return pos, True
 	pos += 4
 	while True:
 		if len(buf) < pos + 4:
-			return None
+			return pos, False
 		last = buf[pos] & 0x80
 		pos += 4 + int.from_bytes(buf[pos + 1:pos + 4], "big")
 		if last:
-			return pos
+			return pos, True
+
+
+def audio_data_offset(buf: bytes | bytearray) -> int | None:
+	"""Where audio frames start, past an ID3v2 tag and FLAC metadata (cover
+	art can be megabytes). None if buf is too short to tell, 0 if unknown."""
+	pos, complete = metadata_extent(buf)
+	return pos if complete else None
 
 
 # FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
@@ -495,46 +502,65 @@ class StreamFeeder:
 				logging.info(f"Prefetch: skip '{title}' (no streamable URL)")
 				return
 			logging.info(f"Prefetch: start '{title}' ({self.prefetch_seconds}s)")
-			# Open ended; the amount is settled once the size and header are known
-			resp = self._prefetch_session.get(
-				url, headers={"Range": "bytes=0-", "Accept-Encoding": "identity"}, stream=True, timeout=(5, 30))
-			try:
-				if resp.status_code != HTTPStatus.PARTIAL_CONTENT:
-					# Without range support we cannot resume after the prefetch,
-					# so prefetching would not help
-					logging.info(f"Prefetch: skip '{title}' (no range support, status {resp.status_code})")
-					return
-				total = resp.headers.get("Content-Range", "").rpartition("/")[2]
-				if total.isdigit():
-					size = int(total)
-				length = getattr(track, "length", 0) or 0
-				bitrate = getattr(track, "bitrate", 0) or 0
-				want = None  # bytes to fetch
-				buf = bytearray()
-				for chunk in resp.iter_content(65536):
-					# Abandon if the target changed (queue edit / skip)
-					with self._prefetch_lock:
-						if self._prefetch_target is not track:
-							logging.info(f"Prefetch: abort '{title}' (target changed) after {len(buf) // 1000} KB")
+			length = getattr(track, "length", 0) or 0
+			bitrate = getattr(track, "bitrate", 0) or 0
+
+			def estimate(start: int, file_size: int) -> int:
+				"""Rough bytes for prefetch_seconds of audio after a header ending at start"""
+				if file_size > start and length > 0:
+					rate = (file_size - start) / length
+				else:
+					rate = bitrate * 125  # kbps to bytes/s
+				want = start + int(rate * self.prefetch_seconds) + 65536 if rate > 0 else self.prefetch_fallback_bytes
+				return min(want, self.prefetch_max_bytes)
+
+			# Each request is bounded and read to its end, so the connection is kept for the
+			# next one. The first goes by the track's own size, or is a short probe when that
+			# isn't known; the header found decides whether more is needed.
+			track_size = getattr(track, "size", 0) or 0
+			known = (track_size > 0 and length > 0) or bitrate > 0
+			want = estimate(0, track_size) if known else self.PROBE_BYTES
+			buf = bytearray()
+			for _attempt in range(8):
+				have = len(buf)
+				resp = self._prefetch_session.get(
+					url, headers={"Range": f"bytes={have}-{want - 1}", "Accept-Encoding": "identity"},
+					stream=True, timeout=(5, 30))
+				try:
+					if resp.status_code != HTTPStatus.PARTIAL_CONTENT:
+						# Without range support we cannot resume after the prefetch,
+						# so prefetching would not help
+						if not have:
+							logging.info(f"Prefetch: skip '{title}' (no range support, status {resp.status_code})")
 							return
-					buf += chunk
-					if want is None:
-						start = audio_data_offset(buf)
-						if start is not None:
-							if size > start and length > 0:
-								rate = (size - start) / length
-							else:
-								rate = bitrate * 125  # kbps to bytes/s
-							if rate > 0:
-								want = start + int(rate * self.prefetch_seconds) + 65536
-							else:
-								want = self.prefetch_fallback_bytes
-							want = min(want, self.prefetch_max_bytes)
-					if len(buf) >= (want or self.prefetch_max_bytes):
 						break
-				data = bytes(buf)
-			finally:
-				resp.close()
+					total = resp.headers.get("Content-Range", "").rpartition("/")[2]
+					if total.isdigit():
+						size = int(total)
+					for chunk in resp.iter_content(65536):
+						# Abandon if the target changed (queue edit / skip)
+						with self._prefetch_lock:
+							if self._prefetch_target is not track:
+								logging.info(f"Prefetch: abort '{title}' (target changed) after {len(buf) // 1000} KB")
+								return
+						buf += chunk
+						if len(buf) > want:
+							# The server ignored the end of the range
+							break
+				finally:
+					resp.close()
+				if len(buf) == have or (size > 0 and len(buf) >= size):
+					break
+				start, complete = metadata_extent(buf)
+				if not complete:
+					# The header runs past what's here
+					start = max(start, len(buf))
+				want = estimate(start, size)
+				if size > 0:
+					want = min(want, size)
+				if len(buf) >= want:
+					break
+			data = bytes(buf)
 		except Exception:
 			logging.exception(f"Prefetch: download failed for '{title}'")
 			return

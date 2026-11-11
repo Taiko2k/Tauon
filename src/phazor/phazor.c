@@ -208,53 +208,8 @@ int fade_2_flag = 0;
 
 pthread_mutex_t buffer_mutex;
 
-// Diagnostics for the audio callback, which waits on buffer_mutex. A late
-// callback makes the device repeat or drop audio, so phazor records who held
-// the lock, and for how long, and the main loop logs it. Nothing here logs
-// directly: logging takes the GIL.
-static inline int64_t now_us(void) {
-	struct timespec ts;
-	clock_gettime(CLOCK_MONOTONIC, &ts);
-	return (int64_t) ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
-}
-
-#define BUFFER_LONG_HOLD_US 5000         // holding the buffer lock longer than this is worth a log line
-
-static const char *volatile buffer_holder = "";
-static volatile int buffer_holder_line = 0;
-static volatile int64_t buffer_held_since_us = 0;
-// Longest hold over BUFFER_LONG_HOLD_US since the main loop last logged one
-static const char *volatile buffer_long_holder = "";
-static volatile int buffer_long_holder_line = 0;
-static volatile int64_t buffer_long_hold_us = 0;
-
-static inline void buffer_lock_at(const char *func, int line) {
-	pthread_mutex_lock(&buffer_mutex);
-	buffer_holder = func;
-	buffer_holder_line = line;
-	buffer_held_since_us = now_us();
-}
-#define buffer_lock() buffer_lock_at(__func__, __LINE__)
-
-static inline void buffer_unlock(void) {
-	int64_t held = now_us() - buffer_held_since_us;
-	if (held > BUFFER_LONG_HOLD_US && held > buffer_long_hold_us) {
-		buffer_long_holder = buffer_holder;
-		buffer_long_holder_line = buffer_holder_line;
-		buffer_long_hold_us = held;
-	}
-	pthread_mutex_unlock(&buffer_mutex);
-}
-
-// Late audio callbacks since the main loop last logged them: the worst wait
-// for the lock and who held it, and the longest gap between callbacks.
-static volatile int cb_late_count = 0;
-static volatile int64_t cb_worst_wait_us = 0;
-static const char *volatile cb_wait_holder = "";
-static volatile int cb_wait_holder_line = 0;
-static volatile int64_t cb_worst_gap_us = 0;
-static volatile int64_t cb_period_us = 0;
-static int64_t cb_last_start_us = 0;
+static inline void buffer_lock(void) { pthread_mutex_lock(&buffer_mutex); }
+static inline void buffer_unlock(void) { pthread_mutex_unlock(&buffer_mutex); }
 pthread_mutex_t fade_mutex;
 
 //pthread_mutex_t pulse_mutex;
@@ -3634,43 +3589,11 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 	}
 }
 
-// Note a callback that waited long for the lock, or came long after the last
-static void callback_timing(int64_t start, int64_t locked, const char *holder, int line, int frames) {
-	int64_t period = sample_rate_out > 0 ? (int64_t) frames * 1000000 / sample_rate_out : 0;
-	int64_t wait = locked - start;
-	int64_t gap = cb_last_start_us ? start - cb_last_start_us : 0;
-	cb_last_start_us = start;
-	int64_t wait_limit = period / 4 > 2000 ? period / 4 : 2000;
-	// Under a second: longer is a pause or a stopped device, not lateness
-	bool late_gap = mode == PLAYING && period > 0 && gap > 2 * period + 10000 && gap < 1000000;
-	bool late_wait = holder != NULL && wait > wait_limit;
-	if (!late_gap && !late_wait) return;
-	cb_late_count++;
-	cb_period_us = period;
-	if (late_wait && wait > cb_worst_wait_us) {
-		cb_worst_wait_us = wait;
-		cb_wait_holder = holder;
-		cb_wait_holder_line = line;
-	}
-	if (late_gap && gap > cb_worst_gap_us) cb_worst_gap_us = gap;
-}
-
 int get_audio(int max_frames, float* buff) {
 		if (max_frames <= 0) return 0;
 		int b = 0;
 
-		int64_t cb_start = now_us();
-		const char *waited_on = NULL;
-		int waited_line = 0;
-		if (pthread_mutex_trylock(&buffer_mutex) != 0) {
-			waited_on = buffer_holder;
-			waited_line = buffer_holder_line;
-			buffer_lock();
-		}
-		buffer_holder = __func__;
-		buffer_holder_line = __LINE__;
-		buffer_held_since_us = now_us();
-		callback_timing(cb_start, buffer_held_since_us, waited_on, waited_line, max_frames);
+		buffer_lock();
 		int channels = output_mixer.channels;
 		memset(buff, 0, max_frames * channels * sizeof(float));
 		if (mode == RAMP_DOWN && (pre_roll_waiting_format || pre_roll_remaining > 0)) {
@@ -5882,7 +5805,6 @@ void *main_loop(void *thread_id) {
 	int load_prepared = 0;     // target loaded, transition cutover pending
 	int preload_waited_ms = 0;
 	int64_t underrun_logged_ms = 0;
-	int64_t late_logged_ms = 0;
 	int64_t load_started_ms = 0;  // skip timing diagnostics
 	bool preload_logged = false;
 	int ramp_waited_ms = 0;    // how long we have been waiting for a ramp-down
@@ -5953,34 +5875,14 @@ void *main_loop(void *thread_id) {
 			log_msg(LOG_INFO, "pa: Buffering -> Playing");
 		}
 		if ((log_short_calls || log_fade_putback) && now_ms() - underrun_logged_ms >= 250) {
+			// The device callback adds to these under the buffer lock
+			buffer_lock();
 			int frames = log_short_frames, calls = log_short_calls, putback = log_fade_putback;
-			log_short_frames -= frames;
-			log_short_calls -= calls;
-			log_fade_putback -= putback;
+			log_short_frames = log_short_calls = log_fade_putback = 0;
+			buffer_unlock();
 			underrun_logged_ms = now_ms();
 			log_msg(LOG_INFO, "ph: Output short by %d ms over %d callbacks; %d ms of old-track fade appended",
 				frames_to_ms(frames), calls, frames_to_ms(putback));
-		}
-		if ((cb_late_count || buffer_long_hold_us) && now_ms() - late_logged_ms >= 250) {
-			late_logged_ms = now_ms();
-			int late = cb_late_count;
-			int64_t wait = cb_worst_wait_us, gap = cb_worst_gap_us, period = cb_period_us, hold = buffer_long_hold_us;
-			const char *waiter = cb_wait_holder, *holder = buffer_long_holder;
-			int wait_line = cb_wait_holder_line, hold_line = buffer_long_holder_line;
-			cb_late_count -= late;
-			cb_worst_wait_us = cb_worst_gap_us = 0;
-			buffer_long_hold_us = 0;
-			if (late) {
-				if (wait) {
-					log_msg(LOG_WARNING, "ph: Audio callback late %d time(s): waited up to %.1f ms for the buffer lock held by %s:%d; "
-						"longest gap between callbacks %.1f ms (expected %.1f ms)",
-						late, wait / 1000.0, waiter, wait_line, gap / 1000.0, period / 1000.0);
-				} else {
-					log_msg(LOG_WARNING, "ph: Audio callback late %d time(s): longest gap between callbacks %.1f ms (expected %.1f ms)",
-						late, gap / 1000.0, period / 1000.0);
-				}
-			}
-			if (hold) log_msg(LOG_WARNING, "ph: Buffer lock held %.1f ms by %s:%d", hold / 1000.0, holder, hold_line);
 		}
 
 //		test1++;
@@ -6933,6 +6835,9 @@ EXPORT void set_load_growing(int n) {
 EXPORT void set_file_complete() {
 	pthread_mutex_lock(&bs.mut);
 	loaded_target_growing = 0;
+	// Also a start() of this file that the main loop hasn't loaded yet
+	load_target_growing = 0;
+	load_target_growing_pending = 0;
 	if (bs.active && !bs.net && bs.growing) {
 		// Take its final size now rather than at the reader's next poll, or
 		// the decoder could be told it has ended short of the last part

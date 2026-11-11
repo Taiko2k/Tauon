@@ -396,7 +396,7 @@ class Jellyfin(RemotePlaylistSource):
 		doesn't wait on the server once per album.
 		"""
 		if not self.connected or not self.accessToken:
-			if time.monotonic() - getattr(self, "login_failed_at", 0.0) < LOGIN_RETRY_S:
+			if time.monotonic() - self.login_failed_at < LOGIN_RETRY_S:
 				return False
 			self._authenticate(quiet=True)
 		return self.connected

@@ -935,7 +935,7 @@ def test_plex_reorder_passes_over_a_track_the_server_did_not_take() -> None:
 	moves: list[str] = []
 
 	def query(point: str, method: object = None) -> None:
-		moved, _, after = point.partition("/move")
+		moved, _sep, after = point.partition("/move")
 		key = moved.rsplit("/e", 1)[1]
 		playlist.keys.remove(key)
 		anchor = after.partition("=e")[2]
