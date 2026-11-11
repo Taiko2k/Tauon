@@ -206,7 +206,8 @@ float fade_mini = 0.0;
 int fade_position = 0;
 int fade_2_flag = 0;
 
-pthread_mutex_t buffer_mutex;
+// Statically initialised: a zeroed mutex is invalid on macOS and never locks
+pthread_mutex_t buffer_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static inline void buffer_lock(void) { pthread_mutex_lock(&buffer_mutex); }
 static inline void buffer_unlock(void) { pthread_mutex_unlock(&buffer_mutex); }
