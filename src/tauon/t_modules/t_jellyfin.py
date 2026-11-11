@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING
 import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
-from tauon.t_modules.t_extra import StarRecord, Timer, with_url_scheme
+from tauon.t_modules.t_extra import StarRecord, Timer, describe_error, describe_http_status, with_url_scheme
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome, http_outcome
 from tauon.t_modules.t_server_sync import (
@@ -76,6 +76,8 @@ SINCE_MARGIN_S = 60
 BARE_PAGE_SIZE = 1000
 # More unknown tracks than this and a full import is quicker than fetching them by id
 MISSING_LIMIT = 500
+# After a failed login, background requests wait this long before trying again
+LOGIN_RETRY_S = 30
 
 
 def iso_time(timestamp: float) -> str:
@@ -105,6 +107,8 @@ class Jellyfin(RemotePlaylistSource):
 		self.accessToken = None
 		self.userId = None
 		self.currentId = None
+		# Monotonic time of the last failed login, so background work doesn't retry for every cover
+		self.login_failed_at = 0.0
 
 		self.session_thread_active: bool = False
 		self.session_status: int = 0
@@ -163,6 +167,7 @@ class Jellyfin(RemotePlaylistSource):
 				timeout=(5, 10),
 			)
 		except Exception:
+			self.login_failed_at = time.monotonic()
 			logging.exception(
 				f"{_('Could not establish connection to server.')} {_('Check server is running and URL is correct.')}"
 			)
@@ -179,14 +184,19 @@ class Jellyfin(RemotePlaylistSource):
 			self.accessToken = info["AccessToken"]
 			self.userId = info["User"]["Id"]
 			self.connected = True
+			self.login_failed_at = 0.0
 			if debug:
 				self.show_message(_("Connection and authorisation successful"), mode="done")
-		elif quiet:
+			return
+
+		self.login_failed_at = time.monotonic()
+		if quiet:
 			logging.warning(f"Jellyfin auth failed: {response.status_code}")
 		elif response.status_code == HTTPStatus.UNAUTHORIZED:
 			self.show_message(_("401 Authentication failed"), _("Check username and password."), mode="warning")
 		else:
-			self.show_message(_("Jellyfin auth error"), f"{response.status_code} {response.text}", mode="warning")
+			logging.error(f"Jellyfin auth error: {response.status_code} {response.text}")
+			self.show_message(_("Couldn't sign in to Jellyfin"), describe_http_status(response.status_code), mode="warning")
 
 	def test(self) -> None:
 		self._authenticate(debug=True)
@@ -226,13 +236,18 @@ class Jellyfin(RemotePlaylistSource):
 			if item.get("Id") and item.get("CollectionType") == "music"
 		]
 
-	def resolve_stream(self, stream_id: str, bitrate: int = 0, stream_format: str = "mp3") -> str | tuple[str, dict]:
-		"""The stream's url and params: the original file, or stream_format at bitrate kbps."""
+	def resolve_stream(
+		self, stream_id: str, bitrate: int = 0, stream_format: str = "mp3",
+	) -> tuple[str, dict | None]:
+		"""The stream's url and params: the original file, or stream_format at bitrate kbps.
+
+		The url is empty when the server can't be reached.
+		"""
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 
 		if not self.connected:
-			return ""
+			return "", None
 
 		base_url = f"{self.server_url}/Audio/{stream_id}/stream"
 		params = {
@@ -259,10 +274,8 @@ class Jellyfin(RemotePlaylistSource):
 		return base_url, params
 
 	def get_cover(self, track: TrackClass) -> BytesIO | None:
-		if not self.connected or not self.accessToken:
-			self._authenticate()
-
-		if not self.connected:
+		# Artwork loads in the background, so a server that can't be reached mustn't raise a message
+		if not self._ready():
 			return None
 
 		if not track.art_url_key:
@@ -310,10 +323,7 @@ class Jellyfin(RemotePlaylistSource):
 		return f"{seconds // 60:02d}:{seconds % 60:02d}.{ticks // 10000:03d}"
 
 	def get_lyrics(self, track_object: TrackClass) -> tuple[str, str]:
-		if not self.connected or not self.accessToken:
-			self._authenticate()
-
-		if not self.connected:
+		if not self._ready():
 			return "", ""
 
 		headers = {
@@ -380,8 +390,14 @@ class Jellyfin(RemotePlaylistSource):
 		return bool(self.prefs.jelly_username and self.prefs.jelly_server_url)
 
 	def _ready(self) -> bool:
-		"""Log in quietly when needed, for background requests."""
+		"""Log in quietly when needed, for background requests.
+
+		Soon after a failed login this doesn't try again, so artwork for a whole gallery
+		doesn't wait on the server once per album.
+		"""
 		if not self.connected or not self.accessToken:
+			if time.monotonic() - getattr(self, "login_failed_at", 0.0) < LOGIN_RETRY_S:
+				return False
 			self._authenticate(quiet=True)
 		return self.connected
 
@@ -698,16 +714,16 @@ class Jellyfin(RemotePlaylistSource):
 		return nt
 
 	def favourite_tracks(self) -> list[int] | None:
-		"""Track ids for the jellyfav generator code, or None if cancelled."""
+		"""Track ids for the jellyfav generator code, or None if they couldn't be fetched or it was cancelled."""
 		try:
-			return self.ingest_library(return_list=True, extra={"filters": "IsFavorite"}) or []
+			return self.ingest_library(return_list=True, extra={"filters": "IsFavorite"})
 		except ScanCancelledError:
 			return None
 		finally:
 			self._scan_done()
 
 	def favourite_albums(self) -> list[int] | None:
-		"""Track ids for the jellyfavalb generator code, or None if cancelled."""
+		"""Track ids for the jellyfavalb generator code, or None if they couldn't be fetched or it was cancelled."""
 		try:
 			return self._favourite_albums()
 		except ScanCancelledError:
@@ -727,11 +743,12 @@ class Jellyfin(RemotePlaylistSource):
 		self.gui.request_frame()
 		self.tauon.wake()
 
-	def _favourite_albums(self) -> list[int]:
+	def _favourite_albums(self) -> list[int] | None:
+		# None keeps the playlist as it is: a partial list would drop the albums that failed
 		if not self.connected or not self.accessToken:
 			self._authenticate()
 		if not self.connected:
-			return []
+			return None
 		try:
 			response = requests.get(
 				f"{self.server_url}/Items",
@@ -744,16 +761,19 @@ class Jellyfin(RemotePlaylistSource):
 			)
 		except Exception:
 			logging.exception("Error listing Jellyfin favourite albums")
-			return []
+			return None
 		if response.status_code != HTTPStatus.OK:
 			logging.error(f"Error listing Jellyfin favourite albums: [{response.status_code}] {response.reason}")
-			return []
+			return None
 		album_ids = [item["Id"] for item in response.json().get("Items", []) if item.get("Id")]
 		tracks: list[int] = []
 		# Chunked to keep the query string a sane length
 		for i in range(0, len(album_ids), 100):
 			chunk = ",".join(album_ids[i:i + 100])
-			tracks.extend(self.ingest_library(return_list=True, extra={"albumIds": chunk}) or [])
+			found = self.ingest_library(return_list=True, extra={"albumIds": chunk})
+			if found is None:
+				return None
+			tracks.extend(found)
 		return tracks
 
 	def ingest_library(
@@ -773,7 +793,8 @@ class Jellyfin(RemotePlaylistSource):
 			self.scanning = False
 			if not return_list:
 				self.show_message(_("Error connecting to Jellyfin"))
-			return []
+				return []
+			return None
 
 		playlist: list[int] = []
 
@@ -814,7 +835,7 @@ class Jellyfin(RemotePlaylistSource):
 		except OSError as e:
 			logging.error(f"Error accessing Jellyfin: {e}")
 			self.scanning = False
-			self.show_message(_("Error accessing Jellyfin"), str(e), mode="warning")
+			self.show_message(_("Error accessing Jellyfin"), describe_error(e), mode="warning")
 			return None
 		logging.info(f"Got {len(items)} of {self.scan_total} items")
 
@@ -1021,9 +1042,9 @@ class Jellyfin(RemotePlaylistSource):
 		if not track_ids:
 			return None
 		server_ids = [self.pctl.master_library[t].url_key for t in track_ids]
-		if cache is not None and parent_id is None:
-			sync.purge_removed(JELLYFIN, cache.server_ids, server_ids)
-		sync.store_library(code, LibraryCache("", server_ids, started, server=self._server_key()))
+		suspects = sync.purge_removed(JELLYFIN, cache, server_ids) if cache is not None and parent_id is None else []
+		sync.store_library(
+			code, LibraryCache("", server_ids, started, {"suspects": suspects or []}, server=self._server_key()))
 		return track_ids
 
 	def _library_delta(self, code: str, cache: LibraryCache, parent_id: str | None) -> list[int] | None:
@@ -1075,8 +1096,7 @@ class Jellyfin(RemotePlaylistSource):
 			for item in self._items({"userId": self.userId, "ids": ",".join(missing[i:i + 100]), **full}):
 				if item.get("Id"):
 					existing[item["Id"]] = self._store_track(item, existing).index
-		if parent_id is None:
-			self.tauon.server_sync.purge_removed(JELLYFIN, cache.server_ids, ids)
+		suspects = self.tauon.server_sync.purge_removed(JELLYFIN, cache, ids) if parent_id is None else []
 
 		library = self.pctl.master_library
 		favourites: dict[TrackClass, bool] = {}
@@ -1091,7 +1111,8 @@ class Jellyfin(RemotePlaylistSource):
 
 		track_ids = self._sorted([existing[x] for x in ids if x in existing])
 		self.gui.to_got = len(track_ids)
-		self.tauon.server_sync.store_library(code, LibraryCache("", ids, now, server=self._server_key()))
+		self.tauon.server_sync.store_library(
+			code, LibraryCache("", ids, now, {"suspects": suspects or []}, server=self._server_key()))
 		logging.info(f"Jellyfin library brought up to date: {len(changed)} of {len(ids)} tracks changed")
 		return track_ids
 

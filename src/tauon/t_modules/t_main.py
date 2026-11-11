@@ -64,6 +64,7 @@ import threading
 import time
 
 # import type_enforced
+import urllib.error
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -186,6 +187,8 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	contrast_ratio,
 	ensure_contrast,
 	d_date_display,
+	describe_error,
+	describe_response,
 	d_date_display2,
 	decode_playlist_text,
 	filename_safe,
@@ -423,6 +426,8 @@ CJK_SEARCH_PATTERN = re.compile(
 LRC_TAG_PATTERN = re.compile(r"\[[^\]\n]*\]|<\d+:\d+(?:[.:]\d+)?>")
 # Bump when the persisted search strings change shape; older ones are dropped on load
 SEARCH_CACHE_FORMAT = 2
+# Seconds to leave a media server alone for artwork after it couldn't be reached
+NET_ART_SERVER_RETRY_S = 60
 
 try:
 	from tauon.t_modules.t_chrome import Chrome
@@ -5383,7 +5388,8 @@ class LastFMapi:
 
 		except Exception as e:
 			logging.exception(f"Error connecting to {self.name} network")
-			self.show_message(_("Error connecting to {service} network").format(service=self.name), str(e), mode="warning")
+			self.show_message(
+				_("Error connecting to {service} network").format(service=self.name), describe_error(e), mode="warning")
 			return False
 
 	def toggle(self) -> None:
@@ -5402,7 +5408,7 @@ class LastFMapi:
 
 		except Exception as e:
 			logging.exception("Error communicating with Last.fm network")
-			self.show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			self.show_message(_("Error communicating with Last.fm network"), describe_error(e), mode="warning")
 			return False
 
 	def no_user_connect(self) -> bool:
@@ -5415,7 +5421,7 @@ class LastFMapi:
 
 		except Exception as e:
 			logging.exception("Error communicating with Last.fm network")
-			self.show_message(_("Error communicating with Last.fm network"), str(e), mode="warning")
+			self.show_message(_("Error communicating with Last.fm network"), describe_error(e), mode="warning")
 			return False
 
 	def get_all_scrobbles_estimate_time(self) -> float | None:
@@ -5931,7 +5937,8 @@ class ListenBrainz:
 		if outcome is not Outcome.SENT:
 			logging.warning(f"ListenBrainz answered {r.status_code}: {r.text}")
 			if r.status_code < 500 and r.status_code != 429:
-				self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+				logging.error(f"ListenBrainz error: {r.status_code} {r.text}")
+				self.show_message(_("There was an error submitting data to ListenBrainz"), describe_response(r), mode="warning")
 		return [outcome] * len(items)
 
 	def listen_playing(self, track_object: TrackClass) -> None:
@@ -5948,7 +5955,8 @@ class ListenBrainz:
 		data = {"listen_type": "playing_now", "payload": [{"track_metadata": self.track_metadata(item)}]}
 		r = requests.post(self.url(), headers={"Authorization": "Token " + self.prefs.lb_token}, data=json.dumps(data), timeout=10)
 		if r.status_code != 200:
-			self.show_message(_("There was an error submitting data to ListenBrainz"), r.text, mode="warning")
+			logging.error(f"ListenBrainz error: {r.status_code} {r.text}")
+			self.show_message(_("There was an error submitting data to ListenBrainz"), describe_response(r), mode="warning")
 			logging.error("There was an error submitting data to ListenBrainz")
 			logging.error(r.status_code)
 			logging.error(r.json())
@@ -16385,7 +16393,7 @@ class Tauon:
 
 		except Exception as e:
 			logging.exception("Image download failed")
-			self.show_message(_("Image download failed."), str(e), mode="warning")
+			self.show_message(_("Image download failed."), describe_error(e), mode="warning")
 			self.gui.image_downloading = False
 
 	def display_you_heart(self, x: int, yy: int, just: int = 0) -> None:
@@ -19516,6 +19524,8 @@ class Tauon:
 		self.inp.mouse_click = False
 
 	def show_message(self, line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
+		# Each is drawn as a single line. Server replies and exception text can run to several.
+		line1, line2, line3 = (" ".join(str(line).split()) for line in (line1, line2, line3))
 		self.gui.message_box = True
 		self.gui.message_text = line1
 		self.gui.message_mode = mode
@@ -20688,7 +20698,8 @@ class Tauon:
 			r = requests.get(url, timeout=10)
 
 			if r.status_code != 200:
-				self.show_message(_("There was an error with the Maloja server"), r.text, mode="warning")
+				logging.error(f"Maloja error: {r.status_code} {r.text}")
+				self.show_message(_("There was an error with the Maloja server"), describe_response(r), mode="warning")
 				self.lastfm.scanning_scrobbles = False
 				return
 		except Exception:
@@ -20764,7 +20775,8 @@ class Tauon:
 		if outcome is not Outcome.SENT:
 			logging.warning(f"Maloja answered {r.status_code}: {r.text}")
 			if r.status_code < 500 and r.status_code != 429:
-				self.show_message(_("There was an error submitting data to Maloja server"), r.text, mode="warning")
+				logging.error(f"Maloja error: {r.status_code} {r.text}")
+				self.show_message(_("There was an error submitting data to Maloja server"), describe_response(r), mode="warning")
 		return outcome
 
 	def get_network_thumbnail_url(self, track_object: TrackClass) -> str | None:
@@ -23907,9 +23919,9 @@ class PlexService:
 		if not track_ids:
 			return None
 		server_ids = [self.pctl.master_library[t].url_key for t in track_ids]
-		if cache is not None and not section_key:
-			sync.purge_removed(PLEX, cache.server_ids, server_ids)
-		sync.store_library(code, LibraryCache(stamp or "", server_ids, server=server))
+		suspects = sync.purge_removed(PLEX, cache, server_ids) if cache is not None and not section_key else []
+		sync.store_library(
+			code, LibraryCache(stamp or "", server_ids, extra={"suspects": suspects or []}, server=server))
 		return track_ids
 
 	def _existing(self) -> dict[str, int]:
@@ -23999,7 +24011,7 @@ class PlexService:
 			return None
 		except Exception as e:
 			logging.exception("Error importing PLEX library")
-			self.show_message(_("Error importing PLEX library"), str(e), mode="error")
+			self.show_message(_("Error importing PLEX library"), describe_error(e), mode="error")
 			return [] if return_list else None
 		finally:
 			self.scanning = False
@@ -24084,7 +24096,7 @@ class TauService:
 		except Exception as e:
 			logging.exception("Network error")
 			if not quiet:
-				self.show_message(_("Network error"), str(e), mode="error")
+				self.show_message(_("Network error"), describe_error(e), mode="error")
 		return data
 
 	def ping(self) -> bool:
@@ -26606,6 +26618,9 @@ class AlbumArt:
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
 		self.net_art_failed: dict[str, float] = {}  # art_url_key -> monotonic time of last failed network fetch
+		# Media server -> monotonic time it last couldn't be reached. Local covers load on the
+		# same thread, so a server that's down mustn't cost a timeout for every album.
+		self.net_art_server_failed: dict[str, float] = {}
 
 		# Animated art playback. The clock is kept per source image rather than
 		# per cache unit, so the same art shown at two sizes stays in step and
@@ -26983,6 +26998,9 @@ class AlbumArt:
 					last_fail = self.net_art_failed.get(track.art_url_key)
 					if last_fail is not None and time.monotonic() - last_fail < 120:
 						return None
+					server_fail = self.net_art_server_failed.get(track.file_ext)
+					if server_fail is not None and time.monotonic() - server_fail < NET_ART_SERVER_RETRY_S:
+						return None
 					fetching = True
 					if track.file_ext == "SUB":
 						source_image = self.tauon.subsonic.get_cover(track)
@@ -26999,11 +27017,16 @@ class AlbumArt:
 							file.write(source_image.read())
 						source_image.seek(0)
 						self.net_art_failed.pop(track.art_url_key, None)
+						self.net_art_server_failed.pop(track.file_ext, None)
 					else:
 						self.net_art_failed[track.art_url_key] = time.monotonic()
-			except Exception:
+			except Exception as e:
 				if fetching:
 					self.net_art_failed[track.art_url_key] = time.monotonic()
+					if isinstance(e, (requests.ConnectionError, requests.Timeout, urllib.error.URLError, TimeoutError)):
+						# The server, not just this image: hold off the rest of its artwork for a while
+						logging.warning(f"Couldn't reach the server for artwork, trying again later: {e}")
+						self.net_art_server_failed[track.file_ext] = time.monotonic()
 				logging.exception("Failed to get source")
 		else:
 			source_image = open(subsource[1], "rb")
@@ -30223,6 +30246,8 @@ class MessageBox:
 		w = max(w1, w2, w3)
 
 		w = max(w, 210 * self.gui.scale)
+		# Text that doesn't fit is cut short with an ellipsis rather than running off the window
+		w = min(w, self.window_size[0] - 24 * self.gui.scale)
 
 		h = round(60 * self.gui.scale)
 		if self.gui.message_subtext2:
@@ -30246,6 +30271,8 @@ class MessageBox:
 				inp.key_return_press = False
 
 		x, y, w, h = self.get_rect()
+		# Room for text beside the icon
+		text_w = int(w - 74 * gui.scale)
 
 		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
 			self.colours.box_text_border)
@@ -30271,7 +30298,7 @@ class MessageBox:
 			self.message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(self.message_bubble_icon.h / 2) - 1)
 		elif gui.message_mode == "confirm":
 			self.message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(self.message_info_icon.h / 2) - 1)
-			ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
+			ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, self.colours.message_box_text, 15, text_w)
 			if self.draw.button("Yes", (w // 2 + x) - 70 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
 				gui.message_box = False
 				if gui.message_box_confirm_callback:
@@ -30283,20 +30310,20 @@ class MessageBox:
 			return
 
 		if gui.message_subtext:
-			ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
+			ddt.text((x + 62 * gui.scale, y + 11 * gui.scale), gui.message_text, self.colours.message_box_text, 15, text_w)
 			if gui.message_mode in ("bubble", "link"):
 				link_pa = self.tauon.draw_linked_text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext,
 					self.colours.message_box_text, 12)
 				self.tauon.link_activate(x + 63 * gui.scale, y + (9 + 22) * gui.scale, link_pa)
 			else:
 				ddt.text((x + 63 * gui.scale, y + (9 + 22) * gui.scale), gui.message_subtext, self.colours.message_box_text,
-					12)
+					12, text_w)
 
 			if gui.message_subtext2:
 				ddt.text((x + 63 * gui.scale, y + (9 + 42) * gui.scale), gui.message_subtext2, self.colours.message_box_text,
-					12)
+					12, text_w)
 		else:
-			ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, self.colours.message_box_text, 15)
+			ddt.text((x + 62 * gui.scale, y + 20 * gui.scale), gui.message_text, self.colours.message_box_text, 15, text_w)
 
 class DuplicateImportBox:
 	"""Modal duplicate choices with continuations owned by each import action."""
@@ -32849,7 +32876,8 @@ class Over:
 					elif result.status_code == 200:
 						self.show_message(_("Connection to Maloja server was successful."), mode="done")
 					else:
-						self.show_message(_("The Maloja server returned an error."), result.text, mode="warning")
+						logging.error(f"Maloja error: {result.status_code} {result.text}")
+						self.show_message(_("The Maloja server returned an error."), describe_response(result), mode="warning")
 				except Exception:
 					logging.exception("Could not communicate with the Maloja server")
 					self.show_message(_("Could not communicate with the Maloja server."), mode="warning")
@@ -42165,6 +42193,9 @@ class RadioBox:
 		self.load_failed_timer.set()
 		self.load_failed = True
 		self.load_connecting = False
+		# The station browser says so itself; started from anywhere else, nothing else would
+		if not self.active and not self.gui.message_box:
+			self.show_message(_("Couldn't play the station"), _("Check the address and your connection."), mode="warning")
 		self.gui.request_frame()
 
 	def start2(self, station: RadioStation, request_id: int) -> None:

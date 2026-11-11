@@ -232,3 +232,58 @@ def test_the_download_in_flight_is_known_while_it_runs(tmp_path: Path, monkeypat
 	# it ends, however it ends
 	assert during == [item]
 	assert cache.downloading is None
+
+
+def make_run_cache(tmp_path: Path) -> Cachement:
+	cache = Cachement.__new__(Cachement)
+	cache.direc = str(tmp_path)
+	cache.files = []
+	cache.list = []
+	cache.running = False
+	cache.get_now = None
+	cache.ready = None
+	cache.error = None
+	cache.downloading = None
+	cache.prefs = SimpleNamespace(cache_limit=3, tmp_cache=False, encoder_output=str(tmp_path))
+	cache.tauon = SimpleNamespace(encode_folder_name=lambda _t: "x", encode_track_name=lambda _t: "y")
+	cache.pctl = SimpleNamespace(transcode_bitrate=lambda _t: 0, transcode_format=lambda _t: "mp3")
+	return cache
+
+
+def net_track(n: int) -> SimpleNamespace:
+	return SimpleNamespace(file_ext="JELY", bitrate=0, is_network=True, index=n, url_key=f"k{n}", fullpath="")
+
+
+def test_the_cache_thread_can_be_started_again_after_it_raises(tmp_path: Path) -> None:
+	cache = make_run_cache(tmp_path)
+
+	class AdvanceError(Exception):
+		pass
+
+	def boom(_dry: bool = False) -> None:
+		raise AdvanceError
+
+
+	cache.pctl.advance = boom
+	cache.run()
+	assert cache.running is False, "running stayed set, so no later download could start"
+
+
+def test_a_track_played_again_is_the_last_to_be_evicted(tmp_path: Path) -> None:
+	cache = make_run_cache(tmp_path)
+	items = [net_track(i) for i in range(4)]
+	for t in items:
+		key = cache.get_key(t)
+		(tmp_path / key).write_bytes(b"\0" * 1_000_000)
+		cache.files.append(key)
+		cache.list.append(key)
+	cache.running = True  # so get_file starts no thread
+
+	status, _path = cache.get_file(items[0])
+	assert status == 0
+	cache.trim_cache()
+
+	first = tmp_path / cache.get_key(items[0])
+	remaining = [t for t in items if (tmp_path / cache.get_key(t)).exists()]
+	assert first.exists(), "the track played again was evicted first"
+	assert len(remaining) < 4

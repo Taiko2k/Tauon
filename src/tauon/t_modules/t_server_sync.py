@@ -670,11 +670,20 @@ class ServerSync:
 		except KeyError:
 			return None
 
-	def purge_removed(self, service: str, old: list[str], new: list[str]) -> None:
-		"""Drop tracks that left the server since the last full listing."""
-		gone = set(old) - set(new)
+	def purge_removed(self, service: str, cache: LibraryCache, new: list[str]) -> list[str]:
+		"""Drop tracks that have been missing from two full listings in a row.
+
+		One listing can miss a track that is still on the server, such as when the server's order
+		shifts between pages during a rescan. A purge takes the track out of every playlist, and
+		from a linked one that goes on to the server. Returns the tracks missing for the first
+		time, for the new cache to remember in extra["suspects"].
+		"""
+		listed = set(new)
+		suspects = [x for x in dict.fromkeys(cache.server_ids) if x not in listed]
+		previous = cache.extra.get("suspects") if isinstance(cache.extra, dict) else None
+		gone = {x for x in previous if x not in listed} if isinstance(previous, list) else set()
 		if not gone:
-			return
+			return suspects
 		pctl = self.tauon.pctl
 		with DATABASE_LOCK:
 			track_ids = [
@@ -685,6 +694,7 @@ class ServerSync:
 		if track_ids:
 			logging.info(f"Removed {len(track_ids)} tracks that are no longer on {SERVICE_NAMES[service]}")
 			pctl.notify_database_changed()
+		return suspects
 
 	# Startup refresh
 

@@ -22,6 +22,7 @@ TODO(Martin): Rewrite all tuple[int, int, int, int] things into actual ColorWhat
 from __future__ import annotations
 
 import colorsys
+import errno
 import ipaddress
 import locale
 import logging
@@ -30,6 +31,8 @@ import os
 import random
 import re
 import shlex
+import socket
+import ssl
 import subprocess
 import threading
 import time
@@ -1087,6 +1090,110 @@ def is_stream_url(url: str) -> bool:
 
 def is_http_url(url: str) -> bool:
 	return url.lower().startswith(("http://", "https://"))
+
+
+# What fits on a message box line without running off a small window
+MESSAGE_TEXT_LIMIT = 90
+
+
+def short_text(text: object, limit: int = MESSAGE_TEXT_LIMIT) -> str:
+	"""Text on one line, cut to a length that fits a message box."""
+	line = " ".join(str(text).split())
+	return line if len(line) <= limit else line[:limit - 1].rstrip() + "…"
+
+
+def describe_http_status(status: int) -> str:
+	"""A short reason for an HTTP error status, to show the user."""
+	if status == 401:
+		return _("The server refused the login. Check the username and password.")
+	if status == 403:
+		return _("The server refused the request (403).")
+	if status == 404:
+		return _("The server couldn't find it (404).")
+	if status == 429:
+		return _("The server is limiting requests. Try again shortly.")
+	if status >= 500:
+		return _("The server had a problem ({code}).").format(code=status)
+	return _("The server returned an error ({code}).").format(code=status)
+
+
+def describe_error(error: BaseException) -> str:
+	"""A short reason for a failed network or file operation, to show the user.
+
+	Libraries wrap the real cause several layers deep, and their own text is long and technical,
+	so this goes by what kind of failure it was. The log keeps the detail.
+	"""
+	# The error, and whatever it wraps
+	chain: list[BaseException] = []
+	pending = [error]
+	while pending and len(chain) < 16:
+		item = pending.pop()
+		if any(item is seen for seen in chain):
+			continue
+		chain.append(item)
+		for inner in (item.__cause__, item.__context__, getattr(item, "reason", None), *getattr(item, "args", ())):
+			if isinstance(inner, BaseException):
+				pending.append(inner)
+
+	names = {type(e).__name__ for e in chain}
+	text = " ".join(str(e) for e in chain).lower()
+	codes = {e.errno for e in chain if isinstance(e, OSError) and e.errno}
+
+	def named(*parts: str) -> bool:
+		return any(part in name for part in parts for name in names)
+
+	def says(*phrases: str) -> bool:
+		return any(phrase in text for phrase in phrases)
+
+	if any(isinstance(e, ssl.SSLError) for e in chain) or named("SSL") or says("certificate verify failed"):
+		return _("Couldn't make a secure connection to the server.")
+	if any(isinstance(e, socket.gaierror) for e in chain) or named("NameResolution") or says(
+			"name or service not known", "nodename nor servname", "getaddrinfo failed", "name resolution"):
+		return _("Couldn't find the server. Check the address and your connection.")
+	if any(isinstance(e, TimeoutError) for e in chain) or named("Timeout") or says("timed out"):
+		return _("The server took too long to respond.")
+	if codes & {errno.ECONNREFUSED} or named("ConnectionRefused") or says("connection refused", "actively refused"):
+		return _("The server refused the connection. Is it running?")
+	if codes & {errno.ENETUNREACH, errno.EHOSTUNREACH, errno.ENETDOWN} or says(
+			"network is unreachable", "no route to host", "network is down"):
+		return _("No network connection.")
+	if codes & {errno.ECONNRESET, errno.EPIPE, errno.ECONNABORTED} or named(
+			"ConnectionReset", "RemoteDisconnected", "IncompleteRead", "ChunkedEncoding", "BrokenPipe") or says(
+			"connection aborted", "connection reset"):
+		return _("The connection to the server was lost.")
+	for e in chain:
+		status = getattr(e, "code", None)
+		if not isinstance(status, int):
+			status = getattr(getattr(e, "response", None), "status_code", None)
+		if isinstance(status, int) and 400 <= status < 600:
+			return describe_http_status(status)
+	if named("JSONDecodeError"):
+		return _("The server sent a reply that couldn't be read.")
+	if named("ConnectionError", "URLError", "ProxyError"):
+		return _("Couldn't reach the server.")
+	if any(isinstance(e, FileNotFoundError) for e in chain):
+		return _("File not found.")
+	if any(isinstance(e, PermissionError) for e in chain):
+		return _("Permission denied.")
+	if isinstance(error, OSError) and error.strerror:
+		return short_text(error.strerror)
+	return short_text(str(error) or type(error).__name__)
+
+
+def describe_response(response: object) -> str:
+	"""A short reason for a failed HTTP response, with the server's own words when it gave a brief message."""
+	status = getattr(response, "status_code", 0) or 0
+	message = ""
+	with suppress(Exception):
+		data = response.json()
+		if isinstance(data, dict):
+			found = data.get("message") or data.get("error") or data.get("detail")
+			if isinstance(found, dict):
+				found = found.get("message") or found.get("desc")
+			if isinstance(found, str):
+				message = short_text(found, 60)
+	reason = describe_http_status(status) if status >= 400 else _("The server returned an error.")
+	return short_text(f"{reason} {message}") if message else reason
 
 
 def with_url_scheme(url: str, default_port: int) -> str:

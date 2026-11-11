@@ -34,7 +34,7 @@ from queue import Empty, Queue
 import mutagen
 
 from tauon.t_modules.t_enums import Backend
-from tauon.t_modules.t_extra import filename_safe
+from tauon.t_modules.t_extra import describe_error, filename_safe
 
 from typing import TYPE_CHECKING
 
@@ -43,6 +43,33 @@ if TYPE_CHECKING:
 	from urllib.request import _UrlopenRet
 
 	from tauon.t_modules.t_main import Tauon
+
+
+def icy_stream_title(block: bytes) -> str | None:
+	"""The StreamTitle from an ICY metadata block, or None if it has none.
+
+	Raises ValueError for a block that isn't metadata at all, which means the stream has
+	lost its place.
+	"""
+	block = block.rstrip(b"\x00")
+	if not block:
+		return None
+	if not block.startswith(b"Stream"):
+		raise ValueError("Not an ICY metadata block")
+	# Stations send UTF-8 or, as Shoutcast always did, Latin-1
+	try:
+		meta = block.decode()
+	except UnicodeDecodeError:
+		meta = block.decode("latin-1")
+	start = meta.find("StreamTitle='")
+	if start < 0:
+		return None
+	start += len("StreamTitle='")
+	# A title can hold a semicolon, so end at the closing quote rather than the first one
+	end = meta.find("';", start)
+	if end < 0:
+		end = len(meta.rstrip(";").rstrip("'"))
+	return meta[start:end]
 
 
 class StreamEnc:
@@ -334,7 +361,7 @@ class StreamEnc:
 					logging.debug("RETRYING...")
 					continue
 				logging.error("Connection failed")
-				self.tauon.show_message(_("Failed to establish a connection"), str(e), mode="error")
+				self.tauon.show_message(_("Couldn't connect to the station"), describe_error(e), mode="error")
 				return False
 			finally:
 				urllib.request.http.client.HTTPResponse._read_status = ORIGINAL_HTTP_CLIENT_READ_STATUS
@@ -831,14 +858,9 @@ class StreamEnc:
 						maybe = b""
 
 						try:
-							meta = text.decode().rstrip("\x00")
-							for tag in meta.split(";"):
-								if "=" in tag:
-									a, b = tag.split("=", 1)
-									if a == "StreamTitle":
-										# logging.info("Set meta")
-										self.tauon.pctl.tag_meta = b.rstrip("'").lstrip("'")
-										break
+							title = icy_stream_title(text)
+							if title is not None:
+								self.tauon.pctl.tag_meta = title
 						except Exception:
 							logging.exception("Data malformation detected. Stream aborted.")
 							r.close()

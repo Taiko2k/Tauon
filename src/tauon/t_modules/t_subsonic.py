@@ -36,7 +36,7 @@ from typing import TYPE_CHECKING
 import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
-from tauon.t_modules.t_extra import StarRecord, with_url_scheme
+from tauon.t_modules.t_extra import StarRecord, short_text, with_url_scheme
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome
 from tauon.t_modules.t_server_sync import (
@@ -666,9 +666,9 @@ class SubsonicService(RemotePlaylistSource):
 		if not self.import_complete:
 			return track_ids
 		server_ids = [self.pctl.master_library[t].url_key for t in track_ids]
-		if cache is not None and not music_folder:
-			sync.purge_removed(SUBSONIC, cache.server_ids, server_ids)
-		sync.store_library(code, LibraryCache(stamp or "", server_ids, server=server))
+		suspects = sync.purge_removed(SUBSONIC, cache, server_ids) if cache is not None and not music_folder else []
+		sync.store_library(
+			code, LibraryCache(stamp or "", server_ids, extra={"suspects": suspects or []}, server=server))
 		return track_ids
 
 	def _apply_stars(self, track_ids: list[int], starred: set[str]) -> None:
@@ -744,7 +744,7 @@ class SubsonicService(RemotePlaylistSource):
 		return self._song_ids(self._as_list(starred.get("song")))
 
 	def favourite_albums(self) -> list[int] | None:
-		"""Track ids for the airfavalb generator code."""
+		"""Track ids for the airfavalb generator code, or None if they couldn't all be fetched."""
 		starred = self._starred()
 		if starred is None:
 			return None
@@ -752,13 +752,20 @@ class SubsonicService(RemotePlaylistSource):
 		for album in self._as_list(starred.get("album")):
 			if not isinstance(album, dict) or album.get("id") is None:
 				continue
+			# A partial list would drop the albums that failed from the playlist
 			try:
-				response = self._response(self.r("getAlbum", p={"id": album["id"]}, show_errors=False))
+				d = self.r("getAlbum", p={"id": album["id"]}, show_errors=False)
 			except Exception:
 				logging.exception("Error fetching Subsonic album")
+				return None
+			error = (d.get("subsonic-response") or {}).get("error") if isinstance(d, dict) else None
+			if isinstance(error, dict) and error.get("code") == 70:
+				# No longer on the server
 				continue
-			if response is not None:
-				songs.extend(self._as_list((response.get("album") or {}).get("song")))
+			response = self._response(d)
+			if response is None:
+				return None
+			songs.extend(self._as_list((response.get("album") or {}).get("song")))
 		return self._song_ids(songs)
 
 	def r(
@@ -826,7 +833,11 @@ class SubsonicService(RemotePlaylistSource):
 		subsonic_response = d["subsonic-response"]
 		if subsonic_response["status"] != "ok":
 			if show_errors:
-				self.show_message(_("Subsonic Error: ") + response.text, mode="warning")
+				error = subsonic_response.get("error")
+				detail = error.get("message") if isinstance(error, dict) else None
+				self.show_message(
+					_("The Subsonic server reported an error"), short_text(detail or _("See the log for details.")),
+					mode="warning")
 				logging.error(f"Subsonic Error: {response.text}")
 			else:
 				logging.debug(f"Subsonic request failed for {point}: {subsonic_response.get('error')}")
@@ -1151,79 +1162,85 @@ class SubsonicService(RemotePlaylistSource):
 					statuses[index] = 2
 				return
 
-			items = self._as_list(d["subsonic-response"]["directory"].get("child"))
+			# Guarded like the request above: an error escaping this thread would leave its status
+			# at 1 and the import waiting on it for ever
+			try:
+				items = self._as_list(d["subsonic-response"]["directory"].get("child"))
 
-			self.gui.request_frame()
+				self.gui.request_frame()
 
-			for item in items:
-				if item.get("isDir"):
-					if "userRating" in item and "artist" in item:
-						rating = item["userRating"]
-						if (
-							self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0
-							and rating == 0
-						):
-							pass
-						else:
-							self.album_star_store.set_rating_artist_title(
-								item["artist"], item["title"], int(rating * 2)
-							)
+				for item in items:
+					if item.get("isDir"):
+						if "userRating" in item and "artist" in item:
+							rating = item["userRating"]
+							if (
+								self.album_star_store.get_rating_artist_title(item["artist"], item["title"]) == 0
+								and rating == 0
+							):
+								pass
+							else:
+								self.album_star_store.set_rating_artist_title(
+									item["artist"], item["title"], int(rating * 2)
+								)
 
-					getsongs(index, item["id"], item["title"], inner=True, parent=item)
-					continue
-				self.gui.to_got += 1
-				song = item
-				#logging.debug(item)
-				nt = self.tauon.TrackClass()
+						getsongs(index, item["id"], item["title"], inner=True, parent=item)
+						continue
+					self.gui.to_got += 1
+					song = item
+					#logging.debug(item)
+					nt = self.tauon.TrackClass()
 
-				if parent and "artist" in parent:
-					nt.album_artist = parent["artist"]
+					if parent and "artist" in parent:
+						nt.album_artist = parent["artist"]
 
-				if "title" in song:
-					nt.title = song["title"]
-				if "artist" in song:
-					nt.artist = song["artist"]
-				if "album" in song:
-					nt.album = song["album"]
-				if "track" in song:
-					nt.track_number = song["track"]
-				if "year" in song:
-					nt.date = str(song["year"])
-				if "duration" in song:
-					nt.length = song["duration"]
-				if "created" in song:
-					nt.modified_time = self._created_time(song["created"])
-				# [{'name': 'Pop'}, {'name': 'Rap'}, {'name': 'Rock'}]
-				if song.get("genres"):
-					genres: dict[str, str] = song["genres"]
-					genre_names = [g["name"] for g in genres if g.get("name")]
-					if not genre_names:
-						logging.warning(f"Failed to parse genres from subsonic, got: {genres}")
-					if len(genres) > 1:
-						nt.genres = genre_names
-					nt.genre = " / ".join(genre_names)
+					if "title" in song:
+						nt.title = song["title"]
+					if "artist" in song:
+						nt.artist = song["artist"]
+					if "album" in song:
+						nt.album = song["album"]
+					if "track" in song:
+						nt.track_number = song["track"]
+					if "year" in song:
+						nt.date = str(song["year"])
+					if "duration" in song:
+						nt.length = song["duration"]
+					if "created" in song:
+						nt.modified_time = self._created_time(song["created"])
+					# [{'name': 'Pop'}, {'name': 'Rap'}, {'name': 'Rock'}]
+					if song.get("genres"):
+						genres: dict[str, str] = song["genres"]
+						genre_names = [g["name"] for g in genres if g.get("name")]
+						if not genre_names:
+							logging.warning(f"Failed to parse genres from subsonic, got: {genres}")
+						if len(genres) > 1:
+							nt.genres = genre_names
+						nt.genre = " / ".join(genre_names)
 
-				nt.file_ext = "SUB"
-				nt.parent_folder_name = name
-				if "path" in song:
-					nt.fullpath = song["path"]
-					nt.parent_folder_path = os.path.dirname(song["path"])
-				if "coverArt" in song:
-					nt.art_url_key = song["coverArt"]
-				nt.url_key = song["id"]
-				nt.subsonic_folder_id = folder_id
-				nt.is_network = True
-				self._apply_song_extras(nt, song)
+					nt.file_ext = "SUB"
+					nt.parent_folder_name = name
+					if "path" in song:
+						nt.fullpath = song["path"]
+						nt.parent_folder_path = os.path.dirname(song["path"])
+					if "coverArt" in song:
+						nt.art_url_key = song["coverArt"]
+					nt.url_key = song["id"]
+					nt.subsonic_folder_id = folder_id
+					nt.is_network = True
+					self._apply_song_extras(nt, song)
 
-				rating = 0
-				if "userRating" in song:
-					rating = int(song["userRating"])
+					rating = 0
+					if "userRating" in song:
+						rating = int(song["userRating"])
 
-				songsets[index].append((nt, name, song["id"], rating))
+					songsets[index].append((nt, name, song["id"], rating))
 
-			if inner:
-				return
-			statuses[index] = 2
+			except Exception:
+				logging.exception("Error reading Subsonic folder contents")
+				unread.append(folder_id)
+			finally:
+				if not inner:
+					statuses[index] = 2
 
 		failed_albums: list[str] = []
 		failed_albums_lock = threading.Lock()

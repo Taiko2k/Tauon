@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from typing import TYPE_CHECKING
 
 import pytest
+import requests
 
 from tauon.t_modules.t_extra import StarRecord, TauonPlaylist
 from tauon.t_modules.t_jellyfin import Jellyfin
@@ -33,6 +34,7 @@ from tauon.t_modules.t_server_sync import (
 from tauon.t_modules.t_subsonic import SubsonicService
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
 	from pathlib import Path
 	from typing import Any
 
@@ -580,7 +582,7 @@ def test_jellyfin_delta_counts_the_listing(monkeypatch: pytest.MonkeyPatch) -> N
 	service.tauon = SimpleNamespace(
 		t_title="Tauon", device="Test", t_version="test", wake=lambda: None, sort_track_2=lambda *_args: None,
 		server_sync=SimpleNamespace(
-			pending=lambda *_args: set(), purge_removed=lambda *_args: None,
+			pending=lambda *_args: set(), purge_removed=lambda *_args: [],
 			store_library=lambda _code, cache: stored.append(cache)),
 		star_store=SimpleNamespace(full_get=lambda _index: None, insert=lambda *_args: None))
 	monkeypatch.setattr(service, "_server_time", lambda *_args: 100)
@@ -949,3 +951,200 @@ def test_plex_reorder_passes_over_a_track_the_server_did_not_take() -> None:
 	current = RemotePlaylistState(list(playlist.keys), [1, 2], "", "Mix")
 	assert service.write_remote_playlist("7", current, wanted, None)
 	assert playlist.keys == ["/library/metadata/2", "/library/metadata/1", "/library/metadata/3"]
+
+
+def with_purge(tauon: SimpleNamespace, ids: list[int]) -> tuple[SimpleNamespace, list[int]]:
+	"""Put the tracks in a playlist and give the library a purge that records what it removed."""
+	playlist = SimpleNamespace(playlist_ids=list(ids))
+	tauon.pctl.multi_playlist.append(playlist)
+	purged: list[int] = []
+
+	def purge_track(track_id: int) -> None:
+		tauon.pctl.master_library.pop(track_id, None)
+		for pl in tauon.pctl.multi_playlist:
+			pl.playlist_ids[:] = [i for i in pl.playlist_ids if i != track_id]
+		purged.append(track_id)
+
+	tauon.pctl.purge_track = purge_track
+	return playlist, purged
+
+
+def test_a_track_missing_from_one_listing_is_kept_and_marked_as_a_suspect(tmp_path: Path) -> None:
+	sync, tauon, _jellyfin = make_sync(tmp_path)
+	ids = tracks(tauon, "a", "b", "c")
+	playlist, purged = with_purge(tauon, ids)
+	suspects = sync.purge_removed(JELLYFIN, LibraryCache("", ["a", "b", "c"]), ["a", "c"])
+	assert suspects == ["b"]
+	assert purged == []
+	assert ids[1] in tauon.pctl.master_library
+	assert ids[1] in playlist.playlist_ids
+
+
+def test_a_track_missing_from_two_listings_in_a_row_is_purged(tmp_path: Path) -> None:
+	sync, tauon, _jellyfin = make_sync(tmp_path)
+	ids = tracks(tauon, "a", "b", "c")
+	playlist, purged = with_purge(tauon, ids)
+	suspects = sync.purge_removed(JELLYFIN, LibraryCache("", ["a", "b", "c"]), ["a", "c"])
+	# The next listing still lacks b
+	previous = LibraryCache("", ["a", "c"], extra={"suspects": suspects})
+	assert sync.purge_removed(JELLYFIN, previous, ["a", "c"]) == []
+	assert purged == [ids[1]]
+	assert ids[1] not in tauon.pctl.master_library
+	assert playlist.playlist_ids == [ids[0], ids[2]]
+
+
+def test_a_suspect_that_is_listed_again_is_not_purged_and_is_cleared(tmp_path: Path) -> None:
+	sync, tauon, _jellyfin = make_sync(tmp_path)
+	ids = tracks(tauon, "a", "b", "c")
+	playlist, purged = with_purge(tauon, ids)
+	previous = LibraryCache("", ["a", "c"], extra={"suspects": ["b"]})
+	assert sync.purge_removed(JELLYFIN, previous, ["a", "b", "c"]) == []
+	assert purged == []
+	assert playlist.playlist_ids == ids
+
+
+def test_jellyfin_change_only_refresh_remembers_a_track_the_listing_lacks(
+	tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+	sync, tauon, _jellyfin = make_sync(tmp_path)
+	ids = tracks(tauon, "a", "b")
+	with_purge(tauon, ids)
+	for index in ids:
+		track = tauon.pctl.master_library[index]
+		track.album_artist = track.album = track.track_number = track.parent_folder_path = ""
+	stored: list[LibraryCache] = []
+	service = Jellyfin.__new__(Jellyfin)
+	service.connected, service.accessToken, service.userId, service.cancel_scan = True, "token", "user", False
+	service.scan_stage = ""
+	service.gui = SimpleNamespace(request_frame=lambda: None, to_got=0)
+	service.pctl = tauon.pctl
+	service.prefs = SimpleNamespace(jelly_server_url="https://jf.example")
+	sync.store_library = lambda _code, cache: stored.append(cache)
+	service.tauon = SimpleNamespace(
+		t_title="Tauon", device="Test", t_version="test", wake=lambda: None, sort_track_2=lambda *_args: None,
+		server_sync=sync, star_store=SimpleNamespace(full_get=lambda _index: None, insert=lambda *_args: None))
+	monkeypatch.setattr(service, "_server_time", lambda *_args: 100)
+
+	def get(_url: str, *, params: dict[str, Any], **_kwargs: object) -> SimpleNamespace:
+		# Nothing changed, and the full listing only has a
+		items = [] if "minDateLastSaved" in params else [{"Id": "a", "UserData": {"PlayCount": 0}}]
+		return SimpleNamespace(status_code=200, json=lambda: {"Items": items, "TotalRecordCount": len(items)})
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.requests.get", get)
+	cache = LibraryCache("", ["a", "b"], 50, server="https://jf.example|user")
+	service._library_delta("jelly", cache, None)  # noqa: SLF001
+	assert stored[0].extra["suspects"] == ["b"]
+	assert ids[1] in tauon.pctl.master_library
+
+
+def test_jellyfin_stream_of_an_unreachable_server_has_no_url() -> None:
+	jellyfin = Jellyfin.__new__(Jellyfin)
+	jellyfin.connected = False
+	jellyfin.accessToken = None
+	jellyfin._authenticate = lambda: None  # noqa: SLF001
+	assert jellyfin.resolve_stream("abc") == ("", None)
+
+
+class BareTrack:
+	art_url_key = None
+	file_ext = ""
+	is_network = True
+	url_key = None
+	parent_folder_path = ""
+
+
+def audio_item(item_id: str) -> dict[str, Any]:
+	return {
+		"Id": item_id, "Type": "Audio", "Name": item_id,
+		"MediaSources": [{"Path": f"/m/{item_id}.flac", "Size": 1, "MediaStreams": []}],
+		"DateCreated": "2024-01-01T00:00:00.0000000Z",
+	}
+
+
+def make_favourites_jellyfin(monkeypatch: pytest.MonkeyPatch) -> Jellyfin:
+	service, _logins, _server = make_login_jellyfin(monkeypatch)
+	service.scanning = False
+	service.scan_stage = ""
+	service.lyrics_scan_checked = set()
+	service.tauon.star_store = SimpleNamespace(full_get=lambda _i: None, insert=lambda *_a: None)
+	service.tauon.server_sync = SimpleNamespace(pending=lambda *_a: set())
+	service.tauon.sort_track_2 = lambda *_a: None
+	service.tauon.TrackClass = BareTrack
+	service.tauon.album_art_gen = SimpleNamespace(source_cache={})
+	library: dict[int, BareTrack] = {}
+	service.pctl = SimpleNamespace(master_library=library, master_count=0, get_track=library.get)
+	return service
+
+
+def test_jellyfin_favourite_tracks_are_unknown_when_login_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+	service = make_favourites_jellyfin(monkeypatch)
+	service.connected, service.accessToken = False, None
+	service._authenticate = lambda *_a, **_k: None  # noqa: SLF001
+	assert service.favourite_tracks() is None
+
+
+def test_jellyfin_favourite_albums_are_unknown_when_login_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+	service = make_favourites_jellyfin(monkeypatch)
+	service.connected, service.accessToken = False, None
+	service._authenticate = lambda *_a, **_k: None  # noqa: SLF001
+	assert service.favourite_albums() is None
+
+
+def test_jellyfin_favourite_tracks_are_unknown_when_the_server_is_unreachable(monkeypatch: pytest.MonkeyPatch) -> None:
+	service = make_favourites_jellyfin(monkeypatch)
+
+	def get(*_args: object, **_kwargs: object) -> None:
+		raise requests.ConnectionError("down")
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.requests.get", get)
+	assert service.favourite_tracks() is None
+
+
+def test_jellyfin_favourite_albums_are_unknown_when_one_chunk_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+	service = make_favourites_jellyfin(monkeypatch)
+	ids = [f"a{i}" for i in range(150)]
+
+	def get(_url: str, *, params: dict[str, Any], **_kwargs: object) -> SimpleNamespace:
+		if "albumIds" not in params:
+			return SimpleNamespace(status_code=200, json=lambda: {"Items": [{"Id": i} for i in ids]})
+		if params["albumIds"].split(",")[0] != "a0":
+			raise requests.ConnectionError("down")
+		return SimpleNamespace(status_code=200, json=lambda: {"Items": [audio_item("t1")], "TotalRecordCount": 1})
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.requests.get", get)
+	assert service.favourite_albums() is None
+
+
+def subsonic_with_albums(get_album: Callable[[str], dict[str, Any]]) -> SubsonicService:
+	service = SubsonicService.__new__(SubsonicService)
+	service._song_ids = lambda entries: [e["id"] for e in entries]  # noqa: SLF001
+
+	def r(point: str, p: dict[str, Any] | None = None, **_kwargs: object) -> dict[str, Any]:
+		if point == "getStarred2":
+			return {"subsonic-response": {"status": "ok", "starred2": {"album": [{"id": "1"}, {"id": "2"}]}}}
+		return get_album(p["id"])
+
+	service.r = r
+	return service
+
+
+def album_reply(song: str) -> dict[str, Any]:
+	return {"subsonic-response": {"status": "ok", "album": {"song": [{"id": song}]}}}
+
+
+def test_subsonic_favourite_albums_are_unknown_when_an_album_request_fails() -> None:
+	def get_album(album_id: str) -> dict[str, Any]:
+		if album_id == "1":
+			return album_reply("s1")
+		raise requests.ConnectionError("down")
+
+	assert subsonic_with_albums(get_album).favourite_albums() is None
+
+
+def test_subsonic_favourite_albums_skip_an_album_the_server_no_longer_has() -> None:
+	def get_album(album_id: str) -> dict[str, Any]:
+		if album_id == "1":
+			return {"subsonic-response": {"status": "failed", "error": {"code": 70, "message": "not found"}}}
+		return album_reply("s2")
+
+	assert subsonic_with_albums(get_album).favourite_albums() == ["s2"]
