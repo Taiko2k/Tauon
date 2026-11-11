@@ -11492,20 +11492,22 @@ class Tauon:
 		except Exception:
 			logging.exception("Image remove error")
 			self.show_message(_("Image remove error"), mode="error")
+			if not dry and pr == 1:
+				self.pctl.revert()
 			return None
 
 		if dry:
 			return removed
 
-		if removed == 0:
-			self.show_message(_("Image removal failed."), mode="error")
-			return None
-		if removed == 1:
-			self.show_message(_("Deleted embedded picture from file"), mode="done")
-		else:
-			self.show_message(_("{N} files processed").local(N=removed), mode="done")
 		if pr == 1:
 			self.pctl.revert()
+
+		if removed == 0:
+			self.show_message(_("Image removal failed."), mode="error")
+		elif removed == 1:
+			self.show_message(_("Deleted embedded picture from file"), mode="done")
+		else:
+			self.show_message(_("{N} files processed").format(N=removed), mode="done")
 		return None
 
 	def delete_file_image(self, track_object: TrackClass) -> None:
