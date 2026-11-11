@@ -2001,6 +2001,73 @@ static void mpg_choose_seek() {
 	bool fuzzy = loaded_target_net && (mpg_has_toc || (mpg_min_kbps > 0 && mpg_min_kbps == mpg_max_kbps));
 	mpg123_param(mh, fuzzy ? MPG123_ADD_FLAGS : MPG123_REMOVE_FLAGS, MPG123_FUZZY, 0);
 }
+
+// Byte length of the MPEG audio frame whose 4 byte header is h: 0 for free
+// format, -1 if h isn't a valid header. Covers MPEG 1, 2 and 2.5, layers I-III.
+static int mpg_frame_bytes(const unsigned char *h) {
+	static const int kbps[2][3][15] = {
+		{  // MPEG 1: layer I, II, III
+			{0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448},
+			{0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384},
+			{0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320},
+		},
+		{  // MPEG 2 and 2.5
+			{0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256},
+			{0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
+			{0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160},
+		},
+	};
+	static const int rates[4][3] = {
+		{11025, 12000, 8000},   // MPEG 2.5
+		{0, 0, 0},              // reserved
+		{22050, 24000, 16000},  // MPEG 2
+		{44100, 48000, 32000},  // MPEG 1
+	};
+	if (h[0] != 0xFF || (h[1] & 0xE0) != 0xE0) return -1;
+	int version = (h[1] >> 3) & 3;
+	int layer = (h[1] >> 1) & 3;  // 3 = I, 2 = II, 1 = III
+	int bitrate = h[2] >> 4;
+	int rate_index = (h[2] >> 2) & 3;
+	if (version == 1 || layer == 0 || bitrate == 15 || rate_index == 3) return -1;
+	int kb = kbps[version == 3 ? 0 : 1][3 - layer][bitrate];
+	int rate = rates[version][rate_index];
+	int padding = (h[2] >> 1) & 1;
+	if (kb == 0) return 0;
+	if (layer == 3) return (12 * kb * 1000 / rate + padding) * 4;
+	if (layer == 1 && version != 3) return 72 * kb * 1000 / rate + padding;
+	return 144 * kb * 1000 / rate + padding;
+}
+
+// Some MP3s have zero padding before the first frame. Find where the audio
+// starts past it, checking the frame after as well so stray bytes don't pass
+// as a header. Returns -1 if this isn't padded MPEG audio.
+#define MPG_PADDING_MAX 65536
+static int64_t mpg_find_after_padding() {
+	unsigned char buf[4096];
+	int64_t pos = 0;
+	if (bs_seek_abs(0) != 0) return -1;
+	while (pos < MPG_PADDING_MAX) {
+		int n = bs_read(buf, sizeof(buf));
+		if (n <= 0) return -1;
+		for (int i = 0; i < n; i++) {
+			if (buf[i] == 0) continue;
+			int64_t start = pos + i;
+			unsigned char h[4], next[4];
+			if (bs_seek_abs(start) != 0 || bs_read_exact(h, 4) != 4) return -1;
+			int len = mpg_frame_bytes(h);
+			if (len < 0) return -1;
+			if (len > 0) {
+				if (bs_seek_abs(start + len) != 0 || bs_read_exact(next, 4) != 4) return -1;
+				// Same version, layer and sample rate
+				if (mpg_frame_bytes(next) < 0 || (next[1] & 0xFE) != (h[1] & 0xFE)
+						|| (next[2] & 0x0C) != (h[2] & 0x0C)) return -1;
+			}
+			return start;
+		}
+		pos += n;
+	}
+	return -1;
+}
 char parse_buffer[2048 * 2];
 
 // openMPT related ---------------
@@ -4704,15 +4771,8 @@ int load_next_inner() {
 	} else if (memcmp(peak, "OggS", 4) == 0) {
 		codec = VORBIS;
 		if (peak[28] == 'O' && peak[29] == 'p') codec = OPUS;
-	} else if (memcmp(peak, "\xff\xfb", 2) == 0) {
+	} else if (mpg_frame_bytes((const unsigned char *) peak) >= 0) {
 		codec = MPG;
-		//log_msg(LOG_INFO, "Detected mp3");
-	} else if (memcmp(peak, "\xff\xf3", 2) == 0) {
-		codec = MPG;
-		//log_msg(LOG_INFO, "Detected mp3");
-	} else if (memcmp(peak, "\xff\xf2", 2) == 0) {
-		codec = MPG;
-		//log_msg(LOG_INFO, "Detected mp3");
 	} else if (memcmp(peak, "\0\0\0\x20" "ftypM4A", 11) == 0) {
 		codec = FFMPEG;
 		//log_msg(LOG_INFO, "Detected m4a");
@@ -4757,6 +4817,16 @@ int load_next_inner() {
 				codec = FLAC;
 				log_msg(LOG_INFO, "Detected FLAC with ID3 header\n");
 			}
+		}
+	}
+	// A network stream has no extension to fall back on
+	int64_t mpg_padding = 0;
+	if (codec == UNKNOWN && peak[0] == 0) {
+		int64_t start = mpg_find_after_padding();
+		if (start > 0) {
+			codec = MPG;
+			mpg_padding = stream_meta_end = start;
+			log_msg(LOG_INFO, "pa: Detected MP3 after %lld bytes of padding", (long long) start);
 		}
 	}
 	bs_seek_abs(0);
@@ -5190,6 +5260,9 @@ int load_next_inner() {
 			} else {
 				mpg123_param(mh, MPG123_REMOVE_FLAGS, MPG123_NO_PEEK_END | MPG123_FORCE_SEEKABLE | MPG123_FUZZY, 0);
 			}
+			// mpg123 gives up looking for the first frame after 1024 bytes by default;
+			// reset it each load, as the retry below lifts the limit
+			mpg123_param(mh, MPG123_RESYNC_LIMIT, 1024 + (long) mpg_padding, 0.0);
 			mpg_has_toc = false;
 			mpg_min_kbps = mpg_max_kbps = 0;
 			int ret = mpg123_open_handle(mh, &bs);
