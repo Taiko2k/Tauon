@@ -838,6 +838,9 @@ class GuiVar:
 		self.quick_search_mode: bool = False
 		self.b_info_bar:        bool = False
 		self.editline: str = ""
+		# IME area: whether a text box set it this frame, and whether it's at the default spot
+		self.text_input_area_set:     bool = False
+		self.text_input_area_default: bool = False
 		self.rename_index:        int = 0
 		self.last_row:            int = 0
 		self.album_v_gap:       float = 66
@@ -2750,6 +2753,8 @@ class PlayerCtl:
 		#self.time_to_get = []
 		self.a_time: float = 0
 		self.b_time: float = 0
+		# The backend drained a track whose length is unknown
+		self.unknown_length_ended: bool = False
 		# self.playlist_backup = []
 		self.active_replaygain: float = 0
 		self.active_replaygain_gain_db: float = 0
@@ -4441,9 +4446,15 @@ class PlayerCtl:
 
 		if self.playing_state == PlayingState.PLAYING and self.decode_time + gap_extra >= self.playing_length and self.decode_time > 0.2:
 
-			# Allow some time for backend to provide a length
-			if self.playing_time < 6 and self.playing_length == 0:
-				return
+			# Unknown length: play until the backend reaches the end of the file.
+			# Casting has no such signal, so allow time for a length instead.
+			if self.playing_length == 0:
+				if self.tauon.chrome_mode:
+					if self.playing_time < 6:
+						return
+				elif not self.unknown_length_ended:
+					return
+			self.unknown_length_ended = False
 			if self.a_time < 2:
 				return
 
@@ -9503,6 +9514,27 @@ class Tauon:
 
 	def pixel_to_logical(self, x: int) -> int:
 		return round((x / self.window_size[0]) * self.logical_size[0])
+
+	def set_text_input_area(self, x: float, y: float, w: float, h: float, cursor: float) -> None:
+		"""Place the IME candidate window. Arguments are in pixels; cursor is relative to x."""
+		win_w, win_h = self.window_size
+		cursor_x = max(0, min(x + cursor, win_w - 1))
+		x = max(0, min(x, cursor_x))
+		y = max(0, min(y, win_h - 1))
+		w = max(1, min(w, win_w - x))
+		h = max(1, min(h, win_h - y))
+		cursor = cursor_x - x
+		p = self.pixel_to_logical
+		sdl3.set_text_input_area(self.t_window, sdl3.Rect(p(x), p(y), p(w), p(h)), p(cursor))
+		self.gui.text_input_area_set = True
+		self.gui.text_input_area_default = False
+
+	def reset_text_input_area(self) -> None:
+		"""Move the IME area to where the global search input starts."""
+		scale = self.gui.scale
+		x = 30 * scale if self.window_size[0] < 400 * scale else 80 * scale
+		self.set_text_input_area(x, 45 * scale, 300 * scale, 30 * scale, 0)
+		self.gui.text_input_area_default = True
 
 	def img_slide_update_gall(self, value: int, pause: bool = True) -> None:
 		self.gui.halt_image_rendering = True
@@ -26009,12 +26041,7 @@ class MultiLineTextBox:
 					ColourRGBA(245, 245, 245, 255)
 				)
 
-			pixel_to_logical = self.tauon.pixel_to_logical
-			input_area = sdl3.Rect(
-				pixel_to_logical(x), pixel_to_logical(self.y + line_y - scroll),
-				pixel_to_logical(width), pixel_to_logical(line_height)
-			)
-			sdl3.set_text_input_area(self.t_window, input_area, pixel_to_logical(space))
+			self.tauon.set_text_input_area(x, self.y + line_y - scroll, width, line_height, space)
 
 		self.tauon.animate_monitor_timer.set()
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
@@ -26424,9 +26451,7 @@ class TextBox2:
 				ex = self.ddt.text((space + round(4 * self.gui.scale), headroom), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 				self.ddt.rect((space + round(4 * self.gui.scale), th + round(2 * self.gui.scale), ex, round(1 * self.gui.scale)), ColourRGBA(245, 245, 245, 255))
 
-			pixel_to_logical = self.tauon.pixel_to_logical
-			rect = sdl3.Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.set_text_input_area(self.t_window, rect, pixel_to_logical(space))
+			self.tauon.set_text_input_area(x, y, max(tw, width), max(th, selection_height), space)
 
 		self.tauon.animate_monitor_timer.set()
 
@@ -26455,6 +26480,8 @@ class TextBox2:
 class TextBox:
 	# TODO(Martin): Global class var!
 	cursor = True
+	# Measure/draw limit; ddt defaults cut long text at 3000-4000px
+	MAX_W = 8000
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon:   Tauon = tauon
@@ -26469,6 +26496,8 @@ class TextBox:
 		self.cursor_position = 0
 		self.selection = 0
 		self.down_lock: bool = False
+		self.offset: float = 0  # horizontal scroll in pixels
+		self.overflow: bool = False
 
 	def paste(self) -> None:
 		if has_clipboard_text():
@@ -26535,7 +26564,8 @@ class TextBox:
 
 	def draw(
 		self, x: int, y: int, colour: list[int], active: bool = True, secret: bool = False,
-		font: int = 13, width: int = 0, click: bool = False, selection_height: float = 18, big: bool = False) -> None:
+		font: int = 13, width: int = 0, click: bool = False, selection_height: float = 18, big: bool = False,
+		view_width: int = 0) -> None:
 		inp = self.inp
 		ddt = self.ddt
 		gui = self.gui
@@ -26698,21 +26728,23 @@ class TextBox:
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
+			# Map clicks against the scrolled text position from the last frame
+			tx = x - self.offset
 			if self.coll(select_rect):
 				# ddt.rect_r((x - 15, y, width + 16, 19), [50, 255, 50, 50], True)
 				if click:
 					pre = 0
 					post = 0
-					if inp.mouse_position[0] < x + 1:
+					if inp.mouse_position[0] < tx + 1:
 						self.cursor_position = len(self.text)
 					else:
 						for i in range(len(self.text)):
-							post = ddt.get_text_w(self.text[0:i + 1], font)
+							post = self.text_w(self.text[0:i + 1], font)
 							# pre_half = int((post - pre) / 2)
 
-							if x + pre - 0 <= inp.mouse_position[0] <= x + post + 0:
+							if tx + pre - 0 <= inp.mouse_position[0] <= tx + post + 0:
 								diff = post - pre
-								if inp.mouse_position[0] >= x + pre + int(diff / 2):
+								if inp.mouse_position[0] >= tx + pre + int(diff / 2):
 									self.cursor_position = len(self.text) - i - 1
 								else:
 									self.cursor_position = len(self.text) - i
@@ -26728,19 +26760,19 @@ class TextBox:
 			if self.down_lock:
 				pre = 0
 				post = 0
-				if inp.mouse_position[0] < x + 1:
+				if inp.mouse_position[0] < tx + 1:
 
 					self.selection = len(self.text)
 				else:
 
 					for i in range(len(self.text)):
-						post = ddt.get_text_w(self.text[0:i + 1], font)
+						post = self.text_w(self.text[0:i + 1], font)
 						# pre_half = int((post - pre) / 2)
 
-						if x + pre - 0 <= inp.mouse_position[0] <= x + post + 0:
+						if tx + pre - 0 <= inp.mouse_position[0] <= tx + post + 0:
 							diff = post - pre
 
-							if inp.mouse_position[0] >= x + pre + int(diff / 2):
+							if inp.mouse_position[0] >= tx + pre + int(diff / 2):
 								self.selection = len(self.text) - i - 1
 							else:
 								self.selection = len(self.text) - i
@@ -26751,42 +26783,47 @@ class TextBox:
 					else:
 						self.selection = 0
 
-			a = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+			a = self.text_w(self.text[0: len(self.text) - self.cursor_position], font)
 
 			# logging.info("")
 			# logging.info(self.selection)
 			# logging.info(self.cursor_position)
 
-			b = ddt.get_text_w(self.text[0: len(self.text) - self.selection], font)
+			b = self.text_w(self.text[0: len(self.text) - self.selection], font)
 
 			# rint((a, b))
+
+			view_w = self.view_width(x, view_width or width)
+			self.update_offset(a, self.text_w(self.text, font), view_w, font)
+			dx = x - self.offset
+			old_clip = self.clip(x, view_w)
 
 			top = y
 			if big:
 				top -= 12 * gui.scale
 
-			ddt.rect([x + a, top, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
+			ddt.rect([dx + a, top, b - a, selection_height], ColourRGBA(40, 120, 180, 255))
 
 			if self.selection != self.cursor_position:
 				inf_comp = 0
-				space = ddt.text((x, y), self.get_selection(0), colour, font)
+				space = ddt.text((dx, y), self.get_selection(0), colour, font, max_w=self.MAX_W)
 				space += ddt.text(
-					(x + space - inf_comp, y), self.get_selection(1), ColourRGBA(240, 240, 240, 255), font,
-					bg=ColourRGBA(40, 120, 180, 255))
-				ddt.text((x + space - (inf_comp * 2), y), self.get_selection(2), colour, font)
+					(dx + space - inf_comp, y), self.get_selection(1), ColourRGBA(240, 240, 240, 255), font,
+					max_w=self.MAX_W, bg=ColourRGBA(40, 120, 180, 255))
+				ddt.text((dx + space - (inf_comp * 2), y), self.get_selection(2), colour, font, max_w=self.MAX_W)
 			else:
-				ddt.text((x, y), self.text, colour, font)
+				ddt.text((dx, y), self.text, colour, font, max_w=self.MAX_W)
 
-			space = ddt.get_text_w(self.text[0: len(self.text) - self.cursor_position], font)
+			space = a
 
 			if TextBox.cursor and self.selection == self.cursor_position:
 				# ddt.line(x + space, y + 2, x + space, y + 15, colour)
 
 				if big:
 					# ddt.rect_r((xx + 1 , yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour, True)
-					ddt.rect((x + space, y - 15 * gui.scale + 2, 1 * gui.scale, 30 * gui.scale), colour)
+					ddt.rect((dx + space, y - 15 * gui.scale + 2, 1 * gui.scale, 30 * gui.scale), colour)
 				else:
-					ddt.rect((x + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour)
+					ddt.rect((dx + space, y + 2, 1 * gui.scale, 14 * gui.scale), colour)
 
 			if click:
 				self.selection = self.cursor_position
@@ -26804,13 +26841,17 @@ class TextBox:
 				if inp.key_ctrl_down and inp.key_v_press:
 					self.paste()
 
-			if secret:
-				space = ddt.text((x, y), "●" * len(self.text), colour, font)
-			else:
-				space = ddt.text((x, y), self.text, colour, font)
+			text = "●" * len(self.text) if secret else self.text
+			space = self.text_w(text, font)
+			view_w = self.view_width(x, view_width)
+			self.update_offset(space, space, view_w, font, active)
+			dx = x - self.offset
+			old_clip = self.clip(x, view_w)
+
+			ddt.text((dx, y), text, colour, font, max_w=self.MAX_W)
 
 			if active and TextBox.cursor:
-				xx = x + space + 1
+				xx = dx + space + 1
 				yy = y + 3
 				if big:
 					ddt.rect((xx + 1, yy - 12 * gui.scale, 2 * gui.scale, 27 * gui.scale), colour)
@@ -26820,16 +26861,60 @@ class TextBox:
 		if active:
 			tw, th = ddt.get_text_wh(self.gui.editline, font, max_x=2000)
 			if self.gui.editline not in ("", self.inp.input_text):
-				ex = ddt.text((x + space + round(4 * gui.scale), y), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
+				ex = ddt.text((dx + space + round(4 * gui.scale), y), self.gui.editline, ColourRGBA(240, 230, 230, 255), font)
 
-				ddt.rect((x + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
+				ddt.rect((dx + space + round(4 * gui.scale), (y + th) - round(4 * gui.scale), ex, round(1 * gui.scale)),
 					ColourRGBA(245, 245, 245, 255))
 
-			pixel_to_logical = self.tauon.pixel_to_logical
-			rect = sdl3.Rect(pixel_to_logical(x), pixel_to_logical(y), pixel_to_logical(tw), pixel_to_logical(th))
-			sdl3.set_text_input_area(self.t_window, rect, pixel_to_logical(space))
+			if big:
+				self.tauon.set_text_input_area(x, y - 15 * gui.scale, view_w, 30 * gui.scale, dx + space - x)
+			else:
+				self.tauon.set_text_input_area(x, y, view_w, max(th, selection_height), dx + space - x)
+
+		if old_clip is not False:
+			sdl3.set_render_clip_rect(self.renderer, old_clip)
 
 		self.tauon.animate_monitor_timer.set()
+
+	def text_w(self, text: str, font: int) -> int:
+		return self.ddt.get_text_wh(text, font, self.MAX_W)[0]
+
+	def view_width(self, x: float, width: float) -> float:
+		"""Visible text width: the box width if given, never past the window edge."""
+		available = self.tauon.window_size[0] - x
+		if width > 0:
+			available = min(available, width)
+		return max(1, available - round(8 * self.gui.scale))
+
+	def update_offset(self, cursor_x: float, text_w: float, view_w: float, font: int, active: bool = True) -> None:
+		"""Scroll horizontally so the cursor and any IME composition stay visible."""
+		edit_w = 0
+		if active and self.gui.editline not in ("", self.inp.input_text):
+			edit_w = self.text_w(self.gui.editline, font) + round(4 * self.gui.scale)
+		if cursor_x + edit_w - self.offset > view_w:
+			self.offset = cursor_x + edit_w - view_w
+		if cursor_x < self.offset:
+			self.offset = cursor_x
+		self.offset = max(0, min(self.offset, text_w + edit_w - view_w))
+		self.overflow = text_w + edit_w > view_w
+
+	def clip(self, x: float, view_w: float) -> sdl3.Rect | None | bool:
+		"""Clip drawing to the visible text area while scrolled or overflowing.
+		Returns the previous clip rect to restore, or False if clipping wasn't changed."""
+		if not self.overflow:
+			return False
+		old = sdl3.get_render_clip_rect(self.renderer)
+		left = round(x)
+		right = round(x + view_w + 8 * self.gui.scale)
+		top = 0
+		bottom = self.tauon.window_size[1]
+		if old is not None:
+			left = max(left, old.x)
+			right = min(right, old.x + old.w)
+			top = max(top, old.y)
+			bottom = min(bottom, old.y + old.h)
+		sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(left, top, max(0, right - left), max(0, bottom - top)))
+		return old
 
 class ImageObject:
 	def __init__(self) -> None:
@@ -61942,6 +62027,7 @@ def main(holder: Holder) -> None:
 	# time.sleep(3)
 
 	sdl3.start_text_input(t_window)
+	tauon.reset_text_input_area()
 	active_touch = tauon.touch_input_tracker
 
 	# SDL_SetHint(SDL_HINT_IME_INTERNAL_EDITING, b"1")
@@ -64422,6 +64508,7 @@ def main(holder: Holder) -> None:
 					window_size[:] = sdl3.get_window_size_in_pixels(t_window)
 					auto_scale(bag)
 					tauon.update_window_minimum_size(only_if_changed=True)
+					gui.text_input_area_default = False  # default spot depends on window size
 					gui.update_layout = True
 					gui.request_frame()
 				elif event.type == sdl3.SDL_EVENT_WINDOW_RESIZED:
@@ -65649,6 +65736,7 @@ def main(holder: Holder) -> None:
 			# request_frame() made while drawing means "render another frame
 			# after this one".
 			gui.update = False
+			gui.text_input_area_set = False
 			tauon.gall_ren.new_frame()
 			ddt.new_frame()
 			tauon.drop_pending_image_clears()
@@ -67537,7 +67625,8 @@ def main(holder: Holder) -> None:
 					#     gui.search_error = False
 
 					search_over.search_text.draw(
-						rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213
+						rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213,
+						view_width=rect[2] - 16 * gui.scale,
 					)
 
 					if (
@@ -68356,6 +68445,10 @@ def main(holder: Holder) -> None:
 					)
 
 			inp.input_text = ""
+
+			# No text box took the IME this frame: park it where global search starts
+			if not gui.text_input_area_set and not gui.text_input_area_default:
+				tauon.reset_text_input_area()
 
 			# logging.info("FRAME " + str(tauon.core_timer.get()))
 			gui.present = True
