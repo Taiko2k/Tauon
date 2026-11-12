@@ -39,6 +39,7 @@ import mutagen.wave
 
 from tauon.t_modules.t_asf import asf_field_key, asf_field_values, asf_key, asf_rating
 from tauon.t_modules.t_extra import process_odat
+from tauon.t_modules.t_ratings import parse_fmps
 from tauon.t_modules.t_replaygain import parse_r128_gain, parse_replaygain_db
 
 if TYPE_CHECKING:
@@ -556,7 +557,7 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass | TrackFile) -> None:
 			logging.debug(track.fullpath)
 
 		if item.desc.lower() == "fmps_rating":
-			track.FMPS_Rating = float(item.text[0])
+			track.FMPS_Rating = parse_fmps(item.text[0])
 		elif item.desc.lower() == "syncedlyrics" and not track.synced:
 			track.synced = "\n".join(item.text)
 		elif item.desc.lower() in ("lyrics", "unsyncedlyrics") and not track.lyrics:
@@ -609,7 +610,7 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 			break
 	for key in ("----:com.apple.iTunes:FMPS_RATING", "----:com.apple.iTunes:fmps_rating"):
 		if key in tags:
-			track.FMPS_Rating = float(get_bytes(key).decode("utf-8"))
+			track.FMPS_Rating = parse_fmps(get_bytes(key))
 			break
 	if "----:com.apple.iTunes:SYNCEDLYRICS" in tags:
 		track.synced = get_bytes("----:com.apple.iTunes:SYNCEDLYRICS").decode("utf-8")
@@ -773,7 +774,7 @@ class Flac(TrackFile):
 					elif a in ("label", "organization", "publisher"):
 						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
-						self.FMPS_Rating = float(b.decode("utf-8"))
+						self.FMPS_Rating = parse_fmps(b)
 					elif a == "artistsort":
 						self.artist_sort = b.decode("utf-8")
 
@@ -1060,7 +1061,7 @@ class Opus(TrackFile):
 					elif a in ("label", "organization", "publisher"):
 						self.set_vorbis_label(a, b)
 					elif a == "fmps_rating":
-						self.FMPS_Rating = float(b.decode("utf-8"))
+						self.FMPS_Rating = parse_fmps(b)
 					elif a == "artistsort":
 						self.artist_sort = b.decode("utf-8")
 					# else:
@@ -1251,7 +1252,7 @@ class Ape(TrackFile):
 				elif key == "syncedlyrics":
 					self.synced_lyrics = value
 				elif key == "fmps_rating":
-					self.FMPS_Rating = float(value)
+					self.FMPS_Rating = parse_fmps(value)
 				elif key == "replaygain_track_gain":
 					self.replaygain_track_gain = parse_replaygain_db(value)
 				elif key == "replaygain_track_peak":

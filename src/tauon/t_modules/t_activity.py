@@ -177,6 +177,15 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 		rows.append(Activity("transcode", title, purple, detail, overall, not gui.tc_cancel,
 			album_progress=album, album_active=min(active, 1 - (album or 0)),
 			album_count=_("{done} / {total} tracks").format(done=done, total=gui.transcoding_batch_total)))
+	job = tauon.rating_job
+	if job is not None:
+		if job.cancel:
+			title = _("Stopping…")
+		else:
+			title = _("Writing ratings to files")
+		detail = _("{done} / {total} tracks").format(done=job.done, total=job.total) if job.total else ""
+		rows.append(Activity("ratings", title, ColourRGBA(240, 200, 60, 255), detail,
+			progress=fraction(job.done, job.total), cancel=not job.cancel))
 	if tauon.lrclib_uploads:
 		rows.append(Activity("lyrics", _("Uploading lyrics to LRCLIB…"), green))
 	if tauon.lastfm.scanning_loves:
@@ -268,6 +277,10 @@ class ActivityPopover:
 			getattr(tauon, key).cancel_scan = True
 			if tauon.regen_background:
 				tauon.server_sync.refresh_cancelled = True
+		elif key == "ratings":
+			job = tauon.rating_job
+			if job is not None:
+				job.cancel = True
 		elif key == "scrobbles":
 			tauon.lastfm.cancel_scrobble_scan = True
 		elif key == "friends":

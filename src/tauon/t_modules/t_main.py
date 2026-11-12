@@ -342,6 +342,13 @@ from tauon.t_modules.t_tagscan import (  # noqa: E402
 )
 from tauon.t_modules.t_themeload import Deco, load_theme, save_theme  # noqa: E402
 from tauon.t_modules.t_tidal import Tidal  # noqa: E402
+from tauon.t_modules.t_ratings import (  # noqa: E402
+	RatingJob,
+	read_file_rating,
+	tag_rating,
+	track_rating_file,
+	write_file_rating,
+)
 from tauon.t_modules.t_remote_playlists import RemotePlaylist  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
 from tauon.t_modules.t_waveform import WaveformCache  # noqa: E402
@@ -1336,6 +1343,8 @@ class StarStore:
 		self.prefs: Prefs    = tauon.prefs
 		self.after_scan: list[TrackClass] = tauon.after_scan
 		self.db: dict[tuple[str, str, str], StarRecord] = {}
+		# Rated while asking whether to write ratings to files
+		self.pending_writes: list[int] = []
 
 	def key(self, track_id: int) -> tuple[str, str, str]:
 		track_object = self.pctl.master_library[track_id]
@@ -1388,69 +1397,71 @@ class StarStore:
 		if push:
 			self.tauon.server_sync.queue_edit(tr, RATING, value)
 
-		if self.prefs.write_ratings and write:
-			logging.info("Writing rating..")
-			assert value <= 10
-			assert value >= 0
+		if write and track_rating_file(tr):
+			if self.prefs.write_ratings:
+				self.write_to_file(tr, self.db[key].rating)
+			elif self.prefs.write_ratings is None:
+				self.ask_write_ratings(index)
 
-			if tr.file_ext in ("OGG", "OPUS"):
-				tag = mutagen.oggvorbis.OggVorbis(tr.fullpath)
-				if value == 0:
-					if "FMPS_RATING" in tag:
-						del tag["FMPS_RATING"]
-						tag.save()
-				else:
-					tag["FMPS_RATING"] = [f"{value / 10:.2f}"]
-					tag.save()
+	def write_to_file(self, tr: TrackClass, value: int, notify: bool = True) -> bool:
+		"""Write a rating into the track's file tags. Returns False on failure."""
+		try:
+			write_file_rating(tr.fullpath, value)
+		except Exception:
+			logging.exception("Failed to write rating to %s", tr.fullpath)
+			if notify:
+				self.tauon.show_message(_("Couldn't write rating to file"), tr.filename, mode="warning")
+			return False
+		# Keep the scanned values in step so a rescan reads back the same rating
+		tr.FMPS_Rating = value / 10 if value else None
+		tr.POPM = None
+		try:
+			tr.modified_time = os.path.getmtime(tr.fullpath)
+		except OSError:
+			pass
+		return True
 
-			elif tr.file_ext == "MP3":
-				tag = mutagen.id3.ID3(tr.fullpath)
+	def ask_write_ratings(self, index: int) -> None:
+		"""First rating of a local file while the preference is unset: ask, then apply to what was rated."""
+		gui = self.tauon.gui
+		if gui.message_box and gui.message_mode == "confirm" and gui.message_box_confirm_callback == self.confirm_write_ratings:
+			# Already asking; rate several tracks while the box is up and they all get written
+			self.pending_writes.append(index)
+			return
+		self.pending_writes = [index]
+		gui.message_box_confirm_callback = self.confirm_write_ratings
+		gui.message_box_no_callback = self.decline_write_ratings
+		gui.message_box_confirm_reference = ()
+		self.tauon.show_message(
+			_("Also write ratings into your music file tags on disk?"),
+			_("Ratings are kept in Tauon either way. Change this later in Settings › Library › Ratings."),
+			mode="confirm")
 
-				# if True:
-				#	 if value == 0:
-				#		 tag.delall("POPM")
-				#	 else:
-				#		 p_rating = 0
-				#
-				#	 tag.add(mutagen.id3.POPM(email="Windows Media Player 9 Series", rating=int))
+	def confirm_write_ratings(self) -> None:
+		self.prefs.write_ratings = True
+		pending, self.pending_writes = self.pending_writes, []
+		for index in dict.fromkeys(pending):
+			tr = self.pctl.get_track(index)
+			if track_rating_file(tr):
+				self.write_to_file(tr, self.get_rating(index))
 
-				if value == 0:
-					changed = False
-					frames = tag.getall("TXXX")
-					for i in reversed(range(len(frames))):
-						if frames[i].desc.lower() == "fmps_rating":
-							changed = True
-					if changed:
-						tag.delall("TXXX:FMPS_RATING")
-						tag.save()
-				else:
-					changed = False
-					frames = tag.getall("TXXX")
-					for i in reversed(range(len(frames))):
-						if frames[i].desc.lower() == "fmps_rating":
-							frames[i].text = f"{value / 10:.2f}"
-							changed = True
-					if not changed:
-						tag.add(
-							mutagen.id3.TXXX(
-								encoding=mutagen.id3.Encoding.UTF8, text=f"{value / 10:.2f}",
-								desc="FMPS_RATING"))
-					tag.save()
+	def decline_write_ratings(self) -> None:
+		self.prefs.write_ratings = False
+		self.pending_writes = []
 
-			elif tr.file_ext == "FLAC":
-				audio = mutagen.flac.FLAC(tr.fullpath)
-				tags = audio.tags
-				if value == 0:
-					if "FMPS_Rating" in tags:
-						del tags["FMPS_Rating"]
-						audio.save()
-				else:
-					tags["FMPS_Rating"] = f"{value / 10:.2f}"
-					audio.save()
-
-			tr.FMPS_Rating = float(value / 10)
-			if value == 0:
-				tr.FMPS_Rating = None
+	def adopt_file_rating(self, track: TrackClass) -> None:
+		"""After a tag scan: take the file's rating if the track has no local one."""
+		if not self.prefs.read_ratings or not track_rating_file(track):
+			return
+		rating = tag_rating(track.FMPS_Rating, track.POPM)
+		if not rating:
+			return
+		key = self.object_key(track)
+		record = self.db.get(key)
+		if record is None:
+			self.db[key] = StarRecord(rating=rating)
+		elif not record.rating:
+			record.rating = rating
 
 	def get_by_object(self, track: TrackClass) -> float:
 		return self.db.get(self.object_key(track), StarRecord()).playtime
@@ -1478,7 +1489,9 @@ class StarStore:
 			self.db[key] = record
 		else:
 			self.db[key].playtime += record.playtime
-			self.db[key].rating = record.rating
+			# Unrated keeps whatever the rescan read from the file
+			if record.rating:
+				self.db[key].rating = record.rating
 			if record.hated and not self.db[key].hated:
 				self.db[key].hated = True
 				self.db[key].hated_timestamp = record.hated_timestamp
@@ -8177,6 +8190,7 @@ class Tauon:
 		self.to_scan:           list[int] = []
 		self.after_scan: list[TrackClass] = []
 		self.quick_import_done: list[str] = []
+		self.rating_job: RatingJob | None = None
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
 		self.move_in_progress:       bool = False
 		self.worker2_lock: threading.LockType                 = threading.Lock()
@@ -15246,69 +15260,81 @@ class Tauon:
 		self.cm_clean_db = True
 		self.thread_manager.ready("worker")
 
-	def import_fmps(self) -> None:
-		"""FMPS spec: https://gitorious.org/xdg-specs/xdg-specs/trees/master/specifications/FMPSpecs?p=xdg-specs:xdg-specs.git;a=blob;f=specifications/FMPSpecs/specification.txt;hb=HEAD#l235"""
-		unique = set()
-		for playlist in self.pctl.multi_playlist:
-			for id in playlist.playlist_ids:
-				tr = self.pctl.get_track(id)
-				if tr.FMPS_Rating is not None:
-					if tr.FMPS_Rating > 1 or tr.FMPS_Rating < 0:
-						logging.warning(f"Nonstandard FMPS_RATING in track, skipping {tr.fullpath}: {tr.FMPS_Rating}")
-						continue
-					rating = round(tr.FMPS_Rating * 10)
-					self.star_store.set_rating(tr.index, rating)
-					unique.add(tr.index)
-
-		self.show_message(_("{N} ratings imported").format(N=str(len(unique))), mode="done")
-
-		self.gui.request_tracklist_redraw()
-
-	def import_popm(self) -> None:
-		unique = set()
-		skipped = set()
-		for playlist in self.pctl.multi_playlist:
-			for id in playlist.playlist_ids:
-				tr = self.pctl.get_track(id)
-				if tr.POPM is not None:
-					rating = tr.POPM
-					t_rating = 0
-					if rating <= 1:
-						t_rating = 2
-					elif rating <= 64:
-						t_rating = 4
-					elif rating <= 128:
-						t_rating = 6
-					elif rating <= 196:
-						t_rating = 8
-					elif rating <= 255:
-						t_rating = 10
-
-					if self.star_store.get_rating(tr.index) == 0:
-						self.star_store.set_rating(tr.index, t_rating)
-						unique.add(tr.index)
-					else:
-						logging.info("Won't import POPM because track is already rated")
-						skipped.add(tr.index)
-
-		s = str(len(unique)) + " ratings imported"
-		if len(skipped) > 0:
-			s += f", {len(skipped)} skipped"
-		self.show_message(s, mode="done")
-
-		self.gui.request_tracklist_redraw()
-
-	def clear_ratings(self) -> None:
-		if not self.inp.key_shift_down:
-			self.show_message(
-				_("This will delete all track and album ratings from the local database!"),
-				_("Press button again while holding shift key if you're sure you want to do that."),
-				mode="warning")
+	def start_write_all_ratings(self) -> None:
+		"""Write every rated local track's rating into its file, in the background."""
+		if self.rating_job is not None:
+			self.show_message(_("Ratings are already being written"), mode="info")
 			return
-		for key, star in self.star_store.db.items():
+		job = RatingJob()
+		self.rating_job = job
+		tracks = [track for track in list(self.pctl.master_library.values()) if track_rating_file(track)]
+		threading.Thread(target=self.run_rating_job, args=(job, tracks), daemon=True).start()
+		self.gui.request_frame()
+
+	def run_rating_job(self, job: RatingJob, tracks: list[TrackClass]) -> None:
+		star_store = self.star_store
+		try:
+			tracks = [track for track in tracks if star_store.get_rating(track.index)]
+			job.total = len(tracks)
+			for track in tracks:
+				if job.cancel or not self.pctl.running:
+					break
+				job.done += 1
+				self.gui.request_frame()
+				if not os.path.isfile(track.fullpath):
+					continue
+				try:
+					on_file = read_file_rating(track.fullpath)
+				except Exception:
+					logging.exception("Failed to read rating from %s", track.fullpath)
+					job.failed += 1
+					continue
+				rating = star_store.get_rating(track.index)
+				if rating and rating != on_file:
+					if star_store.write_to_file(track, rating, notify=False):
+						job.changed += 1
+					else:
+						job.failed += 1
+		except Exception:
+			logging.exception("Rating job failed")
+			job.failed += 1
+		finally:
+			self.rating_job = None
+			self.gui.request_tracklist_redraw()
+			self.gui.request_frame()
+		text = _("Wrote {N} ratings to files").format(N=job.changed)
+		if job.cancel:
+			text = _("Stopped.") + " " + text
+		if job.failed:
+			self.show_message(text, _("{N} files couldn't be processed. See the log for details.").format(N=job.failed), mode="warning")
+		else:
+			self.show_message(text, mode="done")
+
+	def confirm_clear_track_ratings(self) -> None:
+		self.gui.message_box_confirm_callback = self.clear_track_ratings
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = ()
+		self.show_message(
+			_("Clear all track ratings?"),
+			_("This removes them from Tauon's database. Ratings saved in your music files are not changed."),
+			mode="confirm")
+
+	def clear_track_ratings(self) -> None:
+		for star in self.star_store.db.values():
 			star.rating = 0
+		self.gui.request_tracklist_redraw()
+		self.toast(_("Track ratings cleared"))
+
+	def confirm_clear_album_ratings(self) -> None:
+		self.gui.message_box_confirm_callback = self.clear_album_ratings
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = ()
+		self.show_message(_("Clear all album ratings?"), _("This can't be undone."), mode="confirm")
+
+	def clear_album_ratings(self) -> None:
 		self.album_star_store.db.clear()
 		self.gui.request_tracklist_redraw()
+		self.toast(_("Album ratings cleared"))
 
 	def find_incomplete(self) -> None:
 		self.gen_incomplete(self.pctl.active_playlist_viewing)
@@ -17463,6 +17489,7 @@ class Tauon:
 					return False
 
 		return not self.gui.press_off_level_zero \
+			and not self.gui.message_box \
 			and not self.gui.rename_folder_box \
 			and not self.gui.track_box \
 			and not self.rename_track_box.active \
@@ -19897,12 +19924,20 @@ class Tauon:
 		*,
 		rating: int | None = None,
 		on_change: Callable[[int], None] | None = None,
+		row: tuple[float, float] | None = None,
 	) -> None:
+		"""row is the (top, height) of the tracklist row, which the hit area is kept inside
+		so neighbouring rows never both respond to one pointer position."""
 		isolated = on_change is not None
 		rat = (rating or 0) if isolated else self.album_star_store.get_rating(n_track) if album else self.star_store.get_rating(n_track.index)
 		display_rat = 0 if hint_only else rat
 
 		rect = (x - round(5 * self.gui.scale), y - round(4 * self.gui.scale), round(80 * self.gui.scale), round(24 * self.gui.scale))
+		if row is not None:
+			# coll() includes both edges, so stop a pixel short of the next row's top
+			top = max(rect[1], row[0])
+			bottom = min(rect[1] + rect[3], row[0] + row[1] - 1)
+			rect = (rect[0], top, rect[2], max(0, bottom - top))
 		boundary = 3 * self.gui.scale
 		input_in_bounds = isolated or (
 			self.gui.playlist_top + boundary < self.inp.mouse_position[1] <= self.window_size[1] - self.gui.panelBY - boundary
@@ -21457,6 +21492,7 @@ class Tauon:
 				logging.exception(f"Error printing error. Non utf8 not allowed: {nt.fullpath.encode('utf-8', 'surrogateescape').decode('utf-8', 'replace')}")
 			return nt
 		intern_track_strings(nt)
+		self.star_store.adopt_file_rating(nt)
 		if self.pctl.track_queue and nt.index == self.pctl.track_queue[self.pctl.queue_step]:
 			self.lyrics_ren_mini.to_reload = True
 		return nt
@@ -21831,6 +21867,7 @@ class Tauon:
 					n_track,
 					allow_input=self.gui.show_ratings,
 					hint_only=not self.gui.show_ratings,
+					row=(ry, self.gui.playlist_row_height),
 				)
 
 				star_x += round(70 * self.gui.scale)
@@ -22920,8 +22957,6 @@ class Tauon:
 			# gui.show_hearts = False
 			self.gui.star_mode = "none"
 			self.prefs.rating_playtime_stars = True
-			if not self.prefs.write_ratings:
-				self.show_message(_("Note that ratings are stored in the local database and not written to tags."))
 
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
@@ -30613,6 +30648,9 @@ class MessageBox:
 		self.message_bubble_icon   = asset_loader(bag, bag.loaded_asset_dc, "bubble.png")
 		self.message_download_icon = asset_loader(bag, bag.loaded_asset_dc, "ddl.png")
 
+	def confirm_text_lines(self) -> int:
+		return bool(self.gui.message_subtext) + bool(self.gui.message_subtext2)
+
 	def get_rect(self) -> tuple[int, int, float, int]:
 		w1 = self.ddt.get_text_w(self.gui.message_text, 15) + 74 * self.gui.scale
 		w2 = self.ddt.get_text_w(self.gui.message_subtext, 12) + 74 * self.gui.scale
@@ -30624,7 +30662,10 @@ class MessageBox:
 		w = min(w, self.window_size[0] - 24 * self.gui.scale)
 
 		h = round(60 * self.gui.scale)
-		if self.gui.message_subtext2:
+		if self.gui.message_mode == "confirm":
+			# Subtitle lines sit between the question and the buttons
+			h += round(self.confirm_text_lines() * 20 * self.gui.scale)
+		elif self.gui.message_subtext2:
 			h += round(15 * self.gui.scale)
 
 		x = int(self.window_size[0] / 2) - int(w / 2)
@@ -30673,11 +30714,17 @@ class MessageBox:
 		elif gui.message_mode == "confirm":
 			self.message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(self.message_info_icon.h / 2) - 1)
 			ddt.text((x + 62 * gui.scale, y + 9 * gui.scale), gui.message_text, self.colours.message_box_text, 15, text_w)
-			if self.draw.button("Yes", (w // 2 + x) - 70 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
+			line_y = y + 29 * gui.scale
+			for line in (gui.message_subtext, gui.message_subtext2):
+				if line:
+					ddt.text((x + 63 * gui.scale, line_y), line, self.colours.message_box_text, 12, text_w)
+					line_y += 20 * gui.scale
+			button_y = y + (32 + self.confirm_text_lines() * 20) * gui.scale
+			if self.draw.button("Yes", (w // 2 + x) - 70 * gui.scale, button_y, w=60*gui.scale):
 				gui.message_box = False
 				if gui.message_box_confirm_callback:
 					gui.message_box_confirm_callback(*gui.message_box_confirm_reference)
-			if self.draw.button("No", (w // 2 + x) + 25 * gui.scale, y + 32 * gui.scale, w=60*gui.scale):
+			if self.draw.button("No", (w // 2 + x) + 25 * gui.scale, button_y, w=60*gui.scale):
 				gui.message_box = False
 				if gui.message_box_no_callback:
 					gui.message_box_no_callback(*gui.message_box_confirm_reference)
@@ -33912,6 +33959,7 @@ class Over:
 			SettingsGroup("library", _("Library"), ColourRGBA(255, 148, 102, 255), [
 				SettingsSection("playlists", _("Playlists"), self.settings_body_playlists),
 				SettingsSection("imports", _("Imports"), self.settings_body_imports),
+				SettingsSection("ratings", _("Ratings"), self.settings_body_ratings),
 				SettingsSection("artists", _("Multiple artists"), self.settings_body_artists),
 				SettingsSection("transcode", _("Transcode"), self.settings_body_transcode),
 				SettingsSection("lyrics", _("Lyrics"), self.settings_body_lyrics),
@@ -33964,6 +34012,11 @@ class Over:
 			_("Use persistent network cache"): "cache stream streaming offline jellyfin subsonic plex keep download",
 			_("Wait for entire file"): "download buffer stream streaming network full file before playing",
 			_("Cache size"): "cache disk space storage limit gb size",
+			_("Read ratings on tag scan"): "rating ratings stars import fmps popm tags file scan rescan",
+			_("Write ratings to tags"): "rating ratings stars save export fmps popm id3 tags file metadata",
+			_("Write all ratings"): "rating ratings stars export save fmps popm tags files library",
+			_("Clear track ratings"): "rating ratings stars reset delete remove database",
+			_("Clear album ratings"): "rating ratings stars reset delete remove database albums",
 			# Connect
 			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
 			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
@@ -35050,6 +35103,29 @@ class Over:
 				_("Tracks will now be recorded. Restart any playback for change to take effect."),
 				_("Tracks will be saved to \"Saved Radio Tracks\" playlist."),
 				mode="info")
+
+	def settings_body_ratings(self, rows: SettingsRows) -> None:
+		prefs = self.prefs
+		tauon = self.tauon
+		prefs.read_ratings = rows.switch(
+			prefs.read_ratings, _("Read ratings on tag scan"),
+			_("Unrated tracks take the rating saved in their file."))
+		writing = bool(prefs.write_ratings)
+		if prefs.write_ratings is None:
+			hint = _("Not set yet. You'll be asked the first time you rate a track.")
+		else:
+			hint = _("Saves FMPS_RATING, plus POPM in MP3s.")
+		if rows.switch(writing, _("Write ratings to tags"), hint) != writing:
+			prefs.write_ratings = not writing
+		busy = tauon.rating_job is not None
+		rows.action(
+			_("Write all ratings"), ((_("Write"), None if busy else tauon.start_write_all_ratings, False),),
+			hint=_("Save every rated track's rating into its file."))
+		rows.action(
+			_("Clear track ratings"), ((_("Clear…"), tauon.confirm_clear_track_ratings, False),),
+			hint=_("Only Tauon's database. Files are not changed."))
+		rows.action(
+			_("Clear album ratings"), ((_("Clear…"), tauon.confirm_clear_album_ratings, False),))
 
 	def settings_body_artists(self, rows: SettingsRows) -> None:
 		prefs = self.prefs
@@ -40414,12 +40490,14 @@ class StandardPlaylist:
 		scroll_area = (gui.playlist_left, scroll_top, gui.plw, window_size[1] - gui.panelBY - scroll_top)
 		mouse_scroll = inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
 			1] > scroll_top - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
-				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active
+				and not (self.coll(gui.pl_rect)) and not tauon.search_over.active and not tauon.radiobox.active \
+				and not gui.message_box
 		touch_scroll = (
 			inp.touch_scroll_y != 0
 			and coll_point(inp.touch_position, scroll_area)
 			and not tauon.search_over.active
 			and not tauon.radiobox.active
+			and not gui.message_box
 		)
 		use_smooth_scroll = (
 			self.smooth_scroll.enabled()
@@ -41266,7 +41344,8 @@ class StandardPlaylist:
 					if item[0] == "Rating":
 						if wid > 45 * gui.scale:
 							yy = ry + (gui.playlist_row_height // 2) - (6 * gui.scale)
-							self.tauon.draw_rating_widget(run + 4 * gui.scale, yy, n_track)
+							self.tauon.draw_rating_widget(
+								run + 4 * gui.scale, yy, n_track, row=(ry, gui.playlist_row_height))
 
 					if item[0] == "Starline":
 						total = self.star_store.get_by_object(n_track)
@@ -56701,7 +56780,9 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("fanart.tv-artist", prefs.enable_fanart_artist)
 	cf.update_value("fanart.tv-background", prefs.enable_fanart_bg)
 	cf.update_value("auto-update-playlists", prefs.always_auto_update_playlists)
-	cf.update_value("write-ratings-to-tag", prefs.write_ratings)
+	cf.update_value("read-ratings-on-scan", prefs.read_ratings)
+	cf.update_value(
+		"write-ratings-to-tags", "ask" if prefs.write_ratings is None else "true" if prefs.write_ratings else "false")
 	cf.update_value("enable-discord-rpc", prefs.discord_enable)
 	cf.update_value("discord-card-layout",         prefs.discord_card_layout)
 	cf.update_value("discord-member-list-display",  prefs.discord_member_list_display)
@@ -57163,9 +57244,14 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "auto-update-playlists",
 		prefs.always_auto_update_playlists,
 		"Automatically update generator playlists")
-	prefs.write_ratings = cf.sync_add(
-		"bool", "write-ratings-to-tag", prefs.write_ratings,
-		"This writes FMPS_Rating tags on disk. Only writing to MP3, OGG and FLAC files is currently supported.")
+	prefs.read_ratings = cf.sync_add(
+		"bool", "read-ratings-on-scan", prefs.read_ratings,
+		"Take ratings from file tags (FMPS_RATING, then POPM) when scanning tracks that have no local rating")
+	# Replaces the old bool "write-ratings-to-tag", so everyone is asked again
+	write_ratings = cf.sync_add(
+		"string", "write-ratings-to-tags", "ask",
+		"Write ratings to file tags (FMPS_RATING, plus POPM in ID3): true, false, or ask on the first rating")
+	prefs.write_ratings = {"true": True, "false": False}.get(str(write_ratings).strip().lower())
 	prefs.discord_enable = cf.sync_add(
 		"bool", "enable-discord-rpc", prefs.discord_enable,
 		"Show track info in running Discord application")
@@ -61753,9 +61839,6 @@ def main(holder: Holder) -> None:
 
 	x_menu.add_to_sub(0, MenuItem(_("Remove Network Tracks"), tauon.clean_db2))
 	x_menu.add_to_sub(0, MenuItem(_("Remove Missing Tracks"), tauon.clean_db))
-	x_menu.add_to_sub(0, MenuItem(_("Import FMPS Ratings"), tauon.import_fmps))
-	x_menu.add_to_sub(0, MenuItem(_("Import POPM Ratings"), tauon.import_popm))
-	x_menu.add_to_sub(0, MenuItem(_("Reset User Ratings"), tauon.clear_ratings))
 	x_menu.add_to_sub(0, MenuItem(_("Find Incomplete Albums"), tauon.find_incomplete))
 	x_menu.add_to_sub(0, MenuItem(_("Mark Missing as Found"), pctl.reset_missing_flags, show_test=inp.test_shift))
 

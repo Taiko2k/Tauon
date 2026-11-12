@@ -391,7 +391,9 @@ class Prefs:
 
 	subsonic_playlists = {}
 
-	write_ratings: bool = False
+	read_ratings: bool = True
+	# None until the user is asked, on their first rating of a local file
+	write_ratings: bool | None = None
 	rating_playtime_stars: bool = False
 	rating_whole_stars: bool = False
 
