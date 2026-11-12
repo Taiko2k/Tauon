@@ -71,7 +71,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict, deque
-from concurrent.futures import Future, ThreadPoolExecutor, as_completed
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, as_completed, wait
 from ctypes import (
 	POINTER,
 	Structure,
@@ -1053,6 +1053,7 @@ class GuiVar:
 
 		self.artist_info_panel: bool = False
 		self.album_artist_dict: dict[int, str] = {}
+		self.album_year_dict: dict[int, str] = {}
 
 		self.show_hearts: bool = True
 
@@ -5264,6 +5265,9 @@ class LastFMapi:
 		self.friend_scan_done = 0
 		self.friend_scan_total = 0
 		self.cancel_friend_scan = False
+		self.love_scan_done = 0
+		self.love_scan_total = 0
+		self.cancel_love_scan = False
 		# Spaces out request starts across scan worker threads
 		self.request_gap_lock = threading.Lock()
 		self.request_next_slot = 0.0
@@ -5600,37 +5604,12 @@ class LastFMapi:
 		self.friend_scan_total = len(friends)
 		self.gui.request_frame()
 
-		def fetch(friend: str) -> list[tuple[str, str]]:
-			loves: list[tuple[str, str]] = []
-			try:
-				for main in self.fetch_all_pages(
-						user, "user.getLovedTracks", {"user": friend, "limit": str(self.LOVES_PAGE_SIZE)}, "lovedtracks", cancelled):
-					for node in main.getElementsByTagName("track"):
-						title = pylast._extract(node, "name")
-						# The artist's <name> comes after the track's
-						artist = pylast._extract(node, "name", 1)
-						if artist and title:
-							loves.append((artist.casefold(), title.casefold()))
-			except Exception:
-				logging.exception(f"Failed to get loved tracks for {friend}")
-			return loves
+		def friend_done(friend: str) -> None:
+			self.friend_scan_done += 1
+			self.scanning_username = friend
+			self.gui.request_frame()
 
-		result: dict[str, list[tuple[str, str]]] = {}
-		with ThreadPoolExecutor(max_workers=self.scrobble_scan_workers()) as pool:
-			futures = {pool.submit(fetch, friend): friend for friend in friends}
-			try:
-				for future in as_completed(futures):
-					friend = futures[future]
-					result[friend] = future.result()
-					self.friend_scan_done += 1
-					self.scanning_username = friend
-					self.gui.request_frame()
-					if self.cancel_friend_scan:
-						break
-			finally:
-				for future in futures:
-					future.cancel()
-
+		result = self.fetch_loves(user, friends, cancelled, friend_done)
 		if self.cancel_friend_scan:
 			return None
 		return result
@@ -5836,6 +5815,61 @@ class LastFMapi:
 
 		self.show_message(_("Removed {N} loves.").format(N=count))
 
+	def fetch_loves(
+			self, user: pylast.User, names: list[str], cancelled: Callable[[], bool],
+			on_user_done: Callable[[str], None] | None = None) -> dict[str, list[tuple[str, str]]]:
+		"""Loved tracks of each user as casefolded (artist, title), fetched in parallel."""
+		self.love_scan_done = 0
+		self.love_scan_total = 0
+
+		fetched_totals: dict[str, int] = {}
+
+		def fetch(name: str, page: int) -> tuple[str, int, list[tuple[str, str]]]:
+			loves: list[tuple[str, str]] = []
+			pages = 0
+			try:
+				params = {"user": name, "limit": str(self.LOVES_PAGE_SIZE), "page": str(page)}
+				fetched = self.fetch_page(user, "user.getLovedTracks", params, "lovedtracks", cancelled)
+				if fetched is not None and fetched[0] is not None:
+					main, pages, total = fetched
+					if page == 1:
+						fetched_totals[name] = total
+					for node in main.getElementsByTagName("track"):
+						title = pylast._extract(node, "name")
+						# The artist's <name> comes after the track's
+						artist = pylast._extract(node, "name", 1)
+						if artist and title:
+							loves.append((artist.casefold(), title.casefold()))
+			except Exception:
+				logging.exception(f"Failed to get loved tracks for {name}")
+			return name, pages, loves
+
+		result: dict[str, list[tuple[str, str]]] = {name: [] for name in names}
+		# Pages still to come per user; a big library's pages spread over all workers
+		waiting: dict[str, int] = {}
+		with ThreadPoolExecutor(max_workers=self.scrobble_scan_workers()) as pool:
+			pending = {pool.submit(fetch, name, 1) for name in names}
+			try:
+				while pending and not cancelled():
+					done, pending = wait(pending, return_when=FIRST_COMPLETED)
+					for future in done:
+						name, pages, loves = future.result()
+						result[name].extend(loves)
+						self.love_scan_done += len(loves)
+						if name not in waiting:
+							waiting[name] = max(pages, 1)
+							self.love_scan_total += fetched_totals.get(name, 0)
+							pending |= {pool.submit(fetch, name, page) for page in range(2, pages + 1)}
+						waiting[name] -= 1
+						if not waiting[name] and on_user_done:
+							on_user_done(name)
+						self.gui.request_frame()
+			finally:
+				for future in pending:
+					future.cancel()
+
+		return result
+
 	def get_friends_love(self) -> None:
 		if not self.last_fm_enable:
 			self.scanning_friends = False
@@ -5889,76 +5923,58 @@ class LastFMapi:
 			_("{N} tracks in your library are loved by friends").format(N=len(matched)), mode="done")
 
 	def dl_love(self) -> None:
-		if not self.last_fm_enable:
-			return
-		username = self.username
-		self.show_message(_("Scanning loved tracks for: {username}").format(username=username), mode="info")
-		self.scanning_username = username
-
-		if not username:
-			self.show_message(_("No username found"), mode="error")
-			return
-
-		if len(username) > 25:
-			logging.error("Aborted due to long username")
-			return
-
 		self.scanning_loves = True
-
-		logging.info("Connect for friend scan")
-
+		self.cancel_love_scan = False
+		self.love_scan_done = 0
+		self.love_scan_total = 0
 		try:
+			if not self.last_fm_enable:
+				return
+			username = self.username
+			self.scanning_username = username
+			if not username:
+				self.show_message(_("No username found"), mode="error")
+				return
 			if self.network is None:
 				self.no_user_connect()
 
-			self.network.enable_rate_limit()
-			logging.info("Get user...")
-			lastfm_user = self.network.get_user(username)
-			tracks = lastfm_user.get_loved_tracks(limit=None)
-
-			matches = 0
-			updated = 0
-
-			library: dict[tuple[str, str], list[int]] = {}
-			for index, tr in list(self.pctl.master_library.items()):
-				title = tr.title.casefold()
-				for name in {name.casefold() for name in lastfm_artist_names(tr)}:
-					library.setdefault((name, title), []).append(index)
-
-			for track in tracks:
-				title = track.track.title.casefold()
-				artist = track.track.artist.name.casefold()
-
-				for index in library.get((artist, title), ()):
-					matches += 1
-					logging.info("MATCH:")
-					logging.info(f"     {artist} - {title}")
-					star = self.star_store.full_get(index)
-					if star is None:
-						star = StarRecord()
-					if not star.loved:
-						updated += 1
-						logging.info("     NEW LOVE")
-						star.loved = True
-
-					self.star_store.insert(index, star)
-
-			self.scanning_loves = False
-			if len(tracks) == 0:
+			loves = self.fetch_loves(
+				self.network.get_user(username), [username], lambda: self.cancel_love_scan)[username]
+			if self.cancel_love_scan:
+				self.show_message(_("Loved tracks scan cancelled"))
+				return
+			if not loves:
 				self.show_message(_("User has no loved tracks."))
 				return
-			if matches > 0 and updated == 0:
-				self.show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
-				return
-			if matches > 0 and updated > 0:
-				self.show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
-				return
-			self.show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(tracks))))
-			return
+
+			wanted = set(loves)
+			matches = 0
+			updated = 0
+			for index, tr in list(self.pctl.master_library.items()):
+				if (tr.artist.casefold(), tr.title.casefold()) not in wanted:
+					continue
+				matches += 1
+				star = self.star_store.full_get(index)
+				if star is None:
+					star = StarRecord()
+				if not star.loved:
+					updated += 1
+					star.loved = True
+				self.star_store.insert(index, star)
 		except Exception:
 			logging.exception("This doesn't seem to be working :(")
 			self.show_message(_("This doesn't seem to be working :("), mode="error")
-		self.scanning_loves = False
+			return
+		finally:
+			self.scanning_loves = False
+			self.gui.request_tracklist_redraw()
+
+		if matches and not updated:
+			self.show_message(_("{N} matched tracks are up to date.").format(N=str(matches)))
+		elif matches:
+			self.show_message(_("{N} tracks matched. {T} were updated.").format(N=str(matches), T=str(updated)))
+		else:
+			self.show_message(_("Of {N} loved tracks, no matches were found in local db").format(N=str(len(loves))))
 
 	def update(self, track_object: TrackClass) -> int | None:
 		if not self.last_fm_enable:
@@ -20651,6 +20667,42 @@ class Tauon:
 
 		return h
 
+	def draw_gallery_title_line(
+		self, x: int, text_align: int, text: str, year: str, colour: ColourRGBA, year_colour: ColourRGBA,
+		y: int, font: int, max_w: int,
+	) -> None:
+		"""Draw a gallery tile's text line, with the release year if given."""
+		ddt = self.ddt
+		if not year:
+			ddt.text((x, y, text_align), text, colour, font, max_w)
+			return
+		gap = round(8 * self.gui.scale)
+		yw = ddt.get_text_w(year, font)
+		if text_align == 2:
+			joined = f"{text} · {year}" if text else year
+			if ddt.get_text_w(joined, font) <= max_w:
+				ddt.text((x, y, 2), joined, colour, font, max_w)
+				return
+			# Too long to centre: span the tile so only the title truncates
+			x -= max_w // 2
+		ddt.text((x + max_w, y, 1), year, year_colour, font)
+		# ddt.text ellipsizes 12px past max_w, so take that off too
+		ddt.text((x, y, 0), text, colour, font, max_w - yw - gap - 12)
+
+	def gallery_album_year(self, album_on: int) -> str:
+		"""Release year of a gallery album, or a "first-last" span if its tracks differ."""
+		start = self.album_dex[album_on]
+		end = self.album_dex[album_on + 1] if album_on + 1 < len(self.album_dex) else len(self.pctl.default_playlist)
+		years = set()
+		for track_id in self.pctl.default_playlist[start:end]:
+			date = self.pctl.master_library[track_id].date[:4]
+			if date.isdigit():
+				years.add(int(date))
+		if not years:
+			return ""
+		lo, hi = min(years), max(years)
+		return str(lo) if lo == hi else f"{lo}\u2013{hi}"
+
 	def reload_albums(self, quiet: bool = False, return_playlist: int = -1, custom_list: list[int] | None = None) -> list[int]:
 		if self.cm_clean_db:
 			# Doing reload while things are being removed may cause crash
@@ -20707,6 +20759,7 @@ class Tauon:
 		self.album_dex[:] = dex
 		self.album_dex_pl_uuid = self.pctl.multi_playlist[target_pl_no].uuid_int
 		self.album_info_cache.clear()
+		self.gui.album_year_dict.clear()
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 		self.gui.update_layout = True
@@ -32470,6 +32523,8 @@ class Over:
 
 	def get_user_love(self) -> None:
 		if not self.lastfm.scanning_friends and not self.lastfm.scanning_scrobbles and not self.lastfm.scanning_loves:
+			# Set now so a second click can't start another scan
+			self.lastfm.scanning_loves = True
 			shoot_dl = threading.Thread(target=self.lastfm.dl_love)
 			shoot_dl.daemon = True
 			shoot_dl.start()
@@ -56392,6 +56447,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("gallery-thin-borders", prefs.thin_gallery_borders)
 	cf.update_value("increase-row-spacing", prefs.increase_gallery_row_spacing)
 	cf.update_value("gallery-center-text", prefs.center_gallery_text)
+	cf.update_value("gallery-show-year", prefs.gallery_show_year)
 
 	cf.update_value("use-custom-fonts", prefs.use_custom_fonts)
 	cf.update_value("font-main-standard", prefs.linux_font)
@@ -56796,6 +56852,7 @@ def load_prefs(bag: Bag) -> None:
 	prefs.thin_gallery_borders = cf.sync_add("bool", "gallery-thin-borders", prefs.thin_gallery_borders)
 	prefs.increase_gallery_row_spacing = cf.sync_add("bool", "increase-row-spacing", prefs.increase_gallery_row_spacing)
 	prefs.center_gallery_text = cf.sync_add("bool", "gallery-center-text", prefs.center_gallery_text)
+	prefs.gallery_show_year = cf.sync_add("bool", "gallery-show-year", prefs.gallery_show_year)
 
 	cf.br()
 	cf.add_text("[fonts]")
@@ -58397,6 +58454,7 @@ def worker1(tauon: Tauon) -> None:
 					break
 
 			gui.album_artist_dict.clear()
+			gui.album_year_dict.clear()
 
 		if tauon.playlist_autoscan:
 			pl_folder_autoscan()
@@ -58686,6 +58744,7 @@ def worker1(tauon: Tauon) -> None:
 				del tauon.to_scan[0]
 				gui.request_frame()
 			gui.album_artist_dict.clear()
+			gui.album_year_dict.clear()
 			pctl.notify_database_changed()
 			gui.request_tracklist_redraw()
 			if network_warn:
@@ -60822,6 +60881,13 @@ def main(holder: Holder) -> None:
 	gallery_settings_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
 		check_test=lambda: prefs.center_gallery_text))
 
+	def _gal_toggle_year(ref=None) -> None:
+		prefs.gallery_show_year ^= True
+		gui.request_frame()
+
+	gallery_settings_menu.add(MenuItem(_("Show release year"), _gal_toggle_year,
+		check_test=lambda: prefs.gallery_show_year))
+
 	def _gal_toggle_click(ref=None) -> None:
 		tauon.toggle_gallery_click()
 
@@ -60844,6 +60910,8 @@ def main(holder: Holder) -> None:
 	# These are global prefs (not per-instance), so the same callbacks apply.
 	gallery_grid_menu.add(MenuItem(_("Center title text"), _gal_toggle_center,
 		check_test=lambda: prefs.center_gallery_text))
+	gallery_grid_menu.add(MenuItem(_("Show release year"), _gal_toggle_year,
+		check_test=lambda: prefs.gallery_show_year))
 	gallery_grid_menu.add(MenuItem(_("Single click to play"), _gal_toggle_click,
 		check_test=lambda: tauon.toggle_gallery_click(1)))
 	gallery_grid_menu.add(MenuItem(_("Scroll by row"), _gal_toggle_row_scroll,
@@ -62816,6 +62884,13 @@ def main(holder: Holder) -> None:
 								if artists > 1:
 									line = _("Various Artists")
 
+							year = ""
+							if prefs.gallery_show_year:
+								year = gui.album_year_dict.get(c_index)
+								if year is None:
+									year = tauon.gallery_album_year(album_on)
+									gui.album_year_dict[c_index] = year
+
 							text_align = 0
 							if prefs.center_gallery_text:
 								x += tauon.album_mode_art_size // 2
@@ -62825,18 +62900,16 @@ def main(holder: Holder) -> None:
 
 							if card_mode:
 								if line2 == "":
-									ddt.text(
-										(x, y + tauon.album_mode_art_size + 8 * gui.scale, text_align),
-										line,
-										line1_colour,
+									tauon.draw_gallery_title_line(
+										x, text_align, line, year, line1_colour, line1_colour,
+										y + tauon.album_mode_art_size + 8 * gui.scale,
 										310,
 										tauon.album_mode_art_size - 18 * gui.scale,
 									)
 								else:
-									ddt.text(
-										(x, y + tauon.album_mode_art_size + 7 * gui.scale, text_align),
-										line2,
-										line2_colour,
+									tauon.draw_gallery_title_line(
+										x, text_align, line2, year, line2_colour, line1_colour,
+										y + tauon.album_mode_art_size + 7 * gui.scale,
 										311,
 										tauon.album_mode_art_size - 18 * gui.scale,
 									)
@@ -62853,18 +62926,16 @@ def main(holder: Holder) -> None:
 										tauon.album_mode_art_size - 18 * gui.scale,
 									)
 							elif line2 == "":
-								ddt.text(
-									(x, y + tauon.album_mode_art_size + 9 * gui.scale - text_lift, text_align),
-									line,
-									line1_colour,
+								tauon.draw_gallery_title_line(
+									x, text_align, line, year, line1_colour, line1_colour,
+									y + tauon.album_mode_art_size + 9 * gui.scale - text_lift,
 									311,
 									tauon.album_mode_art_size - 5 * gui.scale,
 								)
 							else:
-								ddt.text(
-									(x, y + tauon.album_mode_art_size + 8 * gui.scale - text_lift, text_align),
-									line2,
-									line2_colour,
+								tauon.draw_gallery_title_line(
+									x, text_align, line2, year, line2_colour, line1_colour,
+									y + tauon.album_mode_art_size + 8 * gui.scale - text_lift,
 									211 if grid_edge else 212,
 									tauon.album_mode_art_size - (round(5 * gui.scale) if grid_edge else 0),
 								)
@@ -65829,6 +65900,7 @@ def main(holder: Holder) -> None:
 								pctl.notify_database_changed()
 								gui.auto_play_import = False
 								gui.album_artist_dict.clear()
+								gui.album_year_dict.clear()
 							break
 
 				# The custom layout owns the complete main canvas.  Its widgets render

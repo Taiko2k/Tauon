@@ -810,6 +810,7 @@ class TransEditBox:
 		self.tauon.bg_save()
 		self.gui.request_tracklist_redraw()
 		self.gui.album_artist_dict.clear()
+		self.gui.album_year_dict.clear()
 
 	def fix_mojibake(self) -> None:
 		self._close_tools()

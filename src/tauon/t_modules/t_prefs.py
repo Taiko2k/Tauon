@@ -350,6 +350,7 @@ class Prefs:
 	diacritic_search: bool = True
 	increase_gallery_row_spacing: bool = False
 	center_gallery_text: bool = False
+	gallery_show_year: bool = False
 
 	tracklist_y_text_offset = 0
 	theme: int = 14

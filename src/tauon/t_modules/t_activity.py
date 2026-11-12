@@ -180,7 +180,16 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 	if tauon.lrclib_uploads:
 		rows.append(Activity("lyrics", _("Uploading lyrics to LRCLIB…"), green))
 	if tauon.lastfm.scanning_loves:
-		rows.append(Activity("lastfm", _("Scanning: ") + tauon.lastfm.scanning_username, ColourRGBA(200, 150, 240, 255)))
+		lastfm = tauon.lastfm
+		detail = ""
+		progress = None
+		if lastfm.love_scan_total:
+			done = min(lastfm.love_scan_done, lastfm.love_scan_total)
+			detail = _("{done} / {total} loved tracks").format(done=done, total=lastfm.love_scan_total)
+			progress = fraction(done, lastfm.love_scan_total)
+		title = _("Stopping loved tracks scan…") if lastfm.cancel_love_scan else _("Getting your loved tracks…")
+		rows.append(Activity("lastfm", title, ColourRGBA(200, 150, 240, 255), detail, progress,
+			cancel=not lastfm.cancel_love_scan))
 	if tauon.lastfm.scanning_friends:
 		lastfm = tauon.lastfm
 		detail = ""
@@ -263,6 +272,8 @@ class ActivityPopover:
 			tauon.lastfm.cancel_scrobble_scan = True
 		elif key == "friends":
 			tauon.lastfm.cancel_friend_scan = True
+		elif key == "lastfm":
+			tauon.lastfm.cancel_love_scan = True
 		elif key in ("sync", "transcode"):
 			if key == "transcode" or gui.sync_transcode_folder:
 				del tauon.transcode_list[1:]
