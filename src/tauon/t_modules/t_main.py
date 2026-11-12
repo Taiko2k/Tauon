@@ -41160,7 +41160,8 @@ class StandardPlaylist:
 					y = gui.playlist_text_offset + gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 					ry = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 
-					if run > end - 50 * gui.scale and h not in magnet_layout:
+					# Narrow columns (e.g. ❤) only need their own width to draw
+					if run > end - min(50 * gui.scale, item[1]) and h not in magnet_layout:
 						# Magnet-packed text lives within the group's clamped span, so
 						# it stays on-screen even when this column's own run does not.
 						break
