@@ -9,6 +9,7 @@ Changelog
  - Added drag grip to settings
  - Added whole star ratings setting
  - Added year setting to gallery
+ - Added rating keybinds
  - Reworked server sync and library add
  - Added transcode for remote servers
  - Fixed last.fm total count and scan speed

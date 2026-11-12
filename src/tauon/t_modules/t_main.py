@@ -20391,6 +20391,47 @@ class Tauon:
 			shoot_love.daemon = True
 			shoot_love.start()
 
+	def rate_hotkey(self, stars: int, playing: bool) -> None:
+		"""Set the playing or selected track to 1-5 stars, or clear it with 0."""
+		if playing:
+			track = self.pctl.playing_object()
+		elif self.pctl.selected_ready():
+			track = self.pctl.get_track(self.pctl.default_playlist[self.pctl.selected_in_playlist])
+		else:
+			track = None
+		if track is not None:
+			self.rate_tracks([track.index], stars)
+
+	def rate_tracks(self, track_ids: list[int], stars: int) -> None:
+		"""Set tracks to 1-5 stars, or clear them with 0. Tag writes run off the main thread."""
+		if not track_ids:
+			return
+
+		def run() -> None:
+			failed = 0
+			for track_id in track_ids:
+				try:
+					self.star_store.set_rating(track_id, stars * 2, write=True, push=True)
+				except Exception:
+					logging.exception("Failed to set rating")
+					failed += 1
+			if failed:
+				self.show_message(_("Error setting rating"), _("{count} track(s) failed").format(count=failed), mode="error")
+			self.gui.request_tracklist_redraw()
+			self.gui.update = True
+
+		threading.Thread(target=run, daemon=True).start()
+		self.toast(_("Rated {stars}/5").format(stars=stars) if stars else _("Rating cleared"))
+
+	def rate_selection(self, stars: int) -> None:
+		self.rate_tracks([self.pctl.default_playlist[i] for i in self.gui.shift_selection if i < len(self.pctl.default_playlist)], stars)
+
+	def selection_rated(self, stars: int) -> bool:
+		"""Whether every selected track has exactly this many stars."""
+		playlist = self.pctl.default_playlist
+		ids = [playlist[i] for i in self.gui.shift_selection if i < len(playlist)]
+		return bool(ids) and all(self.star_store.get_rating(t) == stars * 2 for t in ids)
+
 	def locate_artist(self) -> None:
 		track = self.pctl.playing_object()
 		if not track:
@@ -44665,6 +44706,10 @@ class ShortcutsSheet:
 				(_("Undo"), ("_undo",)),
 				(_("Love the selected track"), ("love-selected",)),
 				(_("Love the playing track"), ("love-playing",)),
+				(_("Rate the selected track 1 to 5"), ("rate-selected-1", "rate-selected-5"), "…"),
+				(_("Rate the playing track 1 to 5"), ("rate-playing-1", "rate-playing-5"), "…"),
+				(_("Clear the selected track's rating"), ("rate-selected-clear",)),
+				(_("Clear the playing track's rating"), ("rate-playing-clear",)),
 				(_("Add to queue"), ("add-to-queue",)),
 				(_("Clear the queue"), ("clear-queue",)),
 				(_("Track info"), ("info-show",)),
@@ -44712,10 +44757,18 @@ class ShortcutsSheet:
 			return [[ctrl if key == "Ctrl" else key for key in keys] for keys in self.FIXED[function]]
 		return self.gui.keymaps.describe(function)
 
-	def row_tokens(self, functions: tuple[str, ...], joiner: str) -> list[tuple[bool, str]]:
-		"""Keycaps (True) and separators (False) for a row; empty when nothing is bound."""
+	def row_tokens(self, functions: tuple[str, ...], joiner: str) -> list[tuple[int, str]]:
+		"""Keycaps (1, or 2 for an accented n), separators (0) for a row; empty when nothing is bound.
+		A "…" joiner marks a first/last range, shown as one binding ending in n."""
+		if joiner == "…" and len(functions) == 2:
+			first, last = self.bindings(functions[0]), self.bindings(functions[1])
+			if first and last and first[0][:-1] == last[0][:-1]:
+				tokens: list[tuple[int, str]] = []
+				for key in first[0][:-1]:
+					tokens += [(1, key), (0, "+")]
+				return [*tokens, (2, "n")]
 		groups = [found for found in (self.bindings(function) for function in functions) if found]
-		tokens: list[tuple[bool, str]] = []
+		tokens = []
 		for g, group in enumerate(groups):
 			if g:
 				tokens.append((False, joiner))
@@ -44728,13 +44781,13 @@ class ShortcutsSheet:
 					tokens.append((True, key))
 		return tokens
 
-	def _token_w(self, cap: bool, text: str) -> int:
+	def _token_w(self, cap: int, text: str) -> int:
 		s = self.gui.scale
 		if cap:
 			return max(round(19 * s), self.ddt.get_text_w(text, 312) + round(10 * s))
 		return self.ddt.get_text_w(text, 12) + round(8 * s)
 
-	def _draw_tokens(self, tokens: list[tuple[bool, str]], right: int, y: int) -> int:
+	def _draw_tokens(self, tokens: list[tuple[int, str]], right: int, y: int, accent: ColourRGBA) -> int:
 		"""Draw a row's keys ending at right; returns their width."""
 		s = self.gui.scale
 		ddt = self.ddt
@@ -44746,7 +44799,7 @@ class ShortcutsSheet:
 			if cap:
 				ddt.rect((x, y, tw, cap_h), self.CAP_EDGE)
 				ddt.rect((x + line, y + line, tw - line * 2, cap_h - line * 3), self.CAP_FILL)
-				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.CAP_TEXT, 312, bg=self.CAP_FILL)
+				ddt.text((x + tw // 2, y + round(2 * s), 2), text, accent if cap == 2 else self.CAP_TEXT, 312, bg=self.CAP_FILL)
 			else:
 				ddt.text((x + tw // 2, y + round(2 * s), 2), text, self.SEP, 12, bg=self.BG)
 			x += tw
@@ -44798,11 +44851,11 @@ class ShortcutsSheet:
 			group: list[tuple] = [("head", title, colour)]
 			for row in rows:
 				if isinstance(row[1], str):
-					group.append(("row", row[0], [], row[1]))
+					group.append(("row", row[0], [], row[1], colour))
 				else:
 					tokens = self.row_tokens(row[1], row[2] if len(row) > 2 else "/")
 					if tokens:
-						group.append(("row", row[0], tokens, ""))
+						group.append(("row", row[0], tokens, "", colour))
 			if len(group) > 1:
 				groups.append(group)
 		total = sum(head_h + row_h * (len(group) - 1) for group in groups)
@@ -44828,9 +44881,9 @@ class ShortcutsSheet:
 			if item[0] == "head":
 				ddt.text((x, yy + head_h - round(22 * s)), item[1].upper(), item[2], 212, bg=bg)
 				continue
-			_kind, label, tokens, how = item
+			_kind, label, tokens, how, accent = item
 			if tokens:
-				used = self._draw_tokens(tokens, x + col_w, yy + round(1 * s))
+				used = self._draw_tokens(tokens, x + col_w, yy + round(1 * s), accent)
 			else:
 				used = min(ddt.get_text_w(how, 12), col_w * 2 // 3)
 				ddt.text((x + col_w, yy + round(3 * s), 1), how, self.HOW, 12, bg=bg, max_w=used)
@@ -59310,7 +59363,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 81
+	latest_db_version: float = 82
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -61393,6 +61446,12 @@ def main(holder: Holder) -> None:
 	selection_menu.br()
 	selection_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon))
 	selection_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection))
+	selection_menu.add_sub(_("Set Rating…"), 140)
+	star_labels = (_("Clear Rating"), _("1 Star"), _("2 Stars"), _("3 Stars"), _("4 Stars"), _("5 Stars"))
+	for n in (1, 2, 3, 4, 5):
+		selection_menu.add_to_sub(0, MenuItem(
+			star_labels[n], lambda n=n: tauon.rate_selection(n), check_test=lambda n=n: tauon.selection_rated(n)))
+	selection_menu.add_to_sub(0, MenuItem(star_labels[0], lambda: tauon.rate_selection(0)))
 
 	selection_menu.br()
 	folder_menu.br()
@@ -65285,6 +65344,13 @@ def main(holder: Holder) -> None:
 
 					if keymaps.test("love-selected"):
 						tauon.select_love(notify=True)
+
+					for n in range(6):
+						suffix = str(n) if n else "clear"
+						if keymaps.test(f"rate-selected-{suffix}"):
+							tauon.rate_hotkey(n, playing=False)
+						if keymaps.test(f"rate-playing-{suffix}"):
+							tauon.rate_hotkey(n, playing=True)
 
 					if keymaps.test("search-lyrics-selected"):
 						if pctl.selected_ready():

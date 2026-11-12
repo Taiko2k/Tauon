@@ -74,6 +74,18 @@ add-to-queue Q Alt
 clear-queue Q Shift Alt
 love-playing L Shift Ctrl
 love-selected L Ctrl
+rate-selected-1 1 Alt
+rate-selected-2 2 Alt
+rate-selected-3 3 Alt
+rate-selected-4 4 Alt
+rate-selected-5 5 Alt
+rate-selected-clear 0 Alt
+rate-playing-1 1 Shift Alt
+rate-playing-2 2 Shift Alt
+rate-playing-3 3 Shift Alt
+rate-playing-4 4 Shift Alt
+rate-playing-5 5 Shift Alt
+rate-playing-clear 0 Shift Alt
 regenerate-playlist R Alt
 
 toggle-left-panel ~

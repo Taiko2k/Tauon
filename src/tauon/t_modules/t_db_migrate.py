@@ -308,4 +308,36 @@ def database_migrate(
 			prefs.last_fm_username = ""
 			prefs.auto_lfm = False
 
+	if db_version <= 81:  # noqa: PLR2004
+		logging.info("Updating database to version 82")
+		# Rating hotkeys: Alt+0-5 rate the selected track, Shift+Alt the playing one.
+		# Skip any key combination the user has already bound.
+		keymap_file = config_directory / "input.txt"
+		if install_directory != config_directory and keymap_file.is_file():
+			try:
+				lines = keymap_file.read_text(encoding="utf_8").splitlines()
+				used = set()
+				functions = set()
+				for line in lines:
+					items = line.split()
+					if not items or line[0] in " #":
+						continue
+					functions.add(items[0])
+					if len(items) > 1:
+						used.add((items[1].lower(), frozenset(m.lower() for m in items[2:])))
+				new_binds = []
+				for target, mods in (("selected", ("Alt",)), ("playing", ("Shift", "Alt"))):
+					for n in (1, 2, 3, 4, 5, 0):
+						function = f"rate-{target}-{n if n else 'clear'}"
+						combo = (str(n), frozenset(m.lower() for m in mods))
+						if function in functions or combo in used:
+							continue
+						new_binds.append(" ".join((function, str(n), *mods)))
+				if new_binds:
+					keymap_file.write_text("\n".join([*lines, "", *new_binds]) + "\n", encoding="utf_8")
+					gui.keymaps.maps.clear()
+					gui.keymaps.load()
+			except Exception:
+				logging.exception("Failed to add rating bindings to input.txt")
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists
