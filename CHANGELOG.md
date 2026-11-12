@@ -10,6 +10,8 @@ Changelog
  - Added whole star ratings setting
  - Reworked server sync and library add
  - Added transcode for remote servers
+ - Fixed last.fm total count and scan speed
+ - Fixed last.fm loves for multi-artist tracks
 
 ### v13.1.1
 

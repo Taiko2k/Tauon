@@ -48,7 +48,7 @@ from gi.repository import GLib
 from rapidfuzz import fuzz
 
 if TYPE_CHECKING:
-	from collections.abc import Callable, Iterator
+	from collections.abc import Callable, Iterable, Iterator
 	from typing import IO
 
 	from tauon.t_modules.t_enums import QueueType
@@ -1434,6 +1434,15 @@ def get_artist_strip_feat(track_object: TrackClass) -> str:
 	return artist_name
 
 
+def lastfm_artist_names(track_object: TrackClass) -> list[str]:
+	"""Artist names a last.fm entry for this track may be filed under, scrobble artist first."""
+	names: list[str] = []
+	for name in (get_artist_strip_feat(track_object), track_object.artist, *(track_object.artists or ())):
+		if name and name not in names:
+			names.append(name)
+	return names
+
+
 def get_artist_safe(track: TrackClass | None) -> str:
 	if track:
 		artists = track.album_artists if track.album_artist else track.artists
@@ -1463,6 +1472,32 @@ def get_split_artists(track: TrackClass) -> list[str]:
 		return track.artists
 	artist = track.artist.split("feat")[0].strip()
 	return re.split(r"; |, |& ", artist)
+
+
+def apply_scrobble_counts(
+	tracks: Iterable[TrackClass],
+	counts: dict[tuple[str, str], int],
+	artist_names: Callable[[TrackClass], Iterable[str]],
+) -> int:
+	"""Set lfm_scrobbles from lowercased (artist, title) play counts.
+
+	A track's count is the sum over every distinct name artist_names gives it.
+	Tracks with no match keep their old value. Returns how many were updated.
+	"""
+	if not counts:
+		return 0
+	titles = {title for _artist, title in counts}
+	updated = 0
+	for track in tracks:
+		title = track.title.lower()
+		if title not in titles:
+			continue
+		names = {name.lower() for name in artist_names(track) if name}
+		total = sum(counts.get((name, title), 0) for name in names)
+		if total:
+			track.lfm_scrobbles = total
+			updated += 1
+	return updated
 
 
 def coll_rect(rect1: list[int], rect2: list[int]) -> bool:

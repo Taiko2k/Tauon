@@ -71,7 +71,7 @@ import webbrowser
 import xml.etree.ElementTree as ET
 import zipfile
 from collections import OrderedDict, deque
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, as_completed
 from ctypes import (
 	POINTER,
 	Structure,
@@ -177,6 +177,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	Timer,
 	alpha_blend,
 	alpha_mod,
+	apply_scrobble_counts,
 	archive_file_scan,
 	atomic_save,
 	check_equal,
@@ -223,6 +224,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	is_light,
 	is_stream_url,
 	j_chars,
+	lastfm_artist_names,
 	mac_styles,
 	normalise_stream_url,
 	point_distance,
@@ -457,6 +459,7 @@ if TYPE_CHECKING:
 	from tauon.t_modules.t_dbus import MPRIS, SuspendInhibitor
 	from tauon.t_modules.t_logging import LogHistoryHandler
 	from collections.abc import Callable, Iterator, Sequence
+	from xml.dom import minidom
 	from subprocess import Popen
 
 	from pylast import LastFMNetwork, SessionKeyGenerator
@@ -5253,6 +5256,17 @@ class LastFMapi:
 		self.scanning_friends = False
 		self.scanning_loves = False
 		self.scanning_scrobbles = False
+		# Scrobble scan progress, for the activity popover
+		self.scrobble_scan_done = 0
+		self.scrobble_scan_total = 0
+		self.scrobble_scan_matching = False
+		self.cancel_scrobble_scan = False
+		self.friend_scan_done = 0
+		self.friend_scan_total = 0
+		self.cancel_friend_scan = False
+		# Spaces out request starts across scan worker threads
+		self.request_gap_lock = threading.Lock()
+		self.request_next_slot = 0.0
 
 	# Each service keeps its own account and scrobble toggle in prefs
 	@property
@@ -5424,72 +5438,202 @@ class LastFMapi:
 			self.show_message(_("Error communicating with Last.fm network"), describe_error(e), mode="warning")
 			return False
 
-	def get_all_scrobbles_estimate_time(self) -> float | None:
-		if not self.connected:
-			self.connect(False)
-		if not self.connected or not self.username:
-			return None
+	# Last.fm's maximum page size for user.getRecentTracks
+	SCROBBLE_PAGE_SIZE = 200
+	# Last.fm asks for no more than 5 requests a second
+	SCROBBLE_REQUEST_GAP = 0.25
+	# Page size limits for user.getFriends and user.getLovedTracks
+	FRIENDS_PAGE_SIZE = 500
+	LOVES_PAGE_SIZE = 1000
 
-		user = pylast.User(self.username, self.network)
-		total = user.get_playcount()
-
-		if total:
-			return 0.04364 * total
-		return 0
+	def scrobble_scan_workers(self) -> int:
+		return 2 if self.libre else 4
 
 	def get_all_scrobbles(self) -> None:
-		if not self.connected:
-			self.connect(False)
-		if not self.connected or not self.username:
-			return
-
+		self.scanning_scrobbles = True
+		self.cancel_scrobble_scan = False
+		self.scrobble_scan_done = 0
+		self.scrobble_scan_total = 0
+		self.scrobble_scan_matching = False
 		try:
-			self.scanning_scrobbles = True
-			self.network.enable_rate_limit()
+			if not self.connected:
+				self.connect(False)
+			if not self.connected or not self.username:
+				self.show_message(_("Error, not connected to last.fm"))
+				return
+			if self.cancel_scrobble_scan:
+				self.show_message(_("Scrobble scan cancelled"))
+				return
 			user = pylast.User(self.username, self.network)
-			# username = user.get_name()
 			self.tauon.perf_timer.set()
-			tracks = user.get_recent_tracks(None)
+			counts = self.fetch_scrobble_counts(user)
+			if counts is None:
+				self.show_message(_("Scrobble scan cancelled"))
+				return
 
-			counts: dict[tuple[str, str], int] = {}
-
-			# Count up the unique pairs
-			for track in tracks:
-				key = (str(track.track.artist), str(track.track.title))
-				c = counts.get(key, 0)
-				counts[key] = c + 1
-
-			touched: list[int] = []
-
-			# Add counts to matching tracks
-			for key, value in counts.items():
-				artist, title = key
-				artist = artist.lower()
-				title = title.lower()
-
-				for track in self.pctl.master_library.values():
-					t_artist = track.artist.lower()
-					artists = [x.lower() for x in get_split_artists(track)]
-					if t_artist == artist or artist in artists or (
-							track.album_artist and track.album_artist.lower() == artist):
-						if track.title.lower() == title:
-							if track.index in touched:
-								track.lfm_scrobbles += value
-							else:
-								track.lfm_scrobbles = value
-								touched.append(track.index)
+			self.scrobble_scan_matching = True
+			self.gui.request_frame()
+			apply_scrobble_counts(
+				list(self.pctl.master_library.values()), counts,
+				lambda track: [track.artist, track.album_artist, *get_split_artists(track)])
 		except Exception:
 			logging.exception("Scanning failed. Try again?")
-			self.gui.request_tracklist_redraw()
-			self.scanning_scrobbles = False
 			self.show_message(_("Scanning failed. Try again?"), mode="error")
 			return
+		finally:
+			self.scanning_scrobbles = False
+			self.scrobble_scan_matching = False
+			self.gui.request_tracklist_redraw()
 
-		logging.info(self.tauon.perf_timer.get())
-		self.gui.request_tracklist_redraw()
-		self.scanning_scrobbles = False
+		logging.info(f"Scrobble scan took {self.tauon.perf_timer.get():.1f}s")
 		self.tauon.bg_save()
 		self.show_message(_("Scanning scrobbles complete"), mode="done")
+
+	def paced_request(self, user: pylast.User, method: str, params: dict[str, str], cancelled: Callable[[], bool]) -> minidom.Document | None:
+		"""A pylast request with retries, spaced out across threads. None if cancelled."""
+		for attempt in range(4):
+			if cancelled():
+				return None
+			with self.request_gap_lock:
+				now = time.monotonic()
+				wait = self.request_next_slot - now
+				self.request_next_slot = max(now, self.request_next_slot) + self.SCROBBLE_REQUEST_GAP
+			if wait > 0:
+				time.sleep(wait)
+			try:
+				return user._request(method, False, params)
+			except (pylast.NetworkError, pylast.WSError, pylast.MalformedResponseError):
+				if attempt == 3:
+					raise
+				logging.warning(f"{method} page {params.get('page')} failed, retrying")
+				time.sleep(2 ** attempt)
+		return None
+
+	def fetch_page(self, user: pylast.User, method: str, params: dict[str, str], root: str, cancelled: Callable[[], bool]) -> tuple[minidom.Element | None, int, int] | None:
+		"""Returns (root element, total pages, total items), or None if cancelled."""
+		doc = self.paced_request(user, method, params, cancelled)
+		if doc is None:
+			return None
+		nodes = doc.getElementsByTagName(root)
+		if not nodes:
+			return None, 0, 0
+		main = nodes[0]
+		pages = int(main.getAttribute("totalPages") or main.getAttribute("totalpages") or 0)
+		return main, pages, int(main.getAttribute("total") or 0)
+
+	def fetch_all_pages(self, user: pylast.User, method: str, params: dict[str, str], root: str, cancelled: Callable[[], bool]) -> Iterator[minidom.Element]:
+		"""Yields each page's root element in turn."""
+		page = 1
+		while True:
+			result = self.fetch_page(user, method, {**params, "page": str(page)}, root, cancelled)
+			if result is None or result[0] is None:
+				return
+			main, pages, _total = result
+			yield main
+			if page >= pages:
+				return
+			page += 1
+
+	def fetch_scrobble_counts(self, user: pylast.User) -> dict[tuple[str, str], int] | None:
+		"""Count every scrobble by lowercased (artist, title). None if cancelled."""
+		# Pin the end so new scrobbles don't shift the pages under us
+		base = {"user": user.get_name(), "limit": str(self.SCROBBLE_PAGE_SIZE), "to": str(int(time.time()))}
+		def cancelled() -> bool:
+			return self.cancel_scrobble_scan
+
+		def fetch(page: int) -> tuple[int, int, list[tuple[str, str]]]:
+			result = self.fetch_page(user, "user.getRecentTracks", {**base, "page": str(page)}, "recenttracks", cancelled)
+			if result is None or result[0] is None:
+				return 0, 0, []
+			main, pages, total = result
+			plays: list[tuple[str, str]] = []
+			for node in main.getElementsByTagName("track"):
+				if node.getAttribute("nowplaying") == "true":
+					continue
+				artist = pylast._extract(node, "artist")
+				title = pylast._extract(node, "name")
+				if artist and title:
+					plays.append((artist.lower(), title.lower()))
+			return pages, total, plays
+
+		counts: dict[tuple[str, str], int] = {}
+
+		def add(plays: list[tuple[str, str]]) -> None:
+			for key in plays:
+				counts[key] = counts.get(key, 0) + 1
+			self.scrobble_scan_done += len(plays)
+			self.gui.request_frame()
+
+		pages, total, plays = fetch(1)
+		self.scrobble_scan_total = total
+		add(plays)
+
+		if pages > 1:
+			with ThreadPoolExecutor(max_workers=self.scrobble_scan_workers()) as pool:
+				futures = [pool.submit(fetch, page) for page in range(2, pages + 1)]
+				try:
+					for future in as_completed(futures):
+						add(future.result()[2])
+						if self.cancel_scrobble_scan:
+							break
+				finally:
+					for future in futures:
+						future.cancel()
+
+		if self.cancel_scrobble_scan:
+			return None
+		return counts
+
+	def fetch_friend_loves(self, user: pylast.User, username: str) -> dict[str, list[tuple[str, str]]] | None:
+		"""Each friend's loved tracks as casefolded (artist, title). None if cancelled."""
+		def cancelled() -> bool:
+			return self.cancel_friend_scan
+		friends: list[str] = []
+		for main in self.fetch_all_pages(
+				user, "user.getFriends", {"user": username, "limit": str(self.FRIENDS_PAGE_SIZE)}, "friends", cancelled):
+			for node in main.getElementsByTagName("user"):
+				name = pylast._extract(node, "name")
+				if name:
+					friends.append(name)
+		if self.cancel_friend_scan:
+			return None
+		self.friend_scan_total = len(friends)
+		self.gui.request_frame()
+
+		def fetch(friend: str) -> list[tuple[str, str]]:
+			loves: list[tuple[str, str]] = []
+			try:
+				for main in self.fetch_all_pages(
+						user, "user.getLovedTracks", {"user": friend, "limit": str(self.LOVES_PAGE_SIZE)}, "lovedtracks", cancelled):
+					for node in main.getElementsByTagName("track"):
+						title = pylast._extract(node, "name")
+						# The artist's <name> comes after the track's
+						artist = pylast._extract(node, "name", 1)
+						if artist and title:
+							loves.append((artist.casefold(), title.casefold()))
+			except Exception:
+				logging.exception(f"Failed to get loved tracks for {friend}")
+			return loves
+
+		result: dict[str, list[tuple[str, str]]] = {}
+		with ThreadPoolExecutor(max_workers=self.scrobble_scan_workers()) as pool:
+			futures = {pool.submit(fetch, friend): friend for friend in friends}
+			try:
+				for future in as_completed(futures):
+					friend = futures[future]
+					result[friend] = future.result()
+					self.friend_scan_done += 1
+					self.scanning_username = friend
+					self.gui.request_frame()
+					if self.cancel_friend_scan:
+						break
+			finally:
+				for future in futures:
+					future.cancel()
+
+		if self.cancel_friend_scan:
+			return None
+		return result
 
 	def artist_info(self, artist: str) -> tuple[bool, str | None, str, str | None, str | None] | tuple[bool, str, str]:
 		if self.lastfm_network is None and self.last_fm_only_connect() is False:
@@ -5550,8 +5694,12 @@ class LastFMapi:
 		if not self.connected:
 			return
 
+		# Same artist the scrobble was filed under
+		artist = get_artist_strip_feat(track_object)
+		if not artist:
+			return
 		try:
-			track = self.network.get_track(track_object.artist, track_object.title)
+			track = self.network.get_track(artist, track_object.title)
 			if not track:
 				logging.error("Get love: track not found")
 				return
@@ -5559,8 +5707,8 @@ class LastFMapi:
 
 			remote_loved = track.get_userloved()
 
-			if track_object.title != track.get_correction() or track_object.artist != track.get_artist().get_correction():
-				logging.warning(f"pyLast/Last.fm bug workaround. API thought {track_object.artist} - {track_object.title} loved status was: {remote_loved}")
+			if track_object.title != track.get_correction() or artist != track.get_artist().get_correction():
+				logging.warning(f"pyLast/Last.fm bug workaround. API thought {artist} - {track_object.title} loved status was: {remote_loved}")
 				return
 
 			if remote_loved is None:
@@ -5690,50 +5838,55 @@ class LastFMapi:
 
 	def get_friends_love(self) -> None:
 		if not self.last_fm_enable:
+			self.scanning_friends = False
 			return
 		self.scanning_friends = True
+		self.cancel_friend_scan = False
+		self.friend_scan_done = 0
+		self.friend_scan_total = 0
+		self.scanning_username = ""
 
 		try:
 			username = self.username
 			logging.info(f"Username is {username}")
 
 			if not username:
-				self.scanning_friends = False
 				self.show_message(_("There was an error, try re-log in"))
 				return
 
 			if self.network is None:
 				self.no_user_connect()
 
-			self.network.enable_rate_limit()
-			lastfm_user = self.network.get_user(username)
-			friends = lastfm_user.get_friends(limit=None)
-			self.show_message(_("Getting friend data…"), _("This may take a very long time."), mode="info")
-			for friend in friends:
-				self.scanning_username = friend.name
-				logging.info(f"Getting friend loves: {friend.name}")
+			loves = self.fetch_friend_loves(self.network.get_user(username), username)
+			if loves is None:
+				self.show_message(_("Friend loves scan cancelled"))
+				return
 
-				try:
-					loves = friend.get_loved_tracks(limit=None)
-				except Exception:
-					logging.exception("Failed to get_loved_tracks!")
-					continue
+			library: dict[tuple[str, str], list[TrackClass]] = {}
+			for tr in list(self.pctl.master_library.values()):
+				title = tr.title.casefold()
+				for name in {name.casefold() for name in lastfm_artist_names(tr)}:
+					library.setdefault((name, title), []).append(tr)
 
-				for track in loves:
-					title = track.track.title.casefold()
-					artist = track.track.artist.name.casefold()
-					for index, tr in self.pctl.master_library.items():
-						if tr.title.casefold() == title and tr.artist.casefold() == artist:
-							tr.lfm_friend_likes.add(friend.name)
-							logging.info("MATCH")
-							logging.info(f"     {artist} - {title}")
-							logging.info(f"      ----- {friend.name}")
-
+			matched: set[int] = set()
+			for friend, keys in loves.items():
+				for key in keys:
+					for tr in library.get(key, ()):
+						tr.lfm_friend_likes.add(friend)
+						matched.add(tr.index)
 		except Exception:
 			logging.exception("There was an error getting friends loves")
 			self.show_message(_("There was an error getting friends loves"), "", mode="warning")
+			return
+		finally:
+			self.scanning_friends = False
+			self.scanning_username = ""
+			self.gui.request_tracklist_redraw()
 
-		self.scanning_friends = False
+		self.tauon.bg_save()
+		self.show_message(
+			_("Friend loves scan complete"),
+			_("{N} tracks in your library are loved by friends").format(N=len(matched)), mode="done")
 
 	def dl_love(self) -> None:
 		if not self.last_fm_enable:
@@ -5766,24 +5919,29 @@ class LastFMapi:
 			matches = 0
 			updated = 0
 
+			library: dict[tuple[str, str], list[int]] = {}
+			for index, tr in list(self.pctl.master_library.items()):
+				title = tr.title.casefold()
+				for name in {name.casefold() for name in lastfm_artist_names(tr)}:
+					library.setdefault((name, title), []).append(index)
+
 			for track in tracks:
 				title = track.track.title.casefold()
 				artist = track.track.artist.name.casefold()
 
-				for index, tr in self.pctl.master_library.items():
-					if tr.title.casefold() == title and tr.artist.casefold() == artist:
-						matches += 1
-						logging.info("MATCH:")
-						logging.info(f"     {artist} - {title}")
-						star = self.star_store.full_get(index)
-						if star is None:
-							star = StarRecord()
-						if not star.loved:
-							updated += 1
-							logging.info("     NEW LOVE")
-							star.loved = True
+				for index in library.get((artist, title), ()):
+					matches += 1
+					logging.info("MATCH:")
+					logging.info(f"     {artist} - {title}")
+					star = self.star_store.full_get(index)
+					if star is None:
+						star = StarRecord()
+					if not star.loved:
+						updated += 1
+						logging.info("     NEW LOVE")
+						star.loved = True
 
-						self.star_store.insert(index, star)
+					self.star_store.insert(index, star)
 
 			self.scanning_loves = False
 			if len(tracks) == 0:
@@ -20696,6 +20854,8 @@ class Tauon:
 			url += "/"
 		url += "apis/mlj_1/scrobbles"
 		self.lastfm.scanning_scrobbles = True
+		self.lastfm.scrobble_scan_total = 0
+		self.lastfm.cancel_scrobble_scan = False
 		try:
 			r = requests.get(url, timeout=10)
 
@@ -20710,33 +20870,29 @@ class Tauon:
 			self.lastfm.scanning_scrobbles = False
 			return
 
+		if self.lastfm.cancel_scrobble_scan:
+			self.lastfm.scanning_scrobbles = False
+			self.show_message(_("Scrobble scan cancelled"))
+			return
+
 		try:
 			data = json.loads(r.text)
 			l = data["list"]
 
-			counts: dict[tuple[str, tuple[str, ...]], int] = {}
+			counts: dict[tuple[str, str], int] = {}
 
 			for item in l:
 				artists = item.get("artists")
 				title = item.get("title")
 				if title and artists:
-					key = (title, tuple(artists))
-					c = counts.get(key, 0)
-					counts[key] = c + 1
+					title = title.lower()
+					for artist in {x.lower() for x in artists}:
+						key = (artist, title)
+						counts[key] = counts.get(key, 0) + 1
 
-			touched: list[int] = []
-
-			for key, value in counts.items():
-				title, artists = key
-				artists = [x.lower() for x in artists]
-				title = title.lower()
-				for track in self.pctl.master_library.values():
-					if track.artist.lower() in artists and track.title.lower() == title:
-						if track.index in touched:
-							track.lfm_scrobbles += value
-						else:
-							track.lfm_scrobbles = value
-							touched.append(track.index)
+			self.lastfm.scrobble_scan_matching = True
+			self.gui.request_frame()
+			apply_scrobble_counts(list(self.pctl.master_library.values()), counts, lambda track: [track.artist])
 			self.show_message(_("Scanning scrobbles complete"), mode="done")
 
 		except Exception:
@@ -20745,6 +20901,7 @@ class Tauon:
 
 		self.gui.request_tracklist_redraw()
 		self.lastfm.scanning_scrobbles = False
+		self.lastfm.scrobble_scan_matching = False
 		self.bg_save()
 
 	def maloja_scrobble(self, item: PendingScrobble) -> Outcome:
@@ -21357,7 +21514,7 @@ class Tauon:
 					if not api.token:
 						continue
 					try:
-						api.love(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
+						api.love(get_artist_strip_feat(self.pctl.master_library[track_id]), self.pctl.master_library[track_id].title)
 					except Exception:
 						logging.exception(f"Failed updating {api.name} love status")
 						star.loved = False
@@ -21379,7 +21536,7 @@ class Tauon:
 					if not api.token:
 						continue
 					try:
-						api.unlove(self.pctl.master_library[track_id].artist, self.pctl.master_library[track_id].title)
+						api.unlove(get_artist_strip_feat(self.pctl.master_library[track_id]), self.pctl.master_library[track_id].title)
 					except Exception:
 						logging.exception(f"Failed updating {api.name} love status")
 						self.show_message(_("Failed updating {service} love status").format(service=api.name), mode="warning")
@@ -32285,17 +32442,9 @@ class Over:
 		self.show_message(_("Cleared all loves"), mode="done")
 
 	def get_scrobble_counts(self) -> None:
-		if not self.inp.key_shift_down:
-			t = self.lastfm.get_all_scrobbles_estimate_time()
-			if not t:
-				self.show_message(_("Error, not connected to last.fm"))
-				return
-			self.show_message(
-				_("Warning: This process will take approximately {T} minutes to complete.").format(T=(t // 60)),
-				_("Press again while holding Shift if you understand"), mode="warning")
-			return
-
 		if not self.lastfm.scanning_friends and not self.lastfm.scanning_scrobbles and not self.lastfm.scanning_loves:
+			# Set now so a second click can't start another scan
+			self.lastfm.scanning_scrobbles = True
 			shoot_dl = threading.Thread(target=self.lastfm.get_all_scrobbles)
 			shoot_dl.daemon = True
 			shoot_dl.start()
@@ -32309,15 +32458,10 @@ class Over:
 		self.show_message(_("Cleared all scrobble counts"), mode="done")
 
 	def get_friend_love(self) -> None:
-		if not self.inp.key_shift_down:
-			self.show_message(
-				_("Warning: This process can take a long time to complete! (up to an hour or more)"),
-				_("This feature is not recommended for accounts that have many friends."),
-				_("Press again while holding Shift if you understand"), mode="warning")
-			return
-
 		if not self.lastfm.scanning_friends and not self.lastfm.scanning_scrobbles and not self.lastfm.scanning_loves:
 			logging.info("Launch friend love thread")
+			# Set now so a second click can't start another scan
+			self.lastfm.scanning_friends = True
 			shoot_dl = threading.Thread(target=self.lastfm.get_friends_love)
 			shoot_dl.daemon = True
 			shoot_dl.start()

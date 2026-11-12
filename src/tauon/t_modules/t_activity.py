@@ -179,10 +179,33 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 			album_count=_("{done} / {total} tracks").format(done=done, total=gui.transcoding_batch_total)))
 	if tauon.lrclib_uploads:
 		rows.append(Activity("lyrics", _("Uploading lyrics to LRCLIB…"), green))
-	if tauon.lastfm.scanning_friends or tauon.lastfm.scanning_loves:
+	if tauon.lastfm.scanning_loves:
 		rows.append(Activity("lastfm", _("Scanning: ") + tauon.lastfm.scanning_username, ColourRGBA(200, 150, 240, 255)))
+	if tauon.lastfm.scanning_friends:
+		lastfm = tauon.lastfm
+		detail = ""
+		progress = None
+		if lastfm.friend_scan_total:
+			detail = _("{done} / {total} friends").format(done=lastfm.friend_scan_done, total=lastfm.friend_scan_total)
+			if lastfm.scanning_username:
+				detail += f"  ·  {lastfm.scanning_username}"
+			progress = fraction(lastfm.friend_scan_done, lastfm.friend_scan_total)
+		title = _("Stopping friend loves scan…") if lastfm.cancel_friend_scan else _("Scanning friends' loves…")
+		rows.append(Activity("friends", title, ColourRGBA(200, 150, 240, 255), detail, progress,
+			cancel=not lastfm.cancel_friend_scan))
 	if tauon.lastfm.scanning_scrobbles:
-		rows.append(Activity("scrobbles", _("Scanning Scrobbles…"), ColourRGBA(219, 88, 18, 255)))
+		lastfm = tauon.lastfm
+		detail = ""
+		progress = None
+		if lastfm.scrobble_scan_matching:
+			detail = _("Matching to library…")
+		elif lastfm.scrobble_scan_total:
+			done = min(lastfm.scrobble_scan_done, lastfm.scrobble_scan_total)
+			detail = _("{done} / {total} scrobbles").format(done=done, total=lastfm.scrobble_scan_total)
+			progress = fraction(done, lastfm.scrobble_scan_total)
+		title = _("Stopping scrobble scan…") if lastfm.cancel_scrobble_scan else _("Scanning Scrobbles…")
+		rows.append(Activity("scrobbles", title, ColourRGBA(219, 88, 18, 255), detail, progress,
+			cancel=not lastfm.cancel_scrobble_scan and not lastfm.scrobble_scan_matching))
 	if tauon.lfm_scrobbler.queue and tauon.scrobble_warning_timer.get() < 260:
 		rows.append(Activity("scrobble-error", _("Scrobbling"), ColourRGBA(250, 90, 90, 255),
 			_("Network error. Will try again later."), busy=False))
@@ -236,6 +259,10 @@ class ActivityPopover:
 			getattr(tauon, key).cancel_scan = True
 			if tauon.regen_background:
 				tauon.server_sync.refresh_cancelled = True
+		elif key == "scrobbles":
+			tauon.lastfm.cancel_scrobble_scan = True
+		elif key == "friends":
+			tauon.lastfm.cancel_friend_scan = True
 		elif key in ("sync", "transcode"):
 			if key == "transcode" or gui.sync_transcode_folder:
 				del tauon.transcode_list[1:]
