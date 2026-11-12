@@ -4911,9 +4911,9 @@ int load_next_inner() {
 		unsigned char bh[4];
 		for (int i = 0; i < 64; i++) {
 			pthread_mutex_lock(&bs.mut);
-			bool far = bs_needs_restart_locked(p);
+			bool needs_restart = bs_needs_restart_locked(p);
 			pthread_mutex_unlock(&bs.mut);
-			if (is_net && far) {
+			if (is_net && needs_restart) {
 				// Reading the next header would need a new range request;
 				// this position is already at/near the end of the metadata
 				stream_meta_end = p;
