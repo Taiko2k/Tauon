@@ -129,6 +129,7 @@ from tauon.t_modules.t_db_state import (  # noqa: E402
 	allocate_track_id,
 	backup_state_before_repair,
 	database_write,
+	repaired_position,
 	snapshot_database,
 	state_save,
 	validate_and_repair_database,
@@ -4375,10 +4376,12 @@ class PlayerCtl:
 		if self.track_queue and self.track_queue[self.queue_step] == track_id \
 		and self.playing_state != PlayingState.STOPPED:
 			self.stop(block=True)
-		# Remove from playback history
-		while track_id in self.track_queue:
-			self.track_queue.remove(track_id)
-			self.queue_step -= 1
+		# Remove from playback history; only entries before the current one shift it
+		if track_id in self.track_queue:
+			ids = self.track_queue[:]
+			keep = set(ids) - {track_id}
+			self.queue_step = repaired_position(ids, keep, self.queue_step, empty=0)
+			self.track_queue[:] = [i for i in ids if i != track_id]
 		# Remove track from force queue
 		for i in reversed(range(len(self.force_queue))):
 			item = self.force_queue[i]
@@ -17704,6 +17707,13 @@ class Tauon:
 		keys = set(self.pctl.master_library.keys())
 		for pl in self.pctl.multi_playlist:
 			keys -= set(pl.playlist_ids)
+		# Keep the current track and anything queued
+		if 0 <= self.pctl.queue_step < len(self.pctl.track_queue):
+			keys.discard(self.pctl.track_queue[self.pctl.queue_step])
+		for item in self.pctl.force_queue:
+			keys.discard(item.track_id)
+			for child in item.tracks or ():
+				keys.discard(child.track_id)
 		for item in keys:
 			self.pctl.purge_track(item, fast=True)
 		self.show_message(_("Done! {N} old items were removed.").format(N=len(keys)), mode="done")
@@ -28236,6 +28246,8 @@ class StyleOverlay:
 			if self.pctl.playing_ready() and self.min_on_timer.get() > 0:
 
 				track = self.pctl.playing_object()
+				if track is None:
+					return
 
 				self.window_size_int = copy.copy(self.window_size)
 				self.parent_path = track.parent_folder_path
@@ -28467,6 +28479,15 @@ class StyleOverlay:
 					self.radio_meta = self.pctl.tag_meta
 					self.current_track_id = -1
 					self.stage = 0
+
+			elif track is None:
+				# Track was removed from the library (e.g. Clean Database); fade out
+				if self.a_texture is None:
+					self.flush()
+				elif not self.go_to_sleep:
+					self.current_track_id = -1
+					self.fade_off_timer.set()
+					self.go_to_sleep = True
 
 			elif not self.go_to_sleep and self.b_texture is None and self.current_track_id != track.index:
 				self.radio_meta = None
