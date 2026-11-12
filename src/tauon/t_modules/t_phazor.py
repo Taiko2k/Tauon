@@ -1687,6 +1687,12 @@ def player4(tauon: Tauon) -> None:
 
 		if len(pctl.track_queue) > 0 and 2 > add_time > 0:
 			tauon.star_store.add(pctl.track_queue[pctl.queue_step], add_time)
+		# PHAzOR stops by itself once it has played a file out
+		if (
+			end and pctl.playing_length == 0 and not pctl.playerCommandReady
+			and aud.get_status() == 2 and aud.get_result() == 1
+		):
+			pctl.unknown_length_ended = True
 		if end and pctl.playing_time > 1:
 			pctl.test_progress()
 
@@ -2621,6 +2627,7 @@ def player4(tauon: Tauon) -> None:
 
 				player_timer.set()
 				pctl.jump_time = 0.0
+				pctl.unknown_length_ended = False
 				if loaded_track.length == 0 or loaded_track.file_ext.lower() in tauon.formats.MOD:
 					i = 0
 					t = 0
@@ -2634,6 +2641,8 @@ def player4(tauon: Tauon) -> None:
 					if loaded_track.length != 0:
 						pctl.playing_length = loaded_track.length
 						gui.request_tracklist_redraw()
+					else:
+						logging.warning("Could not get a duration, playing until the end of the file")
 
 				pctl.commit = None
 				stall_timer.set()
