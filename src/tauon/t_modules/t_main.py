@@ -13899,23 +13899,39 @@ class Tauon:
 		self.repair_playing_position_after_removals(removed_positions, self.pctl.active_playlist_viewing)
 
 		if force_delete:
-			for item in li:
-				tr = self.pctl.get_track(item[1])
-				if not tr.is_network:
+			# CUE tracks can share a file, so count unique paths
+			paths = list(dict.fromkeys(
+				tr.fullpath for tr in (self.pctl.get_track(item[1]) for item in li) if not tr.is_network))
+			trashed = 0
+			removed = 0
+			failed = 0
+			for path in paths:
+				try:
+					send2trash(path)
+					trashed += 1
+				except Exception:
+					logging.exception("Could not send file to trash")
 					try:
-						send2trash(tr.fullpath)
-						self.show_message(_("Tracks sent to trash"))
+						os.remove(path)
+						removed += 1
 					except Exception:
-						logging.exception("One or more tracks could not be sent to trash")
-						self.show_message(_("One or more tracks could not be sent to trash"))
-
-						if force_delete:
-							try:
-								os.remove(tr.fullpath)
-								self.show_message(_("Files deleted"), mode="info")
-							except Exception:
-								logging.exception("Error deleting one or more files")
-								self.show_message(_("Error deleting one or more files"), mode="error")
+						logging.exception("Error deleting file")
+						failed += 1
+			deleted = trashed + removed
+			if failed:
+				self.show_message(
+					_("Error deleting one or more files"),
+					_("Deleted {N} of {T} files").format(N=deleted, T=len(paths)), mode="error")
+			elif removed:
+				# Some bypassed the trash
+				if deleted == 1:
+					self.toast(_("Deleted 1 file"), duration=2)
+				else:
+					self.toast(_("Deleted {N} files").format(N=deleted), duration=2)
+			elif trashed == 1:
+				self.toast(_("Moved 1 file to trash"), duration=2)
+			elif trashed:
+				self.toast(_("Moved {N} files to trash").format(N=trashed), duration=2)
 		else:
 			self.undo.bk_tracks(self.pctl.active_playlist_viewing, li)
 
@@ -14115,17 +14131,17 @@ class Tauon:
 			if os.path.exists(fullpath):
 				try:
 					os.remove(fullpath)
-					self.show_message(_("File deleted"), fullpath, mode="info")
+					self.toast(_("File deleted"), duration=2)
 				except Exception:
 					logging.exception("Error deleting file")
 					self.show_message(_("Error deleting file"), fullpath, mode="error")
 			else:
-				self.show_message(_("File moved to trash"))
+				self.toast(_("File moved to trash"), duration=2)
 
 		except Exception:
 			try:
 				os.remove(fullpath)
-				self.show_message(_("File deleted"), fullpath, mode="info")
+				self.toast(_("File deleted"), duration=2)
 			except Exception:
 				logging.exception("Error deleting file")
 				self.show_message(_("Error deleting file"), fullpath, mode="error")
