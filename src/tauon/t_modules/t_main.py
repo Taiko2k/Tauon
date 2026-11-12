@@ -5344,7 +5344,6 @@ class LastFMapi:
 			self.show_message("Failed to get web auth URL from pylast", "Unknown error")
 			return
 		logging.info(str(self.url))
-		copy_to_clipboard(self.url)
 		self.show_message(_("Web auth page opened"), _("Once authorised click the 'done' button."), mode="arrow")
 		webbrowser.open(self.url, new=2, autoraise=True)
 
@@ -32737,6 +32736,8 @@ class Over:
 				_("Scrobble playback and sync loves."),
 				accent,
 			)
+			if api.token is None and api.url is not None:
+				self.settings_copy_link(rect, api.url, accent)
 			self.settings_switch_row(
 				(inner_x, inner_y, inner_w, info_row_h),
 				api.toggle_enabled,
@@ -34332,6 +34333,29 @@ class Over:
 			inner_y += max(sub_h, round(14 * s))
 		inner_y += round(10 * s)
 		return inner_x, inner_y, inner_w, y + h - round(14 * s) - inner_y
+
+	def settings_copy_link(self, rect: tuple[int, int, int, int], url: str, accent: ColourRGBA) -> None:
+		"""'Copy login link' text in a card's top-right corner; copies url on click."""
+		s = self.gui.scale
+		x, y, w, _h = rect
+		text = _("Copy login link")
+		font = 211
+		text_w = self.ddt.get_text_w(text, font)
+		text_x = x + w - round(12 * s) - text_w
+		text_y = y + round(7 * s)
+		hit_rect = (text_x - round(4 * s), text_y - round(3 * s), text_w + round(8 * s), round(20 * s))
+		self.fields.add(hit_rect)
+		hover = self.coll(hit_rect)
+		colour = accent if hover else self.colours.box_text_label
+		self.ddt.text((text_x, text_y), text, colour, font, bg=self.ddt.text_background_colour)
+		if hover:
+			self.gui.cursor_want = 3
+			underline_y = text_y + round(14 * s)
+			self.ddt.line(text_x, underline_y, text_x + text_w, underline_y, alpha_mod(colour, 180))
+			if self.click:
+				self.inp.global_clicked = True
+				copy_to_clipboard(url)
+				self.show_message(_("Copied link to clipboard"), mode="done")
 
 	def settings_card(self, rect: tuple[int, int, int, int], title: str, accent: ColourRGBA) -> ColourRGBA:
 		"""Card background and its small-caps title; returns the card fill."""
