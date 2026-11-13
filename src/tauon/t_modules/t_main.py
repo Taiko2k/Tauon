@@ -1557,6 +1557,7 @@ class Input:
 		self.middle_click:        bool = False
 		self.right_click:         bool = False
 		self.level_2_right_click: bool = False
+		self.level_2_middle_click: bool = False
 		self.level_2_enter:       bool = False
 		self.backspace_press:      int = 0
 		self.mouse_wheel:        float = 0
@@ -30848,9 +30849,9 @@ class SearchOverlay:
 						show = True
 						clear = True
 
-					if inp.middle_click and n in (1, 2, 9):
+					if inp.level_2_middle_click and n in (1, 2, 9):
 						queue_result = True
-						inp.middle_click = False
+						inp.level_2_middle_click = False
 
 				if enter and inp.key_shift_down and fade == 1:
 					show = True
@@ -64265,6 +64266,7 @@ def main(holder: Holder) -> None:
 			inp.right_click = False
 			inp.level_2_right_click = False
 			inp.middle_click = False
+			inp.level_2_middle_click = False
 			inp.mouse_up = False
 			inp.key_return_press = False
 			inp.key_down_press = False
@@ -65773,6 +65775,12 @@ def main(holder: Holder) -> None:
 				or tauon.generator_box.active
 			):
 				inp.right_click = False
+
+			# The search overlay draws after the layout, so hand it the middle
+			# click privately; otherwise panels underneath (e.g. the queue) act first.
+			if inp.middle_click and tauon.search_over.active:
+				inp.middle_click = False
+				inp.level_2_middle_click = True
 
 			if inp.mouse_wheel != 0:
 				gui.request_frame()
