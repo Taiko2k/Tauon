@@ -35709,7 +35709,19 @@ class Over:
 		self.app_icon.render(rect[0] + rows.pad, rect[1] + round(10 * s))
 		text_x = rect[0] + rows.pad + round(self.app_icon.w) + round(14 * s)
 		self.ddt.text((text_x, rect[1] + round(12 * s)), "Tauon", self.colours.box_text, 215, bg=bg)
-		self.ddt.text((text_x, rect[1] + round(32 * s)), self.t_version, self.colours.box_sub_text, 12, bg=bg)
+		version_y = rect[1] + round(32 * s)
+		version_w = self.ddt.get_text_w(self.t_version, 12)
+		version_rect = (text_x - round(4 * s), version_y - round(2 * s), version_w + round(8 * s), round(18 * s))
+		self.fields.add(version_rect)
+		version_hover = self.coll(version_rect)
+		version_colour = rows.accent if version_hover else self.colours.box_sub_text
+		self.ddt.text((text_x, version_y), self.t_version, version_colour, 12, bg=bg)
+		if version_hover:
+			self.gui.cursor_want = 3
+			if self.click:
+				self.inp.global_clicked = True
+				copy_to_clipboard(self.t_version)
+				self.show_message(_("Copied version to clipboard"), self.t_version, mode="done")
 		self.ddt.text((text_x, rect[1] + round(50 * s)), "Copyright © 2015-2026 Taiko2k", self.colours.box_text_label, 11, bg=bg)
 		rows.note(_("This program comes with absolutely no warranty."))
 		rows.tiles(
