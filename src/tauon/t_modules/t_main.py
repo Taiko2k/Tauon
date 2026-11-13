@@ -66587,7 +66587,8 @@ def main(holder: Holder) -> None:
 					# MAIN PLAYLIST
 					# C-PR
 
-					if not gui.custom_mode:
+					# The bar isn't drawn in combo views (showcase, radio), so its grips mustn't take input there
+					if not gui.custom_mode and not gui.combo_mode:
 						render_column_bar_input()
 
 					# heart field test
