@@ -2385,9 +2385,7 @@ class LyricsWidget(MetaWidget):
 		# Synced when preferred, or when there are no static lyrics to fall
 		# back on (matching toggle_lyrics, which flips prefer_synced_lyrics on
 		# in that case).
-		synced = track is not None and (
-			tauon.prefs.prefer_synced_lyrics or not track.lyrics
-		) and tauon.timed_lyrics_ren.generate(track)
+		synced = tauon.lyric_variants.shows_synced(track)
 		if not synced:
 			tauon.meta_box.lyrics(round(x), round(y), round(w), round(h), track)
 			return

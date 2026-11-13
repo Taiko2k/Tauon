@@ -37,6 +37,7 @@ import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, short_text, with_url_scheme
+from tauon.t_modules.t_lyric_variants import LyricVariant, structured_lyric_variants
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome
 from tauon.t_modules.t_server_sync import (
@@ -925,6 +926,19 @@ class SubsonicService(RemotePlaylistSource):
 		if isinstance(lyrics, str):
 			return lyrics.strip(), ""
 		return "", ""
+
+	def get_lyric_variants(self, track_object: TrackClass) -> list[LyricVariant]:
+		"""Every structured lyric the server has for a track, with language and kind."""
+		if not track_object.url_key:
+			return []
+		response = self.r("getLyricsBySongId", p={"id": track_object.url_key}, show_errors=False)
+		if not response:
+			return []
+		subsonic_response = response.get("subsonic-response", {})
+		if subsonic_response.get("status") != "ok":
+			return []
+		entries = self._as_list(subsonic_response.get("lyricsList", {}).get("structuredLyrics"))
+		return structured_lyric_variants(entries, self._plain_from_structured_lyrics, self._lrc_from_structured_lyrics)
 
 	def get_lyrics(self, track_object: TrackClass) -> tuple[str, str]:
 		if track_object.url_key:

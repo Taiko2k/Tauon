@@ -437,6 +437,7 @@ class TDraw:
 		range_height: int | None = None,
 		real_bg: bool = False,
 		key: tuple[int, str, int, int, int, int, int, int, int, int] | None = None,
+		centre: bool = False,
 	) -> int:
 		# perf.set()
 		force_cache = False
@@ -488,6 +489,8 @@ class TDraw:
 
 		if key is None:
 			key = (max_x, text, font, colour.r, colour.g, colour.b, colour.a, bg.r, bg.g, bg.b)
+			if centre:
+				key = (*key, "centre")
 
 		if not real_bg or force_cache:
 			if self._counting_tracklist:
@@ -567,6 +570,8 @@ class TDraw:
 			layout.set_auto_dir(False)
 			if wrap:
 				layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+			# Centres each wrapped line in the full width; the layout is shared, so always reset
+			layout.set_alignment(Pango.Alignment.CENTER if centre else Pango.Alignment.LEFT)
 
 			if max_y is not None:
 				layout.set_ellipsize(Pango.EllipsizeMode.END)
@@ -707,7 +712,7 @@ class TDraw:
 				align = 1
 			if location[2] == 2:
 				align = 2
-			if location[2] == 4:
+			if location[2] in (4, 5):
 				max_h = None
 				if len(location) > 4:
 					max_h = location[4]
@@ -723,6 +728,7 @@ class TDraw:
 					wrap=True,
 					range_top=range_top,
 					range_height=range_height,
+					centre=location[2] == 5,
 				)
 
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)

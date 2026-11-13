@@ -254,6 +254,14 @@ from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
 from tauon.t_modules.t_locale import get_translation_languages  # noqa: E402
+from tauon.t_modules.t_lyric_variants import (  # noqa: E402
+	LyricVariant,
+	choose_variant,
+	merge_variants,
+	parse_lrc,
+	read_embedded_variants,
+	scan_sidecar_variants,
+)
 from tauon.t_modules.t_lyrics import (  # noqa: E402
 	genius,
 	get_lrclib_challenge,
@@ -8246,6 +8254,7 @@ class Tauon:
 		self.d_click_timer.force_set(10)
 		self.lyrics_check_timer: Timer           = Timer()
 		self.lyric_txt_checked: set[int]         = set()  # tracks already looked at for a .txt this session
+		self.lyric_fonts: dict[int, float]       = {}  # Scaled lyrics font handles, to the UI scale they were made at
 		self.lyric_sidecar_cache: tuple[int, float, tuple[Path | None, Path | None]] | None = None
 		self.scroll_hide_timer: Timer            = Timer(100)
 		self.tracklist_align_due: float          = 0  # monotonic time, 0 when nothing is scheduled
@@ -8405,6 +8414,8 @@ class Tauon:
 		self.lyrics_ren_mini:                     LyricsRenMini = LyricsRenMini(tauon=self)
 		self.lyrics_ren:                          LyricsRen = LyricsRen(tauon=self)
 		self.timed_lyrics_ren:                    TimedLyricsRen = TimedLyricsRen(tauon=self)
+		self.lyric_variants:                      LyricVariantStore = LyricVariantStore(tauon=self)
+		self.lyric_switcher:                      LyricSwitcher = LyricSwitcher(tauon=self)
 		self.synced_to_static_lyrics:             TimedLyricsToStatic = TimedLyricsToStatic()
 		self.mini_mode:                           MiniMode = MiniMode(tauon=self)
 		self.mini_mode2:                          MiniMode2 = MiniMode2(tauon=self)
@@ -9413,7 +9424,38 @@ class Tauon:
 			rect.y = float(y)
 			sdl3.render_texture(self.renderer, texture, None, rect)
 
+	def lyric_font(self, base: int) -> int:
+		"""A lyrics font handle, scaled by the lyrics Text Size setting."""
+		step = self.prefs.lyrics_text_size
+		if step == 0 or base not in self.ddt.f_dict:
+			return base
+		handle = 900000 + base * 1000 + 100 + step
+		if self.lyric_fonts.get(handle) != self.ddt.scale:
+			name, _offset, size = self.ddt.f_dict[base]
+			family = name.rsplit(" ", 1)[0]
+			# One step is one point
+			self.ddt.prime_font(family, max(5.0, size / self.ddt.scale + step), handle)
+			self.lyric_fonts[handle] = self.ddt.scale
+		return handle
+
+	def lyrics_text_size_get(self, _ref: object = None) -> str:
+		step = self.prefs.lyrics_text_size
+		return f"+{step}" if step > 0 else str(step)
+
+	def lyrics_text_size_step(self, step: int) -> None:
+		self.prefs.lyrics_text_size = max(LYRICS_TEXT_SIZE_MIN, min(LYRICS_TEXT_SIZE_MAX, self.prefs.lyrics_text_size + step))
+		self.tauon_lyrics_relayout()
+
+	def tauon_lyrics_relayout(self) -> None:
+		self.timed_lyrics_ren.line_heights = []
+		self.lyric_variants.reload_renderers()
+
+	def toggle_lyrics_centre(self, _ref: object = None) -> None:
+		self.prefs.lyrics_centre ^= True
+		self.tauon_lyrics_relayout()
+
 	def prime_fonts(self) -> None:
+		self.lyric_fonts.clear()
 		standard_font = self.prefs.linux_font
 		# if self.windows:
 		#	 standard_font = self.prefs.linux_font + ", Sans"  # The CJK ones dont appear to be working
@@ -11148,6 +11190,7 @@ class Tauon:
 
 	def toggle_synced_lyrics(self, tr: TrackClass) -> None:
 		self.prefs.prefer_synced_lyrics ^= True
+		self.lyric_variants.reload_renderers()
 
 	def toggle_synced_lyrics_deco(self, track: TrackClass) -> Decorator:
 		text = None
@@ -22321,6 +22364,10 @@ class Tauon:
 			prefs.auto_libre_fm,  # 209
 			SEARCH_CACHE_FORMAT,  # 210
 			sorted(prefs.banned_folders),  # 211
+			prefs.prefer_synced_lyrics,  # 212
+			prefs.lyrics_language,  # 213
+			prefs.lyrics_text_size,  # 214
+			prefs.lyrics_centre,  # 215
 		]
 
 		for slot, value in db_snapshot.items():
@@ -24868,6 +24915,7 @@ def strip_lrc_formatting(lyrics: str) -> str:
 class LyricsRenMini:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
 		self.pctl  = tauon.pctl
 		self.ddt   = tauon.ddt
 		self.colours = tauon.colours
@@ -24879,7 +24927,7 @@ class LyricsRenMini:
 		self.lyrics_position = 0
 
 	def generate(self, index: int, w: float) -> None:
-		self.text = strip_lrc_formatting(self.pctl.master_library[index].lyrics)
+		self.text = strip_lrc_formatting(self.tauon.lyric_variants.plain_text(self.pctl.master_library[index]))
 		self.lyrics_position = 0
 
 	def render(self, index: int, x: float, y: float, w: float, h: None, p: int) -> None:
@@ -24897,13 +24945,16 @@ class LyricsRenMini:
 		#	 if inp.mouse_wheel > 0:
 		#		 prefs.lyrics_font_size -= 1
 
-		self.ddt.text((x, y, 4, w), self.text, colour, self.prefs.lyrics_font_size, w - (w % 2), bg)
+		align = 5 if self.prefs.lyrics_centre else 4
+		self.ddt.text((x, y, align, w), self.text, colour, self.tauon.lyric_font(self.prefs.lyrics_font_size), w - (w % 2), bg)
 
 class LyricsRen:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon   = tauon
 		self.ddt     = tauon.ddt
 		self.colours = tauon.colours
+		self.prefs   = tauon.prefs
 		self.index = -1
 		self.text = ""
 		self.lrm     = tauon.lyrics_ren_mini
@@ -24913,7 +24964,7 @@ class LyricsRen:
 	def test_update(self, track_object: TrackClass) -> None:
 		if track_object.index != self.index or self.lrm.to_reload: # or self.text != track_object.lyrics:
 			self.index = track_object.index
-			self.text = strip_lrc_formatting(track_object.lyrics)
+			self.text = strip_lrc_formatting(self.tauon.lyric_variants.plain_text(track_object))
 			self.lyrics_position = 0
 			self.lrm.to_reload = False
 
@@ -24925,7 +24976,9 @@ class LyricsRen:
 		# if test_lumi(self.colours.lyrics_panel_background) < 0.5:
 		#	colour = self.colours.grey(40)
 		# TODO (Flynn): this used to check the gallery background & i don't even know why it did that much
-		self.ddt.text((x, y, 4, w), self.text, colour, 17, w, bg)
+		align = 5 if self.prefs.lyrics_centre else 4
+		# The drawer adds 12px of slack past the wrap width; keep within w
+		self.ddt.text((x, y, align, w - 12), self.text, colour, self.tauon.lyric_font(17), w, bg)
 
 class TimedLyricsToStatic:
 
@@ -24991,6 +25044,7 @@ class TimedLyricsRen:
 		self.temp_scale: float = self.gui.scale
 		self.temp_w: int = -1
 		self.temp_side_panel: bool = False
+		self.temp_font: int = -1
 
 	def generate(self, track: TrackClass) -> bool | None:
 		if self.index == track.index and not self.lrm.to_reload:
@@ -25002,44 +25056,15 @@ class TimedLyricsRen:
 		self.data.clear()
 		self.temp_scale = self.gui.scale
 
-		data = find_synced_lyric_data(track)
+		data = self.tauon.lyric_variants.synced_lines(track)
 		if data is None:
 			return None
 
-		for line in data:
-			if len(line) < 10:
-				continue
-
-			if line[0] != "[" or "]" not in line or ":" not in line or "." not in line:
-				continue
-
-			try:
-				text = line.split("]")[-1].rstrip("\n")
-				t = line
-
-				while t[0] == "[" and (t[9] == "]" or t[10] == "]") and ":" in t and "." in t:
-					a = t.lstrip("[")
-					t = t.split("]")[1] + "]"
-
-					a = a.split("]")[0]
-					mm, b = a.split(":")
-					ss, ms = b.split(".")
-
-					s = int(mm) * 60 + int(ss)
-					if len(ms) == 2:
-						s += int(ms) / 100
-					elif len(ms) == 3:
-						s += int(ms) / 1000
-
-					self.data.append((s, text))
-
-					if len(t) < 10:
-						break
-			except Exception:
-				logging.exception("Failed generating timed lyrics")
-				continue
-
-		self.data = sorted(self.data, key=lambda x: x[0])
+		try:
+			self.data = parse_lrc(data)
+		except Exception:
+			logging.exception("Failed generating timed lyrics")
+			self.data = []
 		if not self.data:
 			return None
 		self.line_heights = []
@@ -25071,19 +25096,29 @@ class TimedLyricsRen:
 		if side_panel:
 			scroll_to = round(-h/3)
 			bg = self.colours.lyrics_panel_background
-			font_size = 15
+			font_size = self.tauon.lyric_font(15)
 			spacing = round(6 * self.gui.scale)
 			self.ddt.rect((self.gui.rsp_x, y, self.gui.rspw, h), bg)
-			y += 25 * self.gui.scale
+			switcher = self.tauon.lyric_switcher
+			# Same inset as the static lyrics box, so the chips don't shift when switching
+			reserved = switcher.begin(
+				self.pctl.master_library[index], (self.gui.rsp_x, y, self.gui.rspw, h), True, bg,
+				inset_right=5 * self.gui.scale)
+			if reserved:
+				# Keep scrolling lines out from under the chips
+				clip = sdl3.Rect(round(self.gui.rsp_x), round(y + reserved), round(self.gui.rspw), max(1, round(h - reserved)))  # noqa: RUF057
+				sdl3.set_render_clip_rect(self.tauon.renderer, clip)
+			y += max(25 * self.gui.scale, reserved)
 			y_center = y + (h/2) - (spacing)
 			allowed_width = round(w - 20 * self.gui.scale)
 		else:
 			scroll_to = 0
 			bg = self.colours.lyrics_panel_background
-			font_size = 20
+			font_size = self.tauon.lyric_font(20)
 			spacing = round(10 * self.gui.scale)
 			y_center = self.window_size[1]/2
-			allowed_width = round(w - 20 * self.gui.scale) - 108
+			# w is the width from x to the right margin
+			allowed_width = round(w)
 
 		# reset scroll position after 5 seconds
 		if self.recenter_timeout.get() > 5 and self.pctl.playing_state == PlayingState.PLAYING:
@@ -25109,7 +25144,7 @@ class TimedLyricsRen:
 					line_active = len(self.data) - 1
 
 		# record line heights so we can perfectly center the active lyric
-		if not self.line_heights or self.temp_scale != self.gui.scale or self.temp_w != w or self.temp_side_panel != side_panel:
+		if not self.line_heights or self.temp_scale != self.gui.scale or self.temp_w != w or self.temp_side_panel != side_panel or self.temp_font != font_size:
 			self.scroll_position = scroll_to
 			self.line_heights = []
 			for i, line in enumerate(self.data):
@@ -25118,6 +25153,7 @@ class TimedLyricsRen:
 			self.temp_scale = self.gui.scale
 			self.temp_w = w
 			self.temp_side_panel = side_panel
+			self.temp_font = font_size
 
 		# don't autoscroll if the new active line is not visible
 		if ( self.scroll_position > h/2 or self.scroll_position < -h/2 ) and self.temp_line != line_active:
@@ -25165,7 +25201,7 @@ class TimedLyricsRen:
 				if i == line_active and highlight:
 					colour = self.colours.active_lyric
 
-				location = [ round(x), round(possible_y), 4, allowed_width - 12 ]
+				location = [ round(x), round(possible_y), 5 if self.prefs.lyrics_centre else 4, allowed_width - 12 ]
 				# see t_draw.py -> __draw_text_cairo -> line that says #Hack
 				text = line[1]
 				if text.rstrip() == "":
@@ -25189,7 +25225,264 @@ class TimedLyricsRen:
 					self.temp_line = rendered_line[2]
 					break
 
+		if side_panel:
+			if reserved:
+				sdl3.set_render_clip_rect(self.tauon.renderer, None)
+			switcher.end()
 		return None
+
+LYRICS_TEXT_SIZE_MIN = -4
+LYRICS_TEXT_SIZE_MAX = 9  # Keeps "+9" within the menu stepper's fixed number box
+
+
+class LyricVariantStore:
+	"""Alternate lyrics per track (see t_lyric_variants).
+
+	The track's own lyrics/synced fields stay the base; extras from sidecars,
+	ID3 frames or the server are read off the UI thread and kept for the session.
+	"""
+
+	RECHECK_SECONDS = 30
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.prefs = tauon.prefs
+		self.gui = tauon.gui
+		self.lock = threading.Lock()
+		self.extras: dict[int, tuple[float, list[LyricVariant]]] = {}
+		self.pending: set[int] = set()
+		self.merged: dict[int, tuple[str, str, list[LyricVariant], list[LyricVariant]]] = {}
+
+	def _scannable(self, track: TrackClass) -> bool:
+		if track.file_ext == "SUB":
+			return bool(track.url_key)
+		return not track.is_network and bool(track.parent_folder_path)
+
+	def extras_for(self, track: TrackClass) -> list[LyricVariant]:
+		with self.lock:
+			entry = self.extras.get(track.index)
+			stale = entry is None or time.monotonic() - entry[0] > self.RECHECK_SECONDS
+			if stale and track.index not in self.pending and self._scannable(track):
+				self.pending.add(track.index)
+				threading.Thread(target=self._scan, args=(track,), daemon=True).start()
+		return entry[1] if entry else []
+
+	def _scan(self, track: TrackClass) -> None:
+		extras: list[LyricVariant] = []
+		try:
+			if track.file_ext == "SUB":
+				extras = self.tauon.subsonic.get_lyric_variants(track)
+			else:
+				extras = scan_sidecar_variants(track.parent_folder_path, track.filename, read_lyric_text)
+				extras += read_embedded_variants(track.fullpath)
+		except Exception:
+			logging.exception("Failed to look for alternate lyrics")
+		# Server lyrics aren't rechecked
+		stamp = math.inf if track.is_network else time.monotonic()
+		with self.lock:
+			old = self.extras.get(track.index)
+			self.extras[track.index] = (stamp, extras)
+			self.pending.discard(track.index)
+
+		def signature(variants: list[LyricVariant]) -> list[tuple]:
+			return [(v.synced, v.lang, v.tag, v.text) for v in variants]
+
+		if signature(old[1] if old else []) != signature(extras):
+			self.reload_renderers()
+
+	def variants(self, track: TrackClass | None) -> list[LyricVariant]:
+		"""All lyrics of a track, base first within each language."""
+		if track is None:
+			return []
+		extras = self.extras_for(track)
+		cached = self.merged.get(track.index)
+		if cached is not None and cached[0] is track.lyrics and cached[1] is track.synced and cached[2] is extras:
+			return cached[3]
+		synced = track.synced
+		if not synced and track.lyrics and lyrics_are_synced(track.lyrics):
+			synced = track.lyrics
+		merged = merge_variants(synced, track.lyrics, extras)
+		if len(self.merged) > 64:
+			self.merged.clear()
+		self.merged[track.index] = (track.lyrics, track.synced, extras, merged)
+		return merged
+
+	def selected(self, track: TrackClass | None, synced: bool) -> LyricVariant | None:
+		return choose_variant(self.variants(track), synced, self.prefs.lyrics_language)
+
+	def plain_text(self, track: TrackClass | None) -> str:
+		"""The static lyrics to show for a track."""
+		if track is None:
+			return ""
+		variant = self.selected(track, False)
+		if variant is None or variant.base:
+			return track.lyrics
+		return variant.text
+
+	def synced_lines(self, track: TrackClass) -> list[str] | None:
+		"""The LRC lines to show for a track, or None."""
+		variant = self.selected(track, True)
+		if variant is None or variant.base:
+			return find_synced_lyric_data(track)
+		return variant.text.splitlines()
+
+	def shows_synced(self, track: TrackClass | None) -> bool:
+		"""Whether lyrics views show synced lyrics for a track: when preferred,
+		or as the fallback when there are no plain ones."""
+		if track is None:
+			return False
+		return bool(
+			(self.prefs.prefer_synced_lyrics or not self.plain_text(track))
+			and self.tauon.timed_lyrics_ren.generate(track))
+
+	def has_lyrics(self, track: TrackClass | None) -> bool:
+		return track is not None and bool(self.plain_text(track) or self.tauon.timed_lyrics_ren.generate(track))
+
+	def select(self, variant: LyricVariant) -> None:
+		"""Pick a variant; it becomes the preference for later tracks too."""
+		self.prefs.prefer_synced_lyrics = variant.synced
+		self.prefs.lyrics_language = variant.key
+		self.reload_renderers()
+
+	def reload_renderers(self) -> None:
+		tauon = self.tauon
+		tauon.lyrics_ren_mini.to_reload = True
+		tauon.lyrics_ren_mini.index = -1
+		tauon.lyrics_ren.index = -1
+		tauon.timed_lyrics_ren.index = -1
+		tauon.mini_lyrics.source_key = None
+		self.gui.request_frame()
+
+
+class LyricSwitcher:
+	"""Lyrics picker in the top right of a lyrics view, shown when the track has
+	more than one variant. The selected chip is solid, the others are outlined;
+	synced variants carry a small three-line mark. When no variant has a
+	language or other label, the chips are icons only: the synced mark, or
+	three even lines for plain.
+
+	Call begin() before drawing the lyrics, so it takes clicks first, and end()
+	after, so it paints on top.
+	"""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.ddt = tauon.ddt
+		self.gui = tauon.gui
+		self.inp = tauon.inp
+		self.coll = tauon.coll
+		self.fields = tauon.fields
+		self.colours = tauon.colours
+		self.font = 211
+		self.layout: list[tuple[tuple[int, int, int, int], LyricVariant, bool]] = []
+		self.bg: ColourRGBA | None = None
+		self.icons_only = False
+
+	def label(self, variant: LyricVariant) -> str:
+		return variant.label or (_("Synced") if variant.synced else _("Plain"))
+
+	def begin(
+		self, track: TrackClass | None, rect: tuple[float, float, float, float], showing_synced: bool,
+		bg: ColourRGBA, inset_right: float = 0, inset_top: float = 0,
+	) -> int:
+		"""Lay out and take clicks. Returns the height used from the top of rect,
+		for views that keep their text clear of the chips, or 0 when hidden."""
+		self.layout = []
+		self.bg = bg
+		self.icons_only = False
+		if track is None:
+			return 0
+		variants = self.tauon.lyric_variants.variants(track)
+		if len(variants) < 2:
+			return 0
+		# Choose from this list; the store's list can be replaced by a finished scan
+		active = choose_variant(variants, showing_synced, self.tauon.prefs.lyrics_language)
+
+		s = self.gui.scale
+		pad = round(7 * s)
+		mark = round(10 * s)
+		seg_h = round(18 * s)
+		gap = round(3 * s)
+		margin = round(8 * s)
+		x, y, w, _h = (round(v) for v in rect)
+		right = x + w - round(6 * s) - round(inset_right)
+		top = y + margin + round(inset_top)
+		avail = max(seg_h, right - x - margin)
+		self.icons_only = not any(variant.label for variant in variants)
+
+		# Right to left, starting a new row below only if the view is too narrow for one
+		row_x = right
+		row_y = top
+		for variant in variants:
+			if self.icons_only:
+				seg_w = round(24 * s)
+			else:
+				seg_w = min(avail, self.ddt.get_text_w(self.label(variant), self.font) + pad * 2 + (mark if variant.synced else 0))
+			if row_x != right and row_x - seg_w < right - avail:
+				row_x = right
+				row_y += seg_h + gap
+			seg = (row_x - seg_w, row_y, seg_w, seg_h)
+			self.layout.append((seg, variant, variant is active))
+			self.fields.add(seg)
+			row_x -= seg_w + gap
+		self.layout.reverse()
+
+		if self.inp.mouse_click:
+			for seg, variant, selected in self.layout:
+				if self.coll(seg):
+					self.inp.mouse_click = False
+					if not selected:
+						self.tauon.lyric_variants.select(variant)
+					self.gui.request_frame()
+					break
+		return row_y + seg_h + round(6 * s) - y
+
+	def icon(self, x: int, cy: int, synced: bool, selected: bool, colour: ColourRGBA, fill: ColourRGBA, size: int) -> None:
+		"""Three lyric lines. Synced: uneven, the middle one lit like a synced view. Plain: even."""
+		s = self.gui.scale
+		bar_h = max(1, round(1.5 * s))
+		step = round(3.5 * s)
+		y = cy - step - bar_h // 2
+		if not synced:
+			for i in range(3):
+				self.ddt.rect((x, y + step * i, size, bar_h), colour)
+			return
+		dim = alpha_blend(ColourRGBA(colour.r, colour.g, colour.b, 120), fill)
+		self.ddt.rect((x, y, round(size * 0.7), bar_h), dim)
+		self.ddt.rect((x, y + step, size, bar_h), self.colours.active_lyric if selected else colour)
+		self.ddt.rect((x, y + step * 2, round(size * 0.55), bar_h), dim)
+
+	def end(self) -> None:
+		if not self.layout or self.bg is None:
+			return
+		s = self.gui.scale
+		bg = self.bg
+		text = self.colours.lyrics
+		line = max(1, round(s))
+		pad = round(7 * s)
+		for seg, variant, selected in self.layout:
+			x, y, w, h = seg
+			hover = self.coll(seg)
+			if selected:
+				fill = alpha_blend(ColourRGBA(text.r, text.g, text.b, 70 if hover else 55), bg)
+				border = fill
+				colour = text
+			else:
+				fill = alpha_blend(ColourRGBA(text.r, text.g, text.b, 18), bg) if hover else bg
+				border = alpha_blend(ColourRGBA(text.r, text.g, text.b, 110 if hover else 75), bg)
+				colour = text if hover else alpha_blend(ColourRGBA(text.r, text.g, text.b, 160), fill)
+			self.ddt.bordered_rect((x + line, y + line, w - line * 2, h - line * 2), fill, border, line)
+
+			if self.icons_only:
+				self.icon(x + (w - round(8 * s)) // 2, y + h // 2, variant.synced, selected, colour, fill, round(8 * s))
+				continue
+			tx = x + pad
+			if variant.synced:
+				self.icon(tx - round(1 * s), y + h // 2, True, selected, colour, fill, round(7 * s))
+				tx += round(10 * s)
+			ty = y + (h - round(15 * s)) // 2 - round(1 * s)
+			self.ddt.text((tx, ty), self.label(variant), colour, self.font, max_w=x + w - tx - pad + round(2 * s), bg=fill)
+
 
 class MiniLyrics:
 	"""Lyrics drawer under the mini mode layouts."""
@@ -25211,6 +25504,7 @@ class MiniLyrics:
 		self.last_scroll_rect: tuple[int, int, int, int] | None = None
 
 		self.source_key: tuple | None = None
+		self.track: TrackClass | None = None
 		self.synced = False
 		self.entries: list[tuple[float | None, str]] = []
 
@@ -25270,6 +25564,7 @@ class MiniLyrics:
 		key = None
 		if track is not None:
 			key = (track.index, self.prefs.prefer_synced_lyrics, len(track.lyrics or ""), len(track.synced or ""))
+		self.track = track
 		if key == self.source_key:
 			return
 		self.source_key = key
@@ -25283,11 +25578,12 @@ class MiniLyrics:
 			return
 
 		timed = self.tauon.timed_lyrics_ren
-		if (self.prefs.prefer_synced_lyrics or not track.lyrics) and timed.generate(track):
+		plain = self.tauon.lyric_variants.plain_text(track)
+		if (self.prefs.prefer_synced_lyrics or not plain) and timed.generate(track):
 			self.synced = True
 			self.entries = list(timed.data)
-		elif track.lyrics:
-			lines = strip_lrc_formatting(track.lyrics).strip("\n").splitlines()
+		elif plain:
+			lines = strip_lrc_formatting(plain).strip("\n").splitlines()
 			self.entries = [(None, line.rstrip()) for line in lines]
 
 	def active_index(self) -> int:
@@ -25365,9 +25661,15 @@ class MiniLyrics:
 		if not self.entries or w < 1 or h < 1:
 			return
 		scale = self.gui.scale
+		font = self.tauon.lyric_font(font)
 		self._layout(font, text_w, gap)
 		self.scroll_rect = (x, y, w, h)
 		self.hit_rects.append(self.scroll_rect)
+		switcher = self.tauon.lyric_switcher
+		reserved = switcher.begin(self.track, (x, y, w, h), self.synced, bg)
+		if reserved:
+			y += reserved
+			h = max(1, h - reserved)
 
 		active = self.active_index()
 		if self.synced:
@@ -25427,6 +25729,7 @@ class MiniLyrics:
 			if self.synced and self.inp.mouse_click and self.coll(self.scroll_rect) and self.coll((x, entry_y, w, entry_h)):
 				clicked = i
 		sdl3.set_render_clip_rect(self.tauon.renderer, None)
+		switcher.end()
 
 		if clicked is not None and self.pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
 			self.inp.mouse_click = False
@@ -48350,6 +48653,10 @@ class MetaBox:
 				self.gui.force_showcase_index = -1
 				self.showcase_menu.activate(track)
 
+		switcher = self.tauon.lyric_switcher
+		reserved = switcher.begin(track, (x, y, w, h), False, bg, inset_right=5 * self.gui.scale)
+		text_top = max(round(13 * self.gui.scale), reserved)
+
 		# Test for scroll wheel input
 		scroll_area = (x + 10, y, w - 10, h)
 		lp = self.lyrics_ren_mini.lyrics_position
@@ -48361,12 +48668,15 @@ class MetaBox:
 
 			self.gui.request_frame()
 
-		tw, th = self.ddt.get_text_wh(track.lyrics + "\n", 15, w - 50 * self.gui.scale, True)
+		tw, th = self.ddt.get_text_wh(
+			strip_lrc_formatting(self.tauon.lyric_variants.plain_text(track)) + "\n",
+			self.tauon.lyric_font(self.prefs.lyrics_font_size), w - 50 * self.gui.scale, True)
 
 		oth = th
 
 		th -= h
 		th += 25 * self.gui.scale  # Empty space buffer at end
+		th += text_top - round(13 * self.gui.scale)
 
 		if self.lyrics_ren_mini.lyrics_position * -1 > th:
 			self.lyrics_ren_mini.lyrics_position = th * -1
@@ -48391,11 +48701,11 @@ class MetaBox:
 		# lines would show through the album art box
 		# The annotations say int, but the panel geometry arrives scaled
 		# (gui.rspw is a float), so these do need rounding
-		clip = sdl3.Rect(round(x), round(y), round(w), round(h))  # noqa: RUF057
+		clip = sdl3.Rect(round(x), round(y + reserved), round(w), max(1, round(h - reserved)))  # noqa: RUF057
 		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		self.lyrics_ren_mini.render(
 			self.pctl.track_queue[self.pctl.queue_step], x + margin,
-			y + self.lyrics_ren_mini.lyrics_position + 13 * self.gui.scale,
+			y + self.lyrics_ren_mini.lyrics_position + text_top,
 			w - 50 * self.gui.scale,
 			None, 0)
 		sdl3.set_render_clip_rect(self.tauon.renderer, None)
@@ -48403,6 +48713,7 @@ class MetaBox:
 		self.ddt.rect((x, y + h - 1, w, 1), self.colours.lyrics_panel_background)
 
 		self.tauon.lyric_side_top_pulse.render(x, y, w - round(17 * self.gui.scale), 16 * self.gui.scale)
+		switcher.end()
 		self.tauon.lyric_side_bottom_pulse.render(x, y + h, w - round(17 * self.gui.scale), 15 * self.gui.scale, bottom=True)
 
 	def draw(self, x: int, y: int, w: int, h: int, track: TrackClass | None=None, lyrics_ui: bool = True) -> None:
@@ -52513,8 +52824,12 @@ class Showcase:
 			timed_ready = False
 			if True and self.prefs.show_lyrics_showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
+			plain_lyrics = self.tauon.lyric_variants.plain_text(track)
+			lyrics_margin = round(24 * self.gui.scale)
+			lyrics_rect = (gcx, self.gui.panelY, self.window_size[0] - gcx, self.window_size[1] - self.gui.panelY - self.gui.panelBY)
+			switcher = self.tauon.lyric_switcher
 
-			if timed_ready and track.lyrics:
+			if timed_ready and plain_lyrics:
 				# if not self.prefs.guitar_chords or self.guitar_chords.test_ready_status(track) != 1:
 				# 	line = _("Prefer synced")
 				# 	if self.prefs.prefer_synced_lyrics:
@@ -52534,10 +52849,12 @@ class Showcase:
 						background_highlight_colour=bfg):
 						self.guitar_chords.auto_scroll = True
 			elif True and self.prefs.show_lyrics_showcase and timed_ready:
-				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
+				w = self.window_size[0] - gcx - lyrics_margin
 				h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
+				switcher.begin(track, lyrics_rect, True, self.colours.lyrics_panel_background, inset_right=lyrics_margin - 8 * self.gui.scale)
 				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w, h=h)
-			elif track.lyrics == "" or not self.prefs.show_lyrics_showcase:
+				switcher.end()
+			elif not plain_lyrics or not self.prefs.show_lyrics_showcase:
 				w = self.window_size[0] - (x + box) - round(30 * self.gui.scale)
 				x = int(x + box + (self.window_size[0] - x - box) / 2)
 
@@ -52572,7 +52889,8 @@ class Showcase:
 			else:
 				x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 				x -= 100 * self.gui.scale
-				w = self.window_size[0] - x - 30 * self.gui.scale
+				w = self.window_size[0] - x - lyrics_margin
+				switcher.begin(track, lyrics_rect, False, self.colours.lyrics_panel_background, inset_right=lyrics_margin - 8 * self.gui.scale)
 
 				if self.inp.key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
 					self.lyrics_ren.lyrics_position += 35 * self.gui.scale
@@ -52580,7 +52898,7 @@ class Showcase:
 					self.lyrics_ren.lyrics_position -= 35 * self.gui.scale
 
 				self.lyrics_ren.test_update(track)
-				tw, th = self.ddt.get_text_wh(self.lyrics_ren.text + "\n", 17, w, True)
+				tw, th = self.ddt.get_text_wh(self.lyrics_ren.text + "\n", self.tauon.lyric_font(17), w, True)
 
 				self.lyrics_ren.lyrics_position = max(self.lyrics_ren.lyrics_position, th * -1 + 100 * self.gui.scale)
 				self.lyrics_ren.lyrics_position = min(self.lyrics_ren.lyrics_position, 70 * self.gui.scale)
@@ -52591,6 +52909,7 @@ class Showcase:
 					w,
 					int(self.window_size[1] - 100 * self.gui.scale),
 					0)
+				switcher.end()
 
 		self.ddt.alpha_bg = False
 		self.ddt.force_gray = False
@@ -60324,6 +60643,16 @@ def main(holder: Holder) -> None:
 				search_dia_string_cache = {}
 			if len(save) > 211 and save[211] is not None:
 				prefs.banned_folders = set(save[211])
+			if len(save) > 212 and save[212] is not None:
+				prefs.prefer_synced_lyrics = save[212]
+			if len(save) > 213 and save[213] is not None:
+				prefs.lyrics_language = save[213]
+			if len(save) > 214 and save[214] is not None:
+				# Out of range means a percent from a dev build
+				size = int(save[214])
+				prefs.lyrics_text_size = size if LYRICS_TEXT_SIZE_MIN <= size <= LYRICS_TEXT_SIZE_MAX else 0
+			if len(save) > 215 and save[215] is not None:
+				prefs.lyrics_centre = save[215]
 
 			del save
 			state_loaded = True
@@ -61279,6 +61608,13 @@ def main(holder: Holder) -> None:
 
 	tauon.cancel_menu.add(MenuItem(_("Cancel"), tauon.cancel_import))
 
+	def add_lyrics_text_items(menu: Menu) -> None:
+		"""Text size and alignment for the lyrics views"""
+		menu.add_incrementor(
+			_("Text Size"), tauon.lyrics_text_size_get,
+			lambda _ref=None: tauon.lyrics_text_size_step(-1), lambda _ref=None: tauon.lyrics_text_size_step(1))
+		menu.add(MenuItem(_("Centre Lyrics"), tauon.toggle_lyrics_centre, pass_ref=True, check_test=lambda: tauon.prefs.lyrics_centre))
+
 	def add_showcase_lyrics_items(menu: Menu) -> None:
 		"""Add the shared lyrics items (fresh MenuItems per menu)"""
 		menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
@@ -61290,6 +61626,7 @@ def main(holder: Holder) -> None:
 			check_test=tauon.toggle_lyrics_check))
 		menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
 			check_test=lambda: tauon.prefs.prefer_synced_lyrics))
+		add_lyrics_text_items(menu)
 		menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 		misc_sub = menu.sub_number
 		menu.add_sub(_("Misc…"), 150)
@@ -61327,6 +61664,7 @@ def main(holder: Holder) -> None:
 		check_test=tauon.toggle_lyrics_check))
 	center_info_menu.add(MenuItem(_("Prefer Synced Lyrics"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
 		check_test=lambda: tauon.prefs.prefer_synced_lyrics))
+	add_lyrics_text_items(center_info_menu)
 	center_info_menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 
 	center_info_menu.add_sub(_("Misc…"), 150)
@@ -66359,20 +66697,11 @@ def main(holder: Holder) -> None:
 									window_size[1] - gui.panelY - gui.panelBY,
 								)
 							):
-								if (target_track and target_track.lyrics and prefs.show_lyrics_side) or (
-									prefs.show_lyrics_side
-									and prefs.prefer_synced_lyrics
-									and target_track is not None
-									and tauon.timed_lyrics_ren.generate(target_track)
-								):
+								if prefs.show_lyrics_side and tauon.lyric_variants.has_lyrics(target_track):
 									prefs.show_lyrics_side ^= True
 									prefs.side_panel_layout = 1
 								elif prefs.side_panel_layout == 0:
-									if (target_track and target_track.lyrics and not prefs.show_lyrics_side) or (
-										prefs.prefer_synced_lyrics
-										and target_track is not None
-										and tauon.timed_lyrics_ren.generate(target_track)
-									):
+									if tauon.lyric_variants.has_lyrics(target_track):
 										prefs.show_lyrics_side = True
 										prefs.side_panel_layout = 1
 									else:
@@ -66380,12 +66709,7 @@ def main(holder: Holder) -> None:
 								else:
 									prefs.side_panel_layout = 0
 
-						if (
-							prefs.show_lyrics_side
-							and prefs.prefer_synced_lyrics
-							and target_track is not None
-							and tauon.timed_lyrics_ren.generate(target_track)
-						):
+						if prefs.show_lyrics_side and tauon.lyric_variants.shows_synced(target_track):
 							if prefs.show_side_lyrics_art_panel:
 								gui.l_panel_h = round(200 * gui.scale)
 								gui.l_panel_y = window_size[1] - (gui.panelBY + gui.l_panel_h)
@@ -66433,7 +66757,7 @@ def main(holder: Holder) -> None:
 						elif (
 							prefs.show_lyrics_side
 							and target_track is not None
-							and target_track.lyrics
+							and tauon.lyric_variants.plain_text(target_track)
 							and gui.rspw > 192 * gui.scale
 						):
 							if prefs.show_side_lyrics_art_panel:

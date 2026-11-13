@@ -224,6 +224,9 @@ class Prefs:
 
 	guitar_chords: bool = False
 	prefer_synced_lyrics: bool = True
+	lyrics_language: str = ""  # Key of the last lyric variant picked in the switcher
+	lyrics_text_size: int = 0  # Points added to the lyrics fonts
+	lyrics_centre: bool = False
 	sync_lyrics_time_offset: int = -150  # in milliseconds
 
 	playback_follow_cursor: bool = False
