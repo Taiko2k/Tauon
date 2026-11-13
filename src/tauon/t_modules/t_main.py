@@ -41049,7 +41049,11 @@ class StandardPlaylist:
 							year = d_date_display(tr)
 						date = "(" + year + ")"
 
-					if line.endswith(")"):
+					# Left align always shows the tag date, so only strip the title's bracketed year when that date is shown
+					left_aligned = prefs.row_title_format == 2
+					if left_aligned and not date:
+						pass
+					elif line.endswith(")"):
 						b = line.split("(")
 						if len(b) > 1 and len(b[1]) <= 11:
 
@@ -41057,7 +41061,8 @@ class StandardPlaylist:
 
 							if match:
 								line = b[0]
-								date = "(" + b[1]
+								if not left_aligned:
+									date = "(" + b[1]
 					elif line.startswith("("):
 						b = line.split(")")
 						if len(b) > 1 and len(b[0]) <= 11:
@@ -41066,9 +41071,12 @@ class StandardPlaylist:
 
 							if match:
 								line = b[1]
-								date = b[0] + ")"
+								if not left_aligned:
+									date = b[0] + ")"
 
-					if "(" in line and year_search.search(line):
+					if left_aligned:
+						line = line.strip()
+					elif "(" in line and year_search.search(line):
 						date = ""
 
 				line = line.replace(" - ", separator)
