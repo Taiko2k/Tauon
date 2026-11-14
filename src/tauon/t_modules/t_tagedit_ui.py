@@ -7,6 +7,7 @@ from __future__ import annotations
 import copy
 import io
 import logging
+import os
 import threading
 from dataclasses import dataclass, replace
 from functools import partial
@@ -127,6 +128,9 @@ class TransEditBox:
 		self.lookup_album = 0
 		self.lookup_scroll = 0
 		self.lookup_dragging = False
+		self.rename_scroll = 0
+		self.rename_cache: tuple[tuple, list[tuple[TrackClass, str, str]]] | None = None
+		self.path_cache: tuple[int, list[Path]] | None = None
 
 	def activate(self) -> None:
 		if self.gui.write_tag_in_progress:
@@ -181,6 +185,9 @@ class TransEditBox:
 		self.main_page = 0
 		self.row_key = None
 		self.row_page = 0
+		self.rename_scroll = 0
+		self.rename_cache = None
+		self.path_cache = None
 		self.new_key.clear()
 		self.key_active = False
 		self.active = True
@@ -219,6 +226,7 @@ class TransEditBox:
 		if completed is None:
 			return
 		self.session, error = completed
+		self.rename_cache = self.path_cache = None
 		self.loading = False
 		if error is not None:
 			self._close()
@@ -760,6 +768,7 @@ class TransEditBox:
 			selected = self.session.selected_document
 			self.session = TagEditSession([track.fullpath for track in self.tracks])
 			self.session.selected_document = selected
+			self.rename_cache = self.path_cache = None
 			self.lookup_results = None
 			self.art_index = None
 			self._load_fields()
@@ -1956,11 +1965,227 @@ class TransEditBox:
 			if self._rollback_button(x, y + height + round(4 * self.gui.scale)):
 				self._rollback_field(self.row_key)
 
+	# -- Rename tab --
+
+	def _track_paths(self) -> list[Path]:
+		"""Resolved file path of each editor track, matching the session's document paths."""
+		if self.path_cache is None or self.path_cache[0] != id(self.session):
+			self.path_cache = (id(self.session), [Path(track.fullpath).resolve() for track in self.tracks])
+		return self.path_cache[1]
+
+	def _rename_rows(self, template: str) -> list[tuple[TrackClass, str, str]]:
+		"""(track, new name, problem) for each file in the current scope. A row with a problem is skipped."""
+		from tauon.t_modules.t_main import parse_template2  # noqa: PLC0415
+
+		key = (template, id(self.session), self.session.selected_document)
+		if self.rename_cache is not None and self.rename_cache[0] == key:
+			return self.rename_cache[1]
+		scope = {doc.path for doc in self.session.scope_documents}
+		rows = []
+		taken: set[tuple[str, str]] = set()
+		for track, path in zip(self.tracks, self._track_paths(), strict=True):
+			if path not in scope:
+				continue
+			folder = os.path.dirname(track.fullpath)
+			problem = ""
+			try:
+				after = parse_template2(template, track, strict=True)
+			except AssertionError:
+				after = parse_template2(template, track)
+				problem = _("Missing tag")
+			if not problem:
+				target = os.path.join(folder, after)
+				if not os.path.splitext(after)[0]:
+					problem = _("No filename")
+				elif (folder, after.casefold()) in taken:
+					problem = _("Same name as another file")
+				elif after != track.filename and os.path.exists(target) and not os.path.samefile(target, track.fullpath):
+					problem = _("File already exists")
+			taken.add((folder, after.casefold()))
+			rows.append((track, after, problem))
+		self.rename_cache = (key, rows)
+		return rows
+
+	def rename_files(self) -> None:
+		"""Renames the files in the current scope from the template."""
+		from tauon.t_modules.t_enums import PlayingState  # noqa: PLC0415
+
+		if self.gui.write_tag_in_progress or self.lookup_running or self._changes_pending():
+			return
+		rows = [
+			(track, after) for track, after, problem in self._rename_rows(self.tauon.rename_files.text)
+			if not problem and after != track.filename
+		]
+		if not rows:
+			return
+		pctl = self.pctl
+		star_store = self.tauon.star_store
+		pre_state = 0
+		done = 0
+		for track, after in rows:
+			if (
+				pctl.playing_state != PlayingState.STOPPED
+				and 0 <= pctl.queue_step < len(pctl.track_queue)
+				and track.index == pctl.track_queue[pctl.queue_step]
+			):
+				pre_state = pctl.stop(True)
+			star = star_store.full_get(track.index)
+			star_key = star_store.key(track.index)
+			new_path = os.path.join(os.path.dirname(track.fullpath), after)
+			try:
+				os.rename(track.fullpath, new_path)
+			except OSError:
+				logging.exception("Could not rename %s", track.fullpath)
+				continue
+			track.fullpath = new_path
+			track.filename = after
+			for cache in (
+				self.tauon.search_string_cache,
+				self.tauon.search_dia_string_cache,
+				self.tauon.search_field_cache,
+				self.tauon.search_dia_field_cache,
+			):
+				cache.pop(track.index, None)
+			if star is not None:
+				star_store.db.pop(star_key, None)
+				star_store.insert(track.index, star)
+			done += 1
+		if pre_state == 1:
+			pctl.revert()
+		pctl.notify_database_changed()
+		self.tauon.bg_save()
+		self.gui.request_tracklist_redraw()
+		# The session reads files by path, so reopen it at the new names
+		selected = self.session.selected_document
+		try:
+			self.session = TagEditSession([track.fullpath for track in self.tracks])
+			self.session.selected_document = selected
+			self.rename_cache = self.path_cache = None
+			self._load_fields()
+		except Exception as error:
+			logging.exception("Could not reload tags after renaming")
+			self._close()
+			self.show_message(_("Files renamed, but the tag editor could not reload them"), str(error), mode="error")
+			return
+		mode = "done" if done == len(rows) else "warning"
+		self.show_message(
+			_("Rename complete."), _("{N} / {T} filenames were written.").format(N=done, T=len(rows)), mode=mode)
+		# The button's click is already consumed, so skip the dismiss guard
+		self.tauon.message_box_min_timer.force_set(2)
+
+	def _rename(self, x: int, y: int, width: int, height: int) -> None:
+		from tauon.t_modules.t_main import unique_template  # noqa: PLC0415
+
+		scale = self.gui.scale
+		bg = self.colours.box_background
+		warn_colour = ColourRGBA(245, 90, 90, 255)
+		box = self.tauon.rename_files
+		default = self.tauon.prefs.rename_tracks_template
+		bottom = y + height
+
+		self.ddt.text((x, y), _("Filename template"), self.label_colour, 11, max_w=width, bg=bg)
+		y += round(16 * scale)
+		button_width = round(80 * scale)
+		input_height = round(23 * scale)
+		input_width = width - button_width - round(8 * scale)
+		rect = (x, y, input_width, input_height)
+		self.fields.add(rect)
+		self.ddt.bordered_rect(rect, bg, self.colours.box_text_border, max(1, round(scale)))
+		box.draw(
+			x + round(4 * scale), y + round(4 * scale), self.input_colour,
+			active=self.input_enabled, width=input_width - round(8 * scale))
+		if box.text != default and self.draw.button(
+			_("Default"), x + input_width + round(8 * scale), y, w=button_width, h=input_height,
+			press=self.input_enabled and self.inp.mouse_click,
+		):
+			box.set_text(default)
+			self.inp.mouse_click = False
+		y += input_height + round(5 * scale)
+		self.ddt.text(
+			(x, y),
+			_("<tn> track number, <artist>, <albumartist>, <title>, <album>, <date>, <genre>, <ext>"),
+			self.label_colour, 11, max_w=width, bg=bg)
+		y += round(26 * scale)
+
+		template = box.text
+		rows = self._rename_rows(template)
+		column = x + width // 2
+		self.ddt.text((x, y), _("Current name"), self.label_colour, 11, max_w=width // 2, bg=bg)
+		self.ddt.text((column, y), _("New name"), self.label_colour, 11, max_w=width // 2, bg=bg)
+		y += round(18 * scale)
+
+		list_bottom = bottom - round(74 * scale)
+		row_height = round(21 * scale)
+		visible = max(1, (list_bottom - y) // row_height)
+		list_rect = (x, y, width, visible * row_height)
+		if self.input_enabled and self.inp.mouse_wheel and self.coll(list_rect):
+			self.rename_scroll -= int(self.inp.mouse_wheel)
+			self.inp.mouse_wheel = 0
+		self.rename_scroll = max(0, min(self.rename_scroll, len(rows) - visible))
+		for index, (track, after, problem) in enumerate(rows[self.rename_scroll : self.rename_scroll + visible]):
+			row_y = y + index * row_height
+			if (self.rename_scroll + index) % 2:
+				self.ddt.rect((x, row_y, width, row_height), self.colours.box_thumb_background)
+				row_bg = self.colours.box_thumb_background
+			else:
+				row_bg = bg
+			text_y = row_y + round(3 * scale)
+			self.ddt.text(
+				(x + round(4 * scale), text_y), track.filename, self.input_colour, 12,
+				max_w=width // 2 - round(10 * scale), bg=row_bg)
+			if problem:
+				self.ddt.text((x + width - round(4 * scale), text_y, 1), problem, warn_colour, 11, bg=row_bg)
+				problem_width = self.ddt.get_text_w(problem, 11) + round(10 * scale)
+				colour = warn_colour
+			else:
+				problem_width = 0
+				colour = self.label_colour if after == track.filename else self.input_colour
+			self.ddt.text(
+				(column, text_y), after, colour, 12,
+				max_w=width - width // 2 - problem_width - round(4 * scale), bg=row_bg)
+		if len(rows) > visible:
+			self.ddt.text(
+				(x + width, list_rect[1] - round(18 * scale), 1),
+				_("{A}–{B} of {N}").format(
+					A=self.rename_scroll + 1, B=min(len(rows), self.rename_scroll + visible), N=len(rows)),
+				self.label_colour, 11, bg=bg)
+
+		pending = self._changes_pending()
+		warnings = []
+		if pending:
+			warnings.append(_("Write the tag changes on the Main or Misc tab, or discard them, before renaming."))
+		if any(os.path.splitext(after)[1].lower() != os.path.splitext(track.filename)[1].lower() for track, after, _p in rows):
+			warnings.append(_("Warning: This may change the file extension"))
+		if not unique_template(template):
+			warnings.append(_("Warning: The filename might not be unique"))
+		skipped = sum(bool(problem) for _t, _a, problem in rows)
+		if skipped:
+			warnings.append(
+				_("1 file will be skipped") if skipped == 1 else _("{N} files will be skipped").format(N=skipped))
+		button_y = bottom - round(32 * scale)
+		warn_y = list_bottom + round(8 * scale)
+		for line in warnings[:4]:
+			self.ddt.text((x, warn_y), line, warn_colour, 11, max_w=width - round(170 * scale), bg=bg)
+			warn_y += round(16 * scale)
+
+		count = sum(not problem and after != track.filename for track, after, problem in rows)
+		label = _("Rename 1 file") if count == 1 else _("Rename {N} files").format(N=count)
+		enabled = bool(count) and not pending and self.input_enabled
+		if self.draw.button(
+			label, x + width - round(150 * scale), button_y, w=round(150 * scale), h=round(30 * scale),
+			text_colour=None if enabled else self.label_colour,
+			text_highlight_colour=None if enabled else self.label_colour,
+			press=enabled and self.inp.mouse_click,
+			tooltip=_("Renames the files in the current track scope"),
+		):
+			self.inp.mouse_click = False
+			self.rename_files()
+
 	def _tabs(self, x: int, y: int, width: int) -> None:
 		scale = self.gui.scale
-		tab_width = min(round(94 * scale), width // 2)
+		tab_width = min(round(94 * scale), width // 3)
 		self.ddt.rect((x, y + round(32 * scale), width, max(1, round(scale))), self.colours.box_text_border)
-		for index, label in enumerate((_("Main"), _("Misc"))):
+		for index, label in enumerate((_("Main"), _("Misc"), _("Rename"))):
 			rect = (x + index * tab_width, y, tab_width, round(32 * scale))
 			self.fields.add(rect)
 			background = self.colours.box_background
@@ -2185,8 +2410,11 @@ class TransEditBox:
 			enabled=self.input_enabled or menu_open, dim=False,
 		):
 			self.open_tools(x + width - round(16 * scale), y + round(95 * scale))
-		self._scope_selector(body_x, body_y - round(34 * scale), body_width - round(175 * scale), body_height)
-		if not self.lookup_running and self.draw.button(
+		renaming = self.tab == 2
+		scope_width = body_width if renaming else body_width - round(175 * scale)
+		self._scope_selector(body_x, body_y - round(34 * scale), scope_width, body_height)
+		# The Rename tab has its own button, so the tag actions are hidden there
+		if not renaming and not self.lookup_running and self.draw.button(
 			_("MusicBrainz Scan"),
 			x + width - round(180 * scale),
 			body_y - round(34 * scale),
@@ -2197,11 +2425,13 @@ class TransEditBox:
 			self.inp.mouse_click = False
 		if self.tab == 0:
 			self._main(body_x, body_y, body_width, body_height)
-		else:
+		elif self.tab == 1:
 			self._table(body_x, body_y, body_width, body_height)
+		else:
+			self._rename(body_x, body_y, body_width, body_height)
 		footer_y = y + height - round(54 * scale)
 		button_space = round(230 * scale)
-		if not self.lookup_running and self.draw.button(
+		if not renaming and not self.lookup_running and self.draw.button(
 			_("Write tags"),
 			x + width - round(230 * scale),
 			footer_y,

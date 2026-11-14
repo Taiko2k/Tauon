@@ -52,9 +52,6 @@ class Prefs:
 	allow_remote: bool = False
 	expose_web:   bool = True
 
-	show_rym:            bool = False
-	show_band:           bool = False
-	show_wiki:           bool = False
 	show_transfer:       bool = True
 	show_queue:          bool = True
 	prefer_bottom_title: bool = True
@@ -120,7 +117,6 @@ class Prefs:
 
 	show_gimage:      bool = False
 	end_setting:      str  = "stop"
-	show_gen:         bool = False
 	show_lyrics_side: bool = True
 
 	log_vol: bool = False

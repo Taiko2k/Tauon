@@ -13,6 +13,7 @@ Changelog
  - Added rating keybinds
  - Reworked server sync and library add
  - Reworked ratings
+ - Reworked track menus
  - Added transcode for remote servers
  - Fixed last.fm total count and scan speed
  - Fixed last.fm loves for multi-artist tracks
