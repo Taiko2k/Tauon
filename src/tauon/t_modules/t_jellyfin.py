@@ -36,6 +36,7 @@ import requests
 
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, Timer, describe_error, describe_http_status, with_url_scheme
+from tauon.t_modules.t_net_art import read_body
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome, http_outcome
 from tauon.t_modules.t_server_sync import (
@@ -273,7 +274,7 @@ class Jellyfin(RemotePlaylistSource):
 
 		return base_url, params
 
-	def get_cover(self, track: TrackClass) -> BytesIO | None:
+	def get_cover(self, track: TrackClass, cancelled: Callable[[], bool] | None = None) -> BytesIO | None:
 		# Artwork loads in the background, so a server that can't be reached mustn't raise a message
 		if not self._ready():
 			return None
@@ -286,20 +287,32 @@ class Jellyfin(RemotePlaylistSource):
 			"X-Application": "Tauon/1.0",
 			"Authorization": self._get_jellyfin_auth(),
 		}
-		response = requests.get(f"{self.server_url}/Items/{track.art_url_key}/Images/Primary", headers=headers, timeout=10)
-		if response.status_code == HTTPStatus.OK:
-			return io.BytesIO(response.content)
+		status, data, text = self._get_image(track.art_url_key, headers, cancelled)
+		if data is not None:
+			return io.BytesIO(data)
 
 		# An embedded image Jellyfin never extracted 404s, so try the album's cover
-		if response.status_code == HTTPStatus.NOT_FOUND and track.art_url_key == track.url_key:
+		if status == HTTPStatus.NOT_FOUND and track.art_url_key == track.url_key:
 			album_id = self._album_cover_id(track.url_key, headers)
 			if album_id:
-				response = requests.get(f"{self.server_url}/Items/{album_id}/Images/Primary", headers=headers, timeout=10)
-				if response.status_code == HTTPStatus.OK:
-					return io.BytesIO(response.content)
+				status, data, text = self._get_image(album_id, headers, cancelled)
+				if data is not None:
+					return io.BytesIO(data)
 
-		logging.error(f"Jellyfin album art api error: {response.status_code} {response.text}")
+		logging.error(f"Jellyfin album art api error: {status} {text}")
 		return None
+
+	def _get_image(
+		self, item_id: str, headers: dict[str, str], cancelled: Callable[[], bool] | None,
+	) -> tuple[int, bytes | None, str]:
+		"""(status, image bytes or None, error text) for an item's primary image"""
+		response = requests.get(f"{self.server_url}/Items/{item_id}/Images/Primary", headers=headers, timeout=10, stream=True)
+		try:
+			if response.status_code == HTTPStatus.OK:
+				return response.status_code, read_body(response, cancelled), ""
+			return response.status_code, None, response.text
+		finally:
+			response.close()
 
 	def _album_cover_id(self, item_id: str, headers: dict[str, str]) -> str | None:
 		"""Album id of an item, if that album has a cover."""

@@ -311,6 +311,8 @@ class StreamFeeder:
 		self._prefetch_time = 0.0
 		self._prefetch_done: bool = False
 		self._prefetching: bool = False
+		# (generation, bytes fed, size) of the stream last fed, for current_audio_buffered()
+		self.fed_state: tuple[int, int, int] = (-1, 0, -1)
 		# Claimed prefetch (url, data, size, title) waiting for its stream to open
 		self._inject: tuple[str, bytes, int, str] | None = None
 		try:
@@ -962,6 +964,7 @@ class StreamFeeder:
 				pending = pending[fed:] if fed < len(pending) else b""
 				if size > 0:
 					self.pctl.buffering_percent = min(100, int(offset * 100 / size))
+				self.fed_state = (gen, offset, size)
 				# Enough of this track is safe; fetch the next one's start alongside
 				if self._buffered_ahead(offset, size) >= self.prefetch_trigger_ahead:
 					self._maybe_start_prefetch()
@@ -1903,17 +1906,41 @@ def player4(tauon: Tauon) -> None:
 					_("Couldn't play the station"), _("Check the address and your connection."), mode="warning")
 
 	def update_prefetch_target(opening: TrackClass | None = None) -> None:
-		"""Point the feeder at the track after the current one. Before a gapless
-		handover completes the queue hasn't moved on, so the track after the
-		current one can be the one opening; that is never worth prefetching."""
-		if not (feeder.enabled and prefs.network_stream):
+		"""Point the feeder and the network art at the track after the current one.
+		Before a gapless handover completes the queue hasn't moved on, so the track
+		after the current one can be the one opening; its audio is never worth
+		prefetching, but its art is wanted soon."""
+		feeding = feeder.enabled and prefs.network_stream
+		net_art = getattr(getattr(tauon, "album_art_gen", None), "net_art", None)
+		if not feeding and net_art is None:
 			return
 		try:
 			nxt = pctl.advance(dry=True)
 			track = pctl.get_track(nxt) if nxt is not None else None
-			feeder.set_prefetch(None if track is opening else track)
+			if net_art is not None:
+				net_art.set_prefetch(track, needed=(pctl.playing_object(), opening))
+			if feeding:
+				feeder.set_prefetch(None if track is opening else track)
 		except Exception:
 			logging.exception("Failed to set prefetch target")
+
+	def current_audio_buffered() -> bool:
+		"""Whether the loaded track's audio is safe enough to download other things
+		alongside: local or complete, or buffered as far ahead as the audio prefetch waits for"""
+		if loaded_track is None:
+			return False
+		if not loaded_track.is_network:
+			return True
+		ahead = feeder.prefetch_trigger_ahead
+		if loaded_track_streamed:
+			gen, offset, size = feeder.fed_state
+			if gen != aud.net_generation():
+				return False
+			return (size > 0 and offset >= size) or feeder._buffered_ahead(offset, size) >= ahead
+		if growing_unfinished:
+			percent = pctl.buffering_percent
+			return percent >= 100 or percent / 100 * pctl.playing_length - pctl.decode_time >= ahead
+		return True
 
 	def set_native_output_compressor() -> None:
 		compressor_wanted = output_compressor_wanted()
@@ -1975,6 +2002,11 @@ def player4(tauon: Tauon) -> None:
 			set_file_complete()
 			growing_unfinished = False
 			download_failed = cachement.failed_download is loaded_track
+
+		# The next track's art downloads once this one's audio is safe
+		net_art = getattr(getattr(tauon, "album_art_gen", None), "net_art", None)
+		if net_art is not None and net_art.gate_waiting() and current_audio_buffered():
+			net_art.open_gate()
 
 		# Level meter
 		apply_playback_speed()

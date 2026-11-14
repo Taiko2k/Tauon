@@ -254,6 +254,7 @@ from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
 from tauon.t_modules.t_locale import get_translation_languages  # noqa: E402
+from tauon.t_modules.t_net_art import PENDING, NetArtFetcher, read_body  # noqa: E402
 from tauon.t_modules.t_lyric_variants import (  # noqa: E402
 	LyricVariant,
 	choose_variant,
@@ -444,8 +445,6 @@ CJK_SEARCH_PATTERN = re.compile(
 LRC_TAG_PATTERN = re.compile(r"\[[^\]\n]*\]|<\d+:\d+(?:[.:]\d+)?>")
 # Bump when the persisted search strings change shape; older ones are dropped on load
 SEARCH_CACHE_FORMAT = 2
-# Seconds to leave a media server alone for artwork after it couldn't be reached
-NET_ART_SERVER_RETRY_S = 60
 
 try:
 	from tauon.t_modules.t_chrome import Chrome
@@ -27309,20 +27308,14 @@ class AlbumArt:
 		# What get_blur_im last loaded: 0 = album art, 1 = artist background
 		self.loaded_bg_type: int = 0
 
-		self.download_in_progress: bool = False
-		self.downloaded_image = None
-		self.downloaded_track = None
-
 		# State for display(async_hold=True), see display_async()
 		self.async_lock: threading.LockType = threading.Lock()
 		self.async_loads: dict[tuple, set] = {}      # (source, offset) -> requested boxes. One disk load per art
 		self.async_results: dict[tuple, tuple] = {}  # (source, offset, box) -> (frame BytesIOs, original size, format, frame delays, time)
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
-		self.net_art_failed: dict[str, float] = {}  # art_url_key -> monotonic time of last failed network fetch
-		# Media server -> monotonic time it last couldn't be reached. Local covers load on the
-		# same thread, so a server that's down mustn't cost a timeout for every album.
-		self.net_art_server_failed: dict[str, float] = {}
+		# Network art: one download per image, shared, plus the next track's art fetched ahead
+		self.net_art = NetArtFetcher(str(tauon.n_cache_directory), self.download_net_art, on_ready=self.gui.request_frame)
 
 		# Animated art playback. The clock is kept per source image rather than
 		# per cache unit, so the same art shown at two sizes stays in step and
@@ -27354,11 +27347,20 @@ class AlbumArt:
 		self.gui.request_tracklist_redraw()
 		self.gui.request_frame()
 
-	def async_download_image(self, track: TrackClass, subsource: list[tuple[int, str]]) -> None:
-		self.downloaded_image = self.get_source_raw(0, 0, track, subsource=subsource)
-		self.downloaded_track = track
-		self.download_in_progress = False
-		self.gui.request_frame()
+	def download_net_art(self, track: TrackClass, cancelled: Callable[[], bool]) -> bytes | None:
+		"""Download a network track's art for NetArtFetcher, checking cancelled as it reads"""
+		if track.file_ext == "SUB":
+			cover = self.tauon.subsonic.get_cover(track, cancelled)
+		elif track.file_ext == "JELY":
+			cover = self.tauon.jellyfin.get_cover(track, cancelled)
+		else:
+			url = self.tauon.get_network_thumbnail_url(track)
+			if not url:
+				return None
+			with requests.get(url, headers={"User-Agent": self.tauon.t_agent}, timeout=10, stream=True) as response:
+				response.raise_for_status()
+				return read_body(response, cancelled)
+		return cover.getvalue() if cover else None
 
 	def get_info(self, track_object: TrackClass) -> list[tuple[int, int, int, int, str]] | None:
 		sources = self.get_sources(track_object)
@@ -27684,51 +27686,16 @@ class AlbumArt:
 			assert pic
 			source_image = io.BytesIO(pic)
 		elif subsource[0] == 2:
-			fetching = False
 			try:
 				if track.file_ext == "RADIO" and self.pctl.radio_image_bin:
 					# Every consumer owns its stream. Gallery/export callers close
 					# sources, so returning the shared buffer made radio art vanish.
 					return io.BytesIO(self.pctl.radio_image_bin.getvalue())
-
-				cached_path = os.path.join(self.tauon.n_cache_directory, hashlib.md5(track.art_url_key.encode()).hexdigest()[:12])
-				if os.path.isfile(cached_path):
-					source_image = open(cached_path, "rb")
-				else:
-					# Negative cache: many thumbnail sizes can queue up for the same
-					# art, so a dead server would otherwise be hit once per size
-					last_fail = self.net_art_failed.get(track.art_url_key)
-					if last_fail is not None and time.monotonic() - last_fail < 120:
-						return None
-					server_fail = self.net_art_server_failed.get(track.file_ext)
-					if server_fail is not None and time.monotonic() - server_fail < NET_ART_SERVER_RETRY_S:
-						return None
-					fetching = True
-					if track.file_ext == "SUB":
-						source_image = self.tauon.subsonic.get_cover(track)
-					elif track.file_ext == "JELY":
-						source_image = self.tauon.jellyfin.get_cover(track)
-					else:
-						response = urllib.request.urlopen(
-							urllib.request.Request(
-								self.tauon.get_network_thumbnail_url(track), headers={"User-Agent": self.tauon.t_agent}),
-							context=self.tls_context)
-						source_image = io.BytesIO(response.read())
-					if source_image:
-						with Path(cached_path).open("wb") as file:
-							file.write(source_image.read())
-						source_image.seek(0)
-						self.net_art_failed.pop(track.art_url_key, None)
-						self.net_art_server_failed.pop(track.file_ext, None)
-					else:
-						self.net_art_failed[track.art_url_key] = time.monotonic()
-			except Exception as e:
-				if fetching:
-					self.net_art_failed[track.art_url_key] = time.monotonic()
-					if isinstance(e, (requests.ConnectionError, requests.Timeout, urllib.error.URLError, TimeoutError)):
-						# The server, not just this image: hold off the rest of its artwork for a while
-						logging.warning(f"Couldn't reach the server for artwork, trying again later: {e}")
-						self.net_art_server_failed[track.file_ext] = time.monotonic()
+				# Blocks; joins a download of the same art already going
+				path = self.net_art.fetch(track)
+				if path:
+					source_image = open(path, "rb")
+			except Exception:
 				logging.exception("Failed to get source")
 		else:
 			source_image = open(subsource[1], "rb")
@@ -28227,52 +28194,20 @@ class AlbumArt:
 				idea = self.prefs.encoder_output / encode_folder_name(track) / "cover.jpg"
 				if idea.is_file():
 					source_image = idea.open("rb")
+				elif in_worker or (track.file_ext == "RADIO" and self.pctl.radio_image_bin):
+					# Off the UI thread (or in memory): wait for the download, joining one already going
+					source_image = self.get_source_raw(0, 0, track, source[offset])
+					if source_image is None:
+						return None
 				else:
-					try:
-						# We want to download the image asynchronously as to not block the UI
-						if self.downloaded_image and self.downloaded_track == track:
-							source_image = self.downloaded_image
-
-						elif in_worker:
-							# Already off the UI thread, just download here
-							self.download_in_progress = True
-							try:
-								self.async_download_image(track, source[offset])
-							finally:
-								self.download_in_progress = False
-							if self.downloaded_track != track:
-								return None
-							assert self.downloaded_image
-							source_image = self.downloaded_image
-
-						elif self.download_in_progress:
-							return 0
-
-						else:
-							self.download_in_progress = True
-							shoot_dl = threading.Thread(
-								target=self.async_download_image,
-								args=([track, source[offset]]))
-							shoot_dl.daemon = True
-							shoot_dl.start()
-
-							# We'll block with a small timeout to avoid unwanted flashing between frames
-							s = 0
-							while self.download_in_progress:
-								s += 1
-								time.sleep(0.01)
-								if s > 20:  # 200 ms
-									break
-
-							if self.downloaded_track != track:
-								return None
-
-							assert self.downloaded_image
-							source_image = self.downloaded_image
-
-					except Exception:
-						logging.exception("IMAGE NETWORK LOAD ERROR")
-						raise
+					# On the UI thread: download on a thread, blocking only briefly
+					# so a quick download doesn't flash blank first
+					path = self.net_art.fetch(track, block=False, grace=0.2)
+					if path is PENDING:
+						return 0
+					if path is None:
+						return None
+					source_image = open(path, "rb")
 			else:
 				# source_image = open(source[offset][1], 'rb')
 				source_image = self.get_source_raw(0, 0, track, source[offset])
@@ -28295,9 +28230,6 @@ class AlbumArt:
 				logging.exception("Failed to convert image")
 				if theme_only:
 					source_image.close()
-					if source_image is self.downloaded_image:
-						self.downloaded_image = None
-						self.downloaded_track = None
 					return None
 				anim = None
 				im = Image.open(str(self.install_directory / "assets" / "load-error.png"))
@@ -28305,9 +28237,6 @@ class AlbumArt:
 
 			im.load()  # Force the full decode now so every source stream can be closed
 			source_image.close()
-			if source_image is self.downloaded_image:
-				self.downloaded_image = None
-				self.downloaded_track = None
 
 		except Exception:
 			logging.exception("Image load error")
@@ -28572,7 +28501,6 @@ class AlbumArt:
 		self.anim_clocks.clear()
 		self.image_cache.clear()
 		self.source_cache.clear()
-		self.downloaded_track = None
 
 		with self.async_lock:
 			self.async_loads.clear()  # In-flight workers see their job vanish and stop

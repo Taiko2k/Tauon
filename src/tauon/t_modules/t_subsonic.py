@@ -38,6 +38,7 @@ import requests
 from tauon.t_modules.t_db_state import allocate_track_id
 from tauon.t_modules.t_extra import StarRecord, short_text, with_url_scheme
 from tauon.t_modules.t_lyric_variants import LyricVariant, structured_lyric_variants
+from tauon.t_modules.t_net_art import read_body
 from tauon.t_modules.t_remote_playlists import RemotePlaylist, RemotePlaylistSource
 from tauon.t_modules.t_scrobble_queue import Outcome
 from tauon.t_modules.t_server_sync import (
@@ -51,6 +52,7 @@ from tauon.t_modules.t_server_sync import (
 )
 
 if TYPE_CHECKING:
+	from collections.abc import Callable
 	from io import BytesIO
 	from typing import Any
 
@@ -999,8 +1001,10 @@ class SubsonicService(RemotePlaylistSource):
 		thread.daemon = True
 		thread.start()
 
-	def get_cover(self, track_object: TrackClass) -> BytesIO:
-		response = self.r("getCoverArt", p={"id": track_object.art_url_key}, binary=True)
+	def get_cover(self, track_object: TrackClass, cancelled: Callable[[], bool] | None = None) -> BytesIO:
+		url, params = self.r("getCoverArt", p={"id": track_object.art_url_key}, get_url=True)
+		with requests.get(url, params=params, timeout=10, stream=True) as r:
+			response = read_body(r, cancelled)
 		try:
 			response.decode("utf-8")
 			raise ValueError(f"Expected binary data with an image but got a valid string: {response}")
