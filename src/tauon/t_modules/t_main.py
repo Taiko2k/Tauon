@@ -7793,7 +7793,8 @@ class GallClass:
 					if source is False:
 						order[0] = 0
 						self.gall[key] = order
-						# del self.queue[0]
+						# Callers may fall back to another track
+						self.gui.request_frame()
 						continue
 
 					img_name = str(key[2]) + "-" + str(size) + "-" + str(key[0].index) + "-" + str(c_offset)
@@ -7821,6 +7822,9 @@ class GallClass:
 					source_image = self.album_art_gen.get_source_raw(0, 0, key[0], subsource=source)
 				if source_image is None:
 					logging.debug(f"Image for {key[0].fullpath} not found")
+					order[0] = 0
+					self.gall[key] = order
+					self.gui.request_frame()
 					continue
 
 				g = io.BytesIO()
@@ -7884,6 +7888,12 @@ class GallClass:
 			self.i = 0
 			return True
 		return False
+
+	def art_missing(self, track: TrackClass, size: int) -> bool:
+		"""True once a thumbnail lookup for this track has found no usable art."""
+		offset = self.folder_image_offsets.get(track.parent_folder_path, 0)
+		order = self.gall.get((track, round(size), offset))
+		return order is not None and order[0] == 0
 
 	def render(
 			self,
@@ -46211,7 +46221,8 @@ class ArtistList:
 		self.hover_on = "NONE"
 		self.hover_timer = Timer(10)
 
-		self.sample_tracks = {}
+		# One track per album folder, tried in order for fallback art
+		self.sample_tracks: dict[str, list[TrackClass]] = {}
 
 	def load_img(self, artist: str) -> None:
 		filepath = self.artist_info_box.get_data(artist, get_img_path=True)
@@ -46292,6 +46303,7 @@ class ArtistList:
 
 		all: list[str] = []
 		artist_parents = {}
+		samples: dict[str, list[TrackClass]] = {}
 		counts: dict[str, int] = {}
 		play_time = {}
 		filtered = 0
@@ -46323,10 +46335,6 @@ class ArtistList:
 							p = play_time.get(artist, 0)
 							play_time[artist] = p + pp
 
-						# Get a sample track for fallback art
-						if artist not in self.sample_tracks:
-							self.sample_tracks[artist] = track
-
 						# Confirm to final list if appeared at least 5 times
 						# if artist not in all:
 						if artist not in counts:
@@ -46340,10 +46348,13 @@ class ArtistList:
 
 						if artist not in artist_parents:
 							artist_parents[artist] = []
+							samples[artist] = []
 						if track.parent_folder_path not in artist_parents[artist]:
 							artist_parents[artist].append(track.parent_folder_path)
+							samples[artist].append(track)
 
 			current_album_counts = artist_parents
+			self.sample_tracks.update(samples)
 
 			if self.prefs.artist_list_sort_mode == "popular":
 				all.sort(key=counts.get, reverse=True)
@@ -46524,9 +46535,11 @@ class ArtistList:
 						rect.h -= round(diff)
 					self.tauon.style_overlay.hole_punches.append(rect)
 		if not drawn:
-			track = self.sample_tracks.get(artist)
-			if track:
-				self.tauon.gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
+			# First album with art; later ones are tried once earlier ones are known to have none
+			for track in self.sample_tracks.get(artist, ()):
+				if not self.tauon.gall_ren.art_missing(track, self.thumb_size):
+					self.tauon.gall_ren.render(track, (round(thumb_x), round(y)), self.thumb_size)
+					break
 
 		if thin_mode:
 			text = artist[:2].title()
