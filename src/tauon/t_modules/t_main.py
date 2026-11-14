@@ -27857,6 +27857,8 @@ class AlbumArt:
 		if im.mode != "RGB":
 			im = im.convert("RGB")
 		im.thumbnail(size, Image.Resampling.LANCZOS)
+		im.load()  # thumbnail is lazy when no resize is needed
+		source_image.close()
 		buff = io.BytesIO()
 		im.save(buff, format="JPEG")
 		sss = base64.b64encode(buff.getvalue())
@@ -27990,6 +27992,7 @@ class AlbumArt:
 		new_y = round(oy_size * ratio)
 
 		im = im.resize((new_x, new_y))
+		source_image.close()
 
 		if self.loaded_bg_type == 1:
 			artist = get_artist_safe(track)
@@ -28072,6 +28075,9 @@ class AlbumArt:
 				))
 
 			im = im.resize(size, Image.Resampling.LANCZOS)
+
+		im.load()  # thumbnail is lazy when no resize is needed
+		source_image.close()
 
 		if not save_path:
 			g = io.BytesIO()
