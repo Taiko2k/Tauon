@@ -254,7 +254,8 @@ from tauon.t_modules.t_guitar_chords import GuitarChords  # noqa: E402
 from tauon.t_modules.t_jellyfin import Jellyfin
 from tauon.t_modules.t_litterbox import LitterboxCache, get_uploaded_art_url  # noqa: E402
 from tauon.t_modules.t_locale import get_translation_languages  # noqa: E402
-from tauon.t_modules.t_net_art import PENDING, NetArtFetcher, read_body  # noqa: E402
+from tauon.t_modules.t_gallery_prefetch import GalleryPrefetch, album_is_singles, locate_scroll  # noqa: E402
+from tauon.t_modules.t_net_art import PENDING, NetArtFetcher, read_body, wants_net_art  # noqa: E402
 from tauon.t_modules.t_lyric_variants import (  # noqa: E402
 	LyricVariant,
 	choose_variant,
@@ -7650,6 +7651,11 @@ class GallClass:
 		self.frame_stamp: dict[tuple[TrackClass, int, int], int] = {}
 		# Keys drawn or handed out since new_frame(); never evicted mid-frame
 		self.frame_used: set[tuple[TrackClass, int, int]] = set()
+		self.pending = False  # something asked for this frame isn't ready yet
+		# Thumbnails wanted soon (the gallery prefetch), nearest first, made while
+		# nothing on screen waits; prepared holds those not drawn yet
+		self.prepare: list[tuple[TrackClass, int, int]] = []
+		self.prepared: set[tuple[TrackClass, int, int]] = set()
 
 	def new_frame(self) -> None:
 		"""Advance the wanted-stamp epoch. Called once at the start of each render pass.
@@ -7660,6 +7666,7 @@ class GallClass:
 		"""
 		self.frame += 1
 		self.frame_used.clear()
+		self.pending = False
 		if not self.frame % 600 and self.frame_stamp:
 			# Stamps for keys removed from the queue elsewhere (halt, cache
 			# clear, scroll trim) would otherwise linger forever
@@ -7739,7 +7746,8 @@ class GallClass:
 				source_image.close()
 				self.gui.request_frame()
 
-		while len(self.queue) > 0:
+		# What's on screen always goes first; prepared thumbnails one at a time between
+		while self.queue or self._queue_prepared():
 			source_image = None
 
 			if self.gui.halt_image_rendering:
@@ -7864,7 +7872,8 @@ class GallClass:
 				order = [2, g, None, None, edge_colour]
 				self.gall[key] = order
 
-				self.gui.request_frame()
+				if key not in self.prepared:  # made ahead: nothing to show yet
+					self.gui.request_frame()
 				if self.album_art_column_is_shown():
 					self.gui.request_tracklist_redraw()
 				if source_image:
@@ -7886,6 +7895,76 @@ class GallClass:
 
 		if self.i > 0:
 			self.i = 0
+			return True
+		return False
+
+	def key(self, track: TrackClass, size: int | None = None, force_offset: int | None = None) -> tuple[TrackClass, int, int]:
+		"""The cache key render() uses for track at size"""
+		size = round(self.size if size is None else size)
+		offset = self.folder_image_offsets.get(track.parent_folder_path, 0) if force_offset is None else force_offset
+		return track, size, offset
+
+	def _on_disk(self, key: tuple[TrackClass, int, int]) -> bool:
+		track, size, offset = key
+		folder_offset = self.folder_image_offsets.get(track.parent_folder_path, 0)
+		return bool(self.prefs.cache_gallery) and (
+			self.g_cache_directory / f"{offset}-{size}-{track.index}-{folder_offset}.jpg").is_file()
+
+	def has_thumb(self, key: tuple[TrackClass, int, int]) -> bool:
+		"""Whether render() could draw key without loading its art: in memory or in the disk cache"""
+		order = self.gall.get(key)
+		return (order is not None and order[0] >= 2) or self._on_disk(key)
+
+	def busy(self) -> bool:
+		"""Whether anything asked for on screen isn't ready yet"""
+		return self.pending or any(key not in self.prepared for key in self.queue)
+
+	def wake(self) -> None:
+		"""Let the worker thread run"""
+		if self.lock.locked():
+			try:
+				self.lock.release()
+			except RuntimeError:
+				pass  # released by another thread first
+
+	def set_prepare(self, keys: list[tuple[TrackClass, int, int]]) -> None:
+		"""Thumbnails to make ahead, nearest first, replacing the last list.
+		Ones made for an old list and never drawn are let go."""
+		wanted = set(keys)
+		for key in list(self.prepared):
+			if key in wanted:
+				continue
+			order = self.gall.get(key)
+			if order is not None and order[0] == 1:
+				continue  # being made; let go next time
+			if order is not None and order[0] == 2:
+				del self.gall[key]
+				order[1].close()
+			self.prepared.discard(key)
+		self.prepare = keys
+		if keys:
+			self.wake()
+
+	def art_ready(self) -> None:
+		"""Network art arrived; a prepare waiting on it can go on"""
+		if self.prepare:
+			self.wake()
+
+	def _queue_prepared(self) -> bool:
+		"""Queue the next thumbnail wanted soon whose art is at hand. Worker thread."""
+		if self.gui.halt_image_rendering:
+			return False
+		net_art = self.album_art_gen.net_art
+		for key in self.prepare:
+			if key in self.gall:
+				continue
+			track = key[0]
+			if wants_net_art(track) and not self._on_disk(key) \
+			and not os.path.isfile(net_art.cache_path(track.art_url_key)):
+				continue  # still downloading, or not started
+			self.prepared.add(key)
+			self.frame_stamp[key] = self.frame
+			self.queue.append(key)
 			return True
 		return False
 
@@ -7913,6 +7992,7 @@ class GallClass:
 		its dimensions and the dominant colour of its outer pixel band.
 		"""
 		if self.tauon.gallery_load_delay.get() < 0.5:
+			self.pending = True
 			return None
 
 		x = round(location[0])
@@ -7946,6 +8026,8 @@ class GallClass:
 
 			if order[0] == 1:
 				# not done yet
+				self.pending = True
+				self.prepared.discard(key)  # wanted on screen now, so redraw when done
 				return False
 
 			if order[0] == 2:
@@ -7967,6 +8049,7 @@ class GallClass:
 				order[2] = c
 				order[3] = dst
 				self.gall[(track, size, offset)] = order
+				self.prepared.discard(key)
 
 			if order[0] == 3:
 				# ready
@@ -8018,6 +8101,7 @@ class GallClass:
 					return order[2], order[3].w, order[3].h, edge_colour
 				return True
 		else:
+			self.pending = True
 			self.frame_stamp[key] = self.frame
 			if key not in self.queue:
 				self.queue.append(key)
@@ -8483,6 +8567,7 @@ class Tauon:
 		self.TrackClass                           = TrackClass
 		self.quickthumbnail:       QuickThumbnail = QuickThumbnail(tauon=self)
 		self.gall_ren:                  GallClass = GallClass(tauon=self, size=self.album_mode_art_size)
+		self.gallery_prefetch:   GalleryPrefetch = GalleryPrefetch(self)
 		# Tracks whose image textures a worker thread wants dropped; freed on the UI thread
 		self.pending_image_clears: SimpleQueue[TrackClass] = SimpleQueue()
 		self.thumb_tracks:            ThumbTracks = ThumbTracks(tauon=self)
@@ -20794,37 +20879,10 @@ class Tauon:
 		self.gui.last_row = row_len
 		# ----
 
-		px = 0
-		row = 0
-		re = 0
-
-		for i in range(len(self.album_dex)):
-			if i == len(self.album_dex) - 1:
-				re = i
-				break
-			if self.album_dex[i + 1] - 1 > playlist_no - 1:
-				re = i
-				break
-			row += 1
-			if row > row_len - 1:
-				row = 0
-				px += self.album_mode_art_size + self.gui.album_v_gap
-
-		# If the album is within the view port already, dont jump to it
-		# (unless we really want to with force)
-		if not force and self.gui.album_scroll_px + self.gui.album_v_slide_value < px < self.gui.album_scroll_px + self.window_size[1]:
-			# Dont chance the view since its already in the view port
-			# But if the album is just out of view on the bottom, bring it into view on to bottom row
-			if self.window_size[1] > (self.album_mode_art_size + self.gui.album_v_gap) * 2:
-				while not self.gui.album_scroll_px - 20 < px + (self.album_mode_art_size + self.gui.album_v_gap + 3) < self.gui.album_scroll_px + \
-					self.window_size[1] - 40:
-					self.gui.album_scroll_px += 1
-		else:
-			# Set the view to the calculated position
-			self.gui.album_scroll_px = px
-			self.gui.album_scroll_px -= self.gui.album_v_slide_value
-
-			self.gui.album_scroll_px = max(self.gui.album_scroll_px, 0 - self.gui.album_v_slide_value)
+		# Shared with the gallery prefetch, which predicts where this would scroll
+		self.gui.album_scroll_px, re = locate_scroll(
+			self.album_dex, playlist_no, row_len, self.album_mode_art_size + self.gui.album_v_gap,
+			self.gui.album_scroll_px, self.gui.album_v_slide_value, self.window_size[1], force=force)
 
 		if len(self.album_dex) > 0:
 			return self.album_dex[re]
@@ -27438,7 +27496,7 @@ class AlbumArt:
 		self.async_failed: dict[tuple, float] = {}   # (source, offset, box) -> failure time (displays as blank)
 		self.caller_history: dict[str, ImageObject] = {}  # caller_id -> unit it last displayed (held during loads)
 		# Network art: one download per image, shared, plus the next track's art fetched ahead
-		self.net_art = NetArtFetcher(str(tauon.n_cache_directory), self.download_net_art, on_ready=self.gui.request_frame)
+		self.net_art = NetArtFetcher(str(tauon.n_cache_directory), self.download_net_art, on_ready=self.net_art_ready)
 
 		# Animated art playback. The clock is kept per source image rather than
 		# per cache unit, so the same art shown at two sizes stays in step and
@@ -27469,6 +27527,12 @@ class AlbumArt:
 		self.show_message(_("Auto theme algorithm: ") + name)
 		self.gui.request_tracklist_redraw()
 		self.gui.request_frame()
+
+	def net_art_ready(self) -> None:
+		self.gui.request_frame()
+		gall = getattr(self.tauon, "gall_ren", None)
+		if gall is not None:
+			gall.art_ready()
 
 	def download_net_art(self, track: TrackClass, cancelled: Callable[[], bool]) -> bytes | None:
 		"""Download a network track's art for NetArtFetcher, checking cancelled as it reads"""
@@ -63266,24 +63330,9 @@ def main(holder: Holder) -> None:
 							albumtitle = colours.grey(160)
 
 						# Determine meta info
-						singles = False
-						artists = 0
-						last_album = ""
-						last_artist = ""
-						s = 0
-						ones = 0
-						for id in album:
-							tr = pctl.get_track(pctl.default_playlist[id])
-							if tr.album != last_album:
-								if last_album:
-									s += 1
-								last_album = tr.album
-								if str(tr.track_number) == "1":
-									ones += 1
-							if tr.artist != last_artist:
-								artists += 1
-						if s > 2 or ones > 2:
-							singles = True
+						album_tracks = [pctl.get_track(pctl.default_playlist[id]) for id in album]
+						singles = album_is_singles(album_tracks)
+						artists = sum(1 for tr in album_tracks if tr.artist)
 
 						# Draw blank back colour
 						back_colour = ColourRGBA(40, 40, 40, 50)
@@ -63501,6 +63550,8 @@ def main(holder: Holder) -> None:
 					if album_on > len(tauon.album_dex):
 						break
 					render_pos += tauon.album_mode_art_size + gui.album_v_gap
+
+			tauon.gallery_prefetch.gallery_drawn(row_len)
 
 			# POWER TAG BAR --------------
 
@@ -66081,6 +66132,7 @@ def main(holder: Holder) -> None:
 			gui.update = False
 			gui.text_input_area_set = False
 			tauon.gall_ren.new_frame()
+			tauon.gallery_prefetch.new_frame()
 			ddt.new_frame()
 			tauon.drop_pending_image_clears()
 

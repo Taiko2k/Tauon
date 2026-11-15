@@ -4,8 +4,9 @@
 
 Each image is downloaded once, however many places want it at the same time,
 and saved to the network art cache. The next track's art can also be fetched
-ahead, once the playing track's audio is buffered enough. Art wanted on screen
-goes first, and a prefetch that is no longer wanted is called off.
+ahead, once the playing track's audio is buffered enough, followed by any extra
+art asked for (the gallery's, see t_gallery_prefetch). Art wanted on screen goes
+first, and a prefetch that is no longer wanted is called off.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ from typing import TYPE_CHECKING, Any
 import requests
 
 if TYPE_CHECKING:
-	from collections.abc import Callable, Iterable
+	from collections.abc import Callable, Container, Iterable
 
 	from tauon.t_modules.t_main import TrackClass
 
@@ -88,8 +89,11 @@ class NetArtFetcher:
 		self.jobs: dict[str, _Job] = {}
 		self.failed: dict[str, float] = {}  # art key -> when it last failed
 		self.server_failed: dict[str, float] = {}  # file_ext -> when it last couldn't be reached
-		# Prefetch of the next track's art
+		# Prefetch of the next track's art, then of the extra list, one at a time
 		self.target: TrackClass | None = None
+		self.extra: list[TrackClass] = []
+		self.next_track: TrackClass | None = None  # as last given to set_prefetch
+		self.playing: TrackClass | None = None
 		self.gate_open = False  # the playing track's audio is buffered enough
 		self.prefetch_job: _Job | None = None
 
@@ -109,11 +113,18 @@ class NetArtFetcher:
 		t = self.server_failed.get(track.file_ext)
 		return t is not None and now - t < SERVER_RETRY_S
 
-	def _cancel_prefetch(self, keep: str | None, reason: str) -> None:
-		"""Call off the prefetch unless it's for keep. Call with the lock held."""
+	def _cancel_prefetch(self, keep: Container[str], reason: str) -> None:
+		"""Call off the prefetch unless its key is in keep. Call with the lock held."""
 		job = self.prefetch_job
-		if job is not None and job.prefetch and job.key != keep and not job.cancel:
+		if job is not None and job.prefetch and job.key not in keep and not job.cancel:
 			job.cancel = reason
+
+	def _prefetch_keys(self) -> set[str]:
+		"""Art keys still wanted ahead. Call with the lock held."""
+		keys = {t.art_url_key for t in self.extra}
+		if self.target is not None:
+			keys.add(self.target.art_url_key)
+		return keys
 
 	def fetch(self, track: TrackClass, block: bool = True, grace: float = 0.0) -> str | None:
 		"""Path of track's cached art, downloading it if needed, or None if there is none.
@@ -144,7 +155,7 @@ class NetArtFetcher:
 					job = _Job(key, False, self._title(track))
 					job.spawned = not block
 					self.jobs[key] = job
-					self._cancel_prefetch(key, "art on screen first")
+					self._cancel_prefetch((key,), "art on screen first")
 			if started and block:
 				self._run(job, track)
 			elif started:
@@ -221,21 +232,36 @@ class NetArtFetcher:
 		"""Set the track whose art to fetch ahead, once open_gate() says the audio
 		allows it. needed: tracks whose art is wanted now (the one playing, the one
 		opening), so a prefetch of it carries on. Any other prefetch is called off."""
+		needed = tuple(needed)
 		keep = {t.art_url_key for t in needed if wants_net_art(t)}
-		if not wants_net_art(target):
-			target = None
+		playing = needed[0] if needed else None
 		with self.lock:
 			job = self.prefetch_job
 			if job is not None and job.prefetch and job.key in keep:
 				job.prefetch = False  # it's the art on screen now
 				logging.info(f"Art prefetch: '{job.title}' now playing, carrying on")
-			if target is not self.target:
-				self.target = target
+			if target is not self.next_track or playing is not self.playing:
+				# The extra list was worked out for the old next track
+				self.next_track = target
+				self.playing = playing
+				self.extra = []
 				self.gate_open = False
-			self._cancel_prefetch(target.art_url_key if target is not None else None, "no longer next")
+			self.target = target if wants_net_art(target) else None
+			self._cancel_prefetch(self._prefetch_keys(), "no longer next")
+
+	def set_extra(self, tracks: Iterable[TrackClass]) -> None:
+		"""More art to fetch ahead after the next track's, in order, replacing the
+		last list. A prefetch of art no longer in it is called off."""
+		extra = [t for t in tracks if wants_net_art(t)]
+		with self.lock:
+			if extra == self.extra:
+				return
+			self.extra = extra
+			self._cancel_prefetch(self._prefetch_keys(), "no longer wanted")
+		self._try_prefetch()
 
 	def gate_waiting(self) -> bool:
-		return self.target is not None and not self.gate_open
+		return (self.target is not None or bool(self.extra)) and not self.gate_open
 
 	def open_gate(self) -> None:
 		"""The playing track's audio is buffered enough to start the prefetch"""
@@ -245,18 +271,25 @@ class NetArtFetcher:
 			self.gate_open = True
 		self._try_prefetch()
 
+	def _still_needed(self, track: TrackClass) -> bool:
+		"""Not cached and not held off. Call with the lock held."""
+		return not os.path.isfile(self.cache_path(track.art_url_key)) and not self._held_off(track)
+
 	def _try_prefetch(self) -> None:
 		with self.lock:
-			track = self.target
-			if track is None or not self.gate_open or self.prefetch_job is not None:
+			if not self.gate_open or self.prefetch_job is not None:
 				return
 			# Art wanted on screen goes first; this is tried again when it's done
 			if any(not j.prefetch for j in self.jobs.values()):
 				return
-			key = track.art_url_key
-			if os.path.isfile(self.cache_path(key)) or self._held_off(track):
+			if self.target is not None and not self._still_needed(self.target):
 				self.target = None
+			self.extra = [t for t in self.extra if self._still_needed(t)]
+			queue = ([self.target] if self.target is not None else []) + self.extra
+			track = next((t for t in queue if t.art_url_key not in self.jobs), None)
+			if track is None:
 				return
+			key = track.art_url_key
 			job = _Job(key, True, self._title(track))
 			self.jobs[key] = job
 			self.prefetch_job = job
