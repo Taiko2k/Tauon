@@ -11,6 +11,7 @@ Changelog
  - Added whole star ratings setting
  - Added year setting to gallery
  - Added rating keybinds
+ - Added album only tracklist mode
  - Reworked server sync and library add
  - Reworked ratings
  - Reworked track menus

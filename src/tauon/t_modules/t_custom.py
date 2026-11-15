@@ -2429,6 +2429,14 @@ class TracklistWidget(Widget):
 
 	def __init__(self) -> None:
 		self._last_rect: tuple | None = None
+		# Show only the current album's group (toggled from the Layout panel)
+		self.album_only: bool = False
+
+	def get_config(self) -> dict | None:
+		return {"album_only": True} if self.album_only else None
+
+	def set_config(self, d: dict) -> None:
+		self.album_only = bool(d.get("album_only", False))
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
 		pr = tauon.playlist_render
@@ -2470,7 +2478,7 @@ class TracklistWidget(Widget):
 			gui.playlist_left, gui.plw, gui.panelY = rect[0], rect[2], rect[1]
 			tauon.column_bar_input()
 			gui.playlist_left, gui.plw, gui.panelY = saved
-		if gui.pl_update or rect != self._last_rect or interacting:
+		if gui.pl_update or rect != self._last_rect or interacting or pr.album_only_owner is not self:
 			# Flip the request flag off at the start of the render, same as the
 			# standard path: a request_tracklist_redraw() made during it means
 			# "render the tracklist again next frame".
@@ -2480,7 +2488,7 @@ class TracklistWidget(Widget):
 			# normal loop clears it before its full_render; that path is skipped in
 			# custom mode).
 			gui.heart_fields.clear()
-			pr.full_render(rect=rect)
+			pr.full_render(rect=rect, owner=self)
 			self._last_rect = rect
 		else:
 			pr.cache_render()

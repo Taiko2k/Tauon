@@ -40068,6 +40068,97 @@ class StandardPlaylist:
 		self._tracklist_spacer_rows: list[int] = []
 		self._tracklist_prefix_rows: list[int] = [0]
 		self._album_art_block_starts: list[int] = []
+		# Tracklist widget whose settings apply to the last render; None = preset
+		self.album_only_owner: object | None = None
+		self._album_bounds_key: tuple | None = None
+		self._album_bounds: tuple[int, int] | None = None
+		self._album_start_seen: int | None = None
+		self._visible_rows: float = 0
+
+	def album_only_enabled(self) -> bool:
+		owner = self.album_only_owner
+		if owner is not None and self.gui.custom_mode:
+			return bool(getattr(owner, "album_only", False))
+		return self.prefs.tracklist_album_only
+
+	def toggle_album_only(self) -> None:
+		owner = self.album_only_owner
+		if owner is not None and self.gui.custom_mode:
+			owner.album_only = not owner.album_only
+			self.tauon.custom.save_slots()
+		else:
+			self.prefs.tracklist_album_only ^= True
+		self._album_start_seen = None
+		self.gui.request_tracklist_redraw()
+
+	def _current_album_bounds(self) -> tuple[int, int] | None:
+		"""Track range of the folder group holding the playing track (or the
+		selection when this playlist isn't playing), when album-only is on."""
+		if not self.album_only_enabled():
+			return None
+		pctl = self.pctl
+		playlist = pctl.default_playlist
+		length = len(playlist)
+		if not length:
+			return None
+		anchor = -1
+		position = pctl.playlist_playing_position
+		if pctl.active_playlist_viewing == pctl.active_playlist_playing and 0 <= position < length:
+			playing = pctl.playing_object()
+			if playing is not None and playlist[position] == playing.index:
+				anchor = position
+		if anchor < 0:
+			anchor = min(max(pctl.selected_in_playlist, 0), length - 1)
+
+		folder = pctl.get_track(playlist[anchor]).parent_folder_path
+		key = (id(playlist), length, anchor, playlist[anchor])
+		cached = self._album_bounds
+		if key == self._album_bounds_key and cached is not None:
+			# Still valid if the group's edges haven't moved
+			start, end = cached
+			if (
+				pctl.get_track(playlist[start]).parent_folder_path == folder
+				and pctl.get_track(playlist[end - 1]).parent_folder_path == folder
+				and (start == 0 or pctl.get_track(playlist[start - 1]).parent_folder_path != folder)
+				and (end == length or pctl.get_track(playlist[end]).parent_folder_path != folder)
+			):
+				return cached
+		start = anchor
+		while start > 0 and pctl.get_track(playlist[start - 1]).parent_folder_path == folder:
+			start -= 1
+		end = anchor + 1
+		while end < length and pctl.get_track(playlist[end]).parent_folder_path == folder:
+			end += 1
+		self._album_bounds_key = key
+		self._album_bounds = (start, end)
+		return self._album_bounds
+
+	def _tracklist_row_bounds(self) -> tuple[float, float]:
+		"""Scrollable row range: the whole playlist, or the current album."""
+		self._ensure_tracklist_layout()
+		bounds = self._current_album_bounds()
+		if bounds is None:
+			return 0, self._tracklist_prefix_rows[-1]
+		low = self._tracklist_prefix_rows[bounds[0]]
+		# Half a row of padding past the last track marks the end
+		high = max(low, self._tracklist_prefix_rows[bounds[1]] + 0.5 - self._visible_rows)
+		return low, high
+
+	def _clamp_to_album(self) -> None:
+		bounds = self._current_album_bounds()
+		if bounds is None:
+			self._album_start_seen = None
+			return
+		low, high = self._tracklist_row_bounds()
+		row = self._tracklist_scroll_row()
+		changed = bounds[0] != self._album_start_seen
+		if changed:
+			# Album changed: start at its title
+			self._album_start_seen = bounds[0]
+			row = low
+		if changed or row < low or row > high:
+			self._set_tracklist_scroll_row(min(max(row, low), high))
+			self.smooth_scroll.reset_motion("playlist")
 
 	def _album_art_column_width(self) -> int:
 		if not self.gui.set_mode:
@@ -40167,7 +40258,8 @@ class StandardPlaylist:
 		self._ensure_tracklist_layout()
 		if not self._tracklist_prefix_rows:
 			return
-		target_row = min(max(target_row, 0), self._tracklist_prefix_rows[-1])
+		low, high = self._tracklist_row_bounds()
+		target_row = min(max(target_row, low), high)
 		position = bisect.bisect_right(self._tracklist_prefix_rows, target_row) - 1
 		position = min(max(position, 0), len(self.pctl.default_playlist))
 		self.pctl.playlist_view_position = position
@@ -40182,15 +40274,14 @@ class StandardPlaylist:
 		self._set_tracklist_scroll_row(self._tracklist_scroll_row() + rows)
 
 	def tracklist_scroll_fraction(self) -> float:
-		self._ensure_tracklist_layout()
-		total_rows = self._tracklist_prefix_rows[-1]
-		if total_rows <= 0:
+		low, high = self._tracklist_row_bounds()
+		if high - low <= 0:
 			return 0
-		return self._tracklist_scroll_row() / total_rows
+		return (self._tracklist_scroll_row() - low) / (high - low)
 
 	def set_tracklist_scroll_fraction(self, fraction: float) -> None:
-		self._ensure_tracklist_layout()
-		self._set_tracklist_scroll_row(self._tracklist_prefix_rows[-1] * min(max(fraction, 0), 1))
+		low, high = self._tracklist_row_bounds()
+		self._set_tracklist_scroll_row(low + (high - low) * min(max(fraction, 0), 1))
 
 	def _apply_tracklist_pixel_scroll(self) -> None:
 		pctl = self.pctl
@@ -40220,6 +40311,8 @@ class StandardPlaylist:
 			pctl.playlist_view_position = len(pctl.default_playlist)
 			gui.playlist_scroll_pixels = 0
 			self.smooth_scroll.reset_motion("playlist")
+
+		self._clamp_to_album()
 
 		# if logging.getLogger().isEnabledFor(logging.DEBUG) and (
 		# 	forward_steps
@@ -40294,6 +40387,9 @@ class StandardPlaylist:
 			rendered_blocks: set[int],
 			draws: list[tuple[TrackClass, tuple[float, float], int, int]]) -> None:
 		if track_position <= 0 or not self._folder_title_would_appear(track_position):
+			return
+		album = self._current_album_bounds()
+		if album is not None and track_position <= album[0]:
 			return
 
 		block_start, block_end = self._album_art_block_bounds(track_position - 1)
@@ -40606,7 +40702,7 @@ class StandardPlaylist:
 
 		return layout, separators
 
-	def full_render(self, rect: tuple[float, float, float, float] | None = None) -> None:
+	def full_render(self, rect: tuple[float, float, float, float] | None = None, owner: object | None = None) -> None:
 		"""Render the tracklist.
 
 		With rect=None (the preset path) it uses the standard gui layout vars
@@ -40615,6 +40711,7 @@ class StandardPlaylist:
 		render, then restoring them — the heavy body (_render_body) is shared and
 		left untouched, so preset rendering is byte-identical.
 		"""
+		self.album_only_owner = owner
 		if rect is None:
 			self._clip_rect = None
 			self._render_body()
@@ -40656,6 +40753,8 @@ class StandardPlaylist:
 		left        = gui.playlist_left
 		width       = gui.plw
 
+		self._visible_rows = max(
+			0.0, (window_size[1] - gui.panelBY - gui.playlist_top) / max(gui.playlist_row_height, 1))
 		self._ensure_tracklist_layout()
 		self._apply_tracklist_pixel_scroll()
 		self.update_album_rating_hover()
@@ -40846,14 +40945,16 @@ class StandardPlaylist:
 			tracklist_right = left + gui.highlight_left + highlight_width
 			row_input_right_pad = max(0, round(tracklist_right - scrollbar_hitbox_left))
 
+		album = self._current_album_bounds()
+		row_end = album[1] if album is not None else len(pctl.default_playlist)
 		for i in range(render_rows):
 			track_position = i + pctl.playlist_view_position
 
 			# Make sure the view position is valid
 			pctl.playlist_view_position = max(pctl.playlist_view_position, 0)
 
-			# Break if we are at end of playlist
-			if len(pctl.default_playlist) <= track_position or number >= render_rows:
+			# Break if we are at end of playlist (or of the current album)
+			if row_end <= track_position or number >= render_rows:
 				break
 
 			track_object = pctl.get_track(pctl.default_playlist[track_position])
@@ -43936,7 +44037,11 @@ class TracklistLayoutPanel:
 		tauon = self.tauon
 		prefs = self.prefs
 		gui = self.gui
+		pr = tauon.playlist_render
 		return [
+			[(_("Tracklist"), "", [
+				(_("Only current album"), pr.toggle_album_only, pr.album_only_enabled),
+			])],
 			[(_("Track rows"), "standard", [
 				(_("Loves"), tauon.heart_toggle, lambda: bool(tauon.heart_toggle(1))),
 				(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
@@ -56992,6 +57097,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("column-album-art-full-height", prefs.column_album_art_full_height)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
+	cf.update_value("tracklist-current-album-only", prefs.tracklist_album_only)
 	cf.update_value("import-auto-sort", prefs.auto_sort)
 
 	cf.update_value("artist-display-separator", prefs.artist_joiner)
@@ -57428,6 +57534,10 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "tracklist-scrollbar-left",
 		prefs.tracklist_scrollbar_left,
 		"Position the tracklist scroll bar on the left side instead of the right.")
+	prefs.tracklist_album_only = cf.sync_add(
+		"bool", "tracklist-current-album-only",
+		prefs.tracklist_album_only,
+		"Only show the current album in the main tracklist.")
 	prefs.auto_sort = cf.sync_add(
 		"bool", "import-auto-sort", prefs.auto_sort,
 		"This setting is deprecated and will be removed in a future version")
