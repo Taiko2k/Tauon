@@ -1167,7 +1167,14 @@ class Jellyfin(RemotePlaylistSource):
 					self.session_status = 0
 				return
 
+			if self.session_status != 0 and self.session_item_id == track.index and self.pctl.playing_state in (1, 2):
+				# The stop report carries how far the track got
+				self.session_last_item["PositionTicks"] = int(self.pctl.playing_time * 10000000)
+
 			if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
+				if self.session_status != 0:
+					# The server scrobbles a track when its session stops, so end it before the next one starts
+					self.session_send("Sessions/Playing/Stopped", self.session_last_item)
 				data = self.session_item(track)
 				# The server counts a play when a session starts, so the scrobble queue mustn't send it another
 				started = time.time()
