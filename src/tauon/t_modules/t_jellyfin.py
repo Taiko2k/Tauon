@@ -114,6 +114,7 @@ class Jellyfin(RemotePlaylistSource):
 		self.session_thread_active: bool = False
 		self.session_status: int = 0
 		self.session_item_id: int | None = None
+		self.session_play_start: int = 0
 		self.session_update_timer: Timer = Timer()
 		self.session_last_item: dict[str, list[str] | bool | int | str] | None = None
 		# Item whose play the server counted when its session started, and when
@@ -1167,11 +1168,13 @@ class Jellyfin(RemotePlaylistSource):
 					self.session_status = 0
 				return
 
-			if self.session_status != 0 and self.session_item_id == track.index and self.pctl.playing_state in (1, 2):
+			# A repeat plays the same track again, so it counts as a new play too
+			same_play = self.session_item_id == track.index and self.session_play_start == self.pctl.play_starts
+			if self.session_status != 0 and same_play and self.pctl.playing_state in (1, 2):
 				# The stop report carries how far the track got
 				self.session_last_item["PositionTicks"] = int(self.pctl.playing_time * 10000000)
 
-			if (self.session_status == 0 or self.session_item_id != track.index) and self.pctl.playing_state == 1:
+			if (self.session_status == 0 or not same_play) and self.pctl.playing_state == 1:
 				if self.session_status != 0:
 					# The server scrobbles a track when its session stops, so end it before the next one starts
 					self.session_send("Sessions/Playing/Stopped", self.session_last_item)
@@ -1182,6 +1185,7 @@ class Jellyfin(RemotePlaylistSource):
 				self.session_update_timer.set()
 				self.session_status = 1
 				self.session_item_id = track.index
+				self.session_play_start = self.pctl.play_starts
 				self.session_last_item = data
 			elif self.session_status == 1 and self.session_update_timer.get() >= 10:
 				data = self.session_item(track)

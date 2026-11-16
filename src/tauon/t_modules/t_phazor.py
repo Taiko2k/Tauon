@@ -2572,6 +2572,9 @@ def player4(tauon: Tauon) -> None:
 					loaded_track_streamed = stream_url is not None
 					loaded_track_growing = growing_unfinished = target_growing
 					pctl.playing_time = pctl.jump_time
+					if pctl.commit is not None and subcommand == "repeat":
+						# A repeat restarting the track, as the gapless path reports it
+						pctl.update_change()
 					if pctl.jump_time:
 						while aud.get_result() == 0:
 							if stream_url and pctl.playerCommandReady and pctl.playerCommand in ("stop", "open"):

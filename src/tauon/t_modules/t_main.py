@@ -2754,6 +2754,8 @@ class PlayerCtl:
 		self.playing_state: PlayingState = PlayingState.STOPPED
 		self.playing_length: float = 0
 		self.jump_time:      float = 0.0
+		# Goes up each time a track starts, repeats of the same track included
+		self.play_starts: int = 0
 		self.random_mode:        bool = self.prefs.random_mode
 		self.repeat_mode:        bool = self.prefs.repeat_mode
 		self.album_repeat_mode:  bool = self.prefs.album_repeat_mode
@@ -4063,6 +4065,7 @@ class PlayerCtl:
 		self.playing_state = PlayingState.PLAYING
 
 	def update_change(self, update_gui: bool = True) -> None:
+		self.play_starts += 1
 		if self.prefs.update_title and update_gui:
 			self.tauon.update_title_do()
 		self.refresh_now_playing()
