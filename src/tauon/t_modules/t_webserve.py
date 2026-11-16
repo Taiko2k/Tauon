@@ -60,6 +60,28 @@ if TYPE_CHECKING:
 REMOTE_API_PORT = 7814
 REMOTE_API_SERVICE_TYPE = "_tauon-remote._tcp.local."
 
+# Bit rate used by the Opus transcode in /api1/fileopus/. A request that names
+# no usable bit rate gets the default, which is what clients predating the
+# bitrate parameter — any older release of the iOS app — always receive.
+OPUS_DEFAULT_BITRATE_KBPS = 84
+OPUS_MIN_BITRATE_KBPS = 32
+# libopus refuses more than 256 kbps for a mono stream, so the ceiling is the
+# same for every channel layout rather than only for stereo.
+OPUS_MAX_BITRATE_KBPS = 256
+
+
+def parse_opus_bitrate(raw: str | None) -> int | None:
+	"""Read a requested Opus bit rate in kbps, or None to use the default.
+
+	The endpoint is unauthenticated on the local network and the value ends up in
+	an ffmpeg argument list, so anything but digits is discarded rather than
+	rejected: a garbled request then behaves exactly as it did before the
+	parameter existed.
+	"""
+	if not raw or not raw.isdigit():
+		return None
+	return max(OPUS_MIN_BITRATE_KBPS, min(OPUS_MAX_BITRATE_KBPS, int(raw)))
+
 
 def get_local_ipv4_address() -> str | None:
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -626,8 +648,14 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			callback()
 			self.wfile.write(b"OK")
 
-		def stream_opus_file(self, track: TrackClass, source_path: str | None = None) -> None:
-			self.stream_transcoded_file(track, source_path)
+		def stream_opus_file(
+			self,
+			track: TrackClass,
+			source_path: str | None = None,
+			*,
+			bitrate: int | None = None,
+		) -> None:
+			self.stream_transcoded_file(track, source_path, bitrate=bitrate)
 
 		def stream_transcoded_file(
 			self,
@@ -635,6 +663,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			source_path: str | None = None,
 			*,
 			lossless: bool = False,
+			bitrate: int | None = None,
 		) -> None:
 			if track.is_network and source_path is None:
 				self.send_error(404)
@@ -659,7 +688,8 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			if lossless:
 				command.extend(["-c:a", "flac", "-f", "flac", "-"])
 			else:
-				command.extend(["-c:a", "libopus", "-b:a", "84k", "-f", "ogg", "-"])
+				kbps = bitrate or OPUS_DEFAULT_BITRATE_KBPS
+				command.extend(["-c:a", "libopus", "-b:a", f"{kbps}k", "-f", "ogg", "-"])
 
 			try:
 				encoder = subprocess.Popen(
@@ -911,7 +941,9 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					self.wfile.write(b"Invalid parameter")
 
 			elif path.startswith("/api1/fileopus/"):
-				param = path[15:].split("?", 1)[0]
+				levels, params = self.parse_trail(path)
+				param = levels[3] if len(levels) == 4 else ""
+				bitrate = parse_opus_bitrate(params.get("bitrate"))
 
 				play_timer.hit()
 
@@ -923,14 +955,14 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 							tauon,
 							self,
 							current_only=False,
-							transcode=lambda path: self.stream_opus_file(track, path),
+							transcode=lambda path: self.stream_opus_file(track, path, bitrate=bitrate),
 						)
 					elif not track.fullpath or not os.path.isfile(track.fullpath):
 						self.send_response(404)
 						self.end_headers()
 						self.wfile.write(b"File unavailable")
 					else:
-						self.stream_opus_file(track)
+						self.stream_opus_file(track, bitrate=bitrate)
 				else:
 					self.send_response(404)
 					self.end_headers()
