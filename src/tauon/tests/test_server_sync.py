@@ -891,6 +891,37 @@ def test_jellyfin_session_reporting_survives_a_failed_report(monkeypatch: pytest
 	assert service.session_thread_active is False
 
 
+def test_jellyfin_session_stops_each_track_with_how_far_it_played(monkeypatch: pytest.MonkeyPatch) -> None:
+	service, _logins, _server = make_login_jellyfin(monkeypatch)
+	service.session_status, service.session_item_id, service.session_last_item = 0, None, None
+	service.session_update_timer = SimpleNamespace(get=lambda: 0, set=lambda: None)
+	first = SimpleNamespace(index=1, url_key="a", file_ext="JELY")
+	second = SimpleNamespace(index=2, url_key="b", file_ext="JELY")
+	service.pctl = SimpleNamespace(playing_object=lambda: first, playing_state=1, playing_time=1.0, player_volume=50)
+	sent: list[tuple[str, str, int]] = []
+	monkeypatch.setattr(
+		service, "session_send",
+		lambda point, data: sent.append((point, data["ItemId"], data["PositionTicks"])) or True)
+	# Each wait moves playback on: through the first track, on to the second, then to a local file
+	steps = iter([
+		(first, 1, 1.0), (first, 1, 179.0), (second, 1, 0.5), (second, 1, 30.0),
+		(SimpleNamespace(index=3, file_ext="FLAC"), 0, 0.0)])
+
+	def sleep(_seconds: float) -> None:
+		track, state, position = next(steps)
+		service.pctl.playing_object = lambda: track
+		service.pctl.playing_state, service.pctl.playing_time = state, position
+
+	monkeypatch.setattr("tauon.t_modules.t_jellyfin.time.sleep", sleep)
+	service._session_loop()  # noqa: SLF001
+	assert sent == [
+		("Sessions/Playing", "a", 10000000),
+		("Sessions/Playing/Stopped", "a", 1790000000),
+		("Sessions/Playing", "b", 5000000),
+		("Sessions/Playing/Stopped", "b", 300000000),
+	]
+
+
 def test_jellyfin_play_counted_at_session_start_is_not_sent_again(monkeypatch: pytest.MonkeyPatch) -> None:
 	service, _logins, server = make_login_jellyfin(monkeypatch)
 	service.accessToken = server["token"]
