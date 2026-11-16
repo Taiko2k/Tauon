@@ -18,6 +18,7 @@
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import html
 import io
@@ -27,6 +28,7 @@ import os
 import socket
 import struct
 import subprocess
+import tempfile
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
@@ -366,6 +368,60 @@ def cached_audio_mime_type(path: str, track: TrackClass) -> str:
 	return audio_mime_type(track.container or track.file_ext)
 
 
+def stage_network_track(track: TrackClass, tauon: Tauon) -> tuple[str | None, bool]:
+	"""Download a remote track to a file of its own, for transcoding.
+
+	Returns the path, and whether the caller should fall back to the playback
+	cache: the provider handed back a multipart stream, and remuxing one is
+	something only the cache knows how to do.
+
+	The provider URL and its credentials never leave this function, and the
+	file it writes holds audio the provider sent, never anything of the host's.
+	"""
+	try:
+		url, params = tauon.pctl.get_url(track)
+	except Exception:
+		logging.exception("Could not resolve remote audio")
+		return None, False
+
+	if isinstance(url, (list, tuple)):
+		if len(url) > 1:
+			return None, True
+		url = url[0] if url else None
+
+	if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+		return None, False
+
+	path: str | None = None
+	try:
+		with requests.get(
+			url, params=params, headers={"Accept-Encoding": "identity"}, stream=True, timeout=(5, 30),
+		) as response:
+			if response.status_code not in (200, 206):
+				logging.error("Remote audio download returned HTTP %s", response.status_code)
+				return None, False
+			handle = tempfile.NamedTemporaryFile(prefix="tauon-remote-", delete=False)  # noqa: SIM115
+			path = handle.name
+			with handle:
+				for chunk in response.raw.stream(65536, decode_content=False):
+					handle.write(chunk)
+		if os.path.getsize(path) == 0:
+			logging.error("Remote audio download was empty")
+			discard_staged_track(path)
+			return None, False
+	except (requests.RequestException, Urllib3HTTPError, OSError):
+		logging.error("Could not download remote audio")  # noqa: TRY400
+		discard_staged_track(path)
+		return None, False
+	return path, False
+
+
+def discard_staged_track(path: str | None) -> None:
+	if path:
+		with contextlib.suppress(OSError):
+			os.remove(path)
+
+
 def send_network_audio(
 	track: TrackClass,
 	tauon: Tauon,
@@ -656,6 +712,39 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 			bitrate: int | None = None,
 		) -> None:
 			self.stream_transcoded_file(track, source_path, bitrate=bitrate)
+
+		def stream_network_opus_file(self, track: TrackClass, *, bitrate: int | None = None) -> None:
+			"""Transcode a remote track without waiting on the playback cache.
+
+			That cache holds one track at a time, for the one that is playing, so
+			several downloads at once would overwrite each other's slot and wait
+			out the deadline having never been fetched. A download stages its own
+			copy instead, which also keeps the API off the cache the player is
+			using. Anything already in the cache is still used as it is.
+			"""
+			cached_path = tauon.cachement.get_local_instant(track)
+			if cached_path:
+				self.stream_opus_file(track, cached_path, bitrate=bitrate)
+				return
+
+			staged_path, needs_cache = stage_network_track(track, tauon)
+			if needs_cache:
+				send_network_audio(
+					track,
+					tauon,
+					self,
+					current_only=False,
+					transcode=lambda source: self.stream_opus_file(track, source, bitrate=bitrate),
+				)
+				return
+			if staged_path is None:
+				self.send_error(502)
+				return
+
+			try:
+				self.stream_opus_file(track, staged_path, bitrate=bitrate)
+			finally:
+				discard_staged_track(staged_path)
 
 		def stream_transcoded_file(
 			self,
@@ -950,13 +1039,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 				if param.isdigit() and int(param) in pctl.master_library:
 					track = pctl.master_library[int(param)]
 					if track.is_network:
-						send_network_audio(
-							track,
-							tauon,
-							self,
-							current_only=False,
-							transcode=lambda path: self.stream_opus_file(track, path, bitrate=bitrate),
-						)
+						self.stream_network_opus_file(track, bitrate=bitrate)
 					elif not track.fullpath or not os.path.isfile(track.fullpath):
 						self.send_response(404)
 						self.end_headers()
