@@ -777,10 +777,15 @@ class StreamEnc:
 		icy = False
 		m_remain = 0
 		m = 0
-		if metaint and int(metaint) > 0:
-			m = int(metaint)
-			m_remain = m
-			icy = True
+		if metaint:
+			try:
+				parsed_metaint = int(metaint)
+				if parsed_metaint > 0:
+					m = parsed_metaint
+					m_remain = m
+					icy = True
+			except (ValueError, TypeError):
+				logging.warning(f"Invalid icy-metaint header {metaint!r}, disabling metadata extraction")
 
 		maybe = b""
 
