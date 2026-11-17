@@ -63,3 +63,13 @@ I highly recommend reading the Tauon [manual](https://tauonmusicbox.rocks/manual
 Feel free to submit any issues you encounter.
 
 [![Discord](https://img.shields.io/discord/687418493209018622.svg?color=a483ef&style=for-the-badge)](https://discord.gg/v4EmhES)
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=taiko2k%2Ftauon&type=date&legend=bottom-right">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=taiko2k/tauon&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=taiko2k/tauon&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=taiko2k/tauon&type=date&legend=bottom-right" />
+ </picture>
+</a>
