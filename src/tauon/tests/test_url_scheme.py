@@ -22,6 +22,7 @@ from tauon.t_modules.t_extra import with_url_scheme
 		# Anything else is assumed to be behind a TLS proxy
 		("jellyfin.example.com", "https://jellyfin.example.com"),
 		("example.com/jellyfin/", "https://example.com/jellyfin/"),
+		("media.example.com/jellyfin?next=http://other.example", "https://media.example.com/jellyfin?next=http://other.example"),
 		("8.8.8.8:8920", "https://8.8.8.8:8920"),
 		# Typed schemes are left alone
 		("http://jellyfin.example.com", "http://jellyfin.example.com"),

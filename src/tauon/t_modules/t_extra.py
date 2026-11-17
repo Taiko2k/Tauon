@@ -1204,7 +1204,7 @@ def with_url_scheme(url: str, default_port: int) -> str:
 	guessing http there would send the password unencrypted.
 	"""
 	url = url.strip()
-	if not url or "://" in url:
+	if not url or re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", url):
 		return url
 	try:
 		parts = urllib.parse.urlsplit("//" + url)
