@@ -733,6 +733,28 @@ class GuiVar:
 		self.drag_source_position = tuple(self.inp.click_location)
 		self.drag_source_position_persist = tuple(self.inp.click_location)
 
+	BUFFERING_SHOW_DELAY = 0.2
+
+	@property
+	def buffering(self) -> bool:
+		return self._buffering
+
+	@buffering.setter
+	def buffering(self, value: bool) -> None:
+		if value and not self._buffering:
+			self.buffering_since = time.monotonic()
+		self._buffering = bool(value)
+
+	def buffering_visible(self) -> bool:
+		"""True once buffering has lasted long enough to be worth showing, so brief stalls don't flicker."""
+		if not self._buffering:
+			return False
+		remaining = self.BUFFERING_SHOW_DELAY - (time.monotonic() - self.buffering_since)
+		if remaining > 0:
+			self.delay_frame(remaining)
+			return False
+		return True
+
 	def delay_frame(self, t: float) -> None:
 		self.frame_callback_list.append(TestTimer(t))
 
@@ -1287,7 +1309,8 @@ class GuiVar:
 		self.backend_reloading: bool = False
 
 		self.tray_active: bool = False
-		self.buffering: bool = False
+		self._buffering: bool = False
+		self.buffering_since: float = 0.0
 		self.buffering_text = ""
 
 		self.update_on_drag: bool = False
@@ -8576,7 +8599,8 @@ class Tauon:
 		self.thumb_tracks:            ThumbTracks = ThumbTracks(tauon=self)
 		self.chunker:                     Chunker = Chunker()
 		self.stream_proxy:              StreamEnc = StreamEnc(self)
-		self.level_train:       list[list[float]] = []
+		# Bounded: the player thread fills it even while the meter isn't drawn
+		self.level_train: deque[tuple[float, float, float]] = deque(maxlen=60)
 		self.radio_server: ThreadedHTTPServer | None = None
 		self.listen_alongers:    dict[str, Timer] = {}
 		self.encode_folder_name                   = encode_folder_name
@@ -37860,7 +37884,7 @@ class BottomBarType1:
 
 			self.seek_time = pctl.playing_time
 
-		if tauon.radiobox.load_connecting or gui.buffering:
+		if tauon.radiobox.load_connecting or gui.buffering_visible():
 			x = self.seek_bar_position[0] - round(26 - gui.scale)
 			y = self.seek_bar_position[1]
 			# A zero-width shard (image failed to load) would otherwise loop forever
@@ -37924,7 +37948,7 @@ class BottomBarType1:
 			else:
 				gui.seek_cur_show = False
 
-		if gui.buffering and pctl.buffering_percent:
+		if gui.buffering_visible() and pctl.buffering_percent:
 			ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), ColourRGBA(255, 255, 255, 50))
 		# Volume mouse wheel control -----------------------------------------
 		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \

@@ -1921,7 +1921,7 @@ class FeuxBar:
 			ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
 			if progress > 0:
 				ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
-		if self.tauon.radiobox.load_connecting or gui.buffering:
+		if self.tauon.radiobox.load_connecting or gui.buffering_visible():
 			self._draw_buffering(bar_x, bar_y, bar_w, bar_h, round(bar_w * progress), seek_bg, backdrop)
 		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
 		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
@@ -1940,7 +1940,7 @@ class FeuxBar:
 			self.ddt.rect(rect, colour)
 		self.gui.delay_frame(1 / 13)
 		percent = self.pctl.buffering_percent
-		if self.gui.buffering and percent:
+		if self.gui.buffering_visible() and percent:
 			line = max(1, self._s(2))
 			self.ddt.rect((x, y + h - line, round(w * min(percent, 100) / 100), line), alpha_mod(self.colours.seek_bar_fill, 90))
 

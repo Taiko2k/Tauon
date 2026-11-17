@@ -1857,9 +1857,14 @@ int samples_decoded = 0;
 SRC_DATA src_data;
 SRC_STATE *src;
 SRC_STATE *pcm_src;
+// Channels pcm_src was made for. It only carries the speakers in use, since
+// libsamplerate's cost scales with channels and 9 misses its fast paths.
+int pcm_src_channels = 0;
 #define PCM_RESAMPLE_CHUNK 4096
 float pcm_in[65535 * PCM_SPEAKERS];
 float pcm_out[PCM_RESAMPLE_CHUNK * PCM_SPEAKERS];
+float pcm_pack_in[PCM_RESAMPLE_CHUNK * PCM_SPEAKERS];
+float pcm_pack_out[PCM_RESAMPLE_CHUNK * PCM_SPEAKERS];
 uint16_t pcm_source_mask = PCM_STEREO_MASK;
 bool pcm_resampling = false;
 
@@ -1890,6 +1895,37 @@ static void pcm_append(const float *data, int frames) {
 	}
 }
 
+// Speakers carrying audio in the current layout, in speaker order
+static int pcm_active_speakers(int *speakers) {
+	int n = 0;
+	for (int s = 0; s < PCM_SPEAKERS; s++) {
+		if (pcm_source_mask & (1u << s)) speakers[n++] = s;
+	}
+	if (n == 0) {
+		for (int s = 0; s < PCM_SPEAKERS; s++) speakers[s] = s;
+		n = PCM_SPEAKERS;
+	}
+	return n;
+}
+
+// Called without buffer_mutex. A layout change has already drained or reset
+// the old state, so swapping it out loses nothing.
+static bool pcm_src_ensure(int channels) {
+	if (pcm_src != NULL && pcm_src_channels == channels) return true;
+	int error = 0;
+	SRC_STATE *state = src_new(config_resample_quality, channels, &error);
+	if (state == NULL) {
+		log_msg(LOG_ERROR, "ph: Could not create %d channel SRC state: %s", channels, src_strerror(error));
+		return false;
+	}
+	if (pcm_src != NULL) src_delete(pcm_src);
+	pcm_src = state;
+	pcm_src_channels = channels;
+	return true;
+}
+
+// Called with buffer_mutex held. The lock is dropped while resampling so the
+// device callback is never stuck behind it.
 static bool pcm_drain_pending() {
 	// Keep oversized blocks here instead of blocking command processing
 	// while waiting for the device to make room in the ring.
@@ -1902,25 +1938,50 @@ static bool pcm_drain_pending() {
 			pcm_pending_used += count;
 			break;
 		}
+		int speakers[PCM_SPEAKERS];
+		int n = pcm_active_speakers(speakers);
+		int in_frames = remaining < PCM_RESAMPLE_CHUNK ? remaining : PCM_RESAMPLE_CHUNK;
+		const float *in = pcm_in + pcm_pending_used * PCM_SPEAKERS;
+		for (int i = 0; i < in_frames; i++) {
+			for (int c = 0; c < n; c++) pcm_pack_in[i * n + c] = in[i * PCM_SPEAKERS + speakers[c]];
+		}
 		SRC_DATA transfer = {0};
 		transfer.src_ratio = (double) sample_rate_out / sample_rate_src;
-		transfer.end_of_input = pcm_draining;
-		transfer.data_in = pcm_in + pcm_pending_used * PCM_SPEAKERS;
-		transfer.input_frames = remaining;
-		transfer.data_out = pcm_out;
+		transfer.end_of_input = pcm_draining && in_frames == remaining;
+		transfer.data_in = pcm_pack_in;
+		transfer.input_frames = in_frames;
+		transfer.data_out = pcm_pack_out;
 		transfer.output_frames = space < PCM_RESAMPLE_CHUNK ? space : PCM_RESAMPLE_CHUNK;
+
+		// Only the decode thread touches the resampler and pcm_in. The device
+		// callback only adds frames back (fade refill) when the ring is
+		// nearly empty, so the space measured above still fits this chunk.
+		buffer_unlock();
+		if (!pcm_src_ensure(n)) {
+			buffer_lock();
+			return false;
+		}
 		int result = src_process(pcm_src, &transfer);
+		buffer_lock();
 		if (result != 0) {
 			log_msg(LOG_ERROR, "ph: PCM resampling failed: %s", src_strerror(result));
 			return false;
 		}
 		pcm_pending_used += transfer.input_frames_used;
-		pcm_append(pcm_out, transfer.output_frames_gen);
+		int out_frames = transfer.output_frames_gen;
+		memset(pcm_out, 0, out_frames * PCM_SPEAKERS * sizeof(float));
+		for (int i = 0; i < out_frames; i++) {
+			for (int c = 0; c < n; c++) pcm_out[i * PCM_SPEAKERS + speakers[c]] = pcm_pack_out[i * n + c];
+		}
+		pcm_append(pcm_out, out_frames);
 		if (transfer.input_frames_used == 0 && transfer.output_frames_gen == 0) {
 			if (pcm_draining) pcm_resampling = pcm_draining = false;
 			break;
 		}
-		if (pcm_pending_used == pcm_pending_frames && !pcm_draining) break;
+		// The converter can take a whole chunk at once and hand the output
+		// back over several calls, so keep going while it fills the output.
+		if (pcm_pending_used == pcm_pending_frames && !pcm_draining
+			&& transfer.output_frames_gen < transfer.output_frames) break;
 	}
 	if (pcm_pending_used == pcm_pending_frames) pcm_pending_frames = pcm_pending_used = 0;
 	return true;
@@ -3613,8 +3674,14 @@ static void source_advance() {
 static bool read_playback_frame(float *frame, uint16_t *mask) {
 	if (playback_speed != 1.0f && speed_src != NULL) speed_engaged = true;
 	while (true) {
+		// Back at normal speed: play out the filter's tail, then bypass it
+		bool releasing = speed_engaged && playback_speed == 1.0f;
+		if (releasing && !speed_tail) {
+			src_reset(speed_src);
+			speed_engaged = speed_eof = releasing = false;
+		}
 		float input[PCM_SPEAKERS] = {0};
-		bool has_input = !speed_eof && source_peek(input, &speed_mask);
+		bool has_input = !speed_eof && !releasing && source_peek(input, &speed_mask);
 		if (!has_input && !(speed_engaged && speed_tail)) return false;
 		if (!speed_engaged) {
 			memcpy(frame, input, sizeof(input));
@@ -3627,7 +3694,7 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 			.data_in = input, .data_out = frame,
 			.input_frames = has_input ? 1 : 0, .output_frames = 1,
 			.src_ratio = 1.0 / playback_speed,
-			.end_of_input = speed_eof || (mode == ENDING && !has_input),
+			.end_of_input = speed_eof || releasing || (mode == ENDING && !has_input),
 		};
 		if (src_process(speed_src, &transfer) != 0) {
 			speed_tail = false;
@@ -5886,7 +5953,9 @@ void *main_loop(void *thread_id) {
 
 	// SRC ----------------------------
 
-	pcm_src = src_new(config_resample_quality, PCM_SPEAKERS, &error);
+	// Sized to the stereo common case; pcm_src_ensure() resizes it for other layouts
+	pcm_src = src_new(config_resample_quality, 2, &error);
+	pcm_src_channels = 2;
 	if (pcm_src == NULL) {
 		log_msg(LOG_ERROR, "ph: Error creating multichannel SRC state");
 		free(rbuf);
