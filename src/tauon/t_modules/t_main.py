@@ -13885,7 +13885,10 @@ class Tauon:
 
 	def sync_track_box_to_selected(self) -> None:
 		if self.gui.track_box and self.pctl.selected_ready():
-			self.gui.track_box_track_id = self.pctl.default_playlist[self.pctl.selected_in_playlist]
+			track_id = self.pctl.default_playlist[self.pctl.selected_in_playlist]
+			if track_id != self.gui.track_box_track_id:
+				self.gui.track_box_track_id = track_id
+				self.gui.request_frame()
 
 	def activate_track_box(self, ref: MenuTrackRef) -> None:
 		self.show_track_box(ref.track_id)
@@ -17781,7 +17784,7 @@ class Tauon:
 		if not menu.active:
 			self.close_menu_popup()
 
-	def is_level_zero(self, include_menus: bool = True) -> bool:
+	def is_level_zero(self, include_menus: bool = True, ignore_track_box: bool = False) -> bool:
 		if include_menus:
 			if self.top_panel.activity.open:
 				return False
@@ -17792,7 +17795,7 @@ class Tauon:
 		return not self.gui.press_off_level_zero \
 			and not self.gui.message_box \
 			and not self.gui.rename_folder_box \
-			and not self.gui.track_box \
+			and (ignore_track_box or not self.gui.track_box) \
 			and not self.radiobox.active \
 			and not self.pref_box.enabled \
 			and not self.gui.quick_search_mode \
@@ -68310,7 +68313,8 @@ def main(holder: Holder) -> None:
 							tauon.goto_album(pctl.playlist_playing_position)
 						gui.quick_search_mode = False
 						tauon.search_clear_timer.set()
-				elif not tauon.search_over.active and tauon.is_level_zero(include_menus=False):
+				# Arrows still move the selection under the track info box, which follows it
+				elif not tauon.search_over.active and tauon.is_level_zero(include_menus=False, ignore_track_box=True):
 					if inp.key_up_press and (
 						(
 							not inp.key_shiftr_down
