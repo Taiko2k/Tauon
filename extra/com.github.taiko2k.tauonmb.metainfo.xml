@@ -103,7 +103,7 @@
 
   <releases>
 
-    <release version="13.2.0" date="2026-11-06">
+    <release version="13.2.0" date="2026-11-17">
       <description>
         <ul>
           <li>Added track ban feature</li>
