@@ -58541,7 +58541,8 @@ def worker1(tauon: Tauon) -> None:
 						cd = []
 
 					file_name = get_quoted_from_line(line)
-					file_path = os.path.join(os.path.dirname(path), file_name)
+					# Forward slashes so cue_list matches other tracks' fullpath on Windows
+					file_path = os.path.join(os.path.dirname(path), file_name).replace("\\", "/")
 
 					if not os.path.isfile(file_path):
 						if files == 1:
@@ -58550,7 +58551,7 @@ def worker1(tauon: Tauon) -> None:
 								if os.path.splitext(item)[0] == os.path.splitext(os.path.basename(path))[0]:
 									if ".cue" not in item.lower() and item.split(".")[-1].lower() in bag.formats.DA:
 										file_name = item
-										file_path = os.path.join(os.path.dirname(path), file_name)
+										file_path = os.path.join(os.path.dirname(path), file_name).replace("\\", "/")
 										logging.info(f"-- Source found at: {file_path}")
 										break
 							else:
@@ -66131,8 +66132,12 @@ def main(holder: Holder) -> None:
 						if order.stage == -1:
 							del tauon.load_orders[i]
 
+				# Load CUEs first so their source files get skipped regardless of naming
+				pending = [o for o in tauon.load_orders if o.stage == 0]
+				pending.sort(key=lambda o: not o.target.lower().endswith(".cue"))
+
 				# Prepare loader thread with load order
-				for order in tauon.load_orders:
+				for order in pending:
 					if order.stage == 0:
 						order.target = order.target.replace("\\", "/")
 						order.stage = 1
