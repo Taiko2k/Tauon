@@ -44416,6 +44416,8 @@ class AddMusicBox:
 		self.loading = False
 		self.scroll = 0.0
 		self._filter_box: TextBox2 | None = None
+		# Imports already queued when the box opened; only a newer one closes it
+		self._known_orders: list[LoadClass] = []
 
 	def open(self, welcome: bool = False) -> None:
 		pctl = self.tauon.pctl
@@ -44424,6 +44426,7 @@ class AddMusicBox:
 		self.playlist_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 		self.welcome = welcome
 		self.page = "main"
+		self._known_orders = list(self.tauon.load_orders)
 		self.active = True
 		self.click = False
 		self.gui.request_frame()
@@ -44991,7 +44994,7 @@ class AddMusicBox:
 		return yy - y + list_h
 
 	def render(self) -> None:
-		if self.tauon.load_orders or self._target() is None:
+		if self._target() is None or any(order not in self._known_orders for order in self.tauon.load_orders):
 			# An import started some other way, such as a drop
 			self.close()
 			return
@@ -67283,9 +67286,19 @@ def main(holder: Holder) -> None:
 				if anchor is not None and not pctl.default_playlist and not tauon.add_music_box.active:
 					label = _("Add files…")
 					button_w = ddt.get_text_w(label, 212) + round(28 * gui.scale)
-					if tauon.draw.button(label, anchor[0] - button_w // 2, anchor[1], w=button_w, h=round(26 * gui.scale)):
+					button_h = round(26 * gui.scale)
+					if tauon.draw.button(label, anchor[0] - button_w // 2, anchor[1], w=button_w, h=button_h):
 						inp.mouse_click = False
 						tauon.add_music_box.open()
+					viewing_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
+					if any(order.playlist == viewing_id for order in tauon.load_orders):
+						background = colours.playlist_panel_background
+						if playlist_render.pl_bg:
+							background = ColourRGBA(0, 0, 0, 0)
+						ddt.text(
+							(anchor[0], anchor[1] + button_h + round(10 * gui.scale), 2), _("Import in progress…"),
+							readable_text_colour(alpha_mod(colours.index_text, 150), colours.playlist_panel_background),
+							211, bg=background)
 
 				if gui.preview_artist:
 					border = round(4 * gui.scale)
