@@ -10,7 +10,7 @@ Please report any issues either over at [Discord](https://discord.gg/v4EmhES) or
 **[List of all changes](https://github.com/Taiko2k/Tauon/blob/master/CHANGELOG.md)**
 
 > [!NOTE]
-> Windows pre-release builds can be wrongly flagged by Defender, it is safe to whitelist them.
+> Windows pre-release builds can be wrongly flagged by Defender, these are usually false machine learning based detections.
 > See https://github.com/Taiko2k/Tauon/issues/1062 for more information.
 
 > [!WARNING]
