@@ -77,6 +77,16 @@ def test_hidden_titles_drop_all_headers() -> None:
 	assert view._tracklist_prefix_rows[-1] == len(TWO_DISCS)
 
 
+def test_layout_rebuilds_after_middle_playlist_reorder() -> None:
+	view = make_view([("a", "1"), ("b", "1"), ("a", "1"), ("b", "1"), ("c", "1")])
+	view.pctl.default_playlist[1], view.pctl.default_playlist[2] = (
+		view.pctl.default_playlist[2], view.pctl.default_playlist[1])
+
+	view._ensure_tracklist_layout()
+
+	assert view._tracklist_title_rows == [1, 0, 1, 0, 1]
+
+
 def test_smooth_pixel_scroll_crosses_fractional_rows() -> None:
 	view = make_view(TWO_DISCS, style="full")
 	first_step = view._tracklist_step_height(0)

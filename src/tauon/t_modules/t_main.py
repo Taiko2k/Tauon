@@ -40215,7 +40215,7 @@ class StandardPlaylist:
 		return max((round(column[1]) for column in self.gui.pl_st if column[0] == "Album Art"), default=0)
 
 	def _ensure_tracklist_layout(self) -> None:
-		"""Cache visual row offsets and album blocks until playlist geometry changes."""
+		"""Cache visual row offsets and album blocks until playlist content or geometry changes."""
 		pctl = self.pctl
 		playlist = pctl.default_playlist
 		playlist_length = len(playlist)
@@ -40230,10 +40230,8 @@ class StandardPlaylist:
 		layout_key = (
 			id(playlist),
 			playlist_id,
-			playlist_length,
+			tuple(playlist),
 			getattr(pctl, "db_inc", 0),
-			playlist[0] if playlist else None,
-			playlist[-1] if playlist else None,
 			art_column_width,
 			self.gui.playlist_row_height,
 			self.prefs.column_album_art_full_height,
