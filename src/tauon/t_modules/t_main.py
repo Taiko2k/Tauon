@@ -17818,7 +17818,16 @@ class Tauon:
 		if not menu.active:
 			self.close_menu_popup()
 
-	def is_level_zero(self, include_menus: bool = True, ignore_track_box: bool = False) -> bool:
+	def quick_find_rect(self) -> list[int]:
+		"""Outer rect of the Ctrl+F quick find box, border included."""
+		w = 420 * self.gui.scale
+		h = 65 * self.gui.scale
+		x = int(self.window_size[0] / 2) - int(w / 2)
+		y = self.window_size[1] - 125 * self.gui.scale
+		return [x - 2, y - 2, w + 4, h + 4]
+
+	def is_level_zero(self, include_menus: bool = True, ignore_track_box: bool = False, allow_quick_find: bool = False) -> bool:
+		"""allow_quick_find: treat an open quick find box as level zero, unless the mouse is over it."""
 		if include_menus:
 			if self.top_panel.activity.open:
 				return False
@@ -17832,7 +17841,7 @@ class Tauon:
 			and (ignore_track_box or not self.gui.track_box) \
 			and not self.radiobox.active \
 			and not self.pref_box.enabled \
-			and not self.gui.quick_search_mode \
+			and (not self.gui.quick_search_mode or (allow_quick_find and not self.coll(self.quick_find_rect()))) \
 			and not self.gui.rename_playlist_box \
 			and not self.search_over.active \
 			and not self.milk_choose.active \
@@ -41319,7 +41328,7 @@ class StandardPlaylist:
 
 						gui.request_tracklist_redraw()
 						# Add folder to queue if middle click
-						if self.inp.middle_click and self.tauon.is_level_zero():
+						if self.inp.middle_click and self.tauon.is_level_zero(allow_quick_find=True):
 							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
 								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
@@ -41445,7 +41454,7 @@ class StandardPlaylist:
 			line_hit = False
 			if self.coll(input_box) and self.inp.mouse_position[1] < window_size[1] - gui.panelBY:
 				line_over = True
-				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and self.tauon.is_level_zero())):
+				if (inp.mouse_click or inp.right_click or (self.inp.middle_click and self.tauon.is_level_zero(allow_quick_find=True))):
 					line_hit = True
 					gui.request_tracklist_redraw()
 				else:
@@ -63508,7 +63517,7 @@ def main(holder: Holder) -> None:
 										logging.debug("Position changed by gallery click")
 										pctl.selected_in_playlist = tauon.album_dex[album_on]
 										gui.request_tracklist_redraw()
-								elif inp.middle_click and tauon.is_level_zero():
+								elif inp.middle_click and tauon.is_level_zero(allow_quick_find=True):
 									# Middle click to add album to queue
 									if inp.key_ctrl_down:
 										# Add to queue ungrouped
