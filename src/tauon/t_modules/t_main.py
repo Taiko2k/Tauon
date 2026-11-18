@@ -31236,18 +31236,17 @@ class PresetDownloadBox:
 				self.cancel()
 
 class NagBox:
-	SPLASH_VERSION = "13.0.0"
+	SPLASH_VERSION = "14.0.0"
 	RELEASE_NOTES_URL = "https://github.com/Taiko2k/TauonMusicBox/releases"
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
-		("Added MULTICHANNEL SURROUND SOUND support", False),
-		("New upgraded Tag Editor", False),
-		("Queued albums can now be expanded", False),
-		("Added auto-queue feature", False),
-		("Added playlist folders", False),
-		("Fixes to outbound streaming formats", False),
-		("And more!", False),
+		("Added disc subtitle support!", False),
+		("New album header tracklist option with album art", False),
+		("Network remote items are now in the Add Music dialogue", False),
+		("Improved network buffering and seeking performance", False),
+		("Multi-language LRC files are now supported", False),
+		("And lots more!", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -31285,8 +31284,8 @@ class NagBox:
 		self.tauon.show_message(_("Yay! Thank you!! 🎉 ✨"), mode="done")
 
 	def draw_left_accent_gradient(self, x: int, y: int, w: int, h: int) -> None:
-		top = ColourRGBA(255, 158, 94, 255)
-		bottom = ColourRGBA(240, 64, 64, 255)
+		top = ColourRGBA(160, 96, 255, 255)
+		bottom = ColourRGBA(236, 64, 180, 255)
 		steps = max(1, round(h / max(self.gui.scale, 1)))
 		for step in range(steps):
 			ratio = step / max(steps - 1, 1)
@@ -31330,11 +31329,11 @@ class NagBox:
 		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
-		version_text = "Tauon v13"
+		version_text = "Tauon v14"
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("STABLE?! That's for horses."),
+			_("Improved edition."),
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
@@ -31355,7 +31354,7 @@ class NagBox:
 
 		row_y = changelog_y + round(38 * scale)
 		row_gap = round(18 * scale)
-		bullet_colour = ColourRGBA(176, 214, 104, 255)
+		bullet_colour = ColourRGBA(140, 124, 255, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
@@ -31375,7 +31374,7 @@ class NagBox:
 		support_y = changelog_y + changelog_h + round(16 * scale)
 		# The two trailing spaces are deliberate: without them the trailing emoji
 		# gets clipped when rendered. Keep them here and in translations.
-		self.ddt.text((inner_x, support_y), _("Please help me make free software. ❤️  "), self.colours.box_text, 213, bg=panel_fill)
+		self.ddt.text((inner_x, support_y), _("Please support the project! ❤️  "), self.colours.box_text, 213, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, support_y + round(19 * scale)),
 			_("Special thanks to everyone who donated."),

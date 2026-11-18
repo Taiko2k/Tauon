@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v13.2.0
+### v14.0.0
 
  - Added track ban feature
  - Added tempo control
