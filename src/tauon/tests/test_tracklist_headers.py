@@ -1,5 +1,6 @@
 # Copyright © 2026, Tauon contributors
 
+import threading
 from types import SimpleNamespace
 from unittest.mock import Mock
 
@@ -31,8 +32,10 @@ def make_view(tracks: list[tuple[str, str]], style: str = "compact") -> Standard
 		tracklist_album_only=False, column_album_art_full_height=False, break_enable=True,
 		tracklist_title_style=style)
 	view.gui = SimpleNamespace(
-		custom_mode=False, set_mode=False, pl_st=[], scale=1, playlist_row_height=ROW, playlist_scroll_pixels=0)
+		custom_mode=False, set_mode=False, pl_st=[], scale=1, playlist_row_height=ROW, playlist_scroll_pixels=0,
+		request_tracklist_redraw=Mock(), star_row_icon=SimpleNamespace(w=14, h=13))
 	view.smooth_scroll = Mock()
+	view._settle_pending = False
 	view.album_only_owner = None
 	view._tracklist_layout_key = None
 	view._tracklist_layout_snapshot = []
@@ -176,6 +179,100 @@ def test_settle_moves_partway_title_to_snap_position() -> None:
 	view.settle_on_full_title()
 	assert view.pctl.playlist_view_position == 5
 	assert view.gui.playlist_scroll_pixels == 5
+
+
+def test_settle_off_main_thread_waits_for_render() -> None:
+	view = make_view(TWO_DISCS, style="full")
+	view.pctl.playlist_view_position = 4
+	view.gui.playlist_scroll_pixels = 12
+	thread = threading.Thread(target=view.settle_on_full_title)
+	thread.start()
+	thread.join()
+	# Left for the main thread's next render
+	assert view.gui.playlist_scroll_pixels == 12
+	assert view._settle_pending
+	view.gui.request_tracklist_redraw.assert_called()
+
+
+def test_disc_number_formats_do_not_split_a_disc() -> None:
+	view = make_view([("a", "1"), ("a", "01"), ("a", "1/2"), ("a", "2/2"), ("a", "02")])
+	sub = view.disc_row_height() / ROW
+	assert view._tracklist_sub_rows == [sub, 0, 0, sub, 0]
+
+
+YEAR = ("1999", 316, 22, False)
+DURATION = ("[ 45:00 ]", 12, 17, False)
+GENRE = ("Progressive Electronic", 13, 15, True)
+
+
+def full_layout(meta: list, album: str = "Album", width: int = 600, ratings: bool = True):
+	"""Lay out a full title at x=0 with text measured as 7 px per character."""
+	view = make_view(TWO_DISCS, style="full")
+	view.gui.show_album_ratings = ratings
+	view.gui.rsp_on_left = False
+	view.ddt = SimpleNamespace(get_text_w=lambda text, _font: 7 * len(text))
+	view._full_title_meta = lambda _tr, _pos: list(meta)
+	tr = SimpleNamespace(album=album, album_artist="Artist", artist="Artist", parent_folder_path="zz", parent_folder_name="zz")
+	return view, view._full_title_layout(tr, 0, 100, 0, width)
+
+
+def test_full_title_rating_ignores_genre_width_and_sits_above_it() -> None:
+	view, with_genre = full_layout([YEAR, DURATION, GENRE])
+	_view, without = full_layout([YEAR, DURATION])
+	# Only the year and duration push the stars left
+	assert with_genre.rating[0] == without.rating[0]
+	right = 600 - 12
+	assert with_genre.rating[0] == right - (7 * len(DURATION[0]) + 2) - 80
+	# Year and genre only: lifted clear of the genre line
+	view, layout = full_layout([YEAR, GENRE])
+	genre_top = layout.meta_y + YEAR[2]
+	assert layout.rating[1] + view.gui.star_row_icon.h < genre_top
+	top_pad, art_size = view._full_title_art_box()
+	centred = round(100 + top_pad + art_size / 2 - view.gui.star_row_icon.h / 2)
+	assert layout.rating[1] < centred
+
+
+def test_full_title_rating_tucks_under_a_long_year_with_all_three_lines() -> None:
+	long_year = ("14 March 1999", 316, 22, False)
+	_view, three = full_layout([long_year, DURATION, GENRE])
+	# Only the duration beside it counts
+	assert three.rating[0] == 588 - (7 * len(DURATION[0]) + 2) - 80
+	# Without the genre the stars are level with the year too, so it pushes them
+	_view, two = full_layout([long_year, DURATION])
+	assert two.rating[0] == 588 - (7 * len(long_year[0]) + 2) - 80
+
+
+def test_full_title_genre_stops_at_the_middle() -> None:
+	long_genre = ("Experimental Electronic, Ambient, Drone, Field Recordings, Musique Concrète", 13, 15, True)
+	_view, layout = full_layout([YEAR, long_genre], album="A", width=900)
+	genre_w = layout.meta[1][3]
+	# Right-aligned at 900 - 12 - 2; its left edge stays right of the middle
+	assert 886 - genre_w >= 450
+	assert genre_w < 7 * len(long_genre[0])
+
+
+def test_full_title_rating_beside_a_lone_genre_and_with_no_metadata() -> None:
+	view, layout = full_layout([GENRE])
+	top_pad, art_size = view._full_title_art_box()
+	assert layout.rating[1] == round(100 + top_pad + art_size / 2 - view.gui.star_row_icon.h / 2)
+	assert layout.rating[0] == 588 - (7 * len(GENRE[0]) + 2) - 80
+	# Nothing on the right: 3 px further left than the old spot
+	_view, empty = full_layout([])
+	assert empty.rating[0] == 588 - 69
+	# A lone year: 1 px tighter than the usual gap
+	_view, year = full_layout([YEAR])
+	assert year.rating[0] == 588 - (7 * len(YEAR[0]) + 2) - 80 + 1
+
+
+def test_full_title_genre_truncates_before_the_album() -> None:
+	album = "Album Title That Fills Most Of Its Line"  # 39 chars
+	_view, layout = full_layout([YEAR, DURATION, GENRE], album=album, width=520)
+	assert layout.text_max_w >= 7 * len(album)
+	genre_w = layout.meta[2][3]
+	assert genre_w < 7 * len(GENRE[0])
+	# Far too little room: the genre is dropped rather than cut to a sliver
+	_view, tight = full_layout([GENRE], album=album * 2, width=520)
+	assert tight.meta[0][3] == 0
 
 
 @pytest.mark.parametrize(

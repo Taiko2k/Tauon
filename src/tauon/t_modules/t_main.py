@@ -4157,7 +4157,7 @@ class PlayerCtl:
 
 		if self.force_queue and not self.pause_queue:
 			if self.force_queue[0].type == QueueType.ALBUM and self.force_queue[0].tracks is None and self.force_queue[0].album_stage == 1:
-				if self.get_track(self.force_queue[0].track_id).parent_folder_path != self.get_track(index).parent_folder_path:
+				if album_folder(self.get_track(self.force_queue[0].track_id)) != album_folder(self.get_track(index)):
 					del self.force_queue[0]
 
 		if len(self.track_queue) > 0:
@@ -4821,7 +4821,7 @@ class PlayerCtl:
 						ok_continue = False
 
 					# Check next song is in album
-					if ok_continue and self.get_track(pl[self.playlist_playing_position + 1]).parent_folder_path != self.get_track(target_index).parent_folder_path:
+					if ok_continue and album_folder(self.get_track(pl[self.playlist_playing_position + 1])) != album_folder(self.get_track(target_index)):
 						ok_continue = False
 
 					# -----------
@@ -4832,7 +4832,7 @@ class PlayerCtl:
 					# Check to see if we still are:
 					ok_continue = True
 
-					if self.get_track(target_index).parent_folder_path != self.playing_object().parent_folder_path:
+					if album_folder(self.get_track(target_index)) != album_folder(self.playing_object()):
 						# Remember to set jumper check this too (leave album if we jump to some other track, i.e. double click))
 						ok_continue = False
 
@@ -4844,8 +4844,8 @@ class PlayerCtl:
 						# Check if we are at end of playlist, or already at end of album
 						if self.playlist_playing_position >= len(pl) - 1 or (self.playlist_playing_position < len(
 								pl) - 1 and \
-								self.get_track(pl[self.playlist_playing_position + 1]).parent_folder_path != self.get_track(
-							target_index).parent_folder_path):
+								album_folder(self.get_track(pl[self.playlist_playing_position + 1])) != album_folder(self.get_track(
+							target_index))):
 
 							if dry:
 								return None
@@ -4857,8 +4857,8 @@ class PlayerCtl:
 
 						# Check if 2 songs down is in album, remove entry in queue if not
 						if self.playlist_playing_position < len(pl) - 2 and \
-								self.get_track(pl[self.playlist_playing_position + 2]).parent_folder_path != self.get_track(
-							target_index).parent_folder_path:
+								album_folder(self.get_track(pl[self.playlist_playing_position + 2])) != album_folder(self.get_track(
+							target_index)):
 							ok_continue = False
 
 					# if ok_continue:
@@ -10786,7 +10786,7 @@ class Tauon:
 		partway = 0
 		playing_object = self.pctl.playing_object()
 		if not self.pctl.force_queue and playing_object is not None:
-			if self.pctl.get_track(track_id).parent_folder_path == playing_object.parent_folder_path:
+			if album_folder(self.pctl.get_track(track_id)) == album_folder(playing_object):
 				partway = 1
 
 		queue_object = queue_item_gen(track_id, position, playlist_id, QueueType.ALBUM, partway)
@@ -10817,14 +10817,13 @@ class Tauon:
 			queue_item = queue_item_gen(ref.track_id, ref.position, ref.playlist_id, QueueType.ALBUM, 0)
 			self.pctl.force_queue.insert(1, queue_item)
 		else:
-			p = self.pctl.get_track(ref.track_id).parent_folder_path
 			p = ""
 			if self.pctl.playing_ready():
-				p = self.pctl.playing_object().parent_folder_path
+				p = album_folder(self.pctl.playing_object())
 
 			# TODO(Taiko): fixme for network tracks
 			for i, item in enumerate(self.pctl.force_queue):
-				if p != self.pctl.get_track(item.track_id).parent_folder_path:
+				if p != album_folder(self.pctl.get_track(item.track_id)):
 					queue_item = queue_item_gen(
 						ref.track_id,
 						ref.position,
@@ -14416,10 +14415,10 @@ class Tauon:
 
 		i = self.pctl.playlist_playing_position + 1
 		parts = []
-		album_parent_path = self.pctl.get_track(item.track_id).parent_folder_path
+		album_parent_path = album_folder(self.pctl.get_track(item.track_id))
 
 		while i < len(playlist):
-			if self.pctl.get_track(playlist[i]).parent_folder_path != album_parent_path:
+			if album_folder(self.pctl.get_track(playlist[i])) != album_parent_path:
 				break
 
 			parts.append((playlist[i], i))
@@ -40121,6 +40120,19 @@ def album_folder(track: TrackClass) -> str:
 	return disc_folder_split(track.parent_folder_path)[0]
 
 
+@dataclass
+class FullTitleLayout:
+	"""Where a full album title's parts go; shared by drawing and the rating hit test."""
+	text_x: float
+	text_max_w: float
+	artist: str
+	album: str
+	# (text, font, line height, max width) top to bottom, right-aligned; max width 0 means skip
+	meta: list[tuple[str, int, int, float]]
+	meta_y: float
+	rating: tuple[float, float] | None
+
+
 class StandardPlaylist:
 	def __init__(self, tauon: Tauon, pl_bg: LoadImageAsset | None) -> None:
 		self.tauon         = tauon
@@ -40158,6 +40170,8 @@ class StandardPlaylist:
 		self._album_bounds: tuple[int, int] | None = None
 		self._album_start_seen: int | None = None
 		self._visible_rows: float = 0
+		# Set off the main thread to run settle_on_full_title on the next render
+		self._settle_pending = False
 
 	def album_only_enabled(self) -> bool:
 		owner = self.album_only_owner
@@ -40349,7 +40363,6 @@ class StandardPlaylist:
 			spacer_rows[-1] = spacer
 			prefix_rows[-1] = offset + spacer
 
-		self._tracklist_layout_key = layout_key
 		self._tracklist_layout_snapshot = list(playlist)
 		self._tracklist_layout_gen += 1
 		self._tracklist_show_titles = show_titles
@@ -40358,6 +40371,8 @@ class StandardPlaylist:
 		self._tracklist_spacer_rows = spacer_rows
 		self._tracklist_prefix_rows = prefix_rows
 		self._album_art_block_starts = block_starts
+		# Key last, so a matching key never pairs with old arrays
+		self._tracklist_layout_key = layout_key
 
 	def _tracklist_step_height(self, track_position: int) -> float:
 		if track_position < 0 or track_position >= len(self.pctl.default_playlist):
@@ -40486,8 +40501,14 @@ class StandardPlaylist:
 		return (
 			bool(track.album)
 			and track.album == previous.album
-			and self.track_disc(track) != self.track_disc(previous)
+			and self.disc_key(track) != self.disc_key(previous)
 		)
+
+	@staticmethod
+	def disc_key(track: TrackClass) -> str:
+		"""Disc number without a /total or leading zeros, so "01", "1" and "1/2" match."""
+		number = StandardPlaylist.track_disc(track).split("/")[0].strip()
+		return number.lstrip("0") or number
 
 	@staticmethod
 	def album_folder_name(track: TrackClass) -> str:
@@ -40502,8 +40523,7 @@ class StandardPlaylist:
 		subtitle = getattr(track, "disc_subtitle", "")  # Absent on tracks saved before the field existed
 		if subtitle:
 			return subtitle
-		number = StandardPlaylist.track_disc(track)
-		return _("Disc {N}").format(N=number.split("/")[0].lstrip("0") or number)
+		return _("Disc {N}").format(N=StandardPlaylist.disc_key(track))
 
 	def _track_row_offset(self, track_position: int) -> float:
 		"""Row offset of a track's own row, below any headers above it."""
@@ -40531,6 +40551,11 @@ class StandardPlaylist:
 	def settle_on_full_title(self) -> None:
 		"""If the top edge falls inside a full album title, move to that title's snap position."""
 		if not self.full_titles() or not self.pctl.default_playlist:
+			return
+		if threading.current_thread() is not threading.main_thread():
+			# Layout state belongs to the main thread (show_current runs on the player thread); settle on the next render
+			self._settle_pending = True
+			self.gui.request_tracklist_redraw()
 			return
 		self._ensure_tracklist_layout(verify=True)
 		if not self._tracklist_show_titles:
@@ -40565,6 +40590,137 @@ class StandardPlaylist:
 		middle = line_y + top_pad + art_size / 2
 		return middle - round(17 * self.gui.scale), middle + round(2 * self.gui.scale)
 
+	def _full_title_right(self, x: float, highlight_width: float) -> float:
+		"""Right edge of a full title's content."""
+		right = x + highlight_width - round(12 * self.gui.scale)
+		if self.gui.rsp_on_left:
+			right -= round(3 * self.gui.scale)
+		return right
+
+	def _full_title_meta(self, tr: TrackClass, track_position: int) -> list[tuple[str, int, int, bool]]:
+		"""(text, font, line height, is genre) for the year, duration and genre on a full title's right."""
+		pctl = self.pctl
+		prefs = self.prefs
+		scale = self.gui.scale
+		playlist = pctl.default_playlist
+		total_time = 0
+		count = 0
+		group = album_folder(tr)
+		q = track_position
+		while q < len(playlist):
+			track = pctl.get_track(playlist[q])
+			if album_folder(track) != group:
+				break
+			total_time += track.length
+			count += 1
+			q += 1
+
+		meta: list[tuple[str, int, int, bool]] = []
+		if prefs.append_date and year_search.search(tr.date):
+			year = d_date_display2(tr) or d_date_display(tr)
+			if year:
+				meta.append((year, 316, round(19 * scale), False))
+		if prefs.append_total_time and count > 1:
+			meta.append(("[ " + get_display_time(total_time) + " ]", 12, round(14 * scale), False))
+		if prefs.row_title_genre and tr.genre:
+			if meta:
+				# Extra breathing room above the genre line
+				text, font, line_h, is_genre = meta[-1]
+				meta[-1] = (text, font, line_h + round(3 * scale), is_genre)
+			meta.append((tr.genre, 13, round(15 * scale), True))
+		return meta
+
+	def _full_title_layout(
+			self, tr: TrackClass, track_position: int, line_y: float, x: float, highlight_width: float) -> FullTitleLayout:
+		"""Place a full title's parts. Width goes to the artist and album first, then the year and
+		duration, then the rating, and the genre gets what is left."""
+		ddt = self.ddt
+		gui = self.gui
+		pctl = self.pctl
+		s = gui.scale
+		top_pad, art_size = self._full_title_art_box()
+		middle = line_y + top_pad + art_size / 2
+		text_x = x + round(12 * s) + art_size + round(10 * s)
+		right = self._full_title_right(x, highlight_width)
+		edge = round(2 * s)  # Metadata is right-aligned this far in
+		text_gap = round(16 * s)
+
+		# Mixed folders fall back to the folder name, as the compact title does
+		playlist = pctl.default_playlist
+		album = tr.album
+		mixed = (
+			track_position + 1 < len(playlist)
+			and (following := pctl.get_track(playlist[track_position + 1])).album != tr.album
+			and following.parent_folder_path == tr.parent_folder_path)
+		if mixed or not album:
+			album = self.album_folder_name(tr)
+		artist = tr.album_artist or tr.artist
+		text_need = max(ddt.get_text_w(artist, 313) if artist else 0, ddt.get_text_w(album, 316))
+
+		meta = self._full_title_meta(tr, track_position)
+		genre = next((line for line in meta if line[3]), None)
+		others = [line for line in meta if not line[3]]
+		fixed_w = max((ddt.get_text_w(text, font) for text, font, _line_h, _is_genre in others), default=0)
+		genre_w = ddt.get_text_w(genre[0], genre[1]) if genre else 0
+		# A lone genre is level with the stars, so they go left of it; under other lines the stars sit above it
+		genre_beside_rating = genre is not None and not others
+		ratings = gui.show_album_ratings
+		# With all three lines the stars sit level with the duration, tucked under the year
+		beside = others[1:] if genre and len(others) == 2 else others
+		beside_w = max((ddt.get_text_w(text, font) for text, font, _line_h, _is_genre in beside), default=0)
+		# A lone year gets a slightly tighter gap to the stars
+		year_only = len(meta) == 1 and meta[0][1] == 316
+
+		def place(genre_w: float) -> tuple[float | None, float]:
+			anchor = beside_w + edge if beside_w else 0
+			if genre_beside_rating and genre_w:
+				anchor = genre_w + edge
+			rating_x = None
+			if ratings:
+				rating_x = right - anchor - round(80 * s) if anchor else right - round(69 * s)
+				if year_only:
+					rating_x += round(1 * s)
+			text_right = right
+			if fixed_w:
+				text_right = min(text_right, right - fixed_w - edge - text_gap)
+			if genre_w:
+				text_right = min(text_right, right - genre_w - edge - text_gap)
+			if rating_x is not None:
+				text_right = min(text_right, rating_x - round(6 * s))
+			return rating_x, text_right
+
+		if genre:
+			_rating_x, text_right = place(0)
+			used = min(text_need, max(0, text_right - text_x))
+			between = round(86 * s) if ratings and genre_beside_rating else text_gap
+			genre_w = min(genre_w, max(0, right - edge - text_x - used - between))
+			# Never past the middle of the header
+			genre_w = min(genre_w, max(0, right - edge - (x + highlight_width / 2)))
+			if genre_w < round(24 * s):
+				# Too narrow to read; leave it out
+				genre_w = 0
+		rating_x, text_right = place(genre_w)
+
+		lines = [(text, font, line_h, genre_w if is_genre else 4000) for text, font, line_h, is_genre in meta]
+		meta_y = line_y + top_pad + (art_size - sum(line[2] for line in meta)) / 2
+		if len(meta) == 1 and meta[0][1] == 316:
+			# A lone year sits high in its line box
+			meta_y += round(3 * s)
+
+		rating = None
+		if rating_x is not None:
+			star_h = gui.star_row_icon.h
+			rating_y = round(middle - star_h / 2)
+			if genre and others:
+				# Keep clear of the genre line below
+				genre_top = meta_y + sum(line[2] for line in others)
+				rating_y = min(rating_y, round(genre_top - star_h - 1 * s))
+			rating = (rating_x, rating_y)
+
+		return FullTitleLayout(
+			text_x=text_x, text_max_w=max(0, text_right - text_x), artist=artist, album=album,
+			meta=lines, meta_y=meta_y, rating=rating)
+
 	def _draw_full_title(
 			self,
 			tr: TrackClass,
@@ -40595,66 +40751,25 @@ class StandardPlaylist:
 		colour = self._folder_title_colour()
 		dim = alpha_mod(colour, max(colour.a - 70, 0))
 		album_y, artist_y = self._full_title_text_y(line_y)
-		text_x = art_x + art_size + round(10 * scale)
-		right = x + highlight_width - round(12 * scale)
-		if gui.rsp_on_left:
-			right -= round(3 * scale)
-
-		if gui.show_album_ratings:
-			right -= round(72 * scale)
-			self.tauon.draw_rating_widget(right + 6 * scale, album_y, tr, album=True, allow_input=not gui.scrollbar_active)
-
-		playlist = pctl.default_playlist
-		total_time = 0
-		count = 0
-		group = album_folder(tr)
-		q = track_position
-		while q < len(playlist):
-			track = pctl.get_track(playlist[q])
-			if album_folder(track) != group:
-				break
-			total_time += track.length
-			count += 1
-			q += 1
+		layout = self._full_title_layout(tr, track_position, line_y, x, highlight_width)
+		text_x = layout.text_x
 
 		# Right side: year, duration and genre stacked and centred as a group
-		meta: list[tuple[str, int, int]] = []  # (text, font, line height)
-		if prefs.append_date and year_search.search(tr.date):
-			year = d_date_display2(tr) or d_date_display(tr)
-			if year:
-				meta.append((year, 316, round(19 * scale)))
-		if prefs.append_total_time and count > 1:
-			meta.append(("[\u200a" + get_display_time(total_time) + "\u200a]", 12, round(14 * scale)))
-		if prefs.row_title_genre and tr.genre:
-			if meta:
-				# Extra breathing room above the genre line
-				text, font, line_h = meta[-1]
-				meta[-1] = (text, font, line_h + round(3 * scale))
-			meta.append((tr.genre, 13, round(15 * scale)))
-		meta_w = 0
-		meta_y = line_y + top_pad + (art_size - sum(line_h for _text, _font, line_h in meta)) / 2
-		meta_right = right - round(2 * scale)
-		for text, font, line_h in meta:
-			meta_w = max(meta_w, ddt.text((meta_right, meta_y, 1), text, dim, font))
+		meta_y = layout.meta_y
+		meta_right = self._full_title_right(x, highlight_width) - round(2 * scale)
+		for text, font, line_h, max_w in layout.meta:
+			if max_w > 0:
+				ddt.text((meta_right, meta_y, 1), text, dim, font, max_w=max_w)
 			meta_y += line_h
-		if meta_w:
-			meta_w += round(18 * scale)
 
-		# Mixed folders fall back to the folder name, as the compact title does
-		album = tr.album
-		mixed = (
-			track_position + 1 < len(playlist)
-			and (following := pctl.get_track(playlist[track_position + 1])).album != tr.album
-			and following.parent_folder_path == tr.parent_folder_path)
-		if mixed or not album:
-			album = self.album_folder_name(tr)
-		artist = tr.album_artist or tr.artist
+		# Album rating left of the year and duration
+		if layout.rating is not None:
+			self.tauon.draw_rating_widget(*layout.rating, tr, album=True, allow_input=not gui.scrollbar_active)
 
-		max_w = max(0, right - meta_w - text_x)
 		# Artist on the top line, album below
-		if artist:
-			ddt.text((text_x, album_y), artist, dim, 313, max_w=max_w)
-		album_w = ddt.text((text_x, artist_y), album, colour, 316, max_w=max_w)
+		if layout.artist:
+			ddt.text((text_x, album_y), layout.artist, dim, 313, max_w=layout.text_max_w)
+		album_w = ddt.text((text_x, artist_y), layout.album, colour, 316, max_w=layout.text_max_w)
 		if tr.parent_folder_path in prefs.banned_folders:
 			self.tauon.display_folder_ban_icon(text_x + album_w + round(6 * scale), artist_y + round(3 * scale))
 
@@ -41117,6 +41232,9 @@ class StandardPlaylist:
 			0.0, (window_size[1] - gui.panelBY - gui.playlist_top) / max(gui.playlist_row_height, 1))
 		self._ensure_tracklist_layout(verify=True)
 		self._apply_tracklist_pixel_scroll()
+		if self._settle_pending:
+			self._settle_pending = False
+			self.settle_on_full_title()
 		self.update_album_rating_hover()
 
 		highlight_width    = gui.tracklist_highlight_width
@@ -41361,7 +41479,11 @@ class StandardPlaylist:
 					# Ignore click in ratings box
 					click_title = (inp.mouse_click or inp.right_click or self.inp.middle_click) and self.coll(input_box)
 					if click_title and gui.show_album_ratings:
-						if self.inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
+						if self.full_titles():
+							# Full titles keep the stars left of the metadata; the hover test knows where
+							if gui.album_rating_hover:
+								click_title = False
+						elif self.inp.mouse_position[0] > (input_box[0] + input_box[2]) - 80 * gui.scale:
 							click_title = False
 
 					# Detect folder title click
@@ -41468,7 +41590,8 @@ class StandardPlaylist:
 				list_items.append((2, track_position, track_object, None, None, False, number, False, False))
 				number += self._tracklist_sub_rows[track_position]
 
-			if number >= render_rows:
+			# A drop on a tall title near the bottom still needs its track row to do the move
+			if number >= render_rows and not self.gui.move_on_title:
 				break
 
 			# Standard track ---------------------------------------------------------------------
@@ -42453,22 +42576,32 @@ class StandardPlaylist:
 		scroll_rows = math.ceil(max(gui.playlist_scroll_pixels, 0) / max(gui.playlist_row_height, 1))
 		render_rows = gui.playlist_view_length + scroll_rows + 2
 		playlist_length = len(self.pctl.default_playlist)
+		# Album-only mode draws nothing past the current album
+		album = self._current_album_bounds()
+		if album is not None:
+			playlist_length = album[1]
 
 		while track_position < playlist_length and number < render_rows:
 			if self._tracklist_title_rows[track_position]:
 				line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
-				rating_x = (
-					gui.playlist_left
-					+ gui.tracklist_highlight_left
-					+ gui.tracklist_highlight_width
-					- (round(12 * gui.scale) if self.full_titles() else 7 * gui.scale)
-					- (round(3 * gui.scale) if gui.rsp_on_left else 0)
-					- round(72 * gui.scale)
-					+ 6 * gui.scale
-				)
 				if self.full_titles():
-					rating_y = self._full_title_text_y(line_y)[0]
+					tr = self.pctl.get_track(self.pctl.default_playlist[track_position])
+					layout = self._full_title_layout(
+						tr, track_position, line_y,
+						gui.playlist_left + gui.tracklist_highlight_left, gui.tracklist_highlight_width)
+					if layout.rating is None:
+						return
+					rating_x, rating_y = layout.rating
 				else:
+					rating_x = (
+						gui.playlist_left
+						+ gui.tracklist_highlight_left
+						+ gui.tracklist_highlight_width
+						- 7 * gui.scale
+						- (round(3 * gui.scale) if gui.rsp_on_left else 0)
+						- round(72 * gui.scale)
+						+ 6 * gui.scale
+					)
 					rating_y = line_y + gui.playlist_row_height - 19 * gui.scale
 				rating_rect = (
 					rating_x - round(5 * gui.scale),
@@ -48342,14 +48475,14 @@ class QueueBox:
 		position = item.position
 		if not 0 <= position < len(playlist) or playlist[position] != item.track_id:
 			position = playlist.index(item.track_id)
-		folder = self.pctl.get_track(item.track_id).parent_folder_path
+		folder = album_folder(self.pctl.get_track(item.track_id))
 		playing = self.pctl.playing_object()
-		if item.album_stage and pl == self.pctl.active_playlist_playing and playing and playing.parent_folder_path == folder:
+		if item.album_stage and pl == self.pctl.active_playlist_playing and playing and album_folder(playing) == folder:
 			position = self.pctl.playlist_playing_position + 1
 		tracks = []
 		while position < len(playlist):
 			track_id = playlist[position]
-			if self.pctl.get_track(track_id).parent_folder_path != folder:
+			if album_folder(self.pctl.get_track(track_id)) != folder:
 				break
 			tracks.append(queue_item_gen(track_id, position, item.playlist_id))
 			position += 1
@@ -48386,7 +48519,7 @@ class QueueBox:
 		else:
 			item.tracks = None
 			playing = self.pctl.playing_object()
-			if item != self.pctl.force_queue[0] or not playing or playing.parent_folder_path != self.pctl.get_track(item.track_id).parent_folder_path:
+			if item != self.pctl.force_queue[0] or not playing or album_folder(playing) != album_folder(self.pctl.get_track(item.track_id)):
 				item.album_stage = 0
 		self.dragging = None
 		self.gui.request_tracklist_redraw()
@@ -48584,8 +48717,8 @@ class QueueBox:
 		if len(self.gui.shift_selection) > 1:
 			# if shift selection contains only same folder
 			for position in self.gui.shift_selection:
-				if self.pctl.get_track(self.pctl.default_playlist[position]).parent_folder_path != self.pctl.get_track(
-						main_track_id).parent_folder_path or self.inp.key_ctrl_down:
+				if album_folder(self.pctl.get_track(self.pctl.default_playlist[position])) != album_folder(self.pctl.get_track(
+						main_track_id)) or self.inp.key_ctrl_down:
 					break
 			else:
 				# Add as album type
@@ -59553,6 +59686,7 @@ def worker1(tauon: Tauon) -> None:
 			if not tauon.after_scan:
 				# Tags such as disc numbers shape the tracklist layout; rebuild it once scanning ends
 				pctl.db_inc += 1
+				gui.request_tracklist_redraw()
 
 		if tauon.playlist_autoscan:
 			pl_folder_autoscan()
