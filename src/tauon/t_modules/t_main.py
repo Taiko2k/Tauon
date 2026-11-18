@@ -22099,6 +22099,9 @@ class Tauon:
 			dash = False
 			if n_track.artist and self.colours.artist_text == self.colours.title_text:
 				dash = True
+			hide_artist = self.prefs.tracklist_hide_artist and bool(n_track.title)
+			if hide_artist:
+				dash = False
 
 			if n_track.title:
 				line = self.track_number_process(n_track.track_number)
@@ -22111,7 +22114,7 @@ class Tauon:
 
 				line = ""
 
-				if n_track.artist and not dash:
+				if n_track.artist and not dash and not hide_artist:
 					line0 = n_track.artist
 
 					artistoffset = self.ddt.text(
@@ -22273,12 +22276,14 @@ class Tauon:
 			if dash and n_track.artist and n_track.title:
 				line = n_track.artist + " - " + n_track.title
 
+			# Without an artist, the title starts where the artist would have
+			title_shift = 6 * self.gui.scale if hide_artist else 0
 			self.ddt.text(
-				(start_x + 33 * self.gui.scale + artistoffset, y),
+				(start_x + 33 * self.gui.scale - title_shift + artistoffset, y),
 				line,
 				alpha_mod(titlec, album_fade),
 				self.gui.row_font_size,
-				width - 71 * self.gui.scale - artistoffset - star_x - 20 * self.gui.scale - 2)
+				width - 71 * self.gui.scale + title_shift - artistoffset - star_x - 20 * self.gui.scale - 2)
 
 			line = get_display_time(n_track.length)
 
@@ -44322,6 +44327,10 @@ class TracklistLayoutPanel:
 		self.prefs.row_title_genre ^= True
 		self._redraw()
 
+	def _toggle_hide_artist(self) -> None:
+		self.prefs.tracklist_hide_artist ^= True
+		self._redraw()
+
 	def _toggle_whole_stars(self) -> None:
 		self.prefs.rating_whole_stars ^= True
 		self._redraw()
@@ -44386,14 +44395,18 @@ class TracklistLayoutPanel:
 		prefs = self.prefs
 		gui = self.gui
 		pr = tauon.playlist_render
+		track_rows = [
+			(_("Loves"), tauon.heart_toggle, lambda: bool(tauon.heart_toggle(1))),
+			(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
+		]
+		# Hidden rather than greyed out in columns view
+		if not gui.set_mode:
+			track_rows.append((_("Hide artist"), self._toggle_hide_artist, lambda: bool(prefs.tracklist_hide_artist)))
 		return [
 			[(_("Tracklist"), "", [
 				(_("Only current album"), pr.toggle_album_only, pr.album_only_enabled),
 			])],
-			[(_("Track rows"), "standard", [
-				(_("Loves"), tauon.heart_toggle, lambda: bool(tauon.heart_toggle(1))),
-				(_("Playcount lines"), tauon.star_line_toggle, lambda: bool(tauon.star_line_toggle(1))),
-			])],
+			[(_("Track rows"), "standard", track_rows)],
 			[(_("Ratings"), "", [
 				(_("Track ratings"), tauon.rating_toggle, lambda: bool(tauon.rating_toggle(1))),
 				(_("Album ratings"), tauon.album_rating_toggle, lambda: bool(tauon.album_rating_toggle(1))),
@@ -57483,6 +57496,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("column-album-artist-fallsback", prefs.column_aa_fallback_artist)
 	cf.update_value("column-album-art-full-height", prefs.column_album_art_full_height)
 	cf.update_value("album-title-style", prefs.tracklist_title_style)
+	cf.update_value("tracklist-hide-artist", prefs.tracklist_hide_artist)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("tracklist-current-album-only", prefs.tracklist_album_only)
@@ -57920,6 +57934,10 @@ def load_prefs(bag: Bag) -> None:
 		"Album title rows in the tracklist: 'compact' or 'full'.")
 	if prefs.tracklist_title_style not in ("compact", "full"):
 		prefs.tracklist_title_style = "compact"
+	prefs.tracklist_hide_artist = cf.sync_add(
+		"bool", "tracklist-hide-artist",
+		prefs.tracklist_hide_artist,
+		"Standard view track rows show the title without the artist.")
 	prefs.left_align_album_artist_title = cf.sync_add(
 		"bool", "left-aligned-album-artist-title",
 		prefs.left_align_album_artist_title,

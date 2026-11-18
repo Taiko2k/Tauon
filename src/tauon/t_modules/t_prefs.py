@@ -307,6 +307,8 @@ class Prefs:
 	column_album_art_full_height: bool = True
 	# Album title rows: "compact" (one row) or "full" (art, artist and album on separate lines)
 	tracklist_title_style: str = "compact"
+	# Standard view track rows show the title without the artist
+	tracklist_hide_artist: bool = False
 
 	meta_persists_stop: bool = False
 	meta_shows_selected: bool = False

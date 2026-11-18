@@ -14,7 +14,8 @@ def make_panel(set_mode: bool = False, scale: int = 1, coll: bool = False) -> Tr
 	panel.gui = SimpleNamespace(scale=scale, set_mode=set_mode, set_bar=True)
 	panel.prefs = SimpleNamespace(
 		ui_scale=scale, playlist_font_size=15, playlist_row_height=22 * scale, tracklist_y_text_offset=0,
-		row_title_genre=False, row_title_format=1, column_album_art_full_height=False, tracklist_scrollbar_left=False)
+		row_title_genre=False, row_title_format=1, column_album_art_full_height=False, tracklist_scrollbar_left=False,
+		tracklist_hide_artist=False)
 	panel.tauon = Mock()
 	panel.ddt = Mock()
 	panel.ddt.get_text_w.side_effect = lambda text, font: len(text) * 10
@@ -46,8 +47,27 @@ def test_track_row_toggles_are_standard_only_and_column_toggles_columns_only() -
 	labels = {title: [chip[0] for chip in chips] for title, _mode, chips in sections}
 	standard = next(title for title, mode in modes.items() if mode == "standard")
 	columns = next(title for title, mode in modes.items() if mode == "columns")
-	assert labels[standard] == ["Loves", "Track ratings", "Star hints", "Playcount lines"]
+	assert labels[standard] == ["Loves", "Playcount lines", "Hide artist"]
 	assert labels[columns] == ["Header bar", "Full album art"]
+
+
+@pytest.mark.parametrize("set_mode", [False, True])
+def test_hide_artist_chip_only_shown_in_standard_view(set_mode: bool) -> None:
+	panel = make_panel(set_mode=set_mode)
+	labels = [chip[0] for row in panel.chip_rows() for _title, _mode, chips in row for chip in chips]
+	assert ("Hide artist" in labels) is not set_mode
+
+
+def test_hide_artist_chip_toggles_pref() -> None:
+	panel = make_panel()
+	panel._redraw = Mock()
+	chip = next(
+		chip for row in panel.chip_rows() for _title, _mode, chips in row for chip in chips
+		if chip[0] == "Hide artist")
+	assert chip[2]() is False
+	chip[1]()
+	assert panel.prefs.tracklist_hide_artist is True
+	assert chip[2]() is True
 
 
 @pytest.mark.parametrize("scale", [1, 2])
