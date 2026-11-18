@@ -305,6 +305,8 @@ class Prefs:
 	custom_encoder_output = ""
 	column_aa_fallback_artist: bool = False
 	column_album_art_full_height: bool = True
+	# Album title rows: "compact" (one row) or "full" (art, artist and album on separate lines)
+	tracklist_title_style: str = "compact"
 
 	meta_persists_stop: bool = False
 	meta_shows_selected: bool = False

@@ -297,6 +297,7 @@ class TrackFile:
 		self.encoder       = ""
 		self.disc_number   = ""
 		self.disc_total    = ""
+		self.disc_subtitle = ""
 		self.lyrics        = ""
 		self.synced_lyrics = ""
 		self.synced = ""
@@ -402,6 +403,7 @@ def read_asf_tags(tags: mutagen.asf.ASFTags, track: TrackClass) -> None:
 	set_artist_values(
 		track, "album_artist", asf_field_values(tags, "albumartist"), asf_field_values(tags, "WM/ALBUMARTISTS"))
 	process_odat(track, "; ".join(asf_field_values(tags, "originaldate")))
+	track.disc_subtitle = "; ".join(asf_field_values(tags, "WM/SetSubTitle"))
 	track.FMPS_Rating = asf_rating(tags)
 	for field, attr in (("tracknumber", "track"), ("discnumber", "disc")):
 		values = asf_field_values(tags, field)
@@ -454,6 +456,7 @@ def read_id3_tags(tags: mutagen.id3.ID3, track: TrackClass | TrackFile) -> None:
 	natural_get("TALB", "album")
 	natural_get("TDRC", "date")
 	natural_get("TCOM", "composer")
+	natural_get("TSST", "disc_subtitle")
 	track.label = "; ".join(str(value) for frame in tags.getall("TPUB") for value in frame.text)
 	natural_get("COMM", "comment")
 	process_odat(track, natural_get("TDOR"))
@@ -641,6 +644,9 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 		if key in tags:
 			setattr(track, attr, get_bytes(key).decode())
 
+	subtitle_key = "----:com.apple.iTunes:DISCSUBTITLE"
+	track.disc_subtitle = get_bytes(subtitle_key).decode() if subtitle_key in tags else ""
+
 	artist_ids = "----:com.apple.iTunes:MusicBrainz Artist Id"
 	if artist_ids in tags:
 		track.musicbrainz_artistids = [value.decode() for value in tags[artist_ids]]
@@ -752,6 +758,8 @@ class Flac(TrackFile):
 						self.disc_total = b.decode("utf-8")
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
+					elif a == "discsubtitle":
+						self.disc_subtitle = b.decode("utf-8")
 					elif a == "metadata_block_picture":
 						logging.info("Tag Scanner: Found picture inside vorbis comment inside a FLAC file. Ignoring")
 						logging.info(f"      In file: {self.filepath}")
@@ -1052,6 +1060,8 @@ class Opus(TrackFile):
 						self.replaygain_album_gain = parse_r128_gain(b)
 					elif a == "discnumber":
 						self.disc_number = b.decode("utf-8")
+					elif a == "discsubtitle":
+						self.disc_subtitle = b.decode("utf-8")
 					elif a in ("disctotal", "totaldiscs"):
 						self.disc_total = b.decode("utf-8")
 					elif a in ("lyrics", "syncedlyrics", "unsyncedlyrics"):
@@ -1214,6 +1224,8 @@ class Ape(TrackFile):
 						self.genres = genres
 				elif key == "discnumber":
 					self.disc_number = value
+				elif key == "discsubtitle":
+					self.disc_subtitle = value
 				elif key == "disc":
 					# Ape track fields appear to use fraction format, rather than separate fields for number and total
 					# So we need to handle that here for consistency
