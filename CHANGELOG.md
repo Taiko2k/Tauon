@@ -12,6 +12,8 @@ Changelog
  - Added year setting to gallery
  - Added rating keybinds
  - Added album only tracklist mode
+ - Added disc title support
+ - Added album art in folder title setting
  - Reworked server sync and library add
  - Reworked ratings
  - Reworked track menus
