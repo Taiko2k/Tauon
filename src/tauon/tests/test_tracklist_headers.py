@@ -35,6 +35,8 @@ def make_view(tracks: list[tuple[str, str]], style: str = "compact") -> Standard
 	view.smooth_scroll = Mock()
 	view.album_only_owner = None
 	view._tracklist_layout_key = None
+	view._tracklist_layout_snapshot = []
+	view._tracklist_layout_gen = 0
 	view._album_bounds_key = None
 	view._album_bounds = None
 	view._album_start_seen = None
@@ -82,9 +84,33 @@ def test_layout_rebuilds_after_middle_playlist_reorder() -> None:
 	view.pctl.default_playlist[1], view.pctl.default_playlist[2] = (
 		view.pctl.default_playlist[2], view.pctl.default_playlist[1])
 
-	view._ensure_tracklist_layout()
+	view._ensure_tracklist_layout(verify=True)
 
 	assert view._tracklist_title_rows == [1, 0, 1, 0, 1]
+
+
+def test_scroll_entry_points_pick_up_reorder() -> None:
+	view = make_view([("a", "1"), ("a", "1"), ("b", "1"), ("b", "1"), ("c", "1")])
+	playlist = view.pctl.default_playlist
+	playlist[1], playlist[2] = playlist[2], playlist[1]
+
+	view.scroll_tracklist_rows(0)
+
+	assert view._tracklist_title_rows == [1, 1, 1, 1, 1]
+
+
+def test_album_only_bounds_follow_reorder() -> None:
+	view = make_view([("x", "1"), ("a", "1"), ("a", "1"), ("a", "1"), ("a", "1"), ("y", "1"), ("z", "1"), ("w", "1")])
+	view.prefs.tracklist_album_only = True
+	view.pctl.selected_in_playlist = 1
+	assert view._current_album_bounds() == (1, 5)
+	# Swap an inner track out; the group's edges still look the same
+	playlist = view.pctl.default_playlist
+	playlist[2], playlist[6] = playlist[6], playlist[2]
+
+	view._ensure_tracklist_layout(verify=True)
+
+	assert view._current_album_bounds() == (1, 2)
 
 
 def test_smooth_pixel_scroll_crosses_fractional_rows() -> None:
