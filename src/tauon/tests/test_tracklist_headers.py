@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from tauon.t_modules.t_main import StandardPlaylist
+from tauon.t_modules.t_main import StandardPlaylist, disc_folder_split
 
 ROW = 20
 
@@ -176,3 +176,61 @@ def test_settle_moves_partway_title_to_snap_position() -> None:
 	view.settle_on_full_title()
 	assert view.pctl.playlist_view_position == 5
 	assert view.gui.playlist_scroll_pixels == 5
+
+
+@pytest.mark.parametrize(
+	("folder", "expected"),
+	[
+		("/m/Album/CD1", ("/m/Album", "1")),
+		("/m/Album/cd02", ("/m/Album", "02")),
+		("/m/Album/Disc 3", ("/m/Album", "3")),
+		("/m/Album/disk2/", ("/m/Album", "2")),
+		("/m/Album/CD1 - Bonus", ("/m/Album/CD1 - Bonus", "")),
+		("/m/Album CD1", ("/m/Album CD1", "")),
+		("/m/Album/CD0", ("/m/Album/CD0", "")),
+		("CD1", ("CD1", "")),
+	],
+)
+def test_disc_folder_split(folder: str, expected: tuple[str, str]) -> None:
+	assert disc_folder_split(folder) == expected
+
+
+CD_FOLDERS = [("x/A/CD1", ""), ("x/A/CD1", ""), ("x/A/CD2", ""), ("x/A/CD2", ""), ("x/B", "")]
+
+
+def test_sibling_cd_folders_merge_into_one_album() -> None:
+	view = make_view(CD_FOLDERS)
+	sub = view.disc_row_height() / ROW
+	assert view._tracklist_title_rows == [1, 0, 0, 0, 1]
+	assert view._tracklist_sub_rows == [sub, 0, sub, 0, 0]
+	assert view._album_art_block_starts == [0, 4]
+	track = view.pctl.get_track
+	assert StandardPlaylist.disc_label(track(0)) == "Disc 1"
+	assert StandardPlaylist.disc_label(track(2)) == "Disc 2"
+	assert StandardPlaylist.album_folder_name(SimpleNamespace(
+		parent_folder_path="x/A/CD2", parent_folder_name="CD2")) == "A"
+
+
+def test_cd_folders_under_different_parents_stay_apart() -> None:
+	view = make_view([("x/A/CD1", ""), ("x/B/CD2", "")])
+	assert view._tracklist_title_rows == [1, 1]
+	assert view._tracklist_sub_rows == [0, 0]
+
+
+def test_disc_tag_wins_over_folder_name() -> None:
+	view = make_view([("x/A/CD1", "3"), ("x/A/CD2", "4")])
+	assert StandardPlaylist.disc_label(view.pctl.get_track(0)) == "Disc 3"
+	assert StandardPlaylist.disc_label(view.pctl.get_track(1)) == "Disc 4"
+
+
+def test_lone_cd_folder_has_no_disc_row() -> None:
+	view = make_view([("x/A/CD1", ""), ("x/A/CD1", ""), ("x/B", "")])
+	assert view._tracklist_title_rows == [1, 0, 1]
+	assert view._tracklist_sub_rows == [0, 0, 0]
+
+
+def test_album_only_bounds_span_cd_folders() -> None:
+	view = make_view(CD_FOLDERS)
+	view.prefs.tracklist_album_only = True
+	view.pctl.selected_in_playlist = 3
+	assert view._current_album_bounds() == (0, 4)

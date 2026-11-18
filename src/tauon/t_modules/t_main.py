@@ -12289,9 +12289,9 @@ class Tauon:
 
 	def get_folder_tracks_local(self, pl_in: int) -> list[int]:
 		selection: list[int] = []
-		parent = os.path.normpath(self.pctl.master_library[self.pctl.default_playlist[pl_in]].parent_folder_path)
+		parent = os.path.normpath(album_folder(self.pctl.master_library[self.pctl.default_playlist[pl_in]]))
 		while pl_in < len(self.pctl.default_playlist) and parent == os.path.normpath(
-				self.pctl.master_library[self.pctl.default_playlist[pl_in]].parent_folder_path):
+				album_folder(self.pctl.master_library[self.pctl.default_playlist[pl_in]])):
 			selection.append(pl_in)
 			pl_in += 1
 		return selection
@@ -40104,6 +40104,24 @@ class MiniModeSignal:
 		self.gui.request_frame()
 		self.ddt.alpha_bg = False
 
+_disc_folder_pattern = re.compile(r"(?:CD|Disc|Disk)\s?(\d{1,2})", re.IGNORECASE)
+
+
+@functools.lru_cache(maxsize=4096)
+def disc_folder_split(folder: str) -> tuple[str, str]:
+	"""(album folder, disc number) for a disc folder like "Album/CD2", otherwise (folder, "")."""
+	parent, name = os.path.split(folder.rstrip("/\\"))
+	match = _disc_folder_pattern.fullmatch(name)
+	if match is None or not parent or match.group(1).strip("0") == "":
+		return folder, ""
+	return parent, match.group(1)
+
+
+def album_folder(track: TrackClass) -> str:
+	"""Folder the track's album is grouped by; sibling CD1, CD2... folders share their parent."""
+	return disc_folder_split(track.parent_folder_path)[0]
+
+
 class StandardPlaylist:
 	def __init__(self, tauon: Tauon, pl_bg: LoadImageAsset | None) -> None:
 		self.tauon         = tauon
@@ -40177,24 +40195,24 @@ class StandardPlaylist:
 		if anchor < 0:
 			anchor = min(max(pctl.selected_in_playlist, 0), length - 1)
 
-		folder = pctl.get_track(playlist[anchor]).parent_folder_path
+		folder = album_folder(pctl.get_track(playlist[anchor]))
 		key = (self._tracklist_layout_gen, id(playlist), length, anchor, playlist[anchor])
 		cached = self._album_bounds
 		if key == self._album_bounds_key and cached is not None:
 			# Still valid if the group's edges haven't moved
 			start, end = cached
 			if (
-				pctl.get_track(playlist[start]).parent_folder_path == folder
-				and pctl.get_track(playlist[end - 1]).parent_folder_path == folder
-				and (start == 0 or pctl.get_track(playlist[start - 1]).parent_folder_path != folder)
-				and (end == length or pctl.get_track(playlist[end]).parent_folder_path != folder)
+				album_folder(pctl.get_track(playlist[start])) == folder
+				and album_folder(pctl.get_track(playlist[end - 1])) == folder
+				and (start == 0 or album_folder(pctl.get_track(playlist[start - 1])) != folder)
+				and (end == length or album_folder(pctl.get_track(playlist[end])) != folder)
 			):
 				return cached
 		start = anchor
-		while start > 0 and pctl.get_track(playlist[start - 1]).parent_folder_path == folder:
+		while start > 0 and album_folder(pctl.get_track(playlist[start - 1])) == folder:
 			start -= 1
 		end = anchor + 1
-		while end < length and pctl.get_track(playlist[end]).parent_folder_path == folder:
+		while end < length and album_folder(pctl.get_track(playlist[end])) == folder:
 			end += 1
 		self._album_bounds_key = key
 		self._album_bounds = (start, end)
@@ -40294,7 +40312,7 @@ class StandardPlaylist:
 				block_starts.append(position)
 
 			if show_titles:
-				if position == 0 or track.parent_folder_path != previous_track.parent_folder_path:
+				if position == 0 or album_folder(track) != album_folder(previous_track):
 					if group_has_discs and self._disc_label_valid(pctl.get_track(playlist[group_start])):
 						sub_rows[group_start] = sub_units
 					title_rows[position] = title_units
@@ -40444,29 +40462,48 @@ class StandardPlaylist:
 		return self.gui.playlist_row_height
 
 	def disc_row_height(self) -> int:
-		return round(21 * self.gui.scale)
+		return round(20 * self.gui.scale)
+
+	@staticmethod
+	def track_disc(track: TrackClass) -> str:
+		"""Disc number tag, falling back to a CD1-style folder name."""
+		# Some sources store the disc number as an int
+		number = str(track.disc_number)
+		if number not in ("", "0"):
+			return number
+		return disc_folder_split(track.parent_folder_path)[1]
 
 	@staticmethod
 	def _disc_label_valid(track: TrackClass) -> bool:
-		# Some sources store the disc number as an int
-		return str(track.disc_number) not in ("", "0")
+		return StandardPlaylist.track_disc(track) != ""
 
 	def _disc_changes(self, track: TrackClass, previous: TrackClass) -> bool:
-		"""A new disc starts within the same album folder."""
+		"""A new disc starts within the same album group."""
+		if not self._disc_label_valid(track) or album_folder(track) != album_folder(previous):
+			return False
+		if track.parent_folder_path != previous.parent_folder_path:
+			# Moved into the next sibling disc folder
+			return True
 		return (
-			self._disc_label_valid(track)
-			and bool(track.album)
-			and str(track.disc_number) != str(previous.disc_number)
+			bool(track.album)
 			and track.album == previous.album
-			and track.parent_folder_path == previous.parent_folder_path
+			and self.track_disc(track) != self.track_disc(previous)
 		)
+
+	@staticmethod
+	def album_folder_name(track: TrackClass) -> str:
+		"""Folder name for titles, skipping a CD1-style disc folder."""
+		folder, disc = disc_folder_split(track.parent_folder_path)
+		if disc:
+			return os.path.basename(folder.rstrip("/\\")) or track.parent_folder_name
+		return track.parent_folder_name
 
 	@staticmethod
 	def disc_label(track: TrackClass) -> str:
 		subtitle = getattr(track, "disc_subtitle", "")  # Absent on tracks saved before the field existed
 		if subtitle:
 			return subtitle
-		number = str(track.disc_number)
+		number = StandardPlaylist.track_disc(track)
 		return _("Disc {N}").format(N=number.split("/")[0].lstrip("0") or number)
 
 	def _track_row_offset(self, track_position: int) -> float:
@@ -40571,10 +40608,11 @@ class StandardPlaylist:
 		playlist = pctl.default_playlist
 		total_time = 0
 		count = 0
+		group = album_folder(tr)
 		q = track_position
 		while q < len(playlist):
 			track = pctl.get_track(playlist[q])
-			if track.parent_folder_path != tr.parent_folder_path:
+			if album_folder(track) != group:
 				break
 			total_time += track.length
 			count += 1
@@ -40610,7 +40648,7 @@ class StandardPlaylist:
 			and (following := pctl.get_track(playlist[track_position + 1])).album != tr.album
 			and following.parent_folder_path == tr.parent_folder_path)
 		if mixed or not album:
-			album = tr.parent_folder_name
+			album = self.album_folder_name(tr)
 		artist = tr.album_artist or tr.artist
 
 		max_w = max(0, right - meta_w - text_x)
@@ -40632,7 +40670,6 @@ class StandardPlaylist:
 		"""Disc subtitle, or "Disc N", followed by a faint rule."""
 		gui = self.gui
 		scale = gui.scale
-		height = self.disc_row_height()
 		if gui.set_mode:
 			text_x = (gui.pl_st_left + 2) * scale
 			if center_mode:
@@ -40650,19 +40687,19 @@ class StandardPlaylist:
 		colour = self._folder_title_colour()
 		colour = alpha_mod(colour, max(colour.a - 60, 0))
 		text_w = self.ddt.text(
-			(text_x, line_y + round(4 * scale)), self.disc_label(tr), colour, 312,
+			(text_x, line_y + round(3 * scale)), self.disc_label(tr), colour, 312,
 			max_w=max(0, right - text_x))
 		line_x = text_x + text_w + round(10 * scale)
 		if line_x < right:
 			self.ddt.rect(
-				(line_x, line_y + height // 2, right - line_x, max(1, round(1 * scale))), self.colours.folder_line)
+				(line_x, line_y + round(11 * scale), right - line_x, max(1, round(1 * scale))),
+				self.colours.folder_line)
 
 	def _same_album_art_block(self, track_a: TrackClass, track_b: TrackClass) -> bool:
-		return (
-			track_a.parent_folder_path == track_b.parent_folder_path
-			and track_a.album == track_b.album
-			and track_a.album_artist == track_b.album_artist
-		)
+		if track_a.parent_folder_path != track_b.parent_folder_path:
+			# Sibling disc folders share one block
+			return album_folder(track_a) == album_folder(track_b)
+		return track_a.album == track_b.album and track_a.album_artist == track_b.album_artist
 
 	def _album_art_block_bounds(self, track_position: int) -> tuple[int, int]:
 		pctl = self.pctl
@@ -41336,9 +41373,9 @@ class StandardPlaylist:
 						if self.inp.middle_click and self.tauon.is_level_zero(allow_quick_find=True):
 							if self.inp.key_ctrl_down:  # Add as ungrouped tracks
 								i = track_position
-								parent = pctl.get_track(pctl.default_playlist[i]).parent_folder_path
-								while i < len(pctl.default_playlist) and parent == pctl.get_track(
-										pctl.default_playlist[i]).parent_folder_path:
+								parent = album_folder(pctl.get_track(pctl.default_playlist[i]))
+								while i < len(pctl.default_playlist) and parent == album_folder(pctl.get_track(
+										pctl.default_playlist[i])):
 									pctl.add_to_queue(queue_item_gen(pctl.default_playlist[i], i, pctl.pl_to_id(
 										pctl.active_playlist_viewing)))
 									i += 1
@@ -41375,9 +41412,8 @@ class StandardPlaylist:
 								self.gui.shift_selection = []
 								pctl.selected_in_playlist = track_position
 								u = track_position
-								while u < len(pctl.default_playlist) and track_object.parent_folder_path == \
-										pctl.master_library[
-											pctl.default_playlist[u]].parent_folder_path:
+								while u < len(pctl.default_playlist) and album_folder(track_object) == \
+										album_folder(pctl.master_library[pctl.default_playlist[u]]):
 									self.gui.shift_selection.append(u)
 									u += 1
 
@@ -41688,13 +41724,13 @@ class StandardPlaylist:
 					date = ""
 					duration = ""
 
-					line = tr.parent_folder_name
+					line = self.album_folder_name(tr)
 
 					# Use folder name if mixed/singles?
 					if len(pctl.default_playlist) > track_position + 1 and pctl.get_track(
 							pctl.default_playlist[track_position + 1]).album != tr.album and \
 							pctl.get_track(pctl.default_playlist[track_position + 1]).parent_folder_path == tr.parent_folder_path:
-						line = tr.parent_folder_name
+						line = self.album_folder_name(tr)
 					else:
 						if tr.album_artist and tr.album:
 							line = tr.album_artist + separator + tr.album
@@ -41753,8 +41789,9 @@ class StandardPlaylist:
 					q = track_position
 
 					total_time = 0
+					group = album_folder(tr)
 					while q < len(pctl.default_playlist):
-						if pctl.get_track(pctl.default_playlist[q]).parent_folder_path != tr.parent_folder_path:
+						if album_folder(pctl.get_track(pctl.default_playlist[q])) != group:
 							break
 
 						total_time += pctl.get_track(pctl.default_playlist[q]).length
