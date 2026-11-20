@@ -98,6 +98,7 @@ class TransEditBox:
 		self.art_index: int | None = None
 		self.art_menu = None
 		self.write_result: tuple[int, str | None] | None = None
+		self.write_pre_state = 0
 		self.scope_open = False
 		self.tools_menu = None
 		self.presets_menu = None
@@ -745,6 +746,7 @@ class TransEditBox:
 		self.gui.write_tag_in_progress = True
 		self.write_result = None
 		session = self.session
+		self.write_pre_state = self._release_playing(session)
 
 		def save() -> None:
 			try:
@@ -756,7 +758,34 @@ class TransEditBox:
 
 		shooter(save)
 
+	def _release_playing(self, session: TagEditSession) -> int:
+		"""Stop playback if it holds a file about to be rewritten; Windows can't replace open files."""
+		from tauon.t_modules.t_enums import PlayingState  # noqa: PLC0415
+
+		pctl = self.pctl
+		if pctl.playing_state == PlayingState.STOPPED or not 0 <= pctl.queue_step < len(pctl.track_queue):
+			return 0
+		track = pctl.get_track(pctl.track_queue[pctl.queue_step])
+		if track.is_network or not track.fullpath:
+			return 0
+		try:
+			playing_path = Path(track.fullpath).resolve()
+		except OSError:
+			return 0
+		if any(doc.path == playing_path and session.pending[doc.path].changed for doc in session.documents):
+			return pctl.stop(True)
+		return 0
+
 	def _finish_write(self) -> None:
+		pre_state = self.write_pre_state
+		self.write_pre_state = 0
+		try:
+			self._finish_write_result()
+		finally:
+			if pre_state == 1:
+				self.pctl.revert()
+
+	def _finish_write_result(self) -> None:
 		count, error = self.write_result
 		self.write_result = None
 		self.gui.write_tag_in_progress = False

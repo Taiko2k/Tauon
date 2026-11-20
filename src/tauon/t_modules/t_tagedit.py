@@ -18,6 +18,7 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 from collections.abc import Callable, Iterator, MutableMapping
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -218,6 +219,18 @@ class TagEntry:
 	value_index: int | None = None
 	value_match: str | None = None
 	value_occurrence: int = 0
+
+
+def replace_file(source: Path, destination: Path) -> None:
+	"""On Windows, retry briefly while another process (player, antivirus) still has the destination open."""
+	for _attempt in range(10 if sys.platform == "win32" else 0):
+		try:
+			source.replace(destination)
+		except PermissionError:
+			time.sleep(0.2)
+		else:
+			return
+	source.replace(destination)
 
 
 def file_stamp(path: Path) -> tuple[int, int, int, int]:
@@ -1677,7 +1690,7 @@ class TagEditSession:
 				TagDocument(staged)
 			for doc, staged, backup in prepared:
 				doc.ensure_unchanged()
-				staged.replace(doc.path)
+				replace_file(staged, doc.path)
 				committed.append((doc, backup, None))
 				committed[-1] = (doc, backup, file_stamp(doc.path))
 		except Exception as error:
