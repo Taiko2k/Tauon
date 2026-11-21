@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, call
 
 import pytest
+import requests
 
 from tauon.t_modules import t_lyrics, t_main
 
@@ -33,6 +34,7 @@ def make_tauon(enabled_sources: list[str]) -> SimpleNamespace:
 			save_lyrics_changes_to_files=False,
 			save_synced_to_lrc=False,
 			show_lyrics_side=False,
+			auto_lyrics_checked=[1],
 		),
 		lyrics_fetch_timer=LyricFetchTimer(),
 		show_message=Mock(),
@@ -104,6 +106,47 @@ def test_lyric_search_uses_api_before_unneeded_scraper(monkeypatch: pytest.Monke
 	assert track.lyrics == "API static lyrics"
 	static_api.assert_called_once_with("Artist", "Title", user_agent="Tauon/Test")
 	static_scraper.assert_not_called()
+
+
+def test_silent_lyric_search_network_error_allows_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+	monkeypatch.setattr(t_main, "lyric_sources", {"API": Mock(side_effect=requests.ConnectionError)})
+	monkeypatch.setattr(t_main, "provides_synced", set())
+	monkeypatch.setattr(t_main, "uses_scraping", set())
+
+	track = SimpleNamespace(index=1, artist="Artist", title="Title", lyrics="", synced="")
+	tauon = make_tauon(["API"])
+	t_main.Tauon.get_lyric_fire(tauon, track, True)
+
+	assert tauon.prefs.auto_lyrics_checked == []
+	assert tauon.now_searching == "errored"
+
+
+def test_silent_lyric_search_not_found_stays_checked(monkeypatch: pytest.MonkeyPatch) -> None:
+	monkeypatch.setattr(t_main, "lyric_sources", {"API": Mock(return_value=("", ""))})
+	monkeypatch.setattr(t_main, "provides_synced", set())
+	monkeypatch.setattr(t_main, "uses_scraping", set())
+
+	track = SimpleNamespace(index=1, artist="Artist", title="Title", lyrics="", synced="")
+	tauon = make_tauon(["API"])
+	t_main.Tauon.get_lyric_fire(tauon, track, True)
+
+	assert tauon.prefs.auto_lyrics_checked == [1]
+
+
+def test_silent_lyric_search_rate_limited_allows_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+	source = Mock(return_value=("lyrics", ""))
+	monkeypatch.setattr(t_main, "lyric_sources", {"API": source})
+
+	track = SimpleNamespace(index=1, artist="Artist", title="Title", lyrics="", synced="")
+	tauon = make_tauon(["API"])
+	monkeypatch.setattr(tauon.lyrics_fetch_timer, "get", lambda: -50)
+	force_set = Mock()
+	monkeypatch.setattr(tauon.lyrics_fetch_timer, "force_set", force_set)
+
+	assert t_main.Tauon.get_lyric_fire(tauon, track, True) == "later"
+	force_set.assert_not_called()
+	assert tauon.prefs.auto_lyrics_checked == []
+	source.assert_not_called()
 
 
 def test_will_overwrite_synced_ignores_network_track(monkeypatch: pytest.MonkeyPatch) -> None:
