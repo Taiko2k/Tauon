@@ -1977,7 +1977,9 @@ class FeuxBar:
 
 		progress = 0.0
 		if length > 0:
-			progress = min(1.0, max(0.0, int(pctl.playing_time) / length))
+			# Whole seconds normally; Clearwater's tube moves continuously
+			elapsed = pctl.playing_time if aero is not None else int(pctl.playing_time)
+			progress = min(1.0, max(0.0, elapsed / length))
 		if self.seek_drag:
 			gui.update_on_drag = True
 			gui.request_frame()
@@ -4270,6 +4272,8 @@ def node_from_dict(d: dict) -> Node:
 # Clearwater (t_aero): the gap between widgets and at the window edge, in
 # scaled px. CustomLayout keeps it in step with the skin; 0 when it's off.
 AERO_GAP = 0.0
+# ... and the gap between the outermost widgets and the window edge
+AERO_EDGE = 0.0
 
 
 def _fixed_on(node: Node, axis: str, scale: float) -> float | None:
@@ -4343,11 +4347,14 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	outer = (x, y, w, h)
 	gap = AERO_GAP
 	if gap:
-		# Clearwater: half the gap around the whole layout, and half around
-		# each widget (and each tab group), so neighbours sit a full gap apart
+		# Clearwater: half the gap around each widget (and each tab group), so
+		# neighbours sit a full gap apart, and the whole layout moved so the
+		# outermost widgets sit AERO_EDGE from the window edge (this can grow
+		# the layout past the window when the edge gap is under half the gap)
 		half = gap / 2
 		if _top:
-			x, y, w, h = x + half, y + half, max(0.0, w - gap), max(0.0, h - gap)
+			d = AERO_EDGE - half
+			x, y, w, h = x + d, y + d, max(0.0, w - d * 2), max(0.0, h - d * 2)
 		if isinstance(node, (Leaf, TabStack)) and not _in_tab:
 			x, y, w, h = x + half, y + half, max(0.0, w - gap), max(0.0, h - gap)
 	node.rect = (x, y, w, h)
@@ -7429,10 +7436,10 @@ class CustomLayout:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND)
 
 	def _sync_aero_gap(self) -> None:
-		global AERO_GAP
-		gap = float(self.tauon.aero.gutter()) if self.tauon.aero.active else 0.0
-		if gap != AERO_GAP:
-			AERO_GAP = gap
+		global AERO_GAP, AERO_EDGE
+		active = self.tauon.aero.active
+		AERO_GAP = float(self.tauon.aero.gutter()) if active else 0.0
+		AERO_EDGE = float(self.tauon.aero.edge_gap()) if active else 0.0
 
 	def _draw_aero_panels(self, aero, node: Node) -> None:
 		"""A glass panel under every widget, and one under each tab group

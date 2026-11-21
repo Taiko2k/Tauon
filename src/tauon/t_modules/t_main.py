@@ -790,8 +790,8 @@ class GuiVar:
 		playback panel is selected -- the Feux panel is the taller of the two."""
 		height = round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
 		if self.bag.prefs.aero:
-			# Clearwater floats the bar on the sky: a gutter above and below
-			height += round(Aero.GUTTER * self.scale) * 2
+			# Clearwater floats the bar on the sky: a gutter above, the edge gap below
+			height += round(Aero.GUTTER * self.scale) + round(Aero.EDGE_GAP * self.scale)
 		return height
 
 	def rescale(self) -> None:
@@ -17291,8 +17291,8 @@ class Tauon:
 		if prefs.aero and gui.mode == GuiMode.MAIN:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
-				# Clearwater floats the top bar on the sky: gutter, glass, gutter
-				gui.panelY = self.aero.gutter() * 2 + self.aero.top_glass_height()
+				# Clearwater floats the top bar on the sky: edge gap, glass, gutter
+				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter()
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
 				gui.playlist_top_bk = gui.playlist_top
 
@@ -17561,9 +17561,10 @@ class Tauon:
 				gui.plw -= gui.rspw
 
 			if prefs.aero and not gui.custom_mode:
-				# Clearwater: a gutter between the panels and at the window edges
+				# Clearwater: a gutter between the panels, a smaller gap at the window edges
 				g = self.aero.gutter()
-				x = g
+				e = self.aero.edge_gap()
+				x = e
 				if gui.lsp:
 					gui.lsp_x = x
 					x += gui.lspw + g
@@ -17572,7 +17573,7 @@ class Tauon:
 					gui.rsp_split_x = x + gui.rspw
 					x += gui.rspw + g
 				gui.playlist_left = x
-				right = window_size[0] - g
+				right = window_size[0] - e
 				if gui.rsp and not gui.rsp_on_left:
 					gui.rsp_x = right - gui.rspw
 					gui.rsp_split_x = gui.rsp_x
@@ -42021,6 +42022,7 @@ class StandardPlaylist:
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
 			aero.row_rects.clear()
+			aero.playing_rows.clear()
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
 			ddt.text_shadow = None
 			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
@@ -42312,7 +42314,8 @@ class StandardPlaylist:
 				# the selection, and the rest remembered for the hover highlight
 				row = aero.row_rect(track_box)
 				if playing:
-					aero.gel(row)
+					# The gel itself goes under the texture at blit time
+					aero.playing_rows.append(row)
 					# text-shadow: 0 1px 1px rgba(0,40,70,.55)
 					ddt.text_shadow = ColourRGBA(0, 40, 70, 140)
 				elif highlight:
@@ -42779,7 +42782,7 @@ class StandardPlaylist:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		if self.tauon.aero.active:
 			# Clearwater's hover highlight sits under the row's text
-			self.tauon.aero.draw_row_hover((r.x, r.y, r.w, r.h))
+			self.tauon.aero.draw_tracklist_under((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
 	def cache_render(self) -> None:
@@ -70269,6 +70272,10 @@ def main(holder: Holder) -> None:
 				tauon.bottom_bar1.seek_time = pctl.playing_time
 				if not prefs.power_save or window_is_focused(tauon.t_window):
 					gui.request_frame()
+			elif tauon.aero.active:
+				# Clearwater's seek tube moves continuously; its frames come
+				# from the tube itself
+				tauon.bottom_bar1.seek_time = pctl.playing_time
 
 		# Auto save play times to disk
 		if pctl.total_playtime - time_last_save > 600:

@@ -231,6 +231,40 @@ def _map_stops(t_img: Image.Image, stops: list[tuple[float, RGBA]]) -> Image.Ima
 	return Image.merge("RGBA", [t_img.point(l) for l in luts])
 
 
+def _stroke_outline(pts: list[tuple[float, float]], half: float) -> list[tuple[float, float]]:
+	"""Outline of a polyline stroked `half` either side of it."""
+	left: list[tuple[float, float]] = []
+	right: list[tuple[float, float]] = []
+	n = len(pts)
+	for i in range(n):
+		x0, y0 = pts[max(0, i - 1)]
+		x1, y1 = pts[min(n - 1, i + 1)]
+		dx, dy = x1 - x0, y1 - y0
+		ln = math.hypot(dx, dy) or 1.0
+		nx, ny = -dy / ln * half, dx / ln * half
+		px, py = pts[i]
+		left.append((px + nx, py + ny))
+		right.append((px - nx, py - ny))
+	return left + right[::-1]
+
+
+_LUTS: dict[int, list[int]] = {}
+
+
+def _lut(k: float) -> list[int]:
+	"""A 256-entry table scaling a channel by k (for Image.point), cached
+	at 1/1024 steps."""
+	q = max(0, round(k * 1024))
+	table = _LUTS.get(q)
+	if table is None:
+		k = q / 1024
+		table = [min(255, round(v * k)) for v in range(256)]
+		if len(_LUTS) > 4096:
+			_LUTS.clear()
+		_LUTS[q] = table
+	return table
+
+
 def _solid(size: tuple[int, int], c: RGBA, alpha: Image.Image) -> Image.Image:
 	"""Colour c with alpha taken from an 'L' mask (scaled by c's own alpha)."""
 	img = Image.new("RGBA", size, (round(c[0] * 255), round(c[1] * 255), round(c[2] * 255), 0))
@@ -306,13 +340,15 @@ class _Tex:
 class Aero:
 	"""The Clearwater skin. One instance lives on tauon.aero."""
 
-	GUTTER = 8          # logical px between panels and at the window edge
+	GUTTER = 8          # logical px between panels
+	EDGE_GAP = 4        # logical px between the panels and the window edge
 	RADIUS = 10         # panel corner radius
 	TOP_H = 40          # top glass bar height (the panel's 30px row sits inside it)
 	SKY_DIV = 5         # sky is painted at 1/SKY_DIV of the logical window size
 	FROST_BLUR = 22     # backdrop-filter: blur(22px)
 	FROST_SAT = 1.7     # backdrop-filter: saturate(1.7)
-	FPS = 30
+	FPS = 30            # ambient drift, the seek bar, bubbles, the spectrum
+	FPS_FAST = 60       # colour transitions and the glint
 
 	# Dusk tokens from the concept
 	TEXT = rgba8(232, 246, 255)
@@ -368,6 +404,12 @@ class Aero:
 		self.glint_start = -10.0
 		self._glints: list = []
 		self._sky_painted = 0.0
+		self._due = 0.0
+		self._raster_spent = 0.0
+		self.palette_moving = False
+		# The playing row's gel is drawn under the cached tracklist each frame
+		# (so it follows a colour change without re-rendering the list)
+		self.playing_rows: list[tuple[float, float, float, float]] = []
 		self._glint_track = None
 		self.panel_index = 0
 
@@ -624,6 +666,7 @@ class Aero:
 		now = time.monotonic()
 		dt = min(0.1, max(0.0, now - self._last))
 		self._last = now
+		self._raster_spent = 0.0
 		self._poll_palette()
 		moving = self._step_palette(dt)
 		animate = self.motion()
@@ -640,13 +683,27 @@ class Aero:
 		glinting = now - self.glint_start < 1.6
 		self.panel_index = 0
 		self._glints = []
-		# The drift is slow: repaint the sky at half the frame rate unless the
-		# palette is moving (the bokeh still move every frame)
-		if animate and not moving and now - self._sky_painted < 1 / 15:
+		self.palette_moving = moving
+		# The drift is slow: repaint the sky at 15 Hz (the bokeh still move
+		# every frame). A colour change repaints at up to 30 Hz; the panels,
+		# gel and orbs over it change colour every frame
+		limit = 1 / 30 if moving else 1 / 15
+		if (animate or moving) and now - self._sky_painted < limit:
 			self._sky_dirty = False
 		self.draw_sky()
-		if animate or moving or glinting or self.bubbles:
-			self.gui.delay_frame(1 / self.FPS)
+		if moving or glinting:
+			self.schedule(1 / self.FPS_FAST)
+		elif animate or self.bubbles:
+			self.schedule(1 / self.FPS)
+
+	def schedule(self, interval: float) -> None:
+		"""Ask for a frame `interval` from now, unless one is already due by then."""
+		now = time.monotonic()
+		due = now + interval
+		if now < self._due <= due + 0.002:
+			return
+		self._due = due
+		self.gui.delay_frame(interval)
 
 	# -- sky -----------------------------------------------------------------------------
 
@@ -656,7 +713,11 @@ class Aero:
 		return max(16, round(w / self.SKY_DIV)), max(16, round(h / self.SKY_DIV))
 
 	def _paint_sky(self, lw: int, lh: int) -> tuple[Image.Image, Image.Image]:
-		"""The dusk sky at low resolution, and its frosted copy."""
+		"""The dusk sky at low resolution, and its frosted copy.
+
+		Everything here is Pillow's C code; per-pixel work never runs in
+		Python (lookup tables are 256 entries, and the bokeh sprites are
+		cached by size and strength)."""
 		h1, h2, acc = self.h1, self.h2, self.acc
 		T = self.sky_t
 
@@ -669,7 +730,7 @@ class Aero:
 			px[0, yy] = (round(c[0] * 255), round(c[1] * 255), round(c[2] * 255))
 		img = col.resize((lw, lh), Image.Resampling.NEAREST)
 
-		# Blooms, added ('lighter')
+		# Blooms, added ('lighter'): an inverted radial falloff, coloured
 		blooms = (
 			(0.2 + 0.08 * math.sin(T * 0.11), 0.25 + 0.06 * math.cos(T * 0.09), 0.6, h1 + 15, 0.26),
 			(0.82 + 0.06 * math.cos(T * 0.07), 0.78 + 0.05 * math.sin(T * 0.12), 0.65, h2, 0.30),
@@ -677,10 +738,9 @@ class Aero:
 		)
 		for bx, by, br, bh, ba in blooms:
 			R = br * lw
-			t = _radial_l((lw, lh), bx * lw, by * lh, R, R)
+			falloff = self._falloff((lw, lh), bx * lw, by * lh, R)
 			c = hsl(bh, 0.95, 0.55)
-			layer = Image.merge("RGB", [t.point(lambda v, k=c[i] * ba: round((1 - v / 255) * k * 255)) for i in range(3)])
-			img = ImageChops.add(img, layer)
+			img = ImageChops.add(img, Image.merge("RGB", [falloff.point(_lut(c[i] * ba)) for i in range(3)]))
 
 		# Light ribbons, added. Drawn at 2x for antialiasing
 		ss = 2
@@ -695,41 +755,35 @@ class Aero:
 			while xx <= lw + 10:
 				yy = base + math.sin(xx * freq + ph) * amp + math.sin(xx * freq * 2.3 - ph * 1.3) * amp * 0.35 - xx * 0.14
 				pts.append((xx * ss, yy * ss))
-				xx += 3
+				xx += 2
 			acc_l = Image.new("L", (lw, lh), 0)
 			for width, alpha in ((14 - 3 * k, 0.10), (5, 0.17), (1.2, 0.45)):
 				lay = Image.new("L", (lw * ss, lh * ss), 0)
-				d = ImageDraw.Draw(lay)
-				wpx = max(1, round(width * ss))
-				d.line(pts, fill=round(255 * alpha), width=wpx, joint="curve")
-				r = wpx / 2
-				for ex, ey in (pts[0], pts[-1]):
-					d.ellipse([ex - r, ey - r, ex + r, ey + r], fill=round(255 * alpha))
+				# Each stroke is one filled outline: a polyline leaves gaps at
+				# its joints, and round joints cost a pie slice per point
+				ImageDraw.Draw(lay).polygon(_stroke_outline(pts, max(1.0, width * ss) / 2), fill=round(255 * alpha))
 				acc_l = ImageChops.add(acc_l, lay.reduce(ss))
 			c = hsl(hue, 0.90, 0.65)
-			layer = Image.merge("RGB", [acc_l.point(lambda v, m=c[i]: round(v * m)) for i in range(3)])
-			img = ImageChops.add(img, layer)
+			img = ImageChops.add(img, Image.merge("RGB", [acc_l.point(_lut(c[i])) for i in range(3)]))
 
 		# Frost: the sky with its bokeh, blurred 22px and saturated 1.7
-		frost = img.copy()
 		bok = Image.new("L", (lw, lh), 0)
-		prof = self._bokeh_profile()
 		for p in self.parts:
 			a = p["a"] * 0.42 * (0.6 + 0.4 * math.sin(T * 0.6 + p["ph"]))
 			r = p["r"] / self.SKY_DIV
-			d = max(2, round(r * 2))
-			spr = prof.resize((d, d), Image.Resampling.BILINEAR).point(lambda v, k=a: round(v * k))
-			x = (p["x"] * lw + math.sin(T * 0.3 + p["ph"]) * 14 / self.SKY_DIV) - r
-			y = p["y"] * lh - r
-			tmp = Image.new("L", (lw, lh), 0)
-			tmp.paste(spr, (round(x), round(y)))
-			bok = ImageChops.add(bok, tmp)
-		frost = ImageChops.add(frost, Image.merge("RGB", (bok, bok, bok)))
+			spr = self._bokeh_sprite(max(2, round(r * 2)), a)
+			x = round(p["x"] * lw + math.sin(T * 0.3 + p["ph"]) * 14 / self.SKY_DIV - r)
+			y = round(p["y"] * lh - r)
+			box = (x, y, x + spr.width, y + spr.height)
+			if box[2] <= 0 or box[3] <= 0 or box[0] >= lw or box[1] >= lh:
+				continue
+			region = bok.crop(box)
+			bok.paste(ImageChops.add(region, spr), box)
+		frost = ImageChops.add(img, Image.merge("RGB", (bok, bok, bok)))
 		sigma = self.FROST_BLUR / self.SKY_DIV
 		# Clamp-to-edge before blurring, like a backdrop filter at the window edge
 		m = math.ceil(sigma * 3)
-		padded = Image.new("RGB", (lw + m * 2, lh + m * 2))
-		padded.paste(frost.resize((lw + m * 2, lh + m * 2), Image.Resampling.NEAREST), (0, 0))
+		padded = frost.resize((lw + m * 2, lh + m * 2), Image.Resampling.NEAREST)
 		padded.paste(frost, (m, m))
 		frost = padded.filter(ImageFilter.GaussianBlur(sigma)).crop((m, m, m + lw, m + lh))
 		s = self.FROST_SAT
@@ -742,6 +796,29 @@ class Aero:
 		# A touch of softening so the 5x bilinear stretch reads as a smooth wash
 		img = img.filter(ImageFilter.GaussianBlur(0.6))
 		return img, frost
+
+	def _falloff(self, size: tuple[int, int], cx: float, cy: float, R: float) -> Image.Image:
+		"""'L' image, 255 at (cx, cy) falling linearly to 0 at radius R. The
+		scaled template is cached per radius; only the paste moves."""
+		key = ("falloff", round(R))
+		tpl = self._misc.get(key)
+		if tpl is None:
+			d = max(1, round(R * 2))
+			tpl = ImageChops.invert(_radial_l((d, d), d / 2, d / 2, d / 2, d / 2))
+			self._misc[key] = tpl
+		out = Image.new("L", size, 0)
+		out.paste(tpl, (round(cx - tpl.width / 2), round(cy - tpl.height / 2)))
+		return out
+
+	def _bokeh_sprite(self, d: int, alpha: float) -> Image.Image:
+		"""A bokeh disc at low resolution, scaled by `alpha` (cached in 32 steps)."""
+		q = max(0, min(31, round(alpha * 31)))
+		key = ("bokeh", d, q)
+		spr = self._misc.get(key)
+		if spr is None:
+			spr = self._bokeh_profile().resize((d, d), Image.Resampling.BILINEAR).point(_lut(q / 31))
+			self._misc[key] = spr
+		return spr
 
 	def _bokeh_profile(self) -> Image.Image:
 		prof = self._misc.get("bokeh_profile")
@@ -1160,10 +1237,13 @@ class Aero:
 				band = Gradient((bx, y, bw, h), 90, [
 					(0.0, (1, 1, 1, 0)), (0.5, (1, 1, 1, 0.6)), (1.0, (1, 1, 1, 0))])
 				self.shape(fr, rr, grad=band, cuts=[(1, 0, bx), (1, 0, bx + bw)])
-				self.gui.delay_frame(1 / self.FPS)
 			if bubbles:
 				self._bubbles(fr, now, playing)
 			sdl3.set_render_clip_rect(r_, old_clip)
+		if playing:
+			# Keep frames coming so the fill advances smoothly (with or
+			# without ambient motion)
+			self.schedule(1 / self.FPS)
 		if bead:
 			self.bead(x + fw, y + h / 2)
 
@@ -1191,7 +1271,7 @@ class Aero:
 			sdl3.render_texture(self.renderer, spr.tex, None, sdl3.FRect(bx, by - sz / 2, sz, sz))
 		self.bubbles = keep
 		if keep:
-			self.gui.delay_frame(1 / self.FPS)
+			self.schedule(1 / self.FPS)
 
 	def _bubble_tex(self) -> _Tex:
 		t = self._misc.get("bubble")
@@ -1207,12 +1287,32 @@ class Aero:
 
 	# -- rasterised pieces: orbs, bead, LED --------------------------------------------------------
 
-	def _cached(self, key, build) -> _Tex:
+	RASTER_BUDGET = 0.004   # seconds of hue-driven re-rasterising per frame
+
+	def _cached(self, key, build, hue_slot: int | None = None) -> _Tex:
+		"""A cached raster. Keys whose `hue_slot` entry is a hue are rebuilt as
+		the palette moves; past the per-frame budget the nearest hue already
+		built stands in, so a colour change never stalls a frame."""
 		t = self._orbs.get(key)
 		if t is not None:
 			self._orbs.move_to_end(key)
 			return t
+		if hue_slot is not None and self._raster_spent > self.RASTER_BUDGET:
+			best = None
+			for k, cand in self._orbs.items():
+				if len(k) == len(key) and all(k[i] == key[i] for i in range(len(key)) if i != hue_slot):
+					dist = abs(((k[hue_slot] - key[hue_slot] + 540) % 360) - 180)
+					if best is None or dist < best[0]:
+						best = (dist, cand)
+			# Only a near hue: the traffic lights share sizes but not colours
+			if best is not None and best[0] <= 40:
+				# Come back for the exact one next frame
+				self.schedule(1 / self.FPS_FAST)
+				return best[1]
+		started = time.perf_counter()
 		img, pad = build()
+		if hue_slot is not None:
+			self._raster_spent += time.perf_counter() - started
 		t = _Tex(self._make_tex(img), img.width, img.height, 0, 0, pad)
 		self._orbs[key] = t
 		while len(self._orbs) > 96:
@@ -1300,7 +1400,7 @@ class Aero:
 		d = max(6, round(d))
 		H = self.acc if hue is None else hue
 		hq = round(H / 2) * 2
-		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover))
+		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover), 2)
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
 		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
@@ -1319,7 +1419,7 @@ class Aero:
 		d = max(6, round(d))
 		H = self.acc if hue is None else hue
 		hq = round(H / 2) * 2
-		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover))
+		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover), 2)
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
 		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
@@ -1354,7 +1454,7 @@ class Aero:
 	def bead(self, cx: float, cy: float, d: float | None = None) -> None:
 		d = round(self.s(20) if d is None else d)
 		hq = round(self.acc / 2) * 2
-		t = self._cached(("bead", d, hq), lambda: self._bead_image(d, hq))
+		t = self._cached(("bead", d, hq), lambda: self._bead_image(d, hq), 2)
 		sdl3.render_texture(self.renderer, t.tex, None,
 			sdl3.FRect(round(cx - d / 2) - t.pad, round(cy - d / 2) - t.pad, t.w, t.h))
 
@@ -1626,7 +1726,7 @@ class Aero:
 			self.soft((bx, py, bw, ch), 0, 3 * sc, 0, hsl(H, 1.0, 0.60, 0.9))
 			self.shape((bx, py, bw, ch), 0, hsl(H, 1.0, 0.80))
 		if live or any(p > 0.005 for p in self.spec_peaks):
-			self.gui.delay_frame(1 / self.FPS)
+			self.schedule(1 / self.FPS)
 
 	# -- tracklist rows ---------------------------------------------------------------------------
 
@@ -1635,6 +1735,19 @@ class Aero:
 		x, y, w, h = box
 		m = self.s(8)
 		return (x + m, y, max(0.0, w - m * 2), h)
+
+	def draw_tracklist_under(self, clip) -> None:
+		"""Everything drawn under the cached tracklist texture: the playing
+		row's gel (drawn fresh, so it follows a colour change) and the hover
+		highlight."""
+		old = sdl3.get_render_clip_rect(self.renderer)
+		cx, cy, cw, ch = clip
+		sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(round(cx), round(cy), round(cw), round(ch)))
+		for rect in self.playing_rows:
+			if rect[1] + rect[3] >= cy and rect[1] <= cy + ch:
+				self.gel(rect)
+		sdl3.set_render_clip_rect(self.renderer, old)
+		self.draw_row_hover(clip)
 
 	def draw_row_hover(self, clip) -> None:
 		"""Highlight the row under the mouse. The rows are remembered from the
@@ -1678,6 +1791,9 @@ class Aero:
 	def gutter(self) -> int:
 		return self.si(self.GUTTER)
 
+	def edge_gap(self) -> int:
+		return self.si(self.EDGE_GAP)
+
 	def top_glass_height(self) -> int:
 		# The top panel's own row (30px, or 100px for the art header) plus a
 		# little glass above and below it
@@ -1685,15 +1801,22 @@ class Aero:
 		return self.si(row + self.TOP_H - 30)
 
 	def top_glass_rect(self) -> tuple[int, int, int, int]:
-		g = self.gutter()
+		e = self.edge_gap()
 		ww = self.tauon.window_size[0]
-		return (g, g, ww - g * 2, self.top_glass_height())
+		return (e, e, ww - e * 2, self.top_glass_height())
+
+	def bottom_glass_rect(self) -> tuple[int, int, int, int]:
+		"""The bottom bar: a gutter above it, the edge gap below and beside."""
+		g = self.gutter()
+		e = self.edge_gap()
+		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
+		by = self.gui.panelBY
+		return (e, wh - by + g, ww - e * 2, by - g - e)
 
 	def preset_rects(self) -> list[tuple[tuple[int, int, int, int], bool, float | None]]:
 		"""(rect, tall, sheen) for every glass panel of the standard layout."""
 		gui = self.gui
-		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
-		g = self.gutter()
+		wh = self.tauon.window_size[1]
 		out = []
 		top = self.top_glass_rect()
 		out.append((top, False, None))
@@ -1706,7 +1829,7 @@ class Aero:
 				out.append(((gui.playlist_left, mid_y, gui.plw, mid_h), True, 110))
 		if gui.rsp:
 			out.append(((gui.rsp_x, mid_y, gui.rspw, mid_h), True, 120))
-		out.append(((g, wh - gui.panelBY + g, ww - g * 2, gui.panelBY - g * 2), False, None))
+		out.append((self.bottom_glass_rect(), False, None))
 		return out
 
 	def draw_preset_panels(self) -> None:
@@ -1728,12 +1851,8 @@ class Aero:
 		tauon.custom._draw_offscreen(_PresetTop(row), gx, y, gw, row, True)
 
 	def render_preset_bottom(self) -> None:
-		tauon = self.tauon
-		gui = self.gui
-		g = self.gutter()
-		ww, wh = tauon.window_size[0], tauon.window_size[1]
-		h = gui.panelBY - g * 2
-		tauon.custom._draw_offscreen(_PresetBottom(), g, wh - gui.panelBY + g, ww - g * 2, h, True)
+		x, y, w, h = self.bottom_glass_rect()
+		self.tauon.custom._draw_offscreen(_PresetBottom(), x, y, w, h, True)
 
 
 class _PresetTop:
