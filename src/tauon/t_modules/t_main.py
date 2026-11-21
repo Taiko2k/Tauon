@@ -11209,9 +11209,13 @@ class Tauon:
 				if t < -65:
 					self.show_message(_("Stop requesting lyrics AAAAAA."), mode="error")
 
+			self.now_searching = "errored"
+			if silent:
+				if track_object.index in self.prefs.auto_lyrics_checked:
+					self.prefs.auto_lyrics_checked.remove(track_object.index)
+				return "later"
 			# If the user keeps pressing, lets mess with them haha
 			self.lyrics_fetch_timer.force_set(t - 5)
-			self.now_searching = "errored"
 			return "later"
 
 		if t > 0:
@@ -11235,6 +11239,7 @@ class Tauon:
 
 		found_lyrics = False
 		found_synced = False
+		source_failed = False
 		enabled_sources = [name for name in lyric_sources if name in self.prefs.lyrics_enables]
 		enabled_sources.sort(key=lambda name: (name not in provides_synced, name in uses_scraping))
 		for name in enabled_sources:
@@ -11272,6 +11277,7 @@ class Tauon:
 						break
 			except Exception:
 				logging.exception("Failed to find lyrics")
+				source_failed = True
 
 			if not lyrics and not synced:
 				logging.error(f"Could not find lyrics from source {name}")
@@ -11280,6 +11286,8 @@ class Tauon:
 			self.now_searching = "errored"
 			if not silent:
 				self.show_message(_("No lyrics for this track were found"))
+			elif source_failed and track_object.index in self.prefs.auto_lyrics_checked:
+				self.prefs.auto_lyrics_checked.remove(track_object.index)
 		else:
 			self.gui.message_box = False
 			if not self.gui.showcase_mode:
@@ -21893,12 +21901,9 @@ class Tauon:
 
 		if self.prefs.auto_lyrics and not track_object.lyrics and track_object.index not in self.prefs.auto_lyrics_checked:
 			if self.lyrics_check_timer.get() > 5 and self.pctl.playing_time > 1:
-				result = self.get_lyric_wiki_silent(track_object)
-				if result == "later":
-					pass
-				else:
-					self.lyrics_check_timer.set()
-					self.prefs.auto_lyrics_checked.append(track_object.index)
+				self.lyrics_check_timer.set()
+				self.prefs.auto_lyrics_checked.append(track_object.index)
+				self.get_lyric_wiki_silent(track_object)
 
 	def hit_discord(self) -> None:
 		if not (self.prefs.discord_enable and self.prefs.discord_allow):
