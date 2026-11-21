@@ -1222,6 +1222,17 @@ class TopPanelWidget(Widget):
 		# so the panel just renders at its native (0, 0) origin and is blitted to
 		# the real segment. It draws — and, in view mode, handles input — within
 		# the reframed space.
+		gui = tauon.gui
+		if AERO_TOP_EXTRA and h > gui.panelY2:
+			# Aqualine's glass is taller than the row: centre the row in it
+			# (TopPanel lays itself out from panelY)
+			panel_y = gui.panelY
+			gui.panelY = gui.panelY2 + round((h - gui.panelY2) / 2)
+			try:
+				tauon.top_panel.render()
+			finally:
+				gui.panelY = panel_y
+			return
 		tauon.top_panel.render()
 
 
@@ -4283,12 +4294,27 @@ def node_from_dict(d: dict) -> Node:
 AERO_GAP = 0.0
 # ... and the gap between the outermost widgets and the window edge
 AERO_EDGE = 0.0
+# ... and how much taller the Header Bar's glass is than its row
+AERO_TOP_EXTRA = 0.0
+
+
+def _gutter(node: Node, scale: float) -> float:
+	"""A node's gutter in scaled px. Under Aqualine the skin's own gaps space
+	the widgets, so the default widget gutter is taken back out (a larger one
+	still adds on top) and the layout matches the standard one."""
+	g = node.gutter
+	if AERO_GAP:
+		g = max(0, g - DEFAULT_WIDGET_GUTTER)
+	return g * scale
 
 
 def _fixed_on(node: Node, axis: str, scale: float) -> float | None:
 	# A locked widget keeps its content size; its slot grows by the gap
 	gap = AERO_GAP if isinstance(node, (Leaf, TabStack)) else 0.0
 	if axis == "v" and node.lock_v:
+		if isinstance(node, Leaf) and isinstance(node.widget, TopPanelWidget):
+			# Aqualine's Header Bar glass is taller than its row
+			gap += AERO_TOP_EXTRA
 		return node.fixed_h * scale + gap
 	if axis == "h" and node.lock_h:
 		return node.fixed_w * scale + gap
@@ -4325,7 +4351,7 @@ def _eff_edge(node: Node, side: str, scale: float) -> float:
 	whatever its edge children add inside. Along a stack's axis only the
 	first/last child touches that edge; across it every child does, so take the
 	minimum (a child with no gutter means content reaches that edge)."""
-	g = node.gutter * scale
+	g = _gutter(node, scale)
 	if not isinstance(node, Stack) or not node.children:
 		return g
 	first = ("t" if node.orient == "v" else "l")
@@ -4374,7 +4400,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 			tab_h = min(h, TAB_BAR_HEIGHT * scale)
 			available_h = max(0.0, h - tab_h)
 			border_inset = max(1, round(scale)) if node.border else 0
-			g = child.gutter * scale
+			g = _gutter(child, scale)
 			gx = min(g + border_inset, w / 2)
 			gy = min(g + border_inset, available_h / 2)
 			layout(child, x + gx, y + tab_h + gy,
@@ -4415,7 +4441,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	lead_side, trail_side = ("t", "b") if axis == "v" else ("l", "r")
 	cross_sides = ("l", "r") if axis == "v" else ("t", "b")
 	n = len(node.children)
-	gutters = [c.gutter * scale for c in node.children]
+	gutters = [_gutter(c, scale) for c in node.children]
 	# Per-child axis insets: the child's own gutter by default (its descendants
 	# nest inside naturally), overridden at shared boundaries and consumed edges.
 	lead = list(gutters)
@@ -6710,7 +6736,14 @@ class CustomLayout:
 		frame; everything else reads the cache through top_panel_rect()."""
 		for lf in iter_visible_leaves(root):
 			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
-				return self._leaf_paint_rect(lf)
+				rect = self._leaf_paint_rect(lf)
+				if rect is not None and AERO_TOP_EXTRA:
+					# Aqualine: the row centred in the taller glass, so the
+					# window controls and visualisers line up with the tabs
+					x, y, w, h = rect
+					row = self.gui.panelY2
+					return (x, y + round((h - row) / 2), w, row)
+				return rect
 		return None
 
 	def tracklist_rect(self) -> tuple[int, int, int, int] | None:
@@ -7451,10 +7484,12 @@ class CustomLayout:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND)
 
 	def _sync_aero_gap(self) -> None:
-		global AERO_GAP, AERO_EDGE
-		active = self.tauon.aero.active
-		AERO_GAP = float(self.tauon.aero.gutter()) if active else 0.0
-		AERO_EDGE = float(self.tauon.aero.edge_gap()) if active else 0.0
+		global AERO_GAP, AERO_EDGE, AERO_TOP_EXTRA
+		aero = self.tauon.aero
+		active = aero.active
+		AERO_GAP = float(aero.gutter()) if active else 0.0
+		AERO_EDGE = float(aero.edge_gap()) if active else 0.0
+		AERO_TOP_EXTRA = float(aero.si(aero.TOP_H) - aero.si(30)) if active else 0.0
 
 	def _draw_aero_panels(self, aero, node: Node) -> None:
 		"""A glass panel under every widget, and one under each tab group
