@@ -2088,9 +2088,9 @@ class AqualineBar:
 
 	# The concept's bar proportions (96px tall, 64px play orb lifted 5px, 40px
 	# others) at a slightly smaller size
-	PANEL_H = 88
-	PLAY_D = 58
-	SIDE_D = 37
+	PANEL_H = 73
+	PLAY_D = 49
+	SIDE_D = 31
 	PLAY_LIFT = 4
 
 	def __init__(self, tauon: Tauon) -> None:
