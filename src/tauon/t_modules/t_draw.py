@@ -143,6 +143,9 @@ class TDraw:
 		self.draw_layout = PangoCairo.create_layout(self.context)
 
 		self.text_background_colour = ColourRGBA(0, 0, 0, 255)
+		# When set, text is drawn twice: first in this colour one pixel lower
+		# (a CSS-style text-shadow), then normally
+		self.text_shadow: ColourRGBA | None = None
 		self.pretty_rect: tuple[int, int, int, int] | None = None
 		self.real_bg: bool = False
 		self.alpha_bg: bool = False
@@ -703,6 +706,16 @@ class TDraw:
 
 		if bg is None:
 			bg = self.text_background_colour
+
+		if self.text_shadow is not None:
+			shadow = self.text_shadow
+			self.text_shadow = None
+			try:
+				drop = max(1, round(self.scale))
+				self.text((location[0], location[1] + drop, *location[2:]), text, shadow, font,
+					max_w, bg, range_top, range_height, real_bg, None)
+			finally:
+				self.text_shadow = shadow
 
 		if colour.a != 255:
 			colour = alpha_blend(colour, bg)

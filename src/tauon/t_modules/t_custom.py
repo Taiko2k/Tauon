@@ -69,6 +69,7 @@ from tauon.t_modules.t_extra import (
 	rgb_to_hls,
 	test_lumi,
 )
+from tauon.t_modules.t_aero import to_colour
 from tauon.t_modules.t_waveform import Needles, coverage_quads, normalise
 
 if TYPE_CHECKING:
@@ -436,6 +437,22 @@ def build_spectro_lut(preset: int) -> list[bytes]:
 	return lut
 
 
+class GlassSpectrumWidget(Widget):
+	"""24 glass bars with lit peak caps (the Clearwater side panel spectrum).
+	Fed from the same 24-band data as the top-panel spectrum."""
+
+	kind = "vis_glass"
+	name = N_("Visualiser: Glass Spectrum")
+	min_w = 80
+	min_h = 30
+	single_instance = True
+
+	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
+		pad = round(10 * tauon.gui.scale)
+		tauon.fields.add((round(x), round(y), round(w), round(h)))
+		tauon.aero.draw_glass_spectrum((x + pad, y + pad, max(1, w - pad * 2), max(1, h - pad * 2)))
+
+
 class SpectrogramWidget(Widget):
 	"""Scrolling spectrogram, built for the custom layout (the legacy top-panel
 	spec2 one is preset-only and unfed on PHAZOR). Data: the PHAZOR vis thread
@@ -623,8 +640,13 @@ class SpectrogramWidget(Widget):
 		cls._last_frame = now
 
 		# Background in the palette's floor colour, so sparse history blends in.
+		# Clearwater lights the spectrogram additively over the glass instead:
+		# its dark floor becomes the glass itself.
+		glass = tauon.aero.active
 		lut0 = cls._lut[0]
-		tauon.ddt.rect(rect, ColourRGBA(lut0[2], lut0[1], lut0[0], 255))
+		if not glass:
+			tauon.ddt.rect(rect, ColourRGBA(lut0[2], lut0[1], lut0[0], 255))
+		field_blend = sdl3.SDL_BLENDMODE_ADD if glass else sdl3.SDL_BLENDMODE_NONE
 
 		if cls._filled and flow_mode:
 			period = cls.FLOW_NATIVE_FRAME_PERIOD if cls._flow_native is not None \
@@ -659,10 +681,11 @@ class SpectrogramWidget(Widget):
 			sdl3.render_texture(
 				tauon.renderer, cls._flow_tex, src, glow_dst)
 			sdl3.set_texture_alpha_mod(cls._flow_tex, 255)
-			sdl3.set_texture_blend_mode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_texture_blend_mode(cls._flow_tex, field_blend)
 			dst = sdl3.FRect(x, y, w, h)
 			sdl3.render_texture(
 				tauon.renderer, cls._flow_tex, src, dst)
+			sdl3.set_texture_blend_mode(cls._flow_tex, sdl3.SDL_BLENDMODE_NONE)
 			sdl3.set_render_clip_rect(tauon.renderer, None)
 		elif cls._filled:
 			col_px = 1.5 * gui.scale
@@ -681,11 +704,13 @@ class SpectrogramWidget(Widget):
 			# revealed from the right edge as time passes, then the next column
 			# lands exactly where it left off — constant leftward velocity.
 			dx = x + w - offset - (visible - 1) * col_px
+			sdl3.set_texture_blend_mode(cls._tex, field_blend)
 			for s, n in runs:
 				src = sdl3.FRect(s, 0, n, bins)
 				dst = sdl3.FRect(dx, y, n * col_px, h)
 				sdl3.render_texture(tauon.renderer, cls._tex, src, dst)
 				dx += n * col_px
+			sdl3.set_texture_blend_mode(cls._tex, sdl3.SDL_BLENDMODE_NONE)
 			sdl3.set_render_clip_rect(tauon.renderer, None)
 
 		if tauon.coll(rect) and tauon.inp.right_click and tauon.is_level_zero(False):
@@ -1492,7 +1517,7 @@ class FeuxBar:
 
 		# Match the standard bar: punch the panel colour in (for window
 		# transparency) unless art is showing underneath, then blend over it.
-		if not gui.have_art_bg:
+		if not gui.backdrop:
 			sdl3.set_render_draw_blend_mode(self.tauon.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect((0, top, w, h), panel)
 		sdl3.set_render_draw_blend_mode(self.tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
@@ -1506,8 +1531,15 @@ class FeuxBar:
 
 		# Pod widths. The right pod is measured from its real contents so the
 		# divider lands on it; both collapse on a narrow segment.
-		pod3_w = (self._s(16) + a["feux-shuffle"].w + self._s(9) + a["feux-repeat"].w
-			+ self._s(16) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
+		aero = tauon.aero if tauon.aero.active else None
+		if aero is not None:
+			# Clearwater: LED pills for the modes, and a speaker before the volume tube
+			pod3_w = (self._s(16) + self._pill_w(a["feux-shuffle"]) + self._s(9) + self._pill_w(a["feux-repeat"])
+				+ self._s(16) + self._s(24) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
+			hairline = ColourRGBA(150, 215, 255, 26)
+		else:
+			pod3_w = (self._s(16) + a["feux-shuffle"].w + self._s(9) + a["feux-repeat"].w
+				+ self._s(16) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
 		show_right = w > pod3_w + self._s(430)
 		if not show_right:
 			pod3_w = 0
@@ -1631,7 +1663,16 @@ class FeuxBar:
 		art_y = mid - art // 2
 		track = pctl.playing_object()
 
-		if show_art:
+		aero = tauon.aero if tauon.aero.active else None
+		if show_art and aero is not None:
+			if track is not None and pctl.playing_state != PlayingState.STOPPED:
+				aero.set_art_style(r=self._s(5), shadow="small")
+				tauon.album_art_gen.display(
+					track, (art_x, art_y), (art, art), async_hold=True, caller_id="feux_bar")
+				aero.end_art_style()
+			else:
+				aero.art_placeholder((art_x, art_y, art, art), self._s(5))
+		elif show_art:
 			if track is not None and pctl.playing_state != PlayingState.STOPPED:
 				tauon.album_art_gen.display(
 					track, (art_x, art_y), (art, art), async_hold=True, caller_id="feux_bar")
@@ -1686,6 +1727,9 @@ class FeuxBar:
 		title_colour = self._fg(
 			self._tint(colours.bar_title_text, text_x, mid, panel, boost=0.6), backdrop, 4.5)
 		sub_colour = self._fg(self._step(backdrop, 0.42), backdrop, 2.6)
+		if aero is not None:
+			title_colour = to_colour(aero.TEXT)
+			sub_colour = to_colour(aero.MUTED)
 
 		# Both lines hang off the centre line so they stay put as the panel
 		# grows (the offsets are the default layout's distance from it).
@@ -1732,6 +1776,10 @@ class FeuxBar:
 		mb_over = self._fg(self._tint(colours.media_buttons_over, left, mid, panel, boost=0.6), backdrop, 4.5)
 		box = self._s(32)
 		x = left + self._s(15)
+		# Clearwater draws the transport as gel orbs, the play orb the largest
+		aero = tauon.aero if tauon.aero.active else None
+		if aero is not None:
+			box = self._s(34)
 		playing = pctl.playing_state == PlayingState.PLAYING
 		# Shuffle lockdown disables everything that would let you choose what
 		# plays next or where in it you are, so the panel hides those controls
@@ -1758,6 +1806,7 @@ class FeuxBar:
 			rect = (x, mid - self._s(17), box, self._s(34))
 			self.fields.add(rect)
 			colour = mb_off
+			over = self.coll(rect)
 			if self.coll(rect):
 				colour = mb_over
 				if inp.mouse_click:
@@ -1770,7 +1819,10 @@ class FeuxBar:
 					tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Back"))
-			a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
+			if aero is not None:
+				aero.orb(x + box / 2, mid, box, a["feux-bb"], hover=over, pressed=over and inp.mouse_down)
+			else:
+				a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
 
 		# PLAY / PAUSE, on a filled disc. The disc takes the contrasting ink so
@@ -1780,6 +1832,8 @@ class FeuxBar:
 		# and tone -- a pure white disc on a dark panel is louder than anything
 		# else down there. Hover lifts it, without going all the way either.
 		disc = a["feux-disc"].w
+		if aero is not None:
+			disc = self._s(48)
 		disc_x = x
 		rect = (disc_x, mid - disc // 2, disc, disc)
 		self.fields.add(rect)
@@ -1794,20 +1848,26 @@ class FeuxBar:
 					pctl.play()
 				inp.mouse_click = False
 			self._tip(tauon.tool_tip2, disc_x, top - self._s(4), _("Pause") if playing else _("Play"))
-		a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
 		# Hold the outgoing glyph until the light reaches it (see GLINT_SWAP).
 		shown = playing
 		if glinting and glint < self.GLINT_TIME * self.GLINT_SWAP:
 			shown = not playing
 		glyph = a["feux-pause"] if shown else a["feux-play"]
-		glyph_colour = self._fg(ColourRGBA(backdrop.r, backdrop.g, backdrop.b, 255), disc_colour, 4.5)
-		glyph.render(disc_x + round((disc - glyph.w) / 2), mid - round(glyph.h / 2), glyph_colour)
+		if aero is not None:
+			over = self.coll(rect)
+			aero.orb(disc_x + disc / 2, mid, disc, glyph, hover=over, pressed=over and inp.mouse_down)
+		else:
+			a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
+			glyph_colour = self._fg(ColourRGBA(backdrop.r, backdrop.g, backdrop.b, 255), disc_colour, 4.5)
+			glyph.render(disc_x + round((disc - glyph.w) / 2), mid - round(glyph.h / 2), glyph_colour)
 		if glinting:
 			self._draw_glint(disc_x + disc / 2, mid, disc // 2, glint / self.GLINT_TIME)
 		x += disc + self._s(8)
 
 		# STOP, a smaller disc beside it
 		stop = a["feux-disc-sm"].w
+		if aero is not None:
+			stop = self._s(28)
 		if not lock:
 			rect = (x, mid - stop // 2, stop, stop)
 			self.fields.add(rect)
@@ -1827,9 +1887,13 @@ class FeuxBar:
 			glyph_lightness = rgb_to_hls(glyph_c.r, glyph_c.g, glyph_c.b)[1]
 			ring_lightness = rgb_to_hls(ring.r, ring.g, ring.b)[1]
 			glyph_c = rgb_add_hls(ring, l=glyph_lightness - ring_lightness)
-			a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
-			a["feux-stop"].render(
-				x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
+			if aero is not None:
+				over = self.coll(rect)
+				aero.orb(x + stop / 2, mid, stop, a["feux-stop"], hover=over, pressed=over and inp.mouse_down)
+			else:
+				a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
+				a["feux-stop"].render(
+					x + round((stop - a["feux-stop"].w) / 2), mid - round(a["feux-stop"].h / 2), glyph_c)
 		x += stop + self._s(8)
 
 		# FORWARD
@@ -1837,6 +1901,7 @@ class FeuxBar:
 			rect = (x, mid - self._s(17), box, self._s(34))
 			self.fields.add(rect)
 			colour = mb_off
+			over = self.coll(rect)
 			if self.coll(rect):
 				colour = mb_over
 				if inp.mouse_click:
@@ -1847,13 +1912,18 @@ class FeuxBar:
 					tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Forward"))
-			a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
+			if aero is not None:
+				aero.orb(x + box / 2, mid, box, a["feux-ff"], hover=over, pressed=over and inp.mouse_down)
+			else:
+				a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)
 
 		# TIMES + SCRUB BAR
 		length = pctl.playing_length
 		elapsed = get_display_time(pctl.playing_time)
 		time_colour = self._fg(self._tint(colours.time_playing, x, mid, panel, boost=0.6), backdrop, 4.5)
+		if aero is not None:
+			time_colour = to_colour(aero.MUTED)
 
 		show_time = right - x > self._s(200)
 		el_w = ddt.get_text_w(elapsed, 212) if show_time else 0
@@ -1873,8 +1943,10 @@ class FeuxBar:
 			return
 
 		bar_h = self._s(self.BAR_H)
+		if aero is not None:
+			bar_h = self._s(14)
 		bar_y = mid - bar_h // 2
-		needles = self.tauon.prefs.feux_panel_waveform
+		needles = self.tauon.prefs.feux_panel_waveform and aero is None
 		reach = self._s(9)
 		if needles:
 			# Whole needles only, so the flat state fills the bar exactly.
@@ -1915,13 +1987,17 @@ class FeuxBar:
 				if pctl.playing_ready():
 					pctl.seek_decimal(progress)
 
-		if needles:
+		if aero is not None:
+			# A glass tube of gel, with a bead riding the end of the fill
+			aero.tube((bar_x, bar_y, bar_w, bar_h), progress,
+				playing=playing, bubbles=True, hover=self._on_seek)
+		elif needles:
 			self._draw_needles(bar_x, bar_y, bar_w, bar_h, h, progress, seek_bg, seek_fill, backdrop)
 		else:
 			ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
 			if progress > 0:
 				ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
-		if self.tauon.radiobox.load_connecting or gui.buffering_visible():
+		if (self.tauon.radiobox.load_connecting or gui.buffering_visible()) and aero is None:
 			self._draw_buffering(bar_x, bar_y, bar_w, bar_h, round(bar_w * progress), seek_bg, backdrop)
 		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
 		gui.seek_bar_rect = (bar_x, bar_y, round(bar_w * progress), bar_h)
@@ -2109,6 +2185,7 @@ class FeuxBar:
 		x = w - self._s(18)
 		gap = self._s(9)      # between the shuffle and repeat icons
 		inner = gap // 2      # each of their hitboxes claims half of it
+		aero = tauon.aero if tauon.aero.active else None
 
 		# MENU. Left opens the playback menu, right the panel's own context
 		# menu -- the same pair the standard bar's hamburger carries.
@@ -2145,6 +2222,8 @@ class FeuxBar:
 		# VOLUME (bar only, no speaker)
 		vol_w = self._s(self.VOL_W)
 		bar_h = self._s(self.BAR_H)
+		if aero is not None:
+			bar_h = self._s(14)
 		x -= vol_w
 		vol_x = x
 		vol_y = mid - bar_h // 2
@@ -2171,10 +2250,17 @@ class FeuxBar:
 			else:
 				pctl.set_volume(False)
 
-		ddt.rect((vol_x, vol_y, vol_w, bar_h), vol_bg)
 		filled = round(vol_w * min(100, max(0, pctl.player_volume)) / 100)
-		if filled > 0:
-			ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
+		if aero is not None:
+			aero.tube((vol_x, vol_y, vol_w, bar_h), min(100, max(0, pctl.player_volume)) / 100,
+				shimmer=False, bubbles=False)
+			# Speaker, in the bar's text colour
+			x -= self._s(24)
+			aero.speaker(x + self._s(2), mid, self._s(17), to_colour(aero.TEXT))
+		else:
+			ddt.rect((vol_x, vol_y, vol_w, bar_h), vol_bg)
+			if filled > 0:
+				ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
 		gui.volume_bar_rect = (vol_x, vol_y, filled, bar_h)
 		x -= self._s(16)
 
@@ -2191,12 +2277,15 @@ class FeuxBar:
 			icon = a["feux-repeat"]
 		else:
 			icon = a["feux-repeat-off"]
-		x -= icon.w
+		pill_w = self._pill_w(icon) if aero is not None else icon.w
+		x -= pill_w
 		# Shuffle and repeat sit closer together than the pads either side of
 		# them, so their inner pads split the gap between the two instead of
 		# each taking it whole -- overlapping boxes would light up both
 		# buttons on hover and toggle both modes on a click in the seam.
-		rect = (x - inner, mid - self._s(15), icon.w + inner + self._s(8), self._s(30))
+		rect = (x - inner, mid - self._s(15), pill_w + inner + self._s(8), self._s(30))
+		if aero is not None:
+			rect = (x - inner, mid - self._s(15), pill_w + inner * 2, self._s(30))
 		self.fields.add(rect)
 		colour = md_active if pctl.repeat_mode else md_off
 		if self.coll(rect):
@@ -2209,7 +2298,10 @@ class FeuxBar:
 				inp.right_click = False
 			self._tip(tauon.tool_tip, x, top - self._s(4),
 				_("Repeat album") if pctl.album_repeat_mode else _("Repeat track"))
-		icon.render(x, mid - icon.h // 2, colour)
+		if aero is not None:
+			self._aero_pill(aero, x, mid, pill_w, icon, bool(pctl.repeat_mode), self.coll(rect))
+		else:
+			icon.render(x, mid - icon.h // 2, colour)
 		# Tighter than the other gaps on purpose: the repeat-off glyph carries
 		# about 6 px of its own left padding, so an even gap here reads as a
 		# wide one and throws the shuffle icon off centre.
@@ -2222,8 +2314,9 @@ class FeuxBar:
 			icon = a["feux-shuffle"]
 		else:
 			icon = a["feux-shuffle-off"]
-		x -= icon.w
-		rect = (x - self._s(8), mid - self._s(15), icon.w + self._s(8) + (gap - inner), self._s(30))
+		pill_w = self._pill_w(icon) if aero is not None else icon.w
+		x -= pill_w
+		rect = (x - self._s(8), mid - self._s(15), pill_w + self._s(8) + (gap - inner), self._s(30))
 		self.fields.add(rect)
 		colour = md_active if pctl.random_mode else md_off
 		if self.coll(rect):
@@ -2235,7 +2328,20 @@ class FeuxBar:
 				tauon.shuffle_menu.activate(position=(x + icon.w, mid + self._s(14)))
 				inp.right_click = False
 			self._tip(tauon.tool_tip, x, top - self._s(4), _("Shuffle"))
-		icon.render(x, mid - icon.h // 2, colour)
+		if aero is not None:
+			self._aero_pill(aero, x, mid, pill_w, icon, bool(pctl.random_mode), self.coll(rect))
+		else:
+			icon.render(x, mid - icon.h // 2, colour)
+
+	def _pill_w(self, icon) -> int:
+		"""Width of a Clearwater mode pill: padding, LED, gap, icon, padding."""
+		return self._s(10 + 7 + 7) + round(icon.w) + self._s(10)
+
+	def _aero_pill(self, aero, x: int, mid: int, w: int, icon, on: bool, hover: bool) -> None:
+		h = self._s(26)
+		icon_x = aero.pill((x, mid - h // 2, w, h), on, hover)
+		colour = to_colour(aero.TEXT if on else aero.MUTED)
+		icon.render(round(icon_x), mid - icon.h // 2, colour)
 
 
 class PlaybackPanelFeuxWidget(Widget):
@@ -3908,6 +4014,10 @@ def _vis_sticks(spec: WidgetSpec) -> Widget:
 	return SticksVisWidget()
 
 
+def _vis_glass(spec: WidgetSpec) -> Widget:
+	return GlassSpectrumWidget()
+
+
 def _vis_spectrogram(spec: WidgetSpec) -> Widget:
 	return SpectrogramWidget()
 
@@ -3944,6 +4054,8 @@ WIDGET_SPECS: list[WidgetSpec] = [
 		single_instance=True, colour=ColourRGBA(16, 16, 22, 255)),
 	WidgetSpec("vis_spectrogram", N_("Visualiser: Spectrogram"), "Visualizers", _vis_spectrogram,
 		single_instance=True, colour=ColourRGBA(12, 12, 16, 255)),
+	WidgetSpec("vis_glass", N_("Visualiser: Glass Spectrum"), "Visualizers", _vis_glass,
+		single_instance=True, colour=ColourRGBA(14, 26, 40, 255)),
 	WidgetSpec("playback_panel", N_("Playback Panel"), "Panels", _playback_panel,
 		lock_v=True, fixed_h=51, single_instance=True, colour=ColourRGBA(32, 32, 40, 255)),
 	WidgetSpec("playback_panel_feux", N_("Playback panel: Feux"), "Panels", _playback_panel_feux,
@@ -4155,11 +4267,18 @@ def node_from_dict(d: dict) -> Node:
 
 # -- layout pass ------------------------------------------------------------
 
+# Clearwater (t_aero): the gap between widgets and at the window edge, in
+# scaled px. CustomLayout keeps it in step with the skin; 0 when it's off.
+AERO_GAP = 0.0
+
+
 def _fixed_on(node: Node, axis: str, scale: float) -> float | None:
+	# A locked widget keeps its content size; its slot grows by the gap
+	gap = AERO_GAP if isinstance(node, (Leaf, TabStack)) else 0.0
 	if axis == "v" and node.lock_v:
-		return node.fixed_h * scale
+		return node.fixed_h * scale + gap
 	if axis == "h" and node.lock_h:
-		return node.fixed_w * scale
+		return node.fixed_w * scale + gap
 	return None
 
 
@@ -4206,7 +4325,7 @@ def _eff_edge(node: Node, side: str, scale: float) -> float:
 
 
 def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
-		consumed: frozenset[str] = frozenset()) -> None:
+		consumed: frozenset[str] = frozenset(), _top: bool = True, _in_tab: bool = False) -> None:
 	"""Assign rects to ``node`` and its descendants. Locked children take fixed
 	(scaled) pixels along the parent's axis; the remainder splits by weight; the
 	cross axis fills. Locks only steer this distribution — they never inset or
@@ -4221,8 +4340,18 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	Boundaries with a bare edge on either side, outer edges and the cross axis
 	keep natural (nested) gutters.
 	"""
+	outer = (x, y, w, h)
+	gap = AERO_GAP
+	if gap:
+		# Clearwater: half the gap around the whole layout, and half around
+		# each widget (and each tab group), so neighbours sit a full gap apart
+		half = gap / 2
+		if _top:
+			x, y, w, h = x + half, y + half, max(0.0, w - gap), max(0.0, h - gap)
+		if isinstance(node, (Leaf, TabStack)) and not _in_tab:
+			x, y, w, h = x + half, y + half, max(0.0, w - gap), max(0.0, h - gap)
 	node.rect = (x, y, w, h)
-	node.slot_rect = (x, y, w, h)  # parent overwrites with the pre-gutter slot below
+	node.slot_rect = outer if _top else (x, y, w, h)  # parent overwrites with the pre-gutter slot below
 	if isinstance(node, TabStack):
 		child = node.active_child()
 		if child is not None:
@@ -4233,7 +4362,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 			gx = min(g + border_inset, w / 2)
 			gy = min(g + border_inset, available_h / 2)
 			layout(child, x + gx, y + tab_h + gy,
-				max(0.0, w - gx * 2), max(0.0, available_h - gy * 2), scale)
+				max(0.0, w - gx * 2), max(0.0, available_h - gy * 2), scale, _top=False, _in_tab=True)
 			child.slot_rect = (
 				x + border_inset,
 				y + tab_h + border_inset,
@@ -4314,7 +4443,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 			cw, ch = max(0.0, length - lead[i] - trail[i]), max(0.0, h - c0 - c1)
 		# The child's rect already accounts for its gutter inset; descendants and
 		# draw use it directly (no double inset).
-		layout(child, cx, cy, cw, ch, scale, frozenset(child_consumed[i]))
+		layout(child, cx, cy, cw, ch, scale, frozenset(child_consumed[i]), _top=False, _in_tab=_in_tab)
 		child.slot_rect = (x, cursor, w, length) if axis == "v" else (cursor, y, length, h)
 		cursor += length
 
@@ -5706,6 +5835,7 @@ class CustomLayout:
 		"""
 		inp = self.tauon.inp
 		gui = self.gui
+		self._sync_aero_gap()
 
 		# Full-screen overlays (Milkdrop preset chooser, Dream Room) capture and
 		# mute the pointer themselves later in the frame. Stand down entirely so we
@@ -6726,7 +6856,13 @@ class CustomLayout:
 		# background active the panel colour carries alpha and would let the
 		# standard UI ghost through, so lay down the opaque base + blurred
 		# art again and let the translucent widget fills blend over that.
-		if gui.have_art_bg:
+		self._sync_aero_gap()
+		aero = tauon.aero if tauon.aero.active else None
+		if aero is not None:
+			# Clearwater: the sky again (over anything the standard layout drew)
+			aero.draw_sky()
+			aero.panel_index = 0
+		elif gui.have_art_bg:
 			tauon.style_overlay.display(background=True)
 		else:
 			# A window-transparency style leaves the panel colour translucent, so
@@ -6748,6 +6884,8 @@ class CustomLayout:
 
 		if gui.have_art_bg:
 			self._draw_art_bg_veil(root, ww, wh)
+		if aero is not None:
+			self._draw_aero_panels(aero, root)
 
 		# The MilkDrop Box widget owns the (singleton) visualiser while it is in
 		# the layout: gates the ArtBox / MetaBox milk paths off so both never
@@ -6765,6 +6903,10 @@ class CustomLayout:
 		spectro = count_visible_kind(root, "vis_spectrogram") > 0
 		if spectro != gui.spectrogram_in_widget:
 			gui.spectrogram_in_widget = spectro
+			gui.update_layout = True
+		glass = count_visible_kind(root, "vis_glass") > 0
+		if glass != gui.glass_spec_in_widget:
+			gui.glass_spec_in_widget = glass
 			gui.update_layout = True
 
 		# The top-panel visualisers (level meter / spectrum / scrolling
@@ -6795,6 +6937,8 @@ class CustomLayout:
 		# Tab chrome is last among the layout content so the switcher's single,
 		# non-overlapping frame remains the final border at its outer edges.
 		self._draw_tab_bars(root)
+		if aero is not None:
+			aero.flush_glints()
 
 		# Widgets receive the deferred mouse-up event above so a later widget can
 		# accept a track drop. Once every widget has had that chance, end the drag
@@ -7173,7 +7317,7 @@ class CustomLayout:
 			else:
 				self._draw_offscreen(widget, dx, dy, dw, dh, interactive, (cx,cy,cw,ch))
 
-		if leaf.border and not tab_border:
+		if leaf.border and not tab_border and not tauon.aero.active:
 			b = max(1, round(1 * gui.scale))
 			ddt.rect((cx, cy, cw, b), SEGMENT_BORDER_COLOUR)
 			ddt.rect((cx, cy + ch - b, cw, b), SEGMENT_BORDER_COLOUR)
@@ -7283,6 +7427,28 @@ class CustomLayout:
 		sdl3.render_texture(renderer, scratch, src, dst)
 		if replace:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND)
+
+	def _sync_aero_gap(self) -> None:
+		global AERO_GAP
+		gap = float(self.tauon.aero.gutter()) if self.tauon.aero.active else 0.0
+		if gap != AERO_GAP:
+			AERO_GAP = gap
+
+	def _draw_aero_panels(self, aero, node: Node) -> None:
+		"""A glass panel under every widget, and one under each tab group
+		(its tab bar included). Empty cells are left as open sky."""
+		scale = self.gui.scale
+		if isinstance(node, TabStack):
+			x, y, w, h = (round(v) for v in node.rect)
+			aero.panel((x, y, w, h), tall=h > 120 * scale)
+			return
+		if isinstance(node, Stack):
+			for child in node.children:
+				self._draw_aero_panels(aero, child)
+			return
+		if isinstance(node, Leaf) and node.widget is not None:
+			x, y, w, h = (round(v) for v in node.rect)
+			aero.panel((x, y, w, h), tall=h > 120 * scale)
 
 	def _draw_art_bg_veil(self, root: Node, ww: int, wh: int) -> None:
 		"""Dim the art background between widgets. Widgets dim their own rects

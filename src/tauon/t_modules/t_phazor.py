@@ -1609,6 +1609,20 @@ def player4(tauon: Tauon) -> None:
 				if pctl.playing_time > 0.5 and (pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)):
 					gui.update_spec = 1
 
+			# The glass spectrum (side panel, or its Custom Layout widget) shares
+			# the 24-band data of the top-panel spectrum
+			if gui.glass_spec_wanted:
+				if gui.vis == 2:
+					gui.glass_spec = gui.spec
+				else:
+					aud.get_spectrum(24, bins1)
+					bias = 1
+					glass: list[float] = []
+					for b in list(bins1):
+						glass.append(int(b * 1.7 * bias))
+						bias += 0.04
+					gui.glass_spec = glass
+
 			# Spectrogram widget: fed independently of gui.vis (own FFT buffers)
 			# so it can run alongside the bar visualiser above. Raw log-spaced
 			# spectrum columns, queued for SpectrogramWidget (t_custom) to

@@ -134,6 +134,7 @@ from tauon.t_modules.t_db_state import (  # noqa: E402
 	state_save,
 	validate_and_repair_database,
 )
+from tauon.t_modules.t_aero import Aero  # noqa: E402
 from tauon.t_modules.t_custom import (  # noqa: E402
 	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
@@ -787,7 +788,11 @@ class GuiVar:
 	def bottom_panel_height(self) -> float:
 		"""Height of the standard layout's bottom panel, which depends on which
 		playback panel is selected -- the Feux panel is the taller of the two."""
-		return round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
+		height = round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
+		if self.bag.prefs.aero:
+			# Clearwater floats the bar on the sky: a gutter above and below
+			height += round(Aero.GUTTER * self.scale) * 2
+		return height
 
 	def rescale(self) -> None:
 		self.spec_y = round(5 * self.scale)
@@ -1204,6 +1209,13 @@ class GuiVar:
 		# underneath the UI; panels must blend over it rather than clearing
 		# or replacing their region's pixels
 		self.have_art_bg: bool = False
+		# True while panels sit on a drawn backdrop (art background or the
+		# Clearwater sky): they blend over it instead of clearing their region
+		self.backdrop: bool = False
+		# Glass spectrum (Clearwater side panel / Custom Layout widget)
+		self.glass_spec_wanted: bool = False
+		self.glass_spec_in_widget: bool = False
+		self.glass_spec: list[float] = []
 
 		self.preview_artist: str = ""
 		self.preview_artist_location = (0, 0)
@@ -8500,6 +8512,7 @@ class Tauon:
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
 		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
+		self.aero:                                      Aero = Aero(self)
 		self.album_art_gen:                         AlbumArt = self.style_overlay.album_art_gen
 		self.litterbox:                      LitterboxCache = LitterboxCache(self.user_directory)
 		self.tool_tip:                               ToolTip = ToolTip(tauon=self)
@@ -9235,6 +9248,29 @@ class Tauon:
 		)
 		mac_inactive = ColourRGBA(mac_inactive.r, mac_inactive.g, mac_inactive.b, 255)
 
+		# Clearwater draws the buttons as gel: traffic lights as small orbs,
+		# the others as glass capsules with a red gel close
+		aero = self.aero if self.aero.active and gui.mode == GuiMode.MAIN else None
+
+		def light(x: float, y: float, colour: ColourRGBA) -> None:
+			if aero is None:
+				self.gui.mac_circle.render(x, y, colour)
+				return
+			d = self.gui.mac_circle.w
+			aero.mac_light(x + d / 2, y + self.gui.mac_circle.h / 2, d, (colour.r, colour.g, colour.b), False)
+
+		def button_bg(rect: tuple, colour: ColourRGBA, kind: str = "") -> None:
+			if aero is None:
+				ddt.rect((rect[0], rect[1], rect[2], rect[3]), colour)
+				return
+			if colour is bg_on:
+				return
+			w = round((40 if kind == "close" else 28) * gui.scale)
+			h = round(19 * gui.scale)
+			aero.cap_button(
+				(rect[0] + (rect[2] - w) // 2, rect[1] + (rect[3] - h) // 2, w, h),
+				kind, self.coll(rect))
+
 		# Close
 		if right:
 			xx = a_right - x_width
@@ -9251,16 +9287,16 @@ class Tauon:
 				colour = mac_inactive
 			elif self.coll(rect):
 				colour = rgb_add_hls(colour, 0, 0.11, 0.05)
-			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
+			light(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown and coll_point(inp.last_click_location, rect):
 				self.do_exit_button()
 		else:
 			rect = (xx, y, x_width, h)
 			last_width = x_width
-			ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_off)
+			button_bg(rect, bg_off, "close")
 			self.fields.add(rect)
 			if self.coll(rect) and not gui.mouse_unknown:
-				ddt.rect((rect[0], rect[1], rect[2], rect[3]), bg_on)
+				button_bg(rect, bg_on)
 				self.top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
 				if coll_point(inp.last_click_location, rect):
 					self.do_exit_button()
@@ -9281,7 +9317,7 @@ class Tauon:
 				colour = mac_inactive
 			elif self.coll(rect):
 				colour = rgb_add_hls(colour, 0, 0.1, 0.04)
-			self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
+			light(xx + 6 * gui.scale, y, colour)
 			if self.coll(rect) and not gui.mouse_unknown:
 				if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 					self.restore_full_mode()
@@ -9303,7 +9339,7 @@ class Tauon:
 					colour = mac_inactive
 				elif self.coll(rect):
 					colour = rgb_add_hls(colour, 0, 0.11, 0.05)
-				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
+				light(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_minimize_button()
@@ -9315,10 +9351,10 @@ class Tauon:
 					xx += last_width
 				rect = (xx, y, ma_width, h)
 				last_width = ma_width
-				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+				button_bg(rect, bg_off)
 				self.fields.add(rect)
 				if self.coll(rect):
-					ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+					button_bg(rect, bg_on)
 					self.top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_maximize_button()
@@ -9344,7 +9380,7 @@ class Tauon:
 					colour = mac_inactive
 				elif self.coll(rect):
 					colour = rgb_add_hls(colour, 0, 0.1, 0.04)
-				self.gui.mac_circle.render(xx + 6 * gui.scale, y, colour)
+				light(xx + 6 * gui.scale, y, colour)
 				if self.coll(rect) and not gui.mouse_unknown:
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_maximize_button()
@@ -9356,10 +9392,10 @@ class Tauon:
 
 				rect = (xx, y, mi_width, h)
 				last_width = mi_width
-				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+				button_bg(rect, bg_off)
 				self.fields.add(rect)
 				if self.coll(rect):
-					ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+					button_bg(rect, bg_on)
 					ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_minimize_button()
@@ -9382,10 +9418,10 @@ class Tauon:
 					xx += last_width
 
 				rect = (xx, y, re_width, h)
-				ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_off)
+				button_bg(rect, bg_off)
 				self.fields.add(rect)
 				if self.coll(rect):
-					ddt.rect_a((rect[0], rect[1]), (rect[2], rect[3]), bg_on)
+					button_bg(rect, bg_on)
 					self.top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
 					if (inp.mouse_click or inp.ab_click) and coll_point(inp.click_location, rect):
 						self.restore_full_mode()
@@ -17084,6 +17120,7 @@ class Tauon:
 		self.bottom_bar1.__init__(self)
 		self.bottom_bar_ao1.__init__(self)
 		self.top_panel.__init__(self)
+		self.aero.reset()
 		self.view_box.__init__(self, reload=True)
 		self.queue_box.recalc()
 		self.playlist_box.recalc()
@@ -17233,6 +17270,9 @@ class Tauon:
 			colours.apply_transparency(
 				darkness=prefs.transparency_tracklist_darkness,
 				intensity=prefs.transparency_intensity)
+		# Clearwater: see-through panels and its own text palette
+		if prefs.aero:
+			self.aero.apply_colours(colours)
 
 		# -----
 
@@ -17247,6 +17287,14 @@ class Tauon:
 			gui.panelY = round(30 * gui.scale)
 			gui.playlist_top = gui.panelY + (8 * gui.scale)
 			gui.playlist_top_bk = gui.playlist_top
+
+		if prefs.aero and gui.mode == GuiMode.MAIN:
+			gui.panelBY = gui.bottom_panel_height()
+			if not gui.custom_mode:
+				# Clearwater floats the top bar on the sky: gutter, glass, gutter
+				gui.panelY = self.aero.gutter() * 2 + self.aero.top_glass_height()
+				gui.playlist_top = gui.panelY + (8 * gui.scale)
+				gui.playlist_top_bk = gui.playlist_top
 
 		gui.show_playlist = True
 		if w < 750 * gui.scale and prefs.album_mode:
@@ -17316,6 +17364,13 @@ class Tauon:
 		if gui.custom_mode and gui.vis in (1, 2, 3) and not gui.top_panel_in_widget:
 			gui.vis = 0
 			gui.turbo = False
+
+		# The glass spectrum needs the vis thread too
+		gui.glass_spec_wanted = prefs.backend == Backend.PHAZOR and gui.mode == GuiMode.MAIN and (
+			(gui.custom_mode and gui.glass_spec_in_widget)
+			or (not gui.custom_mode and prefs.side_panel_spectrum and gui.rsp))
+		if gui.glass_spec_wanted:
+			gui.turbo = True
 
 		# The spectrogram widget feeds from its own C path (get_spectrum_hires,
 		# separate FFT buffers) so it runs alongside whichever gui.vis was chosen
@@ -17504,6 +17559,25 @@ class Tauon:
 				gui.playlist_left += gui.rspw
 			elif gui.rsp:
 				gui.plw -= gui.rspw
+
+			if prefs.aero and not gui.custom_mode:
+				# Clearwater: a gutter between the panels and at the window edges
+				g = self.aero.gutter()
+				x = g
+				if gui.lsp:
+					gui.lsp_x = x
+					x += gui.lspw + g
+				if gui.rsp and gui.rsp_on_left:
+					gui.rsp_x = x
+					gui.rsp_split_x = x + gui.rspw
+					x += gui.rspw + g
+				gui.playlist_left = x
+				right = window_size[0] - g
+				if gui.rsp and not gui.rsp_on_left:
+					gui.rsp_x = right - gui.rspw
+					gui.rsp_split_x = gui.rsp_x
+					right = gui.rsp_x - g
+				gui.plw = max(0, right - gui.playlist_left)
 
 			if window_size[0] < 630 * gui.scale:
 				gui.compact_bar = True
@@ -23037,6 +23111,7 @@ class Tauon:
 			self.prefs.colour_from_image = False
 			self.gui.theme_temp_current = -1
 			self.gui.reload_theme = True
+		self._set_aero(False)
 		# Removes panel translucency (and restores the transparency alphas
 		# if a glass style is on)
 		self.gui.update_layout = True
@@ -23045,17 +23120,55 @@ class Tauon:
 
 	def set_bg_style_base(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return not self.prefs.art_bg and not self.prefs.colour_from_image
+			return not self.prefs.art_bg and not self.prefs.colour_from_image and not self.prefs.aero
 		self._clear_background_style()
 		return None
 
 	def set_bg_style_colourise(self, mode: int = 0) -> bool | None:
 		if mode == 1:
-			return self.prefs.colour_from_image and not self.prefs.art_bg
+			return self.prefs.colour_from_image and not self.prefs.art_bg and not self.prefs.aero
 		self._clear_background_style()
 		self.prefs.colour_from_image = True
 		self.gui.theme_temp_current = -1
 		self.gui.reload_theme = True
+		return None
+
+	def _set_aero(self, on: bool) -> None:
+		"""Switch the Clearwater skin (t_aero) on or off."""
+		if bool(self.prefs.aero) == on:
+			return
+		self.prefs.aero = on
+		# The standard layout's bottom panel gains (or loses) its gutters
+		self.gui.panelBY = self.gui.bottom_panel_height()
+		# Theme reload restores the theme's own colours, or applies Clearwater's
+		self.gui.reload_theme = True
+		self.gui.update_layout = True
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
+
+	def set_bg_style_clearwater(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.aero)
+		self._clear_background_style()
+		# The sky fills the window, so window transparency has nothing to show
+		if self.prefs.transparent_mode:
+			self.prefs.transparent_mode = 0
+		self._set_aero(True)
+		return None
+
+	def toggle_aero_motion(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.aero_motion)
+		self.prefs.aero_motion = not self.prefs.aero_motion
+		self.gui.request_frame()
+		return None
+
+	def toggle_side_panel_spectrum(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.side_panel_spectrum)
+		self.prefs.side_panel_spectrum = not self.prefs.side_panel_spectrum
+		self.gui.update_layout = True
+		self.gui.request_frame()
 		return None
 
 	# --- Window transparency, independent of the background style above
@@ -23087,6 +23200,7 @@ class Tauon:
 			self.prefs.colour_from_image = False
 			self.gui.theme_temp_current = -1
 			self.gui.reload_theme = True
+		self._set_aero(False)
 		# The art fills the window, so window transparency has nothing to show
 		# through; turn it off (and hide its switcher) while an art background
 		# is in use
@@ -27766,7 +27880,8 @@ class AlbumArt:
 		self.temp_dest.y = int((box[1] - self.temp_dest.h) / 2) + self.temp_dest.y
 
 		# render the image
-		sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, self.temp_dest)
+		if not self.tauon.aero.draw_styled_art(self.current_frame(unit, animate), self.temp_dest):
+			sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, self.temp_dest)
 		self.style_overlay.hole_punches.append(self.temp_dest)
 
 		self.gui.art_drawn_rect = (self.temp_dest.x, self.temp_dest.y, self.temp_dest.w, self.temp_dest.h)
@@ -28741,7 +28856,8 @@ class AlbumArt:
 
 		self.tauon.style_overlay.hole_punches.append(rect)
 
-		sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, rect)
+		if not self.tauon.aero.draw_styled_art(self.current_frame(unit, animate), rect):
+			sdl3.render_texture(self.renderer, self.current_frame(unit, animate), None, rect)
 
 		self.gui.art_drawn_rect = (rect.x, rect.y, rect.w, rect.h)
 
@@ -34284,7 +34400,8 @@ class Over:
 			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
 			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
-			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
+			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic clearwater aero frutiger glass gel glossy skeuomorphic sky",
+			_("Ambient motion"): "clearwater animation animate sky motion drift bokeh",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35185,8 +35302,13 @@ class Over:
 				(_("Artist"), tauon.set_art_bg_artist(1), tauon.set_art_bg_artist),
 				(_("Frost lo"), tauon.set_art_bg_frosted_low(1), tauon.set_art_bg_frosted_low),
 				(_("Frost hi"), tauon.set_art_bg_frosted_high(1), tauon.set_art_bg_frosted_high),
+				(_("Clearwater"), tauon.set_bg_style_clearwater(1), tauon.set_bg_style_clearwater),
 			),
 		)
+
+		if prefs.aero:
+			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
+			return
 
 		# Window transparency combines only with the two non-art styles
 		if prefs.art_bg:
@@ -36753,7 +36875,10 @@ class TopPanel:
 			bg = colours.tab_highlight
 		else:
 			bg = colours.tab_background
-		self.ddt.rect(rect, bg)
+		if tauon.aero.active:
+			tauon.aero.tab(tauon.aero.tab_rect(rect), active, bg is colours.tab_highlight)
+		else:
+			self.ddt.rect(rect, bg)
 		fg = colours.tab_text_active if active else colours.tab_text
 
 		bar_highlight_size = round(2 * gui.scale)
@@ -36795,7 +36920,7 @@ class TopPanel:
 
 		# Draw the background (blend over the art background if active,
 		# otherwise clear first so window transparency works)
-		if not gui.have_art_bg:
+		if not gui.backdrop:
 			ddt.clear_rect((0, 0, window_size[0], gui.panelY))
 		ddt.rect((0, 0, window_size[0], gui.panelY), colours.top_panel_background)
 
@@ -36882,9 +37007,12 @@ class TopPanel:
 		hot = tauon.style_overlay.tint_from_background(
 			colours.corner_button_active, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
 			colours.top_panel_background)
-		self.menu_disc.render(
-			mrect, (tauon.x_menu.active or mhit) and not tauon.tab_menu.active, tauon.x_menu.active, idle, hot,
-			(0, 0, window_size[0], gui.panelY), not colours.lm)
+		if tauon.aero.active:
+			tauon.aero.menu_orb(mrect, mhit and not tauon.tab_menu.active, mhit and inp.mouse_down)
+		else:
+			self.menu_disc.render(
+				mrect, (tauon.x_menu.active or mhit) and not tauon.tab_menu.active, tauon.x_menu.active, idle, hot,
+				(0, 0, window_size[0], gui.panelY), not colours.lm)
 		if mhit and not tauon.x_menu.active:
 			ox, oy = inp.view_offset
 			tauon.tool_tip.test(mrect[0] + ox, mrect[1] + mrect[3] + 4 * gui.scale + oy, _("Menu"))
@@ -37379,7 +37507,11 @@ class TopPanel:
 				bg = colours.tab_background
 
 			# Draw tab background
-			ddt.rect(rect, bg)
+			aero = tauon.aero if tauon.aero.active else None
+			if aero is not None:
+				aero.tab(aero.tab_rect(rect), active, bg is colours.tab_highlight)
+			else:
+				ddt.rect(rect, bg)
 
 			# Determine text colour
 			fg = colours.tab_text_active if active else colours.tab_text
@@ -37388,7 +37520,10 @@ class TopPanel:
 			# edge is kept for drag and drop indicators), clear of the window border
 			if not gui.radio_view and i == pctl.active_playlist_playing and \
 					pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED):
-				ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 80))
+				if aero is not None:
+					aero.tab_playing_mark(aero.tab_rect(rect))
+				else:
+					ddt.rect((x, y + round(gui.scale), tab_width, bar_highlight_size), alpha_mod(fg, 80))
 
 			# Draw tab text
 			text = tab.name if gui.radio_view else tab.title
@@ -37594,7 +37729,8 @@ class TopPanel:
 			round(sx + ox), round(yy + oy), round(status_right - sx), round(self.height))
 
 		# Menu click effects, drawn over everything near the disc
-		self.menu_disc.render_fx()
+		if not tauon.aero.active:
+			self.menu_disc.render_fx()
 
 		if colours.lm:
 			colours.tb_line = colours.grey(200)
@@ -37769,7 +37905,7 @@ class BottomBarType1:
 
 		# Replace pixels (for window transparency) unless the art background
 		# is underneath, in which case blend over it
-		if not self.gui.have_art_bg:
+		if not self.gui.backdrop:
 			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), colours.bottom_panel_colour)
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
@@ -37807,7 +37943,9 @@ class BottomBarType1:
 		md_active = so.tint_from_background(colours.mode_button_active, window_size[0] - 120 * gui.scale, buttons_y, 0.2, panel_bg)
 		md_over = so.tint_from_background(colours.mode_button_over, window_size[0] - 120 * gui.scale, buttons_y, 0.2, panel_bg)
 
-		ddt.rect_a(self.seek_bar_position, self.seek_bar_size, seek_bg)
+		aero = self.tauon.aero if self.tauon.aero.active else None
+		if aero is None:
+			ddt.rect_a(self.seek_bar_position, self.seek_bar_size, seek_bg)
 
 		time_items, time_extra = self.time_layout()
 
@@ -37952,7 +38090,12 @@ class BottomBarType1:
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
 				self.seek_bar_size[1])
-			ddt.rect(gui.seek_bar_rect, seek_fill)
+			if aero is not None:
+				aero.tube(aero.classic_seek_rect(self.seek_bar_position, self.seek_bar_size),
+					self.seek_time / pctl.playing_length,
+					playing=pctl.playing_state == PlayingState.PLAYING, bubbles=True)
+			else:
+				ddt.rect(gui.seek_bar_rect, seek_fill)
 			tauon.draw_ab_repeat_markers(
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				self.seek_bar_size[0], self.seek_bar_size[1])
@@ -38104,15 +38247,20 @@ class BottomBarType1:
 
 				pctl.set_volume()
 
-			ddt.rect_a(
-				(self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
-				self.volume_bar_size, volume_bg)  # 22
-
 			gui.volume_bar_rect = (
 				self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
 				int(pctl.player_volume * self.volume_bar_size[0] / 100), self.volume_bar_size[1])
 
-			ddt.rect(gui.volume_bar_rect, colours.volume_bar_fill)
+			if aero is not None:
+				aero.tube(
+					(self.volume_bar_position[0] - right_offset, self.volume_bar_position[1],
+					self.volume_bar_size[0], self.volume_bar_size[1]),
+					min(100, max(0, pctl.player_volume)) / 100, shimmer=False)
+			else:
+				ddt.rect_a(
+					(self.volume_bar_position[0] - right_offset, self.volume_bar_position[1]),
+					self.volume_bar_size, volume_bg)  # 22
+				ddt.rect(gui.volume_bar_rect, colours.volume_bar_fill)
 
 			self.fields.add(self.volume_bar_position + self.volume_bar_size)
 			if pctl.active_replaygain != 0 and (self.coll((
@@ -38242,7 +38390,13 @@ class BottomBarType1:
 					if inp.right_click:
 						pctl.show_current(highlight=True)
 
-				self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
+				if aero is not None:
+					over = self.coll(rect)
+					play = self.play_button
+					aero.orb(29 * gui.scale + play.w / 2, window_size[1] - self.control_line_bottom + play.h / 2,
+						34 * gui.scale, play, hover=over, pressed=over and inp.mouse_down)
+				else:
+					self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
 				# ddt.rect_r(rect,[255,0,0,255], True)
 
 			# PAUSE---
@@ -38265,8 +38419,18 @@ class BottomBarType1:
 					tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Pause"))
 
 				# ddt.rect_r(rect,[255,0,0,255], True)
-				ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
-				ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
+				if aero is not None:
+					over = self.coll(rect)
+
+					def pause_glyph(off: int, colour: ColourRGBA, x: float = x, y: float = y) -> None:
+						ddt.rect_a((x, y + off), (4 * gui.scale, 13 * gui.scale), colour)
+						ddt.rect_a((x + 10 * gui.scale, y + off), (4 * gui.scale, 13 * gui.scale), colour)
+
+					aero.orb_glyph(x + 7 * gui.scale, y + 6.5 * gui.scale, 34 * gui.scale, pause_glyph,
+						hover=over, pressed=over and inp.mouse_down)
+				else:
+					ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
+					ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
 
 			# STOP---
 			x = 125 * gui.scale + buttons_x_offset
@@ -38281,7 +38445,16 @@ class BottomBarType1:
 					tauon.stop_menu.activate(position=(x - 0 * gui.scale, y - 6 * gui.scale))
 				#tauon.tool_tip2.test(x, y - 35 * gui.scale, _("Stop, RC: Toggle auto-stop"))
 
-			ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
+			if aero is not None:
+				over = self.coll(rect)
+
+				def stop_glyph(off: int, colour: ColourRGBA, x: float = x, y: float = y) -> None:
+					ddt.rect_a((x + 2 * gui.scale, y + 2 * gui.scale + off), (9 * gui.scale, 9 * gui.scale), colour)
+
+				aero.orb_glyph(x + 6.5 * gui.scale, y + 6.5 * gui.scale, 28 * gui.scale, stop_glyph,
+					hover=over, pressed=over and inp.mouse_down)
+			else:
+				ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
 
 			if compact:
@@ -38317,8 +38490,14 @@ class BottomBarType1:
 			else:
 				gui.tool_tip_lock_off_f = False
 
-			self.forward_button.render(
-				buttons_x_offset + 240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
+			if aero is not None:
+				over = self.coll(rect)
+				ff = self.forward_button
+				aero.orb(buttons_x_offset + 240 * gui.scale + ff.w / 2, 1 + window_size[1] - self.control_line_bottom + ff.h / 2,
+					30 * gui.scale, ff, hover=over, pressed=over and inp.mouse_down)
+			else:
+				self.forward_button.render(
+					buttons_x_offset + 240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
 
 			# ddt.rect_r(rect,[255,0,0,255], True)
 
@@ -38350,8 +38529,14 @@ class BottomBarType1:
 			else:
 				gui.tool_tip_lock_off_b = False
 
-			self.back_button.render(buttons_x_offset + 180 * gui.scale, 1 + window_size[1] - self.control_line_bottom,
-									back_colour)
+			if aero is not None:
+				over = self.coll(rect)
+				bb = self.back_button
+				aero.orb(buttons_x_offset + 180 * gui.scale + bb.w / 2, 1 + window_size[1] - self.control_line_bottom + bb.h / 2,
+					30 * gui.scale, bb, hover=over, pressed=over and inp.mouse_down)
+			else:
+				self.back_button.render(buttons_x_offset + 180 * gui.scale, 1 + window_size[1] - self.control_line_bottom,
+										back_colour)
 			# ddt.rect_r(rect,[255,0,0,255], True)
 
 			# menu button
@@ -38425,6 +38610,10 @@ class BottomBarType1:
 				#ddt.rect_a((x, y), (25 * gui.scale, 3 * gui.scale), rpbc)
 
 				icon_x_shift = round(2 * gui.scale)
+				if aero is not None:
+					# Glass pill with an LED; the icon moves over to make room
+					aero.pill(rect, bool(pctl.random_mode), self.coll(rect))
+					icon_x_shift += round(12 * gui.scale)
 				if pctl.album_shuffle_mode:
 					self.shuffle_button_a.render(x + round(1 * gui.scale) + icon_x_shift, y + round(1 * gui.scale), rpbc)
 				elif off:
@@ -38496,6 +38685,9 @@ class BottomBarType1:
 
 				ar = x + round(50 * gui.scale)
 				h = round(5 * gui.scale)
+
+				if aero is not None:
+					aero.pill(rect, bool(pctl.repeat_mode), self.coll(rect))
 
 				if pctl.album_repeat_mode:
 					self.repeat_button_a.render(ar - round(45 * gui.scale) + icon_x_shift, y - round(2 * gui.scale), rpbc)
@@ -38574,7 +38766,7 @@ class BottomBarType_ao1:
 
 		# Replace pixels (for window transparency) unless the art background
 		# is underneath, in which case blend over it
-		if not self.gui.have_art_bg:
+		if not self.gui.backdrop:
 			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_NONE)
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
@@ -40741,8 +40933,12 @@ class StandardPlaylist:
 		x = left + gui.highlight_left
 
 		if highlight:
-			ddt.text_background_colour = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
-			ddt.rect_a((x, line_y), (highlight_width, height), colours.row_select_highlight)
+			if self.tauon.aero.active:
+				aero = self.tauon.aero
+				aero.selection(aero.row_rect((x, line_y, highlight_width, height - 1)))
+			else:
+				ddt.text_background_colour = alpha_blend(colours.row_select_highlight, colours.playlist_panel_background)
+				ddt.rect_a((x, line_y), (highlight_width, height), colours.row_select_highlight)
 
 		top_pad, art_size = self._full_title_art_box()
 		art_x = x + round(12 * scale)
@@ -41822,7 +42018,11 @@ class StandardPlaylist:
 		album_art_rendered_blocks: set[int] = set()
 		album_art_column_draws: list[tuple[TrackClass, tuple[float, float], int, int]] = []
 
+		aero = tauon.aero if tauon.aero.active else None
+		if aero is not None:
+			aero.row_rects.clear()
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
+			ddt.text_shadow = None
 			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 			ddt.text_background_colour = colours.playlist_panel_background
 
@@ -41970,7 +42170,12 @@ class StandardPlaylist:
 					if gui.scale == 2:
 						height += 1
 
-					if highlight:
+					if highlight and aero is not None:
+						aero.selection(aero.row_rect((
+							left + gui.highlight_left,
+							gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels,
+							highlight_width, gui.playlist_row_height - 1)))
+					elif highlight:
 						ddt.text_background_colour = alpha_blend(
 							colours.row_select_highlight,
 							colours.playlist_panel_background)
@@ -42102,7 +42307,19 @@ class StandardPlaylist:
 				continue
 
 			# Draw playing highlight
-			if playing:
+			if aero is not None:
+				# Clearwater: a gel row for the playing track, a glass pill for
+				# the selection, and the rest remembered for the hover highlight
+				row = aero.row_rect(track_box)
+				if playing:
+					aero.gel(row)
+					# text-shadow: 0 1px 1px rgba(0,40,70,.55)
+					ddt.text_shadow = ColourRGBA(0, 40, 70, 140)
+				elif highlight:
+					aero.selection(row)
+				else:
+					aero.row_rects.append(row)
+			elif playing:
 				ddt.rect(track_box, colours.row_playing_highlight)
 				ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
 
@@ -42114,7 +42331,7 @@ class StandardPlaylist:
 					3 * gui.scale], ColourRGBA(125, 105, 215, 255))
 
 			# Highlight
-			if highlight:
+			if highlight and aero is None:
 				ddt.rect_a(
 					(left + gui.highlight_left, line_y), (highlight_width, gui.playlist_row_height),
 					colours.row_select_highlight)
@@ -42492,7 +42709,22 @@ class StandardPlaylist:
 			):
 				cv += 1
 
+		ddt.text_shadow = None
 		for track, location, art_size, draw_height in album_art_column_draws:
+			if aero is not None:
+				# Rounded, glossed thumbnails with a ring and a small shadow
+				got = tauon.gall_ren.render(track, location, art_size, return_texture=True)
+				if got:
+					tex, tw, th, _edge = got
+					tx = round(location[0] + (art_size - tw) / 2)
+					ty = round(location[1] + (art_size - th) / 2)
+					old_clip = sdl3.get_render_clip_rect(self.renderer)
+					if draw_height < art_size:
+						sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(
+							round(location[0]) - 20, round(location[1]), round(art_size) + 40, round(draw_height)))
+					aero.art(tex, (tx, ty, tw, th), aero.s(5), shadow="small")
+					sdl3.set_render_clip_rect(self.renderer, old_clip)
+				continue
 			tauon.gall_ren.render(track, location, art_size, max_height=draw_height)
 
 		# This is a bit hacky since its only generated after drawing
@@ -42545,6 +42777,9 @@ class StandardPlaylist:
 		# background, where the art below is meant to show through.)
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
+		if self.tauon.aero.active:
+			# Clearwater's hover highlight sits under the row's text
+			self.tauon.aero.draw_row_hover((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
 	def cache_render(self) -> None:
@@ -42629,7 +42864,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True, draw_background: bool = True) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True, draw_background: bool = True, reflect: float = 0) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -42640,7 +42875,7 @@ class ArtBox:
 		# already painted its full panel, so it disables this second fill to avoid
 		# stacking the translucent panel colour into an opaque block behind art.
 		if draw_background:
-			if not gui.have_art_bg:
+			if not gui.backdrop:
 				ddt.clear_rect((x, y, w, h))
 			ddt.rect((x, y, w, h), colours.side_panel_background)
 		# ddt.rect_r((x, y, w ,h), [255, 0, 0, 200], True)
@@ -42669,7 +42904,11 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
+			# Clearwater: rounded, glossed art with a drop shadow (and, in the
+			# side panel, its reflection)
+			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect)
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
+			tauon.aero.end_art_style()
 			showc = tauon.album_art_gen.get_info(target_track)
 
 			# Milkdrop visualiser
@@ -46345,7 +46584,12 @@ class PlaylistBox:
 				bg = ColourRGBA(bg.r, bg.g, bg.b, 255)
 
 		real_bg = alpha_blend(bg, self.colours.playlist_box_background)
-		self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
+		if self.tauon.aero.active:
+			if bg.a:
+				aero = self.tauon.aero
+				aero.selection(aero.row_rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h - 1)))
+		else:
+			self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
 
 		# Chevron sits between the row's left edge (past any colour bars) and the title
 		text_x = tab_start + self.depth_text_start(row.depth) + round(12 * gui.scale)
@@ -46645,7 +46889,16 @@ class PlaylistBox:
 			real_bg = alpha_blend(bg, self.colours.playlist_box_background)
 
 			# Draw highlight
-			self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
+			if tauon.aero.active:
+				# Clearwater: a glass pill for the open playlist, a faint one for a drop target
+				aero = tauon.aero
+				row_rect = aero.row_rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h - 1))
+				if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
+					aero.selection(row_rect)
+				elif bg.a:
+					aero.hover_row(row_rect)
+			else:
+				self.ddt.rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h), bg)
 
 			# Draw title text
 			text_start = self.depth_text_start(row.depth)
@@ -49306,7 +49559,7 @@ class MetaBox:
 		# context menu and the "Lyrics" showcase link.
 		bg = self.colours.side_panel_background
 		self.ddt.text_background_colour = bg
-		if not self.gui.have_art_bg:
+		if not self.gui.backdrop:
 			self.ddt.clear_rect((x, y, w, h))
 		self.ddt.rect((x, y, w, h), bg)
 
@@ -49461,7 +49714,7 @@ class MetaBox:
 		radiobox = self.tauon.radiobox
 		target_track = track
 
-		if not gui.have_art_bg:
+		if not gui.backdrop:
 			ddt.clear_rect((x, y, w, h))
 		ddt.rect((x, y, w, h), colours.side_panel_background)
 		small_mode = window_size[1] < 550 * gui.scale
@@ -57609,6 +57862,9 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
+	cf.update_value("clearwater-style", prefs.aero)
+	cf.update_value("clearwater-motion", prefs.aero_motion)
+	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
 	cf.update_value("transparency-intensity", prefs.transparency_intensity)
 	cf.update_value("rounded-corners", prefs.rounded_corners)
@@ -57955,6 +58211,10 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
+	prefs.aero = cf.sync_add("bool", "clearwater-style", prefs.aero, "Clearwater glass-and-gel skin")
+	prefs.aero_motion = cf.sync_add("bool", "clearwater-motion", prefs.aero_motion, "Animate the Clearwater sky")
+	prefs.side_panel_spectrum = cf.sync_add(
+		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(
 		"float", "transparency-tracklist-darkness", prefs.transparency_tracklist_darkness,
 		"How much heavier than the other glass panels the tracklist fill is, 0 to 1")
@@ -57963,6 +58223,8 @@ def load_prefs(bag: Bag) -> None:
 		"Scales how far off opaque the glass panels sit, 0.5 to 1.5")
 	# The setting used to be a three-way choice, so an old config can hold a 2
 	prefs.transparent_mode = 1 if prefs.transparent_mode else 0
+	if prefs.aero:
+		prefs.transparent_mode = 0
 	prefs.transparency_intensity = max(0.5, min(1.5, prefs.transparency_intensity))
 	prefs.transparency_tracklist_darkness = max(0.0, min(1.0, prefs.transparency_tracklist_darkness))
 	if first_run and prefs.macos:
@@ -62274,6 +62536,14 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
 
+	# The glass spectrum along the bottom of the side panel
+	side_spectrum_item = MenuItem(
+		_("Show Spectrum"), tauon.toggle_side_panel_spectrum,
+		check_test=lambda: tauon.toggle_side_panel_spectrum(1),
+		show_test=lambda _ref=None: prefs.backend == Backend.PHAZOR and not gui.custom_mode)
+	center_info_menu.add(side_spectrum_item)
+	picture_menu.add(side_spectrum_item)
+	picture_menu.br()
 	picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
 	# Next and previous pictures
 	picture_menu.add(MenuItem(_("Next Image"), tauon.cycle_offset, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True))
@@ -63914,11 +64184,14 @@ def main(holder: Holder) -> None:
 						if info[0] == 1 and not selection_highlight_shown and (
 							pctl.playing_state in (PlayingState.PLAYING, PlayingState.PAUSED)
 						):
-							ddt.rect_a(
-								(x - highlight_border, y - highlight_border),
-								(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
-								colours.gallery_highlight,
-							)
+							if tauon.aero.active:
+								tauon.aero.playing_glow((x, y, tauon.album_mode_art_size, tauon.album_mode_art_size))
+							else:
+								ddt.rect_a(
+									(x - highlight_border, y - highlight_border),
+									(tauon.album_mode_art_size + highlight_border * 2, tauon.album_mode_art_size + highlight_border * 2),
+									colours.gallery_highlight,
+								)
 							# ddt.rect_a((x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size),
 							#            colours.gallery_background, True)
 
@@ -64003,10 +64276,11 @@ def main(holder: Holder) -> None:
 							gui.request_frame()
 
 						# Draw faint outline
-						ddt.rect(
-							(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
-							ColourRGBA(255, 255, 255, 11),
-						)
+						if not tauon.aero.active:
+							ddt.rect(
+								(x - 1, y - 1, tauon.album_mode_art_size + 2, tauon.album_mode_art_size + 2),
+								ColourRGBA(255, 255, 255, 11),
+							)
 
 						if gui.album_tab_mode or gallery_menu.active:
 							if info[2] is False and info[0] != 1 and not colours.lm:
@@ -64037,9 +64311,10 @@ def main(holder: Holder) -> None:
 
 						back_colour = alpha_blend(ColourRGBA(10, 10, 10, 15), colours.gallery_background)
 
-						ddt.rect_a(
-							(x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour
-						)
+						if not tauon.aero.active:
+							ddt.rect_a(
+								(x, y), (tauon.album_mode_art_size, tauon.album_mode_art_size), back_colour
+							)
 
 						# Draw album art
 						if singles:
@@ -64072,7 +64347,17 @@ def main(holder: Holder) -> None:
 							album_count += 1
 							if (album_count * 1.5) + 10 > tauon.gall_ren.limit:
 								tauon.gall_ren.limit = round((album_count * 1.5) + 30)
-							drawn_art = tauon.gall_ren.render(track, (x, y))
+							if tauon.aero.active:
+								# Rounded, glossed, with a small shadow
+								got = tauon.gall_ren.render(track, (x, y), return_texture=True)
+								drawn_art = bool(got)
+								if got:
+									tex, tw, th, _edge = got
+									size = tauon.album_mode_art_size
+									tauon.aero.art(tex, (x + (size - tw) // 2, y + (size - th) // 2, tw, th),
+										tauon.aero.s(6), shadow="small")
+							else:
+								drawn_art = tauon.gall_ren.render(track, (x, y))
 
 						# Determine mouse collision
 						rect = (
@@ -64090,7 +64375,10 @@ def main(holder: Holder) -> None:
 						# Draw mouse-over highlight
 						if (not gallery_menu.active and m_in) or (gallery_menu.active and info[2]):
 							if tauon.is_level_zero():
-								ddt.rect(rect, ColourRGBA(255, 255, 255, 10))
+								if tauon.aero.active:
+									tauon.aero.shape(rect, tauon.aero.s(6), (1, 1, 1, 0.06))
+								else:
+									ddt.rect(rect, ColourRGBA(255, 255, 255, 10))
 
 						if drawn_art is False and gui.gallery_show_text is False:
 							ddt.text(
@@ -64549,13 +64837,20 @@ def main(holder: Holder) -> None:
 					bg = ColourRGBA(200, 200, 200, 100)
 					fg = ColourRGBA(100, 100, 100, 200)
 
-				ddt.rect_a((x, top), (width + 1 * gui.scale, bottom - top), bg)
-				ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
-
-				if (
+				thumb_hover = (
 					tauon.coll((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl)) and inp.mouse_position[0] != 0
-				) or scroll_hold:
-					ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), ColourRGBA(255, 255, 255, 19))
+				) or scroll_hold
+				if tauon.aero.active:
+					# Clearwater: a slim accent pill, no track (10px wide, 2px clear border)
+					bar_w = round(10 * gui.scale)
+					bx = x + width - bar_w if not prefs.tracklist_scrollbar_left else x + 1
+					tauon.aero.scroll_thumb((bx, sbp, bar_w, sbl), thumb_hover)
+				else:
+					ddt.rect_a((x, top), (width + 1 * gui.scale, bottom - top), bg)
+					ddt.rect_a((x + 1, sbp), (width, sbl), alpha_mod(fg, scroll_opacity))
+
+					if thumb_hover:
+						ddt.rect_a((x + 1 * gui.scale, sbp), (width, sbl), ColourRGBA(255, 255, 255, 19))
 
 	tauon.tracklist_scrollbar_render = render_tracklist_scrollbar  # for the Tracklist widget
 
@@ -66795,6 +67090,8 @@ def main(holder: Holder) -> None:
 				colours.apply_transparency(
 				darkness=prefs.transparency_tracklist_darkness,
 				intensity=prefs.transparency_intensity)
+			if prefs.aero:
+				tauon.aero.apply_colours(colours)
 
 			prefs.theme_name = gui.theme_name
 
@@ -66841,6 +67138,7 @@ def main(holder: Holder) -> None:
 				tauon.clear_img_cache(delete_disk=False)
 				ddt.clear_text_cache()
 				tauon.destroy_corner_textures()
+				tauon.aero.reset()
 				for item in WhiteModImageAsset.assets:
 					item.reload()
 				reset_render = False
@@ -66857,8 +67155,16 @@ def main(holder: Holder) -> None:
 			# Blurred album art background: drawn first so all panels and
 			# text composite on top of it (panel colours are made translucent
 			# in update_layout_do while this is active)
-			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN
-			if gui.have_art_bg:
+			aero_on = tauon.aero.active
+			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN and not aero_on
+			gui.backdrop = gui.have_art_bg or aero_on
+			if aero_on:
+				# Clearwater: the sky, then the standard layout's glass panels
+				# (custom mode lays its own down in custom.render())
+				tauon.aero.begin_frame()
+				if not gui.custom_mode:
+					tauon.aero.draw_preset_panels()
+			elif gui.have_art_bg:
 				tauon.style_overlay.display(background=True)
 
 			# tauon.perf_timer.set()
@@ -67458,26 +67764,32 @@ def main(holder: Holder) -> None:
 							boxw = gui.rspw
 							available_h = max(0, window_size[1] - gui.panelY - gui.panelBY)
 							boxh = min(gui.rspw, available_h)
+							# Clearwater mirrors the art below itself; the text moves
+							# down to make room. The glass spectrum takes the bottom.
+							refl = tauon.aero.reflection_height() if tauon.aero.active and prefs.show_side_art else 0
+							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum else 0
 
 							if prefs.show_side_art:
 								meta_box.draw(
 									rsp_x,
-									gui.panelY + boxh,
+									gui.panelY + boxh + refl,
 									gui.rspw,
-									available_h - boxh,
+									max(0, available_h - boxh - refl - spec_h),
 									track=target_track,
 								)
 
-								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track)
+								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track, reflect=refl)
 
 							else:
 								meta_box.draw(
 									rsp_x,
 									gui.panelY,
 									gui.rspw,
-									window_size[1] - gui.panelY - gui.panelBY,
+									max(0, available_h - spec_h),
 									track=target_track,
 								)
+							if spec_h:
+								tauon.aero.draw_side_spectrum(rsp_x, gui.panelY, gui.rspw, available_h)
 
 						elif prefs.side_panel_layout == 1:
 							h = window_size[1] - (gui.panelY + gui.panelBY)
@@ -67485,7 +67797,7 @@ def main(holder: Holder) -> None:
 							y = gui.panelY
 							w = gui.rspw
 
-							if not gui.have_art_bg:
+							if not gui.backdrop:
 								ddt.clear_rect((x, y, w, h))
 							ddt.rect((x, y, w, h), colours.side_panel_background)
 							tauon.test_auto_lyrics(target_track)
@@ -67739,7 +68051,10 @@ def main(holder: Holder) -> None:
 				# itself (reframed); skip the standard one to avoid double-rendering
 				# the same stateful TopPanel object.
 				if gui.mode == GuiMode.MAIN and not gui.custom_mode:
-					tauon.top_panel.render()
+					if tauon.aero.active:
+						tauon.aero.render_preset_top()
+					else:
+						tauon.top_panel.render()
 
 				# RENDER EXTRA FRAME DOUBLE
 				if colours.lm and not gui.custom_mode:
@@ -67804,6 +68119,8 @@ def main(holder: Holder) -> None:
 				# double-rendering the same stateful bar object.
 				if gui.custom_mode:
 					pass
+				elif tauon.aero.active:
+					tauon.aero.render_preset_bottom()
 				elif prefs.feux_panel:
 					tauon.feux_bar.render(gui.panelBY)
 				elif prefs.shuffle_lock:
@@ -67814,6 +68131,9 @@ def main(holder: Holder) -> None:
 				# (The blurred art background is now drawn at the start of the
 				# frame, underneath the UI, rather than composited over it here)
 				tauon.style_overlay.hole_punches.clear()
+
+				if tauon.aero.active and not gui.custom_mode:
+					tauon.aero.flush_glints()
 
 				# Custom Layout System: composite over the standard layout once
 				# panel rendering is done. Overlays (toasts, menus, dialogs) below
@@ -68424,6 +68744,12 @@ def main(holder: Holder) -> None:
 						if hdr is not None:
 							win_anchor = (hdr[0], hdr[0] + hdr[2], hdr[1])
 						tool_rect = list(tauon.custom.window_controls_rect())
+					elif tauon.aero.active and tauon.aero.header_rect is not None:
+						hdr = tauon.aero.header_rect
+						win_anchor = (hdr[0], hdr[0] + hdr[2], hdr[1])
+						tool_rect = [hdr[0] + hdr[2] - 110 * gui.scale, hdr[1], 110 * gui.scale, hdr[3]]
+						if prefs.left_window_control or gui.macstyle:
+							tool_rect[0] = hdr[0]
 					else:
 						tool_rect = [window_size[0] - 110 * gui.scale, 2, 95 * gui.scale, 45 * gui.scale]
 						if prefs.left_window_control:
@@ -69602,6 +69928,9 @@ def main(holder: Holder) -> None:
 				else:
 					vis_right = round(vis_panel[0] + vis_panel[2])
 					vis_top = round(vis_panel[1])
+			elif tauon.aero.active and tauon.aero.header_rect is not None:
+				vis_right = round(tauon.aero.header_rect[0] + tauon.aero.header_rect[2])
+				vis_top = round(tauon.aero.header_rect[1])
 
 			if gui.vis == 5:
 				# milky
