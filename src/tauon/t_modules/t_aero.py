@@ -1758,6 +1758,15 @@ class Aero:
 	def reflection_height(self) -> int:
 		return self.si(46)
 
+	def side_art_inset(self) -> int:
+		"""Total inset of the side panel art (20px of glass each side)."""
+		return self.si(40)
+
+	def side_art_text_gap(self) -> int:
+		"""How far the side panel text moves down to clear the reflection:
+		its height and 3px gap, less the art's own bottom padding."""
+		return max(0, self.reflection_height() + self.si(3) - self.side_art_inset() // 2)
+
 	def side_spectrum_height(self) -> int:
 		"""Room the side panel spectrum takes: 64px of bars, 8 above, 16 below."""
 		return self.si(64 + 8 + 16)
@@ -1773,7 +1782,8 @@ class Aero:
 
 	def draw_side_spectrum(self, x: float, y: float, w: float, h: float) -> None:
 		"""The glass spectrum at the bottom of a side panel region."""
-		art_w = w - self.s(17)
+		# As wide as the art above it
+		art_w = w - (self.side_art_inset() if self.active else self.s(17))
 		bars_h = self.s(64)
 		rect = (x + (w - art_w) / 2, y + h - self.s(16) - bars_h, art_w, bars_h)
 		self.draw_glass_spectrum(rect)

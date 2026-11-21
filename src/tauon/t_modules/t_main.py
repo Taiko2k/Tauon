@@ -17444,6 +17444,15 @@ class Tauon:
 					if self.draw_max_button:
 						offset += 20
 					offset = round(offset * gui.scale)
+				elif prefs.aero:
+					# Clearwater's capsules (2px margin, 44px close, 32px others)
+					# and a clear gap before the visualiser (14px with its own 10)
+					offset = 2 + 44 + 4
+					if self.draw_min_button:
+						offset += 32
+					if self.draw_max_button:
+						offset += 32
+					offset = round(offset * gui.scale)
 				gui.offset_extra = offset
 
 			gui.album_v_slide_value = round(50 * gui.scale)
@@ -17636,11 +17645,13 @@ class Tauon:
 
 			# Only nudge for the left panel when the tracklist actually borders it.
 			# With the side panel on the left, the tracklist borders that instead.
-			if gui.lsp and not gui.rsp_on_left:
+			# (Clearwater's gutters separate the panels, so it keeps the full inset
+			# and the selection capsule keeps the same margin in every layout.)
+			if gui.lsp and not gui.rsp_on_left and not prefs.aero:
 				inset_left -= 10 * gui.scale
 				inset_width += 10 * gui.scale
 
-			if gui.rsp_on_left:
+			if gui.rsp_on_left and not prefs.aero:
 				inset_left -= 11 * gui.scale
 				inset_width += 6 * gui.scale
 
@@ -37051,7 +37062,10 @@ class TopPanel:
 			colours.corner_button_active, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
 			colours.top_panel_background)
 		if tauon.aero.active:
-			tauon.aero.menu_orb(mrect, mhit and not tauon.tab_menu.active, mhit and inp.mouse_down)
+			# Held down while its menu is open
+			tauon.aero.menu_orb(
+				mrect, (mhit and not tauon.tab_menu.active) or tauon.x_menu.active,
+				(mhit and inp.mouse_down) or tauon.x_menu.active)
 		else:
 			self.menu_disc.render(
 				mrect, (tauon.x_menu.active or mhit) and not tauon.tab_menu.active, tauon.x_menu.active, idle, hot,
@@ -42388,7 +42402,7 @@ class StandardPlaylist:
 					1 * gui.scale), colours.folder_line)
 
 			if not gui.set_mode:
-				left_trim = round(9 * gui.scale) if gui.custom_mode else 0
+				left_trim = round(9 * gui.scale) if gui.custom_mode and not tauon.aero.active else 0
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
 					playing, 255, left + inset_left - left_trim, inset_width + left_trim, 1, line_y)
@@ -42929,8 +42943,12 @@ class ArtBox:
 		box_h = h
 
 		if inset:  # The Custom Layout Art Box passes inset=False (its gutter spaces it)
-			box_w -= 17 * gui.scale  # Inset the square a bit
-			box_h -= 17 * gui.scale  # Inset the square a bit
+			pad = 17 * gui.scale  # Inset the square a bit
+			if reflect and tauon.aero.active:
+				# Clearwater's side panel: the concept's 20px of glass around the art
+				pad = tauon.aero.side_art_inset()
+			box_w -= pad
+			box_h -= pad
 
 		box_x = x + ((w - box_w) // 2)
 		box_y = y + ((h - box_h) // 2)
@@ -67811,7 +67829,7 @@ def main(holder: Holder) -> None:
 							boxh = min(gui.rspw, available_h)
 							# Clearwater mirrors the art below itself; the text moves
 							# down to make room. The glass spectrum takes the bottom.
-							refl = tauon.aero.reflection_height() if tauon.aero.active and prefs.show_side_art else 0
+							refl = tauon.aero.side_art_text_gap() if tauon.aero.active and prefs.show_side_art else 0
 							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum else 0
 
 							if prefs.show_side_art:
@@ -67823,7 +67841,8 @@ def main(holder: Holder) -> None:
 									track=target_track,
 								)
 
-								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track, reflect=refl)
+								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track,
+									reflect=tauon.aero.reflection_height() if refl else 0)
 
 							else:
 								meta_box.draw(
