@@ -123,7 +123,8 @@ def rounded_poly(x: float, y: float, w: float, h: float,
 			pts.append((cx, cy))
 			continue
 		ox, oy = cx + sx * rx, cy + sy * ry
-		seg = max(3, min(14, round(max(rx, ry) / 1.6)))
+		# Enough segments that a small cap (a 7px tube end) reads as round
+		seg = max(6, min(16, round(max(rx, ry) / 1.2)))
 		for i in range(seg + 1):
 			ang = math.radians(a0 + (a1 - a0) * i / seg)
 			pts.append((ox + math.cos(ang) * rx, oy + math.sin(ang) * ry))
@@ -349,6 +350,7 @@ class Aero:
 	FROST_SAT = 1.7     # backdrop-filter: saturate(1.7)
 	FPS = 30            # ambient drift, the seek bar, bubbles, the spectrum
 	FPS_FAST = 60       # colour transitions and the glint
+	SHIMMER_SPEED = 170  # logical px per second along the seek tube
 
 	# Dusk tokens from the concept
 	TEXT = rgba8(232, 246, 255)
@@ -1245,10 +1247,12 @@ class Aero:
 			self.ring("right_in", fr, rr, (1, 1, 1, 0.4))
 			now = time.monotonic()
 			if shimmer and playing and self.motion():
-				# 70px band crossing the fill every 2.6s
+				# A 70px band travelling the whole tube at a constant speed,
+				# lit only where the gel is: its pace and position don't
+				# depend on how full the tube is
 				bw = 70 * sc
-				t = (now % 2.6) / 2.6
-				bx = x - 80 * sc + (fw + 80 * sc) * t
+				span = w + 150 * sc
+				bx = x - 80 * sc + (now * self.SHIMMER_SPEED * sc) % span
 				band = Gradient((bx, y, bw, h), 90, [
 					(0.0, (1, 1, 1, 0)), (0.5, (1, 1, 1, 0.6)), (1.0, (1, 1, 1, 0))])
 				self.shape(fr, rr, grad=band, cuts=[(1, 0, bx), (1, 0, bx + bw)])
@@ -1267,8 +1271,11 @@ class Aero:
 		sc = self.gui.scale
 		if playing and self.motion() and fw > 24 * sc and now >= self._bubble_next:
 			self._bubble_next = now + 0.26
+			# Born at a fixed distance along the tube, so they stay put as
+			# the gel grows or shrinks around them
 			self.bubbles.append({
-				"t": now, "u": random.random(), "size": (2 + random.random() * 2.5) * sc,
+				"t": now, "off": random.random() * max(0.0, fw - 22 * sc),
+				"size": (2 + random.random() * 2.5) * sc,
 				"top": (5 + random.random() * 4) * sc})
 		keep = []
 		spr = self._bubble_tex()
@@ -1279,7 +1286,10 @@ class Aero:
 			keep.append(b)
 			e = 1 - (1 - k) ** 2   # ease-out
 			a = (k / 0.25) * 0.95 if k < 0.25 else 0.95 * (1 - (k - 0.25) / 0.75)
-			bx = x + b["u"] * max(0.0, fw - 22 * sc) + 18 * sc * e
+			bx = x + b["off"] + 18 * sc * e
+			if bx > x + fw:
+				# A seek back left it outside the gel
+				continue
 			by = y + b["top"] + (6 - 15 * e) * sc
 			_mod(spr.tex, 255, 255, 255, round(a * 255))
 			sz = b["size"]

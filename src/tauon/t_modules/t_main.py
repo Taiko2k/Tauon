@@ -42403,6 +42403,9 @@ class StandardPlaylist:
 
 			if not gui.set_mode:
 				left_trim = round(9 * gui.scale) if gui.custom_mode and not tauon.aero.active else 0
+				if tauon.aero.active:
+					# Clearwater: the number sits 12px in from the capsule's edge
+					left_trim = round(3 * gui.scale)
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
 					playing, 255, left + inset_left - left_trim, inset_width + left_trim, 1, line_y)
