@@ -1,12 +1,12 @@
 # Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
 
-"""Clearwater: an optional glass-and-gel skin in the Frutiger Aero style.
+"""Aqualine: an optional glass-and-gel skin in the Frutiger Aero style.
 
 Everything here draws on top of Tauon's normal UI. t_main and t_custom call in
 at a handful of points while prefs.aero is on, and otherwise nothing in this
 module runs.
 
-The look is the dusk variant of the Clearwater concept:
+The look is the dusk variant of the Aqualine concept:
 
 - a sky painted from the playing album's colours, at a fifth of the window's
   logical size so that scaling it up does the blurring, with drifting light
@@ -339,7 +339,7 @@ class _Tex:
 
 
 class Aero:
-	"""The Clearwater skin. One instance lives on tauon.aero."""
+	"""The Aqualine skin. One instance lives on tauon.aero."""
 
 	GUTTER = 8          # logical px between panels
 	EDGE_GAP = 4        # logical px between the panels and the window edge
@@ -431,6 +431,8 @@ class Aero:
 
 		# Header rect for things drawn onto the top glass from outside it
 		self.header_rect: tuple[int, int, int, int] | None = None
+		# The compact playback panel's stand-in while the skin is on
+		self.compact_bar = AqualineBar(tauon)
 
 	# -- state ------------------------------------------------------------------
 
@@ -583,7 +585,7 @@ class Aero:
 					pal = self.palette_from_image(im)
 					raw.close()
 		except Exception:
-			logging.exception("Clearwater: could not read art colours")
+			logging.exception("Aqualine: could not read art colours")
 		with self._palette_lock:
 			self._palette_result = (key, pal)
 		self.gui.request_frame()
@@ -1532,7 +1534,7 @@ class Aero:
 		return lx + self.s(3.5) + self.s(7)
 
 	def menu_orb(self, rect, hover: bool, pressed: bool) -> None:
-		"""The main menu button: Tauon's record icon as a glossy glass orb."""
+		"""The main menu button: Tauon's record floating in a glass marble."""
 		x, y, w, h = rect
 		d = max(8, round(min(h, self.s(26))))
 		t = self._cached(("menu_icon", d, hover, pressed), lambda: self._menu_icon_image(d, hover, pressed))
@@ -1540,22 +1542,34 @@ class Aero:
 		oy = round(y + h / 2 - d / 2)
 		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(ox - t.pad, oy - t.pad, t.w, t.h))
 
+	MENU_CAP = 0.55   # strength of the specular cap over the marble
+
 	def _menu_icon_image(self, d: int, hover: bool, pressed: bool) -> tuple[Image.Image, int]:
-		"""assets/svg/app-icon.svg (a record: dark disc, a warm and a cool
-		quarter, a gradient hub, the label and spindle), drawn with Cairo, then
-		given the orbs' drop shadow, rims and specular cap."""
+		"""Tauon's record (assets/svg/app-icon.svg) floating in a clear glass
+		marble.
+
+		The record is a thin disc tilted back 52 degrees and rolled slightly:
+		its face is an ellipse cos(tilt) tall, and its thickness (3.5% of its
+		diameter) shows along the ellipse's minor axis. Light comes from above,
+		like the marble's cap: the far rim catches a thin highlight and the
+		front of the edge is the darkest part. Its soft shadow follows its
+		outline a little below."""
 		import cairo
 
 		sc = self.gui.scale
-		pad = math.ceil(12 * sc) + 2
+		pad = max(math.ceil(12 * sc) + 2, d // 2)
 		N = d + pad * 2
 		size = (N, N)
-		surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, N, N)
-		cr = cairo.Context(surf)
-		k = (d / 2) / 210
-		cr.translate(pad + d / 2, pad + d / 2)
-		cr.scale(k, k)
-		cr.translate(-315, -315)
+		cx = cy = N / 2
+		R = d / 2
+		rr = R * 0.66
+		tilt = math.radians(52)
+		roll = -0.22
+		squash = math.cos(tilt)
+		depth = 0.035 * 2 * rr * math.sin(tilt)
+		nx, ny = -math.sin(roll), math.cos(roll)
+		lift_y = R * 0.02
+		tau = math.tau
 
 		def rgb(h: str) -> tuple[float, float, float]:
 			return tuple(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5))
@@ -1566,80 +1580,135 @@ class Aero:
 				g.add_color_stop_rgb(offset, *rgb(colour))
 			return g
 
-		tau = math.tau
-		# Disc and its grooves
-		cr.arc(315, 315, 210, 0, tau)
-		cr.set_source(linear(125, 110, 510, 525, ((0, "#302f38"), (0.5, "#1d1c24"), (1, "#15151c"))))
+		def layer() -> tuple[cairo.ImageSurface, cairo.Context]:
+			surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, N, N)
+			return surf, cairo.Context(surf)
+
+		def to_image(surf: cairo.ImageSurface) -> Image.Image:
+			surf.flush()
+			img = Image.frombuffer("RGBA", size, bytes(surf.get_data()), "raw", "BGRa", surf.get_stride(), 1).copy()
+			surf.finish()
+			return img
+
+		def ellipse(cr: cairo.Context, ox: float = 0.0, oy: float = 0.0) -> None:
+			cr.save()
+			cr.translate(cx + ox, cy + lift_y + oy)
+			cr.rotate(roll)
+			cr.scale(1, squash)
+			cr.arc(0, 0, rr, 0, tau)
+			cr.restore()
+
+		# Glass: nearly clear in the middle, brighter toward the rim
+		surf, cr = layer()
+		g = cairo.RadialGradient(cx, cy - R * 0.25, 0, cx, cy, R)
+		g.add_color_stop_rgba(0, 0.75, 0.9, 1.0, 0.10)
+		g.add_color_stop_rgba(0.75, 0.55, 0.8, 1.0, 0.22)
+		g.add_color_stop_rgba(1, 0.75, 0.92, 1.0, 0.55)
+		cr.arc(cx, cy, R, 0, tau)
+		cr.set_source(g)
 		cr.fill()
-		for r, colour, width, alpha in ((201, "#4b4854", 1.5, 0.72), (190, "#42404b", 1.1, 0.58),
-				(176, "#3f3d48", 1, 0.54), (162, "#3c3a45", 1, 0.5), (148, "#393742", 0.9, 0.46),
-				(134, "#373540", 0.9, 0.43)):
-			cr.arc(315, 315, r, 0, tau)
-			cr.set_source_rgba(*rgb(colour), alpha)
-			cr.set_line_width(max(width, 1.0 / k * 0.5))
-			cr.stroke()
-		# Warm quarter, top left
+		marble = to_image(surf)
+
+		# The record's shadow
+		surf, cr = layer()
+		ellipse(cr, nx * R * 0.16, ny * R * 0.16 + R * 0.10)
+		cr.set_source_rgba(0, 0.04, 0.12, 0.32)
+		cr.fill()
+		marble = Image.alpha_composite(marble, to_image(surf).filter(ImageFilter.GaussianBlur(max(0.8, d / 18))))
+
+		surf, cr = layer()
+		# Its edge: the underside, dark, lighter toward the back
+		edge = cairo.LinearGradient(cx - nx * rr, cy - ny * rr * squash, cx + nx * rr, cy + ny * rr * squash)
+		edge.add_color_stop_rgb(0, 0.20, 0.20, 0.25)
+		edge.add_color_stop_rgb(1, 0.06, 0.06, 0.09)
+		ellipse(cr, nx * depth, ny * depth)
+		cr.set_source(edge)
+		cr.fill()
+		# Its face, in the icon's own 210-unit coordinates
+		k = rr / 210
+		cr.save()
+		cr.translate(cx, cy + lift_y)
+		cr.rotate(roll)
+		cr.scale(k, k * squash)
+		cr.arc(0, 0, 210, 0, tau)
+		cr.set_source(linear(-190, -205, 195, 210, ((0, "#302f38"), (0.5, "#1d1c24"), (1, "#15151c"))))
+		cr.fill()
+		if d > 30:
+			for radius, alpha in ((201, 0.5), (176, 0.4), (148, 0.35)):
+				cr.arc(0, 0, radius, 0, tau)
+				cr.set_source_rgba(0.35, 0.34, 0.40, alpha)
+				cr.set_line_width(max(2.0, 0.6 / k))
+				cr.stroke()
 		cr.new_path()
-		cr.arc(315, 315, 208.9, math.pi, math.pi * 1.5)
-		cr.arc_negative(315, 315, 123, math.pi * 1.5, math.pi)
+		cr.arc(0, 0, 208.9, math.pi, math.pi * 1.5)
+		cr.arc_negative(0, 0, 123, math.pi * 1.5, math.pi)
 		cr.close_path()
-		cr.set_source(linear(110, 315, 315, 110, ((0, "#7b3fa5"), (0.27, "#bb4f91"), (0.53, "#e86678"),
+		cr.set_source(linear(-205, 0, 0, -205, ((0, "#7b3fa5"), (0.27, "#bb4f91"), (0.53, "#e86678"),
 			(0.78, "#fa8a55"), (1, "#ffc857"))))
 		cr.fill()
-		# Cool quarter, bottom right
 		cr.new_path()
-		cr.arc(315, 315, 208.9, 0, math.pi * 0.5)
-		cr.arc_negative(315, 315, 123, math.pi * 0.5, 0)
+		cr.arc(0, 0, 208.9, 0, math.pi * 0.5)
+		cr.arc_negative(0, 0, 123, math.pi * 0.5, 0)
 		cr.close_path()
-		cr.set_source(linear(520, 315, 315, 520, ((0, "#514273"), (0.32, "#506da0"), (0.66, "#45a0bd"),
-			(1, "#62d1c4"))))
+		cr.set_source(linear(205, 0, 0, 205, ((0, "#514273"), (0.32, "#506da0"), (0.66, "#45a0bd"), (1, "#62d1c4"))))
 		cr.fill()
-		# Hub, label, spindle
-		cr.arc(315, 315, 83, 0, tau)
-		cr.set_source(linear(235, 235, 395, 395, ((0, "#e86678"), (0.5, "#8b4a9a"), (1, "#45a0bd"))))
+		cr.arc(0, 0, 83, 0, tau)
+		cr.set_source(linear(-80, -80, 80, 80, ((0, "#e86678"), (0.5, "#8b4a9a"), (1, "#45a0bd"))))
 		cr.fill()
-		label = cairo.RadialGradient(315, 315, 0, 315, 315, 73)
-		for offset, colour in ((0, "#24232c"), (0.78, "#15151c"), (1, "#0c0c13")):
-			label.add_color_stop_rgb(offset, *rgb(colour))
-		cr.arc(315, 315, 73, 0, tau)
-		cr.set_source(label)
-		cr.fill_preserve()
-		cr.set_source_rgb(*rgb("#34323d"))
-		cr.set_line_width(max(1.0, 1.0 / k * 0.5))
-		cr.stroke()
-		cr.arc(315, 315, 15, 0, tau)
-		cr.set_source_rgb(*rgb("#0a0a11"))
+		cr.arc(0, 0, 73, 0, tau)
+		cr.set_source_rgb(*rgb("#17161e"))
 		cr.fill()
-		cr.arc(315, 315, 6, 0, tau)
+		cr.arc(0, 0, 18, 0, tau)
 		cr.set_source_rgb(*rgb("#e86678"))
 		cr.fill()
-		surf.flush()
-		icon = Image.frombuffer("RGBA", size, bytes(surf.get_data()), "raw", "BGRa", surf.get_stride(), 1).copy()
-		surf.finish()
+		# Light from above: a broad faint sheen over the far half, and a thin
+		# highlight where the far rim catches it
+		sheen = cairo.LinearGradient(0, -210, 0, 210)
+		sheen.add_color_stop_rgba(0, 1, 1, 1, 0.16)
+		sheen.add_color_stop_rgba(0.55, 1, 1, 1, 0.0)
+		cr.arc(0, 0, 210, 0, tau)
+		cr.set_source(sheen)
+		cr.fill()
+		cr.arc(0, 0, 208, 1.15 * math.pi, 1.85 * math.pi)
+		cr.set_source_rgba(1, 1, 1, 0.35)
+		cr.set_line_width(max(0.6, d / 140) / (k * squash))
+		cr.stroke()
+		cr.restore()
+		marble = Image.alpha_composite(marble, to_image(surf))
+
+		# Light gathered along the bottom of the marble
+		surf, cr = layer()
+		glow = cairo.RadialGradient(cx, cy + R * 0.85, 0, cx, cy + R * 0.85, R * 0.7)
+		glow.add_color_stop_rgba(0, 0.6, 0.95, 1.0, 0.55 if hover else 0.45)
+		glow.add_color_stop_rgba(1, 0.6, 0.95, 1.0, 0)
+		cr.arc(cx, cy, R, 0, tau)
+		cr.clip()
+		cr.arc(cx, cy + R * 0.85, R * 0.7, 0, tau)
+		cr.set_source(glow)
+		cr.fill()
+		marble = Image.alpha_composite(marble, to_image(surf))
 
 		c0 = pad
 		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
+		if hover:
+			# Lit from inside, like the other orbs
+			r, g_, b, a = marble.split()
+			lift = _lut(1.15)
+			bright = Image.merge("RGBA", (r.point(lift), g_.point(lift), b.point(lift), a))
+			marble = Image.composite(bright, marble, circle)
+
 		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
 		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
 		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.45), drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 10, 25, 0.6), outer))
-		if hover:
-			# Lit from inside, like the other orbs
-			r, g, b, a = icon.split()
-			lift = _lut(1.18)
-			icon = Image.merge("RGBA", (r.point(lift), g.point(lift), b.point(lift), a))
-		canvas = Image.alpha_composite(canvas, icon)
-		# A soft light along the bottom edge and a bright inner rim
-		ig = _inset_shadow(circle, 0, -2 * sc, 2 * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(150, 200, 255, 0.35 if hover else 0.22), ig))
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 15, 35, 0.6), outer))
+		canvas = Image.alpha_composite(canvas, marble)
 		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(220, 235, 255, 0.5 if hover else 0.35), inner))
-		# The specular cap, gentler over the dark record than over gel
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(220, 240, 255, 0.6 if hover else 0.45), inner))
 		cap, _pad = self._cap_image(d, pressed)
 		capped = Image.new("RGBA", size, (0, 0, 0, 0))
 		capped.paste(cap, (c0, c0))
-		capped.putalpha(capped.getchannel("A").point(_lut(0.6)))
+		capped.putalpha(capped.getchannel("A").point(_lut(self.MENU_CAP)))
 		canvas = Image.alpha_composite(canvas, capped)
 		return canvas, pad
 
@@ -1991,6 +2060,10 @@ class _PresetBottom:
 		if prefs.feux_panel:
 			tauon.feux_bar.render(h)
 			return
+		if not prefs.shuffle_lock:
+			# Aqualine's own compact panel
+			tauon.aero.compact_bar.render(h)
+			return
 		bar = tauon.bottom_bar_ao1 if prefs.shuffle_lock else tauon.bottom_bar1
 		panel_by = gui.panelBY
 		gui.panelBY = round(h)
@@ -1999,3 +2072,306 @@ class _PresetBottom:
 			bar.render()
 		finally:
 			gui.panelBY = panel_by
+
+
+class AqualineBar:
+	"""Aqualine's compact playback panel: the concept's bottom bar.
+
+	Transport orbs on the left (play larger, sitting a little high), the
+	track title, artist and times over the seek tube in the middle, and the
+	mode pills and volume on the right. It stands in for the classic compact
+	panel while the skin is on; the Feux panel keeps its own design.
+
+	Draws against the bottom `height` px of the current window space, like
+	the other bars, so the offscreen widget path can host it.
+	"""
+
+	# The concept's bar proportions (96px tall, 64px play orb lifted 5px, 40px
+	# others) at a slightly smaller size
+	PANEL_H = 88
+	PLAY_D = 58
+	SIDE_D = 37
+	PLAY_LIFT = 4
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.seek_drag = False
+		self.vol_drag = False
+		self.on_seek = False
+
+	def _s(self, v: float) -> int:
+		return round(v * self.tauon.gui.scale)
+
+	def _tip(self, x: float, y: float, text: str, tip=None) -> None:
+		tauon = self.tauon
+		sx, sy = tauon.inp.to_screen(x, y)
+		(tip or tauon.tool_tip2).test(sx, sy, text)
+
+	def width_right(self, a: dict) -> int:
+		return (self.tauon.feux_bar._pill_w(a["feux-shuffle"]) + self._s(8)
+			+ self.tauon.feux_bar._pill_w(a["feux-repeat"]) + self._s(16)
+			+ self._s(30) + self._s(96) + self._s(14) + round(a["feux-menu"].w))
+
+	def render(self, height: float | None = None) -> None:
+		tauon = self.tauon
+		gui = tauon.gui
+		inp = tauon.inp
+		pctl = tauon.pctl
+		ddt = tauon.ddt
+		aero = tauon.aero
+		feux = tauon.feux_bar
+		a = feux._load_assets()
+		from tauon.t_modules.t_extra import get_display_time
+
+		w = round(tauon.window_size[0])
+		h = round(height) if height is not None else round(tauon.window_size[1])
+		top = round(tauon.window_size[1]) - h
+		mid = top + h / 2
+		# Shrink the orbs on a short panel (the custom layout's widget can be 51px)
+		k = min(1.0, h / self._s(self.PANEL_H))
+		play_d = self._s(self.PLAY_D) * k
+		side_d = self._s(self.SIDE_D) * k
+		pad_x = self._s(22)
+		gap = self._s(26)
+		playing = pctl.playing_state == PlayingState.PLAYING
+		text_c = to_colour(aero.TEXT)
+		muted_c = to_colour(aero.MUTED)
+		ddt.text_background_colour = tauon.colours.bottom_panel_colour
+		self.on_seek = False
+
+		# -- transport ---------------------------------------------------------
+		x = pad_x
+		down = inp.mouse_down
+
+		def orb_button(cx: float, d: float, glyph, tip: str) -> tuple[bool, tuple]:
+			rect = (round(cx - d / 2), round(mid - d / 2), round(d), round(d))
+			tauon.fields.add(rect)
+			over = tauon.coll(rect)
+			if over:
+				self._tip(rect[0], top - self._s(4), tip)
+			return over, rect
+
+		cx = x + side_d / 2
+		over, rect = orb_button(cx, side_d, a["feux-bb"], _("Back"))
+		if over and inp.mouse_click:
+			pctl.back()
+		if over and inp.right_click:
+			tauon.toggle_repeat()
+			tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
+			inp.right_click = False
+		aero.orb(cx, mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
+		x += side_d + self._s(10)
+
+		cx = x + play_d / 2
+		play_mid = mid - self._s(self.PLAY_LIFT) * k   # the concept lifts the play orb a little
+		rect = (round(cx - play_d / 2), round(play_mid - play_d / 2), round(play_d), round(play_d))
+		tauon.fields.add(rect)
+		over = tauon.coll(rect)
+		if over:
+			if inp.mouse_click:
+				if playing or pctl.playing_state == PlayingState.PAUSED:
+					pctl.pause()
+				else:
+					pctl.play()
+				inp.mouse_click = False
+			if inp.right_click:
+				# No stop button on this panel: right-click stops
+				pctl.stop()
+				inp.right_click = False
+			self._tip(rect[0], top - self._s(4), _("Pause, Right-click: Stop") if playing else _("Play, Right-click: Stop"))
+		glyph = a["feux-pause"] if playing else a["feux-play"]
+		aero.orb(cx, play_mid, play_d, glyph, hover=over, pressed=over and down)
+		x += play_d + self._s(10)
+
+		cx = x + side_d / 2
+		over, rect = orb_button(cx, side_d, a["feux-ff"], _("Forward"))
+		if over and inp.mouse_click:
+			pctl.advance()
+		if over and inp.right_click:
+			tauon.toggle_random()
+			tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
+			inp.right_click = False
+		aero.orb(cx, mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
+		x += side_d
+
+		# -- right: mode pills, volume, menu ------------------------------------
+		right_w = self.width_right(a)
+		show_right = w - x - gap * 2 - right_w > self._s(160)
+		if show_right:
+			right_x = w - pad_x - right_w
+			self._draw_right(a, right_x, top, mid, h)
+		else:
+			# Narrow: the modes and volume go, the playback menu stays
+			right_x = w - pad_x - round(a["feux-menu"].w)
+			self._draw_menu(a, right_x, top, mid)
+
+		# -- middle: title line over the seek tube ------------------------------
+		left = x + gap
+		right = right_x - (gap if show_right else self._s(14))
+		width = right - left
+		if width < self._s(60):
+			return
+		track = pctl.playing_object()
+		tube_h = self._s(14)
+		block = self._s(18) + self._s(7) + tube_h
+		line_y = mid - block / 2 + self._s(9)
+		tube_y = round(mid + block / 2 - tube_h)
+		length = pctl.playing_length
+
+		if length > 0 and pctl.playing_state != PlayingState.STOPPED:
+			times = f"{get_display_time(pctl.playing_time)} / {get_display_time(length)}"
+		else:
+			times = ""
+		times_w = ddt.get_text_w(times, 212) if times else 0
+		if times:
+			ddt.text((right + 1, feux._text_y(212, line_y), 1), times, muted_c, 212)
+		text_room = width - times_w - self._s(12)
+		if track is not None and text_room > self._s(30):
+			title = track.title or track.filename
+			title_w = ddt.text((left, feux._text_y(213, line_y)), title, text_c, 213, max_w=text_room)
+			artist = track.artist or ""
+			room = text_room - (title_w or 0) - self._s(8)
+			if artist and room > self._s(24):
+				ddt.text((left + (title_w or 0) + self._s(8), feux._text_y(12, line_y)), artist, muted_c, 12, max_w=room)
+			title_rect = (left, round(line_y - self._s(10)), round(text_room), self._s(20))
+			if tauon.coll(title_rect) and pctl.playing_ready():
+				if inp.mouse_click:
+					pctl.show_current()
+				if inp.right_click:
+					tauon.mode_menu.activate()
+					inp.right_click = False
+
+		# The seek tube
+		tube = (left, tube_y, width, tube_h)
+		reach = self._s(6)
+		hit = (left, tube_y - reach, width, tube_h + reach * 2)
+		tauon.fields.add(hit)
+		if tauon.coll(hit) and not tauon.prefs.shuffle_lock:
+			self.on_seek = True
+			inp.global_clicked = True
+			if inp.mouse_click:
+				self.seek_drag = True
+			if inp.mouse_wheel != 0:
+				pctl.seek_time(pctl.playing_time + inp.mouse_wheel * 3)
+			if inp.right_click:
+				pctl.pause()
+				inp.right_click = False
+		progress = 0.0
+		if length > 0:
+			progress = min(1.0, max(0.0, pctl.playing_time / length))
+		if self.seek_drag:
+			gui.update_on_drag = True
+			gui.request_frame()
+			progress = min(1.0, max(0.0, (inp.mouse_position[0] - left) / max(1, width)))
+			if not inp.mouse_down:
+				self.seek_drag = False
+				if pctl.playing_ready():
+					pctl.seek_decimal(progress)
+		aero.tube(tube, progress, playing=playing, bubbles=True)
+		tauon.draw_ab_repeat_markers(left, tube_y, width, tube_h)
+		gui.seek_bar_rect = (left, tube_y, round(width * progress), tube_h)
+
+		# Right-click anywhere unclaimed opens the panel menu; the wheel sets volume
+		panel = (0, top, w, h)
+		if inp.right_click and tauon.coll(panel):
+			tauon.mode_menu.activate()
+			inp.right_click = False
+		if inp.mouse_wheel != 0 and tauon.coll(panel) and not self.on_seek:
+			pctl.player_volume = min(100, max(0, pctl.player_volume + inp.mouse_wheel * tauon.prefs.volume_wheel_increment))
+			pctl.set_volume()
+			gui.request_frame()
+
+	def _draw_right(self, a: dict, x: float, top: float, mid: float, h: float) -> None:
+		tauon = self.tauon
+		gui = tauon.gui
+		inp = tauon.inp
+		pctl = tauon.pctl
+		aero = tauon.aero
+		feux = tauon.feux_bar
+		pill_h = self._s(26)
+
+		if not tauon.prefs.shuffle_lock:
+			# Shuffle
+			icon = a["feux-shuffle-a"] if pctl.album_shuffle_mode else a["feux-shuffle"] if pctl.random_mode else a["feux-shuffle-off"]
+			pw = feux._pill_w(a["feux-shuffle"])
+			rect = (round(x), round(mid - pill_h / 2), pw, pill_h)
+			tauon.fields.add(rect)
+			over = tauon.coll(rect)
+			if over:
+				if inp.mouse_click:
+					tauon.toggle_random()
+				if inp.right_click:
+					tauon.shuffle_menu.activate(position=(x + pw, mid + self._s(14)))
+					inp.right_click = False
+				self._tip(x, top - self._s(4), _("Shuffle"), tauon.tool_tip)
+			feux._aero_pill(aero, round(x), round(mid), pw, icon, bool(pctl.random_mode), over)
+			x += pw + self._s(8)
+			# Repeat
+			icon = a["feux-repeat-a"] if pctl.album_repeat_mode else a["feux-repeat"] if pctl.repeat_mode else a["feux-repeat-off"]
+			pw = feux._pill_w(a["feux-repeat"])
+			rect = (round(x), round(mid - pill_h / 2), pw, pill_h)
+			tauon.fields.add(rect)
+			over = tauon.coll(rect)
+			if over:
+				if inp.mouse_click:
+					tauon.toggle_repeat()
+				if inp.right_click:
+					tauon.repeat_menu.activate(position=(x + pw, mid + self._s(14)))
+					inp.right_click = False
+				self._tip(x, top - self._s(4), _("Repeat album") if pctl.album_repeat_mode else _("Repeat track"), tauon.tool_tip)
+			feux._aero_pill(aero, round(x), round(mid), pw, icon, bool(pctl.repeat_mode), over)
+			x += pw + self._s(16)
+		else:
+			x += feux._pill_w(a["feux-shuffle"]) + self._s(8) + feux._pill_w(a["feux-repeat"]) + self._s(16)
+
+		# Volume: speaker, then the tube (clear of the grip, which overhangs
+		# the tube's start at low volume)
+		aero.speaker(x, mid, self._s(17), to_colour(aero.TEXT))
+		x += self._s(30)
+		vol_w = self._s(96)
+		tube_h = self._s(14)
+		vol = (round(x), round(mid - tube_h / 2), vol_w, tube_h)
+		hit = (vol[0], vol[1] - self._s(8), vol_w, tube_h + self._s(16))
+		tauon.fields.add(hit)
+		if tauon.coll(hit):
+			inp.global_clicked = True
+			if inp.mouse_click:
+				self.vol_drag = True
+			if inp.right_click:
+				pctl.toggle_mute()
+				inp.right_click = False
+		if self.vol_drag:
+			gui.update_on_drag = True
+			gui.request_frame()
+			pctl.player_volume = int(min(1.0, max(0.0, (inp.mouse_position[0] - vol[0]) / max(1, vol_w))) * 100)
+			if not inp.mouse_down:
+				self.vol_drag = False
+				pctl.set_volume(True)
+			else:
+				pctl.set_volume(False)
+		level = min(100, max(0, pctl.player_volume)) / 100
+		aero.tube(vol, level, shimmer=False)
+		gui.volume_bar_rect = (vol[0], vol[1], round(vol_w * level), tube_h)
+		x += vol_w + self._s(14)
+		self._draw_menu(a, x, top, mid)
+
+	def _draw_menu(self, a: dict, x: float, top: float, mid: float) -> None:
+		"""Playback menu (left click) / panel menu (right click), as on the other bars."""
+		tauon = self.tauon
+		inp = tauon.inp
+		aero = tauon.aero
+		feux = tauon.feux_bar
+		icon = a["feux-menu"]
+		rect = (round(x - self._s(6)), round(mid - self._s(15)), round(icon.w + self._s(12)), self._s(30))
+		tauon.fields.add(rect)
+		colour = to_colour(aero.TEXT if tauon.extra_menu.active else aero.MUTED)
+		if tauon.coll(rect):
+			colour = to_colour(aero.TEXT)
+			if inp.mouse_click or inp.right_click:
+				target = tauon.mode_menu if inp.right_click else tauon.extra_menu
+				if target.active:
+					feux._close(target)
+				elif not target.click_dismissed:
+					target.activate(position=(max(0, x + icon.w - round(target.w)), top), bottom_anchor=True)
+				inp.right_click = False
+		icon.render(round(x), round(mid - icon.h / 2), colour)

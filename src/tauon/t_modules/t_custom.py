@@ -438,7 +438,7 @@ def build_spectro_lut(preset: int) -> list[bytes]:
 
 
 class GlassSpectrumWidget(Widget):
-	"""24 glass bars with lit peak caps (the Clearwater side panel spectrum).
+	"""24 glass bars with lit peak caps (the Aqualine side panel spectrum).
 	Fed from the same 24-band data as the top-panel spectrum."""
 
 	kind = "vis_glass"
@@ -640,7 +640,7 @@ class SpectrogramWidget(Widget):
 		cls._last_frame = now
 
 		# Background in the palette's floor colour, so sparse history blends in.
-		# Clearwater lights the spectrogram additively over the glass instead:
+		# Aqualine lights the spectrogram additively over the glass instead:
 		# its dark floor becomes the glass itself.
 		glass = tauon.aero.active
 		lut0 = cls._lut[0]
@@ -1258,6 +1258,10 @@ class PlaybackPanelWidget(Widget):
 		# there, panelBY is its taller height, and this bar puts its seek bar
 		# above the top of the scratch (so it never gets blitted) and drags the
 		# title up with it.
+		if tauon.aero.active and not tauon.prefs.shuffle_lock:
+			# Aqualine's own compact panel
+			tauon.aero.compact_bar.render(h)
+			return
 		panel_by = tauon.gui.panelBY
 		tauon.gui.panelBY = round(h)
 		try:
@@ -1533,7 +1537,7 @@ class FeuxBar:
 		# divider lands on it; both collapse on a narrow segment.
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
-			# Clearwater: LED pills for the modes, and a speaker before the volume tube
+			# Aqualine: LED pills for the modes, and a speaker before the volume tube
 			pod3_w = (self._s(16) + self._pill_w(a["feux-shuffle"]) + self._s(9) + self._pill_w(a["feux-repeat"])
 				+ self._s(16) + self._s(24) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
 			hairline = ColourRGBA(150, 215, 255, 26)
@@ -1776,7 +1780,7 @@ class FeuxBar:
 		mb_over = self._fg(self._tint(colours.media_buttons_over, left, mid, panel, boost=0.6), backdrop, 4.5)
 		box = self._s(32)
 		x = left + self._s(15)
-		# Clearwater draws the transport as gel orbs, the play orb the largest
+		# Aqualine draws the transport as gel orbs, the play orb the largest
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
 			box = self._s(34)
@@ -1977,7 +1981,7 @@ class FeuxBar:
 
 		progress = 0.0
 		if length > 0:
-			# Whole seconds normally; Clearwater's tube moves continuously
+			# Whole seconds normally; Aqualine's tube moves continuously
 			elapsed = pctl.playing_time if aero is not None else int(pctl.playing_time)
 			progress = min(1.0, max(0.0, elapsed / length))
 		if self.seek_drag:
@@ -2336,14 +2340,19 @@ class FeuxBar:
 			icon.render(x, mid - icon.h // 2, colour)
 
 	def _pill_w(self, icon) -> int:
-		"""Width of a Clearwater mode pill: padding, LED, gap, icon, padding."""
+		"""Width of a Aqualine mode pill: padding, LED, gap, icon, padding."""
 		return self._s(10 + 7 + 7) + round(icon.w) + self._s(10)
 
 	def _aero_pill(self, aero, x: int, mid: int, w: int, icon, on: bool, hover: bool) -> None:
 		h = self._s(26)
 		icon_x = aero.pill((x, mid - h // 2, w, h), on, hover)
 		colour = to_colour(aero.TEXT if on else aero.MUTED)
-		icon.render(round(icon_x), mid - icon.h // 2, colour)
+		# Centre the glyph in the room after the LED. The repeat-off glyph
+		# carries about 6px of empty space on its left, so measure it without
+		pad = self._s(6) if icon is self.assets.get("feux-repeat-off") else 0
+		room = x + w - self._s(10) - icon_x
+		gx = icon_x + (room - (icon.w - pad)) / 2 - pad
+		icon.render(round(gx), mid - icon.h // 2, colour)
 
 
 class PlaybackPanelFeuxWidget(Widget):
@@ -4269,7 +4278,7 @@ def node_from_dict(d: dict) -> Node:
 
 # -- layout pass ------------------------------------------------------------
 
-# Clearwater (t_aero): the gap between widgets and at the window edge, in
+# Aqualine (t_aero): the gap between widgets and at the window edge, in
 # scaled px. CustomLayout keeps it in step with the skin; 0 when it's off.
 AERO_GAP = 0.0
 # ... and the gap between the outermost widgets and the window edge
@@ -4347,7 +4356,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	outer = (x, y, w, h)
 	gap = AERO_GAP
 	if gap:
-		# Clearwater: half the gap around each widget (and each tab group), so
+		# Aqualine: half the gap around each widget (and each tab group), so
 		# neighbours sit a full gap apart, and the whole layout moved so the
 		# outermost widgets sit AERO_EDGE from the window edge (this can grow
 		# the layout past the window when the edge gap is under half the gap)
@@ -6866,7 +6875,7 @@ class CustomLayout:
 		self._sync_aero_gap()
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
-			# Clearwater: the sky again (over anything the standard layout drew)
+			# Aqualine: the sky again (over anything the standard layout drew)
 			aero.draw_sky()
 			aero.panel_index = 0
 		elif gui.have_art_bg:
@@ -7431,7 +7440,7 @@ class CustomLayout:
 		replace = bool(tauon.prefs.transparent_mode) and not gui.have_art_bg
 		# Blending onto a cleared target leaves colour already multiplied by
 		# alpha; composite it as such, or every soft edge comes out darker
-		# (Clearwater's glows read as dark halos). Clearwater only, for now.
+		# (Aqualine's glows read as dark halos). Aqualine only, for now.
 		premultiplied = tauon.aero.active and not replace
 		if replace:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_NONE)

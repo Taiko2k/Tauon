@@ -134,7 +134,7 @@ from tauon.t_modules.t_db_state import (  # noqa: E402
 	state_save,
 	validate_and_repair_database,
 )
-from tauon.t_modules.t_aero import Aero  # noqa: E402
+from tauon.t_modules.t_aero import Aero, AqualineBar  # noqa: E402
 from tauon.t_modules.t_custom import (  # noqa: E402
 	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
@@ -788,10 +788,17 @@ class GuiVar:
 	def bottom_panel_height(self) -> float:
 		"""Height of the standard layout's bottom panel, which depends on which
 		playback panel is selected -- the Feux panel is the taller of the two."""
-		height = round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
-		if self.bag.prefs.aero:
-			# Clearwater floats the bar on the sky: a gutter above, the edge gap below
-			height += round(Aero.GUTTER * self.scale) + round(Aero.edge_gap_logical(self.bag.prefs) * self.scale)
+		prefs = self.bag.prefs
+		if prefs.feux_panel:
+			height = round(FeuxBar.PANEL_H * self.scale)
+		elif prefs.aero and not prefs.shuffle_lock:
+			# Aqualine's compact panel is the concept's bar, a little taller
+			height = round(AqualineBar.PANEL_H * self.scale)
+		else:
+			height = round(51 * self.scale)
+		if prefs.aero:
+			# Aqualine floats the bar on the sky: a gutter above, the edge gap below
+			height += round(Aero.GUTTER * self.scale) + round(Aero.edge_gap_logical(prefs) * self.scale)
 		return height
 
 	def rescale(self) -> None:
@@ -1210,9 +1217,9 @@ class GuiVar:
 		# or replacing their region's pixels
 		self.have_art_bg: bool = False
 		# True while panels sit on a drawn backdrop (art background or the
-		# Clearwater sky): they blend over it instead of clearing their region
+		# Aqualine sky): they blend over it instead of clearing their region
 		self.backdrop: bool = False
-		# Glass spectrum (Clearwater side panel / Custom Layout widget)
+		# Glass spectrum (Aqualine side panel / Custom Layout widget)
 		self.glass_spec_wanted: bool = False
 		self.glass_spec_in_widget: bool = False
 		self.glass_spec: list[float] = []
@@ -9236,7 +9243,7 @@ class Tauon:
 		re_width = round(30 * gui.scale)
 		last_width = 0
 		if self.aero.active and gui.mode == GuiMode.MAIN and not macstyle:
-			# Clearwater's capsules: a 40px close and 28px others, 4px apart
+			# Aqualine's capsules: a 40px close and 28px others, 4px apart
 			x_width = round(44 * gui.scale)
 			ma_width = mi_width = re_width = round(32 * gui.scale)
 
@@ -9252,7 +9259,7 @@ class Tauon:
 		)
 		mac_inactive = ColourRGBA(mac_inactive.r, mac_inactive.g, mac_inactive.b, 255)
 
-		# Clearwater draws the buttons as gel: traffic lights as small orbs,
+		# Aqualine draws the buttons as gel: traffic lights as small orbs,
 		# the others as glass capsules with a red gel close
 		aero = self.aero if self.aero.active and gui.mode == GuiMode.MAIN else None
 
@@ -9264,7 +9271,7 @@ class Tauon:
 			aero.mac_light(x + d / 2, y + self.gui.mac_circle.h / 2, d, (colour.r, colour.g, colour.b), False)
 
 		def icon(asset, rect: tuple, colour: ColourRGBA, dx: float, dy: float) -> None:
-			# Centred in Clearwater's capsule; the usual offsets otherwise
+			# Centred in Aqualine's capsule; the usual offsets otherwise
 			if aero is not None:
 				asset.render(round(rect[0] + (rect[2] - asset.w) / 2), round(rect[1] + (rect[3] - asset.h) / 2), colour)
 			else:
@@ -9293,6 +9300,9 @@ class Tauon:
 		if right:
 			xx = a_right - x_width
 			xx -= round(2 * gui.scale)
+			if aero is not None and not macstyle:
+				# The concept's 10px between the close capsule and the bar's edge
+				xx -= round(6 * gui.scale)
 
 		if macstyle:
 			xx = a_right - 27 * gui.scale
@@ -9486,7 +9496,7 @@ class Tauon:
 
 		colour = colours.window_frame
 		if self.aero.see_through:
-			# Clearwater with clear gaps: there is no window edge to frame
+			# Aqualine with clear gaps: there is no window edge to frame
 			return
 
 		# When corners are rounded, stop the straight edges short so the
@@ -9585,7 +9595,7 @@ class Tauon:
 		small texture copies, the textures themselves are cached.
 		"""
 		radius = self.corner_round_radius()
-		# Clearwater with clear gaps: the corners are already empty, and the
+		# Aqualine with clear gaps: the corners are already empty, and the
 		# frame arcs would float on the desktop
 		if not radius or self.aero.see_through:
 			return
@@ -17292,7 +17302,7 @@ class Tauon:
 			colours.apply_transparency(
 				darkness=prefs.transparency_tracklist_darkness,
 				intensity=prefs.transparency_intensity)
-		# Clearwater: see-through panels and its own text palette
+		# Aqualine: see-through panels and its own text palette
 		if prefs.aero:
 			self.aero.apply_colours(colours)
 
@@ -17313,7 +17323,7 @@ class Tauon:
 		if prefs.aero and gui.mode == GuiMode.MAIN:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
-				# Clearwater floats the top bar on the sky: edge gap, glass, gutter
+				# Aqualine floats the top bar on the sky: edge gap, glass, gutter
 				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter()
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
 				gui.playlist_top_bk = gui.playlist_top
@@ -17445,9 +17455,9 @@ class Tauon:
 						offset += 20
 					offset = round(offset * gui.scale)
 				elif prefs.aero:
-					# Clearwater's capsules (2px margin, 44px close, 32px others)
+					# Aqualine's capsules (8px margin, 44px close, 32px others)
 					# and a clear gap before the visualiser (14px with its own 10)
-					offset = 2 + 44 + 4
+					offset = 8 + 44 + 4
 					if self.draw_min_button:
 						offset += 32
 					if self.draw_max_button:
@@ -17478,7 +17488,7 @@ class Tauon:
 
 			if prefs.aero and not gui.custom_mode:
 				# The gallery's top margin is measured from the window top, sized
-				# for the usual 30px top bar; Clearwater's floating bar is taller
+				# for the usual 30px top bar; Aqualine's floating bar is taller
 				gui.album_v_slide_value += gui.panelY - round(30 * gui.scale)
 
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
@@ -17597,7 +17607,7 @@ class Tauon:
 				gui.plw -= gui.rspw
 
 			if prefs.aero and not gui.custom_mode:
-				# Clearwater: a gutter between the panels, a smaller gap at the window edges
+				# Aqualine: a gutter between the panels, a smaller gap at the window edges
 				g = self.aero.gutter()
 				e = self.aero.edge_gap()
 				x = e
@@ -17645,7 +17655,7 @@ class Tauon:
 
 			# Only nudge for the left panel when the tracklist actually borders it.
 			# With the side panel on the left, the tracklist borders that instead.
-			# (Clearwater's gutters separate the panels, so it keeps the full inset
+			# (Aqualine's gutters separate the panels, so it keeps the full inset
 			# and the selection capsule keeps the same margin in every layout.)
 			if gui.lsp and not gui.rsp_on_left and not prefs.aero:
 				inset_left -= 10 * gui.scale
@@ -23176,19 +23186,19 @@ class Tauon:
 		return None
 
 	def _set_aero(self, on: bool) -> None:
-		"""Switch the Clearwater skin (t_aero) on or off."""
+		"""Switch the Aqualine skin (t_aero) on or off."""
 		if bool(self.prefs.aero) == on:
 			return
 		self.prefs.aero = on
 		# The standard layout's bottom panel gains (or loses) its gutters
 		self.gui.panelBY = self.gui.bottom_panel_height()
-		# Theme reload restores the theme's own colours, or applies Clearwater's
+		# Theme reload restores the theme's own colours, or applies Aqualine's
 		self.gui.reload_theme = True
 		self.gui.update_layout = True
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 
-	def set_bg_style_clearwater(self, mode: int = 0) -> bool | None:
+	def set_bg_style_aqualine(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.aero)
 		self._clear_background_style()
@@ -34452,9 +34462,9 @@ class Over:
 			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
 			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
-			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic clearwater aero frutiger glass gel glossy skeuomorphic sky",
-			_("Ambient motion"): "clearwater animation animate sky motion drift bokeh",
-			_("Show desktop between panels"): "clearwater transparent see through gaps desktop floating panels",
+			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic aqualine aero frutiger glass gel glossy skeuomorphic sky",
+			_("Ambient motion"): "aqualine animation animate sky motion drift bokeh",
+			_("Show desktop between panels"): "aqualine transparent see through gaps desktop floating panels",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35355,7 +35365,7 @@ class Over:
 				(_("Artist"), tauon.set_art_bg_artist(1), tauon.set_art_bg_artist),
 				(_("Frost lo"), tauon.set_art_bg_frosted_low(1), tauon.set_art_bg_frosted_low),
 				(_("Frost hi"), tauon.set_art_bg_frosted_high(1), tauon.set_art_bg_frosted_high),
-				(_("Clearwater"), tauon.set_bg_style_clearwater(1), tauon.set_bg_style_clearwater),
+				(_("Aqualine"), tauon.set_bg_style_aqualine(1), tauon.set_bg_style_aqualine),
 			),
 		)
 
@@ -42365,7 +42375,7 @@ class StandardPlaylist:
 
 			# Draw playing highlight
 			if aero is not None:
-				# Clearwater: a gel row for the playing track, a glass pill for
+				# Aqualine: a gel row for the playing track, a glass pill for
 				# the selection (no hover highlight)
 				row = aero.row_rect(track_box)
 				if playing:
@@ -42404,7 +42414,7 @@ class StandardPlaylist:
 			if not gui.set_mode:
 				left_trim = round(9 * gui.scale) if gui.custom_mode and not tauon.aero.active else 0
 				if tauon.aero.active:
-					# Clearwater: the number sits 12px in from the capsule's edge
+					# Aqualine: the number sits 12px in from the capsule's edge
 					left_trim = round(3 * gui.scale)
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
@@ -42837,7 +42847,7 @@ class StandardPlaylist:
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		if self.tauon.aero.active:
-			# Clearwater's playing-row gel sits under the row's text
+			# Aqualine's playing-row gel sits under the row's text
 			self.tauon.aero.draw_tracklist_under((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
@@ -42948,7 +42958,7 @@ class ArtBox:
 		if inset:  # The Custom Layout Art Box passes inset=False (its gutter spaces it)
 			pad = 17 * gui.scale  # Inset the square a bit
 			if reflect and tauon.aero.active:
-				# Clearwater's side panel: the concept's 20px of glass around the art
+				# Aqualine's side panel: the concept's 20px of glass around the art
 				pad = tauon.aero.side_art_inset()
 			box_w -= pad
 			box_h -= pad
@@ -42967,7 +42977,7 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-			# Clearwater: rounded, glossed art with a drop shadow (and, in the
+			# Aqualine: rounded, glossed art with a drop shadow (and, in the
 			# side panel, its reflection)
 			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect)
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
@@ -46953,7 +46963,7 @@ class PlaylistBox:
 
 			# Draw highlight
 			if tauon.aero.active:
-				# Clearwater: a glass pill for the open playlist, a faint one for a drop target
+				# Aqualine: a glass pill for the open playlist, a faint one for a drop target
 				aero = tauon.aero
 				row_rect = aero.row_rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h - 1))
 				if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
@@ -57925,9 +57935,9 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
-	cf.update_value("clearwater-style", prefs.aero)
-	cf.update_value("clearwater-motion", prefs.aero_motion)
-	cf.update_value("clearwater-see-through", prefs.aero_see_through)
+	cf.update_value("aqualine-style", prefs.aero)
+	cf.update_value("aqualine-motion", prefs.aero_motion)
+	cf.update_value("aqualine-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
 	cf.update_value("transparency-intensity", prefs.transparency_intensity)
@@ -58275,10 +58285,10 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
-	prefs.aero = cf.sync_add("bool", "clearwater-style", prefs.aero, "Clearwater glass-and-gel skin")
-	prefs.aero_motion = cf.sync_add("bool", "clearwater-motion", prefs.aero_motion, "Animate the Clearwater sky")
+	prefs.aero = cf.sync_add("bool", "aqualine-style", prefs.aero, "Aqualine glass-and-gel skin")
+	prefs.aero_motion = cf.sync_add("bool", "aqualine-motion", prefs.aero_motion, "Animate the Aqualine sky")
 	prefs.aero_see_through = cf.sync_add(
-		"bool", "clearwater-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Clearwater's panels")
+		"bool", "aqualine-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqualine's panels")
 	prefs.side_panel_spectrum = cf.sync_add(
 		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(
@@ -64907,7 +64917,7 @@ def main(holder: Holder) -> None:
 					tauon.coll((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl)) and inp.mouse_position[0] != 0
 				) or scroll_hold
 				if tauon.aero.active:
-					# Clearwater: a slim accent pill, no track (10px wide, 2px clear border)
+					# Aqualine: a slim accent pill, no track (10px wide, 2px clear border)
 					bar_w = round(10 * gui.scale)
 					bx = x + width - bar_w if not prefs.tracklist_scrollbar_left else x + 1
 					tauon.aero.scroll_thumb((bx, sbp, bar_w, sbl), thumb_hover)
@@ -67225,7 +67235,7 @@ def main(holder: Holder) -> None:
 			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN and not aero_on
 			gui.backdrop = gui.have_art_bg or aero_on
 			if aero_on:
-				# Clearwater: the sky, then the standard layout's glass panels
+				# Aqualine: the sky, then the standard layout's glass panels
 				# (custom mode lays its own down in custom.render())
 				tauon.aero.begin_frame()
 				if not gui.custom_mode:
@@ -67830,7 +67840,7 @@ def main(holder: Holder) -> None:
 							boxw = gui.rspw
 							available_h = max(0, window_size[1] - gui.panelY - gui.panelBY)
 							boxh = min(gui.rspw, available_h)
-							# Clearwater mirrors the art below itself; the text moves
+							# Aqualine mirrors the art below itself; the text moves
 							# down to make room. The glass spectrum takes the bottom.
 							refl = tauon.aero.side_art_text_gap() if tauon.aero.active and prefs.show_side_art else 0
 							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum else 0
@@ -70337,7 +70347,7 @@ def main(holder: Holder) -> None:
 				if not prefs.power_save or window_is_focused(tauon.t_window):
 					gui.request_frame()
 			elif tauon.aero.active:
-				# Clearwater's seek tube moves continuously; its frames come
+				# Aqualine's seek tube moves continuously; its frames come
 				# from the tube itself
 				tauon.bottom_bar1.seek_time = pctl.playing_time
 

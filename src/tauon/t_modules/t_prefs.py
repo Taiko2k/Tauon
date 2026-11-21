@@ -360,11 +360,11 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
-	# Clearwater: the glass-and-gel skin (t_aero). Exclusive with the art
+	# Aqualine: the glass-and-gel skin (t_aero). Exclusive with the art
 	# backgrounds and window transparency
 	aero: bool = False
 	aero_motion: bool = True
-	# Leave the gaps between Clearwater's panels clear, so they float on the
+	# Leave the gaps between Aqualine's panels clear, so they float on the
 	# desktop (the panels still frost the animated sky)
 	aero_see_through: bool = True
 	# The glass spectrum under the art in the right side panel
