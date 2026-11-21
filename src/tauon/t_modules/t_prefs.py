@@ -364,6 +364,9 @@ class Prefs:
 	# backgrounds and window transparency
 	aero: bool = False
 	aero_motion: bool = True
+	# Leave the gaps between Clearwater's panels clear, so they float on the
+	# desktop (the panels still frost the animated sky)
+	aero_see_through: bool = True
 	# The glass spectrum under the art in the right side panel
 	side_panel_spectrum: bool = False
 	# How much heavier than the other panels the tracklist fill is held, so a

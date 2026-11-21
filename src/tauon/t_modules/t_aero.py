@@ -429,10 +429,6 @@ class Aero:
 
 		# Header rect for things drawn onto the top glass from outside it
 		self.header_rect: tuple[int, int, int, int] | None = None
-		# Tracklist rows from the last render, for the hover highlight
-		self.row_rects: list[tuple[float, float, float, float]] = []
-		self.row_clip: tuple[float, float, float, float] | None = None
-		self._hover_row = None
 
 	# -- state ------------------------------------------------------------------
 
@@ -527,6 +523,9 @@ class Aero:
 		put("window_frame", to_colour(self.EDGE))
 		put("window_button_icon_off", muted)
 		put("window_buttons_icon_over", text)
+		# The close capsule is red gel: its cross stays white
+		put("window_button_x_off", ColourRGBA(255, 255, 255, 230))
+		put("window_button_x_on", ColourRGBA(255, 255, 255, 255))
 		put("vis_colour", ColourRGBA(120, 220, 255, 255))
 		put("scroll_colour", ColourRGBA(80, 170, 220, 140))
 		put("seek_bar_background", to_colour(self.SUNKEN))
@@ -656,6 +655,11 @@ class Aero:
 		return moving
 
 	# -- frame ----------------------------------------------------------------------
+
+	@property
+	def see_through(self) -> bool:
+		"""The sky stays behind the glass only; the gaps show the desktop."""
+		return self.active and bool(self.prefs.aero_see_through)
 
 	def motion(self) -> bool:
 		return bool(self.prefs.aero_motion) and not self.gui.lowered
@@ -842,6 +846,9 @@ class Aero:
 		return tex
 
 	def draw_sky(self) -> None:
+		"""Bring the sky textures up to date and paint the sky across the
+		window, or, see-through, leave the window clear: the sky then only
+		reaches the eye through the panels' frost."""
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
 		lw, lh = self._sky_dims()
 		if (lw, lh) != self._sky_size:
@@ -858,6 +865,14 @@ class Aero:
 			self._frost_tex = self._upload(self._frost_tex, frost)
 			self._sky_dirty = False
 		r = self.renderer
+		if self.see_through:
+			# Replace whatever is there with nothing (custom mode draws over
+			# the standard layout's frame start)
+			sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_NONE)
+			sdl3.set_render_draw_color(r, 0, 0, 0, 0)
+			sdl3.render_fill_rect(r, sdl3.FRect(0, 0, ww, wh))
+			sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_BLEND)
+			return
 		sdl3.render_texture(r, self._sky_tex, None, sdl3.FRect(0, 0, ww, wh))
 		# Bokeh over the sharp sky ('lighter')
 		spr = self._sprite_tex()
@@ -1328,9 +1343,8 @@ class Aero:
 		c0 = pad
 		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
 		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
-		if hover:
-			glow = circle.filter(ImageFilter.GaussianBlur(9 * sc))
-			canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 1.0, 0.60, 0.8), glow))
+		# Hover lights the orb from inside (body, caustic, inner glow and rim
+		# all brighter) rather than throwing a halo around it
 		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
 		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.45), drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
@@ -1340,21 +1354,25 @@ class Aero:
 		t = _radial_l(size, c0 + d * 0.5, c0 + d * 0.35, R, R)
 		body = _map_stops(t, [(0.0, hsl(H, 0.75, 0.48)), (0.62, hsl(H, 0.85, 0.30)), (1.0, hsl(H, 0.90, 0.16))])
 		# Caustic over it: ellipse 60% 45% at 50% 92%
+		reach = 0.82 if hover else 0.7
 		t2 = _radial_l(size, c0 + d * 0.5, c0 + d * 0.92, d * 0.6, d * 0.45)
-		caustic = _map_stops(t2, [(0.0, hsl(H, 1.0, 0.78, 0.9)), (0.7, hsl(H, 1.0, 0.78, 0.0)), (1.0, hsl(H, 1.0, 0.78, 0.0))])
+		caustic = _map_stops(t2, [
+			(0.0, hsl(H, 1.0, 0.80 if hover else 0.78, 1.0 if hover else 0.9)),
+			(reach, hsl(H, 1.0, 0.78, 0.0)), (1.0, hsl(H, 1.0, 0.78, 0.0))])
 		body = Image.alpha_composite(body, caustic)
 		body.putalpha(ImageChops.multiply(body.getchannel("A"), circle))
 		canvas = Image.alpha_composite(canvas, body)
 		# inset 0 -2px 4px glow, then the 1px inner ring
 		ig = _inset_shadow(circle, 0, -2 * sc, (3 if hover else 2) * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 1.0, 0.80, 0.5 if hover else 0.35), ig))
+		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 1.0, 0.80, 0.6 if hover else 0.35), ig))
 		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
-		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 0.90, 0.85, 0.55 if hover else 0.45), inner))
+		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 0.90, 0.88, 0.7 if hover else 0.45), inner))
 		if hover:
-			# filter: brightness(1.08)
+			# Brighten the glass itself, not the shadow under it
 			r, g, b, a = canvas.split()
-			r, g, b = (ch.point(lambda v: min(255, round(v * 1.08))) for ch in (r, g, b))
-			canvas = Image.merge("RGBA", (r, g, b, a))
+			lift = _lut(1.12)
+			bright = Image.merge("RGBA", (r.point(lift), g.point(lift), b.point(lift), a))
+			canvas = Image.composite(bright, canvas, circle)
 		return canvas, pad
 
 	def _cap_image(self, d: int, pressed: bool) -> tuple[Image.Image, int]:
@@ -1442,9 +1460,12 @@ class Aero:
 		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 30, 60, 0.45), outer))
 		R = d * math.hypot(0.5, 0.7)
 		t = _radial_l(size, c0 + d * 0.5, c0 + d * 0.3, R, R)
+		# Solid all the way out: a see-through bead showed the tube's edge
+		# running through it. Same light, the translucent stops resolved
+		# over a pale glass tint instead of over whatever is behind
 		body = _map_stops(t, [
-			(0.0, (1, 1, 1, 1)), (0.18, (1, 1, 1, 1)), (0.40, (1, 1, 1, 0.55)),
-			(0.70, hsl(H, 0.60, 0.75, 0.55)), (1.0, hsl(H, 0.70, 0.40, 0.7))])
+			(0.0, (1, 1, 1, 1)), (0.18, (1, 1, 1, 1)), (0.40, rgba8(226, 238, 246)),
+			(0.70, hsl(H, 0.50, 0.72)), (1.0, hsl(H, 0.62, 0.40))])
 		body.putalpha(ImageChops.multiply(body.getchannel("A"), circle))
 		canvas = Image.alpha_composite(canvas, body)
 		ig = _inset_shadow(circle, 0, -2 * sc, 1.5 * sc)
@@ -1501,36 +1522,116 @@ class Aero:
 		return lx + self.s(3.5) + self.s(7)
 
 	def menu_orb(self, rect, hover: bool, pressed: bool) -> None:
-		"""The main menu button: a small orb with a ring-and-stem glyph."""
+		"""The main menu button: Tauon's record icon as a glossy glass orb."""
 		x, y, w, h = rect
-		d = min(h, self.s(26))
-		cx, cy = x + w / 2, y + h / 2
-		r = self.renderer
+		d = max(8, round(min(h, self.s(26))))
+		t = self._cached(("menu_icon", d, hover, pressed), lambda: self._menu_icon_image(d, hover, pressed))
+		ox = round(x + w / 2 - d / 2)
+		oy = round(y + h / 2 - d / 2)
+		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(ox - t.pad, oy - t.pad, t.w, t.h))
 
-		def glyph(off: int, colour: ColourRGBA) -> None:
-			c = (colour.r / 255, colour.g / 255, colour.b / 255, colour.a / 255)
-			# Drawn in the concept's 24-unit box at 50% of the orb
-			k = d * 0.5 / 24
-			ox = cx - 12 * k
-			oy = cy - 12 * k + off
-			sw = 2.2
+	def _menu_icon_image(self, d: int, hover: bool, pressed: bool) -> tuple[Image.Image, int]:
+		"""assets/svg/app-icon.svg (a record: dark disc, a warm and a cool
+		quarter, a gradient hub, the label and spindle), drawn with Cairo, then
+		given the orbs' drop shadow, rims and specular cap."""
+		import cairo
 
-			def quad(pts):
-				verts = [(ox + px * k, oy + py * k, 0.0, 0.0, *c) for px, py in pts]
-				sdl3.render_geometry(r, None, verts, (0, 1, 2, 0, 2, 3))
+		sc = self.gui.scale
+		pad = math.ceil(12 * sc) + 2
+		N = d + pad * 2
+		size = (N, N)
+		surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, N, N)
+		cr = cairo.Context(surf)
+		k = (d / 2) / 210
+		cr.translate(pad + d / 2, pad + d / 2)
+		cr.scale(k, k)
+		cr.translate(-315, -315)
 
-			steps = 28
-			for i in range(steps):
-				a0 = math.tau * i / steps
-				a1 = math.tau * (i + 1) / steps
-				ri, ro = 6 - sw / 2, 6 + sw / 2
-				quad([(12 + math.cos(a0) * ri, 12 + math.sin(a0) * ri), (12 + math.cos(a0) * ro, 12 + math.sin(a0) * ro),
-					(12 + math.cos(a1) * ro, 12 + math.sin(a1) * ro), (12 + math.cos(a1) * ri, 12 + math.sin(a1) * ri)])
-			quad([(12 - sw / 2, 3), (12 + sw / 2, 3), (12 + sw / 2, 6), (12 - sw / 2, 6)])
-			quad([(12 - sw / 2, 18), (12 + sw / 2, 18), (12 + sw / 2, 21), (12 - sw / 2, 21)])
+		def rgb(h: str) -> tuple[float, float, float]:
+			return tuple(int(h[i:i + 2], 16) / 255 for i in (1, 3, 5))
 
-		sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_BLEND)
-		self.orb_glyph(cx, cy, d, glyph, hover=hover, pressed=pressed)
+		def linear(x1: float, y1: float, x2: float, y2: float, stops) -> cairo.LinearGradient:
+			g = cairo.LinearGradient(x1, y1, x2, y2)
+			for offset, colour in stops:
+				g.add_color_stop_rgb(offset, *rgb(colour))
+			return g
+
+		tau = math.tau
+		# Disc and its grooves
+		cr.arc(315, 315, 210, 0, tau)
+		cr.set_source(linear(125, 110, 510, 525, ((0, "#302f38"), (0.5, "#1d1c24"), (1, "#15151c"))))
+		cr.fill()
+		for r, colour, width, alpha in ((201, "#4b4854", 1.5, 0.72), (190, "#42404b", 1.1, 0.58),
+				(176, "#3f3d48", 1, 0.54), (162, "#3c3a45", 1, 0.5), (148, "#393742", 0.9, 0.46),
+				(134, "#373540", 0.9, 0.43)):
+			cr.arc(315, 315, r, 0, tau)
+			cr.set_source_rgba(*rgb(colour), alpha)
+			cr.set_line_width(max(width, 1.0 / k * 0.5))
+			cr.stroke()
+		# Warm quarter, top left
+		cr.new_path()
+		cr.arc(315, 315, 208.9, math.pi, math.pi * 1.5)
+		cr.arc_negative(315, 315, 123, math.pi * 1.5, math.pi)
+		cr.close_path()
+		cr.set_source(linear(110, 315, 315, 110, ((0, "#7b3fa5"), (0.27, "#bb4f91"), (0.53, "#e86678"),
+			(0.78, "#fa8a55"), (1, "#ffc857"))))
+		cr.fill()
+		# Cool quarter, bottom right
+		cr.new_path()
+		cr.arc(315, 315, 208.9, 0, math.pi * 0.5)
+		cr.arc_negative(315, 315, 123, math.pi * 0.5, 0)
+		cr.close_path()
+		cr.set_source(linear(520, 315, 315, 520, ((0, "#514273"), (0.32, "#506da0"), (0.66, "#45a0bd"),
+			(1, "#62d1c4"))))
+		cr.fill()
+		# Hub, label, spindle
+		cr.arc(315, 315, 83, 0, tau)
+		cr.set_source(linear(235, 235, 395, 395, ((0, "#e86678"), (0.5, "#8b4a9a"), (1, "#45a0bd"))))
+		cr.fill()
+		label = cairo.RadialGradient(315, 315, 0, 315, 315, 73)
+		for offset, colour in ((0, "#24232c"), (0.78, "#15151c"), (1, "#0c0c13")):
+			label.add_color_stop_rgb(offset, *rgb(colour))
+		cr.arc(315, 315, 73, 0, tau)
+		cr.set_source(label)
+		cr.fill_preserve()
+		cr.set_source_rgb(*rgb("#34323d"))
+		cr.set_line_width(max(1.0, 1.0 / k * 0.5))
+		cr.stroke()
+		cr.arc(315, 315, 15, 0, tau)
+		cr.set_source_rgb(*rgb("#0a0a11"))
+		cr.fill()
+		cr.arc(315, 315, 6, 0, tau)
+		cr.set_source_rgb(*rgb("#e86678"))
+		cr.fill()
+		surf.flush()
+		icon = Image.frombuffer("RGBA", size, bytes(surf.get_data()), "raw", "BGRa", surf.get_stride(), 1).copy()
+		surf.finish()
+
+		c0 = pad
+		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
+		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.45), drop))
+		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 10, 25, 0.6), outer))
+		if hover:
+			# Lit from inside, like the other orbs
+			r, g, b, a = icon.split()
+			lift = _lut(1.18)
+			icon = Image.merge("RGBA", (r.point(lift), g.point(lift), b.point(lift), a))
+		canvas = Image.alpha_composite(canvas, icon)
+		# A soft light along the bottom edge and a bright inner rim
+		ig = _inset_shadow(circle, 0, -2 * sc, 2 * sc)
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(150, 200, 255, 0.35 if hover else 0.22), ig))
+		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(220, 235, 255, 0.5 if hover else 0.35), inner))
+		# The specular cap, gentler over the dark record than over gel
+		cap, _pad = self._cap_image(d, pressed)
+		capped = Image.new("RGBA", size, (0, 0, 0, 0))
+		capped.paste(cap, (c0, c0))
+		capped.putalpha(capped.getchannel("A").point(_lut(0.6)))
+		canvas = Image.alpha_composite(canvas, capped)
+		return canvas, pad
 
 	def speaker(self, x: float, cy: float, size: float, colour: ColourRGBA) -> None:
 		"""Speaker glyph (24-unit box): body, cone, and one sound wave."""
@@ -1747,29 +1848,7 @@ class Aero:
 			if rect[1] + rect[3] >= cy and rect[1] <= cy + ch:
 				self.gel(rect)
 		sdl3.set_render_clip_rect(self.renderer, old)
-		self.draw_row_hover(clip)
-
-	def draw_row_hover(self, clip) -> None:
-		"""Highlight the row under the mouse. The rows are remembered from the
-		last tracklist render; registering them as fields makes the main loop
-		redraw as the mouse crosses from one to the next."""
-		inp = self.inp
-		mx, my = inp.mouse_position[0], inp.mouse_position[1]
-		cx, cy, cw, ch = clip
-		fields = self.tauon.fields
-		hit = None
-		for rect in self.row_rects:
-			x, y, w, h = rect
-			if y + h < cy or y > cy + ch:
-				continue
-			fields.add((round(x), round(y), round(w), round(h)))
-			if hit is None and x <= mx < x + w and y <= my < y + h and cy <= my < cy + ch:
-				hit = rect
-		if hit is not None and not self.gui.custom_edit:
-			old = sdl3.get_render_clip_rect(self.renderer)
-			sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(round(cx), round(cy), round(cw), round(ch)))
-			self.hover_row(hit)
-			sdl3.set_render_clip_rect(self.renderer, old)
+		# No hover highlight: rows only light up when selected
 
 	# -- scrollbar ----------------------------------------------------------------------------------
 
@@ -1791,8 +1870,14 @@ class Aero:
 	def gutter(self) -> int:
 		return self.si(self.GUTTER)
 
+	@classmethod
+	def edge_gap_logical(cls, prefs) -> int:
+		"""The window-edge gap in logical px: a pixel wider when the sky fills
+		the window, so the panels keep a little more room from its frame."""
+		return cls.EDGE_GAP + (0 if prefs.aero_see_through else 1)
+
 	def edge_gap(self) -> int:
-		return self.si(self.EDGE_GAP)
+		return self.si(self.edge_gap_logical(self.prefs))
 
 	def top_glass_height(self) -> int:
 		# The top panel's own row (30px, or 100px for the art header) plus a

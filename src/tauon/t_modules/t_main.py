@@ -791,7 +791,7 @@ class GuiVar:
 		height = round((FeuxBar.PANEL_H if self.bag.prefs.feux_panel else 51) * self.scale)
 		if self.bag.prefs.aero:
 			# Clearwater floats the bar on the sky: a gutter above, the edge gap below
-			height += round(Aero.GUTTER * self.scale) + round(Aero.EDGE_GAP * self.scale)
+			height += round(Aero.GUTTER * self.scale) + round(Aero.edge_gap_logical(self.bag.prefs) * self.scale)
 		return height
 
 	def rescale(self) -> None:
@@ -9235,6 +9235,10 @@ class Tauon:
 		mi_width = round(35 * gui.scale)
 		re_width = round(30 * gui.scale)
 		last_width = 0
+		if self.aero.active and gui.mode == GuiMode.MAIN and not macstyle:
+			# Clearwater's capsules: a 40px close and 28px others, 4px apart
+			x_width = round(44 * gui.scale)
+			ma_width = mi_width = re_width = round(32 * gui.scale)
 
 		xx = a_left
 		left = prefs.left_window_control
@@ -9258,6 +9262,20 @@ class Tauon:
 				return
 			d = self.gui.mac_circle.w
 			aero.mac_light(x + d / 2, y + self.gui.mac_circle.h / 2, d, (colour.r, colour.g, colour.b), False)
+
+		def icon(asset, rect: tuple, colour: ColourRGBA, dx: float, dy: float) -> None:
+			# Centred in Clearwater's capsule; the usual offsets otherwise
+			if aero is not None:
+				asset.render(round(rect[0] + (rect[2] - asset.w) / 2), round(rect[1] + (rect[3] - asset.h) / 2), colour)
+			else:
+				asset.render(rect[0] + dx, rect[1] + dy, colour)
+
+		def min_bar(rect: tuple, colour: ColourRGBA) -> None:
+			bar_w, bar_h = 14 * gui.scale, 3 * gui.scale
+			if aero is not None:
+				ddt.rect_a((round(rect[0] + (rect[2] - bar_w) / 2), round(rect[1] + rect[3] / 2 + 2 * gui.scale)), (bar_w, bar_h), colour)
+			else:
+				ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (bar_w, bar_h), colour)
 
 		def button_bg(rect: tuple, colour: ColourRGBA, kind: str = "") -> None:
 			if aero is None:
@@ -9297,11 +9315,11 @@ class Tauon:
 			self.fields.add(rect)
 			if self.coll(rect) and not gui.mouse_unknown:
 				button_bg(rect, bg_on)
-				self.top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_on)
+				icon(self.top_panel.exit_button, rect, x_on, 8 * gui.scale, 8 * gui.scale)
 				if coll_point(inp.last_click_location, rect):
 					self.do_exit_button()
 			else:
-				self.top_panel.exit_button.render(rect[0] + 8 * gui.scale, rect[1] + 8 * gui.scale, x_off)
+				icon(self.top_panel.exit_button, rect, x_off, 8 * gui.scale, 8 * gui.scale)
 
 		# Macstyle restore
 		if gui.mode == GuiMode.MINI and macstyle:
@@ -9355,11 +9373,11 @@ class Tauon:
 				self.fields.add(rect)
 				if self.coll(rect):
 					button_bg(rect, bg_on)
-					self.top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_on)
+					icon(self.top_panel.maximize_button, rect, fg_on, 10 * gui.scale, 10 * gui.scale)
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_maximize_button()
 				else:
-					self.top_panel.maximize_button.render(rect[0] + 10 * gui.scale, rect[1] + 10 * gui.scale, fg_off)
+					icon(self.top_panel.maximize_button, rect, fg_off, 10 * gui.scale, 10 * gui.scale)
 
 		# minimize
 
@@ -9396,12 +9414,11 @@ class Tauon:
 				self.fields.add(rect)
 				if self.coll(rect):
 					button_bg(rect, bg_on)
-					ddt.rect_a((rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_on)
+					min_bar(rect, fg_on)
 					if (inp.mouse_up or inp.ab_click) and coll_point(inp.last_click_location, rect):
 						self.do_minimize_button()
 				else:
-					ddt.rect_a(
-						(rect[0] + 11 * gui.scale, rect[1] + 16 * gui.scale), (14 * gui.scale, 3 * gui.scale), fg_off)
+					min_bar(rect, fg_off)
 
 		# restore
 		if gui.mode == GuiMode.MINI:
@@ -9422,12 +9439,12 @@ class Tauon:
 				self.fields.add(rect)
 				if self.coll(rect):
 					button_bg(rect, bg_on)
-					self.top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_on)
+					icon(self.top_panel.restore_button, rect, fg_on, 8 * gui.scale, 9 * gui.scale)
 					if (inp.mouse_click or inp.ab_click) and coll_point(inp.click_location, rect):
 						self.restore_full_mode()
 						gui.request_frame()
 				else:
-					self.top_panel.restore_button.render(rect[0] + 8 * gui.scale, rect[1] + 9 * gui.scale, fg_off)
+					icon(self.top_panel.restore_button, rect, fg_off, 8 * gui.scale, 9 * gui.scale)
 
 	def draw_window_border(self) -> None:
 		ddt         = self.ddt
@@ -9438,7 +9455,7 @@ class Tauon:
 
 		# The grip triangle would clash with a rounded corner, the resize
 		# hit-zone below still works without it
-		if not self.corner_round_radius():
+		if not self.corner_round_radius() and not self.aero.see_through:
 			corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
 		corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
@@ -9468,6 +9485,9 @@ class Tauon:
 			gui.cursor_want = 11
 
 		colour = colours.window_frame
+		if self.aero.see_through:
+			# Clearwater with clear gaps: there is no window edge to frame
+			return
 
 		# When corners are rounded, stop the straight edges short so the
 		# corner arc textures can continue the contour
@@ -9565,7 +9585,9 @@ class Tauon:
 		small texture copies, the textures themselves are cached.
 		"""
 		radius = self.corner_round_radius()
-		if not radius:
+		# Clearwater with clear gaps: the corners are already empty, and the
+		# frame arcs would float on the desktop
+		if not radius or self.aero.see_through:
 			return
 
 		thickness = max(1, round(1 * self.gui.scale))
@@ -17445,6 +17467,11 @@ class Tauon:
 			if prefs.increase_gallery_row_spacing:
 				gui.album_v_gap = round(gui.album_v_gap * 1.3)
 
+			if prefs.aero and not gui.custom_mode:
+				# The gallery's top margin is measured from the window top, sized
+				# for the usual 30px top bar; Clearwater's floating bar is taller
+				gui.album_v_slide_value += gui.panelY - round(30 * gui.scale)
+
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
 
 			# The top-panel visualiser rects (spec1_rec / spec2_rec /
@@ -22130,6 +22157,9 @@ class Tauon:
 
 		if this_line_playing is True:
 			timec   = self.colours.time_text
+			if self.aero.active:
+				# On the gel the time matches the index, not the dimmer time role
+				timec = self.colours.index_playing
 			titlec  = self.colours.title_playing
 			indexc  = self.colours.index_playing
 			artistc = self.colours.artist_playing
@@ -23162,6 +23192,16 @@ class Tauon:
 			return bool(self.prefs.aero_motion)
 		self.prefs.aero_motion = not self.prefs.aero_motion
 		self.gui.request_frame()
+		return None
+
+	def toggle_aero_see_through(self, mode: int = 0) -> bool | None:
+		if mode == 1:
+			return bool(self.prefs.aero_see_through)
+		self.prefs.aero_see_through = not self.prefs.aero_see_through
+		# The window-edge gap depends on it
+		self.gui.update_layout = True
+		self.gui.request_frame()
+		self.gui.request_tracklist_redraw()
 		return None
 
 	def toggle_side_panel_spectrum(self, mode: int = 0) -> bool | None:
@@ -34403,6 +34443,7 @@ class Over:
 			# Appearance
 			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic clearwater aero frutiger glass gel glossy skeuomorphic sky",
 			_("Ambient motion"): "clearwater animation animate sky motion drift bokeh",
+			_("Show desktop between panels"): "clearwater transparent see through gaps desktop floating panels",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35309,6 +35350,7 @@ class Over:
 
 		if prefs.aero:
 			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
+			rows.switch(tauon.toggle_aero_see_through, _("Show desktop between panels"))
 			return
 
 		# Window transparency combines only with the two non-art styles
@@ -42021,7 +42063,6 @@ class StandardPlaylist:
 
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
-			aero.row_rects.clear()
 			aero.playing_rows.clear()
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
 			ddt.text_shadow = None
@@ -42311,7 +42352,7 @@ class StandardPlaylist:
 			# Draw playing highlight
 			if aero is not None:
 				# Clearwater: a gel row for the playing track, a glass pill for
-				# the selection, and the rest remembered for the hover highlight
+				# the selection (no hover highlight)
 				row = aero.row_rect(track_box)
 				if playing:
 					# The gel itself goes under the texture at blit time
@@ -42320,8 +42361,6 @@ class StandardPlaylist:
 					ddt.text_shadow = ColourRGBA(0, 40, 70, 140)
 				elif highlight:
 					aero.selection(row)
-				else:
-					aero.row_rects.append(row)
 			elif playing:
 				ddt.rect(track_box, colours.row_playing_highlight)
 				ddt.text_background_colour = alpha_blend(colours.row_playing_highlight, ddt.text_background_colour)
@@ -42781,7 +42820,7 @@ class StandardPlaylist:
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		if self.tauon.aero.active:
-			# Clearwater's hover highlight sits under the row's text
+			# Clearwater's playing-row gel sits under the row's text
 			self.tauon.aero.draw_tracklist_under((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
@@ -57867,6 +57906,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("transparent-style", prefs.transparent_mode)
 	cf.update_value("clearwater-style", prefs.aero)
 	cf.update_value("clearwater-motion", prefs.aero_motion)
+	cf.update_value("clearwater-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
 	cf.update_value("transparency-intensity", prefs.transparency_intensity)
@@ -58216,6 +58256,8 @@ def load_prefs(bag: Bag) -> None:
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
 	prefs.aero = cf.sync_add("bool", "clearwater-style", prefs.aero, "Clearwater glass-and-gel skin")
 	prefs.aero_motion = cf.sync_add("bool", "clearwater-motion", prefs.aero_motion, "Animate the Clearwater sky")
+	prefs.aero_see_through = cf.sync_add(
+		"bool", "clearwater-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Clearwater's panels")
 	prefs.side_panel_spectrum = cf.sync_add(
 		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(

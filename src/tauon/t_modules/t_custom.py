@@ -7429,10 +7429,16 @@ class CustomLayout:
 		# second one, which is what makes custom mode read darker than the
 		# standard layout; copy the pixels over the base instead.
 		replace = bool(tauon.prefs.transparent_mode) and not gui.have_art_bg
+		# Blending onto a cleared target leaves colour already multiplied by
+		# alpha; composite it as such, or every soft edge comes out darker
+		# (Clearwater's glows read as dark halos). Clearwater only, for now.
+		premultiplied = tauon.aero.active and not replace
 		if replace:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_NONE)
+		elif premultiplied:
+			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED)
 		sdl3.render_texture(renderer, scratch, src, dst)
-		if replace:
+		if replace or premultiplied:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_BLEND)
 
 	def _sync_aero_gap(self) -> None:
