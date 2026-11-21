@@ -154,7 +154,7 @@ from tauon.t_modules.t_tagedit_ui import TransEditBox  # noqa: E402
 from tauon.t_modules.t_generator import rename_playlist_references  # noqa: E402
 from tauon.t_modules.t_generator_ui import GeneratorEditBox  # noqa: E402
 from tauon.t_modules.t_musicbrainz_lookup import musicbrainz_call  # noqa: E402
-from tauon.t_modules.t_room import DreamRoom  # noqa: E402
+from tauon.t_modules.t_aero_world import Dreams  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
 	Backend,
 	GuiMode,
@@ -8515,7 +8515,8 @@ class Tauon:
 		self.radio_view:                           RadioView = RadioView(tauon=self)
 		self.view_box:                               ViewBox = ViewBox(tauon=self)
 		self.custom:                            CustomLayout = CustomLayout(tauon=self)
-		self.dream_room:                           DreamRoom = DreamRoom(tauon=self)
+		# The easter egg scenes: the Dream Room, and the Aero world for Aqualine
+		self.dream_room:                              Dreams = Dreams(tauon=self)
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
 		self.style_overlay:                     StyleOverlay = StyleOverlay(tauon=self)
@@ -36156,11 +36157,15 @@ class Over:
 		rect = rows.custom(icon_h + round(20 * s))
 		bg = self.ddt.text_background_colour
 		self.app_icon.render(rect[0] + rows.pad, rect[1] + round(10 * s))
-		# Easter egg: the icon opens the Dream Room (no pointer cursor on purpose)
+		# Easter egg: the icon opens the Dream Room, or the Aero world while the
+		# Aqualine skin is on (no pointer cursor on purpose)
 		icon_rect = (rect[0] + rows.pad, rect[1] + round(10 * s), round(self.app_icon.w), round(self.app_icon.h))
 		if self.click and self.coll(icon_rect):
 			self.inp.global_clicked = True
-			self.tauon.dream_room.toggle()
+			if self.prefs.aero:
+				self.tauon.dream_room.toggle_aero()
+			else:
+				self.tauon.dream_room.toggle()
 		text_x = rect[0] + rows.pad + round(self.app_icon.w) + round(14 * s)
 		self.ddt.text((text_x, rect[1] + round(12 * s)), "Tauon", self.colours.box_text, 215, bg=bg)
 		version_y = rect[1] + round(32 * s)
