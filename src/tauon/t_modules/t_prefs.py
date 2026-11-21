@@ -360,6 +360,15 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
+	# Aqualine: the glass-and-gel skin (t_aero). Exclusive with the art
+	# backgrounds and window transparency
+	aero: bool = False
+	aero_motion: bool = True
+	# Leave the gaps between Aqualine's panels clear, so they float on the
+	# desktop (the panels still frost the animated sky)
+	aero_see_through: bool = False
+	# The glass spectrum under the art in the right side panel
+	side_panel_spectrum: bool = False
 	# How much heavier than the other panels the tracklist fill is held, so a
 	# busy desktop doesn't read through the rows. 0 keeps it in line with them
 	transparency_tracklist_darkness: float = 0.0

@@ -117,6 +117,9 @@ class _Batch:
 
 class DreamRoom:
 
+	zoom_out_time = ZOOM_OUT_TIME
+	zoom_in_time = ZOOM_IN_TIME
+
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
 		self.gui = tauon.gui
@@ -475,23 +478,65 @@ class DreamRoom:
 
 	# ----------------------------------------------------------------- render
 
-	def render(self) -> None:
-		gui = self.gui
-		renderer = self.renderer
+	def _step(self) -> float:
+		"""Advance the scene clock and the zoom. Returns the frame's dt."""
 		now = time.monotonic()
 		dt = min(max(now - self.last_frame, 0.0), 0.05)
 		self.last_frame = now
 		self.T += dt
 
 		if self.phase == "out":
-			self.t += dt / ZOOM_OUT_TIME
+			self.t += dt / self.zoom_out_time
 			if self.t >= 1.0:
 				self.t = 1.0
 				self.phase = "idle"
 		elif self.phase == "in":
-			self.t -= dt / ZOOM_IN_TIME
+			self.t -= dt / self.zoom_in_time
 			if self.t <= 0.0:
 				self.t = 0.0
+		return dt
+
+	def _draw_app(self, sx0, sx1, sy0, sy1, z, cols_x=10, cols_y=6) -> None:
+		"""The live application, perspective-mapped onto a screen rectangle."""
+		gui = self.gui
+		w, h = self.window_size[0], self.window_size[1]
+		tex_size = float(getattr(gui, "max_window_tex", 1000))
+		u1 = w / tex_size
+		v1 = h / tex_size
+		white = (255, 255, 255, 255)
+		main_tex = gui.main_texture
+		sdl3.set_texture_scale_mode(main_tex, sdl3.SDL_SCALEMODE_LINEAR)
+		q = self._quad
+		for j in range(cols_y):
+			fy0, fy1 = j / cols_y, (j + 1) / cols_y
+			py0 = _lerp(sy1, sy0, fy0)
+			py1 = _lerp(sy1, sy0, fy1)
+			for i in range(cols_x):
+				fx0, fx1 = i / cols_x, (i + 1) / cols_x
+				px0 = _lerp(sx0, sx1, fx0)
+				px1 = _lerp(sx0, sx1, fx1)
+				q([(px0, py0, z), (px1, py0, z), (px1, py1, z), (px0, py1, z)],
+					[white] * 4,
+					uvs=[(fx0 * u1, fy0 * v1), (fx1 * u1, fy0 * v1),
+						(fx1 * u1, fy1 * v1), (fx0 * u1, fy1 * v1)],
+					texture=main_tex)
+
+	def _finish(self) -> None:
+		"""End-of-frame housekeeping shared by the scenes."""
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+
+		# Suppress the visualiser overlay path this frame (it blits fixed-rect
+		# textures straight onto the backbuffer, over the scene)
+		self.gui.level_update = False
+
+		if self.phase == "in" and self.t <= 0.0:
+			# This frame drew the t=0 pose (identical to the normal blit);
+			# hand back to the standard pipeline from the next frame on.
+			self.phase = "off"
+
+	def render(self) -> None:
+		renderer = self.renderer
+		dt = self._step()
 
 		self._ensure_assets()
 		self._advance(dt)
@@ -794,27 +839,7 @@ class DreamRoom:
 			[(13, 13, 17, 255)] * 4)
 		self._glow((SCR_CX, sy0 - 0.028, SCR_Z), 0.006, 0.006, (90, 200, 255), 150)	# power LED
 
-		# The live application, perspective-mapped onto the screen
-		tex_size = float(getattr(gui, "max_window_tex", 1000))
-		u1 = w / tex_size
-		v1 = h / tex_size
-		cols_x, cols_y = 10, 6
-		white = (255, 255, 255, 255)
-		main_tex = gui.main_texture
-		sdl3.set_texture_scale_mode(main_tex, sdl3.SDL_SCALEMODE_LINEAR)
-		for j in range(cols_y):
-			fy0, fy1 = j / cols_y, (j + 1) / cols_y
-			py0 = _lerp(sy1, sy0, fy0)
-			py1 = _lerp(sy1, sy0, fy1)
-			for i in range(cols_x):
-				fx0, fx1 = i / cols_x, (i + 1) / cols_x
-				px0 = _lerp(sx0, sx1, fx0)
-				px1 = _lerp(sx0, sx1, fx1)
-				q([(px0, py0, SCR_Z), (px1, py0, SCR_Z), (px1, py1, SCR_Z), (px0, py1, SCR_Z)],
-					[white] * 4,
-					uvs=[(fx0 * u1, fy0 * v1), (fx1 * u1, fy0 * v1),
-						(fx1 * u1, fy1 * v1), (fx0 * u1, fy1 * v1)],
-					texture=main_tex)
+		self._draw_app(sx0, sx1, sy0, sy1, SCR_Z)
 
 		# ------------------------------------------- bookshelf speakers
 		# One either side of the monitor, sitting on the desk. Camera ends up
@@ -904,13 +929,4 @@ class DreamRoom:
 			edge((w, h), (w, 0), (w - ew, 0), (w - ew, h), a1)
 			batch.flush()
 
-		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
-
-		# Suppress the visualiser overlay path this frame (it blits fixed-rect
-		# textures straight onto the backbuffer, over the scene)
-		gui.level_update = False
-
-		if self.phase == "in" and self.t <= 0.0:
-			# This frame drew the t=0 pose (identical to the normal blit);
-			# hand back to the standard pipeline from the next frame on.
-			self.phase = "off"
+		self._finish()
