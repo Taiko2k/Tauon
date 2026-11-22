@@ -364,6 +364,8 @@ class Prefs:
 	# backgrounds and window transparency
 	aero: bool = False
 	aero_motion: bool = True
+	# 0: Obsidian for dark, colourless art, Dusk otherwise; 1: always Dusk; 2: always Obsidian
+	aero_variant: int = 0
 	# Leave the gaps between Aqualine's panels clear, so they float on the
 	# desktop (the panels still frost the animated sky)
 	aero_see_through: bool = False

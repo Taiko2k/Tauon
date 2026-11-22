@@ -1551,7 +1551,7 @@ class FeuxBar:
 			# Aqualine: LED pills for the modes, and a speaker before the volume tube
 			pod3_w = (self._s(16) + self._pill_w(a["feux-shuffle"]) + self._s(9) + self._pill_w(a["feux-repeat"])
 				+ self._s(16) + self._s(24) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
-			hairline = ColourRGBA(150, 215, 255, 26)
+			hairline = ColourRGBA(225, 232, 242, 22) if aero.mono > 0.5 else ColourRGBA(150, 215, 255, 26)
 		else:
 			pod3_w = (self._s(16) + a["feux-shuffle"].w + self._s(9) + a["feux-repeat"].w
 				+ self._s(16) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))

@@ -16,6 +16,11 @@ The look is the dusk variant of the Aqualine concept:
   sheen over their top and one-pixel rims;
 - gel controls (orbs, tubes, rows) lit in the album's accent hue.
 
+Dark, colourless covers get the Obsidian variant instead: a graphite sky,
+smoked glass, black lacquer orbs and mercury gel, with one accent hue taken
+from the cover's small bright highlights. `Aero.mono` eases between the two
+(0 is dusk, 1 Obsidian), so every colour below is a blend of both.
+
 Shapes with gradients are built as meshes: a rounded-rect outline cut into
 convex cells along every gradient stop, so vertex colour interpolation
 reproduces the gradient exactly. Rings, orbs and other radial pieces are
@@ -62,6 +67,19 @@ def to_colour(c: RGBA) -> ColourRGBA:
 
 def _lerp(a: float, b: float, t: float) -> float:
 	return a + (b - a) * t
+
+
+def mix(a: RGBA, b: RGBA, t: float) -> RGBA:
+	if t <= 0:
+		return a
+	if t >= 1:
+		return b
+	return (a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t,
+		a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t)
+
+
+def _hue_lerp(a: float, b: float, t: float) -> float:
+	return (a + (((b - a + 540) % 360) - 180) * t) % 360
 
 
 def _stop_at(stops: list[tuple[float, RGBA]], t: float) -> RGBA:
@@ -348,7 +366,10 @@ class Aero:
 	SKY_DIV = 5         # sky is painted at 1/SKY_DIV of the logical window size
 	FROST_BLUR = 22     # backdrop-filter: blur(22px)
 	FROST_SAT = 1.7     # backdrop-filter: saturate(1.7)
-	FPS = 30            # ambient drift, the seek bar, bubbles, the spectrum
+	FPS = 30            # the seek bar, bubbles, the spectrum
+	FPS_AMBIENT = 60    # the sky's drift (it cross-fades between keyframes)
+	SKY_KEY_RATE = 15   # sky keyframes per second while drifting
+	SKY_KEY_RATE_FAST = 30  # and while the colours change
 	FPS_FAST = 60       # colour transitions and the glint
 	SHIMMER_SPEED = 170  # logical px per second along the seek tube
 
@@ -370,7 +391,37 @@ class Aero:
 	TAB = rgba8(160, 225, 255, 0.16)
 	STAR = rgba8(170, 220, 255, 0.2)
 
+	# Obsidian tokens, the same roles in graphite and smoke
+	OBSIDIAN = {
+		"TEXT": rgba8(238, 241, 245),
+		"MUTED": rgba8(154, 162, 173),
+		"TINT": rgba8(12, 13, 16, 0.54),
+		"RIM": rgba8(232, 238, 248, 0.34),
+		"RIM_SOFT": rgba8(220, 228, 240, 0.10),
+		"EDGE": rgba8(0, 0, 0, 0.82),
+		"SHADOW": rgba8(0, 0, 0, 0.72),
+		"SHEEN_TOP": rgba8(235, 240, 250, 0.15),
+		"SHEEN_MID": rgba8(235, 240, 250, 0.02),
+		"SUNKEN": rgba8(0, 0, 0, 0.55),
+		"HOVER": rgba8(255, 255, 255, 0.06),
+		"SEL_TOP": rgba8(235, 240, 250, 0.17),
+		"SEL_BOT": rgba8(235, 240, 250, 0.05),
+		"SEL_EDGE": rgba8(235, 240, 250, 0.20),
+		"TAB": rgba8(235, 240, 250, 0.12),
+		"STAR": rgba8(235, 240, 250, 0.18),
+	}
+
 	DEFAULT_PALETTE = (200.0, 186.0, 196.0)
+	# Obsidian's accent when a dark cover has no highlights to take one from
+	ICE = 205.0
+	# A cover is "dark" (Obsidian on Auto) below these mean HSL values
+	DARK_SAT = 0.16
+	DARK_LIGHT = 0.24
+	DARK_LIGHT_SAT = 0.30
+
+	VARIANT_AUTO = 0
+	VARIANT_DUSK = 1
+	VARIANT_OBSIDIAN = 2
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -382,6 +433,18 @@ class Aero:
 		# Palette: hues in degrees, eased toward the target
 		self.h1, self.h2, self.acc = self.DEFAULT_PALETTE
 		self.target = self.DEFAULT_PALETTE
+		# Obsidian: how far in (0-1), and its accent hue
+		self.mono = 0.0
+		self.oacc = self.ICE
+		self.art_dark = False
+		self.target_oacc = self.ICE
+		self._mono_applied: int | None = None
+		self._colours = None
+		# The class constants are the dusk tokens; the instance's own copies
+		# are the blend that is drawn with
+		self._dusk = {name: getattr(type(self), name) for name in self.OBSIDIAN}
+		self._tokens_mono = -1.0
+		self._update_tokens()
 		self._palette_key = None
 		self._palette_cache: dict = {}
 		self._palette_lock = threading.Lock()
@@ -390,10 +453,18 @@ class Aero:
 		# Sky
 		self.sky_t = 0.0
 		self._last = time.monotonic()
-		self._sky_tex = None
-		self._frost_tex = None
+		# Two keyframes, each [sky texture, frost texture]: the sky shown is A
+		# cross-faded into B, while the next keyframe paints on a thread
+		self._key_a: list | None = None
+		self._key_b: list | None = None
+		self._blend_start = 0.0
+		self._blend_len = 1.0
 		self._sky_size = (0, 0)
 		self._sky_dirty = True
+		self._sky_gen = 0
+		self._sky_job: threading.Thread | None = None
+		self._sky_job_result: tuple | None = None
+		self._sky_job_lock = threading.Lock()
 		self._sprite: _Tex | None = None
 		self._sky_drawn_key = None
 		rnd = random.Random(7)
@@ -405,7 +476,6 @@ class Aero:
 		# Glint (a light sweep across every panel on track change)
 		self.glint_start = -10.0
 		self._glints: list = []
-		self._sky_painted = 0.0
 		self._due = 0.0
 		self._raster_spent = 0.0
 		self.palette_moving = False
@@ -465,11 +535,7 @@ class Aero:
 			if isinstance(t, _Tex):
 				sdl3.destroy_texture(t.tex)
 		self._misc.clear()
-		for t in (self._sky_tex, self._frost_tex):
-			if t is not None:
-				sdl3.destroy_texture(t)
-		self._sky_tex = None
-		self._frost_tex = None
+		self._drop_sky_keys()
 		self._sky_size = (0, 0)
 		if self._sprite is not None:
 			sdl3.destroy_texture(self._sprite.tex)
@@ -486,9 +552,19 @@ class Aero:
 		"tab_highlight", "art_box", "vis_bg",
 	)
 
+	def _update_tokens(self) -> None:
+		m = self.mono
+		if abs(m - self._tokens_mono) < 1e-4:
+			return
+		self._tokens_mono = m
+		for name, obs in self.OBSIDIAN.items():
+			setattr(self, name, mix(self._dusk[name], obs, m))
+
 	def apply_colours(self, colours) -> None:
-		"""Make the panels see-through and recolour text to the dusk palette.
-		Called after every theme (re)load while the skin is on."""
+		"""Make the panels see-through and recolour text to the skin's
+		palette. Called after every theme (re)load while the skin is on."""
+		self._colours = colours
+		self._mono_applied = round(self.mono)
 		glass = ColourRGBA(10, 26, 42, 0)
 		for name in self.PANEL_COLOURS:
 			if getattr(colours, name, None) is None:
@@ -496,8 +572,18 @@ class Aero:
 			# A fresh object per name: several names can alias one colour, and
 			# every one of them has to stop pointing at the opaque original
 			setattr(colours, name, ColourRGBA(glass.r, glass.g, glass.b, 0))
-		text = to_colour(self.TEXT)
-		muted = to_colour(self.MUTED)
+		colours.column_colours = {}
+		colours.column_colours_playing = {}
+		colours.lm = False
+		self._apply_text_colours(colours)
+
+	def _apply_text_colours(self, colours) -> None:
+		"""Text and the theme-drawn bits, for the variant mostly showing."""
+		obs = self._mono_applied == 1
+		d = self._dusk
+		text = to_colour(self.OBSIDIAN["TEXT"] if obs else d["TEXT"])
+		muted = to_colour(self.OBSIDIAN["MUTED"] if obs else d["MUTED"])
+		acc = to_colour(hsl(self.target_oacc, 0.85, 0.62)) if obs else ColourRGBA(90, 200, 240, 255)
 
 		def put(name: str, c: ColourRGBA) -> None:
 			if hasattr(colours, name):
@@ -511,10 +597,10 @@ class Aero:
 		for name in ("artist_text", "index_text", "time_text", "side_bar_line2", "tab_text",
 				"status_text_normal", "playlist_text_missing"):
 			put(name, muted)
-		put("folder_line", ColourRGBA(150, 215, 255, 26))
+		put("folder_line", ColourRGBA(225, 232, 242, 22) if obs else ColourRGBA(150, 215, 255, 26))
 		put("row_playing_highlight", ColourRGBA(0, 0, 0, 0))
 		put("row_select_highlight", ColourRGBA(0, 0, 0, 0))
-		put("star_line", ColourRGBA(170, 220, 255, 51))
+		put("star_line", to_colour(self.OBSIDIAN["STAR"] if obs else rgba8(170, 220, 255, 0.2)))
 		put("star_line_playing", ColourRGBA(255, 255, 255, 120))
 		put("media_buttons_off", muted)
 		put("media_buttons_over", text)
@@ -524,22 +610,30 @@ class Aero:
 		put("mode_button_active", text)
 		put("corner_button", muted)
 		put("corner_button_active", text)
-		put("window_frame", to_colour(self.EDGE))
+		put("window_frame", to_colour(self.OBSIDIAN["EDGE"] if obs else d["EDGE"]))
 		put("window_button_icon_off", muted)
 		put("window_buttons_icon_over", text)
 		# The close capsule is red gel: its cross stays white
 		put("window_button_x_off", ColourRGBA(255, 255, 255, 230))
 		put("window_button_x_on", ColourRGBA(255, 255, 255, 255))
-		put("vis_colour", ColourRGBA(120, 220, 255, 255))
-		put("scroll_colour", ColourRGBA(80, 170, 220, 140))
-		put("seek_bar_background", to_colour(self.SUNKEN))
-		put("volume_bar_background", to_colour(self.SUNKEN))
-		put("seek_bar_fill", ColourRGBA(90, 200, 240, 255))
-		put("volume_bar_fill", ColourRGBA(90, 200, 240, 255))
+		put("vis_colour", ColourRGBA(225, 232, 242, 255) if obs else ColourRGBA(120, 220, 255, 255))
+		put("scroll_colour", ColourRGBA(225, 232, 242, 97) if obs else ColourRGBA(80, 170, 220, 140))
+		sunken = to_colour(self.OBSIDIAN["SUNKEN"] if obs else d["SUNKEN"])
+		put("seek_bar_background", sunken)
+		put("volume_bar_background", sunken)
+		put("seek_bar_fill", acc)
+		put("volume_bar_fill", acc)
 		put("bar_time", muted)
-		colours.column_colours = {}
-		colours.column_colours_playing = {}
-		colours.lm = False
+
+	def _sync_text_colours(self) -> None:
+		"""Swap the theme's text colours as the blend crosses the middle (the
+		tracklist is a cached texture, so it is redrawn once, not per step)."""
+		side = round(self.mono)
+		if side == self._mono_applied or self._colours is None:
+			return
+		self._mono_applied = side
+		self._apply_text_colours(self._colours)
+		self.gui.request_tracklist_redraw()
 
 	# -- palette ------------------------------------------------------------------
 
@@ -552,8 +646,10 @@ class Aero:
 		if key != self._palette_key:
 			self._palette_key = key
 			if key in self._palette_cache:
-				self.target = self._palette_cache[key]
-			elif track is not None:
+				self._set_target(self._palette_cache[key])
+			elif track is None:
+				self._set_target(self._default_entry())
+			else:
 				threading.Thread(target=self._palette_worker, args=(track, key), daemon=True).start()
 		with self._palette_lock:
 			if self._palette_result is not None:
@@ -561,7 +657,7 @@ class Aero:
 				self._palette_result = None
 				self._palette_cache[rkey] = pal
 				if rkey == self._palette_key:
-					self.target = pal
+					self._set_target(pal)
 					self.gui.request_frame()
 
 		# Glint on every track change
@@ -571,8 +667,25 @@ class Aero:
 				self.glint_start = time.monotonic()
 			self._glint_track = tid
 
+	def _default_entry(self) -> tuple:
+		return (*self.DEFAULT_PALETTE, False, self.ICE)
+
+	def _set_target(self, entry: tuple) -> None:
+		"""entry: (sky hue, horizon hue, accent hue, dark art, Obsidian accent)."""
+		self.target = entry[:3]
+		self.art_dark = entry[3]
+		self.target_oacc = entry[4]
+
+	def target_mono(self) -> float:
+		variant = self.prefs.aero_variant
+		if variant == self.VARIANT_OBSIDIAN:
+			return 1.0
+		if variant == self.VARIANT_DUSK:
+			return 0.0
+		return 1.0 if self.art_dark else 0.0
+
 	def _palette_worker(self, track, key) -> None:
-		pal = self.DEFAULT_PALETTE
+		pal = self._default_entry()
 		try:
 			art = self.tauon.album_art_gen
 			sources = art.get_sources(track)
@@ -581,8 +694,17 @@ class Aero:
 				raw = art.get_source_raw(offset, sources, track)
 				if raw is not None:
 					im = Image.open(raw)
-					im.draft("RGB", (80, 80))
-					pal = self.palette_from_image(im)
+					im.draft("RGB", (100, 100))
+					im = im.convert("RGB")
+					im.thumbnail((100, 100))
+					hues = self.palette_from_image(im)
+					dark, highlight = self.art_stats(im)
+					if highlight is not None:
+						oacc = highlight
+					else:
+						# Forced Obsidian on colourful art keeps the album's accent
+						oacc = self.ICE if dark else hues[2]
+					pal = (*hues, dark, oacc)
 					raw.close()
 		except Exception:
 			logging.exception("Aqualine: could not read art colours")
@@ -644,18 +766,86 @@ class Aero:
 			acc = h1
 		return (h1, h2, acc)
 
+	@classmethod
+	def art_stats(cls, im: Image.Image) -> tuple[bool, float | None]:
+		"""(dark, highlight hue) for album art.
+
+		Dark: the 40px thumbnail's mean HSL saturation and lightness fall
+		under the Obsidian rule. Highlight: the main hue among the bright,
+		saturated pixels of a finer 100px sample (lit windows, a neon sign;
+		at 40px they blur into grey), or None when there are too few."""
+		im = im.convert("RGB")
+		small = im.copy()
+		small.thumbnail((40, 40))
+		ss = ll = 0.0
+		n = 0
+		for r, g, b in small.getdata():
+			mx = max(r, g, b)
+			mn = min(r, g, b)
+			l = (mx + mn) / 510
+			n += 1
+			ll += l
+			# Under 6 levels of chroma is compression noise in the blacks,
+			# where HSL saturation would read it as vivid
+			if mx - mn >= 6:
+				ss += (mx - mn) / 255 / max(1e-6, 1 - abs(2 * l - 1))
+		if n == 0:
+			return False, None
+		sat = ss / n
+		light = ll / n
+		dark = sat < cls.DARK_SAT or (light < cls.DARK_LIGHT and sat < cls.DARK_LIGHT_SAT)
+
+		fine = im.copy()
+		fine.thumbnail((100, 100))
+		bins = [0.0] * 36
+		count = 0
+		for r, g, b in fine.getdata():
+			mx = max(r, g, b)
+			mn = min(r, g, b)
+			if mx == mn:
+				continue
+			l = (mx + mn) / 510
+			s = (mx - mn) / 255 / max(1e-6, 1 - abs(2 * l - 1))
+			if s > 0.4 and l > 0.12:
+				h = colorsys.rgb_to_hls(r / 255, g / 255, b / 255)[0]
+				bins[int(h * 36) % 36] += s * l
+				count += 1
+		if count < 4:
+			return dark, None
+		# The strongest hue, not the mean: red and blue lights mustn't average
+		# to magenta
+		smooth = [bins[i - 1] * 0.25 + bins[i] * 0.5 + bins[(i + 1) % 36] * 0.25 for i in range(36)]
+		peak = max(range(36), key=lambda i: smooth[i])
+		sx = sy = 0.0
+		for j in (peak - 1, peak, peak + 1):
+			ang = math.radians((j % 36) * 10 + 5)
+			sx += math.cos(ang) * bins[j % 36]
+			sy += math.sin(ang) * bins[j % 36]
+		return dark, math.degrees(math.atan2(sy, sx)) % 360
+
 	def _step_palette(self, dt: float) -> bool:
 		k = 1 - math.exp(-dt * 3.2)
 		moving = False
-		cur = [self.h1, self.h2, self.acc]
-		for i in range(3):
-			d = ((self.target[i] - cur[i] + 540) % 360) - 180
+		target = (*self.target, self.target_oacc)
+		cur = [self.h1, self.h2, self.acc, self.oacc]
+		for i in range(4):
+			d = ((target[i] - cur[i] + 540) % 360) - 180
 			if abs(d) > 0.3:
 				cur[i] = (cur[i] + d * k) % 360
 				moving = True
 			else:
-				cur[i] = self.target[i]
-		self.h1, self.h2, self.acc = cur
+				cur[i] = target[i]
+		self.h1, self.h2, self.acc, self.oacc = cur
+		# Obsidian fades in over the same second the hues take
+		tm = self.target_mono()
+		dm = tm - self.mono
+		if abs(dm) > 0.004:
+			self.mono += dm * k
+			moving = True
+		else:
+			self.mono = tm
+		self._update_tokens()
+		self._sync_text_colours()
 		return moving
 
 	# -- frame ----------------------------------------------------------------------
@@ -692,16 +882,12 @@ class Aero:
 		self.panel_index = 0
 		self._glints = []
 		self.palette_moving = moving
-		# The drift is slow: repaint the sky at 15 Hz (the bokeh still move
-		# every frame). A colour change repaints at up to 30 Hz; the panels,
-		# gel and orbs over it change colour every frame
-		limit = 1 / 30 if moving else 1 / 15
-		if (animate or moving) and now - self._sky_painted < limit:
-			self._sky_dirty = False
 		self.draw_sky()
-		if moving or glinting:
-			self.schedule(1 / self.FPS_FAST)
-		elif animate or self.bubbles:
+		# The sky keeps moving between keyframes (a cross-fade), so drift and
+		# colour changes both run at the fast rate
+		if moving or glinting or animate or self.sky_settling():
+			self.schedule(1 / self.FPS_AMBIENT)
+		elif self.bubbles:
 			self.schedule(1 / self.FPS)
 
 	def schedule(self, interval: float) -> None:
@@ -720,17 +906,37 @@ class Aero:
 		h = self.tauon.window_size[1] / self.gui.scale
 		return max(16, round(w / self.SKY_DIV)), max(16, round(h / self.SKY_DIV))
 
-	def _paint_sky(self, lw: int, lh: int) -> tuple[Image.Image, Image.Image]:
-		"""The dusk sky at low resolution, and its frosted copy.
+	def _sky_snapshot(self) -> dict:
+		"""Everything the sky painter reads, copied for its thread."""
+		return {
+			"h1": self.h1, "h2": self.h2, "acc": self.acc, "mono": self.mono, "oacc": self.oacc,
+			"T": self.sky_t, "parts": [dict(p) for p in self.parts]}
+
+	def _paint_sky(self, lw: int, lh: int, snap: dict) -> tuple[Image.Image, Image.Image]:
+		"""The sky at low resolution, and its frosted copy, from a snapshot.
 
 		Everything here is Pillow's C code; per-pixel work never runs in
 		Python (lookup tables are 256 entries, and the bokeh sprites are
-		cached by size and strength)."""
-		h1, h2, acc = self.h1, self.h2, self.acc
-		T = self.sky_t
+		cached by size and strength). Runs on a worker thread."""
+		h1, h2, acc = snap["h1"], snap["h2"], snap["acc"]
+		T = snap["T"]
+		# Obsidian: the same sky with its colour eased out, a touch darker, its
+		# light silver; one ribbon and the top bloom keep the accent
+		m = snap["mono"]
+		oacc = snap["oacc"]
 
-		# Base gradient
-		stops = [(0.0, hsl(h1, 0.70, 0.08)), (0.55, hsl(h1, 0.65, 0.15)), (1.0, hsl(h2, 0.55, 0.20))]
+		def sat(v: float) -> float:
+			return _lerp(v, 0.10, m)
+
+		def lit(v: float, o: float) -> float:
+			return _lerp(v, o, m)
+
+		# Base gradient: graphite, cool at the top and a hint warm at the floor
+		cool = _hue_lerp(h1, 215, m)
+		stops = [
+			(0.0, hsl(cool, sat(0.70), lit(0.08, 0.05))),
+			(0.55, hsl(cool, sat(0.65), lit(0.15, 0.10))),
+			(1.0, hsl(_hue_lerp(h2, 30, m), sat(0.55), lit(0.20, 0.14)))]
 		col = Image.new("RGB", (1, lh))
 		px = col.load()
 		for yy in range(lh):
@@ -744,11 +950,20 @@ class Aero:
 			(0.82 + 0.06 * math.cos(T * 0.07), 0.78 + 0.05 * math.sin(T * 0.12), 0.65, h2, 0.30),
 			(0.55 + 0.1 * math.sin(T * 0.05 + 2), 0.08, 0.45, acc + 25, 0.20),
 		)
-		for bx, by, br, bh, ba in blooms:
+		for i_b, (bx, by, br, bh, ba) in enumerate(blooms):
 			R = br * lw
 			falloff = self._falloff((lw, lh), bx * lw, by * lh, R)
 			c = hsl(bh, 0.95, 0.55)
-			img = ImageChops.add(img, Image.merge("RGB", [falloff.point(_lut(c[i] * ba)) for i in range(3)]))
+			c = (c[0] * ba, c[1] * ba, c[2] * ba)
+			if m > 0:
+				if i_b == 2:
+					o = hsl(oacc, 0.70, 0.50)
+					oa = ba * 0.75
+				else:
+					o = hsl(_hue_lerp(bh, 215, m), sat(0.95), 0.46)
+					oa = ba * 0.45
+				c = tuple(_lerp(c[i], o[i] * oa, m) for i in range(3))
+			img = ImageChops.add(img, Image.merge("RGB", [falloff.point(_lut(c[i])) for i in range(3)]))
 
 		# Light ribbons, added. Drawn at 2x for antialiasing
 		ss = 2
@@ -772,12 +987,18 @@ class Aero:
 				ImageDraw.Draw(lay).polygon(_stroke_outline(pts, max(1.0, width * ss) / 2), fill=round(255 * alpha))
 				acc_l = ImageChops.add(acc_l, lay.reduce(ss))
 			c = hsl(hue, 0.90, 0.65)
+			if m > 0:
+				if k == 1:
+					o = hsl(oacc, 0.75, 0.66, 0.8)
+				else:
+					o = hsl(215, 0.10, 0.78, 0.5)
+				c = tuple(_lerp(c[i], o[i] * o[3], m) for i in range(3))
 			img = ImageChops.add(img, Image.merge("RGB", [acc_l.point(_lut(c[i])) for i in range(3)]))
 
 		# Frost: the sky with its bokeh, blurred 22px and saturated 1.7
 		bok = Image.new("L", (lw, lh), 0)
-		for p in self.parts:
-			a = p["a"] * 0.42 * (0.6 + 0.4 * math.sin(T * 0.6 + p["ph"]))
+		for p in snap["parts"]:
+			a = p["a"] * 0.42 * (1 - 0.35 * m) * (0.6 + 0.4 * math.sin(T * 0.6 + p["ph"]))
 			r = p["r"] / self.SKY_DIV
 			spr = self._bokeh_sprite(max(2, round(r * 2)), a)
 			x = round(p["x"] * lw + math.sin(T * 0.3 + p["ph"]) * 14 / self.SKY_DIV - r)
@@ -849,25 +1070,91 @@ class Aero:
 		sdl3.update_texture(tex, None, data, w * 4)
 		return tex
 
+	def _drop_sky_keys(self) -> None:
+		for key in (self._key_a, self._key_b):
+			if key is not None:
+				for t in key:
+					sdl3.destroy_texture(t)
+		self._key_a = self._key_b = None
+		# A paint still running was for the old textures or size
+		self._sky_gen += 1
+
+	def _sky_worker(self, lw: int, lh: int, snap: dict, gen: int) -> None:
+		try:
+			result = (gen, (lw, lh), self._paint_sky(lw, lh, snap))
+		except Exception:
+			logging.exception("Aqualine: sky paint failed")
+			result = (gen, None, None)
+		with self._sky_job_lock:
+			self._sky_job_result = result
+		self.gui.request_frame()
+
+	def sky_blend(self) -> float:
+		"""How far the shown sky is from keyframe A to B (0-1)."""
+		if self._key_a is None:
+			return 1.0
+		return min(1.0, max(0.0, (time.monotonic() - self._blend_start) / self._blend_len))
+
+	def sky_settling(self) -> bool:
+		"""A cross-fade or a keyframe paint is still under way."""
+		return self._sky_job is not None or self.sky_blend() < 1.0
+
+	def _update_sky_keys(self, lw: int, lh: int) -> None:
+		"""Keyframes: paint the next one on a thread while the shown sky
+		cross-fades from A to B; take it in once that fade has finished."""
+		now = time.monotonic()
+		if self._key_b is None:
+			# First paint (or a resize): synchronous, nothing to fade from
+			sky, frost = self._paint_sky(lw, lh, self._sky_snapshot())
+			self._key_b = [self._upload(None, sky), self._upload(None, frost)]
+			self._key_a = None
+			self._sky_dirty = False
+			return
+		if self._sky_job is not None:
+			with self._sky_job_lock:
+				result = self._sky_job_result
+			if result is not None and self.sky_blend() >= 1.0:
+				self._sky_job = None
+				self._sky_job_result = None
+				gen, size, imgs = result
+				if gen == self._sky_gen and size == (lw, lh) and imgs is not None:
+					# Reuse the outgoing keyframe's textures for the new one
+					old = self._key_a
+					new = [self._upload(old[0] if old else None, imgs[0]),
+						self._upload(old[1] if old else None, imgs[1])]
+					self._key_a = self._key_b
+					self._key_b = new
+					self._blend_start = now
+					rate = self.SKY_KEY_RATE_FAST if self.palette_moving else self.SKY_KEY_RATE
+					self._blend_len = 1 / rate
+		if self._sky_job is None and self._sky_dirty:
+			self._sky_dirty = False
+			self._sky_job_result = None
+			self._sky_job = threading.Thread(
+				target=self._sky_worker, args=(lw, lh, self._sky_snapshot(), self._sky_gen), daemon=True)
+			self._sky_job.start()
+
+	def frost_layers(self) -> list[tuple[object, float]]:
+		"""(frost texture, alpha) to draw in order: A, then B faded over it."""
+		if self._key_b is None:
+			return []
+		f = self.sky_blend()
+		if self._key_a is None or f >= 1.0:
+			return [(self._key_b[1], 1.0)]
+		return [(self._key_a[1], 1.0), (self._key_b[1], f)]
+
 	def draw_sky(self) -> None:
-		"""Bring the sky textures up to date and paint the sky across the
+		"""Bring the sky keyframes up to date and paint the sky across the
 		window, or, see-through, leave the window clear: the sky then only
 		reaches the eye through the panels' frost."""
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
 		lw, lh = self._sky_dims()
 		if (lw, lh) != self._sky_size:
-			for t in (self._sky_tex, self._frost_tex):
-				if t is not None:
-					sdl3.destroy_texture(t)
-			self._sky_tex = self._frost_tex = None
+			self._drop_sky_keys()
+			self._sky_job = None
 			self._sky_size = (lw, lh)
 			self._sky_dirty = True
-		if self._sky_dirty or self._sky_tex is None:
-			self._sky_painted = time.monotonic()
-			sky, frost = self._paint_sky(lw, lh)
-			self._sky_tex = self._upload(self._sky_tex, sky)
-			self._frost_tex = self._upload(self._frost_tex, frost)
-			self._sky_dirty = False
+		self._update_sky_keys(lw, lh)
 		r = self.renderer
 		if self.see_through:
 			# Replace whatever is there with nothing (custom mode draws over
@@ -877,14 +1164,27 @@ class Aero:
 			sdl3.render_fill_rect(r, sdl3.FRect(0, 0, ww, wh))
 			sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_BLEND)
 			return
-		sdl3.render_texture(r, self._sky_tex, None, sdl3.FRect(0, 0, ww, wh))
+		dst = sdl3.FRect(0, 0, ww, wh)
+		f = self.sky_blend()
+		if self._key_a is not None and f < 1.0:
+			# Opaque keyframes: A, then B blended over it at the fade's progress
+			sdl3.set_texture_blend_mode(self._key_a[0], sdl3.SDL_BLENDMODE_NONE)
+			_mod(self._key_a[0], 255, 255, 255, 255)
+			sdl3.render_texture(r, self._key_a[0], None, dst)
+			sdl3.set_texture_blend_mode(self._key_b[0], sdl3.SDL_BLENDMODE_BLEND)
+			_mod(self._key_b[0], 255, 255, 255, round(f * 255))
+			sdl3.render_texture(r, self._key_b[0], None, dst)
+		else:
+			sdl3.set_texture_blend_mode(self._key_b[0], sdl3.SDL_BLENDMODE_NONE)
+			_mod(self._key_b[0], 255, 255, 255, 255)
+			sdl3.render_texture(r, self._key_b[0], None, dst)
 		# Bokeh over the sharp sky ('lighter')
 		spr = self._sprite_tex()
 		T = self.sky_t
 		sc = self.gui.scale
 		sdl3.set_texture_blend_mode(spr.tex, sdl3.SDL_BLENDMODE_ADD)
 		for p in self.parts:
-			a = p["a"] * 0.42 * (0.6 + 0.4 * math.sin(T * 0.6 + p["ph"]))
+			a = p["a"] * 0.42 * (1 - 0.35 * self.mono) * (0.6 + 0.4 * math.sin(T * 0.6 + p["ph"]))
 			rr = p["r"] * sc
 			x = p["x"] * ww + math.sin(T * 0.3 + p["ph"]) * 14 * sc - rr
 			y = p["y"] * wh - rr
@@ -965,13 +1265,16 @@ class Aero:
 			return
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.render_geometry(self.renderer, texture, verts, idx)
-		if texture is not None and texture is not self._frost_tex:
+		if texture is not None and not self._is_frost(texture):
 			# SDL's software renderer applies vertex colours to a textured mesh
 			# through the texture's own colour and alpha mod, and leaves them
 			# there: album art drawn here (the reflection fades to alpha 0)
 			# came out invisible the next time the rest of Tauon drew it
 			sdl3.set_texture_color_mod(texture, 255, 255, 255)
 			sdl3.set_texture_alpha_mod(texture, 255)
+
+	def _is_frost(self, texture) -> bool:
+		return any(key is not None and texture is key[1] for key in (self._key_a, self._key_b))
 
 	# -- rings ------------------------------------------------------------------------------
 
@@ -997,6 +1300,8 @@ class Aero:
 			a = ImageChops.subtract(base, m(1, 1, -1, -1, max(0.0, r - 1)))
 		elif kind == "top":
 			a = ImageChops.multiply(base, ImageChops.invert(m(0, 1, 0, 1)))
+		elif kind == "bottom_in":
+			a = ImageChops.multiply(base, ImageChops.invert(m(0, -1, 0, -1)))
 		elif kind == "bottom_out":
 			a = ImageChops.multiply(m(0, 1, 0, 1), ImageChops.invert(base))
 		elif kind == "right_in":
@@ -1111,8 +1416,11 @@ class Aero:
 		# 0 10px 26px -12px shadow
 		self.soft((x, y, w, h), R, 13 * sc, -12 * sc, self.SHADOW, 0, 10 * sc)
 		# Frost
-		if self._frost_tex is not None:
-			self.shape((x, y, w, h), R, texture=self._frost_tex, uv=self.frost_uv())
+		uv = self.frost_uv()
+		for tex, alpha in self.frost_layers():
+			# The first layer replaces what is under it; a fading second one blends
+			sdl3.set_texture_blend_mode(tex, sdl3.SDL_BLENDMODE_NONE if alpha >= 1.0 else sdl3.SDL_BLENDMODE_BLEND)
+			self.shape((x, y, w, h), R, (1.0, 1.0, 1.0, alpha), texture=tex, uv=uv)
 		# Tint
 		self.shape((x, y, w, h), R, self.TINT)
 		# Sheen: ::before, inset 1px, rounded top corners only
@@ -1174,17 +1482,23 @@ class Aero:
 		"""The playing row's gel: a hard step at the midline."""
 		r = self.s(6) if r is None else r
 		H = self.acc if hue is None else hue
+		m = self.mono if hue is None else 0.0
+		A = self.oacc
 		x, y, w, h = rect
 		sc = self.gui.scale
 		if glow:
-			# 0 3px 12px -3px glow
-			self.soft(rect, r, 6 * sc, -3 * sc, hsl(H, 0.95, 0.45, 0.7), 0, 3 * sc)
-		stops = [
-			(0.0, hsl(H, 0.85, 0.64)), (0.5, hsl(H, 0.82, 0.52)),
-			(0.51, hsl(H, 0.90, 0.41)), (1.0, hsl(H, 0.85, 0.50))]
+			# 0 3px 12px -3px glow; Obsidian's in the accent
+			self.soft(rect, r, 6 * sc, -3 * sc, mix(hsl(H, 0.95, 0.45, 0.7), hsl(A, 0.9, 0.55, 0.6), m), 0, 3 * sc)
+		# Obsidian: a graphite gel, with the same hard step
+		obs = (rgba8(107, 114, 125), rgba8(71, 77, 86), rgba8(42, 46, 52), rgba8(59, 64, 71))
+		dusk = (hsl(H, 0.85, 0.64), hsl(H, 0.82, 0.52), hsl(H, 0.90, 0.41), hsl(H, 0.85, 0.50))
+		stops = [(p, mix(dusk[i], obs[i], m)) for i, p in enumerate((0.0, 0.5, 0.51, 1.0))]
 		self.shape(rect, r, grad=vgrad(y, h, stops))
-		self.ring("top", rect, r, (1, 1, 1, 0.65))
-		self.ring("outer", rect, r, hsl(H, 0.80, 0.28, 0.7))
+		self.ring("top", rect, r, (1, 1, 1, 0.65 - 0.1 * m))
+		if m > 0:
+			# An accent lip along the bottom
+			self.ring("bottom_in", rect, r, hsl(A, 0.9, 0.62, 0.7 * m))
+		self.ring("outer", rect, r, mix(hsl(H, 0.80, 0.28, 0.7), rgba8(0, 0, 0, 0.72), m))
 
 	def tab(self, rect, active: bool, hover: bool) -> None:
 		r = self.s(7)
@@ -1198,8 +1512,9 @@ class Aero:
 			uw = w - self.s(24)
 			uh = max(1.0, self.s(2))
 			uy = y + h + self.s(1) - uh
-			col = hsl(self.acc, 0.95, 0.55)
-			self.soft((ux, uy, uw, uh), uh / 2, 4 * self.gui.scale, 0, col)
+			col = mix(hsl(self.acc, 0.95, 0.55), hsl(self.oacc, 0.9, 0.64), self.mono)
+			glow = mix(col, hsl(self.oacc, 0.9, 0.58), self.mono)
+			self.soft((ux, uy, uw, uh), uh / 2, 4 * self.gui.scale, 0, glow)
 			self.shape((ux, uy, uw, uh), uh / 2, col)
 		elif hover:
 			self.shape(rect, r, self.HOVER)
@@ -1213,14 +1528,16 @@ class Aero:
 		"""A small lit dot in the tab that playback comes from."""
 		x, y, w, h = rect
 		d = self.s(4)
-		self.soft((x + w - self.s(7) - d, y + self.s(5), d, d), d / 2, 2 * self.gui.scale, 0, hsl(self.acc, 1.0, 0.6, 0.8))
-		self.shape((x + w - self.s(7) - d, y + self.s(5), d, d), d / 2, hsl(self.acc, 0.9, 0.75))
+		H = _hue_lerp(self.acc, self.oacc, self.mono)
+		self.soft((x + w - self.s(7) - d, y + self.s(5), d, d), d / 2, 2 * self.gui.scale, 0, hsl(H, 1.0, 0.6, 0.8))
+		self.shape((x + w - self.s(7) - d, y + self.s(5), d, d), d / 2, hsl(H, 0.9, 0.75))
 
 	def sunken(self, rect, r: float) -> None:
 		"""A recessed track: sunken fill, inner shadow, ring and lower lip."""
 		self.shape(rect, r, self.SUNKEN)
-		self.ring("inset_top_shadow", rect, r, rgba8(0, 20, 40, 0.35))
-		self.ring("inner", rect, r, rgba8(0, 20, 40, 0.18))
+		m = self.mono
+		self.ring("inset_top_shadow", rect, r, mix(rgba8(0, 20, 40, 0.35), rgba8(0, 0, 0, 0.45), m))
+		self.ring("inner", rect, r, mix(rgba8(0, 20, 40, 0.18), rgba8(0, 0, 0, 0.25), m))
 		self.ring("bottom_out", rect, r, self.RIM_SOFT)
 
 	def tube(self, rect, frac: float, *, playing: bool = False, shimmer: bool = True,
@@ -1238,15 +1555,18 @@ class Aero:
 			old_clip = sdl3.get_render_clip_rect(r_)
 			fr = (x, y, fw, h)
 			sdl3.set_render_clip_rect(r_, clip)
+			m = self.mono
+			A = self.oacc
 			# 0 0 10px glow, clipped by the tube
-			self.soft(fr, min(r, fw / 2), 5 * sc, 0, hsl(H, 0.95, 0.55, 0.65))
-			stops = [
-				(0.0, hsl(H, 0.92, 0.74)), (0.5, hsl(H, 0.85, 0.56)),
-				(0.51, hsl(H, 0.90, 0.44)), (1.0, hsl(H, 0.85, 0.58))]
+			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(hsl(H, 0.95, 0.55, 0.65), hsl(A, 0.9, 0.60, 0.45), m))
+			# Obsidian: mercury, lit by the accent at its end
+			obs = (rgba8(245, 247, 250), rgba8(188, 196, 206), rgba8(133, 142, 153), rgba8(206, 212, 219))
+			dusk = (hsl(H, 0.92, 0.74), hsl(H, 0.85, 0.56), hsl(H, 0.90, 0.44), hsl(H, 0.85, 0.58))
+			stops = [(p, mix(dusk[i], obs[i], m)) for i, p in enumerate((0.0, 0.5, 0.51, 1.0))]
 			rr = min(r, fw / 2)
 			self.shape(fr, rr, grad=vgrad(y, h, stops))
-			self.ring("top", fr, rr, (1, 1, 1, 0.75))
-			self.ring("right_in", fr, rr, (1, 1, 1, 0.4))
+			self.ring("top", fr, rr, (1, 1, 1, 0.75 + 0.25 * m))
+			self.ring("right_in", fr, rr, mix((1, 1, 1, 0.4), hsl(A, 0.9, 0.75, 0.8), m))
 			now = time.monotonic()
 			if shimmer and playing and self.motion():
 				# A 70px band travelling the whole tube at a constant speed,
@@ -1347,7 +1667,9 @@ class Aero:
 			sdl3.destroy_texture(old.tex)
 		return t
 
-	def _orb_image(self, d: int, H: float, hover: bool) -> tuple[Image.Image, int]:
+	def _orb_image(self, d: int, H: float, hover: bool, obs: bool = False) -> tuple[Image.Image, int]:
+		"""A gel orb in hue H, or with `obs`, Obsidian's black lacquer whose
+		caustic and inner glow take H."""
 		sc = self.gui.scale
 		pad = math.ceil(30 * sc) + 2
 		N = d + pad * 2
@@ -1358,27 +1680,40 @@ class Aero:
 		# Hover lights the orb from inside (body, caustic, inner glow and rim
 		# all brighter) rather than throwing a halo around it
 		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.45), drop))
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 0, 0, 0.6) if obs else rgba8(0, 25, 50, 0.45), drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.55), outer))
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 0, 0, 0.78) if obs else rgba8(0, 25, 50, 0.55), outer))
 		# Body: radial-gradient(circle at 50% 35%, ...) to the farthest corner
 		R = d * math.hypot(0.5, 0.65)
 		t = _radial_l(size, c0 + d * 0.5, c0 + d * 0.35, R, R)
-		body = _map_stops(t, [(0.0, hsl(H, 0.75, 0.48)), (0.62, hsl(H, 0.85, 0.30)), (1.0, hsl(H, 0.90, 0.16))])
+		if obs:
+			body_stops = [(0.0, rgba8(75, 81, 91)), (0.62, rgba8(29, 32, 38)), (1.0, rgba8(8, 9, 11))]
+		else:
+			body_stops = [(0.0, hsl(H, 0.75, 0.48)), (0.62, hsl(H, 0.85, 0.30)), (1.0, hsl(H, 0.90, 0.16))]
+		body = _map_stops(t, body_stops)
 		# Caustic over it: ellipse 60% 45% at 50% 92%
 		reach = 0.82 if hover else 0.7
 		t2 = _radial_l(size, c0 + d * 0.5, c0 + d * 0.92, d * 0.6, d * 0.45)
+		if obs:
+			cs, cl, ca = 0.85, 0.66, (0.7 if hover else 0.55)
+		else:
+			cs, cl, ca = 1.0, (0.80 if hover else 0.78), (1.0 if hover else 0.9)
 		caustic = _map_stops(t2, [
-			(0.0, hsl(H, 1.0, 0.80 if hover else 0.78, 1.0 if hover else 0.9)),
-			(reach, hsl(H, 1.0, 0.78, 0.0)), (1.0, hsl(H, 1.0, 0.78, 0.0))])
+			(0.0, hsl(H, cs, cl, ca)), (reach, hsl(H, cs, cl, 0.0)), (1.0, hsl(H, cs, cl, 0.0))])
 		body = Image.alpha_composite(body, caustic)
 		body.putalpha(ImageChops.multiply(body.getchannel("A"), circle))
 		canvas = Image.alpha_composite(canvas, body)
 		# inset 0 -2px 4px glow, then the 1px inner ring
 		ig = _inset_shadow(circle, 0, -2 * sc, (3 if hover else 2) * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 1.0, 0.80, 0.6 if hover else 0.35), ig))
+		if obs:
+			glow_c = hsl(H, 0.9, 0.70, 0.45 if hover else 0.3)
+			ring_c = rgba8(240, 245, 252, 0.5) if hover else rgba8(230, 236, 245, 0.36)
+		else:
+			glow_c = hsl(H, 1.0, 0.80, 0.6 if hover else 0.35)
+			ring_c = hsl(H, 0.90, 0.88, 0.7 if hover else 0.45)
+		canvas = Image.alpha_composite(canvas, _solid(size, glow_c, ig))
 		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
-		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 0.90, 0.88, 0.7 if hover else 0.45), inner))
+		canvas = Image.alpha_composite(canvas, _solid(size, ring_c, inner))
 		if hover:
 			# Brighten the glass itself, not the shadow under it
 			r, g, b, a = canvas.split()
@@ -1423,22 +1758,39 @@ class Aero:
 		img.putalpha(alpha)
 		return img, 0
 
+	def _blit(self, t: _Tex, x: float, y: float, alpha: float = 1.0) -> None:
+		"""Draw a cached raster with its top-left (less its pad) at (x, y)."""
+		_mod(t.tex, 255, 255, 255, round(alpha * 255))
+		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
+
+	def _orb_body(self, x: int, y: int, d: int, hover: bool, hue: float | None) -> None:
+		"""The orb under its glyph: the gel, or Obsidian's lacquer faded in
+		over it. An explicit hue (the traffic lights) is never Obsidian."""
+		m = self.mono if hue is None else 0.0
+		if m < 1:
+			hq = round((self.acc if hue is None else hue) / 2) * 2
+			self._blit(self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover), 2), x, y)
+		if m > 0:
+			oq = round(self.oacc / 2) * 2
+			t = self._cached(("orb_obs", d, oq, hover), lambda: self._orb_image(d, oq, hover, obs=True), 2)
+			self._blit(t, x, y, min(1.0, m))
+
+	def _glyph_shadow(self, hue: float | None) -> ColourRGBA:
+		return to_colour(mix(rgba8(0, 30, 60, 0.6), rgba8(0, 0, 0, 0.6), self.mono if hue is None else 0.0))
+
 	def orb(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
 			pressed: bool = False, hue: float | None = None) -> None:
 		"""A gel orb centred on (cx, cy). `glyph` is an icon asset drawn white
 		under the cap, with the concept's 1px drop shadow."""
 		d = max(6, round(d))
-		H = self.acc if hue is None else hue
-		hq = round(H / 2) * 2
-		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover), 2)
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
-		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
+		self._orb_body(x, y, d, hover, hue)
 		if glyph is not None:
 			gx = round(cx - glyph.w / 2)
 			gy = round(cy - glyph.h / 2)
 			sh = max(1, round(self.gui.scale))
-			glyph.render(gx, gy + sh, ColourRGBA(0, 30, 60, 153))
+			glyph.render(gx, gy + sh, self._glyph_shadow(hue))
 			glyph.render(gx, gy, ColourRGBA(255, 255, 255, 255))
 		cap = self._cached(("cap", d, pressed), lambda: self._cap_image(d, pressed))
 		sdl3.render_texture(self.renderer, cap.tex, None, sdl3.FRect(x, y, d, d))
@@ -1447,18 +1799,15 @@ class Aero:
 			pressed: bool = False, hue: float | None = None) -> None:
 		"""Like orb(), but the glyph is drawn by a callback (colour) -> None."""
 		d = max(6, round(d))
-		H = self.acc if hue is None else hue
-		hq = round(H / 2) * 2
-		t = self._cached(("orb", d, hq, hover), lambda: self._orb_image(d, hq, hover), 2)
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
-		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
-		draw_glyph(max(1, round(self.gui.scale)), ColourRGBA(0, 30, 60, 153))
+		self._orb_body(x, y, d, hover, hue)
+		draw_glyph(max(1, round(self.gui.scale)), self._glyph_shadow(hue))
 		draw_glyph(0, ColourRGBA(255, 255, 255, 255))
 		cap = self._cached(("cap", d, pressed), lambda: self._cap_image(d, pressed))
 		sdl3.render_texture(self.renderer, cap.tex, None, sdl3.FRect(x, y, d, d))
 
-	def _bead_image(self, d: int, H: float) -> tuple[Image.Image, int]:
+	def _bead_image(self, d: int, H: float, obs: bool = False) -> tuple[Image.Image, int]:
 		sc = self.gui.scale
 		pad = math.ceil(9 * sc) + 2
 		N = d + pad * 2
@@ -1466,32 +1815,48 @@ class Aero:
 		c0 = pad
 		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
 		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+		shade = rgba8(0, 0, 0, 0.6) if obs else rgba8(0, 30, 60, 0.45)
 		drop = _outer_shadow(circle, 0, 2 * sc, 2.5 * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 30, 60, 0.45), drop))
+		canvas = Image.alpha_composite(canvas, _solid(size, shade, drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 30, 60, 0.45), outer))
+		canvas = Image.alpha_composite(canvas, _solid(size, shade, outer))
 		R = d * math.hypot(0.5, 0.7)
 		t = _radial_l(size, c0 + d * 0.5, c0 + d * 0.3, R, R)
 		# Solid all the way out: a see-through bead showed the tube's edge
 		# running through it. Same light, the translucent stops resolved
 		# over a pale glass tint instead of over whatever is behind
-		body = _map_stops(t, [
-			(0.0, (1, 1, 1, 1)), (0.18, (1, 1, 1, 1)), (0.40, rgba8(226, 238, 246)),
-			(0.70, hsl(H, 0.50, 0.72)), (1.0, hsl(H, 0.62, 0.40))])
+		if obs:
+			# Polished metal; the accent only in its lower glow
+			stops = [
+				(0.0, (1, 1, 1, 1)), (0.18, (1, 1, 1, 1)), (0.40, rgba8(231, 235, 240)),
+				(0.70, rgba8(169, 177, 187)), (1.0, rgba8(94, 102, 113))]
+			glow_c = hsl(H, 0.9, 0.72, 0.55)
+		else:
+			stops = [
+				(0.0, (1, 1, 1, 1)), (0.18, (1, 1, 1, 1)), (0.40, rgba8(226, 238, 246)),
+				(0.70, hsl(H, 0.50, 0.72)), (1.0, hsl(H, 0.62, 0.40))]
+			glow_c = hsl(H, 1.0, 0.85, 0.7)
+		body = _map_stops(t, stops)
 		body.putalpha(ImageChops.multiply(body.getchannel("A"), circle))
 		canvas = Image.alpha_composite(canvas, body)
 		ig = _inset_shadow(circle, 0, -2 * sc, 1.5 * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, hsl(H, 1.0, 0.85, 0.7), ig))
+		canvas = Image.alpha_composite(canvas, _solid(size, glow_c, ig))
 		return canvas, pad
 
 	def bead(self, cx: float, cy: float, d: float | None = None) -> None:
 		d = round(self.s(20) if d is None else d)
-		hq = round(self.acc / 2) * 2
-		t = self._cached(("bead", d, hq), lambda: self._bead_image(d, hq), 2)
-		sdl3.render_texture(self.renderer, t.tex, None,
-			sdl3.FRect(round(cx - d / 2) - t.pad, round(cy - d / 2) - t.pad, t.w, t.h))
+		x = round(cx - d / 2)
+		y = round(cy - d / 2)
+		m = self.mono
+		if m < 1:
+			hq = round(self.acc / 2) * 2
+			self._blit(self._cached(("bead", d, hq), lambda: self._bead_image(d, hq), 2), x, y)
+		if m > 0:
+			oq = round(self.oacc / 2) * 2
+			self._blit(self._cached(("bead_obs", d, oq), lambda: self._bead_image(d, oq, obs=True), 2), x, y, m)
 
-	def _led_image(self, d: int, on: bool) -> tuple[Image.Image, int]:
+	def _led_image(self, d: int, on: bool, H: float | None = None) -> tuple[Image.Image, int]:
+		"""Green when on, or lit in hue H (Obsidian's accent)."""
 		sc = self.gui.scale
 		pad = math.ceil(9 * sc) + 2
 		N = d + pad * 2
@@ -1501,10 +1866,14 @@ class Aero:
 		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
 		if on:
 			glow = circle.filter(ImageFilter.GaussianBlur(3 * sc))
-			canvas = Image.alpha_composite(canvas, _solid(size, rgba8(109, 255, 61, 1.0), glow))
+			glow_c = rgba8(109, 255, 61, 1.0) if H is None else hsl(H, 0.95, 0.60)
+			canvas = Image.alpha_composite(canvas, _solid(size, glow_c, glow))
 		R = d * math.hypot(0.6, 0.65)
 		t = _radial_l(size, c0 + d * 0.4, c0 + d * 0.35, R, R)
-		if on:
+		if on and H is not None:
+			stops = [(0.0, (1, 1, 1, 1)), (0.55, hsl(H, 0.9, 0.66)), (1.0, hsl(H, 0.8, 0.40))]
+			ring_c = rgba8(0, 0, 0, 0.25)
+		elif on:
 			stops = [(0.0, rgba8(234, 255, 216)), (0.55, rgba8(95, 224, 58)), (1.0, rgba8(43, 158, 18))]
 			ring_c = rgba8(0, 60, 0, 0.3)
 		else:
@@ -1519,9 +1888,15 @@ class Aero:
 
 	def led(self, cx: float, cy: float, on: bool) -> None:
 		d = max(4, round(self.s(7)))
-		t = self._cached(("led", d, on), lambda: self._led_image(d, on))
-		sdl3.render_texture(self.renderer, t.tex, None,
-			sdl3.FRect(round(cx - d / 2) - t.pad, round(cy - d / 2) - t.pad, t.w, t.h))
+		x = round(cx - d / 2)
+		y = round(cy - d / 2)
+		# Off, the LED is grey in both variants; on, Obsidian's accent replaces green
+		m = self.mono if on else 0.0
+		if m < 1:
+			self._blit(self._cached(("led", d, on), lambda: self._led_image(d, on)), x, y)
+		if m > 0:
+			oq = round(self.oacc / 2) * 2
+			self._blit(self._cached(("led_obs", d, oq), lambda: self._led_image(d, True, oq), 2), x, y, m)
 
 	def pill(self, rect, on: bool, hover: bool = False) -> float:
 		"""A mode toggle: glass pill with an LED. Returns the x after the LED."""
@@ -1749,12 +2124,16 @@ class Aero:
 		x, y, w, h = rect
 		r = self.s(5)
 		if kind == "close":
-			stops = [(0.0, rgba8(243, 160, 140)), (0.5, rgba8(223, 91, 63)), (0.51, rgba8(196, 58, 30)), (1.0, rgba8(226, 112, 79))]
+			# Red gel; Obsidian's is graphite, and only its hover glow is red
+			m = self.mono
+			dusk = (rgba8(243, 160, 140), rgba8(223, 91, 63), rgba8(196, 58, 30), rgba8(226, 112, 79))
+			obs = (rgba8(123, 130, 141), rgba8(77, 83, 92), rgba8(44, 48, 55), rgba8(65, 70, 78))
+			stops = [(p, mix(dusk[i], obs[i], m)) for i, p in enumerate((0.0, 0.5, 0.51, 1.0))]
 			if hover:
 				self.soft(rect, r, 6 * self.gui.scale, 0, rgba8(255, 90, 50, 0.7))
 			self.shape(rect, r, grad=vgrad(y, h, stops))
-			self.ring("top", rect, r, rgba8(255, 220, 210, 0.9))
-			self.ring("outer", rect, r, rgba8(110, 20, 0, 0.6))
+			self.ring("top", rect, r, mix(rgba8(255, 220, 210, 0.9), rgba8(255, 255, 255, 0.6), m))
+			self.ring("outer", rect, r, mix(rgba8(110, 20, 0, 0.6), rgba8(0, 0, 0, 0.7), m))
 		else:
 			stops = [(0.0, (1, 1, 1, 0.55)), (0.5, (1, 1, 1, 0.2)), (0.51, (1, 1, 1, 0.08)), (1.0, (1, 1, 1, 0.25))]
 			self.shape(rect, r, grad=vgrad(y, h, stops))
@@ -1781,10 +2160,10 @@ class Aero:
 		r = self.s(6) if r is None else r
 		if shadow == "large":
 			# 0 14px 28px -10px rgba(0,20,40,.65)
-			self.soft(rect, r, 14 * sc, -10 * sc, rgba8(0, 20, 40, 0.65), 0, 14 * sc)
+			self.soft(rect, r, 14 * sc, -10 * sc, mix(rgba8(0, 20, 40, 0.65), rgba8(0, 0, 0, 0.75), self.mono), 0, 14 * sc)
 		elif shadow == "small":
 			# 0 3px 8px -3px rgba(0,20,40,.5)
-			self.soft(rect, r, 4 * sc, -3 * sc, rgba8(0, 20, 40, 0.5), 0, 3 * sc)
+			self.soft(rect, r, 4 * sc, -3 * sc, mix(rgba8(0, 20, 40, 0.5), rgba8(0, 0, 0, 0.6), self.mono), 0, 3 * sc)
 		self.shape(rect, r, texture=tex, uv=lambda px, py: ((px - x) / w, (py - y) / h))
 		if reflect > 0:
 			gap = self.s(3)
@@ -1799,7 +2178,7 @@ class Aero:
 			g = Gradient(rect, 160, [(0.0, (1, 1, 1, 0.5)), (0.38, (1, 1, 1, 0.1)), (0.385, (1, 1, 1, 0.0)), (1.0, (1, 1, 1, 0.0))])
 			self.shape(rect, r, grad=g)
 		if ring:
-			self.ring("outer", rect, r, rgba8(0, 20, 40, 0.4))
+			self.ring("outer", rect, r, mix(rgba8(0, 20, 40, 0.4), rgba8(0, 0, 0, 0.5), self.mono))
 
 	def set_art_style(self, **style) -> None:
 		"""Ask for the next album art drawn through AlbumArt to be drawn with
@@ -1823,13 +2202,17 @@ class Aero:
 		r = self.s(6) if r is None else r
 		x, y, w, h = rect
 		g = self.s(3)
-		self.soft(rect, r, 6 * self.gui.scale, g, hsl(self.acc, 0.95, 0.55, 0.85))
-		self.ring("outer", (x - g + 1, y - g + 1, w + g * 2 - 2, h + g * 2 - 2), r + g, hsl(self.acc, 0.9, 0.72, 0.9))
+		H = _hue_lerp(self.acc, self.oacc, self.mono)
+		self.soft(rect, r, 6 * self.gui.scale, g, hsl(H, 0.95, 0.55, 0.85))
+		self.ring("outer", (x - g + 1, y - g + 1, w + g * 2 - 2, h + g * 2 - 2), r + g, hsl(H, 0.9, 0.72, 0.9))
 
 	def art_placeholder(self, rect, r: float | None = None) -> None:
 		r = self.s(6) if r is None else r
 		x, y, w, h = rect
-		self.shape(rect, r, grad=vgrad(y, h, [(0.0, hsl(self.h1, 0.4, 0.22)), (1.0, hsl(self.h2, 0.4, 0.14))]))
+		m = self.mono
+		top = mix(hsl(self.h1, 0.4, 0.22), rgba8(42, 46, 52), m)
+		bottom = mix(hsl(self.h2, 0.4, 0.14), rgba8(22, 24, 28), m)
+		self.shape(rect, r, grad=vgrad(y, h, [(0.0, top), (1.0, bottom)]))
 		self.ring("outer", rect, r, rgba8(0, 20, 40, 0.4))
 
 	# -- spectrum -----------------------------------------------------------------------------------
@@ -1894,6 +2277,12 @@ class Aero:
 		gap = self.s(3)
 		bw = (w - gap * (n - 1)) / n
 		H = self.acc if hue is None else hue
+		# Obsidian (only while the skin is on): silver bars, accent caps
+		m = self.mono if self.active else 0.0
+		bar_top = hsl(H, 0.90 * (1 - m), 0.62 + 0.22 * m, 0.95)
+		bar_bottom = hsl(H, 0.85 * (1 - m), 0.30 + 0.14 * m, 0.55)
+		cap_glow = mix(hsl(H, 1.0, 0.60, 0.9), hsl(self.oacc, 1.0, 0.60, 0.9), m)
+		cap = mix(hsl(H, 1.0, 0.80), hsl(self.oacc, 1.0, 0.78), m)
 		k = 1 - math.exp(-dt * 13)   # .35 per frame at 30fps
 		decay = 0.012 * 30 * dt
 		for i in range(n):
@@ -1905,7 +2294,7 @@ class Aero:
 			bh = max(self.s(2), v * reach)
 			bx = x + i * (bw + gap)
 			by = y + h - bh
-			g = vgrad(by, bh, [(0.0, hsl(H, 0.90, 0.62, 0.95)), (1.0, hsl(H, 0.85, 0.30, 0.55))])
+			g = vgrad(by, bh, [(0.0, bar_top), (1.0, bar_bottom)])
 			rr = min(self.s(2), bw / 2, bh / 2)
 			self.shape((bx, by, bw, bh), (rr, rr, 0, 0), grad=g)
 			sw = max(1.0, bw * 0.35)
@@ -1913,8 +2302,8 @@ class Aero:
 				self.shape((bx + 1, by + 1, sw, bh - 2), 0, (1, 1, 1, 0.38))
 			py = y + h - self.spec_peaks[i] * reach - self.s(4)
 			ch = max(1.0, self.s(2))
-			self.soft((bx, py, bw, ch), 0, 3 * sc, 0, hsl(H, 1.0, 0.60, 0.9))
-			self.shape((bx, py, bw, ch), 0, hsl(H, 1.0, 0.80))
+			self.soft((bx, py, bw, ch), 0, 3 * sc, 0, cap_glow)
+			self.shape((bx, py, bw, ch), 0, cap)
 		if live or any(p > 0.005 for p in self.spec_peaks):
 			self.schedule(1 / self.FPS)
 
@@ -1946,8 +2335,9 @@ class Aero:
 		# 10px track with a 2px clear border: a 6px pill
 		inset = self.s(2)
 		r = (w - inset * 2) / 2
-		self.shape((x + inset, y + inset, w - inset * 2, h - inset * 2), r,
-			hsl(self.acc, 0.70, 0.55, 0.75 if hover else 0.55))
+		self.shape((x + inset, y + inset, w - inset * 2, h - inset * 2), r, mix(
+			hsl(self.acc, 0.70, 0.55, 0.75 if hover else 0.55),
+			rgba8(225, 232, 242, 0.55 if hover else 0.38), self.mono))
 
 	# -- layout -------------------------------------------------------------------------------------
 
@@ -1986,6 +2376,14 @@ class Aero:
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
 		by = self.gui.panelBY
 		return (e, wh - by + g, ww - e * 2, by - g - e)
+
+	def side_split_centre(self) -> float:
+		"""The middle of the gutter between the side panel and the tracklist
+		(rsp_split_x is the side panel's own edge, so the gap is all on one
+		side of it)."""
+		gui = self.gui
+		half = self.gutter() / 2
+		return gui.rsp_split_x + half if gui.rsp_on_left else gui.rsp_split_x - half
 
 	def preset_rects(self) -> list[tuple[tuple[int, int, int, int], bool, float | None]]:
 		"""(rect, tall, sheen) for every glass panel of the standard layout."""
@@ -2092,6 +2490,8 @@ class AqualineBar:
 	PLAY_D = 49
 	SIDE_D = 31
 	PLAY_LIFT = 4
+	# The whole transport sits this much below the panel's centre line
+	TRANSPORT_DROP = 3
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -2142,9 +2542,10 @@ class AqualineBar:
 		# -- transport ---------------------------------------------------------
 		x = pad_x
 		down = inp.mouse_down
+		orb_mid = mid + self._s(self.TRANSPORT_DROP) * k
 
 		def orb_button(cx: float, d: float, glyph, tip: str) -> tuple[bool, tuple]:
-			rect = (round(cx - d / 2), round(mid - d / 2), round(d), round(d))
+			rect = (round(cx - d / 2), round(orb_mid - d / 2), round(d), round(d))
 			tauon.fields.add(rect)
 			over = tauon.coll(rect)
 			if over:
@@ -2159,11 +2560,11 @@ class AqualineBar:
 			tauon.toggle_repeat()
 			tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
 			inp.right_click = False
-		aero.orb(cx, mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
+		aero.orb(cx, orb_mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
 		x += side_d + self._s(10)
 
 		cx = x + play_d / 2
-		play_mid = mid - self._s(self.PLAY_LIFT) * k   # the concept lifts the play orb a little
+		play_mid = orb_mid - self._s(self.PLAY_LIFT) * k   # the concept lifts the play orb a little
 		rect = (round(cx - play_d / 2), round(play_mid - play_d / 2), round(play_d), round(play_d))
 		tauon.fields.add(rect)
 		over = tauon.coll(rect)
@@ -2191,7 +2592,7 @@ class AqualineBar:
 			tauon.toggle_random()
 			tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
 			inp.right_click = False
-		aero.orb(cx, mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
+		aero.orb(cx, orb_mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
 		x += side_d
 
 		# -- right: mode pills, volume, menu ------------------------------------

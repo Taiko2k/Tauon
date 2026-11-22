@@ -23216,6 +23216,11 @@ class Tauon:
 		self.gui.request_frame()
 		return None
 
+	def set_aero_variant(self, variant: int) -> None:
+		"""Aqualine's palette: auto, Dusk or Obsidian. The skin eases across."""
+		self.prefs.aero_variant = variant
+		self.gui.request_frame()
+
 	def toggle_aero_see_through(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.aero_see_through)
@@ -35371,6 +35376,16 @@ class Over:
 		)
 
 		if prefs.aero:
+			variant = prefs.aero_variant
+			rows.choices(
+				_("Palette"),
+				(
+					(_("Auto"), variant == 0, lambda: tauon.set_aero_variant(0)),
+					(_("Dusk"), variant == 1, lambda: tauon.set_aero_variant(1)),
+					(_("Obsidian"), variant == 2, lambda: tauon.set_aero_variant(2)),
+				),
+				hint=_("Auto uses Obsidian for dark, colourless album art"),
+			)
 			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
 			rows.switch(tauon.toggle_aero_see_through, _("Show desktop between panels"))
 			return
@@ -57942,6 +57957,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("transparent-style", prefs.transparent_mode)
 	cf.update_value("aqualine-style", prefs.aero)
 	cf.update_value("aqualine-motion", prefs.aero_motion)
+	cf.update_value("aqualine-variant", prefs.aero_variant)
 	cf.update_value("aqualine-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
@@ -58292,6 +58308,9 @@ def load_prefs(bag: Bag) -> None:
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
 	prefs.aero = cf.sync_add("bool", "aqualine-style", prefs.aero, "Aqualine glass-and-gel skin")
 	prefs.aero_motion = cf.sync_add("bool", "aqualine-motion", prefs.aero_motion, "Animate the Aqualine sky")
+	prefs.aero_variant = cf.sync_add(
+		"int", "aqualine-variant", prefs.aero_variant,
+		"0=auto (Obsidian for dark, colourless art), 1=always Dusk, 2=always Obsidian")
 	prefs.aero_see_through = cf.sync_add(
 		"bool", "aqualine-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqualine's panels")
 	prefs.side_panel_spectrum = cf.sync_add(
@@ -67346,6 +67365,9 @@ def main(holder: Holder) -> None:
 					side_drag_x = gui.rsp_split_x + 4 * gui.scale
 					if prefs.scroll_enable:
 						side_drag_x = gui.rsp_split_x - 1 * gui.scale
+				if prefs.aero and not gui.custom_mode:
+					# Aqualine: centred on the visible gap between the panels
+					side_drag_x = tauon.aero.side_split_centre() - 6 * gui.scale
 				rect = (
 					side_drag_x,
 					gui.panelY,
@@ -68023,6 +68045,8 @@ def main(holder: Holder) -> None:
 							sep_x = gui.rsp_split_x + 1 * gui.scale
 							if gui.rsp_on_left or prefs.scroll_enable:
 								sep_x = gui.rsp_split_x - 1 * gui.scale
+							if prefs.aero:
+								sep_x = round(tauon.aero.side_split_centre())
 							ddt.line(
 								sep_x,
 								gui.panelY + 1 * gui.scale,
