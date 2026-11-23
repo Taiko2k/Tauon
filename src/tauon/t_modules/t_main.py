@@ -134,7 +134,7 @@ from tauon.t_modules.t_db_state import (  # noqa: E402
 	state_save,
 	validate_and_repair_database,
 )
-from tauon.t_modules.t_aero import Aero, AqualineBar  # noqa: E402
+from tauon.t_modules.t_aero import Aero, AquaBar  # noqa: E402
 from tauon.t_modules.t_custom import (  # noqa: E402
 	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
@@ -792,12 +792,12 @@ class GuiVar:
 		if prefs.feux_panel:
 			height = round(FeuxBar.PANEL_H * self.scale)
 		elif prefs.aero and not prefs.shuffle_lock:
-			# Aqualine's compact panel is the concept's bar, a little taller
-			height = round(AqualineBar.PANEL_H * self.scale)
+			# Aqua's compact panel is the concept's bar, a little taller
+			height = round(AquaBar.PANEL_H * self.scale)
 		else:
 			height = round(51 * self.scale)
 		if prefs.aero:
-			# Aqualine floats the bar on the sky: a gutter above, the edge gap below
+			# Aqua floats the bar on the sky: a gutter above, the edge gap below
 			height += round(Aero.GUTTER * self.scale) + round(Aero.edge_gap_logical(prefs) * self.scale)
 		return height
 
@@ -1217,9 +1217,9 @@ class GuiVar:
 		# or replacing their region's pixels
 		self.have_art_bg: bool = False
 		# True while panels sit on a drawn backdrop (art background or the
-		# Aqualine sky): they blend over it instead of clearing their region
+		# Aqua sky): they blend over it instead of clearing their region
 		self.backdrop: bool = False
-		# Glass spectrum (Aqualine side panel / Custom Layout widget)
+		# Glass spectrum (Aqua side panel / Custom Layout widget)
 		self.glass_spec_wanted: bool = False
 		self.glass_spec_in_widget: bool = False
 		self.glass_spec: list[float] = []
@@ -6805,7 +6805,7 @@ class Menu:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def glass(self) -> bool:
-		"""Aqualine draws menus on glass instead of the theme's flat fill."""
+		"""Aqua draws menus on glass instead of the theme's flat fill."""
 		return self.tauon.aero.active
 
 	def glass_hover(self, rect: tuple[float, float, float, float]) -> None:
@@ -7560,7 +7560,7 @@ class Menu:
 		A menu opens down-right from the anchor (or upward for a
 		bottom-anchored menu). If the main column would extend past the window
 		there, it pops out into its own popup window instead of being
-		flipped/shifted to fit inside - except on Aqualine's glass, where a
+		flipped/shifted to fit inside - except on Aqua's glass, where a
 		menu that fits in the window is flipped or slid into it so it stays
 		see-through. Judged by the main column only: an inline submenu that
 		would overflow flips left / clamps up at render time.
@@ -8571,7 +8571,7 @@ class Tauon:
 		self.radio_view:                           RadioView = RadioView(tauon=self)
 		self.view_box:                               ViewBox = ViewBox(tauon=self)
 		self.custom:                            CustomLayout = CustomLayout(tauon=self)
-		# The easter egg scenes: the Dream Room, and the Aero world for Aqualine
+		# The easter egg scenes: the Dream Room, and the Aero world for Aqua
 		self.dream_room:                              Dreams = Dreams(tauon=self)
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
@@ -9300,7 +9300,7 @@ class Tauon:
 		re_width = round(30 * gui.scale)
 		last_width = 0
 		if self.aero.active and gui.mode == GuiMode.MAIN and not macstyle:
-			# Aqualine's capsules: a 40px close and 28px others, 4px apart
+			# Aqua's capsules: a 40px close and 28px others, 4px apart
 			x_width = round(44 * gui.scale)
 			ma_width = mi_width = re_width = round(32 * gui.scale)
 
@@ -9316,7 +9316,7 @@ class Tauon:
 		)
 		mac_inactive = ColourRGBA(mac_inactive.r, mac_inactive.g, mac_inactive.b, 255)
 
-		# Aqualine draws the buttons as gel: traffic lights as small orbs,
+		# Aqua draws the buttons as gel: traffic lights as small orbs,
 		# the others as glass capsules with a red gel close
 		aero = self.aero if self.aero.active and gui.mode == GuiMode.MAIN else None
 
@@ -9328,7 +9328,7 @@ class Tauon:
 			aero.mac_light(x + d / 2, y + self.gui.mac_circle.h / 2, d, (colour.r, colour.g, colour.b), False)
 
 		def icon(asset, rect: tuple, colour: ColourRGBA, dx: float, dy: float) -> None:
-			# Centred in Aqualine's capsule; the usual offsets otherwise
+			# Centred in Aqua's capsule; the usual offsets otherwise
 			if aero is not None:
 				asset.render(round(rect[0] + (rect[2] - asset.w) / 2), round(rect[1] + (rect[3] - asset.h) / 2), colour)
 			else:
@@ -9553,7 +9553,7 @@ class Tauon:
 
 		colour = colours.window_frame
 		if self.aero.see_through:
-			# Aqualine with clear gaps: there is no window edge to frame
+			# Aqua with clear gaps: there is no window edge to frame
 			return
 
 		# When corners are rounded, stop the straight edges short so the
@@ -9652,7 +9652,7 @@ class Tauon:
 		small texture copies, the textures themselves are cached.
 		"""
 		radius = self.corner_round_radius()
-		# Aqualine with clear gaps: the corners are already empty, and the
+		# Aqua with clear gaps: the corners are already empty, and the
 		# frame arcs would float on the desktop
 		if not radius or self.aero.see_through:
 			return
@@ -17359,7 +17359,7 @@ class Tauon:
 			colours.apply_transparency(
 				darkness=prefs.transparency_tracklist_darkness,
 				intensity=prefs.transparency_intensity)
-		# Aqualine: see-through panels and its own text palette
+		# Aqua: see-through panels and its own text palette
 		if prefs.aero:
 			self.aero.apply_colours(colours)
 
@@ -17380,7 +17380,7 @@ class Tauon:
 		if prefs.aero and gui.mode == GuiMode.MAIN:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
-				# Aqualine floats the top bar on the sky: edge gap, glass, gutter
+				# Aqua floats the top bar on the sky: edge gap, glass, gutter
 				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter()
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
 				gui.playlist_top_bk = gui.playlist_top
@@ -17512,7 +17512,7 @@ class Tauon:
 						offset += 20
 					offset = round(offset * gui.scale)
 				elif prefs.aero:
-					# Aqualine's capsules (8px margin, 44px close, 32px others)
+					# Aqua's capsules (8px margin, 44px close, 32px others)
 					# and a clear gap before the visualiser (14px with its own 10)
 					offset = 8 + 44 + 4
 					if self.draw_min_button:
@@ -17545,7 +17545,7 @@ class Tauon:
 
 			if prefs.aero and not gui.custom_mode:
 				# The gallery's top margin is measured from the window top, sized
-				# for the usual 30px top bar; Aqualine's floating bar is taller
+				# for the usual 30px top bar; Aqua's floating bar is taller
 				gui.album_v_slide_value += gui.panelY - round(30 * gui.scale)
 
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
@@ -17664,7 +17664,7 @@ class Tauon:
 				gui.plw -= gui.rspw
 
 			if prefs.aero and not gui.custom_mode:
-				# Aqualine: a gutter between the panels, a smaller gap at the window edges
+				# Aqua: a gutter between the panels, a smaller gap at the window edges
 				g = self.aero.gutter()
 				e = self.aero.edge_gap()
 				x = e
@@ -17712,7 +17712,7 @@ class Tauon:
 
 			# Only nudge for the left panel when the tracklist actually borders it.
 			# With the side panel on the left, the tracklist borders that instead.
-			# (Aqualine's gutters separate the panels, so it keeps the full inset
+			# (Aqua's gutters separate the panels, so it keeps the full inset
 			# and the selection capsule keeps the same margin in every layout.)
 			if gui.lsp and not gui.rsp_on_left and not prefs.aero:
 				inset_left -= 10 * gui.scale
@@ -22270,6 +22270,9 @@ class Tauon:
 		if True or style == 1:
 			# if not gui.rsp and not gui.combo_mode:
 			#     width -= 10 * gui.scale
+			if self.aero.active and not self.gui.custom_mode:
+				# Keep the duration clear of the gel's rounded end
+				width -= round(2 * self.gui.scale)
 
 			dash = False
 			if n_track.artist and self.colours.artist_text == self.colours.title_text:
@@ -23236,19 +23239,19 @@ class Tauon:
 		return None
 
 	def _set_aero(self, on: bool) -> None:
-		"""Switch the Aqualine skin (t_aero) on or off."""
+		"""Switch the Aqua skin (t_aero) on or off."""
 		if bool(self.prefs.aero) == on:
 			return
 		self.prefs.aero = on
 		# The standard layout's bottom panel gains (or loses) its gutters
 		self.gui.panelBY = self.gui.bottom_panel_height()
-		# Theme reload restores the theme's own colours, or applies Aqualine's
+		# Theme reload restores the theme's own colours, or applies Aqua's
 		self.gui.reload_theme = True
 		self.gui.update_layout = True
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 
-	def set_bg_style_aqualine(self, mode: int = 0) -> bool | None:
+	def set_bg_style_aqua(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.aero)
 		self._clear_background_style()
@@ -23266,7 +23269,7 @@ class Tauon:
 		return None
 
 	def set_aero_variant(self, variant: int) -> None:
-		"""Aqualine's palette: auto, Dusk or Obsidian. The skin eases across."""
+		"""Aqua's palette: auto, Dusk or Obsidian. The skin eases across."""
 		self.prefs.aero_variant = variant
 		self.gui.request_frame()
 
@@ -34517,9 +34520,9 @@ class Over:
 			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
 			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
-			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic aqualine aero frutiger glass gel glossy skeuomorphic sky",
-			_("Ambient motion"): "aqualine animation animate sky motion drift bokeh",
-			_("Show desktop between panels"): "aqualine transparent see through gaps desktop floating panels",
+			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic aqua aero frutiger glass gel glossy skeuomorphic sky",
+			_("Ambient motion"): "aqua animation animate sky motion drift bokeh",
+			_("Show desktop between panels"): "aqua transparent see through gaps desktop floating panels",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35420,7 +35423,7 @@ class Over:
 				(_("Artist"), tauon.set_art_bg_artist(1), tauon.set_art_bg_artist),
 				(_("Frost lo"), tauon.set_art_bg_frosted_low(1), tauon.set_art_bg_frosted_low),
 				(_("Frost hi"), tauon.set_art_bg_frosted_high(1), tauon.set_art_bg_frosted_high),
-				(_("Aqualine"), tauon.set_bg_style_aqualine(1), tauon.set_bg_style_aqualine),
+				(_("Aqua"), tauon.set_bg_style_aqua(1), tauon.set_bg_style_aqua),
 			),
 		)
 
@@ -36222,7 +36225,7 @@ class Over:
 		bg = self.ddt.text_background_colour
 		self.app_icon.render(rect[0] + rows.pad, rect[1] + round(10 * s))
 		# Easter egg: the icon opens the Dream Room, or the Aero world while the
-		# Aqualine skin is on (no pointer cursor on purpose)
+		# Aqua skin is on (no pointer cursor on purpose)
 		icon_rect = (rect[0] + rows.pad, rect[1] + round(10 * s), round(self.app_icon.w), round(self.app_icon.h))
 		if self.click and self.coll(icon_rect):
 			self.inp.global_clicked = True
@@ -42447,7 +42450,7 @@ class StandardPlaylist:
 
 			# Draw playing highlight
 			if aero is not None:
-				# Aqualine: a gel row for the playing track, a glass pill for
+				# Aqua: a gel row for the playing track, a glass pill for
 				# the selection (no hover highlight)
 				row = aero.row_rect(track_box)
 				if playing:
@@ -42488,7 +42491,7 @@ class StandardPlaylist:
 			if not gui.set_mode:
 				left_trim = round(9 * gui.scale) if gui.custom_mode and not tauon.aero.active else 0
 				if tauon.aero.active:
-					# Aqualine: the number sits 12px in from the capsule's edge
+					# Aqua: the number sits 12px in from the capsule's edge
 					left_trim = round(3 * gui.scale)
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
@@ -42922,7 +42925,7 @@ class StandardPlaylist:
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		if self.tauon.aero.active:
-			# Aqualine's playing-row gel sits under the row's text
+			# Aqua's playing-row gel sits under the row's text
 			self.tauon.aero.draw_tracklist_under((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
@@ -43033,7 +43036,7 @@ class ArtBox:
 		if inset:  # The Custom Layout Art Box passes inset=False (its gutter spaces it)
 			pad = 17 * gui.scale  # Inset the square a bit
 			if reflect and tauon.aero.active:
-				# Aqualine's side panel: the concept's 20px of glass around the art
+				# Aqua's side panel: the concept's 20px of glass around the art
 				pad = tauon.aero.side_art_inset()
 			box_w -= pad
 			box_h -= pad
@@ -43052,7 +43055,7 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-			# Aqualine: rounded, glossed art with a drop shadow (and, in the
+			# Aqua: rounded, glossed art with a drop shadow (and, in the
 			# side panel, its reflection)
 			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect)
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
@@ -45346,6 +45349,8 @@ class AddMusicBox:
 		self._text = ColourRGBA(255, 255, 255, 255)
 		self._accent = ColourRGBA(255, 255, 255, 255)
 		self._line_px = 1
+		# Drawn on Aqua's glass
+		self._glass = False
 
 		self.page: Literal["main", "servers", "server", "picker"] = "main"
 		self._servers: list[RemoteServer] | None = None
@@ -45729,18 +45734,30 @@ class AddMusicBox:
 		s = self.gui.scale
 		bg = self._bg
 		hover = self.coll(rect)
-		if primary:
-			fill = alpha_blend(alpha_mod(self._accent, 60 if hover else 40), bg)
-			border = alpha_blend(alpha_mod(self._accent, 170), bg)
-		elif hover:
-			fill = self.colours.menu_highlight_background
-			border = self._mix(90)
-		else:
+		if self._glass:
+			# The first option is a gel in the accent, the rest glass
+			aero = self.tauon.aero
+			if primary:
+				aero.gel(rect, round(8 * s), glow=hover)
+			else:
+				aero.tile(rect, round(8 * s), hover)
 			fill = bg
-			border = self._mix(60)
-		self.ddt.bordered_rect(rect, fill, border, self._line_px)
+		else:
+			if primary:
+				fill = alpha_blend(alpha_mod(self._accent, 60 if hover else 40), bg)
+				border = alpha_blend(alpha_mod(self._accent, 170), bg)
+			elif hover:
+				fill = self.colours.menu_highlight_background
+				border = self._mix(90)
+			else:
+				fill = bg
+				border = self._mix(60)
+			self.ddt.bordered_rect(rect, fill, border, self._line_px)
 		top = y + (round(28 * s) if status is None else round(24 * s))
-		icon = self._accent if primary else self._mix(110 if dim else 170, fill)
+		if primary:
+			icon = self._text if self._glass else self._accent
+		else:
+			icon = self._mix(110 if dim else 170, fill)
 		painter(x + w // 2, top, icon)
 		if primary or hover:
 			text_colour = readable_text_colour(self._text, fill)
@@ -45751,7 +45768,7 @@ class AddMusicBox:
 			self.ddt.text(
 				(x + w // 2, top + round(34 * s), 2), status[0], readable_text_colour(status[1], fill), 11,
 				bg=fill, max_w=w - round(12 * s))
-		if primary:
+		if primary and not self._glass:
 			self.ddt.rect((x, y + h - round(2 * s), w, round(2 * s)), self._accent)
 		self.fields.add(rect)
 		return hover and self.click
@@ -45786,7 +45803,11 @@ class AddMusicBox:
 		hit = (left - round(8 * s), y - round(6 * s), title_x - left + title_w + round(16 * s), round(28 * s))
 		hover = self.coll(hit)
 		if hover:
-			self.ddt.rect((left - round(6 * s), mid - round(12 * s), icon.w + round(12 * s), round(24 * s)), self.colours.menu_highlight_background)
+			back = (left - round(6 * s), mid - round(12 * s), icon.w + round(12 * s), round(24 * s))
+			if self._glass:
+				self.tauon.aero.selection(back, round(6 * s))
+			else:
+				self.ddt.rect(back, self.colours.menu_highlight_background)
 		colour = readable_text_colour(self._text if hover else self._mix(170), bg)
 		icon.render(left, mid - icon.h // 2, colour)
 		self.ddt.text((title_x, y), title, readable_text_colour(self._text, bg), 215, bg=bg, max_w=inner - (title_x - left))
@@ -45839,8 +45860,12 @@ class AddMusicBox:
 				w = ddt.get_text_w(retry, 12) + round(24 * s)
 				button = (left + (inner - w) // 2, cy + round(4 * s), w, round(24 * s))
 				hover = self.coll(button)
-				fill = self.colours.menu_highlight_background if hover else bg
-				ddt.bordered_rect(button, fill, self._mix(90), self._line_px)
+				if self._glass:
+					fill = bg
+					self.tauon.aero.button(button, hover)
+				else:
+					fill = self.colours.menu_highlight_background if hover else bg
+					ddt.bordered_rect(button, fill, self._mix(90), self._line_px)
 				ddt.text((button[0] + w // 2, button[1] + round(4 * s), 2), retry, self._ink(220, fill), 12, bg=fill)
 				self.fields.add(button)
 				if hover and self.click:
@@ -45857,7 +45882,10 @@ class AddMusicBox:
 				if self._filter_box is None:
 					self._filter_box = TextBox2(self.tauon)
 				box = (left, yy, inner, field_h)
-				ddt.bordered_rect(box, bg, self._mix(90), self._line_px)
+				if self._glass:
+					self.tauon.aero.sunken(box, round(6 * s))
+				else:
+					ddt.bordered_rect(box, bg, self._mix(90), self._line_px)
 				text_x = left + round(10 * s)
 				if not self._filter_box.text:
 					ddt.text((text_x, yy + round(6 * s)), _("Filter"), self._ink(110), 13, bg=bg)
@@ -45875,7 +45903,10 @@ class AddMusicBox:
 			return yy - y + list_h
 
 		list_rect = (left, yy, inner, list_h)
-		ddt.bordered_rect(list_rect, bg, self._mix(45), self._line_px)
+		if self._glass:
+			self.tauon.aero.sunken(list_rect, round(8 * s))
+		else:
+			ddt.bordered_rect(list_rect, bg, self._mix(45), self._line_px)
 		if not items:
 			ddt.text((left + inner // 2, yy + round(7 * s), 2), _("No matches"), self._ink(150), 13, bg=bg)
 			return yy - y + list_h
@@ -45896,9 +45927,15 @@ class AddMusicBox:
 		for i, item in enumerate(items[first:first + shown]):
 			row = (left + self._line_px, yy + i * row_h, inner - self._line_px * 2, row_h)
 			hover = self.coll(row)
-			fill = self.colours.menu_highlight_background if hover else bg
-			if hover:
-				ddt.rect(row, fill)
+			if self._glass:
+				fill = bg
+				if hover:
+					self.tauon.aero.selection(
+						(row[0] + round(3 * s), row[1] + round(2 * s), row[2] - round(6 * s), row[3] - round(4 * s)), round(6 * s))
+			else:
+				fill = self.colours.menu_highlight_background if hover else bg
+				if hover:
+					ddt.rect(row, fill)
 			if i:
 				ddt.rect((row[0], row[1], row[2], self._line_px), self._mix(30))
 			text_y = row[1] + round(7 * s)
@@ -45948,9 +45985,16 @@ class AddMusicBox:
 		gui = self.gui
 		s = gui.scale
 		colours = self.colours
-		self._bg = bg = colours.menu_background
-		self._text = colours.menu_text
-		self._accent = colours.toggle_box_on
+		self._glass = glass = self.tauon.aero.active
+		if glass:
+			aero = self.tauon.aero
+			self._bg = bg = aero.menu_bg()
+			self._text = aero.colour("TEXT")
+			self._accent = aero.accent_colour()
+		else:
+			self._bg = bg = colours.menu_background
+			self._text = colours.menu_text
+			self._accent = colours.toggle_box_on
 		self._line_px = max(1, round(s))
 
 		pad = round(18 * s)
@@ -45984,8 +46028,11 @@ class AddMusicBox:
 		y = (self.window_size[1] - h) // 2
 		self.rect = (x, y, w, h)
 
-		border = rgb_add_hls(bg, 0, -0.12, -0.1) if Menu.background_is_light(bg) else rgb_add_hls(bg, 0, 0.1, 0)
-		self.ddt.bordered_rect(self.rect, bg, border, self._line_px)
+		if glass:
+			aero.menu_glass(self.rect, dialog=True)
+		else:
+			border = rgb_add_hls(bg, 0, -0.12, -0.1) if Menu.background_is_light(bg) else rgb_add_hls(bg, 0, 0.1, 0)
+			self.ddt.bordered_rect(self.rect, bg, border, self._line_px)
 		self.ddt.text_background_colour = bg
 		self.fields.add(self.rect)
 
@@ -47038,7 +47085,7 @@ class PlaylistBox:
 
 			# Draw highlight
 			if tauon.aero.active:
-				# Aqualine: a glass pill for the open playlist, a faint one for a drop target
+				# Aqua: a glass pill for the open playlist, a faint one for a drop target
 				aero = tauon.aero
 				row_rect = aero.row_rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h - 1))
 				if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
@@ -58010,10 +58057,10 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("tracklist-y-text-offset", prefs.tracklist_y_text_offset)
 	cf.update_value("theme-name", prefs.theme_name)
 	cf.update_value("transparent-style", prefs.transparent_mode)
-	cf.update_value("aqualine-style", prefs.aero)
-	cf.update_value("aqualine-motion", prefs.aero_motion)
-	cf.update_value("aqualine-variant", prefs.aero_variant)
-	cf.update_value("aqualine-see-through", prefs.aero_see_through)
+	cf.update_value("aqua-style", prefs.aero)
+	cf.update_value("aqua-motion", prefs.aero_motion)
+	cf.update_value("aqua-variant", prefs.aero_variant)
+	cf.update_value("aqua-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
 	cf.update_value("transparency-intensity", prefs.transparency_intensity)
@@ -58361,13 +58408,16 @@ def load_prefs(bag: Bag) -> None:
 
 	prefs.theme_name = cf.sync_add("string", "theme-name", prefs.theme_name)
 	prefs.transparent_mode = cf.sync_add("int", "transparent-style", prefs.transparent_mode, "0=off(default), 1=glass mode")
-	prefs.aero = cf.sync_add("bool", "aqualine-style", prefs.aero, "Aqualine glass-and-gel skin")
-	prefs.aero_motion = cf.sync_add("bool", "aqualine-motion", prefs.aero_motion, "Animate the Aqualine sky")
+	# The skin was called Aqualine: carry its settings over to the new keys
+	if not any(row.lstrip().startswith("aqua-") for row in cf.old):
+		cf.old = [row.replace("aqualine-", "aqua-", 1) if row.lstrip().startswith("aqualine-") else row for row in cf.old]
+	prefs.aero = cf.sync_add("bool", "aqua-style", prefs.aero, "Aqua glass-and-gel skin")
+	prefs.aero_motion = cf.sync_add("bool", "aqua-motion", prefs.aero_motion, "Animate the Aqua sky")
 	prefs.aero_variant = cf.sync_add(
-		"int", "aqualine-variant", prefs.aero_variant,
+		"int", "aqua-variant", prefs.aero_variant,
 		"0=auto (Obsidian for dark, colourless art), 1=always Dusk, 2=always Obsidian")
 	prefs.aero_see_through = cf.sync_add(
-		"bool", "aqualine-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqualine's panels")
+		"bool", "aqua-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqua's panels")
 	prefs.side_panel_spectrum = cf.sync_add(
 		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(
@@ -64996,7 +65046,7 @@ def main(holder: Holder) -> None:
 					tauon.coll((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl)) and inp.mouse_position[0] != 0
 				) or scroll_hold
 				if tauon.aero.active:
-					# Aqualine: a slim accent pill, no track (10px wide, 2px clear border)
+					# Aqua: a slim accent pill, no track (10px wide, 2px clear border)
 					bar_w = round(10 * gui.scale)
 					bx = x + width - bar_w if not prefs.tracklist_scrollbar_left else x + 1
 					tauon.aero.scroll_thumb((bx, sbp, bar_w, sbl), thumb_hover)
@@ -67314,7 +67364,7 @@ def main(holder: Holder) -> None:
 			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN and not aero_on
 			gui.backdrop = gui.have_art_bg or aero_on
 			if aero_on:
-				# Aqualine: the sky, then the standard layout's glass panels
+				# Aqua: the sky, then the standard layout's glass panels
 				# (custom mode lays its own down in custom.render())
 				tauon.aero.begin_frame()
 				if not gui.custom_mode:
@@ -67421,7 +67471,7 @@ def main(holder: Holder) -> None:
 					if prefs.scroll_enable:
 						side_drag_x = gui.rsp_split_x - 1 * gui.scale
 				if prefs.aero and not gui.custom_mode:
-					# Aqualine: centred on the visible gap between the panels
+					# Aqua: centred on the visible gap between the panels
 					side_drag_x = tauon.aero.side_split_centre() - 6 * gui.scale
 				rect = (
 					side_drag_x,
@@ -67922,7 +67972,7 @@ def main(holder: Holder) -> None:
 							boxw = gui.rspw
 							available_h = max(0, window_size[1] - gui.panelY - gui.panelBY)
 							boxh = min(gui.rspw, available_h)
-							# Aqualine mirrors the art below itself; the text moves
+							# Aqua mirrors the art below itself; the text moves
 							# down to make room. The glass spectrum takes the bottom.
 							refl = tauon.aero.side_art_text_gap() if tauon.aero.active and prefs.show_side_art else 0
 							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum else 0
@@ -70478,7 +70528,7 @@ def main(holder: Holder) -> None:
 				if not prefs.power_save or window_is_focused(tauon.t_window):
 					gui.request_frame()
 			elif tauon.aero.active:
-				# Aqualine's seek tube moves continuously; its frames come
+				# Aqua's seek tube moves continuously; its frames come
 				# from the tube itself
 				tauon.bottom_bar1.seek_time = pctl.playing_time
 

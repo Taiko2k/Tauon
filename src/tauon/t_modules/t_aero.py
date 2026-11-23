@@ -1,12 +1,12 @@
 # Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
 
-"""Aqualine: an optional glass-and-gel skin in the Frutiger Aero style.
+"""Aqua: an optional glass-and-gel skin in the Frutiger Aero style.
 
 Everything here draws on top of Tauon's normal UI. t_main and t_custom call in
 at a handful of points while prefs.aero is on, and otherwise nothing in this
 module runs.
 
-The look is the dusk variant of the Aqualine concept:
+The look is the dusk variant of the Aqua concept:
 
 - a sky painted from the playing album's colours, at a fifth of the window's
   logical size so that scaling it up does the blurring, with drifting light
@@ -359,7 +359,7 @@ class _Tex:
 
 
 class Aero:
-	"""The Aqualine skin. One instance lives on tauon.aero."""
+	"""The Aqua skin. One instance lives on tauon.aero."""
 
 	GUTTER = 8          # logical px between panels
 	EDGE_GAP = 4        # logical px between the panels and the window edge
@@ -493,7 +493,8 @@ class Aero:
 		# The playing row's gel is drawn under the cached tracklist each frame
 		# (so it follows a colour change without re-rendering the list)
 		self.playing_rows: list[tuple[float, float, float, float]] = []
-		self._glint_track = None
+		# Off until the first palette is in, so start-up doesn't glint
+		self._glint_armed = False
 		self.panel_index = 0
 
 		# Caches
@@ -513,7 +514,7 @@ class Aero:
 		# Header rect for things drawn onto the top glass from outside it
 		self.header_rect: tuple[int, int, int, int] | None = None
 		# The compact playback panel's stand-in while the skin is on
-		self.compact_bar = AqualineBar(tauon)
+		self.compact_bar = AquaBar(tauon)
 
 	# -- state ------------------------------------------------------------------
 
@@ -682,18 +683,16 @@ class Aero:
 					self._set_target(pal)
 					self.gui.request_frame()
 
-		# Glint on every track change
-		tid = (track.index if track is not None else None, pctl.playing_state != PlayingState.STOPPED)
-		if tid != self._glint_track:
-			if self._glint_track is not None and track is not None:
-				self.glint_start = time.monotonic()
-			self._glint_track = tid
-
 	def _default_entry(self) -> tuple:
 		return (*self.DEFAULT_PALETTE, False, self.ICE)
 
 	def _set_target(self, entry: tuple) -> None:
 		"""entry: (sky hue, horizon hue, accent hue, dark art, Obsidian accent)."""
+		# The glint marks a change of colours (not a new track from the same art)
+		previous = (*self.target, self.art_dark, self.target_oacc)
+		if self._glint_armed and tuple(entry) != previous:
+			self.glint_start = time.monotonic()
+		self._glint_armed = True
 		self.target = entry[:3]
 		self.art_dark = entry[3]
 		self.target_oacc = entry[4]
@@ -736,7 +735,7 @@ class Aero:
 					pal = (*hues, dark, oacc)
 					raw.close()
 		except Exception:
-			logging.exception("Aqualine: could not read art colours")
+			logging.exception("Aqua: could not read art colours")
 		with self._palette_lock:
 			self._palette_result = (key, pal)
 		self.gui.request_frame()
@@ -1112,7 +1111,7 @@ class Aero:
 		try:
 			result = (gen, (lw, lh), self._paint_sky(lw, lh, snap))
 		except Exception:
-			logging.exception("Aqualine: sky paint failed")
+			logging.exception("Aqua: sky paint failed")
 			result = (gen, None, None)
 		with self._sky_job_lock:
 			self._sky_job_result = result
@@ -1576,6 +1575,20 @@ class Aero:
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.render_geometry(self.renderer, None, verts, idx)
 
+	def accent_colour(self) -> ColourRGBA:
+		"""The accent as a theme colour (Obsidian's highlight accent there)."""
+		return to_colour(mix(hsl(self.acc, 0.85, 0.6), hsl(self.oacc, 0.85, 0.62), self.mono))
+
+	def tile(self, rect, r: float, hover: bool) -> None:
+		"""A glass button face: the selection pill, fainter at rest."""
+		x, y, w, h = rect
+		k = 1.0 if hover else 0.55
+		top, bot = self.SEL_TOP, self.SEL_BOT
+		self.shape(rect, r, grad=vgrad(y, h, [
+			(0.0, (top[0], top[1], top[2], top[3] * k)), (1.0, (bot[0], bot[1], bot[2], bot[3] * k))]))
+		self.ring("top", rect, r, self.RIM if hover else self.RIM_SOFT)
+		self.ring("outer", rect, r, self.SEL_EDGE)
+
 	GLOW_RADIUS = 3.5   # logical px of blur in the text halo on the playing gel
 	GLOW_ALPHA = 0.6
 
@@ -1608,6 +1621,8 @@ class Aero:
 		for rect, R, index in glints:
 			self._glint(rect, R, index)
 
+	GLINT_ALPHA = 0.3   # peak of the light sweep on a colour change (the concept had .5)
+
 	def _glint(self, rect, R: float, index: int) -> None:
 		"""linear-gradient(105deg, transparent 38%, white .5 50%, transparent
 		62%) at 260% width, swept from 140% to -40% in 1s, staggered 80ms per
@@ -1622,7 +1637,7 @@ class Aero:
 		ox = (w - bw) * pos
 		box = (x + ox, y, bw, h)
 		g = Gradient(box, 105, [
-			(0.0, (1, 1, 1, 0)), (0.38, (1, 1, 1, 0)), (0.5, (1, 1, 1, 0.5)),
+			(0.0, (1, 1, 1, 0)), (0.38, (1, 1, 1, 0)), (0.5, (1, 1, 1, self.GLINT_ALPHA)),
 			(0.62, (1, 1, 1, 0)), (1.0, (1, 1, 1, 0))])
 		self.shape(rect, R, grad=g)
 
@@ -2674,7 +2689,7 @@ class _PresetBottom:
 			tauon.feux_bar.render(h)
 			return
 		if not prefs.shuffle_lock:
-			# Aqualine's own compact panel
+			# Aqua's own compact panel
 			tauon.aero.compact_bar.render(h)
 			return
 		bar = tauon.bottom_bar_ao1 if prefs.shuffle_lock else tauon.bottom_bar1
@@ -2687,8 +2702,8 @@ class _PresetBottom:
 			gui.panelBY = panel_by
 
 
-class AqualineBar:
-	"""Aqualine's compact playback panel: the concept's bottom bar.
+class AquaBar:
+	"""Aqua's compact playback panel: the concept's bottom bar.
 
 	Transport orbs on the left (play larger, sitting a little high), the
 	track title, artist and times over the seek tube in the middle, and the

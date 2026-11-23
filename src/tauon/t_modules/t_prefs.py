@@ -360,13 +360,13 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
-	# Aqualine: the glass-and-gel skin (t_aero). Exclusive with the art
+	# Aqua: the glass-and-gel skin (t_aero). Exclusive with the art
 	# backgrounds and window transparency
 	aero: bool = False
 	aero_motion: bool = True
 	# 0: Obsidian for dark, colourless art, Dusk otherwise; 1: always Dusk; 2: always Obsidian
 	aero_variant: int = 0
-	# Leave the gaps between Aqualine's panels clear, so they float on the
+	# Leave the gaps between Aqua's panels clear, so they float on the
 	# desktop (the panels still frost the animated sky)
 	aero_see_through: bool = False
 	# The glass spectrum under the art in the right side panel

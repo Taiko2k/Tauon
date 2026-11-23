@@ -2,7 +2,7 @@
 
 **GO OUTSIDE**
 
-The About icon in Settings opens this one while the Aqualine skin is on,
+The About icon in Settings opens this one while the Aqua skin is on,
 and the Dream Room (t_room) otherwise; `Dreams` holds both behind the one
 switch Tauon calls. (Not to be confused with t_aero, the skin itself.)
 
