@@ -2495,7 +2495,7 @@ class Aero:
 				sdl3.render_texture(self.renderer, t.tex, None, dst)
 
 	MENU_CAP = 0.55   # strength of the specular cap over the marble
-	MENU_GLASS_DESAT = 1.0  # how far the marble's glass is pulled from ice blue to grey
+	MENU_GLASS_DESAT = 0.8  # how far the marble's glass is pulled from ice blue to grey
 	# The record's wobble on click: degrees, swings per second, decay rate, length
 	WOBBLE_ANGLE = 26.0
 	WOBBLE_FREQ = 1.9
@@ -2593,9 +2593,9 @@ class Aero:
 		# Glass: nearly clear in the middle, brighter toward the rim
 		surf, cr = layer()
 		g = cairo.RadialGradient(cx, cy - R * 0.25, 0, cx, cy, R)
-		g.add_color_stop_rgba(0, *ice(0.75, 0.9, 1.0), 0.10)
-		g.add_color_stop_rgba(0.75, *ice(0.55, 0.8, 1.0), 0.22)
-		g.add_color_stop_rgba(1, *ice(0.75, 0.92, 1.0), 0.55)
+		g.add_color_stop_rgba(0, *ice(0.75, 0.9, 1.0), 0.03)
+		g.add_color_stop_rgba(0.75, *ice(0.55, 0.8, 1.0), 0.09)
+		g.add_color_stop_rgba(1, *ice(0.75, 0.92, 1.0), 0.36)
 		cr.arc(cx, cy, R, 0, tau)
 		cr.set_source(g)
 		cr.fill()
@@ -2671,7 +2671,7 @@ class Aero:
 		# Light gathered along the bottom of the marble
 		surf, cr = layer()
 		glow = cairo.RadialGradient(cx, cy + R * 0.85, 0, cx, cy + R * 0.85, R * 0.7)
-		glow.add_color_stop_rgba(0, *ice(0.6, 0.95, 1.0), 0.55 if hover else 0.45)
+		glow.add_color_stop_rgba(0, *ice(0.6, 0.95, 1.0), 0.42 if hover else 0.28)
 		glow.add_color_stop_rgba(1, *ice(0.6, 0.95, 1.0), 0)
 		cr.arc(cx, cy, R, 0, tau)
 		cr.clip()
@@ -2698,7 +2698,7 @@ class Aero:
 		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
 		under = Image.alpha_composite(under, _solid(size, ice8(0, 25, 50, 0.45), drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
-		under = Image.alpha_composite(under, _solid(size, ice8(0, 15, 35, 0.6), outer))
+		under = Image.alpha_composite(under, _solid(size, ice8(0, 15, 35, 0.5), outer))
 		under = Image.alpha_composite(under, glass)
 		over = light
 		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
