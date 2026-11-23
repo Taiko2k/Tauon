@@ -17579,6 +17579,10 @@ class Tauon:
 					gui.playlist_text_offset = round(((gui.playlist_row_height - real_font_px) / 2) - 1.8 * gui.scale)
 
 			gui.playlist_text_offset += prefs.tracklist_y_text_offset
+			if prefs.aero and gui.scale >= 1.5:
+				# Centre on the row (and so the capsules): the HiDPI offset
+				# above leaves the text a pixel low
+				gui.playlist_text_offset -= 1
 
 			gui.pl_title_real_height = round(gui.playlist_row_height * 0.55) + 4 - 12
 
@@ -20495,10 +20499,15 @@ class Tauon:
 		playtime_stars = 0
 		if not isolated and self.prefs.rating_playtime_stars and not album and (hint_only or display_rat == 0):
 			playtime_stars = star_count3(self.star_store.get(n_track.index), n_track.length)
-			if self.gui.tracklist_bg_is_light:
-				fg2 = alpha_blend(ColourRGBA(0, 0, 0, 70), self.ddt.text_background_colour)
-			else:
-				fg2 = alpha_blend(ColourRGBA(255, 255, 255, 50), self.ddt.text_background_colour)
+			fg2 = ColourRGBA(0, 0, 0, 70) if self.gui.tracklist_bg_is_light else ColourRGBA(255, 255, 255, 50)
+			base = self.ddt.text_background_colour
+			# alpha_blend keeps the base's alpha, so over a see-through panel
+			# (Aqua) the hint would vanish: draw it translucent there instead,
+			# a little stronger to hold up against the sky behind the glass
+			if base.a >= 255:
+				fg2 = alpha_blend(fg2, base)
+			elif not self.gui.tracklist_bg_is_light:
+				fg2 = ColourRGBA(255, 255, 255, 80)
 
 		for ss in range(5):
 			xx = x + ss * self.gui.star_row_icon.w
