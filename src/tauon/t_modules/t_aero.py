@@ -1576,6 +1576,16 @@ class Aero:
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.render_geometry(self.renderer, None, verts, idx)
 
+	GLOW_RADIUS = 3.5   # logical px of blur in the text halo on the playing gel
+	GLOW_ALPHA = 0.6
+
+	def text_glow(self) -> tuple[ColourRGBA, float]:
+		"""(colour, radius) for ddt.text_glow on the playing row: a deep shade
+		of the gel's own hue, so bright gels darken just around the letters."""
+		obs = 1.0 if self._mono_applied == 1 else 0.0
+		c = mix(hsl(self.target[2], 0.8, 0.12, self.GLOW_ALPHA), (0.0, 0.0, 0.0, self.GLOW_ALPHA * 0.7), obs)
+		return to_colour(c), self.s(self.GLOW_RADIUS)
+
 	def menu_hover(self, rect, renderer=None) -> None:
 		"""The hovered item: the tracklist's selection pill."""
 		r = self.s(5)

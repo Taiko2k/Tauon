@@ -42161,6 +42161,7 @@ class StandardPlaylist:
 			aero.playing_rows.clear()
 		for type, track_position, tr, track_box, input_box, highlight, number, drag_highlight, playing in list_items:
 			ddt.text_shadow = None
+			ddt.text_glow = None
 			line_y = gui.playlist_top + gui.playlist_row_height * number - gui.playlist_scroll_pixels
 			ddt.text_background_colour = colours.playlist_panel_background
 
@@ -42452,8 +42453,10 @@ class StandardPlaylist:
 				if playing:
 					# The gel itself goes under the texture at blit time
 					aero.playing_rows.append(row)
-					# text-shadow: 0 1px 1px rgba(0,40,70,.55)
+					# text-shadow: 0 1px 1px rgba(0,40,70,.55), over a soft halo
+					# that keeps it readable on bright gels
 					ddt.text_shadow = ColourRGBA(0, 40, 70, 140)
+					ddt.text_glow = aero.text_glow()
 				elif highlight:
 					aero.selection(row)
 			elif playing:
@@ -42850,6 +42853,7 @@ class StandardPlaylist:
 				cv += 1
 
 		ddt.text_shadow = None
+		ddt.text_glow = None
 		for track, location, art_size, draw_height in album_art_column_draws:
 			if aero is not None:
 				# Rounded, glossed thumbnails with a ring and a small shadow
@@ -68345,7 +68349,19 @@ def main(holder: Holder) -> None:
 					label = _("Add files…")
 					button_w = ddt.get_text_w(label, 212) + round(28 * gui.scale)
 					button_h = round(26 * gui.scale)
-					if tauon.draw.button(label, anchor[0] - button_w // 2, anchor[1], w=button_w, h=button_h):
+					if tauon.aero.active:
+						aero = tauon.aero
+						brect = (anchor[0] - button_w // 2, anchor[1], button_w, button_h)
+						tauon.fields.add(brect)
+						over = tauon.coll(brect)
+						aero.button(brect, over)
+						ddt.text(
+							(brect[0] + button_w // 2, brect[1] + button_h // 2 - round(9 * gui.scale), 2), label,
+							aero.colour("TEXT"), 212, bg=aero.menu_bg())
+						clicked = over and inp.mouse_click
+					else:
+						clicked = tauon.draw.button(label, anchor[0] - button_w // 2, anchor[1], w=button_w, h=button_h)
+					if clicked:
 						inp.mouse_click = False
 						tauon.add_music_box.open()
 					viewing_id = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int

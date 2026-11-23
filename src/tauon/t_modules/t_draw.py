@@ -24,7 +24,7 @@ import math
 from collections import OrderedDict
 from typing import TYPE_CHECKING
 
-from PIL import Image
+from PIL import Image, ImageFilter
 
 from tauon.t_modules import t_native as sdl3
 from tauon.t_modules.t_extra import ColourRGBA, Timer, alpha_blend, coll_rect
@@ -146,6 +146,10 @@ class TDraw:
 		# When set, text is drawn twice: first in this colour one pixel lower
 		# (a CSS-style text-shadow), then normally
 		self.text_shadow: ColourRGBA | None = None
+		# When set, (colour, radius px): a soft blurred halo of the text drawn
+		# under it, like Aero's text glow, so text reads on bright surfaces
+		self.text_glow: tuple[ColourRGBA, float] | None = None
+		self._glow_cache: OrderedDict = OrderedDict()
 		self.pretty_rect: tuple[int, int, int, int] | None = None
 		self.real_bg: bool = False
 		self.alpha_bg: bool = False
@@ -707,15 +711,22 @@ class TDraw:
 		if bg is None:
 			bg = self.text_background_colour
 
+		# Under everything: the glow, then the shadow (neither drawn for the other)
+		glow = self.text_glow
+		if glow is not None and (len(location) < 3 or location[2] in (0, 1, 2)):
+			align = location[2] if len(location) > 2 else 0
+			self.__draw_text_glow(location[0], location[1], text, font, max_w, align, *glow)
 		if self.text_shadow is not None:
 			shadow = self.text_shadow
 			self.text_shadow = None
+			self.text_glow = None
 			try:
 				drop = max(1, round(self.scale))
 				self.text((location[0], location[1] + drop, *location[2:]), text, shadow, font,
 					max_w, bg, range_top, range_height, real_bg, None)
 			finally:
 				self.text_shadow = shadow
+				self.text_glow = glow
 
 		if colour.a != 255:
 			colour = alpha_blend(colour, bg)
@@ -745,6 +756,71 @@ class TDraw:
 				)
 
 		return self.__draw_text_cairo(location, text, colour, font, max_w, bg, align, real_bg=real_bg, key=key)
+
+	def __draw_text_glow(self, x: float, y: float, text: str, font: int, max_w: int, align: int,
+			colour: ColourRGBA, radius: float) -> None:
+		"""The text_glow halo for one line of text, placed to match it."""
+		max_x = round(max_w + 12)
+		key = (max_x, text, font, colour.r, colour.g, colour.b, colour.a, round(radius * 4))
+		g = self._glow_cache.get(key)
+		if g is None:
+			g = self.__make_text_glow(text, font, max_x, colour, radius)
+			if g is None:
+				return
+			self._glow_cache[key] = g
+			while len(self._glow_cache) > 64:
+				_k, old = self._glow_cache.popitem(last=False)
+				sdl3.destroy_texture(old[0])
+		else:
+			self._glow_cache.move_to_end(key)
+		tex, gw, gh, pad, y_off, w = g
+		dx = round(x)
+		if align == 1:
+			dx -= w
+		elif align == 2:
+			dx -= int(w / 2)
+		sdl3.render_texture(self.renderer, tex, None, sdl3.FRect(dx - pad, round(y) - y_off - pad, gw, gh))
+
+	def __make_text_glow(self, text: str, font: int, max_x: int, colour: ColourRGBA, radius: float):
+		"""Rasterise the glyphs (thickened a little so the halo fills in behind
+		thin strokes), blur them, and upload in the glow colour."""
+		if font not in self.f_dict:
+			return None
+		wh = self.get_text_wh(text, font, max_x)
+		if not wh or wh[0] < 1:
+			return None
+		w, h = wh[0], wh[1] + 4
+		pad = math.ceil(radius * 2.5) + 1
+		gw, gh = w + pad * 2, h + pad * 2
+		surf = cairo.ImageSurface(cairo.FORMAT_A8, gw, gh)
+		ctx = cairo.Context(surf)
+		layout = PangoCairo.create_layout(ctx)
+		layout.set_auto_dir(False)
+		layout.set_font_description(self._font_description(font))
+		layout.set_ellipsize(Pango.EllipsizeMode.END)
+		layout.set_width(max_x * Pango.SCALE)
+		layout.set_height(-1)
+		layout.set_text(text.encode("utf-8", "replace").decode(), -1)
+		y_off = round(round(layout.get_baseline() / 1000) - 13 * self.scale)
+		ctx.move_to(pad, pad)
+		PangoCairo.layout_path(ctx, layout)
+		ctx.set_line_width(max(1.0, radius * 0.8))
+		ctx.set_line_join(cairo.LINE_JOIN_ROUND)
+		ctx.stroke_preserve()
+		ctx.fill()
+		surf.flush()
+		mask = Image.frombuffer("L", (gw, gh), bytes(surf.get_data()), "raw", "L", surf.get_stride(), 1).copy()
+		surf.finish()
+		mask = mask.filter(ImageFilter.GaussianBlur(radius))
+		k = colour.a / 255
+		img = Image.new("RGBA", (gw, gh), (colour.r, colour.g, colour.b, 0))
+		img.putalpha(mask.point(lambda v: min(255, round(v * k))))
+		tex = sdl3.create_texture_from_rgba(self.renderer, gw, gh, img.tobytes())
+		sdl3.set_texture_blend_mode(tex, sdl3.SDL_BLENDMODE_BLEND)
+		# Never identity mods: SDL's software renderer then writes opaque
+		# alpha into transparent targets (the cached tracklist)
+		sdl3.set_texture_color_mod(tex, 255, 255, 254)
+		return tex, gw, gh, pad, y_off, w
 
 	def get_wrapped_lines(self, text: str, font: int, max_x: int) -> list[str]:
 		"""Preserve paragraph separators while splitting rendered lines."""
