@@ -8461,6 +8461,7 @@ class Tauon:
 		self.d_click_timer: Timer                = Timer()
 		self.d_click_timer.force_set(10)
 		self.lyrics_check_timer: Timer           = Timer()
+		self.auto_lyrics_retry: dict[int, tuple[int, float]] = {}  # track index -> (failures, monotonic time of next try), this session only
 		self.lyric_txt_checked: set[int]         = set()  # tracks already looked at for a .txt this session
 		self.lyric_fonts: dict[int, float]       = {}  # Scaled lyrics font handles, to the UI scale they were made at
 		self.lyric_sidecar_cache: tuple[int, float, tuple[Path | None, Path | None]] | None = None
@@ -11436,9 +11437,17 @@ class Tauon:
 			self.now_searching = "errored"
 			if not silent:
 				self.show_message(_("No lyrics for this track were found"))
-			elif source_failed and track_object.index in self.prefs.auto_lyrics_checked:
-				self.prefs.auto_lyrics_checked.remove(track_object.index)
+			elif source_failed:
+				# Retry after 30 s, doubling each time; give up for this session after 5 failures
+				fails = self.auto_lyrics_retry.get(track_object.index, (0, 0.0))[0] + 1
+				delay = 30 * 2 ** (fails - 1) if fails < 5 else float("inf")
+				self.auto_lyrics_retry[track_object.index] = (fails, time.monotonic() + delay)
+				if track_object.index in self.prefs.auto_lyrics_checked:
+					self.prefs.auto_lyrics_checked.remove(track_object.index)
+			else:
+				self.auto_lyrics_retry.pop(track_object.index, None)
 		else:
+			self.auto_lyrics_retry.pop(track_object.index, None)
 			self.gui.message_box = False
 			if not self.gui.showcase_mode:
 				self.prefs.show_lyrics_side = True
@@ -22108,6 +22117,9 @@ class Tauon:
 		self.check_lyric_txt(track_object)
 
 		if self.prefs.auto_lyrics and not track_object.lyrics and track_object.index not in self.prefs.auto_lyrics_checked:
+			retry = self.auto_lyrics_retry.get(track_object.index)
+			if retry and time.monotonic() < retry[1]:
+				return
 			if self.lyrics_check_timer.get() > 5 and self.pctl.playing_time > 1:
 				self.lyrics_check_timer.set()
 				self.prefs.auto_lyrics_checked.append(track_object.index)
