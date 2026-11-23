@@ -1835,7 +1835,7 @@ class FeuxBar:
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Back"))
 			if aero is not None:
-				aero.ghost(x + box / 2, mid, box, a["feux-bb"], hover=over, pressed=over and inp.mouse_down)
+				aero.ghost(x + box / 2, mid, box, a["feux-bb"], hover=over, pressed=over and inp.mouse_down, nudge=1)
 			else:
 				a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
@@ -1928,7 +1928,7 @@ class FeuxBar:
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Forward"))
 			if aero is not None:
-				aero.ghost(x + box / 2, mid, box, a["feux-ff"], hover=over, pressed=over and inp.mouse_down)
+				aero.ghost(x + box / 2, mid, box, a["feux-ff"], hover=over, pressed=over and inp.mouse_down, nudge=-1)
 			else:
 				a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)

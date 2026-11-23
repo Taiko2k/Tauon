@@ -17381,7 +17381,8 @@ class Tauon:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
 				# Aqua floats the top bar on the sky: edge gap, glass, gutter
-				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter()
+				# (a pixel short: the glass's shadow makes the full gap look wide)
+				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter() - round(gui.scale)
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
 				gui.playlist_top_bk = gui.playlist_top
 
@@ -23251,6 +23252,10 @@ class Tauon:
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
 
+	def set_skin_tauon(self) -> None:
+		"""Back to Tauon's own themes (from the Aqua skin)."""
+		self._set_aero(False)
+
 	def set_bg_style_aqua(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.aero)
@@ -23267,11 +23272,6 @@ class Tauon:
 		self.prefs.aero_motion = not self.prefs.aero_motion
 		self.gui.request_frame()
 		return None
-
-	def set_aero_variant(self, variant: int) -> None:
-		"""Aqua's palette: auto, Dusk or Obsidian. The skin eases across."""
-		self.prefs.aero_variant = variant
-		self.gui.request_frame()
 
 	def toggle_aero_see_through(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -34520,7 +34520,8 @@ class Over:
 			_("Keep scrobbles while offline"): "offline queue pending cache retry hold save internet network connection unsent failed lost restart lastfm last.fm librefm listenbrainz maloja",
 			_("Discard waiting scrobbles"): "clear queue delete pending offline unsent scrobbles",
 			# Appearance
-			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic aqua aero frutiger glass gel glossy skeuomorphic sky",
+			_("Skin"): "skin look style tauon aqua aero frutiger glass gel glossy skeuomorphic sky",
+			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
 			_("Ambient motion"): "aqua animation animate sky motion drift bokeh",
 			_("Show desktop between panels"): "aqua transparent see through gaps desktop floating panels",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
@@ -35333,8 +35334,23 @@ class Over:
 	def settings_body_theme(self, rows: SettingsRows) -> None:
 		gui = self.gui
 		prefs = self.prefs
+		tauon = self.tauon
 		s = gui.scale
 		accent = rows.accent
+
+		# Tauon's own themes, or the Aqua skin, which brings its own look:
+		# themes and background styles only apply to Tauon
+		rows.choices(
+			_("Skin"),
+			(
+				(_("Tauon"), not prefs.aero, tauon.set_skin_tauon),
+				(_("Aqua"), bool(prefs.aero), tauon.set_bg_style_aqua),
+			),
+		)
+		if prefs.aero:
+			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
+			rows.switch(tauon.toggle_aero_see_through, _("Show desktop between panels"))
+			return
 
 		rect = rows.custom(round(34 * s))
 		self.settings_index_entry(
@@ -35413,7 +35429,6 @@ class Over:
 
 		# One mutually exclusive choice between the plain theme, auto-theming
 		# and the album-art backgrounds
-		tauon = self.tauon
 		rows.choices(
 			_("Background style"),
 			(
@@ -35423,24 +35438,8 @@ class Over:
 				(_("Artist"), tauon.set_art_bg_artist(1), tauon.set_art_bg_artist),
 				(_("Frost lo"), tauon.set_art_bg_frosted_low(1), tauon.set_art_bg_frosted_low),
 				(_("Frost hi"), tauon.set_art_bg_frosted_high(1), tauon.set_art_bg_frosted_high),
-				(_("Aqua"), tauon.set_bg_style_aqua(1), tauon.set_bg_style_aqua),
 			),
 		)
-
-		if prefs.aero:
-			variant = prefs.aero_variant
-			rows.choices(
-				_("Palette"),
-				(
-					(_("Auto"), variant == 0, lambda: tauon.set_aero_variant(0)),
-					(_("Dusk"), variant == 1, lambda: tauon.set_aero_variant(1)),
-					(_("Obsidian"), variant == 2, lambda: tauon.set_aero_variant(2)),
-				),
-				hint=_("Auto uses Obsidian for dark, colourless album art"),
-			)
-			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
-			rows.switch(tauon.toggle_aero_see_through, _("Show desktop between panels"))
-			return
 
 		# Window transparency combines only with the two non-art styles
 		if prefs.art_bg:
@@ -38635,7 +38634,7 @@ class BottomBarType1:
 				over = self.coll(rect)
 				ff = self.forward_button
 				aero.ghost(buttons_x_offset + 240 * gui.scale + ff.w / 2, 1 + window_size[1] - self.control_line_bottom + ff.h / 2,
-					30 * gui.scale, ff, hover=over, pressed=over and inp.mouse_down)
+					30 * gui.scale, ff, hover=over, pressed=over and inp.mouse_down, nudge=-1)
 			else:
 				self.forward_button.render(
 					buttons_x_offset + 240 * gui.scale, 1 + window_size[1] - self.control_line_bottom, forward_colour)
@@ -38674,7 +38673,7 @@ class BottomBarType1:
 				over = self.coll(rect)
 				bb = self.back_button
 				aero.ghost(buttons_x_offset + 180 * gui.scale + bb.w / 2, 1 + window_size[1] - self.control_line_bottom + bb.h / 2,
-					30 * gui.scale, bb, hover=over, pressed=over and inp.mouse_down)
+					30 * gui.scale, bb, hover=over, pressed=over and inp.mouse_down, nudge=1)
 			else:
 				self.back_button.render(buttons_x_offset + 180 * gui.scale, 1 + window_size[1] - self.control_line_bottom,
 										back_colour)
@@ -58059,7 +58058,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("transparent-style", prefs.transparent_mode)
 	cf.update_value("aqua-style", prefs.aero)
 	cf.update_value("aqua-motion", prefs.aero_motion)
-	cf.update_value("aqua-variant", prefs.aero_variant)
 	cf.update_value("aqua-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
@@ -58413,9 +58411,6 @@ def load_prefs(bag: Bag) -> None:
 		cf.old = [row.replace("aqualine-", "aqua-", 1) if row.lstrip().startswith("aqualine-") else row for row in cf.old]
 	prefs.aero = cf.sync_add("bool", "aqua-style", prefs.aero, "Aqua glass-and-gel skin")
 	prefs.aero_motion = cf.sync_add("bool", "aqua-motion", prefs.aero_motion, "Animate the Aqua sky")
-	prefs.aero_variant = cf.sync_add(
-		"int", "aqua-variant", prefs.aero_variant,
-		"0=auto (Obsidian for dark, colourless art), 1=always Dusk, 2=always Obsidian")
 	prefs.aero_see_through = cf.sync_add(
 		"bool", "aqua-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqua's panels")
 	prefs.side_panel_spectrum = cf.sync_add(

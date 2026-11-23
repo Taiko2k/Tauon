@@ -30,6 +30,7 @@ rasterised once per size with Pillow and cached.
 from __future__ import annotations
 
 import colorsys
+import functools
 import logging
 import math
 import random
@@ -55,6 +56,95 @@ RGBA = tuple[float, float, float, float]
 def hsl(h: float, s: float, l: float, a: float = 1.0) -> RGBA:
 	"""CSS hsl(): hue in degrees, saturation and lightness 0-1."""
 	r, g, b = colorsys.hls_to_rgb((h % 360) / 360, l, s)
+	return (r, g, b, a)
+
+
+def _to_lin(c: float) -> float:
+	return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
+
+
+def _to_srgb(c: float) -> float:
+	c = max(0.0, c)
+	return 12.92 * c if c <= 0.0031308 else 1.055 * c ** (1 / 2.4) - 0.055
+
+
+def _oklch(r: float, g: float, b: float) -> tuple[float, float, float]:
+	r, g, b = _to_lin(r), _to_lin(g), _to_lin(b)
+	l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+	m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+	s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+	L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+	a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+	bb = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+	return L, math.hypot(a, bb), math.degrees(math.atan2(bb, a)) % 360
+
+
+def _oklch_linear(L: float, C: float, h: float) -> tuple[float, float, float]:
+	a, b = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+	l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+	m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+	s = (L - 0.0894841775 * a - 1.2914855480 * b) ** 3
+	return (4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+		-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+		-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)
+
+
+def _from_oklch(L: float, C: float, h: float) -> tuple[float, float, float]:
+	"""OKLCH to sRGB, giving up chroma (not lightness or hue) to stay in gamut."""
+	def fits(c: float) -> bool:
+		return all(-1e-4 <= v <= 1 + 1e-4 for v in _oklch_linear(L, c, h))
+	if not fits(C):
+		lo, hi = 0.0, C
+		for _ in range(20):
+			mid = (lo + hi) / 2
+			if fits(mid):
+				lo = mid
+			else:
+				hi = mid
+		C = lo
+	r, g, b = _oklch_linear(L, C, h)
+	return (min(1.0, _to_srgb(r)), min(1.0, _to_srgb(g)), min(1.0, _to_srgb(b)))
+
+
+def _interp(points: tuple, x: float) -> float:
+	if x <= points[0][0]:
+		return points[0][1]
+	for (x0, y0), (x1, y1) in zip(points, points[1:]):
+		if x <= x1:
+			return y0 + (y1 - y0) * (x - x0) / (x1 - x0)
+	return points[-1][1]
+
+
+# For an HSL lightness, the least perceived (OKLCH) lightness the liquid may
+# have, and which way its hue leans (+ toward the nearest bright hue)
+_LIFT_FLOOR = ((0.28, 0.50), (0.50, 0.72), (0.70, 0.87), (0.90, 0.97))
+_LIFT_LEAN = ((0.28, -0.45), (0.50, 0.4), (0.70, 1.0))
+_LIFT_DRIFT = 22.0
+
+
+@functools.lru_cache(maxsize=2048)
+def _lifted(h: float, s: float, l: float) -> tuple[float, float, float]:
+	r, g, b = colorsys.hls_to_rgb((h % 360) / 360, l, s)
+	if l < 0.25:
+		return r, g, b
+	L, C, hue = _oklch(r, g, b)
+	floor = _interp(_LIFT_FLOOR, l)
+	if L >= floor:
+		return r, g, b
+	# Dark hues (blue, red, violet) come up to the floor; their highlights
+	# lean toward cyan or yellow, their shadows away, like lit glass
+	bright = min((195.0, 100.0), key=lambda t: abs(((t - hue + 540) % 360) - 180))
+	lack = (floor - L) / floor
+	turn = ((bright - hue + 540) % 360) - 180
+	amount = _LIFT_DRIFT * _interp(_LIFT_LEAN, l) * min(1.0, lack * 3)
+	hue += max(-abs(amount), min(abs(amount), turn)) * (1 if amount >= 0 else -1)
+	return _from_oklch(floor, C, hue)
+
+
+def lifted_hsl(h: float, s: float, l: float, a: float = 1.0) -> RGBA:
+	"""hsl(), except hues that would look dark at this lightness (blue, red,
+	violet) are lifted to the brightness yellow or aqua have there."""
+	r, g, b = _lifted(round(h % 360, 1), round(s, 3), round(l, 3))
 	return (r, g, b, a)
 
 
@@ -1742,15 +1832,16 @@ class Aero:
 			m = self.mono
 			A = self.oacc
 			# 0 0 10px glow, clipped by the tube
-			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(hsl(H, 0.95, 0.55, 0.65), hsl(A, 0.9, 0.60, 0.45), m))
+			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(lifted_hsl(H, 0.95, 0.55, 0.65), lifted_hsl(A, 0.9, 0.60, 0.45), m))
 			# Obsidian: mercury, lit by the accent at its end
 			obs = (rgba8(245, 247, 250), rgba8(188, 196, 206), rgba8(133, 142, 153), rgba8(206, 212, 219))
-			dusk = (hsl(H, 0.92, 0.74), hsl(H, 0.85, 0.56), hsl(H, 0.90, 0.44), hsl(H, 0.85, 0.58))
+			# In the play orb's tone (dark hues lifted)
+			dusk = (lifted_hsl(H, 0.92, 0.74), lifted_hsl(H, 0.85, 0.56), lifted_hsl(H, 0.90, 0.44), lifted_hsl(H, 0.85, 0.58))
 			stops = [(p, mix(dusk[i], obs[i], m)) for i, p in enumerate((0.0, 0.5, 0.51, 1.0))]
 			rr = min(r, fw / 2)
 			self.shape(fr, rr, grad=vgrad(y, h, stops))
 			self.ring("top", fr, rr, (1, 1, 1, 0.75 + 0.25 * m))
-			self.ring("right_in", fr, rr, mix((1, 1, 1, 0.4), hsl(A, 0.9, 0.75, 0.8), m))
+			self.ring("right_in", fr, rr, mix((1, 1, 1, 0.4), lifted_hsl(A, 0.9, 0.75, 0.8), m))
 			now = time.monotonic()
 			if shimmer and playing and self.motion():
 				# A 70px band travelling the whole tube at a constant speed,
@@ -1964,7 +2055,7 @@ class Aero:
 
 	def _orb_glow(self, x: int, y: int, d: int, strength: float = 1.0) -> None:
 		"""0 0 14px of the accent around the transport's hero orb."""
-		c = mix(hsl(self.acc, 0.9, 0.55, 0.45 * strength), hsl(self.oacc, 0.9, 0.6, 0.4 * strength), self.mono)
+		c = mix(lifted_hsl(self.acc, 0.9, 0.55, 0.45 * strength), lifted_hsl(self.oacc, 0.9, 0.6, 0.4 * strength), self.mono)
 		self.soft((x, y, d, d), d / 2, 7 * self.gui.scale, 0, c)
 
 	def orb(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
@@ -2109,9 +2200,9 @@ class Aero:
 		m = self.mono
 		H, A = self.acc, self.oacc
 		stops = [
-			(0.0, mix(hsl(H, 0.80, 0.70), hsl(A, 0.75, 0.68), m)),
-			(0.3, mix(hsl(H, 0.85, 0.50), hsl(A, 0.85, 0.52), m)),
-			(1.0, mix(hsl(H, 0.90, 0.28), hsl(A, 0.80, 0.30), m)),
+			(0.0, mix(lifted_hsl(H, 0.80, 0.70), lifted_hsl(A, 0.75, 0.68), m)),
+			(0.3, mix(lifted_hsl(H, 0.85, 0.50), lifted_hsl(A, 0.85, 0.52), m)),
+			(1.0, mix(lifted_hsl(H, 0.90, 0.28), lifted_hsl(A, 0.80, 0.30), m)),
 		]
 		if hover:
 			stops = [(t, mix(c, (1.0, 1.0, 1.0, 1.0), 0.12)) for t, c in stops]
@@ -2163,13 +2254,15 @@ class Aero:
 				self.schedule(1 / self.FPS)
 
 	def ghost(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
-			pressed: bool = False, draw_glyph=None) -> None:
+			pressed: bool = False, draw_glyph=None, nudge: float = 0) -> None:
 		"""A secondary transport button: the glyph etched straight on the
 		glass, with a faint glass disc behind it only on hover. `glyph` is an
-		icon asset, or `draw_glyph(offset, colour)` draws it."""
+		icon asset, or `draw_glyph(offset, colour)` draws it. `nudge` moves
+		the disc (not the glyph) that many logical px right, so it sits
+		optically centred on an arrow."""
 		d = max(6, round(d))
 		r = d / 2
-		rect = (round(cx - r), round(cy - r), d, d)
+		rect = (round(cx - r + nudge * self.gui.scale), round(cy - r), d, d)
 		if hover or pressed:
 			k = 0.7 if pressed else 1.0
 			self.shape(rect, r, grad=vgrad(rect[1], d, [(0.0, (1, 1, 1, 0.16 * k)), (1.0, (1, 1, 1, 0.04 * k))]))
@@ -2997,7 +3090,7 @@ class AquaBar:
 			tauon.toggle_repeat()
 			tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
 			inp.right_click = False
-		aero.ghost(cx, orb_mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
+		aero.ghost(cx, orb_mid, side_d, a["feux-bb"], hover=over, pressed=over and down, nudge=1)
 		x += side_d + self._s(10)
 
 		cx = x + play_d / 2
@@ -3029,7 +3122,7 @@ class AquaBar:
 			tauon.toggle_random()
 			tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
 			inp.right_click = False
-		aero.ghost(cx, orb_mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
+		aero.ghost(cx, orb_mid, side_d, a["feux-ff"], hover=over, pressed=over and down, nudge=-1)
 		x += side_d
 
 		# -- right: mode pills, volume, menu ------------------------------------
