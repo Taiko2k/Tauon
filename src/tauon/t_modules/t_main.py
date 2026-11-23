@@ -1172,6 +1172,10 @@ class GuiVar:
 		self.transcoding_overall_done = 0
 
 		self.seek_bar_rect = (0, 0, 0, 0)
+		# Width of the seek bar drawn last frame; paces smooth progress redraws
+		self.progress_bar_w = 0
+		self.progress_bar_step = -1
+		self.progress_frame_time = 0.0
 		self.volume_bar_rect = (0, 0, 0, 0)
 
 		self.mini_mode_return_maximized: bool = False
@@ -10478,6 +10482,16 @@ class Tauon:
 		"""Show or hide the playing track's waveform in the Feux scrub bar."""
 		self.prefs.feux_panel_waveform = not self.prefs.feux_panel_waveform
 		self.gui.request_frame()
+
+	def toggle_smooth_progress(self) -> None:
+		"""Advance the seek bar continuously rather than in whole seconds."""
+		self.prefs.smooth_progress = not self.prefs.smooth_progress
+		self.bottom_bar1.seek_time = self.pctl.playing_time
+		self.gui.request_frame()
+
+	def smooth_progress_active(self) -> bool:
+		"""Whether seek bars should move continuously. Aqua's tube always does."""
+		return self.prefs.smooth_progress or self.aero.active
 
 	def lsp_menu_test_queue(self) -> bool:
 		if not self.gui.lsp:
@@ -22869,6 +22883,7 @@ class Tauon:
 			prefs.lyrics_language,  # 213
 			prefs.lyrics_text_size,  # 214
 			prefs.lyrics_centre,  # 215
+			prefs.smooth_progress,  # 216
 		]
 
 		for slot, value in db_snapshot.items():
@@ -38737,10 +38752,16 @@ class BottomBarType1:
 				self.seek_bar_position[0], self.seek_bar_position[1],
 				int(self.seek_time * self.seek_bar_size[0] / pctl.playing_length),
 				self.seek_bar_size[1])
+			gui.progress_bar_w = self.seek_bar_size[0]
 			if aero is not None:
 				aero.tube(aero.classic_seek_rect(self.seek_bar_position, self.seek_bar_size),
 					self.seek_time / pctl.playing_length,
 					playing=pctl.playing_state == PlayingState.PLAYING, bubbles=True)
+			elif prefs.smooth_progress:
+				ddt.progress_fill(
+					self.seek_bar_position[0], self.seek_bar_position[1],
+					self.seek_bar_size[0], self.seek_bar_size[1],
+					self.seek_time / pctl.playing_length, seek_fill)
 			else:
 				ddt.rect(gui.seek_bar_rect, seek_fill)
 			tauon.draw_ab_repeat_markers(
@@ -55636,6 +55657,9 @@ SCROLL_PHYSICS_TOUCH_DRAG_MULTIPLIER = 1.0
 SCROLL_PHYSICS_TOUCH_FLING_MULTIPLIER = 1.15
 SCROLL_ANIMATION_MAX_FPS = 144.0
 SCROLL_ANIMATION_FRAME_INTERVAL = 1.0 / SCROLL_ANIMATION_MAX_FPS
+# Smooth progress: fade steps per device pixel, and the redraw cap
+SMOOTH_PROGRESS_LEVELS = 16
+SMOOTH_PROGRESS_FPS = 30.0
 SCROLL_PHYSICS_FIXED_TIMESTEP = 1.0 / 240.0
 SCROLL_PHYSICS_MAX_TIMESTEP = 0.05
 SCROLL_PHYSICS_ACCELERATION_BOOST = 2
@@ -62280,6 +62304,8 @@ def main(holder: Holder) -> None:
 				prefs.lyrics_text_size = size if LYRICS_TEXT_SIZE_MIN <= size <= LYRICS_TEXT_SIZE_MAX else 0
 			if len(save) > 215 and save[215] is not None:
 				prefs.lyrics_centre = save[215]
+			if len(save) > 216 and save[216] is not None:
+				prefs.smooth_progress = save[216]
 
 			del save
 			state_loaded = True
@@ -63914,6 +63940,10 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Show Waveform"), tauon.toggle_feux_waveform,
 		check_test=lambda: prefs.feux_panel_waveform,
 		show_test=lambda ref=None: tauon.feux_panel_showing() and not tauon.aero.active))
+	# Aqua always moves smoothly
+	mode_menu.add(MenuItem(_("Smooth Progress"), tauon.toggle_smooth_progress,
+		check_test=lambda: prefs.smooth_progress,
+		show_test=lambda ref=None: not tauon.aero.active))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
@@ -71107,6 +71137,19 @@ def main(holder: Holder) -> None:
 				# Aqua's seek tube moves continuously; its frames come
 				# from the tube itself
 				tauon.bottom_bar1.seek_time = pctl.playing_time
+			elif prefs.smooth_progress:
+				tauon.bottom_bar1.seek_time = pctl.playing_time
+				# Redraw when the fill's leading pixel visibly changes, at most
+				# SMOOTH_PROGRESS_FPS. Bar width is in device pixels.
+				if pctl.playing_length > 0:
+					bar_w = gui.progress_bar_w or window_size[0]
+					step = int(pctl.playing_time * bar_w * SMOOTH_PROGRESS_LEVELS / pctl.playing_length)
+					now = time.monotonic()
+					if step != gui.progress_bar_step and now - gui.progress_frame_time >= 1 / SMOOTH_PROGRESS_FPS:
+						gui.progress_bar_step = step
+						gui.progress_frame_time = now
+						if not prefs.power_save or window_is_focused(tauon.t_window):
+							gui.request_frame()
 
 		# Auto save play times to disk
 		if pctl.total_playtime - time_last_save > 600:

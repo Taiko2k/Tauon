@@ -1995,8 +1995,9 @@ class FeuxBar:
 
 		progress = 0.0
 		if length > 0:
-			# Whole seconds normally; Aqua's tube moves continuously
-			elapsed = pctl.playing_time if aero is not None else int(pctl.playing_time)
+			# Whole seconds unless smooth progress is on (Aqua's tube always is)
+			elapsed = pctl.playing_time if tauon.smooth_progress_active() else int(pctl.playing_time)
+			gui.progress_bar_w = bar_w
 			progress = min(1.0, max(0.0, elapsed / length))
 		if self.seek_drag:
 			gui.update_on_drag = True
@@ -2016,7 +2017,10 @@ class FeuxBar:
 		else:
 			ddt.rect((bar_x, bar_y, bar_w, bar_h), seek_bg)
 			if progress > 0:
-				ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
+				if tauon.smooth_progress_active():
+					ddt.progress_fill(bar_x, bar_y, bar_w, bar_h, progress, seek_fill)
+				else:
+					ddt.rect((bar_x, bar_y, round(bar_w * progress), bar_h), seek_fill)
 		if (self.tauon.radiobox.load_connecting or gui.buffering_visible()) and aero is None:
 			self._draw_buffering(bar_x, bar_y, bar_w, bar_h, round(bar_w * progress), seek_bg, backdrop)
 		self.tauon.draw_ab_repeat_markers(bar_x, bar_y, bar_w, bar_h)
@@ -2073,7 +2077,8 @@ class FeuxBar:
 		if self.needles.update(targets, now):
 			self.gui.request_frame()
 
-		played = x + round(w * progress)
+		# Unrounded when smooth, so coverage_quads fades the edge pixel
+		played = x + w * progress if tauon.smooth_progress_active() else x + round(w * progress)
 		cy = y + flat
 		# Lift the colours away from the backdrop (brighter on dark panels,
 		# darker on light ones) as each needle's gap opens, so the flat state

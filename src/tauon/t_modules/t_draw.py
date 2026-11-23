@@ -261,6 +261,20 @@ class TDraw:
 		# else:
 		# 	sdl3.SDL_RenderDrawRect(self.renderer, self.sdlrect)
 
+	def progress_fill(self, x: float, y: float, w: float, h: float, fraction: float, colour: ColourRGBA) -> int:
+		"""Fill `fraction` of a bar in device pixels, the leading partial column
+		faded in by how much of it is covered. Returns the whole-pixel width."""
+		left = round(x)
+		width = round(w)
+		end = left + width * min(1.0, max(0.0, fraction))
+		whole = math.floor(end)
+		if whole > left:
+			self.rect((left, y, whole - left, h), colour)
+		edge = end - whole
+		if edge > 0 and whole < left + width:
+			self.rect((whole, y, 1, h), ColourRGBA(colour.r, colour.g, colour.b, round(colour.a * edge)))
+		return whole - left
+
 	def rect_abs(self, rectangle: tuple[int, int, int, int], colour: ColourRGBA) -> None:
 		"""x1, y1, x2, y2"""
 		sdl3.set_render_draw_color(self.renderer, colour.r, colour.g, colour.b, colour.a)

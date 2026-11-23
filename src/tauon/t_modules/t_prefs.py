@@ -246,6 +246,8 @@ class Prefs:
 	# Whether the Feux panel's scrub bar shows the playing track's waveform
 	# as needles (see t_waveform). Scanned with FFmpeg, kept in memory only.
 	feux_panel_waveform: bool = True
+	# Advance seek bars continuously instead of once a second (Aqua always does)
+	smooth_progress: bool = False
 	# Width of the Feux panel's now-playing pod -- the art and title, up to the
 	# hairline the user drags. Stored unscaled (see FeuxBar.POD1_W, the default)
 	# so a chosen width holds its proportions across a UI scale change; the
