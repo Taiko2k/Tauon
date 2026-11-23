@@ -155,6 +155,7 @@ from tauon.t_modules.t_generator import rename_playlist_references  # noqa: E402
 from tauon.t_modules.t_generator_ui import GeneratorEditBox  # noqa: E402
 from tauon.t_modules.t_musicbrainz_lookup import musicbrainz_call  # noqa: E402
 from tauon.t_modules.t_aero_world import Dreams  # noqa: E402
+from tauon.t_modules.t_aqua_splash import refresh_splash, splash_ready  # noqa: E402
 from tauon.t_modules.t_enums import (  # noqa: E402
 	Backend,
 	GuiMode,
@@ -22853,6 +22854,7 @@ class Tauon:
 					borderless=self.draw_border,
 					maximized=gui.maximized,
 					position=old_position,
+					aqua_splash=bool(prefs.aero) and splash_ready(self.user_directory),
 				)
 				with atomic_save(self.user_directory / WINDOW_STATE_FILENAME, "w") as file:
 					file.write(serialize_window_state(window_state))
@@ -23260,6 +23262,13 @@ class Tauon:
 		self.gui.update_layout = True
 		self.gui.request_frame()
 		self.gui.request_tracklist_redraw()
+		self.refresh_aqua_splash()
+
+	def refresh_aqua_splash(self) -> None:
+		"""Paint Aqua's loading screen for this window, if it needs it (on a
+		worker thread; the native launcher shows it at the next start)."""
+		if self.prefs.aero:
+			refresh_splash(self.user_directory, (self.window_size[0], self.window_size[1]), self.gui.scale)
 
 	def set_skin_tauon(self) -> None:
 		"""Back to Tauon's own themes (from the Aqua skin)."""
@@ -63829,6 +63838,9 @@ def main(holder: Holder) -> None:
 		pctl.try_reload_playlist_from_file(playlist, False)
 	tauon.playlist_autoscan = True
 	tauon.thread_manager.ready("worker")
+
+	# Aqua's loading screen for the next start, if this window needs a new one
+	tauon.refresh_aqua_splash()
 
 	# Hold the splash/loading screen for a minimum duration
 	# while tauon.core_timer.get() < 0.5:

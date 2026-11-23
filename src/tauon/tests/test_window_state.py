@@ -12,6 +12,7 @@ def test_window_state_round_trip() -> None:
 		borderless=False,
 		maximized=True,
 		position=(-120, 48),
+		aqua_splash=True,
 	)
 	assert parse_window_state(serialize_window_state(state), WindowState(1120, 600, 1.0)) == state
 
