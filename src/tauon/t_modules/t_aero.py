@@ -36,6 +36,7 @@ import random
 import threading
 import time
 from collections import OrderedDict
+from contextlib import contextmanager
 from typing import TYPE_CHECKING
 
 from PIL import Image, ImageChops, ImageDraw, ImageFilter
@@ -390,6 +391,10 @@ class Aero:
 	SEL_EDGE = rgba8(160, 225, 255, 0.25)
 	TAB = rgba8(160, 225, 255, 0.16)
 	STAR = rgba8(170, 220, 255, 0.2)
+	# Menus float over the panels, so their glass is deeper; a popup window
+	# has no sky behind it and gets a solid pane instead
+	MENU_TINT = rgba8(6, 20, 36, 0.66)
+	MENU_SOLID = rgba8(20, 44, 66)
 
 	# Obsidian tokens, the same roles in graphite and smoke
 	OBSIDIAN = {
@@ -409,6 +414,8 @@ class Aero:
 		"SEL_EDGE": rgba8(235, 240, 250, 0.20),
 		"TAB": rgba8(235, 240, 250, 0.12),
 		"STAR": rgba8(235, 240, 250, 0.18),
+		"MENU_TINT": rgba8(10, 11, 14, 0.72),
+		"MENU_SOLID": rgba8(30, 32, 37),
 	}
 
 	DEFAULT_PALETTE = (200.0, 186.0, 196.0)
@@ -597,6 +604,9 @@ class Aero:
 		for name in ("artist_text", "index_text", "time_text", "side_bar_line2", "tab_text",
 				"status_text_normal", "playlist_text_missing"):
 			put(name, muted)
+		solid = self.OBSIDIAN["MENU_SOLID"] if obs else d["MENU_SOLID"]
+		put("menu_icons", ColourRGBA(text.r, text.g, text.b, 62))
+		put("menu_text_disabled", to_colour(mix(self.OBSIDIAN["MUTED"] if obs else d["MUTED"], solid, 0.45)))
 		put("folder_line", ColourRGBA(225, 232, 242, 22) if obs else ColourRGBA(150, 215, 255, 26))
 		put("row_playing_highlight", ColourRGBA(0, 0, 0, 0))
 		put("row_select_highlight", ColourRGBA(0, 0, 0, 0))
@@ -1439,6 +1449,76 @@ class Aero:
 		self.ring("outer", (x, y, w, h), R, self.EDGE)
 		# The glint crosses the panel's content too, so it waits for flush_glints()
 		self._glints.append(((x, y, w, h), R, index))
+
+	# -- context menus --------------------------------------------------------------------------
+
+	MENU_RADIUS = 8
+
+	@contextmanager
+	def _on(self, renderer):
+		"""Draw meshes on another renderer (a popup window's) for a while."""
+		if renderer is None:
+			yield
+			return
+		old = self.renderer
+		self.renderer = renderer
+		try:
+			yield
+		finally:
+			self.renderer = old
+
+	def menu_bg(self) -> ColourRGBA:
+		"""The colour menu text and glyphs are worked out against."""
+		c = to_colour(self.MENU_SOLID)
+		return ColourRGBA(c.r, c.g, c.b, 200)
+
+	def menu_glass(self, rect, renderer=None) -> None:
+		"""A context menu's glass: frosted sky in the main window, or a solid
+		pane of the same glass in a popup window (textures belong to the main
+		renderer, so the popup's is meshes only)."""
+		x, y, w, h = (round(v) for v in rect)
+		if w < 4 or h < 4:
+			return
+		R = min(self.s(self.MENU_RADIUS), w / 2, h / 2)
+		ri = max(0.0, R - 1)
+		sh = min(h - 2, self.s(28))
+		top = self.SHEEN_TOP
+		sheen = vgrad(y + 1, sh, [(0.0, top), (1.0, (top[0], top[1], top[2], 0.0))])
+		if renderer is None:
+			sc = self.gui.scale
+			self.soft((x, y, w, h), R, 12 * sc, -4 * sc, self.SHADOW, 0, 9 * sc)
+			uv = self.frost_uv()
+			for tex, alpha in self.frost_layers():
+				sdl3.set_texture_blend_mode(tex, sdl3.SDL_BLENDMODE_NONE if alpha >= 1.0 else sdl3.SDL_BLENDMODE_BLEND)
+				self.shape((x, y, w, h), R, (1.0, 1.0, 1.0, alpha), texture=tex, uv=uv)
+			self.shape((x, y, w, h), R, self.MENU_TINT)
+			self.shape((x + 1, y + 1, w - 2, sh), (ri, ri, 0, 0), grad=sheen)
+			self.ring("inner", (x, y, w, h), R, self.RIM_SOFT)
+			self.ring("top", (x, y, w, h), R, self.RIM)
+			self.ring("outer", (x, y, w, h), R, self.EDGE)
+			return
+		base = self.MENU_SOLID
+		with self._on(renderer):
+			self.shape((x, y, w, h), R, mix(base, (0.0, 0.0, 0.0, 1.0), 0.55))
+			self.shape((x + 1, y + 1, w - 2, h - 2), ri, grad=vgrad(y, h, [
+				(0.0, mix(base, (1.0, 1.0, 1.0, 1.0), 0.07)), (1.0, base)]))
+			self.shape((x + 1, y + 1, w - 2, sh), (ri, ri, 0, 0), grad=sheen)
+			self.shape((x + R, y + 1, w - 2 * R, max(1.0, self.s(1))), 0, self.RIM)
+
+	def menu_hover(self, rect, renderer=None) -> None:
+		"""The hovered item: the tracklist's selection pill."""
+		r = self.s(5)
+		if renderer is None:
+			self.selection(rect, r)
+			return
+		y, h = rect[1], rect[3]
+		with self._on(renderer):
+			self.shape(rect, r, grad=vgrad(y, h, [(0.0, self.SEL_TOP), (1.0, self.SEL_BOT)]))
+
+	def menu_rule(self, x: float, y: float, w: float, renderer=None) -> None:
+		"""A menu break's hairline."""
+		with self._on(renderer):
+			self.shape((x + self.s(10), y, w - self.s(20), max(1.0, self.s(1))), 0, self.STAR)
 
 	def flush_glints(self) -> None:
 		"""Draw the queued glints over everything drawn since the panels."""

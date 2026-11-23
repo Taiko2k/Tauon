@@ -6802,6 +6802,15 @@ class Menu:
 	def deco(self, _=_) -> Decorator:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
+	def glass(self) -> bool:
+		"""Aqualine draws menus on glass instead of the theme's flat fill."""
+		return self.tauon.aero.active
+
+	def glass_hover(self, rect: tuple[float, float, float, float]) -> None:
+		s = self.gui.scale
+		x, y, w, h = rect
+		self.tauon.aero.menu_hover((x + 4 * s, y + 1 * s, w - 8 * s, h - 2 * s), self.render_renderer)
+
 	def click(self) -> None:
 		self.clicked = True
 		# cheap hack to prevent scroll bar from being activated when closing menu
@@ -7005,6 +7014,9 @@ class Menu:
 						colour = icon.select_colour_callback()
 					else:
 						colour = icon.colour
+					# Dark grey highlights vanish on glass
+					if colour is not None and self.glass() and is_grey(colour) and colour.r < 100:
+						colour = colours.menu_text
 
 				if colour is None and icon.base_asset_mod:
 					colour = off_colour
@@ -7287,6 +7299,12 @@ class Menu:
 			springing = self.can_be_spring_clicked and self.spring_loading_timer.get() > 0.3
 			self._hover_main = None
 
+			glass = self.glass()
+			if glass:
+				aero = tauon.aero
+				glass_bg = aero.menu_bg()
+				aero.menu_glass((x_run, y_run, *self.popup_size()), self.render_renderer)
+
 			for i in range(len(self.items)):
 				#logging.info(self.items[i])
 
@@ -7300,6 +7318,11 @@ class Menu:
 					rect = (x_run, y_run, self.w, self.break_height - 1)
 					if coll_point(self.pointer, rect):
 						self.clicked = False
+
+					if glass:
+						aero.menu_rule(x_run, y_run + round(self.break_height / 2), self.w, self.render_renderer)
+						y_run += self.break_height
+						continue
 
 					ddt.rect_a((x_run, y_run), (self.w, self.break_height), colours.menu_background)
 
@@ -7333,8 +7356,11 @@ class Menu:
 					fx.text_colour = colours.menu_text_disabled
 
 				# Draw item background, black by default
-				ddt.rect_a((x_run, y_run), (self.w, self.h), fx.bg_colour)
-				bg = fx.bg_colour
+				if glass:
+					bg = glass_bg
+				else:
+					ddt.rect_a((x_run, y_run), (self.w, self.h), fx.bg_colour)
+					bg = fx.bg_colour
 
 				# Detect if mouse is over this item
 				selected = False
@@ -7342,10 +7368,13 @@ class Menu:
 				self.fields.add(rect)
 
 				if coll_point(self.pointer, (x_run, y_run, self.w, self.h - 1)):
-					ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
+					if glass:
+						self.glass_hover((x_run, y_run, self.w, self.h))
+					else:
+						ddt.rect_a((x_run, y_run), (self.w, self.h), colours.menu_highlight_background)  # [15, 15, 15, 255]
+						bg = alpha_blend(colours.menu_highlight_background, bg)
 					selected = True
 					self._hover_main = self.items[i]
-					bg = alpha_blend(colours.menu_highlight_background, bg)
 
 					# Call menu items callback if clicked
 					if self.items[i].incrementor or self.items[i].slider_get is not None or self.slider_held is not None:
@@ -7366,7 +7395,8 @@ class Menu:
 						self.sub_y_position = y_run
 
 				# Draw tab
-				ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
+				if not glass:
+					ddt.rect_a((x_run, y_run), (4 * gui.scale, self.h), colours.menu_tab)
 
 				# Draw Icon
 				x = 12 * gui.scale
@@ -7393,6 +7423,8 @@ class Menu:
 							colour = rgb_add_hls(bg, 0, -0.8, -0.1)
 						else:
 							colour = rgb_add_hls(bg, 0, 0.40, 0)
+					if glass:
+						colour = colours.menu_text if self.sub_active == self.items[i].func or selected else colours.menu_text_disabled
 
 					# colour = ColourRGBA(50, 50, 50, 255)
 					# if selected:
@@ -7424,7 +7456,9 @@ class Menu:
 				hint = self.items[i].hint_text()
 				if hint is not None and not self.items[i].incrementor:
 
-					if self.background_is_light(bg):
+					if glass:
+						hint_colour = colours.menu_text_disabled
+					elif self.background_is_light(bg):
 						hint_colour = rgb_add_hls(bg, 0, -0.30, -0.3)
 					else:
 						hint_colour = rgb_add_hls(bg, 0, 0.15, 0)
@@ -7608,6 +7642,10 @@ class Menu:
 				xoff = 24 * gui.scale
 				break
 
+		glass = self.glass()
+		if glass:
+			self.tauon.aero.menu_glass((ox, oy, *self.submenu_size()), self.render_renderer)
+
 		self._hover_sub = None
 		row = 0
 		for item in sub_items:
@@ -7618,14 +7656,18 @@ class Menu:
 			else:
 				fx = self.deco()
 
-			ddt.rect_a((ox, y), (sub_w, self.h), fx.bg_colour)
+			if not glass:
+				ddt.rect_a((ox, y), (sub_w, self.h), fx.bg_colour)
 			self.fields.add((ox, y, sub_w, self.h - 1))
 
-			bg = colours.menu_background
+			bg = self.tauon.aero.menu_bg() if glass else colours.menu_background
 			this_select = False
 			if coll_point(self.pointer, (ox, y, sub_w, self.h - 1)):
-				ddt.rect_a((ox, y), (sub_w, self.h), colours.menu_highlight_background)
-				bg = alpha_blend(colours.menu_highlight_background, bg)
+				if glass:
+					self.glass_hover((ox, y, sub_w, self.h))
+				else:
+					ddt.rect_a((ox, y), (sub_w, self.h), colours.menu_highlight_background)
+					bg = alpha_blend(colours.menu_highlight_background, bg)
 				this_select = True
 				self._hover_sub = item
 
@@ -7671,7 +7713,8 @@ class Menu:
 			else:
 				label_max_w = sub_w - (text_x - ox) - 10 * gui.scale
 				ddt.text((text_x, y + ytoff), label, fx.text_colour, self.font, max_w=label_max_w, bg=bg)
-			ddt.rect_a((ox, y), (4 * gui.scale, self.h), colours.menu_tab)
+			if not glass:
+				ddt.rect_a((ox, y), (4 * gui.scale, self.h), colours.menu_tab)
 
 			row += 1
 
