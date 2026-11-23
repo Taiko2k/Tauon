@@ -38535,7 +38535,7 @@ class BottomBarType1:
 					over = self.coll(rect)
 					play = self.play_button
 					aero.orb(29 * gui.scale + play.w / 2, window_size[1] - self.control_line_bottom + play.h / 2,
-						34 * gui.scale, play, hover=over, pressed=over and inp.mouse_down)
+						34 * gui.scale, play, hover=over, pressed=over and inp.mouse_down, glow=True)
 				else:
 					self.play_button.render(29 * gui.scale, window_size[1] - self.control_line_bottom, play_colour)
 				# ddt.rect_r(rect,[255,0,0,255], True)
@@ -38568,7 +38568,7 @@ class BottomBarType1:
 						ddt.rect_a((x + 10 * gui.scale, y + off), (4 * gui.scale, 13 * gui.scale), colour)
 
 					aero.orb_glyph(x + 7 * gui.scale, y + 6.5 * gui.scale, 34 * gui.scale, pause_glyph,
-						hover=over, pressed=over and inp.mouse_down)
+						hover=over, pressed=over and inp.mouse_down, glow=True)
 				else:
 					ddt.rect_a((x, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
 					ddt.rect_a((x + 10 * gui.scale, y + 0), (4 * gui.scale, 13 * gui.scale), pause_colour)
@@ -38592,7 +38592,7 @@ class BottomBarType1:
 				def stop_glyph(off: int, colour: ColourRGBA, x: float = x, y: float = y) -> None:
 					ddt.rect_a((x + 2 * gui.scale, y + 2 * gui.scale + off), (9 * gui.scale, 9 * gui.scale), colour)
 
-				aero.orb_glyph(x + 6.5 * gui.scale, y + 6.5 * gui.scale, 28 * gui.scale, stop_glyph,
+				aero.ghost(x + 6.5 * gui.scale, y + 6.5 * gui.scale, 28 * gui.scale, draw_glyph=stop_glyph,
 					hover=over, pressed=over and inp.mouse_down)
 			else:
 				ddt.rect_a((x, y + 0), (13 * gui.scale, 13 * gui.scale), stop_colour)
@@ -38634,7 +38634,7 @@ class BottomBarType1:
 			if aero is not None:
 				over = self.coll(rect)
 				ff = self.forward_button
-				aero.orb(buttons_x_offset + 240 * gui.scale + ff.w / 2, 1 + window_size[1] - self.control_line_bottom + ff.h / 2,
+				aero.ghost(buttons_x_offset + 240 * gui.scale + ff.w / 2, 1 + window_size[1] - self.control_line_bottom + ff.h / 2,
 					30 * gui.scale, ff, hover=over, pressed=over and inp.mouse_down)
 			else:
 				self.forward_button.render(
@@ -38673,7 +38673,7 @@ class BottomBarType1:
 			if aero is not None:
 				over = self.coll(rect)
 				bb = self.back_button
-				aero.orb(buttons_x_offset + 180 * gui.scale + bb.w / 2, 1 + window_size[1] - self.control_line_bottom + bb.h / 2,
+				aero.ghost(buttons_x_offset + 180 * gui.scale + bb.w / 2, 1 + window_size[1] - self.control_line_bottom + bb.h / 2,
 					30 * gui.scale, bb, hover=over, pressed=over and inp.mouse_down)
 			else:
 				self.back_button.render(buttons_x_offset + 180 * gui.scale, 1 + window_size[1] - self.control_line_bottom,

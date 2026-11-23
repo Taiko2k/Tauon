@@ -1954,13 +1954,21 @@ class Aero:
 	def _glyph_shadow(self, hue: float | None) -> ColourRGBA:
 		return to_colour(mix(rgba8(0, 30, 60, 0.6), rgba8(0, 0, 0, 0.6), self.mono if hue is None else 0.0))
 
+	def _orb_glow(self, x: int, y: int, d: int) -> None:
+		"""0 0 14px of the accent around the transport's hero orb."""
+		c = mix(hsl(self.acc, 0.9, 0.55, 0.45), hsl(self.oacc, 0.9, 0.6, 0.4), self.mono)
+		self.soft((x, y, d, d), d / 2, 7 * self.gui.scale, 0, c)
+
 	def orb(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
-			pressed: bool = False, hue: float | None = None) -> None:
+			pressed: bool = False, hue: float | None = None, glow: bool = False) -> None:
 		"""A gel orb centred on (cx, cy). `glyph` is an icon asset drawn white
-		under the cap, with the concept's 1px drop shadow."""
+		under the cap, with the concept's 1px drop shadow. `glow` adds the
+		hero orb's accent glow."""
 		d = max(6, round(d))
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
+		if glow:
+			self._orb_glow(x, y, d)
 		self._orb_body(x, y, d, hover, hue)
 		if glyph is not None:
 			gx = round(cx - glyph.w / 2)
@@ -1972,16 +1980,45 @@ class Aero:
 		sdl3.render_texture(self.renderer, cap.tex, None, sdl3.FRect(x, y, d, d))
 
 	def orb_glyph(self, cx: float, cy: float, d: float, draw_glyph, *, hover: bool = False,
-			pressed: bool = False, hue: float | None = None) -> None:
+			pressed: bool = False, hue: float | None = None, glow: bool = False) -> None:
 		"""Like orb(), but the glyph is drawn by a callback (colour) -> None."""
 		d = max(6, round(d))
 		x = round(cx - d / 2)
 		y = round(cy - d / 2)
+		if glow:
+			self._orb_glow(x, y, d)
 		self._orb_body(x, y, d, hover, hue)
 		draw_glyph(max(1, round(self.gui.scale)), self._glyph_shadow(hue))
 		draw_glyph(0, ColourRGBA(255, 255, 255, 255))
 		cap = self._cached(("cap", d, pressed), lambda: self._cap_image(d, pressed))
 		sdl3.render_texture(self.renderer, cap.tex, None, sdl3.FRect(x, y, d, d))
+
+	def ghost(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
+			pressed: bool = False, draw_glyph=None) -> None:
+		"""A secondary transport button: the glyph etched straight on the
+		glass, with a faint glass disc behind it only on hover. `glyph` is an
+		icon asset, or `draw_glyph(offset, colour)` draws it."""
+		d = max(6, round(d))
+		r = d / 2
+		rect = (round(cx - r), round(cy - r), d, d)
+		if hover or pressed:
+			k = 0.7 if pressed else 1.0
+			self.shape(rect, r, grad=vgrad(rect[1], d, [(0.0, (1, 1, 1, 0.16 * k)), (1.0, (1, 1, 1, 0.04 * k))]))
+			self.ring("top", rect, r, (1.0, 1.0, 1.0, 0.4 * k))
+			self.ring("outer", rect, r, mix(rgba8(0, 10, 25, 0.4), rgba8(0, 0, 0, 0.5), self.mono))
+		shadow = to_colour(mix(rgba8(0, 8, 20, 0.75), rgba8(0, 0, 0, 0.8), self.mono))
+		t = self.TEXT
+		colour = to_colour(t if hover else (t[0], t[1], t[2], 0.88))
+		sh = max(1, round(self.gui.scale))
+		if draw_glyph is not None:
+			draw_glyph(sh, shadow)
+			draw_glyph(0, colour)
+			return
+		if glyph is not None:
+			gx = round(cx - glyph.w / 2)
+			gy = round(cy - glyph.h / 2)
+			glyph.render(gx, gy + sh, shadow)
+			glyph.render(gx, gy, colour)
 
 	def _bead_image(self, d: int, H: float, obs: bool = False) -> tuple[Image.Image, int]:
 		sc = self.gui.scale
@@ -2717,9 +2754,10 @@ class AquaBar:
 	# The concept's bar proportions (96px tall, 64px play orb lifted 5px, 40px
 	# others) at a slightly smaller size
 	PANEL_H = 73
-	PLAY_D = 49
-	SIDE_D = 31
-	PLAY_LIFT = 4
+	# Quiet transport: one hero play orb, the rest etched glyphs on the glass
+	PLAY_D = 52
+	SIDE_D = 34
+	PLAY_LIFT = 0
 	# The whole transport sits this much below the panel's centre line
 	TRANSPORT_DROP = 3
 
@@ -2790,7 +2828,7 @@ class AquaBar:
 			tauon.toggle_repeat()
 			tauon.toast(_("Repeat On") if pctl.repeat_mode else _("Repeat Off"))
 			inp.right_click = False
-		aero.orb(cx, orb_mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
+		aero.ghost(cx, orb_mid, side_d, a["feux-bb"], hover=over, pressed=over and down)
 		x += side_d + self._s(10)
 
 		cx = x + play_d / 2
@@ -2811,7 +2849,7 @@ class AquaBar:
 				inp.right_click = False
 			self._tip(rect[0], top - self._s(4), _("Pause, Right-click: Stop") if playing else _("Play, Right-click: Stop"))
 		glyph = a["feux-pause"] if playing else a["feux-play"]
-		aero.orb(cx, play_mid, play_d, glyph, hover=over, pressed=over and down)
+		aero.orb(cx, play_mid, play_d, glyph, hover=over, pressed=over and down, glow=True)
 		x += play_d + self._s(10)
 
 		cx = x + side_d / 2
@@ -2822,7 +2860,7 @@ class AquaBar:
 			tauon.toggle_random()
 			tauon.toast(_("Shuffle On") if pctl.random_mode else _("Shuffle Off"))
 			inp.right_click = False
-		aero.orb(cx, orb_mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
+		aero.ghost(cx, orb_mid, side_d, a["feux-ff"], hover=over, pressed=over and down)
 		x += side_d
 
 		# -- right: mode pills, volume, menu ------------------------------------

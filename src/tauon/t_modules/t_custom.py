@@ -1835,7 +1835,7 @@ class FeuxBar:
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Back"))
 			if aero is not None:
-				aero.orb(x + box / 2, mid, box, a["feux-bb"], hover=over, pressed=over and inp.mouse_down)
+				aero.ghost(x + box / 2, mid, box, a["feux-bb"], hover=over, pressed=over and inp.mouse_down)
 			else:
 				a["feux-bb"].render(x + (box - a["feux-bb"].w) // 2, mid - a["feux-bb"].h // 2, colour)
 		x += box + self._s(9)
@@ -1870,7 +1870,7 @@ class FeuxBar:
 		glyph = a["feux-pause"] if shown else a["feux-play"]
 		if aero is not None:
 			over = self.coll(rect)
-			aero.orb(disc_x + disc / 2, mid, disc, glyph, hover=over, pressed=over and inp.mouse_down)
+			aero.orb(disc_x + disc / 2, mid, disc, glyph, hover=over, pressed=over and inp.mouse_down, glow=True)
 		else:
 			a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
 			glyph_colour = self._fg(ColourRGBA(backdrop.r, backdrop.g, backdrop.b, 255), disc_colour, 4.5)
@@ -1904,7 +1904,7 @@ class FeuxBar:
 			glyph_c = rgb_add_hls(ring, l=glyph_lightness - ring_lightness)
 			if aero is not None:
 				over = self.coll(rect)
-				aero.orb(x + stop / 2, mid, stop, a["feux-stop"], hover=over, pressed=over and inp.mouse_down)
+				aero.ghost(x + stop / 2, mid, stop, a["feux-stop"], hover=over, pressed=over and inp.mouse_down)
 			else:
 				a["feux-disc-sm"].render(x, mid - round(a["feux-disc-sm"].h / 2), ring)
 				a["feux-stop"].render(
@@ -1928,7 +1928,7 @@ class FeuxBar:
 					inp.right_click = False
 				self._tip(tauon.tool_tip2, x, top - self._s(4), _("Forward"))
 			if aero is not None:
-				aero.orb(x + box / 2, mid, box, a["feux-ff"], hover=over, pressed=over and inp.mouse_down)
+				aero.ghost(x + box / 2, mid, box, a["feux-ff"], hover=over, pressed=over and inp.mouse_down)
 			else:
 				a["feux-ff"].render(x + (box - a["feux-ff"].w) // 2, mid - a["feux-ff"].h // 2, colour)
 		x += box + self._s(16)
