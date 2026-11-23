@@ -448,6 +448,9 @@ class GlassSpectrumWidget(Widget):
 	single_instance = True
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
+		# Part of the Aqua skin: an empty slot otherwise
+		if not tauon.aero.active:
+			return
 		pad = round(10 * tauon.gui.scale)
 		tauon.fields.add((round(x), round(y), round(w), round(h)))
 		tauon.aero.draw_glass_spectrum((x + pad, y + pad, max(1, w - pad * 2), max(1, h - pad * 2)))

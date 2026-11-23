@@ -2944,17 +2944,39 @@ class Aero:
 		dt = min(0.1, max(0.0, now - getattr(self, "_spec_last", now)))
 		self._spec_last = now
 		live = pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM)
+		# Ask for more bands as the panel widens (a full-width side panel
+		# gets 64); spectrum() merges them again where bars would be too thin
+		fit = self.spectrum_fit(rect[2])
+		self.gui.glass_spec_bands = max([24] + [step for step in self.SPEC_BAND_STEPS if step <= fit])
 		data = self.gui.glass_spec
-		n = 24
-		if live and data and len(data) >= n:
-			values = [min(1.0, max(0.03, v / 20)) for v in data[:n]]
+		if live and data:
+			values = [min(1.0, max(0.03, v / 20)) for v in data]
 		else:
-			values = [0.03] * n
+			values = [0.03] * 24
 		self.spectrum(rect, values, dt, live, self.spectrum_hue())
+
+	SPEC_BAND_STEPS = (24, 32, 48, 64)
+	SPEC_MIN_BAR = 5   # logical px
+
+	def spectrum_gap(self) -> float:
+		return self.s(3)
+
+	def spectrum_fit(self, w: float) -> int:
+		"""How many bars fit across w at the narrowest bar width."""
+		gap = self.spectrum_gap()
+		return max(6, int((w + gap) / (self.s(self.SPEC_MIN_BAR) + gap)))
 
 	def spectrum(self, rect, values: list[float], dt: float, live: bool, hue: float | None = None) -> None:
 		"""Glass bars with lit caps. `values` are 0-1."""
 		x, y, w, h = rect
+		# A narrow panel merges neighbouring bands so bars keep their width
+		fit = self.spectrum_fit(w)
+		if len(values) > fit:
+			src = values
+			values = []
+			for j in range(fit):
+				group = src[j * len(src) // fit:max(j * len(src) // fit + 1, (j + 1) * len(src) // fit)]
+				values.append((sum(group) / len(group) + max(group)) / 2)
 		n = len(values)
 		if n == 0 or w < n * 2:
 			return
@@ -2962,7 +2984,7 @@ class Aero:
 			self.spec_vals = [0.0] * n
 			self.spec_peaks = [0.0] * n
 		sc = self.gui.scale
-		gap = self.s(3)
+		gap = self.spectrum_gap()
 		bw = (w - gap * (n - 1)) / n
 		H = self.acc if hue is None else hue
 		# Obsidian (only while the skin is on): silver bars, accent caps

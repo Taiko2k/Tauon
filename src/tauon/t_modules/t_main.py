@@ -1224,6 +1224,8 @@ class GuiVar:
 		self.glass_spec_wanted: bool = False
 		self.glass_spec_in_widget: bool = False
 		self.glass_spec: list[float] = []
+		# Bands the glass spectrum asks for: more when its panel is wide
+		self.glass_spec_bands: int = 24
 
 		self.preview_artist: str = ""
 		self.preview_artist_location = (0, 0)
@@ -17478,8 +17480,8 @@ class Tauon:
 			gui.vis = 0
 			gui.turbo = False
 
-		# The glass spectrum needs the vis thread too
-		gui.glass_spec_wanted = prefs.backend == Backend.PHAZOR and gui.mode == GuiMode.MAIN and (
+		# The glass spectrum (Aqua only) needs the vis thread too
+		gui.glass_spec_wanted = prefs.backend == Backend.PHAZOR and gui.mode == GuiMode.MAIN and self.aero.active and (
 			(gui.custom_mode and gui.glass_spec_in_widget)
 			or (not gui.custom_mode and prefs.side_panel_spectrum and gui.rsp))
 		if gui.glass_spec_wanted:
@@ -34923,6 +34925,7 @@ class Over:
 			_("Skin"): "skin look style tauon aqua aero frutiger glass gel glossy skeuomorphic sky",
 			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
 			_("Ambient motion"): "aqua animation animate sky motion drift bokeh",
+			_("Side panel spectrum"): "aqua spectrum visualiser visualizer bars side panel art glass show",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35787,6 +35790,10 @@ class Over:
 		)
 		if prefs.aero:
 			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
+			if prefs.backend == Backend.PHAZOR:
+				rows.switch(
+					tauon.toggle_side_panel_spectrum, _("Side panel spectrum"),
+					_("Glass bars under the art in the side panel"))
 			return
 
 		rect = rows.custom(round(34 * s))
@@ -54189,7 +54196,26 @@ class Showcase:
 		#self.lastfm_artist = None
 		self.artist_mode: bool = False
 
+	def shelf(self) -> tuple[int, int, int, int]:
+		"""The view's own area: Aqua's glass panel for it, between the bars."""
+		gui = self.gui
+		return (round(gui.playlist_left), round(gui.panelY), round(gui.plw),
+			round(self.window_size[1] - gui.panelY - gui.panelBY))
+
 	def render(self) -> None:
+		if not self.tauon.aero.active:
+			self._render()
+			return
+		# Aqua's bars are translucent: keep the art and lyrics on the view's
+		# own glass, rather than scrolling on underneath the bars
+		old_clip = sdl3.get_render_clip_rect(self.renderer)
+		sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(*self.shelf()))
+		try:
+			self._render()
+		finally:
+			sdl3.set_render_clip_rect(self.renderer, old_clip)
+
+	def _render(self) -> None:
 		if self.gui.timed_lyrics_edit_view:
 			self.timed_lyrics_edit.render()
 			return
@@ -54350,7 +54376,10 @@ class Showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
 			plain_lyrics = self.tauon.lyric_variants.plain_text(track)
 			lyrics_margin = round(24 * self.gui.scale)
-			lyrics_rect = (gcx, self.gui.panelY, self.window_size[0] - gcx, self.window_size[1] - self.gui.panelY - self.gui.panelBY)
+			# Lyrics wrap at the right edge of the view's area (Aqua's glass is inset from the window's)
+			shelf = self.shelf()
+			right = shelf[0] + shelf[2] if self.tauon.aero.active else self.window_size[0]
+			lyrics_rect = (gcx, self.gui.panelY, right - gcx, self.window_size[1] - self.gui.panelY - self.gui.panelBY)
 			switcher = self.tauon.lyric_switcher
 
 			if timed_ready and plain_lyrics:
@@ -54373,7 +54402,7 @@ class Showcase:
 						background_highlight_colour=bfg):
 						self.guitar_chords.auto_scroll = True
 			elif True and self.prefs.show_lyrics_showcase and timed_ready:
-				w = self.window_size[0] - gcx - lyrics_margin
+				w = right - gcx - lyrics_margin
 				h = (self.window_size[1] - self.gui.panelBY) - self.gui.panelY
 				switcher.begin(track, lyrics_rect, True, self.colours.lyrics_panel_background, inset_right=lyrics_margin - 8 * self.gui.scale)
 				self.tauon.timed_lyrics_ren.render(track.index, gcx, y, w=w, h=h)
@@ -54413,7 +54442,7 @@ class Showcase:
 			else:
 				x += box + int(self.window_size[0] * 0.15) + 10 * self.gui.scale
 				x -= 100 * self.gui.scale
-				w = self.window_size[0] - x - lyrics_margin
+				w = right - x - lyrics_margin
 				switcher.begin(track, lyrics_rect, False, self.colours.lyrics_panel_background, inset_right=lyrics_margin - 8 * self.gui.scale)
 
 				if self.inp.key_up_press and not (self.inp.key_ctrl_down or self.inp.key_shift_down or self.inp.key_shiftr_down):
@@ -63225,14 +63254,6 @@ def main(holder: Holder) -> None:
 	center_info_menu.add_to_sub(0, MenuItem(_("Toggle art position"),
 		tauon.toggle_lyrics_panel_position, tauon.toggle_lyrics_panel_position_deco, show_test=tauon.lyrics_in_side_show))
 
-	# The glass spectrum along the bottom of the side panel
-	side_spectrum_item = MenuItem(
-		_("Show Spectrum"), tauon.toggle_side_panel_spectrum,
-		check_test=lambda: tauon.toggle_side_panel_spectrum(1),
-		show_test=lambda _ref=None: prefs.backend == Backend.PHAZOR and not gui.custom_mode)
-	center_info_menu.add(side_spectrum_item)
-	picture_menu.add(side_spectrum_item)
-	picture_menu.br()
 	picture_menu.add(MenuItem(_("Open Image"), tauon.open_image, tauon.open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.open_image_disable_test))
 	# Next and previous pictures
 	picture_menu.add(MenuItem(_("Next Image"), tauon.cycle_offset, tauon.cycle_image_deco, pass_ref=True, pass_ref_deco=True))
@@ -63845,9 +63866,10 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Show Album Art"), tauon.toggle_feux_art,
 		check_test=lambda: prefs.feux_panel_art,
 		show_test=lambda ref=None: tauon.feux_panel_showing()))
+	# Aqua's bar has no waveform
 	mode_menu.add(MenuItem(_("Show Waveform"), tauon.toggle_feux_waveform,
 		check_test=lambda: prefs.feux_panel_waveform,
-		show_test=lambda ref=None: tauon.feux_panel_showing()))
+		show_test=lambda ref=None: tauon.feux_panel_showing() and not tauon.aero.active))
 
 	mode_menu.br()
 	mode_menu.add(MenuItem(_("Copy Title to Clipboard"), tauon.copy_bb_metadata))
@@ -68462,7 +68484,8 @@ def main(holder: Holder) -> None:
 							# Aqua mirrors the art below itself; the text moves
 							# down to make room. The glass spectrum takes the bottom.
 							refl = tauon.aero.side_art_text_gap() if tauon.aero.active and prefs.show_side_art else 0
-							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum else 0
+							# The spectrum is part of the Aqua skin
+							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum and tauon.aero.active else 0
 
 							if prefs.show_side_art:
 								meta_box.draw(

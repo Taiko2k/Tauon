@@ -1612,16 +1612,17 @@ def player4(tauon: Tauon) -> None:
 			# The glass spectrum (side panel, or its Custom Layout widget) shares
 			# the 24-band data of the top-panel spectrum
 			if gui.glass_spec_wanted:
-				if gui.vis == 2:
+				bands = gui.glass_spec_bands
+				if gui.vis == 2 and bands == 24:
 					gui.glass_spec = gui.spec
 				else:
-					aud.get_spectrum(24, bins1)
-					bias = 1
-					glass: list[float] = []
-					for b in list(bins1):
-						glass.append(int(b * 1.7 * bias))
-						bias += 0.04
-					gui.glass_spec = glass
+					buffer = glass_bins.get(bands)
+					if buffer is None:
+						buffer = glass_bins[bands] = (ctypes.c_float * bands)()
+					aud.get_spectrum(bands, buffer)
+					# Treble lifted as for 24 bands, whatever the count
+					lift = 0.96 / bands
+					gui.glass_spec = [int(b * 1.7 * (1 + lift * i)) for i, b in enumerate(buffer)]
 
 			# Spectrogram widget: fed independently of gui.vis (own FFT buffers)
 			# so it can run alongside the bar visualiser above. Raw log-spaced
@@ -1814,6 +1815,7 @@ def player4(tauon: Tauon) -> None:
 		replaygain_live_controls = False
 
 	bins1 = (ctypes.c_float * 24)()
+	glass_bins: dict[int, ctypes.Array] = {}  # the glass spectrum's, by band count
 	bins2 = (ctypes.c_float * 45)()
 	bins3 = (ctypes.c_float * gui.spectrogram_bins)()  # spectrogram widget columns
 	try:
