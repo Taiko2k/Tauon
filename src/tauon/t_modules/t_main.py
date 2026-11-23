@@ -41002,6 +41002,8 @@ class StandardPlaylist:
 		self._tracklist_title_rows: list[float] = []
 		self._tracklist_sub_rows: list[float] = []
 		self._tracklist_show_titles = False
+		# (title position, press location) when a press landed on an already selected folder title
+		self._title_reclick: tuple[int, tuple] | None = None
 		self._album_art_block_starts: list[int] = []
 		# Tracklist widget whose settings apply to the last render; None = preset
 		self.album_only_owner: object | None = None
@@ -42397,6 +42399,16 @@ class StandardPlaylist:
 							temp = tauon.get_folder_tracks_local(track_position)
 							pctl.selected_in_playlist = track_position
 
+							# Re-clicking a selected folder deselects it on release, unless it gets dragged
+							self._title_reclick = None
+							if (
+								not self.inp.key_shift_down
+								and not self.inp.key_ctrl_down
+								and len(temp) > 1
+								and sorted(self.gui.shift_selection) == temp
+							):
+								self._title_reclick = (track_position, gui.drag_source_position)
+
 							if len(self.gui.shift_selection) > 0 and self.inp.key_shift_down:
 								if track_position < self.gui.shift_selection[0]:
 									for item in reversed(temp):
@@ -42409,6 +42421,21 @@ class StandardPlaylist:
 
 							else:
 								self.gui.shift_selection = copy.copy(temp)
+
+					# Released on a re-clicked folder title without dragging: keep only its first track
+					if inp.mouse_up and self._title_reclick and self._title_reclick[0] == track_position:
+						if (
+							self._title_reclick[1] == gui.drag_source_position
+							and self.coll(input_box)
+							and not self.inp.key_shift_down
+							and not self.inp.key_ctrl_down
+							and point_proximity_test(gui.drag_source_position, self.inp.mouse_position, 15)
+						):
+							self.gui.shift_selection = [track_position]
+							pctl.selected_in_playlist = track_position
+							gui.request_tracklist_redraw()
+							gui.request_frame()
+						self._title_reclick = None
 
 					# Should draw drag highlight?
 
