@@ -2384,6 +2384,45 @@ class Aero:
 		self.led(lx, y + h / 2, on)
 		return lx + self.s(3.5) + self.s(7)
 
+	def toggle(self, rect, on: bool, hover: bool = False, colour: ColourRGBA | None = None,
+			disabled: bool = False) -> None:
+		"""An on/off switch: a sunken track that fills with gel (in colour's
+		hue, else the accent) under a glass knob."""
+		x, y, w, h = rect
+		r = h / 2
+		if on and not disabled:
+			hue = None
+			if colour is not None:
+				hue = colorsys.rgb_to_hls(colour.r / 255, colour.g / 255, colour.b / 255)[0] * 360
+			self.gel(rect, r, hue=hue, glow=False)
+		else:
+			self.sunken(rect, r)
+		if hover and not disabled:
+			self.shape(rect, r, self.HOVER)
+		inset = self.s(2)
+		d = max(4, round(h - inset * 2))
+		kx = x + w - inset - d if on else x + inset
+		self._blit(self._cached(("knob", d), lambda: self._knob_image(d)), round(kx), round(y + (h - d) / 2),
+			0.45 if disabled else 1.0)
+
+	def _knob_image(self, d: int) -> tuple[Image.Image, int]:
+		"""A switch's white glass knob with its drop shadow."""
+		sc = self.gui.scale
+		pad = math.ceil(3 * sc) + 2
+		size = (d + pad * 2, d + pad * 2)
+		c0 = pad
+		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
+		shadow = _ellipse_mask(size, (c0, c0 + sc, c0 + d, c0 + d + sc)).filter(ImageFilter.GaussianBlur(1.5 * sc))
+		canvas = _solid(size, (0.0, 0.0, 0.0, 0.4), shadow)
+		R = d * 0.8
+		body = _map_stops(_radial_l(size, c0 + d * 0.5, c0 + d * 0.28, R, R), [
+			(0.0, (1.0, 1.0, 1.0, 1.0)), (0.6, rgba8(226, 233, 240)), (1.0, rgba8(170, 182, 196))])
+		body.putalpha(circle)
+		canvas = Image.alpha_composite(canvas, body)
+		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
+		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 0, 0, 0.28), inner))
+		return canvas, pad
+
 	def menu_orb(self, rect, hover: bool, pressed: bool) -> None:
 		"""The main menu button: Tauon's record floating in a glass marble.
 		The record is its own layer so it can wobble inside the glass."""

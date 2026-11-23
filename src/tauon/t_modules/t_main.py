@@ -134,7 +134,7 @@ from tauon.t_modules.t_db_state import (  # noqa: E402
 	state_save,
 	validate_and_repair_database,
 )
-from tauon.t_modules.t_aero import Aero, AquaBar  # noqa: E402
+from tauon.t_modules.t_aero import Aero, AquaBar, to_colour  # noqa: E402
 from tauon.t_modules.t_custom import (  # noqa: E402
 	SPECTROGRAM_BINS as CL_SPECTROGRAM_BINS,
 	SPECTRO_PRESETS as CL_SPECTRO_PRESETS,
@@ -31869,13 +31869,16 @@ class SettingsRows:
 			hover = over.coll(chip)
 			fill = base
 			if selected:
-				fill = alpha_blend(alpha_mod(self.accent, 60), base)
+				fill = over.settings_over(alpha_mod(self.accent, 60), base)
 			elif hover:
 				fill = over.settings_surface(base, 10)
-			border = alpha_blend(alpha_mod(self.accent, 170), base) if selected else over.settings_overlay(base, 30)
-			over.ddt.bordered_rect(chip, fill, border, line_px)
-			if selected:
-				over.ddt.rect((chip[0], chip[1] + chip_h - round(2 * s), chip_w, round(2 * s)), self.accent)
+			border = over.settings_over(alpha_mod(self.accent, 170), base) if selected else over.settings_overlay(base, 30)
+			if over.settings_glass:
+				fill = over.settings_glass_face(chip, chip_h / 2, selected, hover, self.accent)
+			else:
+				over.ddt.bordered_rect(chip, fill, border, line_px)
+				if selected:
+					over.ddt.rect((chip[0], chip[1] + chip_h - round(2 * s), chip_w, round(2 * s)), self.accent)
 			over.ddt.text(
 				(chip[0] + chip_w // 2, chip[1] + (chip_h - round(16 * s)) // 2 - round(1 * s), 2), label,
 				over.colours.box_text if selected or hover else over.colours.box_text_label, font,
@@ -32293,41 +32296,107 @@ class Over:
 		self.settings_doc_texture_size = size
 		return self.settings_doc_texture
 
+	@property
+	def settings_glass(self) -> bool:
+		"""Aqua: the window is glass and its surfaces stay translucent."""
+		return self.tauon.aero.active
+
+	def settings_flat(self, background: ColourRGBA) -> ColourRGBA:
+		"""A translucent surface as it reads over the glass, for contrast checks."""
+		if background.a >= 255 or not self.settings_glass:
+			return background
+		return alpha_blend(background, alpha_mod(self.tauon.aero.menu_bg(), 255))
+
+	def settings_over(self, colour: ColourRGBA, base: ColourRGBA) -> ColourRGBA:
+		"""colour composited over base; on glass a translucent base stays translucent."""
+		if base.a >= 255 or not self.settings_glass:
+			return alpha_blend(colour, base)
+		ca = colour.a / 255
+		k = base.a / 255 * (1 - ca)
+		a = ca + k
+		if a <= 0:
+			return ColourRGBA(colour.r, colour.g, colour.b, 0)
+		return ColourRGBA(
+			round((colour.r * ca + base.r * k) / a), round((colour.g * ca + base.g * k) / a),
+			round((colour.b * ca + base.b * k) / a), round(a * 255))
+
 	@staticmethod
-	def settings_contrast_text(background: ColourRGBA) -> ColourRGBA:
+	def settings_glass_rgba(colour: ColourRGBA) -> tuple[float, float, float, float]:
+		return (colour.r / 255, colour.g / 255, colour.b / 255, colour.a / 255)
+
+	def settings_contrast_text(self, background: ColourRGBA) -> ColourRGBA:
 		"""Return the most legible neutral ink for a settings surface."""
+		background = self.settings_flat(background)
 		dark = ColourRGBA(24, 25, 29, 255)
 		light = ColourRGBA(246, 246, 248, 255)
 		return max((dark, light), key=lambda candidate: contrast_ratio(candidate, background))
 
-	@staticmethod
-	def settings_background_is_light(background: ColourRGBA) -> bool:
+	def settings_background_is_light(self, background: ColourRGBA) -> bool:
+		background = self.settings_flat(background)
 		dark = ColourRGBA(24, 25, 29, 255)
 		light = ColourRGBA(246, 246, 248, 255)
 		dark_contrast = contrast_ratio(dark, background)
 		return dark_contrast >= 4.5 and dark_contrast >= contrast_ratio(light, background)
 
-	@staticmethod
 	def settings_readable_colour(
+		self,
 		colour: ColourRGBA,
 		background: ColourRGBA,
 		minimum_contrast: float,
 	) -> ColourRGBA:
 		"""Preserve a theme colour when possible, pulling it toward readable ink when needed."""
-		return readable_text_colour(colour, background, minimum_contrast)
+		return readable_text_colour(colour, self.settings_flat(background), minimum_contrast)
 
 	def settings_overlay(self, background: ColourRGBA, alpha: int) -> ColourRGBA:
 		"""Shade a control away from its surface, regardless of surface polarity."""
 		ink = self.settings_contrast_text(background)
-		return alpha_blend(alpha_mod(ink, alpha), background)
+		return self.settings_over(alpha_mod(ink, alpha), background)
 
 	def settings_surface(self, background: ColourRGBA, alpha: int) -> ColourRGBA:
 		"""Raise a nested settings surface, making light-theme elevation visible."""
+		if self.settings_glass:
+			# A frosted veil in the skin's hover tint
+			veil = to_colour(self.tauon.aero.HOVER)
+			return self.settings_over(ColourRGBA(veil.r, veil.g, veil.b, min(255, alpha * 3)), background)
 		if self.settings_background_is_light(background):
 			# The old values were intentionally subtle white overlays for dark UI.
 			# A light UI needs a larger tonal step for its base/card/control hierarchy.
 			alpha = max(alpha, 54)
 		return alpha_blend(ColourRGBA(255, 255, 255, alpha), background)
+
+	def settings_box(
+		self, rect: tuple[int, int, int, int], fill: ColourRGBA, border: ColourRGBA, border_size: int,
+		radius: float | None = None,
+	) -> None:
+		"""bordered_rect, or on glass a rounded fill inside a separate border band."""
+		if not self.settings_glass:
+			self.ddt.bordered_rect(rect, fill, border, border_size)
+			return
+		aero = self.tauon.aero
+		x, y, w, h = rect
+		r = aero.s(6) if radius is None else radius
+		t = border_size
+		aero.band((x - t, y - t, w + t * 2, h + t * 2), r + t, t, self.settings_glass_rgba(border))
+		aero.shape(rect, r, self.settings_glass_rgba(fill))
+
+	def settings_glass_face(
+		self, rect: tuple[int, int, int, int], r: float, selected: bool, hover: bool, accent: ColourRGBA | None = None,
+	) -> ColourRGBA:
+		"""A glass button face: the selection pill when picked (with an accent
+		lip), a faint tile otherwise. Returns the background for its text."""
+		aero = self.tauon.aero
+		if selected:
+			aero.selection(rect, r)
+			if hover:
+				aero.shape(rect, r, aero.HOVER)
+			if accent is not None:
+				x, y, w, h = rect
+				lip = max(1.0, aero.s(2))
+				inset = max(r, aero.s(6))
+				aero.shape((x + inset, y + h - lip - aero.s(2), w - inset * 2, lip), lip / 2, self.settings_glass_rgba(accent))
+		else:
+			aero.tile(rect, r, hover)
+		return self.colours.box_background
 
 	def settings_render_colours(self) -> ColoursClass:
 		"""Build non-destructive settings colours with guaranteed text contrast.
@@ -32338,6 +32407,27 @@ class Over:
 		roles directly from the background it will draw on.
 		"""
 		source = self.tauon.colours
+		if self.settings_glass:
+			# Clear surfaces over the dialog glass, in the skin's text colours
+			aero = self.tauon.aero
+			colours = copy.copy(source)
+			solid = aero.menu_bg()
+			clear = ColourRGBA(solid.r, solid.g, solid.b, 0)
+			text = aero.colour("TEXT")
+			muted = aero.colour("MUTED")
+			rim = to_colour(aero.RIM_SOFT)
+			for name in ("box_background", "sys_tab_bg", "sys_tab_hl", "box_button_background"):
+				setattr(colours, name, clear)
+			for name in ("box_title_text", "box_text", "box_input_text", "box_button_text_highlight"):
+				setattr(colours, name, text)
+			for name in ("box_sub_text", "box_text_label", "box_button_text"):
+				setattr(colours, name, muted)
+			colours.box_border = to_colour(aero.EDGE)
+			colours.box_text_border = clear
+			colours.box_check_border = ColourRGBA(rim.r, rim.g, rim.b, 70)
+			colours.box_button_background_highlight = ColourRGBA(rim.r, rim.g, rim.b, 40)
+			colours.box_thumb_background = ColourRGBA(text.r, text.g, text.b, 70)
+			return colours
 		background = source.box_background
 		dark_ink = ColourRGBA(24, 25, 29, 255)
 		use_dark_ink = self.settings_background_is_light(background)
@@ -32816,7 +32906,10 @@ class Over:
 		if emphasis:
 			border = self.settings_overlay(border, 10)
 
-		self.ddt.bordered_rect(button_rect, fill, border, round(1 * self.gui.scale))
+		if self.settings_glass:
+			fill = self.settings_glass_face(button_rect, self.tauon.aero.s(7), emphasis, hover)
+		else:
+			self.ddt.bordered_rect(button_rect, fill, border, round(1 * self.gui.scale))
 
 		self.fields.add(button_rect)
 		hit = False
@@ -32871,6 +32964,8 @@ class Over:
 				plug()
 
 		icon_colour = self.colours.box_text if hover or emphasis else self.colours.box_text_label
+		if hover and self.settings_glass:
+			self.tauon.aero.hover_row(button_rect, button_size / 2)
 		if draw_icon is not None:
 			draw_icon(button_rect, icon_colour)
 		elif icon is not None:
@@ -32903,7 +32998,7 @@ class Over:
 		x, y, w, h = rect
 		fill = self.settings_surface(self.colours.box_button_background, 6)
 		border = self.settings_overlay(self.colours.box_text_border, 18)
-		self.ddt.bordered_rect(rect, fill, border, round(1 * self.gui.scale))
+		self.settings_box(rect, fill, border, round(1 * self.gui.scale))
 
 		text_x = x + round(14 * self.gui.scale)
 		text_y = y + round(7 * self.gui.scale)
@@ -32957,7 +33052,7 @@ class Over:
 		base = self.ddt.text_background_colour
 		fill = self.settings_overlay(base, 18 if hover or active else 12)
 		border = self.settings_overlay(base, 40)
-		active_border = alpha_blend(alpha_mod(accent, 160), base)
+		active_border = self.settings_over(alpha_mod(accent, 160), base)
 		if active:
 			border = active_border
 
@@ -32993,7 +33088,15 @@ class Over:
 		active, fill, border = self.settings_text_field_state((x, y, w, h), text_box, accent, editable=editable)
 		if border_override is not None and not active:
 			border = border_override
-		self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
+		if self.settings_glass:
+			aero = self.tauon.aero
+			r = aero.s(5)
+			aero.sunken((x, y, w, h), r)
+			if active or border_override is not None:
+				aero.band((x - 1, y - 1, w + 2, h + 2), r + 1, max(1.0, aero.s(1)), self.settings_glass_rgba(border))
+			fill = self.colours.box_background
+		else:
+			self.ddt.bordered_rect((x, y, w, h), fill, border, round(1 * self.gui.scale))
 		text_y = y + (h - round(16 * self.gui.scale)) // 2
 
 		if placeholder and not text_box.text:
@@ -33087,14 +33190,19 @@ class Over:
 		real_bg = bg
 		hit = False
 
-		self.ddt.rect(rect2, self.colours.box_check_border)
-		self.ddt.rect(rect, bg)
+		glass = self.settings_glass
+		if glass:
+			self.tauon.aero.tile(rect, self.tauon.aero.s(5), self.coll(rect))
+		else:
+			self.ddt.rect(rect2, self.colours.box_check_border)
+			self.ddt.rect(rect, bg)
 
 		self.fields.add(rect)
 		if self.coll(rect):
 			button_shade = alpha_mod(self.settings_contrast_text(bg), 15)
-			self.ddt.rect(rect, button_shade)
-			real_bg = alpha_blend(button_shade, bg)
+			if not glass:
+				self.ddt.rect(rect, button_shade)
+			real_bg = self.settings_over(button_shade, bg)
 			self.ddt.text((x + int(w / 2), rect[1] + 1 * self.gui.scale, 2), text, self.colours.box_title_text, 211, bg=real_bg)
 			if self.click:
 				hit = True
@@ -33118,7 +33226,11 @@ class Over:
 		bg_colour = self.settings_surface(self.colours.box_button_background, 8)
 		real_bg = bg_colour
 
-		self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
+		glass = self.settings_glass
+		if glass:
+			real_bg = self.settings_glass_face(rect, self.tauon.aero.s(5), force_on, self.coll(rect))
+		else:
+			self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
 		self.fields.add(rect)
 		hit = False
 
@@ -33127,9 +33239,10 @@ class Over:
 			text_position = (x + rect[2] // 2, rect[1] + 1 * self.gui.scale, 2)
 
 		if self.coll(rect) or force_on:
-			bg_colour = alpha_blend(self.colours.box_button_background_highlight, bg_colour)
-			real_bg = bg_colour
-			self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
+			if not glass:
+				bg_colour = self.settings_over(self.colours.box_button_background_highlight, bg_colour)
+				real_bg = bg_colour
+				self.ddt.bordered_rect(rect, bg_colour, border_colour, round(1 * self.gui.scale))
 			self.ddt.text(text_position, text, self.colours.box_button_text_highlight, 211, bg=real_bg)
 			if self.click and not force_on:
 				hit = True
@@ -34696,7 +34809,7 @@ class Over:
 		bg = ddt.text_background_colour
 		if flash and key == self.settings_flash_key and self.settings_flash_timer.get() < 1.6:
 			# Briefly mark the row a search result jumped to
-			bg = alpha_blend(alpha_mod(accent, 40), bg)
+			bg = self.settings_over(alpha_mod(accent, 40), bg)
 			ddt.rect((x, y + max(1, round(1 * s)), w, h - max(1, round(1 * s))), bg)
 			self.gui.request_frame()
 		pad = round(12 * s)
@@ -34732,7 +34845,10 @@ class Over:
 		if hover:
 			fill = self.settings_surface(fill, 10)
 		border = self.settings_overlay(self.colours.box_text_border, 26 if emphasis else 18)
-		self.ddt.bordered_rect((x, y, w, h), fill, border, max(1, round(1 * s)))
+		if self.settings_glass:
+			fill = self.settings_glass_face((x, y, w, h), self.tauon.aero.s(6), emphasis, hover)
+		else:
+			self.ddt.bordered_rect((x, y, w, h), fill, border, max(1, round(1 * s)))
 		self.fields.add((x, y, w, h))
 		colour = self.colours.box_text if hover or emphasis else self.colours.box_button_text
 		text_y = y + (h - round(16 * s)) // 2
@@ -34820,7 +34936,7 @@ class Over:
 		base = self.ddt.text_background_colour
 		fill = base
 		if key == self.settings_flash_key and self.settings_flash_timer.get() < 1.6:
-			fill = alpha_blend(alpha_mod(accent, 40), base)
+			fill = self.settings_over(alpha_mod(accent, 40), base)
 			self.gui.request_frame()
 		hover = self.coll((x, y, w, h)) and not disabled
 		if hover:
@@ -34849,14 +34965,19 @@ class Over:
 		switch_y = y + (h - switch_h) // 2
 		border = self.settings_overlay(self.colours.box_text_border, 24)
 		if disabled:
-			switch_fill = alpha_blend(ColourRGBA(128, 128, 128, 24), fill)
+			switch_fill = self.settings_over(ColourRGBA(128, 128, 128, 24), fill)
 			switch_border = border
 		elif active:
-			switch_fill = alpha_blend(alpha_mod(accent, 70), fill)
-			switch_border = alpha_blend(alpha_mod(accent, 170), fill)
+			switch_fill = self.settings_over(alpha_mod(accent, 70), fill)
+			switch_border = self.settings_over(alpha_mod(accent, 170), fill)
 		else:
 			switch_fill = self.settings_surface(fill, 14)
 			switch_border = border
+		if self.settings_glass:
+			self.tauon.aero.toggle(
+				(switch_x, switch_y, switch_w, switch_h), bool(active), hover, accent, disabled=disabled)
+			self.ddt.text_background_colour = base
+			return active
 		self.ddt.bordered_rect((switch_x, switch_y, switch_w, switch_h), switch_fill, switch_border, max(1, round(1 * s)))
 		knob_w = round(12 * s)
 		knob_h = switch_h - round(7 * s)
@@ -34893,7 +35014,7 @@ class Over:
 		grip_w = round(8 * s)
 		grip_h = round(14 * s)
 		if disabled:
-			accent = alpha_blend(ColourRGBA(128, 128, 128, 90), self.ddt.text_background_colour)
+			accent = self.settings_over(ColourRGBA(128, 128, 128, 90), self.ddt.text_background_colour)
 		use_log_scale = log_scale and min_value > 0 and max_value > min_value
 		if use_log_scale:
 			log_min = math.log(min_value)
@@ -34903,8 +35024,18 @@ class Over:
 		else:
 			ratio = 0.0 if max_value == min_value else (value - min_value) / (max_value - min_value)
 		ratio = min(max(ratio, 0.0), 1.0)
-		self.ddt.rect((slider_x, slider_y, slider_w, slider_h), self.settings_overlay(self.ddt.text_background_colour, 40))
-		self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
+		glass = self.settings_glass
+		if glass:
+			aero = self.tauon.aero
+			tube_h = round(aero.s(6))
+			tube = (slider_x, centre_y - tube_h / 2, slider_w, tube_h)
+			if disabled:
+				aero.sunken(tube, tube_h / 2)
+			else:
+				aero.tube(tube, ratio, shimmer=False, bead=False)
+		else:
+			self.ddt.rect((slider_x, slider_y, slider_w, slider_h), self.settings_overlay(self.ddt.text_background_colour, 40))
+			self.ddt.rect((slider_x, slider_y, round(slider_w * ratio), slider_h), accent)
 		if notch is not None and max_value > min_value:
 			# A tick at the default, so the value it was tuned around is
 			# findable again by eye
@@ -34914,7 +35045,10 @@ class Over:
 				(slider_x + round(slider_w * notch_ratio), slider_y - notch_h - round(2 * s), max(1, round(1 * s)), notch_h),
 				self.settings_overlay(self.ddt.text_background_colour, 70))
 		grip_x = slider_x + round(slider_w * ratio) - grip_w // 2
-		self.ddt.rect((grip_x, centre_y - grip_h // 2, grip_w, grip_h), accent)
+		if not glass:
+			self.ddt.rect((grip_x, centre_y - grip_h // 2, grip_w, grip_h), accent)
+		elif not disabled:
+			self.tauon.aero.bead(slider_x + slider_w * ratio, centre_y, self.tauon.aero.s(16))
 		if disabled:
 			return value
 
@@ -35007,8 +35141,15 @@ class Over:
 		# blitted at exactly the view rect, so an outside border would be
 		# cropped at the document's edges
 		border_size = max(1, round(1 * s))
-		self.ddt.rect(rect, border)
-		self.ddt.rect((x + border_size, y + border_size, w - border_size * 2, h - border_size * 2), fill)
+		if self.settings_glass:
+			aero = self.tauon.aero
+			r = aero.s(10)
+			aero.shape(rect, r, self.settings_glass_rgba(fill))
+			aero.ring("inner", rect, r, aero.RIM_SOFT)
+			aero.ring("top", rect, r, aero.RIM_SOFT)
+		else:
+			self.ddt.rect(rect, border)
+			self.ddt.rect((x + border_size, y + border_size, w - border_size * 2, h - border_size * 2), fill)
 		self.ddt.text_background_colour = fill
 		if title:
 			self.ddt.text((x + round(12 * s), y + round(7 * s)), title.upper(), accent, 211, bg=fill, max_w=w - round(40 * s))
@@ -35046,7 +35187,12 @@ class Over:
 		base = self.ddt.text_background_colour
 		border = self.settings_overlay(self.colours.box_text_border, 24)
 		line = max(1, round(1 * s))
-		self.ddt.bordered_rect((x, y, sum(widths), h), base, border, line)
+		glass = self.settings_glass
+		aero = self.tauon.aero
+		if glass:
+			aero.sunken((x, y, sum(widths), h), aero.s(7))
+		else:
+			self.ddt.bordered_rect((x, y, sum(widths), h), base, border, line)
 
 		seg_x = x
 		for index, ((label, active, callback), seg_w) in enumerate(zip(options, widths)):
@@ -35054,16 +35200,22 @@ class Over:
 			hover = self.coll(rect)
 			self.fields.add(rect)
 			bg = base
-			if active:
-				bg = alpha_blend(alpha_mod(accent, 60), base)
-			elif hover:
-				bg = self.settings_surface(base, 10)
-			if bg != base:
-				self.ddt.rect(rect, bg)
-			if active:
-				self.ddt.rect((seg_x, y + h - round(2 * s), seg_w, round(2 * s)), accent)
-			if index:
-				self.ddt.rect((seg_x, y, line, h), border)
+			if glass:
+				if active:
+					self.settings_glass_face(grow_rect(rect, -line), aero.s(6), True, hover, accent)
+				elif hover:
+					aero.hover_row(grow_rect(rect, -line), aero.s(6))
+			else:
+				if active:
+					bg = self.settings_over(alpha_mod(accent, 60), base)
+				elif hover:
+					bg = self.settings_surface(base, 10)
+				if bg != base:
+					self.ddt.rect(rect, bg)
+				if active:
+					self.ddt.rect((seg_x, y + h - round(2 * s), seg_w, round(2 * s)), accent)
+				if index:
+					self.ddt.rect((seg_x, y, line, h), border)
 			text_colour = self.colours.box_text if active or hover else self.colours.box_text_label
 			self.ddt.text((seg_x + seg_w // 2, y + (h - round(15 * s)) // 2 - round(2 * s), 2), label, text_colour, font, bg=bg)
 			if hover and click and not active:
@@ -35096,7 +35248,7 @@ class Over:
 			bg = self.ddt.text_background_colour
 			fill = bg
 			if is_selected:
-				fill = alpha_blend(alpha_mod(rows.accent, 34), bg)
+				fill = self.settings_over(alpha_mod(rows.accent, 34), bg)
 			elif hover:
 				fill = self.settings_surface(bg, 5)
 			if fill != bg:
@@ -35556,7 +35708,7 @@ class Over:
 				active = not gui.custom_mode and bool(getattr(self.tauon.view_box, ref)(False))
 			rect = rows.custom(round(30 * s))
 			bg = self.ddt.text_background_colour
-			fill = alpha_blend(alpha_mod(accent, 34), bg) if active else bg
+			fill = self.settings_over(alpha_mod(accent, 34), bg) if active else bg
 			if active:
 				self.ddt.rect((rect[0], rect[1] + max(1, round(1 * s)), rect[2], rect[3] - max(1, round(1 * s))), fill)
 			buttons_x = rect[0] + rect[2] - rows.pad - (button_w * 3 + button_gap * 2)
@@ -35988,19 +36140,27 @@ class Over:
 			on, status = self.settings_service_status(view)
 			selected = self.account_view == view
 			hover = self.coll(tile)
-			fill = alpha_blend(alpha_mod(accent, 46), bg) if on else self.settings_surface(bg, 4)
+			fill = self.settings_over(alpha_mod(accent, 46), bg) if on else self.settings_surface(bg, 4)
 			if hover:
 				fill = self.settings_surface(fill, 8)
 			if selected:
 				border = accent
 			elif on:
-				border = alpha_blend(alpha_mod(accent, 120), bg)
+				border = self.settings_over(alpha_mod(accent, 120), bg)
 			else:
 				border = self.settings_overlay(bg, 26)
-			self.ddt.bordered_rect(tile, fill, border, max(1, round(1 * s)))
+			if self.settings_glass:
+				aero = self.tauon.aero
+				fill = self.settings_glass_face(tile, aero.s(8), on, hover)
+				if selected:
+					aero.band(grow_rect(tile, 1), aero.s(8) + 1, max(1.0, aero.s(1.5)), self.settings_glass_rgba(accent))
+			else:
+				self.ddt.bordered_rect(tile, fill, border, max(1, round(1 * s)))
 			led = round(7 * s)
 			led_rect = (tx + round(9 * s), ty + round(11 * s), led, led)
-			if on:
+			if self.settings_glass:
+				self.tauon.aero.led(led_rect[0] + led / 2, led_rect[1] + led / 2, on)
+			elif on:
 				self.ddt.rect(led_rect, self.settings_readable_colour(ColourRGBA(92, 240, 168, 255), fill, 2.0))
 			else:
 				self.ddt.rect_s(led_rect, self.settings_overlay(fill, 90), max(1, round(1 * s)))
@@ -36548,19 +36708,30 @@ class Over:
 				inp.mouse_click = True
 				self.click = False
 
+		glass = self.settings_glass
+		aero = self.tauon.aero
+		rail_w = round(140 * s)
 		frame = round(3 * s)
-		ddt.rect((x - frame, y - frame, full_w + frame * 2, full_h + frame * 2), colours.box_border)
-		ddt.rect((x, y, full_w, full_h), colours.box_background)
+		if glass:
+			aero.menu_glass((x, y, full_w, full_h), dialog=True)
+			# A slightly deeper rail, inside the dialog's rounded corner
+			R = min(aero.s(aero.DIALOG_RADIUS), full_w / 2, full_h / 2)
+			aero.shape((x, y + header_h, rail_w, full_h - header_h), (0, 0, 0, R), (0.0, 0.0, 0.0, 0.14))
+		else:
+			ddt.rect((x - frame, y - frame, full_w + frame * 2, full_h + frame * 2), colours.box_border)
+			ddt.rect((x, y, full_w, full_h), colours.box_background)
 		self.begin_settings_text_inputs()
 
-		rail_w = round(140 * s)
 		chrome = colours.sys_tab_bg
 		line = max(1, round(1 * s))
 		divider = self.settings_divider_colour(chrome)
 
 		# Header: drag grip, search and close
-		ddt.rect((x, y, full_w, header_h), chrome)
-		ddt.rect((x, y + header_h - line, full_w, line), divider)
+		if glass:
+			aero.shape((x + 1, y + header_h - line, full_w - 2, line), 0, aero.STAR)
+		else:
+			ddt.rect((x, y, full_w, header_h), chrome)
+			ddt.rect((x, y + header_h - line, full_w, line), divider)
 		ddt.text_background_colour = chrome
 		close_w = round(32 * s)
 		close_rect = (x + full_w - round(8 * s) - close_w, y + (header_h - close_w) // 2, close_w, close_w)
@@ -36644,6 +36815,9 @@ class Over:
 			bottom = min(view_rect[1] + view_rect[3], int(self.window_size[1]))
 			if right > left and bottom > top:
 				src_rect = sdl3.FRect(left, top, right - left, bottom - top)
+				# Drawn over a cleared target, the page's translucent pixels come out premultiplied
+				sdl3.set_texture_blend_mode(
+					texture, sdl3.SDL_BLENDMODE_BLEND_PREMULTIPLIED if glass else sdl3.SDL_BLENDMODE_BLEND)
 				sdl3.render_texture(self.renderer, texture, src_rect, src_rect)
 		else:
 			gui.request_frame()
@@ -36667,7 +36841,8 @@ class Over:
 				content_x + content_w - scrollbar_w - round(2 * s),
 				body_y + round(2 * s),
 				scrollbar_w,
-				body_h - round(4 * s),
+				# Clear of the glass dialog's rounded corner
+				body_h - round((10 if glass else 4) * s),
 				self.settings_content_scroll,
 				max_scroll,
 				click=self.click,
@@ -36676,10 +36851,15 @@ class Over:
 			)
 
 		# Sidebar: groups, and the open group's sections
-		ddt.rect((x, body_y, rail_w, body_h), chrome)
-		ddt.rect((x + rail_w - line, body_y, line, body_h), divider)
+		if glass:
+			aero.shape((x + rail_w - line, body_y, line, body_h - round(aero.s(aero.DIALOG_RADIUS))), 0, aero.STAR)
+		else:
+			ddt.rect((x, body_y, rail_w, body_h), chrome)
+			ddt.rect((x + rail_w - line, body_y, line, body_h), divider)
 		ddt.text_background_colour = chrome
-		if self.settings_background_is_light(chrome):
+		if glass:
+			hover_bg = active_bg = to_colour(aero.HOVER)
+		elif self.settings_background_is_light(chrome):
 			hover_bg = rgb_add_hls(chrome, l=-0.05, s=0.02)
 			active_bg = rgb_add_hls(chrome, l=-0.09, s=0.03)
 		else:
@@ -36710,9 +36890,20 @@ class Over:
 			# Trim the bottom edge so stacked rows don't share a hover pixel
 			hover = self.coll((rect[0], rect[1], rect[2], rect[3] - 1))
 			fill = active_bg if active else hover_bg if hover else chrome
-			if fill != chrome:
-				ddt.rect(rect, fill)
-			ddt.rect((rect[0], rect[1], round(3 * s), rect[3]), hue if active else alpha_blend(alpha_mod(hue, 100), fill))
+			if glass:
+				fill = chrome
+				if active:
+					aero.selection(rect, aero.s(6))
+				elif hover:
+					aero.hover_row(rect, aero.s(6))
+				lip = round(aero.s(3))
+				aero.shape(
+					(rect[0] + aero.s(4), rect[1] + aero.s(8), lip, rect[3] - aero.s(16)), lip / 2,
+					self.settings_glass_rgba(hue if active else alpha_mod(hue, 100)))
+			else:
+				if fill != chrome:
+					ddt.rect(rect, fill)
+				ddt.rect((rect[0], rect[1], round(3 * s), rect[3]), hue if active else self.settings_over(alpha_mod(hue, 100), fill))
 			ddt.text(
 				(rect[0] + round(12 * s), rect[1] + round(7 * s)), group.name,
 				colours.box_text if active else colours.box_text_label, 212 if active else 12, bg=fill, max_w=item_w - round(16 * s))
@@ -36731,13 +36922,20 @@ class Over:
 				current = section.key == current_section
 				sfill = chrome
 				if current:
-					sfill = alpha_blend(alpha_mod(hue, 34), chrome)
+					sfill = self.settings_over(alpha_mod(hue, 34), chrome)
 				elif shover:
 					sfill = hover_bg
-				if sfill != chrome:
-					ddt.rect(srect, sfill)
-				if current:
-					ddt.rect((srect[0], srect[1], round(2 * s), srect[3]), hue)
+				if glass:
+					if current or shover:
+						aero.shape(srect, aero.s(5), self.settings_glass_rgba(sfill))
+					if current:
+						lip = round(aero.s(2))
+						aero.shape((srect[0], srect[1] + aero.s(4), lip, srect[3] - aero.s(8)), lip / 2, self.settings_glass_rgba(hue))
+				else:
+					if sfill != chrome:
+						ddt.rect(srect, sfill)
+					if current:
+						ddt.rect((srect[0], srect[1], round(2 * s), srect[3]), hue)
 				ddt.text(
 					(srect[0] + round(9 * s), srect[1] + round(3 * s)), section.title,
 					colours.box_text if current or shover else colours.box_text_label, 11, bg=sfill, max_w=srect[2] - round(12 * s))
