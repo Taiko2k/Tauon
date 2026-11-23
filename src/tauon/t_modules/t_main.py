@@ -37134,6 +37134,8 @@ class TopPanel:
 				# popup window (event loop) — don't instantly reopen it.
 				tauon.x_menu.activate(position=(mrect[0], gui.panelY))
 				self.menu_disc.trigger()
+				if tauon.aero.active:
+					tauon.aero.menu_wobble()
 		idle = tauon.style_overlay.tint_from_background(
 			colours.corner_button, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
 			colours.top_panel_background)

@@ -2060,17 +2060,52 @@ class Aero:
 		return lx + self.s(3.5) + self.s(7)
 
 	def menu_orb(self, rect, hover: bool, pressed: bool) -> None:
-		"""The main menu button: Tauon's record floating in a glass marble."""
+		"""The main menu button: Tauon's record floating in a glass marble.
+		The record is its own layer so it can wobble inside the glass."""
 		x, y, w, h = rect
 		d = max(8, round(min(h, self.s(26))))
-		t = self._cached(("menu_icon", d, hover, pressed), lambda: self._menu_icon_image(d, hover, pressed))
 		ox = round(x + w / 2 - d / 2)
 		oy = round(y + h / 2 - d / 2)
-		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(ox - t.pad, oy - t.pad, t.w, t.h))
+		angle = self._menu_wobble_angle()
+		for i, part in enumerate(("under", "disc", "over")):
+			t = self._cached(("menu_icon", part, d, hover, pressed),
+				lambda i=i: self._menu_icon_part(d, hover, pressed, i))
+			dst = sdl3.FRect(ox - t.pad, oy - t.pad, t.w, t.h)
+			if part == "disc" and angle:
+				sdl3.render_texture_rotated(self.renderer, t.tex, None, dst, angle, None, 0)
+			else:
+				sdl3.render_texture(self.renderer, t.tex, None, dst)
 
 	MENU_CAP = 0.55   # strength of the specular cap over the marble
+	MENU_GLASS_DESAT = 1.0  # how far the marble's glass is pulled from ice blue to grey
+	# The record's wobble on click: degrees, swings per second, decay rate, length
+	WOBBLE_ANGLE = 26.0
+	WOBBLE_FREQ = 1.9
+	WOBBLE_DECAY = 3.2
+	WOBBLE_TIME = 1.5
 
-	def _menu_icon_image(self, d: int, hover: bool, pressed: bool) -> tuple[Image.Image, int]:
+	def menu_wobble(self) -> None:
+		"""Set the record in the menu marble wobbling (the menu was opened)."""
+		self._wobble_start = time.monotonic()
+		self.schedule(1 / self.FPS_FAST)
+
+	def _menu_wobble_angle(self) -> float:
+		"""The record's tilt now, in degrees: a damped rock."""
+		el = time.monotonic() - getattr(self, "_wobble_start", -10.0)
+		if el < 0 or el > self.WOBBLE_TIME:
+			return 0.0
+		self.schedule(1 / self.FPS_FAST)
+		return self.WOBBLE_ANGLE * math.exp(-el * self.WOBBLE_DECAY) * math.sin(math.tau * self.WOBBLE_FREQ * el)
+
+	def _menu_icon_part(self, d: int, hover: bool, pressed: bool, index: int) -> tuple[Image.Image, int]:
+		key = (d, hover, pressed)
+		layers = getattr(self, "_menu_layers", None)
+		if layers is None or layers[0] != key:
+			layers = self._menu_layers = (key, self._menu_icon_layers(d, hover, pressed))
+		under, disc, over, pad = layers[1]
+		return (under, disc, over)[index], pad
+
+	def _menu_icon_layers(self, d: int, hover: bool, pressed: bool) -> tuple[Image.Image, Image.Image, Image.Image, int]:
 		"""Tauon's record (assets/svg/app-icon.svg) floating in a clear glass
 		marble.
 
@@ -2079,8 +2114,21 @@ class Aero:
 		diameter) shows along the ellipse's minor axis. Light comes from above,
 		like the marble's cap: the far rim catches a thin highlight and the
 		front of the edge is the darkest part. Its soft shadow follows its
-		outline a little below."""
+		outline a little below.
+
+		Returns (under: shadow, edge and glass; disc: the record and its
+		shadow; over: the glow, inner rim and cap) and the padding."""
 		import cairo
+
+		def ice(r: float, g: float, b: float) -> tuple[float, float, float]:
+			"""The glass's ice blue, pulled toward grey."""
+			lum = 0.3 * r + 0.59 * g + 0.11 * b
+			k = self.MENU_GLASS_DESAT
+			return (r + (lum - r) * k, g + (lum - g) * k, b + (lum - b) * k)
+
+		def ice8(r: int, g: int, b: int, a: float) -> RGBA:
+			c = ice(r / 255, g / 255, b / 255)
+			return (c[0], c[1], c[2], a)
 
 		sc = self.gui.scale
 		pad = max(math.ceil(12 * sc) + 2, d // 2)
@@ -2127,20 +2175,20 @@ class Aero:
 		# Glass: nearly clear in the middle, brighter toward the rim
 		surf, cr = layer()
 		g = cairo.RadialGradient(cx, cy - R * 0.25, 0, cx, cy, R)
-		g.add_color_stop_rgba(0, 0.75, 0.9, 1.0, 0.10)
-		g.add_color_stop_rgba(0.75, 0.55, 0.8, 1.0, 0.22)
-		g.add_color_stop_rgba(1, 0.75, 0.92, 1.0, 0.55)
+		g.add_color_stop_rgba(0, *ice(0.75, 0.9, 1.0), 0.10)
+		g.add_color_stop_rgba(0.75, *ice(0.55, 0.8, 1.0), 0.22)
+		g.add_color_stop_rgba(1, *ice(0.75, 0.92, 1.0), 0.55)
 		cr.arc(cx, cy, R, 0, tau)
 		cr.set_source(g)
 		cr.fill()
-		marble = to_image(surf)
+		glass = to_image(surf)
 
 		# The record's shadow
 		surf, cr = layer()
 		ellipse(cr, nx * R * 0.16, ny * R * 0.16 + R * 0.10)
-		cr.set_source_rgba(0, 0.04, 0.12, 0.32)
+		cr.set_source_rgba(*ice(0, 0.04, 0.12), 0.32)
 		cr.fill()
-		marble = Image.alpha_composite(marble, to_image(surf).filter(ImageFilter.GaussianBlur(max(0.8, d / 18))))
+		disc = to_image(surf).filter(ImageFilter.GaussianBlur(max(0.8, d / 18)))
 
 		surf, cr = layer()
 		# Its edge: the underside, dark, lighter toward the back
@@ -2200,43 +2248,49 @@ class Aero:
 		cr.set_line_width(max(0.6, d / 140) / (k * squash))
 		cr.stroke()
 		cr.restore()
-		marble = Image.alpha_composite(marble, to_image(surf))
+		disc = Image.alpha_composite(disc, to_image(surf))
 
 		# Light gathered along the bottom of the marble
 		surf, cr = layer()
 		glow = cairo.RadialGradient(cx, cy + R * 0.85, 0, cx, cy + R * 0.85, R * 0.7)
-		glow.add_color_stop_rgba(0, 0.6, 0.95, 1.0, 0.55 if hover else 0.45)
-		glow.add_color_stop_rgba(1, 0.6, 0.95, 1.0, 0)
+		glow.add_color_stop_rgba(0, *ice(0.6, 0.95, 1.0), 0.55 if hover else 0.45)
+		glow.add_color_stop_rgba(1, *ice(0.6, 0.95, 1.0), 0)
 		cr.arc(cx, cy, R, 0, tau)
 		cr.clip()
 		cr.arc(cx, cy + R * 0.85, R * 0.7, 0, tau)
 		cr.set_source(glow)
 		cr.fill()
-		marble = Image.alpha_composite(marble, to_image(surf))
+		light = to_image(surf)
 
 		c0 = pad
 		circle = _ellipse_mask(size, (c0, c0, c0 + d, c0 + d))
 		if hover:
 			# Lit from inside, like the other orbs
-			r, g_, b, a = marble.split()
 			lift = _lut(1.15)
-			bright = Image.merge("RGBA", (r.point(lift), g_.point(lift), b.point(lift), a))
-			marble = Image.composite(bright, marble, circle)
 
-		canvas = Image.new("RGBA", size, (0, 0, 0, 0))
+			def lit(img: Image.Image) -> Image.Image:
+				r, g_, b, a = img.split()
+				return Image.merge("RGBA", (r.point(lift), g_.point(lift), b.point(lift), a))
+
+			glass = Image.composite(lit(glass), glass, circle)
+			disc = lit(disc)
+			light = Image.composite(lit(light), light, circle)
+
+		under = Image.new("RGBA", size, (0, 0, 0, 0))
 		drop = _outer_shadow(circle, 0, 3 * sc, 4 * sc)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 25, 50, 0.45), drop))
+		under = Image.alpha_composite(under, _solid(size, ice8(0, 25, 50, 0.45), drop))
 		outer = ImageChops.subtract(_ellipse_mask(size, (c0 - 1, c0 - 1, c0 + d + 1, c0 + d + 1)), circle)
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(0, 15, 35, 0.6), outer))
-		canvas = Image.alpha_composite(canvas, marble)
+		under = Image.alpha_composite(under, _solid(size, ice8(0, 15, 35, 0.6), outer))
+		under = Image.alpha_composite(under, glass)
+		over = light
 		inner = ImageChops.subtract(circle, _ellipse_mask(size, (c0 + 1, c0 + 1, c0 + d - 1, c0 + d - 1)))
-		canvas = Image.alpha_composite(canvas, _solid(size, rgba8(220, 240, 255, 0.6 if hover else 0.45), inner))
+		over = Image.alpha_composite(over, _solid(size, ice8(220, 240, 255, 0.6 if hover else 0.45), inner))
 		cap, _pad = self._cap_image(d, pressed)
 		capped = Image.new("RGBA", size, (0, 0, 0, 0))
 		capped.paste(cap, (c0, c0))
 		capped.putalpha(capped.getchannel("A").point(_lut(self.MENU_CAP)))
-		canvas = Image.alpha_composite(canvas, capped)
-		return canvas, pad
+		over = Image.alpha_composite(over, capped)
+		return under, disc, over, pad
 
 	def speaker(self, x: float, cy: float, size: float, colour: ColourRGBA) -> None:
 		"""Speaker glyph (24-unit box): body, cone, and one sound wave."""
