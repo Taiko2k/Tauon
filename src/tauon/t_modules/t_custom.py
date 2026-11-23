@@ -1870,7 +1870,7 @@ class FeuxBar:
 		glyph = a["feux-pause"] if shown else a["feux-play"]
 		if aero is not None:
 			over = self.coll(rect)
-			aero.orb(disc_x + disc / 2, mid, disc, glyph, hover=over, pressed=over and inp.mouse_down, glow=True)
+			aero.liquid_orb(disc_x + disc / 2, mid, disc, glyph, hover=over, pressed=over and inp.mouse_down)
 		else:
 			a["feux-disc"].render(disc_x, mid - round(a["feux-disc"].h / 2), disc_colour)
 			glyph_colour = self._fg(ColourRGBA(backdrop.r, backdrop.g, backdrop.b, 255), disc_colour, 4.5)

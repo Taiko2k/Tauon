@@ -511,6 +511,13 @@ class Aero:
 		self.spec_vals = [0.0] * 24
 		self.spec_peaks = [0.0] * 24
 
+		# The play orb's liquid: 0 empty, 1 full; slosh is how much its
+		# surface rocks (while the level moves)
+		self.fill = 0.0
+		self._fill_v = 0.0
+		self._catching = False
+		self._slosh = 0.0
+
 		# Header rect for things drawn onto the top glass from outside it
 		self.header_rect: tuple[int, int, int, int] | None = None
 		# The compact playback panel's stand-in while the skin is on
@@ -895,6 +902,7 @@ class Aero:
 		self._raster_spent = 0.0
 		self._poll_palette()
 		moving = self._step_palette(dt)
+		filling = self._step_fill(dt)
 		animate = self.motion()
 		if animate:
 			self.sky_t += dt
@@ -913,7 +921,7 @@ class Aero:
 		self.draw_sky()
 		# The sky keeps moving between keyframes (a cross-fade), so drift and
 		# colour changes both run at the fast rate
-		if moving or glinting or animate or self.sky_settling():
+		if moving or glinting or animate or filling or self.sky_settling():
 			self.schedule(1 / self.FPS_AMBIENT)
 		elif self.bubbles:
 			self.schedule(1 / self.FPS)
@@ -1954,9 +1962,9 @@ class Aero:
 	def _glyph_shadow(self, hue: float | None) -> ColourRGBA:
 		return to_colour(mix(rgba8(0, 30, 60, 0.6), rgba8(0, 0, 0, 0.6), self.mono if hue is None else 0.0))
 
-	def _orb_glow(self, x: int, y: int, d: int) -> None:
+	def _orb_glow(self, x: int, y: int, d: int, strength: float = 1.0) -> None:
 		"""0 0 14px of the accent around the transport's hero orb."""
-		c = mix(hsl(self.acc, 0.9, 0.55, 0.45), hsl(self.oacc, 0.9, 0.6, 0.4), self.mono)
+		c = mix(hsl(self.acc, 0.9, 0.55, 0.45 * strength), hsl(self.oacc, 0.9, 0.6, 0.4 * strength), self.mono)
 		self.soft((x, y, d, d), d / 2, 7 * self.gui.scale, 0, c)
 
 	def orb(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
@@ -1992,6 +2000,167 @@ class Aero:
 		draw_glyph(0, ColourRGBA(255, 255, 255, 255))
 		cap = self._cached(("cap", d, pressed), lambda: self._cap_image(d, pressed))
 		sdl3.render_texture(self.renderer, cap.tex, None, sdl3.FRect(x, y, d, d))
+
+	# -- the liquid play orb ------------------------------------------------------------
+
+	PLAYTIME_FULL = 180.0  # a track's total play time (seconds) that fills the orb
+	CATCH_UP = 0.5     # orbs per second the level moves after a track change
+	DRAIN_TIME = 1.5   # seconds to drain a full orb when playback stops
+	EASE_ZONE = 0.15   # within this of its target the level slows down
+	FILL_LEVEL = 1.0   # full is this much of the orb's height
+
+	def _fill_target(self) -> float:
+		pctl = self.tauon.pctl
+		if pctl.playing_state == PlayingState.STOPPED:
+			return 0.0
+		track = pctl.playing_object()
+		if track is None:
+			return 0.0
+		return min(1.0, self.tauon.star_store.get(track.index) / self.PLAYTIME_FULL)
+
+	def _step_fill(self, dt: float) -> bool:
+		"""Move the liquid toward the playing track's total play time (a
+		pause holds it; a stop drains it). Small gaps, like the play time
+		growing as it plays, are taken at once without asking for frames; a
+		new track's level is reached quickly. True while animating."""
+		target = self._fill_target()
+		gap = target - self.fill
+		# Starts past a visible gap, then runs until it has all but arrived
+		animating = abs(gap) > (0.003 if self._catching else 0.02)
+		self._catching = animating
+		if animating:
+			if self.tauon.pctl.playing_state == PlayingState.STOPPED:
+				top = 1 / self.DRAIN_TIME
+			else:
+				top = self.CATCH_UP
+			# Eased: the speed builds up, and tapers off near the target
+			speed = top * max(0.08, min(1.0, abs(gap) / self.EASE_ZONE))
+			want = math.copysign(speed, gap)
+			self._fill_v += (want - self._fill_v) * min(1.0, dt * 6)
+			step = self._fill_v * dt
+			self.fill = min(target, self.fill + step) if gap > 0 else max(target, self.fill + step)
+		else:
+			self.fill = target
+			self._fill_v = 0.0
+		self._slosh += ((1.0 if animating else 0.0) - self._slosh) * min(1.0, dt * 3)
+		return animating or self._slosh > 0.01
+
+	def liquid_orb(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
+			pressed: bool = False, draw_glyph=None) -> None:
+		"""The play button: the menu marble's clear glass, part filled with
+		the accent as playback runs. `glyph` is an icon asset, or
+		`draw_glyph(offset, colour)` draws it."""
+		d = max(8, round(d))
+		ox = round(cx - d / 2)
+		oy = round(cy - d / 2)
+		level = self.fill
+		if level > 0.02:
+			self._orb_glow(ox, oy, d, 0.3 + 0.7 * level)
+		for part, index in (("under", 0), ("liquid", -1), ("glyph", -1), ("over", 2)):
+			if part == "liquid":
+				self._liquid(cx, cy, d, level, hover)
+			elif part == "glyph":
+				shadow = self._glyph_shadow(None)
+				sh = max(1, round(self.gui.scale))
+				if draw_glyph is not None:
+					draw_glyph(sh, shadow)
+					draw_glyph(0, ColourRGBA(255, 255, 255, 255))
+				elif glyph is not None:
+					gx = round(cx - glyph.w / 2)
+					gy = round(cy - glyph.h / 2)
+					glyph.render(gx, gy + sh, shadow)
+					glyph.render(gx, gy, ColourRGBA(255, 255, 255, 255))
+			else:
+				t = self._cached(("menu_icon", part, d, hover, pressed),
+					lambda i=index: self._menu_icon_part(d, hover, pressed, i))
+				sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(ox - t.pad, oy - t.pad, t.w, t.h))
+
+	def _liquid(self, cx: float, cy: float, d: int, level: float, hover: bool) -> None:
+		"""The accent liquid inside the orb: a circle cut by its (rocking)
+		surface, a bright meniscus and, while playing, rising bubbles."""
+		if level <= 0.005:
+			return
+		sc = self.gui.scale
+		R = d / 2 - max(1.0, 1.2 * sc)
+		h = level * self.FILL_LEVEL * 2 * R
+		y0 = cy + R - h
+		now = time.monotonic()
+		tilt = 0.12 * self._slosh * math.sin(now * 6.5)
+
+		def depth(px: float, py: float) -> float:
+			return py - (y0 + tilt * (px - cx))
+
+		n = 48
+		ring = [(cx + R * math.cos(math.tau * i / n), cy + R * math.sin(math.tau * i / n)) for i in range(n)]
+		poly: list[tuple[float, float]] = []
+		chord: list[tuple[float, float]] = []
+		for i in range(n):
+			p, q = ring[i], ring[(i + 1) % n]
+			fp, fq = depth(*p), depth(*q)
+			if fp >= 0:
+				poly.append(p)
+			if (fp >= 0) != (fq >= 0):
+				t = fp / (fp - fq)
+				pt = (p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t)
+				poly.append(pt)
+				chord.append(pt)
+		if len(poly) < 3:
+			return
+		m = self.mono
+		H, A = self.acc, self.oacc
+		stops = [
+			(0.0, mix(hsl(H, 0.80, 0.70), hsl(A, 0.75, 0.68), m)),
+			(0.3, mix(hsl(H, 0.85, 0.50), hsl(A, 0.85, 0.52), m)),
+			(1.0, mix(hsl(H, 0.90, 0.28), hsl(A, 0.80, 0.30), m)),
+		]
+		if hover:
+			stops = [(t, mix(c, (1.0, 1.0, 1.0, 1.0), 0.12)) for t, c in stops]
+		top = min(p[1] for p in poly)
+		span = max(1.0, cy + R - top)
+
+		def colour(py: float) -> tuple:
+			c = _stop_at(stops, (py - top) / span)
+			return (c[0], c[1], c[2], 0.94)
+
+		mx = sum(p[0] for p in poly) / len(poly)
+		my = sum(p[1] for p in poly) / len(poly)
+		verts = [(mx, my, 0.0, 0.0, *colour(my))]
+		verts += [(px, py, 0.0, 0.0, *colour(py)) for px, py in poly]
+		idx = []
+		for i in range(len(poly)):
+			idx += (0, 1 + i, 1 + (i + 1) % len(poly))
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(self.renderer, None, verts, idx)
+
+		# Meniscus: a bright band just under the surface, short of the walls
+		if len(chord) == 2:
+			(ax, ay), (bx, by) = sorted(chord)
+			ix, iy = (bx - ax) * 0.08, (by - ay) * 0.08
+			ax, ay, bx, by = ax + ix, ay + iy, bx - ix, by - iy
+			band = max(1.5, 2.5 * sc)
+			hi = (1.0, 1.0, 1.0, 0.75)
+			lo = (1.0, 1.0, 1.0, 0.0)
+			verts = [(ax, ay, 0, 0, *hi), (bx, by, 0, 0, *hi), (bx, by + band, 0, 0, *lo), (ax, ay + band, 0, 0, *lo)]
+			sdl3.render_geometry(self.renderer, None, verts, [0, 1, 2, 0, 2, 3])
+
+		# Bubbles rising through it while playing (still, without ambient motion)
+		if level > 0.2 and self.tauon.pctl.playing_state == PlayingState.PLAYING:
+			spr = self._bubble_tex()
+			moving = self.motion()
+			clock = now if moving else 0.0
+			for i in range(3):
+				ph = (clock * 0.3 + i / 3) % 1.0
+				by = cy + R - 2 * sc - ph * (h - 4 * sc)
+				half = math.sqrt(max(0.0, R * R - (by - cy) ** 2)) * 0.6
+				bx = cx + half * math.sin(i * 2.4 + clock * 0.8 + ph * 2.5)
+				sz = d * (0.07 + 0.025 * i)
+				a = 0.8 * min(1.0, ph * 5, (1 - ph) * 5)
+				if depth(bx, by - sz / 2) <= 0 or a <= 0:
+					continue
+				_mod(spr.tex, 255, 255, 255, round(a * 255))
+				sdl3.render_texture(self.renderer, spr.tex, None, sdl3.FRect(bx - sz / 2, by - sz / 2, sz, sz))
+			if moving:
+				self.schedule(1 / self.FPS)
 
 	def ghost(self, cx: float, cy: float, d: float, glyph=None, *, hover: bool = False,
 			pressed: bool = False, draw_glyph=None) -> None:
@@ -2849,7 +3018,7 @@ class AquaBar:
 				inp.right_click = False
 			self._tip(rect[0], top - self._s(4), _("Pause, Right-click: Stop") if playing else _("Play, Right-click: Stop"))
 		glyph = a["feux-pause"] if playing else a["feux-play"]
-		aero.orb(cx, play_mid, play_d, glyph, hover=over, pressed=over and down, glow=True)
+		aero.liquid_orb(cx, play_mid, play_d, glyph, hover=over, pressed=over and down)
 		x += play_d + self._s(10)
 
 		cx = x + side_d / 2
