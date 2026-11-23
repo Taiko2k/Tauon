@@ -4296,6 +4296,52 @@ AERO_GAP = 0.0
 AERO_EDGE = 0.0
 # ... and how much taller the Header Bar's glass is than its row
 AERO_TOP_EXTRA = 0.0
+# ... and how much less gap (logical px) sits under a Header Bar and above a
+# playback bar, as in the standard layout (their glass reads as a wider gap)
+AERO_BAR_TRIM = 2
+# Edges set by a first layout pass: (kind, y, x0, x1), kind "below" a Header
+# Bar or "above" a playback bar
+_aero_pulls: list[tuple[str, float, float, float]] = []
+_aero_pass = False
+
+
+def _aero_bar(node: Node) -> str | None:
+	if isinstance(node, Leaf):
+		if isinstance(node.widget, TopPanelWidget):
+			return "top"
+		if isinstance(node.widget, (PlaybackPanelWidget, PlaybackPanelFeuxWidget)):
+			return "bottom"
+	return None
+
+
+def _aero_collect(node: Node, scale: float) -> None:
+	"""After a first pass: where widgets meet a bar, one gap away."""
+	kind = _aero_bar(node)
+	if kind is not None:
+		x, y, w, h = node.rect
+		if kind == "top":
+			_aero_pulls.append(("below", y + h + AERO_GAP, x, x + w))
+		else:
+			_aero_pulls.append(("above", y - AERO_GAP, x, x + w))
+		return
+	if isinstance(node, Stack):
+		for child in node.children:
+			_aero_collect(child, scale)
+
+
+def _aero_pull(node: Node, x: float, y: float, w: float, h: float, scale: float) -> tuple[float, float, float, float]:
+	"""Stretch a widget toward a bar it sits next to, closing the gap a little."""
+	if _aero_bar(node) is not None:
+		return x, y, w, h
+	trim = round(AERO_BAR_TRIM * scale)
+	for kind, edge, x0, x1 in _aero_pulls:
+		if min(x + w, x1) - max(x, x0) <= 1:
+			continue
+		if kind == "below" and abs(y - edge) < 0.6:
+			y, h = y - trim, h + trim
+		elif kind == "above" and abs(y + h - edge) < 0.6:
+			h += trim
+	return x, y, w, h
 
 
 def _gutter(node: Node, scale: float) -> float:
@@ -4379,6 +4425,21 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	Boundaries with a bare edge on either side, outer edges and the cross axis
 	keep natural (nested) gutters.
 	"""
+	global _aero_pass
+	if _top and AERO_GAP and not _aero_pass:
+		# Two passes: the first finds the bars, the second pulls their
+		# neighbours toward them
+		_aero_pass = True
+		try:
+			_aero_pulls.clear()
+			layout(node, x, y, w, h, scale, consumed)
+			_aero_collect(node, scale)
+			if _aero_pulls:
+				layout(node, x, y, w, h, scale, consumed)
+		finally:
+			_aero_pulls.clear()
+			_aero_pass = False
+		return
 	outer = (x, y, w, h)
 	gap = AERO_GAP
 	if gap:
@@ -4392,6 +4453,8 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 			x, y, w, h = x + d, y + d, max(0.0, w - d * 2), max(0.0, h - d * 2)
 		if isinstance(node, (Leaf, TabStack)) and not _in_tab:
 			x, y, w, h = x + half, y + half, max(0.0, w - gap), max(0.0, h - gap)
+			if _aero_pulls:
+				x, y, w, h = _aero_pull(node, x, y, w, h, scale)
 	node.rect = (x, y, w, h)
 	node.slot_rect = outer if _top else (x, y, w, h)  # parent overwrites with the pre-gutter slot below
 	if isinstance(node, TabStack):

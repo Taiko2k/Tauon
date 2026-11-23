@@ -797,8 +797,8 @@ class GuiVar:
 		else:
 			height = round(51 * self.scale)
 		if prefs.aero:
-			# Aqua floats the bar on the sky: a gutter above, the edge gap below
-			height += round(Aero.GUTTER * self.scale) + round(Aero.edge_gap_logical(prefs) * self.scale)
+			# Aqua floats the bar on the sky: a gap above, the edge gap below
+			height += round(Aero.BOTTOM_GAP * self.scale) + round(Aero.edge_gap_logical(prefs) * self.scale)
 		return height
 
 	def rescale(self) -> None:
@@ -17381,8 +17381,8 @@ class Tauon:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
 				# Aqua floats the top bar on the sky: edge gap, glass, gutter
-				# (a pixel short: the glass's shadow makes the full gap look wide)
-				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter() - round(gui.scale)
+				# (2px short: the glass's shadow makes the full gap look wide)
+				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter() - round(2 * gui.scale)
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
 				gui.playlist_top_bk = gui.playlist_top
 

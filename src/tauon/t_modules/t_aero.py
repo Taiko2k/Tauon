@@ -452,6 +452,7 @@ class Aero:
 	"""The Aqua skin. One instance lives on tauon.aero."""
 
 	GUTTER = 8          # logical px between panels
+	BOTTOM_GAP = 6      # and above the bottom bar (its glass reads as a wider gap)
 	EDGE_GAP = 4        # logical px between the panels and the window edge
 	RADIUS = 10         # panel corner radius
 	TOP_H = 40          # top glass bar height (the panel's 30px row sits inside it)
@@ -2899,8 +2900,8 @@ class Aero:
 		return (e, e, ww - e * 2, self.top_glass_height())
 
 	def bottom_glass_rect(self) -> tuple[int, int, int, int]:
-		"""The bottom bar: a gutter above it, the edge gap below and beside."""
-		g = self.gutter()
+		"""The bottom bar: a gap above it, the edge gap below and beside."""
+		g = self.si(self.BOTTOM_GAP)
 		e = self.edge_gap()
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
 		by = self.gui.panelBY
