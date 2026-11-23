@@ -491,6 +491,8 @@ class Aero:
 	# has no sky behind it and gets a solid pane instead
 	MENU_TINT = rgba8(6, 20, 36, 0.66)
 	MENU_SOLID = rgba8(20, 44, 66)
+	# Deepens the frosted sky behind the search overlay
+	SEARCH_VEIL = rgba8(2, 10, 22, 0.5)
 
 	# Obsidian tokens, the same roles in graphite and smoke
 	OBSIDIAN = {
@@ -512,6 +514,7 @@ class Aero:
 		"STAR": rgba8(235, 240, 250, 0.18),
 		"MENU_TINT": rgba8(10, 11, 14, 0.72),
 		"MENU_SOLID": rgba8(30, 32, 37),
+		"SEARCH_VEIL": rgba8(0, 0, 0, 0.58),
 	}
 
 	DEFAULT_PALETTE = (200.0, 186.0, 196.0)
@@ -1793,6 +1796,74 @@ class Aero:
 			(0.0, (1, 1, 1, 0)), (0.38, (1, 1, 1, 0)), (0.5, (1, 1, 1, self.GLINT_ALPHA)),
 			(0.62, (1, 1, 1, 0)), (1.0, (1, 1, 1, 0))])
 		self.shape(rect, R, grad=g)
+
+	# -- search overlay ---------------------------------------------------------------------------
+
+	def search_veil(self) -> None:
+		"""Behind the search overlay: the frosted sky across the whole window,
+		deepened toward the bottom so the field and results stand out."""
+		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
+		rect = (0, 0, ww, wh)
+		layers = self.frost_layers()
+		if not layers:
+			self.shape(rect, 0, rgba8(4, 10, 18, 0.95))
+			return
+		uv = self.frost_uv()
+		for tex, alpha in layers:
+			sdl3.set_texture_blend_mode(tex, sdl3.SDL_BLENDMODE_BLEND)
+			self.shape(rect, 0, (1.0, 1.0, 1.0, alpha), texture=tex, uv=uv)
+		v = self.SEARCH_VEIL
+		self.shape(rect, 0, grad=vgrad(0, wh, [
+			(0.0, (v[0], v[1], v[2], v[3] * 0.75)), (1.0, (v[0], v[1], v[2], min(1.0, v[3] * 1.3)))]))
+
+	def search_field(self, rect) -> None:
+		"""The search field: a deep capsule in a focus glow of the accent,
+		with a magnifying glass at its left end."""
+		x, y, w, h = rect
+		r = h / 2
+		sc = self.gui.scale
+		H = _hue_lerp(self.acc, self.oacc, self.mono)
+		self.soft(rect, r, 10 * sc, 0, hsl(H, 0.95, 0.55, 0.3))
+		self.sunken(rect, r)
+		self.ring("outer", rect, r, hsl(H, 0.9, 0.72, 0.7))
+		# The magnifier: a lens ring and a short handle down to the right
+		lens = self.s(7)
+		t = max(1.5, self.s(2))
+		cx = x + h * 0.5 + self.s(1)
+		cy = y + h / 2 - self.s(2)
+		ink = mix(self.MUTED, self.TEXT, 0.5)
+		self.band((cx - lens, cy - lens, lens * 2, lens * 2), lens, t, ink)
+		k = math.sqrt(0.5)
+		self._stroke(cx + lens * k, cy + lens * k, cx + (lens + self.s(6)) * k, cy + (lens + self.s(6)) * k,
+			t * 1.15, ink)
+
+	def search_text_x(self, rect) -> float:
+		"""Where the field's text starts, right of the magnifier."""
+		return rect[0] + rect[3] + self.s(4)
+
+	def search_busy(self, right: float, cy: float) -> None:
+		"""Three accent dots breathing in turn while a search runs."""
+		d = self.s(6)
+		gap = self.s(5)
+		H = _hue_lerp(self.acc, self.oacc, self.mono)
+		t = time.monotonic()
+		for i in range(3):
+			k = 0.5 + 0.5 * math.sin(t * 7.0 - i * 1.1)
+			k = round(k * 8) / 8   # a few steps, so the meshes are reused
+			x = right - (3 - i) * (d + gap) + gap
+			self.shape((x, cy - d / 2, d, d), d / 2, hsl(H, 0.9, 0.55 + 0.2 * k, 0.3 + 0.7 * k))
+
+	def _stroke(self, x0: float, y0: float, x1: float, y1: float, t: float, colour: RGBA) -> None:
+		"""A straight line t px wide, as a quad."""
+		dx, dy = x1 - x0, y1 - y0
+		length = math.hypot(dx, dy)
+		if length <= 0:
+			return
+		nx, ny = -dy / length * t / 2, dx / length * t / 2
+		verts = [(px, py, 0.0, 0.0, *colour) for px, py in (
+			(x0 + nx, y0 + ny), (x1 + nx, y1 + ny), (x1 - nx, y1 - ny), (x0 - nx, y0 - ny))]
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(self.renderer, None, verts, [0, 1, 2, 0, 2, 3])
 
 	# -- elements -------------------------------------------------------------------------------
 

@@ -30585,6 +30585,104 @@ class SearchOverlay:
 			text = _("Added {N} tracks to playlist: {name}").format(N=added_count, name=playlist_name)
 		self.tauon.toast(text, duration=2.5)
 
+	def render_glass_row(
+			self, item: list[int | str | None], rect: tuple[int, int, int, int], pad: int, height: int,
+			selected: bool, label: str, kind_colour: ColourRGBA | None, thumbnail_rx: int, text_lx: int,
+			text_right: int, fonts: tuple[int, int, int], control_down: bool) -> None:
+		"""One Aqua search result, straight on the frosted backdrop: art or a gel tag for its kind
+		on the left, then its text; the selected row sits in a glass pill."""
+		aero = self.tauon.aero
+		ddt = self.ddt
+		s = self.gui.scale
+		s_font, s_b_font, b_font = fonts
+		n = item[0]
+		x, y, w, row_h = rect
+		# Everything centres on the pill's middle line
+		pill = (x, y + 1, w, row_h - 1)
+		mid = pill[1] + pill[3] / 2
+		if selected:
+			aero.selection(pill, aero.s(7))
+		fade = 1.0 if selected else 0.8
+		bg = aero.menu_bg()
+		text_c = aero.colour("TEXT")
+		muted_c = aero.colour("MUTED")
+		accent_c = aero.accent_colour()
+
+		def ink(c: ColourRGBA, k: float = 1.0) -> ColourRGBA:
+			return ColourRGBA(c.r, c.g, c.b, round(c.a * fade * k))
+
+		def text_y(centre: float, font: int) -> int:
+			# ddt.text puts the baseline 13px below y; centre the cap height on `centre`
+			return round(centre + (0.35 * (font % 100) - 13) * s)
+
+		top = round(mid - height / 2)
+		max_w = max(round(40 * s), text_right - text_lx)
+
+		if n in (1, 2):
+			art_rect = (thumbnail_rx - height, top, height, height)
+			got = self.tauon.gall_ren.render(self.pctl.get_track(item[2]), (art_rect[0], top), height, return_texture=True)
+			if got:
+				tex, tw, th, _edge = got
+				art_rect = (round(art_rect[0] + (height - tw) / 2), round(top + (height - th) / 2), tw, th)
+				aero.art(tex, art_rect, aero.s(4), shadow="small")
+			else:
+				aero.art_placeholder(art_rect, aero.s(4))
+			if not selected:
+				aero.shape(art_rect, aero.s(4), (0.0, 0.0, 0.0, 0.22))
+		elif kind_colour is not None:
+			tag_h = round(18 * s)
+			tag_pad = round(7 * s)
+			tag_w = ddt.get_text_w(label, 211) + tag_pad * 2
+			tag = (thumbnail_rx - tag_w, round(mid - tag_h / 2), tag_w, tag_h)
+			tag_c = ColourRGBA(kind_colour.r, kind_colour.g, kind_colour.b, round(235 * (1.0 if selected else 0.75)))
+			aero.badge(tag, tag_c)
+			ddt.text((tag[0] + tag_pad, text_y(mid, 211)), label, ColourRGBA(14, 18, 26, 235), 211, bg=tag_c)
+
+		if n in (0, 5, 6, 7, 8, 10):
+			ddt.text((text_lx, text_y(mid, b_font)), item[1], ink(text_c), b_font, max_w=max_w, bg=bg)
+		elif n == 3:
+			genre = str(item[1])
+			xx = ddt.text((text_lx, text_y(mid, b_font)), genre.rstrip("+"), ink(text_c), b_font, max_w=max_w, bg=bg) or 0
+			if genre.endswith("+"):
+				ddt.text(
+					(text_lx + xx + round(12 * s), text_y(mid, 313)), _("(Include multi-tag results)"), ink(muted_c), 313,
+					max_w=max(round(1 * s), max_w - xx - round(12 * s)), bg=bg)
+		elif n in (2, 9):
+			track = self.pctl.get_track(item[2])
+			title = track.title or clean_string(track.filename)
+			meta = track.artist or track.album
+			if meta:
+				gap = round(8 * s)
+				by = "BY" if track.artist else ""
+				by_w = ddt.get_text_w(by, 212) if by else 0
+				meta_w = ddt.get_text_w(meta, s_font) + (by_w + gap if by else 0)
+				if meta_w + round(120 * s) + gap > max_w:
+					meta_w = max(round(70 * s), max_w - round(120 * s) - gap)
+				title_w = max(round(40 * s), max_w - meta_w - gap)
+				drawn = ddt.text((text_lx, text_y(mid, s_b_font)), title, ink(text_c), s_b_font, max_w=title_w, bg=bg) or 0
+				mx = text_lx + drawn + gap
+				if by:
+					ddt.text((mx, text_y(mid, 212)), by, ink(accent_c), 212, bg=bg)
+					mx += by_w + gap
+				ddt.text(
+					(mx, text_y(mid, s_font)), meta, ink(text_c if track.artist else muted_c, 0.8), s_font,
+					max_w=max(round(1 * s), max_w - (mx - text_lx)), bg=bg)
+			else:
+				ddt.text((text_lx, text_y(mid, s_b_font)), title, ink(text_c), s_b_font, max_w=max_w, bg=bg)
+			if control_down and n == 2 and item[2] in self.pctl.default_playlist:
+				aero.led(x + w - round(16 * s), mid, True)
+		elif n == 1:
+			track = self.pctl.master_library[item[2]]
+			artist = track.album_artist or track.artist
+			# Two lines, centred as a pair
+			line1 = mid - 10.5 * s
+			line2 = mid + 10.5 * s
+			ddt.text((text_lx, text_y(line1, s_b_font)), item[1], ink(text_c), s_b_font, max_w=max_w, bg=bg)
+			by_w = ddt.text((text_lx, text_y(line2, 212)), "BY", ink(accent_c), 212, bg=bg) or 0
+			ddt.text(
+				(text_lx + by_w + round(8 * s), text_y(line2, s_font)), artist, ink(text_c, 0.8), s_font,
+				max_w=max(round(1 * s), max_w - by_w - round(8 * s)), bg=bg)
+
 	def render_help_legend(self) -> None:
 		gui = self.gui
 		icon_size = round(26 * gui.scale)
@@ -30598,9 +30696,15 @@ class SearchOverlay:
 		self.fields.add(icon_rect)
 
 		hover = self.coll(icon_rect)
+		glass = self.tauon.aero.active
 		icon_text = ColourRGBA(210, 210, 215, 105)
 		if hover:
 			icon_text = ColourRGBA(245, 245, 245, 230)
+		if glass:
+			# A small glass button
+			aero = self.tauon.aero
+			aero.tile(icon_rect, icon_size / 2, hover)
+			icon_text = aero.colour("TEXT") if hover else aero.colour("MUTED")
 
 		cx = icon_rect[0] + icon_size // 2
 		self.ddt.text(
@@ -30632,22 +30736,29 @@ class SearchOverlay:
 		tooltip_x = max(margin, self.window_size[0] - margin - width)
 		tooltip_y = max(margin, icon_rect[1] - height - round(10 * gui.scale))
 		tooltip_bg = ColourRGBA(18, 18, 22, 245)
+		label_c = text_c = ColourRGBA(245, 245, 245, 255)
 
-		self.ddt.rect((tooltip_x, tooltip_y, width, height), tooltip_bg)
+		if glass:
+			tooltip_bg = aero.menu_bg()
+			label_c = aero.colour("TEXT")
+			text_c = aero.colour("MUTED")
+			aero.menu_glass((tooltip_x, tooltip_y, width, height))
+		else:
+			self.ddt.rect((tooltip_x, tooltip_y, width, height), tooltip_bg)
 		for i, (label, text) in enumerate(lines):
 			line_x = tooltip_x + pad
 			line_y = tooltip_y + pad + i * line_h
 			label_width = self.ddt.text(
 				(line_x, line_y),
 				label,
-				ColourRGBA(245, 245, 245, 255),
+				label_c,
 				label_font,
 				bg=tooltip_bg,
 			)
 			self.ddt.text(
 				(line_x + label_width + label_gap, line_y),
 				text,
-				ColourRGBA(245, 245, 245, 255),
+				text_c,
 				font,
 				bg=tooltip_bg,
 			)
@@ -30719,8 +30830,19 @@ class SearchOverlay:
 
 			overlay_background = ColourRGBA(12, 12, 12, 255)
 			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
-			self.ddt.rect((x, y, w, h), ColourRGBA(3, 3, 3, 235))
-			if control_down:
+			# Aqua: the frosted sky as a backdrop, with a capsule field and the
+			# results under it in one column on the left
+			aero = self.tauon.aero
+			glass = aero.active
+			if glass:
+				aero.search_veil()
+				overlay_background = aero.menu_bg()
+				text_c = aero.colour("TEXT")
+				muted_c = aero.colour("MUTED")
+				accent_c = aero.accent_colour()
+			else:
+				self.ddt.rect((x, y, w, h), ColourRGBA(3, 3, 3, 235))
+			if control_down and not glass:
 				badge_margin = round(14 * gui.scale) + 5
 				badge_pad = round(5 * gui.scale)
 				badge_h = round(20 * gui.scale)
@@ -30778,8 +30900,46 @@ class SearchOverlay:
 
 			#album_art_size_s = 0 * gui.scale
 
+			if glass:
+				col_x = round(24 * gui.scale)
+				col_w = min(round(660 * gui.scale), w - col_x * 2)
+				field = (col_x, round(36 * gui.scale), col_w, round(52 * gui.scale))
+				results_y = field[1] + field[3] + round(18 * gui.scale)
+				# Rows line up with the field's edges
+				row_x = col_x
+				row_w = col_w
+				highlight_x = row_x
+				# Set once the visible rows are known (the kind column fits them)
+				thumbnail_rx = text_lx = 0
+				text_right = row_x + row_w - round(14 * gui.scale)
+				if control_down:
+					# Room for the in-playlist light
+					text_right -= round(18 * gui.scale)
+				aero.search_field(field)
+				input_text_x = aero.search_text_x(field)
+				field_right = field[0] + field[2] - round(field[3] / 2)
+				if control_down:
+					# Ctrl adds results to the playlist being viewed: say which, in a
+					# gel chip at the field's right end
+					chip_text = "+  " + self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title
+					chip_h = round(26 * gui.scale)
+					chip_pad = round(11 * gui.scale)
+					chip_w = min(self.ddt.get_text_w(chip_text, 312) + chip_pad * 2, round(col_w * 0.45))
+					chip = (field_right + round(14 * gui.scale) - chip_w, field[1] + (field[3] - chip_h) // 2, chip_w, chip_h)
+					aero.gel(chip, chip_h / 2, glow=False)
+					self.ddt.text_glow = aero.text_glow()
+					self.ddt.text(
+						(chip[0] + chip_pad, chip[1] + round(5 * gui.scale)), chip_text, ColourRGBA(255, 255, 255, 255), 312,
+						max_w=chip_w - chip_pad * 2, bg=accent_c)
+					self.ddt.text_glow = None
+					field_right = chip[0] - round(10 * gui.scale)
+
 			# Search active animation
-			if self.sip:
+			if self.sip and glass:
+				aero.search_busy(field_right, field[1] + field[3] / 2)
+				field_right -= round(42 * gui.scale)
+				gui.request_frame()
+			elif self.sip:
 				x = round(15 * gui.scale)
 				y = x
 				s = round(7 * gui.scale)
@@ -30806,11 +30966,21 @@ class SearchOverlay:
 			# No results found message
 			elif not self.results and len(self.search_text.text) > 1:
 				if self.input_timer.get() > 0.5 and not self.sip:
-					self.ddt.text((self.window_size[0] // 2, 200 * gui.scale, 2), _("No results found"), ColourRGBA(250, 250, 250, 255), 216,
-						bg=ColourRGBA(12, 12, 12, 255))
+					if glass:
+						self.ddt.text(
+							(input_text_x, results_y + round(8 * gui.scale)), _("No results found"), muted_c, 215,
+							bg=overlay_background)
+					else:
+						self.ddt.text((self.window_size[0] // 2, 200 * gui.scale, 2), _("No results found"), ColourRGBA(250, 250, 250, 255), 216,
+							bg=ColourRGBA(12, 12, 12, 255))
 
-			self.search_text.draw(input_text_x, 60 * gui.scale, ColourRGBA(230, 230, 230, 255), True, False, 30,
-				self.window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
+			if glass:
+				self.search_text.draw(
+					input_text_x, field[1] + field[3] // 2 - round(2 * gui.scale), text_c, True, False, 30,
+					field_right - input_text_x, big=True, click=gui.level_2_click, selection_height=30)
+			else:
+				self.search_text.draw(input_text_x, 60 * gui.scale, ColourRGBA(230, 230, 230, 255), True, False, 30,
+					self.window_size[0] - 100, big=True, click=gui.level_2_click, selection_height=30)
 
 			if inp.input_text or inp.key_backspace_press:
 				self.input_timer.set()
@@ -30891,10 +31061,48 @@ class SearchOverlay:
 			p = self.on - 1
 			clear = False
 
+			names = {
+				0: "Artist",
+				1: "Album",
+				2: "Track",
+				3: "Genre",
+				5: "Folder",
+				6: "Composer",
+				7: "Year",
+				8: "Playlist",
+				9: "Lyrics",
+				10: _("Label"),
+			}
+
+			glass_rows = 0
+			if glass:
+				# Only whole rows that fit above the bottom margin
+				yy = results_y
+				bottom = h - round(56 * gui.scale)
+				end_y = yy
+				# The kind column is as wide as its widest visible item (art or a
+				# tag), right-aligned against the text, so the pill pads it evenly
+				kind_w = round(25 * gui.scale)
+				for k in range(max(self.on, 0), len(self.results)):
+					kind = self.results[k][0]
+					row_h = round((50 if kind == 1 else 25) * gui.scale) + round(4 * gui.scale) * 2
+					if glass_rows and (end_y + row_h > bottom or glass_rows > 41):
+						break
+					end_y += row_h
+					glass_rows += 1
+					if kind == 1:
+						kind_w = max(kind_w, round(50 * gui.scale))
+					elif kind != 2:
+						kind_w = max(kind_w, self.ddt.get_text_w(names.get(kind, "NYI"), 211) + round(7 * gui.scale) * 2)
+				thumbnail_rx = row_x + round(10 * gui.scale) + kind_w
+				text_lx = thumbnail_rx + round(14 * gui.scale)
+
 			for i, item in enumerate(self.results):
 				p += 1
 
 				if p > len(self.results) - 1:
+					break
+				if glass and i >= glass_rows:
 					break
 
 				item: list[int] = self.results[p]
@@ -30913,18 +31121,6 @@ class SearchOverlay:
 
 				n = item[0]
 
-				names = {
-					0: "Artist",
-					1: "Album",
-					2: "Track",
-					3: "Genre",
-					5: "Folder",
-					6: "Composer",
-					7: "Year",
-					8: "Playlist",
-					9: "Lyrics",
-					10: _("Label"),
-				}
 				type_colours = {
 					0:  ColourRGBA(250, 140, 190, 255),  # Artist
 					1:  ColourRGBA(250, 140, 190, 255),  # Album
@@ -30952,94 +31148,101 @@ class SearchOverlay:
 				album_art_size = height
 
 
-				# Selection bar
-				s_rect = (highlight_x, yy, 600 * gui.scale, height + pad + pad - 1)
-				self.fields.add(s_rect)
-				if fade == 1:
-					self.ddt.rect((highlight_x, yy + pad, 4 * gui.scale, height), bar_colour)
-				if n in (2,):
-					if control_down and item[2] in self.pctl.default_playlist:
-						self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
+				if glass:
+					s_rect = (row_x, yy, row_w, height + pad + pad - 1)
+					self.fields.add(s_rect)
+					self.render_glass_row(
+						item, s_rect, pad, height, fade == 1, names.get(n, "NYI"), type_colours.get(n),
+						thumbnail_rx, text_lx, text_right, (s_font, s_b_font, b_font), control_down)
+				else:
+					# Selection bar
+					s_rect = (highlight_x, yy, 600 * gui.scale, height + pad + pad - 1)
+					self.fields.add(s_rect)
+					if fade == 1:
+						self.ddt.rect((highlight_x, yy + pad, 4 * gui.scale, height), bar_colour)
+					if n in (2,):
+						if control_down and item[2] in self.pctl.default_playlist:
+							self.ddt.rect((highlight_x + round(5 * gui.scale), yy + pad, 4 * gui.scale, height), track_in_bar_colour)
 
-				# Type text
-				if n in (0, 3, 5, 6, 7, 8, 9, 10):
-					self.ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
+					# Type text
+					if n in (0, 3, 5, 6, 7, 8, 9, 10):
+						self.ddt.text((thumbnail_rx, yy + pad + round(3 * gui.scale), 1), names[n], type_colours[n], 214)
 
-				# Thumbnail
-				if n in (1, 2):
-					thl = thumbnail_rx - album_art_size
-					self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(50, 50, 50, 150))
-					self.tauon.gall_ren.render(self.pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
-					if fade != 1:
-						self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(0, 0, 0, 70))
-				# Result text
-				if n in (0, 5, 6, 7, 8, 10):  # Bold
-					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
-				if n in (3,):  # Genre
-					xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
-					if item[1].endswith("+"):
-						self.ddt.text(
-							(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
-							ColourRGBA(255, 255, 255, int(255 * fade) // 2), 313)
-				if n in (2,9,):  # Local library track
-					track = self.pctl.get_track(item[2])
-					title_val = track.title or clean_string(track.filename)
-					artist_val = track.artist
-					album_val = track.album
+					# Thumbnail
+					if n in (1, 2):
+						thl = thumbnail_rx - album_art_size
+						self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(50, 50, 50, 150))
+						self.tauon.gall_ren.render(self.pctl.get_track(item[2]), (thl, yy + pad), album_art_size)
+						if fade != 1:
+							self.ddt.rect((thl, yy + pad, album_art_size, album_art_size), ColourRGBA(0, 0, 0, 70))
+					# Result text
+					if n in (0, 5, 6, 7, 8, 10):  # Bold
+						xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
+					if n in (3,):  # Genre
+						xx = self.ddt.text((text_lx, yy + pad + round(3 * gui.scale)), item[1].rstrip("+"), ColourRGBA(255, 255, 255, int(255 * fade)), b_font)
+						if item[1].endswith("+"):
+							self.ddt.text(
+								(xx + text_lx + 13 * gui.scale, yy + pad + round(3 * gui.scale)), _("(Include multi-tag results)"),
+								ColourRGBA(255, 255, 255, int(255 * fade) // 2), 313)
+					if n in (2,9,):  # Local library track
+						track = self.pctl.get_track(item[2])
+						title_val = track.title or clean_string(track.filename)
+						artist_val = track.artist
+						album_val = track.album
 
-					yyy = yy + pad + round(3 * gui.scale)
-					text_max_w = max(round(80 * gui.scale), self.window_size[0] - text_lx - round(24 * gui.scale))
-					text_max_w = min(round(560 * gui.scale), text_max_w)
-					metadata_val = artist_val or album_val
-					if metadata_val:
-						gap = round(8 * gui.scale)
-						by_label = "BY" if artist_val else ""
-						by_width = self.ddt.get_text_w(by_label, 212) if by_label else 0
-						metadata_width = self.ddt.get_text_w(metadata_val, s_font)
-						if by_label:
-							metadata_width += by_width + gap
-						min_title_width = round(120 * gui.scale)
-						if metadata_width + min_title_width + gap > text_max_w:
-							metadata_width = max(round(70 * gui.scale), text_max_w - min_title_width - gap)
-						title_width = max(round(40 * gui.scale), text_max_w - metadata_width - gap)
-						drawn_title_width = self.ddt.text(
-							(text_lx, yyy),
-							title_val,
-							ColourRGBA(255, 255, 255, int(255 * fade)),
-							s_b_font,
-							max_w=title_width,
-						) or 0
-						meta_x = text_lx + drawn_title_width + gap
-						if by_label:
-							self.ddt.text((meta_x, yyy), by_label, ColourRGBA(250, 240, 110, int(255 * fade)), 212)
-							meta_x += by_width + gap
-						self.ddt.text(
-							(meta_x, yyy),
-							metadata_val,
-							ColourRGBA(250, 250, 250, int(255 * fade)) if artist_val else ColourRGBA(220, 220, 220, int(255 * fade)),
-							s_font,
-							max_w=max(round(1 * gui.scale), text_max_w - (meta_x - text_lx)),
-						)
-					else:
-						self.ddt.text(
-							(text_lx, yyy),
-							title_val,
-							ColourRGBA(255, 255, 255, int(255 * fade)),
-							s_b_font,
-							max_w=text_max_w,
-						)
+						yyy = yy + pad + round(3 * gui.scale)
+						text_max_w = max(round(80 * gui.scale), self.window_size[0] - text_lx - round(24 * gui.scale))
+						text_max_w = min(round(560 * gui.scale), text_max_w)
+						metadata_val = artist_val or album_val
+						if metadata_val:
+							gap = round(8 * gui.scale)
+							by_label = "BY" if artist_val else ""
+							by_width = self.ddt.get_text_w(by_label, 212) if by_label else 0
+							metadata_width = self.ddt.get_text_w(metadata_val, s_font)
+							if by_label:
+								metadata_width += by_width + gap
+							min_title_width = round(120 * gui.scale)
+							if metadata_width + min_title_width + gap > text_max_w:
+								metadata_width = max(round(70 * gui.scale), text_max_w - min_title_width - gap)
+							title_width = max(round(40 * gui.scale), text_max_w - metadata_width - gap)
+							drawn_title_width = self.ddt.text(
+								(text_lx, yyy),
+								title_val,
+								ColourRGBA(255, 255, 255, int(255 * fade)),
+								s_b_font,
+								max_w=title_width,
+							) or 0
+							meta_x = text_lx + drawn_title_width + gap
+							if by_label:
+								self.ddt.text((meta_x, yyy), by_label, ColourRGBA(250, 240, 110, int(255 * fade)), 212)
+								meta_x += by_width + gap
+							self.ddt.text(
+								(meta_x, yyy),
+								metadata_val,
+								ColourRGBA(250, 250, 250, int(255 * fade)) if artist_val else ColourRGBA(220, 220, 220, int(255 * fade)),
+								s_font,
+								max_w=max(round(1 * gui.scale), text_max_w - (meta_x - text_lx)),
+							)
+						else:
+							self.ddt.text(
+								(text_lx, yyy),
+								title_val,
+								ColourRGBA(255, 255, 255, int(255 * fade)),
+								s_b_font,
+								max_w=text_max_w,
+							)
 
-				if n in (1,):  # Two line album
-					track = self.pctl.master_library[item[2]]
-					artist = track.album_artist
-					if not artist:
-						artist = track.artist
+					if n in (1,):  # Two line album
+						track = self.pctl.master_library[item[2]]
+						artist = track.album_artist
+						if not artist:
+							artist = track.artist
 
-					xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
+						xx = self.ddt.text((text_lx, yy + pad + round(5 * gui.scale)), item[1], ColourRGBA(255, 255, 255, int(255 * fade)), s_b_font)
 
-					self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", ColourRGBA(250, 240, 110, int(255 * fade)), 212)
-					xx += 8 * gui.scale
-					xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
+						self.ddt.text((text_lx + 5 * gui.scale, yy + 30 * gui.scale), "BY", ColourRGBA(250, 240, 110, int(255 * fade)), 212)
+						xx += 8 * gui.scale
+						xx += self.ddt.text((text_lx + 30 * gui.scale, yy + 30 * gui.scale), artist, ColourRGBA(250, 250, 250, int(255 * fade)), s_font)
 
 				yy += height + pad + pad
 
@@ -31133,7 +31336,7 @@ class SearchOverlay:
 				# ---
 				if i > 40:
 					break
-				if yy > self.window_size[1] - (100 * gui.scale):
+				if not glass and yy > self.window_size[1] - (100 * gui.scale):
 					break
 
 				continue
