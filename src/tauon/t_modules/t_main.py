@@ -799,7 +799,7 @@ class GuiVar:
 			height = round(51 * self.scale)
 		if prefs.aero:
 			# Aqua floats the bar on the sky: a gap above, the edge gap below
-			height += round(Aero.BOTTOM_GAP * self.scale) + round(Aero.edge_gap_logical(prefs) * self.scale)
+			height += round(Aero.BOTTOM_GAP * self.scale) + round(Aero.EDGE_GAP * self.scale)
 		return height
 
 	def rescale(self) -> None:
@@ -9523,7 +9523,7 @@ class Tauon:
 
 		# The grip triangle would clash with a rounded corner, the resize
 		# hit-zone below still works without it
-		if not self.corner_round_radius() and not self.aero.see_through:
+		if not self.corner_round_radius():
 			corner_icon.render(window_size[0] - corner_icon.w, window_size[1] - corner_icon.h, colours.corner_icon)
 
 		corner_rect = (window_size[0] - 20 * gui.scale, window_size[1] - 20 * gui.scale, 20, 20)
@@ -9553,9 +9553,6 @@ class Tauon:
 			gui.cursor_want = 11
 
 		colour = colours.window_frame
-		if self.aero.see_through:
-			# Aqua with clear gaps: there is no window edge to frame
-			return
 
 		# When corners are rounded, stop the straight edges short so the
 		# corner arc textures can continue the contour
@@ -9653,9 +9650,7 @@ class Tauon:
 		small texture copies, the textures themselves are cached.
 		"""
 		radius = self.corner_round_radius()
-		# Aqua with clear gaps: the corners are already empty, and the
-		# frame arcs would float on the desktop
-		if not radius or self.aero.see_through:
+		if not radius:
 			return
 
 		thickness = max(1, round(1 * self.gui.scale))
@@ -10361,6 +10356,30 @@ class Tauon:
 			return
 		self.gui.request_frame()
 
+	def glass_box(self, rect) -> bool:
+		"""Under Aqua, draw a dialog's glass over rect and point text at it.
+		Returns False otherwise, for the caller to draw its own frame."""
+		if not self.aero.active:
+			return False
+		self.aero.menu_glass(rect, dialog=True)
+		self.ddt.text_background_colour = self.aero.menu_bg()
+		return True
+
+	def glass_field(self, rect) -> bool:
+		"""Under Aqua, draw a text field's sunken trough; False otherwise."""
+		if not self.aero.active:
+			return False
+		self.aero.sunken(rect, self.aero.s(5))
+		return True
+
+	def glass_tip(self, rect) -> ColourRGBA | None:
+		"""Under Aqua, draw a tooltip's glass and return its text background;
+		None otherwise."""
+		if not self.aero.active:
+			return None
+		self.aero.menu_glass(rect)
+		return self.aero.menu_bg()
+
 	def ex_tool_tip(self, x: int, y: float, text1_width: int, text: str, font: int) -> None:
 		text2_width = self.ddt.get_text_w(text, font)
 		if text2_width == text1_width:
@@ -10373,10 +10392,13 @@ class Tauon:
 
 		x -= int(w / 2)
 
-		border = 1 * self.gui.scale
-		self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
-		self.ddt.rect((x, y, w, h), self.colours.menu_background)
-		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=self.colours.menu_background)
+		bg = self.glass_tip((x, y, w, h))
+		if bg is None:
+			bg = self.colours.menu_background
+			border = 1 * self.gui.scale
+			self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
+			self.ddt.rect((x, y, w, h), bg)
+		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=bg)
 
 	def menu_standard_or_grey(self, enabled: bool) -> Decorator:
 		line_colour = self.colours.menu_text if enabled else self.colours.menu_text_disabled
@@ -23291,16 +23313,6 @@ class Tauon:
 		self.gui.request_frame()
 		return None
 
-	def toggle_aero_see_through(self, mode: int = 0) -> bool | None:
-		if mode == 1:
-			return bool(self.prefs.aero_see_through)
-		self.prefs.aero_see_through = not self.prefs.aero_see_through
-		# The window-edge gap depends on it
-		self.gui.update_layout = True
-		self.gui.request_frame()
-		self.gui.request_tracklist_redraw()
-		return None
-
 	def toggle_side_panel_spectrum(self, mode: int = 0) -> bool | None:
 		if mode == 1:
 			return bool(self.prefs.side_panel_spectrum)
@@ -25276,9 +25288,17 @@ class Drawing:
 			fill = background_highlight_colour if background_highlight_colour is not None else self.colours.box_button_background_highlight
 			ink = text_highlight_colour if text_highlight_colour is not None else self.colours.box_button_text_highlight
 		background = alpha_blend(fill, self.colours.box_background)
+		aero = self.tauon.aero
+		glass = aero.active and background_colour is None
+		if glass:
+			# Aqua: a glass tile (dropdowns given their own colours keep them)
+			background = aero.menu_bg()
+			ink = text_colour or aero.colour("TEXT")
 		if not enabled and dim:
 			ink = alpha_blend(alpha_mod(ink, 120), background)
-		if border_colour is None:
+		if glass:
+			aero.tile(rect, aero.s(6), active)
+		elif border_colour is None:
 			self.ddt.rect(rect, fill)
 		else:
 			self.ddt.bordered_rect(rect, fill, border_colour, max(1, round(scale)))
@@ -25304,6 +25324,28 @@ class Drawing:
 
 		rect = (x, y, w, h)
 		self.fields.add(rect)
+
+		if press is None:
+			press = self.inp.mouse_click
+
+		aero = self.tauon.aero
+		if aero.active and background_colour is None:
+			# Aqua: a glass capsule; a hover colour of its own (a red Delete)
+			# lights it as a gel of that hue
+			hover = self.coll(rect)
+			if hover and tooltip:
+				self.tauon.tool_tip.test(x + 15 * self.gui.scale, y - 28 * self.gui.scale, tooltip)
+			colour = text_colour or aero.colour("TEXT")
+			if hover and background_highlight_colour is not None:
+				c = background_highlight_colour
+				hue = colorsys.rgb_to_hls(c.r / 255, c.g / 255, c.b / 255)[0] * 360
+				aero.gel(rect, rect[3] / 2, hue=hue, glow=False)
+				colour = text_highlight_colour or ColourRGBA(255, 255, 255, 255)
+			else:
+				aero.button(rect, hover)
+			text_y = rect[1] + rect[3] / 2 - 9 * self.gui.scale + round(text_y_offset * self.gui.scale)
+			self.ddt.text((rect[0] + int(rect[2] / 2), text_y, 2), text, colour, font, bg=aero.menu_bg())
+			return bool(hover and press)
 
 		if text_highlight_colour is None:
 			text_highlight_colour = self.colours.box_button_text_highlight
@@ -29477,6 +29519,7 @@ class StyleOverlay:
 class ToolTip:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon   = tauon
 		self.gui     = tauon.gui
 		self.ddt     = tauon.ddt
 		self.colours = tauon.colours
@@ -29512,11 +29555,13 @@ class ToolTip:
 	def render(self) -> None:
 		if self.called is True:
 			if self.timer.get() > self.trigger:
-				self.ddt.rect((self.x, self.y, self.w, self.h), self.colours.box_button_background)
-				# ddt.rect((self.x, self.y, self.w, self.h), self.colours.grey(45))
+				bg = self.tauon.glass_tip((self.x, self.y, self.w, self.h))
+				if bg is None:
+					bg = self.colours.box_button_background
+					self.ddt.rect((self.x, self.y, self.w, self.h), bg)
 				self.ddt.text(
 					(self.x + int(self.w / 2), self.y + 4 * self.gui.scale, 2), self.text,
-					self.colours.menu_text, self.font, bg=self.colours.box_button_background)
+					self.colours.menu_text, self.font, bg=bg)
 			else:
 				# self.gui.update += 1
 				pass
@@ -29528,6 +29573,7 @@ class ToolTip:
 class ToolTip3:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon   = tauon
 		self.inp     = tauon.inp
 		self.ddt     = tauon.ddt
 		self.gui     = tauon.gui
@@ -29589,12 +29635,14 @@ class ToolTip3:
 		y = self.y
 		h = self.height
 
-		border = 1 * self.gui.scale
-
-		self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
-		self.ddt.rect((x, y, w, h), self.colours.menu_background)
+		bg = self.tauon.glass_tip((x, y, w, h))
+		if bg is None:
+			bg = self.colours.menu_background
+			border = 1 * self.gui.scale
+			self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
+			self.ddt.rect((x, y, w, h), bg)
 		p = self.ddt.text(
-			(x + int(w / 2), y + 3 * self.gui.scale, 2), self.text, self.colours.menu_text, 312, bg=self.colours.menu_background)
+			(x + int(w / 2), y + 3 * self.gui.scale, 2), self.text, self.colours.menu_text, 312, bg=bg)
 
 		if not self.coll(self.rect):
 			self.show = False
@@ -29602,6 +29650,7 @@ class ToolTip3:
 class SubLyricsBox:
 
 	def __init__(self, tauon: Tauon) -> None:
+		self.tauon:           Tauon = tauon
 		self.ddt:             TDraw = tauon.ddt
 		self.gui:            GuiVar = tauon.gui
 		self.inp:             Input = tauon.inp
@@ -29642,9 +29691,10 @@ class SubLyricsBox:
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
-		self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
-		self.ddt.text_background_colour = self.colours.box_background
+		if not self.tauon.glass_box((x, y, w, h)):
+			self.ddt.rect_a((x - 2 * self.gui.scale, y - 2 * self.gui.scale), (w + 4 * self.gui.scale, h + 4 * self.gui.scale), self.colours.box_border)
+			self.ddt.rect_a((x, y), (w, h), self.colours.box_background)
+			self.ddt.text_background_colour = self.colours.box_background
 
 		if self.inp.key_esc_press or ((self.inp.mouse_click or self.inp.right_click or self.inp.level_2_right_click) and not self.coll((x, y, w, h))):
 			self.active = False
@@ -29677,7 +29727,8 @@ class SubLyricsBox:
 		xx += round(6 * self.gui.scale)
 		rect1 = (xx, y, round(250 * self.gui.scale), round(17 * self.gui.scale))
 		self.fields.add(rect1)
-		self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
+		if not self.tauon.glass_field(rect1):
+			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
 		if (self.coll(rect1) and self.inp.mouse_click) or (self.inp.key_tab_press and self.active_field == 2):
 			self.active_field = 1
 			self.inp.key_tab_press = False
@@ -29703,7 +29754,8 @@ class SubLyricsBox:
 		if (self.coll(rect1) and self.inp.mouse_click) or (self.inp.key_tab_press and self.active_field == 1):
 			self.active_field = 2
 		# ddt.rect(rect1, [40, 40, 40, 255], True)
-		self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
+		if not self.tauon.glass_field(rect1):
+			self.ddt.bordered_rect(rect1, self.colours.box_background, self.colours.box_text_border, round(1 * self.gui.scale))
 		self.sub_lyrics_b.draw(
 			xx + round(4 * self.gui.scale), y, self.colours.box_input_text, self.active_field == 2, width=rect1[2] - 8 * self.gui.scale)
 
@@ -29773,9 +29825,10 @@ class ExportPlaylistBox:
 		x = int(self.window_size[0] / 2) - int(w / 2)
 		y = int(self.window_size[1] / 2) - int(h / 2)
 
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
+		if not self.tauon.glass_box((x, y, w, h)):
+			ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale), colours.box_border)
+			ddt.rect_a((x, y), (w, h), colours.box_background)
+			ddt.text_background_colour = colours.box_background
 
 		playlist_id = self.playlist_id
 		pl = self.pctl.id_to_pl(playlist_id)
@@ -29797,7 +29850,8 @@ class ExportPlaylistBox:
 		y += round(30 * gui.scale)
 		rect1 = (x, y, round(450 * gui.scale), round(16 * gui.scale))
 		self.fields.add(rect1)
-		ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
+		if not self.tauon.glass_field(rect1):
+			ddt.bordered_rect(rect1, colours.box_background, colours.box_text_border, round(1 * gui.scale))
 
 		self.directory_text_box.text = playlist.playlist_file
 		self.directory_text_box.draw(
@@ -30153,9 +30207,10 @@ class RelocateBox:
 		h = title_h + zone_h + ref_h + field_h + round(16 * s) + rule_h + bar_h + foot_h + pad
 		self.box_rect = (x, y, w, h)
 
-		ddt.rect_a((x - 2 * s, y - 2 * s), (w + 4 * s, h + 4 * s), colours.box_border)
-		ddt.rect_a((x, y), (w, h), colours.box_background)
-		ddt.text_background_colour = colours.box_background
+		if not self.tauon.glass_box((x, y, w, h)):
+			ddt.rect_a((x - 2 * s, y - 2 * s), (w + 4 * s, h + 4 * s), colours.box_border)
+			ddt.rect_a((x, y), (w, h), colours.box_background)
+			ddt.text_background_colour = colours.box_background
 
 		if self.inp.key_esc_press or (
 			(self.inp.mouse_click or gui.level_2_click or self.inp.right_click or self.inp.level_2_right_click)
@@ -30209,7 +30264,8 @@ class RelocateBox:
 		# Path field
 		field = (x + pad, yy, inner_w, field_h)
 		self.fields.add(field)
-		ddt.bordered_rect(field, colours.box_background, colours.box_text_border, round(1 * s))
+		if not self.tauon.glass_field(field):
+			ddt.bordered_rect(field, colours.box_background, colours.box_text_border, round(1 * s))
 		text_x = x + pad + round(8 * s)
 		text_y = text_top(yy, field_h, 211) - round(2 * s)
 		if not text and not gui.editline:
@@ -31410,11 +31466,11 @@ class MessageBox:
 		# Room for text beside the icon
 		text_w = int(w - 74 * gui.scale)
 
-		ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
-			self.colours.box_text_border)
-		ddt.rect_a((x, y), (w, h), self.colours.message_box_bg)
-
-		ddt.text_background_colour = self.colours.message_box_bg
+		if not self.tauon.glass_box((x, y, w, h)):
+			ddt.rect_a((x - 2 * gui.scale, y - 2 * gui.scale), (w + 4 * gui.scale, h + 4 * gui.scale),
+				self.colours.box_text_border)
+			ddt.rect_a((x, y), (w, h), self.colours.message_box_bg)
+			ddt.text_background_colour = self.colours.message_box_bg
 
 		if gui.message_mode == "info":
 			self.message_info_icon.render(x + 14 * gui.scale, y + int(h / 2) - int(self.message_info_icon.h / 2) - 1)
@@ -31549,9 +31605,10 @@ class DuplicateImportBox:
 		x = (tauon.window_size[0] - w) // 2
 		y = (tauon.window_size[1] - h) // 2
 		ddt.rect((0, 0, *tauon.window_size), ColourRGBA(0, 0, 0, 130))
-		ddt.rect((x - 2 * scale, y - 2 * scale, w + 4 * scale, h + 4 * scale), colours.box_text_border)
-		ddt.rect((x, y, w, h), colours.message_box_bg)
-		ddt.text_background_colour = colours.message_box_bg
+		if not tauon.glass_box((x, y, w, h)):
+			ddt.rect((x - 2 * scale, y - 2 * scale, w + 4 * scale, h + 4 * scale), colours.box_text_border)
+			ddt.rect((x, y, w, h), colours.message_box_bg)
+			ddt.text_background_colour = colours.message_box_bg
 		ddt.text((x + 20 * scale, y + 14 * scale), title, colours.message_box_text, 15, max_w=text_w)
 		ddt.text((x + 20 * scale, y + 43 * scale, 4, text_w), detail, colours.message_box_text, 12)
 		button_y = y + h - round(43 * scale)
@@ -31655,9 +31712,10 @@ class PresetDownloadBox:
 
 		panel = self.colours.message_box_bg
 		border = self.colours.box_text_border
-		ddt.rect_a((x - 2 * scale, y - 2 * scale), (w + 4 * scale, h + 4 * scale), border)
-		ddt.rect_a((x, y), (w, h), panel)
-		ddt.text_background_colour = panel
+		if not self.tauon.glass_box((x, y, w, h)):
+			ddt.rect_a((x - 2 * scale, y - 2 * scale), (w + 4 * scale, h + 4 * scale), border)
+			ddt.rect_a((x, y), (w, h), panel)
+			ddt.text_background_colour = panel
 
 		ddt.text((x + 22 * scale, y + 16 * scale), self.title, self.colours.message_box_text, 15)
 		ddt.text((x + 22 * scale, y + 43 * scale), self.status, self.colours.box_text_label, 12, max_w=w - 44 * scale)
@@ -31781,8 +31839,16 @@ class NagBox:
 		inner_y = y + round(22 * scale)
 		inner_w = w - inner_pad * 2
 
-		self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * scale))
-		self.draw_left_accent_gradient(x, y, round(5 * scale), h)
+		if self.tauon.aero.active:
+			# Glass, with a faint frosted well for the changelog
+			aero = self.tauon.aero
+			panel_fill = aero.menu_bg()
+			section_fill = ColourRGBA(150, 215, 255, 12)
+			divider = aero.colour("STAR")
+			self.tauon.glass_box((x, y, w, h))
+		else:
+			self.ddt.bordered_rect((x, y, w, h), panel_fill, panel_border, round(1 * scale))
+			self.draw_left_accent_gradient(x, y, round(5 * scale), h)
 		self.ddt.text_background_colour = panel_fill
 
 		version_text = "Tauon v14"
@@ -34857,7 +34923,6 @@ class Over:
 			_("Skin"): "skin look style tauon aqua aero frutiger glass gel glossy skeuomorphic sky",
 			_("Background style"): "background album art colourise colorize colour color tint blur frosted wallpaper artist image dynamic",
 			_("Ambient motion"): "aqua animation animate sky motion drift bokeh",
-			_("Show desktop between panels"): "aqua transparent see through gaps desktop floating panels",
 			_("Glass mode"): "glass transparent transparency translucent see through blur opacity window",
 			_("Glass intensity"): "glass transparency opacity strength amount",
 			_("Darken tracklist"): "glass transparency contrast readability dim tracklist",
@@ -35722,7 +35787,6 @@ class Over:
 		)
 		if prefs.aero:
 			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
-			rows.switch(tauon.toggle_aero_see_through, _("Show desktop between panels"))
 			return
 
 		rect = rows.custom(round(34 * s))
@@ -45223,20 +45287,29 @@ class RenamePlaylistBox:
 		self.x = max(margin, min(self.x, self.window_size[0] - min_w - margin))
 
 		rect = [self.x, self.y, min_w, 37 * self.gui.scale]
-		bg = ColourRGBA(40, 40, 40, 255)
-		self.ddt.text_background_colour = bg
-
-		# Draw background
-		self.ddt.rect(rect, bg)
+		aero = self.tauon.aero
+		text_colour = self.colours.alpha_grey(250)
+		if aero.active:
+			# A glass popover, underlined in the accent
+			aero.menu_glass(rect)
+			self.ddt.text_background_colour = aero.menu_bg()
+			text_colour = aero.colour("TEXT")
+			line = max(1.0, aero.s(2))
+			aero.shape(
+				(rect[0] + aero.s(10), rect[1] + rect[3] - aero.s(6), rect[2] - aero.s(20), line), line / 2,
+				aero.colour_rgba(aero.accent_colour()))
+		else:
+			bg = ColourRGBA(40, 40, 40, 255)
+			self.ddt.text_background_colour = bg
+			self.ddt.rect(rect, bg)
+			# Accent
+			rect2 = [self.x, self.y + rect[3] - 4 * self.gui.scale, min_w, 4 * self.gui.scale]
+			self.ddt.rect(rect2, ColourRGBA(255, 255, 255, 60))
 
 		# Draw text entry
 		self.rename_text_area.draw(
-			rect[0] + 10 * self.gui.scale, rect[1] + 8 * self.gui.scale, self.colours.alpha_grey(250),
+			rect[0] + 10 * self.gui.scale, rect[1] + 8 * self.gui.scale, text_colour,
 			width=350 * self.gui.scale, font=315)
-
-		# Draw accent
-		rect2 = [self.x, self.y + rect[3] - 4 * self.gui.scale, min_w, 4 * self.gui.scale]
-		self.ddt.rect(rect2, ColourRGBA(255, 255, 255, 60))
 
 		# If enter or click outside of box: save and close
 		if self.inp.key_return_press or (self.inp.key_esc_press and len(self.gui.editline) == 0) \
@@ -50543,9 +50616,9 @@ class ChannelStatusView:
 		)
 
 	def box_palette(self) -> ChannelStatusPalette:
-		"""Colours that follow the theme's info box"""
+		"""Colours that follow the theme's info box (its glass, under Aqua)"""
 		colours = self.tauon.colours
-		bg = colours.box_background
+		bg = self.tauon.aero.menu_bg() if self.tauon.aero.active else colours.box_background
 
 		def state(colour: ColourRGBA) -> tuple[ColourRGBA, ColourRGBA]:
 			return alpha_blend(alpha_mod(colour, 70), bg), colour
@@ -58477,7 +58550,6 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("transparent-style", prefs.transparent_mode)
 	cf.update_value("aqua-style", prefs.aero)
 	cf.update_value("aqua-motion", prefs.aero_motion)
-	cf.update_value("aqua-see-through", prefs.aero_see_through)
 	cf.update_value("side-panel-spectrum", prefs.side_panel_spectrum)
 	cf.update_value("transparency-tracklist-darkness", prefs.transparency_tracklist_darkness)
 	cf.update_value("transparency-intensity", prefs.transparency_intensity)
@@ -58830,8 +58902,6 @@ def load_prefs(bag: Bag) -> None:
 		cf.old = [row.replace("aqualine-", "aqua-", 1) if row.lstrip().startswith("aqualine-") else row for row in cf.old]
 	prefs.aero = cf.sync_add("bool", "aqua-style", prefs.aero, "Aqua glass-and-gel skin")
 	prefs.aero_motion = cf.sync_add("bool", "aqua-motion", prefs.aero_motion, "Animate the Aqua sky")
-	prefs.aero_see_through = cf.sync_add(
-		"bool", "aqua-see-through", prefs.aero_see_through, "Show the desktop in the gaps between Aqua's panels")
 	prefs.side_panel_spectrum = cf.sync_add(
 		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(
@@ -68875,13 +68945,15 @@ def main(holder: Holder) -> None:
 					if inp.mouse_click and not tauon.coll((x, y, w, h)):
 						gui.audio_info_box = False
 					elif gui.audio_info_box:
-						ddt.rect_a(
-							(x - 3 * gui.scale, y - 3 * gui.scale),
-							(w + 6 * gui.scale, h + 6 * gui.scale),
-							colours.box_border,
-						)
-						ddt.rect_a((x, y), (w, h), colours.box_background)
-						ddt.text_background_colour = colours.box_background
+						info_glass = tauon.glass_box((x, y, w, h))
+						if not info_glass:
+							ddt.rect_a(
+								(x - 3 * gui.scale, y - 3 * gui.scale),
+								(w + 6 * gui.scale, h + 6 * gui.scale),
+								colours.box_border,
+							)
+							ddt.rect_a((x, y), (w, h), colours.box_background)
+							ddt.text_background_colour = colours.box_background
 						palette = tauon.channel_status.box_palette()
 
 						ddt.text((x + 18 * gui.scale, y + 12 * gui.scale), _("Audio Info"), colours.box_title_text, 213)
@@ -68892,7 +68964,12 @@ def main(holder: Holder) -> None:
 							badge_colour = tauon.formats.colours.get(badge_key, ColourRGBA(130, 130, 130, 255))
 							badge_w = max(round(38 * gui.scale), ddt.get_text_w(badge, 211) + round(8 * gui.scale))
 							badge_x = x + w - badge_w  # flush with the right edge, as in Track Info
-							ddt.rect((badge_x, y + round(16 * gui.scale), badge_w, round(12 * gui.scale)), badge_colour)
+							if info_glass:
+								# A gel tag inset from the glass's rounded corner
+								badge_x -= round(16 * gui.scale)
+								tauon.aero.badge((badge_x, y + round(14 * gui.scale), badge_w, round(16 * gui.scale)), badge_colour)
+							else:
+								ddt.rect((badge_x, y + round(16 * gui.scale), badge_w, round(12 * gui.scale)), badge_colour)
 							badge_text = alpha_blend(ColourRGBA(10, 10, 10, 235), badge_colour)
 							if colour_value(badge_colour) < 180:
 								badge_text = alpha_blend(ColourRGBA(200, 200, 200, 235), badge_colour)
@@ -69461,14 +69538,15 @@ def main(holder: Holder) -> None:
 					x = int(window_size[0] / 2) - int(w / 2)
 					y = int(window_size[1] / 2) - int(h / 2)
 
-					ddt.rect_a(
-						(x - 2 * gui.scale, y - 2 * gui.scale),
-						(w + 4 * gui.scale, h + 4 * gui.scale),
-						colours.box_border,
-					)
-					ddt.rect_a((x, y), (w, h), colours.box_background)
-
-					ddt.text_background_colour = colours.box_background
+					folder_glass = tauon.glass_box((x, y, w, h))
+					if not folder_glass:
+						ddt.rect_a(
+							(x - 2 * gui.scale, y - 2 * gui.scale),
+							(w + 4 * gui.scale, h + 4 * gui.scale),
+							colours.box_border,
+						)
+						ddt.rect_a((x, y), (w, h), colours.box_background)
+						ddt.text_background_colour = colours.box_background
 					title_colour = readable_text_colour(colours.box_title_text, colours.box_background, 5.4)
 					label_colour = readable_text_colour(colours.box_text_label, colours.box_background)
 					input_colour = readable_text_colour(colours.box_input_text, colours.box_background)
@@ -69490,6 +69568,10 @@ def main(holder: Holder) -> None:
 						tauon.rename_folder.set_text(prefs.rename_folder_template)
 						tauon.rename_folder.offset = 0
 
+					folder_field = (x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale)
+					if folder_glass:
+						tauon.glass_field(folder_field)
+
 					tauon.rename_folder.draw(
 						x + 14 * gui.scale,
 						y + 41 * gui.scale,
@@ -69497,11 +69579,8 @@ def main(holder: Holder) -> None:
 						width=300 * gui.scale,
 					)
 
-					ddt.rect_s(
-						(x + 8 * gui.scale, y + 38 * gui.scale, 300 * gui.scale, 22 * gui.scale),
-						colours.box_text_border,
-						1 * gui.scale,
-					)
+					if not folder_glass:
+						ddt.rect_s(folder_field, colours.box_text_border, 1 * gui.scale)
 
 					if (
 						pctl.draw.button(
@@ -69654,15 +69733,22 @@ def main(holder: Holder) -> None:
 					rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
 					rect2[0] = rect[0]
 
-					ddt.rect(
-						(rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), colours.box_border
-					)  # [220, 100, 5, 255]
-					# ddt.rect_r((rect[0], rect[1], rect[2], rect[3]), [255,120,5,255], True)
-
-					ddt.text_background_colour = colours.box_background
-					# ddt.text_background_colour = ColourRGBA(255,120,5,255)
-					# ddt.text_background_colour = ColourRGBA(220,100,5,255)
-					ddt.rect(rect, colours.box_background)
+					# Aqua: a glass box with a sunken field (a red gel one on no match)
+					quick_glass = tauon.glass_box(rect)
+					quick_field = (
+						rect[0] + round(10 * gui.scale), rect[1] + round(8 * gui.scale),
+						rect[2] - round(20 * gui.scale), round(26 * gui.scale))
+					if quick_glass:
+						if gui.search_error:
+							tauon.aero.gel(quick_field, quick_field[3] / 2, hue=0, glow=False)
+						else:
+							tauon.aero.sunken(quick_field, quick_field[3] / 2)
+					else:
+						ddt.rect(
+							(rect[0] - 2, rect[1] - 2, rect[2] + 4, rect[3] + 4), colours.box_border
+						)  # [220, 100, 5, 255]
+						ddt.text_background_colour = colours.box_background
+						ddt.rect(rect, colours.box_background)
 
 					if len(inp.input_text) > 0:
 						gui.search_index = -1
@@ -69704,7 +69790,7 @@ def main(holder: Holder) -> None:
 					#     search_text.text = pctl.playing_object().artist
 					#     inp.input_text = ""
 
-					if gui.search_error:
+					if gui.search_error and not quick_glass:
 						ddt.rect([rect[0], rect[1], rect[2], 30 * gui.scale], ColourRGBA(180, 40, 40, 255))
 						ddt.text_background_colour = ColourRGBA(
 							180, 40, 40, 255
@@ -69712,10 +69798,16 @@ def main(holder: Holder) -> None:
 					# if input.backspace_press:
 					#     gui.search_error = False
 
-					search_over.search_text.draw(
-						rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213,
-						view_width=rect[2] - 16 * gui.scale,
-					)
+					if quick_glass:
+						search_over.search_text.draw(
+							quick_field[0] + round(12 * gui.scale), quick_field[1] + round(4.5 * gui.scale),
+							tauon.aero.colour("TEXT"), font=213, view_width=quick_field[2] - round(24 * gui.scale),
+						)
+					else:
+						search_over.search_text.draw(
+							rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213,
+							view_width=rect[2] - 16 * gui.scale,
+						)
 
 					if (
 						inp.key_shift_down

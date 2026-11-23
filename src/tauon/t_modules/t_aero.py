@@ -455,7 +455,7 @@ class Aero:
 
 	GUTTER = 8          # logical px between panels
 	BOTTOM_GAP = 6      # and above the bottom bar (its glass reads as a wider gap)
-	EDGE_GAP = 4        # logical px between the panels and the window edge
+	EDGE_GAP = 5        # logical px between the panels and the window edge
 	RADIUS = 10         # panel corner radius
 	TOP_H = 40          # top glass bar height (the panel's 30px row sits inside it)
 	SKY_DIV = 5         # sky is painted at 1/SKY_DIV of the logical window size
@@ -721,11 +721,14 @@ class Aero:
 		for name in ("title_text", "title_playing", "album_text", "album_playing",
 				"artist_playing", "index_playing", "time_playing", "bar_title_text",
 				"side_bar_line1", "tab_text_active", "folder_title", "status_text_over",
-				"menu_text"):
+				"menu_text", "box_text", "box_title_text", "box_input_text", "message_box_text",
+				"box_button_text", "box_button_text_highlight"):
 			put(name, text)
 		for name in ("artist_text", "index_text", "time_text", "side_bar_line2", "tab_text",
-				"status_text_normal", "playlist_text_missing"):
+				"status_text_normal", "playlist_text_missing", "box_text_label", "box_sub_text"):
 			put(name, muted)
+		# Outlines a dialog still draws itself (most fields are sunken glass)
+		put("box_text_border", ColourRGBA(225, 232, 242, 40) if obs else ColourRGBA(150, 215, 255, 48))
 		solid = self.OBSIDIAN["MENU_SOLID"] if obs else d["MENU_SOLID"]
 		put("menu_icons", ColourRGBA(text.r, text.g, text.b, 62))
 		put("menu_text_disabled", to_colour(mix(muted_rgba, solid, 0.45)))
@@ -986,11 +989,6 @@ class Aero:
 		return moving
 
 	# -- frame ----------------------------------------------------------------------
-
-	@property
-	def see_through(self) -> bool:
-		"""The sky stays behind the glass only; the gaps show the desktop."""
-		return self.active and bool(self.prefs.aero_see_through)
 
 	def motion(self) -> bool:
 		return bool(self.prefs.aero_motion) and not self.gui.lowered
@@ -1283,8 +1281,7 @@ class Aero:
 
 	def draw_sky(self) -> None:
 		"""Bring the sky keyframes up to date and paint the sky across the
-		window, or, see-through, leave the window clear: the sky then only
-		reaches the eye through the panels' frost."""
+		window."""
 		ww, wh = self.tauon.window_size[0], self.tauon.window_size[1]
 		lw, lh = self._sky_dims()
 		if (lw, lh) != self._sky_size:
@@ -1294,14 +1291,6 @@ class Aero:
 			self._sky_dirty = True
 		self._update_sky_keys(lw, lh)
 		r = self.renderer
-		if self.see_through:
-			# Replace whatever is there with nothing (custom mode draws over
-			# the standard layout's frame start)
-			sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_NONE)
-			sdl3.set_render_draw_color(r, 0, 0, 0, 0)
-			sdl3.render_fill_rect(r, sdl3.FRect(0, 0, ww, wh))
-			sdl3.set_render_draw_blend_mode(r, sdl3.SDL_BLENDMODE_BLEND)
-			return
 		dst = sdl3.FRect(0, 0, ww, wh)
 		f = self.sky_blend()
 		if self._key_a is not None and f < 1.0:
@@ -1634,6 +1623,11 @@ class Aero:
 	def colour(self, name: str) -> ColourRGBA:
 		"""A token (TEXT, MUTED, ...) as a theme colour."""
 		return to_colour(getattr(self, name))
+
+	@staticmethod
+	def colour_rgba(c: ColourRGBA) -> RGBA:
+		"""A theme colour as the 0-1 RGBA the meshes take."""
+		return (c.r / 255, c.g / 255, c.b / 255, c.a / 255)
 
 	def badge(self, rect, colour: ColourRGBA) -> None:
 		"""A small coloured gel tag (the track box's format badges)."""
@@ -3043,14 +3037,8 @@ class Aero:
 	def gutter(self) -> int:
 		return self.si(self.GUTTER)
 
-	@classmethod
-	def edge_gap_logical(cls, prefs) -> int:
-		"""The window-edge gap in logical px: a pixel wider when the sky fills
-		the window, so the panels keep a little more room from its frame."""
-		return cls.EDGE_GAP + (0 if prefs.aero_see_through else 1)
-
 	def edge_gap(self) -> int:
-		return self.si(self.edge_gap_logical(self.prefs))
+		return self.si(self.EDGE_GAP)
 
 	def top_glass_height(self) -> int:
 		# The top panel's own row (30px, or 100px for the art header) plus a

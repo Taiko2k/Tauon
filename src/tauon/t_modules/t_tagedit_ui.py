@@ -257,9 +257,7 @@ class TransEditBox:
 			(x, y + round(25 * scale)), filename, self.label_colour, 11, max_w=width, bg=self.colours.box_background
 		)
 		bar = (x, y + round(55 * scale), width, round(14 * scale))
-		self.ddt.bordered_rect(
-			bar, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
-		)
+		self._field(bar, scale, self.colours.box_thumb_background)
 		inset = round(2 * scale)
 		self.ddt.rect(
 			(bar[0] + inset, bar[1] + inset, round((width - 2 * inset) * done / max(1, total)), bar[3] - 2 * inset),
@@ -1044,7 +1042,7 @@ class TransEditBox:
 			self.scope_dragging = False
 			self.inp.mouse_click = False
 			return
-		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_border, max(1, round(scale)))
+		self._box(rect, scale)
 		self.ddt.text(
 			(px + round(12 * scale), py + round(8 * scale)),
 			_("Choose tracks"),
@@ -1053,9 +1051,7 @@ class TransEditBox:
 			bg=self.colours.box_background,
 		)
 		filter_rect = (px + round(9 * scale), py + round(29 * scale), pw - round(18 * scale), round(23 * scale))
-		self.ddt.bordered_rect(
-			filter_rect, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
-		)
+		self._field(filter_rect, scale, self.colours.box_thumb_background)
 		filter_background = alpha_blend(self.colours.box_thumb_background, self.colours.box_background)
 		if not self.scope_filter.text:
 			self.ddt.text(
@@ -1343,9 +1339,7 @@ class TransEditBox:
 			self._close_lookup()
 			return
 		self.ddt.rect((x, y, width, height), ColourRGBA(0, 0, 0, 115))
-		self.ddt.bordered_rect(
-			(px, py, pw, ph), self.colours.box_background, self.colours.box_border, max(1, round(scale))
-		)
+		self._box((px, py, pw, ph), scale)
 		pad = round(14 * scale)
 		self.ddt.text(
 			(px + pad, py + round(12 * scale)),
@@ -1379,9 +1373,7 @@ class TransEditBox:
 		)
 		if self.lookup_running:
 			bar = (px + pad, py + round(68 * scale), pw - 2 * pad, round(12 * scale))
-			self.ddt.bordered_rect(
-				bar, self.colours.box_thumb_background, self.colours.box_text_border, max(1, round(scale))
-			)
+			self._field(bar, scale, self.colours.box_thumb_background)
 			fraction = max(0.0, min(1.0, self.lookup_fraction))
 			inset = max(1, round(2 * scale))
 			self.ddt.rect(
@@ -1596,7 +1588,7 @@ class TransEditBox:
 		y += round(16 * scale)
 		rect = (x, y, width, round(23 * scale))
 		self.fields.add(rect)
-		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
+		self._field(rect, scale)
 		control_width = 0
 		if self._field_edited(field):
 			control_width += round(25 * scale)
@@ -1879,7 +1871,7 @@ class TransEditBox:
 		preset_space = min(preset_space, max(round(80 * scale), add_width - round(90 * scale)))
 		preset_gap = round(4 * scale)
 		rect = (add_x, add_y, add_width - round(49 * scale) - preset_space - preset_gap, round(23 * scale))
-		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
+		self._field(rect, scale)
 		if self.inp.mouse_click and self.coll(rect):
 			self.key_active = True
 		self.new_key.draw(
@@ -1962,7 +1954,7 @@ class TransEditBox:
 		if compact:
 			box_width -= add_width + round(12 * scale)
 		rect = (x, y, box_width, box_height)
-		self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
+		self._field(rect, scale)
 		if self.inp.mouse_click and self.coll(rect):
 			self.key_active = False
 		if self.row_original == "<Multiple values>" and not self.row_box.text:
@@ -2119,7 +2111,7 @@ class TransEditBox:
 		input_width = width - button_width - round(8 * scale)
 		rect = (x, y, input_width, input_height)
 		self.fields.add(rect)
-		self.ddt.bordered_rect(rect, bg, self.colours.box_text_border, max(1, round(scale)))
+		self._field(rect, scale, bg)
 		box.draw(
 			x + round(4 * scale), y + round(4 * scale), self.input_colour,
 			active=self.input_enabled, width=input_width - round(8 * scale))
@@ -2312,10 +2304,40 @@ class TransEditBox:
 			return
 		self.inp.mouse_wheel = getattr(self.inp, "mouse_wheel", 0) + self.wheel_pending
 		self.wheel_pending = 0.0
+		saved = self._glass_colours() if self.tauon.aero.active else None
 		try:
 			self._render()
 		finally:
 			self.inp.mouse_wheel = 0
+			if saved:
+				for name, colour in saved.items():
+					setattr(self.colours, name, colour)
+
+	def _glass_colours(self) -> dict[str, ColourRGBA]:
+		"""Under Aqua, swap in a clear palette while the editor draws on glass
+		(text backgrounds and row fills let the glass through); returns the
+		colours to put back."""
+		solid = self.tauon.aero.menu_bg()
+		glass = {
+			"box_background": ColourRGBA(solid.r, solid.g, solid.b, 0),
+			"box_thumb_background": ColourRGBA(0, 8, 18, 110),
+			"box_button_background_highlight": ColourRGBA(150, 220, 255, 26),
+		}
+		saved = {name: getattr(self.colours, name) for name in glass}
+		for name, colour in glass.items():
+			setattr(self.colours, name, colour)
+		return saved
+
+	def _box(self, rect, scale: float) -> None:
+		"""The editor's frame or a popover's: glass under Aqua."""
+		if not self.tauon.glass_box(rect):
+			self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_border, max(1, round(scale)))
+
+	def _field(self, rect, scale: float, fill: ColourRGBA | None = None) -> None:
+		"""A text field or progress trough: sunken glass under Aqua."""
+		if not self.tauon.glass_field(rect):
+			self.ddt.bordered_rect(
+				rect, fill or self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))
 
 	def _render(self) -> None:
 		if not self.active:
@@ -2375,9 +2397,7 @@ class TransEditBox:
 				self._close()
 				return
 		self.editor_bottom = y + height
-		self.ddt.bordered_rect(
-			(x, y, width, height), self.colours.box_background, self.colours.box_border, max(1, round(scale))
-		)
+		self._box((x, y, width, height), scale)
 		self.ddt.text_background_colour = self.colours.box_background
 		self.gui.box_over = True
 		body_x, body_y = x + round(16 * scale), y + round(140 * scale)
