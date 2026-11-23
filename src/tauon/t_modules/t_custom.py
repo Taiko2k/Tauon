@@ -7405,6 +7405,9 @@ class CustomLayout:
 		saved_drag_source = tuple(gui.drag_source_position)
 		saved_drag_source_persist = tuple(gui.drag_source_position_persist)
 		saved_view = inp.view_offset
+		saved_view_window = inp.view_window
+		if saved_view_window is None:
+			inp.view_window = (saved_w, saved_h)
 		# Narrow the window to the segment so the widget lays out within it as if
 		# it were the whole window. This also lets bottom/right-anchored widgets
 		# (e.g. the Playback panel at window_size[1] - panelBY) land at the scratch
@@ -7441,6 +7444,7 @@ class CustomLayout:
 			tauon.window_size[0] = saved_w
 			tauon.window_size[1] = saved_h
 			inp.view_offset = saved_view
+			inp.view_window = saved_view_window
 			# Restore the mouse position (but not the click flags — a widget that
 			# consumed the click should keep it consumed for later overlays).
 			inp.mouse_position[0], inp.mouse_position[1] = saved_mouse

@@ -1615,6 +1615,8 @@ class Input:
 		# Custom Layout reframing a widget). Use to_screen()/to_local() to convert
 		# between that local space and real screen coordinates.
 		self.view_offset:         tuple[int, int] = (0, 0)
+		# The real window size while an offscreen widget has window_size narrowed
+		self.view_window: tuple[int, int] | None = None
 		self.mouse_up_position:   list[int] = [0, 0]
 		self.touch_position:      list[int] = [0, 0]
 		self.touch_scroll_y:     float = 0
@@ -7543,39 +7545,50 @@ class Menu:
 		self.rescale()
 		self.update_widths()
 
-		# Decide placement: a menu opens down-right from the anchor (or upward for
-		# a bottom-anchored menu). If the main column would extend past the window
-		# at that natural position, it pops out into its own popup window instead
-		# of being flipped/shifted to fit inside. Judged by the main column only:
-		# an inline submenu that would overflow flips left / clamps up at render
-		# time - sizing for the worst-case submenu here sent menus into a popup
-		# even when there was plenty of room for the menu itself.
-		gui = self.gui
-		win_w, win_h = self.window_size[0], self.window_size[1]
-		main_w, main_h = self.popup_size()
-		anchor = [int(self.pos[0]), int(self.pos[1])]
-		self.popup_anchor = anchor
+		self.popup_anchor = [int(self.pos[0]), int(self.pos[1])]
 		self.popup_bottom_anchor = bottom_anchor
-
-		if bottom_anchor:
-			# Opens upward: the anchor marks the bottom edge.
-			self.use_popup = (anchor[0] + main_w > win_w) or (anchor[1] - main_h < gui.panelY)
-		else:
-			self.use_popup = (anchor[0] + main_w > win_w) or (anchor[1] + main_h > win_h)
-
-		if self.use_popup:
-			# Popup mode: anchor the popup window at the requested point; the
-			# compositor keeps it on-screen, so no in-window repositioning needed.
-			self.pos = [0, 0]
-		else:
-			# Inline mode: it fits at the natural position, so draw there as-is
-			# (no flip/shift). A bottom-anchored menu draws its column above the
-			# anchor.
-			self.pos = [anchor[0], anchor[1] - main_h if bottom_anchor else anchor[1]]
+		self.place()
 
 		self.spring_loading_timer.set()
 		self.can_be_spring_clicked = True
 		self.active = True
+
+	def place(self) -> None:
+		"""Decide between inline and popup-window drawing (use_popup) and the
+		inline position, from popup_anchor.
+
+		A menu opens down-right from the anchor (or upward for a
+		bottom-anchored menu). If the main column would extend past the window
+		there, it pops out into its own popup window instead of being
+		flipped/shifted to fit inside - except on Aqualine's glass, where a
+		menu that fits in the window is flipped or slid into it so it stays
+		see-through. Judged by the main column only: an inline submenu that
+		would overflow flips left / clamps up at render time.
+		"""
+		# Measured against the real window, not an offscreen widget's narrowed one
+		win_w, win_h = self.inp.view_window or (self.window_size[0], self.window_size[1])
+		main_w, main_h = self.popup_size()
+		ax, ay = self.popup_anchor
+		bottom = self.popup_bottom_anchor
+		# A bottom-anchored menu draws its column above the anchor, clear of the top panel
+		top_min = self.gui.panelY if bottom else 0
+		x = ax
+		y = ay - main_h if bottom else ay
+
+		self.use_popup = x + main_w > win_w or y < top_min or y + main_h > win_h
+		if self.use_popup and self.glass() and main_w <= win_w and main_h <= win_h - top_min:
+			# Flip to the other side of the anchor, or slide in from the edge
+			if x + main_w > win_w:
+				x = ax - main_w if ax >= main_w else win_w - main_w
+			if y < top_min:
+				y = ay if ay + main_h <= win_h else top_min
+			elif y + main_h > win_h:
+				y = ay - main_h if ay - main_h >= top_min else win_h - main_h
+			self.use_popup = False
+
+		# Popup mode: the popup window sits at the anchor and the compositor
+		# keeps it on-screen; the menu draws at its window's origin.
+		self.pos = [0, 0] if self.use_popup else [x, y]
 
 	def popup_size(self) -> tuple[int, int]:
 		"""Pixel size the popup window needs to fit this menu's main column.
@@ -17888,14 +17901,7 @@ class Tauon:
 		if menu is not None and menu.needs_width_update():
 			menu.update_widths()
 			if not menu.use_popup:
-				main_w, main_h = menu.popup_size()
-				anchor_x, anchor_y = menu.popup_anchor
-				if anchor_x + main_w > self.window_size[0] or (
-					anchor_y - main_h < menu.gui.panelY if menu.popup_bottom_anchor
-					else anchor_y + main_h > self.window_size[1]
-				):
-					menu.use_popup = True
-					menu.pos = [0, 0]
+				menu.place()
 
 		# Inline menus (and the no-menu case) render straight into the main
 		# window; any popup windows from a previous popup menu are torn down.
@@ -68488,13 +68494,28 @@ def main(holder: Holder) -> None:
 					#     value_colour = colours.grey(50)
 					#     path_colour = colours.grey(70)
 
-					ddt.rect_a(
-						(x - 3 * gui.scale, y - 3 * gui.scale),
-						(w + 6 * gui.scale, h + 6 * gui.scale),
-						colours.box_border,
-					)
-					ddt.rect_a((x, y), (w, h), colours.box_background)
-					ddt.text_background_colour = colours.box_background
+					glass = tauon.aero.active
+					if glass:
+						aero = tauon.aero
+						aero.menu_glass((x, y, w, h), dialog=True)
+						ddt.text_background_colour = aero.menu_bg()
+						key_colour_off = aero.colour("MUTED")
+						key_colour_on = value_colour = aero.colour("TEXT")
+						path_colour = alpha_mod(value_colour, 240)
+					else:
+						ddt.rect_a(
+							(x - 3 * gui.scale, y - 3 * gui.scale),
+							(w + 6 * gui.scale, h + 6 * gui.scale),
+							colours.box_border,
+						)
+						ddt.rect_a((x, y), (w, h), colours.box_background)
+						ddt.text_background_colour = colours.box_background
+
+					def badge(rect: list[float], colour: ColourRGBA) -> None:
+						if glass:
+							tauon.aero.badge(rect, colour)
+						else:
+							ddt.rect(rect, colour)
 
 					if inp.mouse_click and not tauon.coll([x, y, w, h]):
 						gui.track_box = False
@@ -68502,6 +68523,8 @@ def main(holder: Holder) -> None:
 						art_size = int(115 * gui.scale)
 
 						# if not tc.is_network: # Don't draw album art if from network location for better performance
+						if glass:
+							tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="small")
 						if comment_mode == 1:
 							tauon.album_art_gen.display(
 								tc, (int(x + w - 135 * gui.scale), int(y + 105 * gui.scale)), (art_size, art_size),
@@ -68512,12 +68535,16 @@ def main(holder: Holder) -> None:
 								tc, (int(x + w - 135 * gui.scale), int(y + h - 135 * gui.scale)), (art_size, art_size),
 								no_theme=True,
 							)
+						if glass:
+							tauon.aero.end_art_style()
 
 						y -= int(24 * gui.scale)
 						y1 = int(y + (40 * gui.scale))
 
+						# Glass corners are round: keep the badges off the edge
+						bx = x + w - (round(10 * gui.scale) if glass else 0)
 						ext_rect = [
-							x + w - round(38 * gui.scale),
+							bx - round(38 * gui.scale),
 							y + round(44 * gui.scale),
 							round(38 * gui.scale),
 							round(12 * gui.scale),
@@ -68535,12 +68562,12 @@ def main(holder: Holder) -> None:
 								if line in tauon.formats.colours:
 									e_colour = tauon.formats.colours[line]
 
-								ddt.rect(ext_rect, e_colour)
+								badge(ext_rect, e_colour)
 								colour = alpha_blend(ColourRGBA(10, 10, 10, 235), e_colour)
 								if colour_value(e_colour) < 180:
 									colour = alpha_blend(ColourRGBA(200, 200, 200, 235), e_colour)
 								ddt.text(
-									(int(x + w - 35 * gui.scale), round(y + (41) * gui.scale)),
+									(int(bx - 35 * gui.scale), round(y + (41) * gui.scale)),
 									line,
 									colour,
 									211,
@@ -68549,12 +68576,12 @@ def main(holder: Holder) -> None:
 								ext_rect[1] += 16 * gui.scale
 								y += 16 * gui.scale
 
-						ddt.rect(ext_rect, ex_colour)
+						badge(ext_rect, ex_colour)
 						colour = alpha_blend(ColourRGBA(10, 10, 10, 235), ex_colour)
 						if colour_value(ex_colour) < 180:
 							colour = alpha_blend(ColourRGBA(200, 200, 200, 235), ex_colour)
 						ddt.text(
-							(int(x + w - 35 * gui.scale), round(y + 41 * gui.scale)),
+							(int(bx - 35 * gui.scale), round(y + 41 * gui.scale)),
 							tc.file_ext,
 							colour,
 							211,
@@ -68566,9 +68593,9 @@ def main(holder: Holder) -> None:
 							colour = ColourRGBA(218, 222, 73, 255)
 							if tc.is_embed_cue:
 								colour = ColourRGBA(252, 199, 55, 255)
-							ddt.rect(ext_rect, colour)
+							badge(ext_rect, colour)
 							ddt.text(
-								(int(x + w - 35 * gui.scale), int(y + (41 + 16) * gui.scale)),
+								(int(bx - 35 * gui.scale), int(y + (41 + 16) * gui.scale)),
 								"CUE",
 								alpha_blend(ColourRGBA(10, 10, 10, 235), colour),
 								211,
@@ -68830,7 +68857,21 @@ def main(holder: Holder) -> None:
 
 						# -------
 						if tc.lyrics:
-							if pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale):
+							if glass:
+								label = _("Lyrics")
+								lrect = (
+									round(x1 + 200 * gui.scale), round(y1 - 11 * gui.scale),
+									ddt.get_text_w(label, 211) + round(24 * gui.scale), round(22 * gui.scale))
+								tauon.fields.add(lrect)
+								over = tauon.coll(lrect)
+								tauon.aero.button(lrect, over)
+								ddt.text(
+									(lrect[0] + lrect[2] // 2, lrect[1] + round(3 * gui.scale), 2), label,
+									key_colour_on if over else value_colour, 211)
+								lyrics_hit = over and inp.mouse_click
+							else:
+								lyrics_hit = pctl.draw.button(_("Lyrics"), x1 + 200 * gui.scale, y1 - 10 * gui.scale)
+							if lyrics_hit:
 								prefs.show_lyrics_showcase = True
 								gui.track_box = False
 								tauon.enter_showcase_view(track_id=gui.track_box_track_id)

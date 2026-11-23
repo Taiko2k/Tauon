@@ -123,10 +123,11 @@ def _bezier(x1: float, y1: float, x2: float, y2: float, t: float) -> float:
 # -- convex mesh helpers -------------------------------------------------------
 
 def rounded_poly(x: float, y: float, w: float, h: float,
-		radii: tuple[float, float, float, float]) -> list[tuple[float, float]]:
+		radii: tuple[float, float, float, float], seg: int | None = None) -> list[tuple[float, float]]:
 	"""Outline of a rounded rect, clockwise from the top-left. radii is
 	(top-left, top-right, bottom-right, bottom-left); each corner may also be
-	an (rx, ry) pair for an elliptical corner."""
+	an (rx, ry) pair for an elliptical corner. `seg` fixes the segments per
+	corner."""
 	pts: list[tuple[float, float]] = []
 	corners = (
 		(x, y, 180, 270, 1, 1),            # top-left: centre is +r,+r from corner
@@ -143,9 +144,9 @@ def rounded_poly(x: float, y: float, w: float, h: float,
 			continue
 		ox, oy = cx + sx * rx, cy + sy * ry
 		# Enough segments that a small cap (a 7px tube end) reads as round
-		seg = max(6, min(16, round(max(rx, ry) / 1.2)))
-		for i in range(seg + 1):
-			ang = math.radians(a0 + (a1 - a0) * i / seg)
+		n = seg or max(6, min(16, round(max(rx, ry) / 1.2)))
+		for i in range(n + 1):
+			ang = math.radians(a0 + (a1 - a0) * i / n)
 			pts.append((ox + math.cos(ang) * rx, oy + math.sin(ang) * ry))
 	return pts
 
@@ -376,7 +377,9 @@ class Aero:
 
 	# Dusk tokens from the concept
 	TEXT = rgba8(232, 246, 255)
-	MUTED = rgba8(147, 185, 210)
+	# Secondary text: a neutral grey, tinted toward the accent by muted_for()
+	MUTED = rgba8(160, 163, 168)
+	MUTED_TINT = 0.12
 	TINT = rgba8(6, 24, 42, 0.44)
 	RIM = rgba8(180, 232, 255, 0.42)
 	RIM_SOFT = rgba8(150, 215, 255, 0.12)
@@ -399,7 +402,7 @@ class Aero:
 	# Obsidian tokens, the same roles in graphite and smoke
 	OBSIDIAN = {
 		"TEXT": rgba8(238, 241, 245),
-		"MUTED": rgba8(154, 162, 173),
+		"MUTED": rgba8(152, 155, 160),
 		"TINT": rgba8(12, 13, 16, 0.54),
 		"RIM": rgba8(232, 238, 248, 0.34),
 		"RIM_SOFT": rgba8(220, 228, 240, 0.10),
@@ -447,6 +450,7 @@ class Aero:
 		self.target_oacc = self.ICE
 		self._mono_applied: int | None = None
 		self._colours = None
+		self._muted_applied: ColourRGBA | None = None
 		# The class constants are the dusk tokens; the instance's own copies
 		# are the blend that is drawn with
 		self._dusk = {name: getattr(type(self), name) for name in self.OBSIDIAN}
@@ -561,11 +565,17 @@ class Aero:
 
 	def _update_tokens(self) -> None:
 		m = self.mono
-		if abs(m - self._tokens_mono) < 1e-4:
-			return
-		self._tokens_mono = m
-		for name, obs in self.OBSIDIAN.items():
-			setattr(self, name, mix(self._dusk[name], obs, m))
+		if abs(m - self._tokens_mono) >= 1e-4:
+			self._tokens_mono = m
+			for name, obs in self.OBSIDIAN.items():
+				setattr(self, name, mix(self._dusk[name], obs, m))
+		self.MUTED = self.muted_for(self.acc, self.oacc, m)
+
+	def muted_for(self, acc: float, oacc: float, m: float) -> RGBA:
+		"""The secondary text grey with a little of the accent mixed in."""
+		grey = mix(self._dusk["MUTED"], self.OBSIDIAN["MUTED"], m)
+		tint = mix(hsl(acc, 0.7, 0.62), hsl(oacc, 0.7, 0.62), m)
+		return mix(grey, tint, self.MUTED_TINT)
 
 	def apply_colours(self, colours) -> None:
 		"""Make the panels see-through and recolour text to the skin's
@@ -589,7 +599,9 @@ class Aero:
 		obs = self._mono_applied == 1
 		d = self._dusk
 		text = to_colour(self.OBSIDIAN["TEXT"] if obs else d["TEXT"])
-		muted = to_colour(self.OBSIDIAN["MUTED"] if obs else d["MUTED"])
+		muted_rgba = self.muted_for(self.target[2], self.target_oacc, 1.0 if obs else 0.0)
+		muted = to_colour(muted_rgba)
+		self._muted_applied = muted
 		acc = to_colour(hsl(self.target_oacc, 0.85, 0.62)) if obs else ColourRGBA(90, 200, 240, 255)
 
 		def put(name: str, c: ColourRGBA) -> None:
@@ -606,7 +618,7 @@ class Aero:
 			put(name, muted)
 		solid = self.OBSIDIAN["MENU_SOLID"] if obs else d["MENU_SOLID"]
 		put("menu_icons", ColourRGBA(text.r, text.g, text.b, 62))
-		put("menu_text_disabled", to_colour(mix(self.OBSIDIAN["MUTED"] if obs else d["MUTED"], solid, 0.45)))
+		put("menu_text_disabled", to_colour(mix(muted_rgba, solid, 0.45)))
 		put("folder_line", ColourRGBA(225, 232, 242, 22) if obs else ColourRGBA(150, 215, 255, 26))
 		put("row_playing_highlight", ColourRGBA(0, 0, 0, 0))
 		put("row_select_highlight", ColourRGBA(0, 0, 0, 0))
@@ -685,6 +697,13 @@ class Aero:
 		self.target = entry[:3]
 		self.art_dark = entry[3]
 		self.target_oacc = entry[4]
+		# The theme's secondary text follows the new accent (the tracklist is
+		# cached, so only when it actually changes)
+		if self._colours is not None and self.enabled:
+			obs = 1.0 if self._mono_applied == 1 else 0.0
+			if to_colour(self.muted_for(self.target[2], self.target_oacc, obs)) != self._muted_applied:
+				self._apply_text_colours(self._colours)
+				self.gui.request_tracklist_redraw()
 
 	def target_mono(self) -> float:
 		variant = self.prefs.aero_variant
@@ -1453,6 +1472,29 @@ class Aero:
 	# -- context menus --------------------------------------------------------------------------
 
 	MENU_RADIUS = 8
+	# A popup window shows the desktop behind it unfrosted, so it stays mostly solid
+	MENU_POPUP_ALPHA = 0.9
+	DIALOG_RADIUS = 12
+
+	def colour(self, name: str) -> ColourRGBA:
+		"""A token (TEXT, MUTED, ...) as a theme colour."""
+		return to_colour(getattr(self, name))
+
+	def badge(self, rect, colour: ColourRGBA) -> None:
+		"""A small coloured gel tag (the track box's format badges)."""
+		x, y, w, h = rect
+		r = self.s(3)
+		c = (colour.r / 255, colour.g / 255, colour.b / 255, colour.a / 255)
+		self.shape(rect, r, grad=vgrad(y, h, [(0.0, mix(c, (1.0, 1.0, 1.0, c[3]), 0.18)), (1.0, c)]))
+		self.ring("top", rect, r, (1.0, 1.0, 1.0, 0.45))
+		self.ring("outer", rect, r, (0.0, 0.0, 0.0, 0.35))
+
+	def button(self, rect, hover: bool) -> None:
+		"""A glass push button."""
+		r = rect[3] / 2
+		self.selection(rect, r)
+		if hover:
+			self.shape(rect, r, self.HOVER)
 
 	@contextmanager
 	def _on(self, renderer):
@@ -1472,21 +1514,26 @@ class Aero:
 		c = to_colour(self.MENU_SOLID)
 		return ColourRGBA(c.r, c.g, c.b, 200)
 
-	def menu_glass(self, rect, renderer=None) -> None:
+	def menu_glass(self, rect, renderer=None, *, dialog: bool = False) -> None:
 		"""A context menu's glass: frosted sky in the main window, or a solid
 		pane of the same glass in a popup window (textures belong to the main
-		renderer, so the popup's is meshes only)."""
+		renderer, so the popup's is meshes only). A dialog is rounder and
+		floats higher."""
 		x, y, w, h = (round(v) for v in rect)
 		if w < 4 or h < 4:
 			return
-		R = min(self.s(self.MENU_RADIUS), w / 2, h / 2)
+		R = min(self.s(self.DIALOG_RADIUS if dialog else self.MENU_RADIUS), w / 2, h / 2)
 		ri = max(0.0, R - 1)
 		sh = min(h - 2, self.s(28))
 		top = self.SHEEN_TOP
 		sheen = vgrad(y + 1, sh, [(0.0, top), (1.0, (top[0], top[1], top[2], 0.0))])
 		if renderer is None:
 			sc = self.gui.scale
-			self.soft((x, y, w, h), R, 12 * sc, -4 * sc, self.SHADOW, 0, 9 * sc)
+			if dialog:
+				# 0 18px 40px -8px
+				self.soft((x, y, w, h), R, 20 * sc, -8 * sc, self.SHADOW, 0, 18 * sc)
+			else:
+				self.soft((x, y, w, h), R, 12 * sc, -4 * sc, self.SHADOW, 0, 9 * sc)
 			uv = self.frost_uv()
 			for tex, alpha in self.frost_layers():
 				sdl3.set_texture_blend_mode(tex, sdl3.SDL_BLENDMODE_NONE if alpha >= 1.0 else sdl3.SDL_BLENDMODE_BLEND)
@@ -1498,12 +1545,36 @@ class Aero:
 			self.ring("outer", (x, y, w, h), R, self.EDGE)
 			return
 		base = self.MENU_SOLID
+		a = self.MENU_POPUP_ALPHA
+		top_c = mix(base, (1.0, 1.0, 1.0, 1.0), 0.07)
 		with self._on(renderer):
-			self.shape((x, y, w, h), R, mix(base, (0.0, 0.0, 0.0, 1.0), 0.55))
+			self.band((x, y, w, h), R, 1.0, mix(base, (0.0, 0.0, 0.0, 1.0), 0.55)[:3] + (0.92,))
 			self.shape((x + 1, y + 1, w - 2, h - 2), ri, grad=vgrad(y, h, [
-				(0.0, mix(base, (1.0, 1.0, 1.0, 1.0), 0.07)), (1.0, base)]))
+				(0.0, top_c[:3] + (a,)), (1.0, base[:3] + (a,))]))
 			self.shape((x + 1, y + 1, w - 2, sh), (ri, ri, 0, 0), grad=sheen)
 			self.shape((x + R, y + 1, w - 2 * R, max(1.0, self.s(1))), 0, self.RIM)
+
+	def band(self, rect, R: float, t: float, colour: RGBA) -> None:
+		"""A rounded rect's border, t px wide, as one mesh: unlike a filled
+		shape under an inset one, nothing shows through a translucent fill."""
+		x, y, w, h = rect
+		seg = max(6, min(16, round(R / 1.2)))
+		outer = rounded_poly(x, y, w, h, (R, R, R, R), seg)
+		ri = max(0.0, R - t)
+		inner = rounded_poly(x + t, y + t, w - 2 * t, h - 2 * t, (ri, ri, ri, ri), seg)
+		if len(outer) != len(inner):
+			return
+		n = len(outer)
+		verts = []
+		for (ox, oy), (ix, iy) in zip(outer, inner):
+			verts.append((ox, oy, 0.0, 0.0, *colour))
+			verts.append((ix, iy, 0.0, 0.0, *colour))
+		idx = []
+		for i in range(n):
+			j = (i + 1) % n
+			idx += (2 * i, 2 * j, 2 * i + 1, 2 * i + 1, 2 * j, 2 * j + 1)
+		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(self.renderer, None, verts, idx)
 
 	def menu_hover(self, rect, renderer=None) -> None:
 		"""The hovered item: the tracklist's selection pill."""
