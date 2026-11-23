@@ -292,6 +292,8 @@ class Gradient:
 		self.sx = cx - self.dx * length / 2
 		self.sy = cy - self.dy * length / 2
 		self.stops = stops
+		# Identifies the gradient for Aero's mesh cache
+		self.key = (box, angle, tuple(stops))
 
 	def t(self, px: float, py: float) -> float:
 		return ((px - self.sx) * self.dx + (py - self.sy) * self.dy) / self.length
@@ -589,6 +591,10 @@ class Aero:
 		self.panel_index = 0
 
 		# Caches
+		# Built meshes by their inputs, in two generations: hits move to the
+		# current one, and the old one is dropped when the current fills
+		self._meshes: dict = {}
+		self._meshes_old: dict = {}
 		self._rings: dict = {}
 		self._soft: OrderedDict = OrderedDict()
 		self._orbs: OrderedDict = OrderedDict()
@@ -632,6 +638,8 @@ class Aero:
 
 	def reset(self) -> None:
 		"""Drop every texture (render targets were reset, or the scale changed)."""
+		self._meshes.clear()
+		self._meshes_old.clear()
 		for t in list(self._rings.values()):
 			sdl3.destroy_texture(t.tex)
 		self._rings.clear()
@@ -1350,6 +1358,24 @@ class Aero:
 			return
 		if not isinstance(radii, tuple) or len(radii) != 4:
 			radii = (radii, radii, radii, radii)
+		key = None
+		if uv is None:
+			# Most shapes are drawn again unchanged the next frame: reuse the mesh
+			try:
+				key = (x, y, w, h, radii, colour, grad.key if grad is not None else None,
+					tuple(g.key for g in grads), tuple(cuts) if cuts else None)
+				mesh = self._meshes.get(key)
+				if mesh is None:
+					mesh = self._meshes_old.pop(key, None)
+					if mesh is not None:
+						self._meshes[key] = mesh
+			except TypeError:
+				key = mesh = None
+			if mesh is not None:
+				sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+				sdl3.render_geometry(self.renderer, texture, mesh[0], mesh[1])
+				self._reset_texture_mod(texture)
+				return
 		polys = [rounded_poly(x, y, w, h, radii)]
 		all_grads = ([grad] if grad is not None else []) + list(grads)
 		allc = list(cuts or [])
@@ -1390,8 +1416,21 @@ class Aero:
 				idx += (base, base + i, base + i + 1)
 		if not verts:
 			return
+		if key is not None:
+			self._remember_mesh(key, (verts, idx))
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.render_geometry(self.renderer, texture, verts, idx)
+		self._reset_texture_mod(texture)
+
+	MESH_CACHE = 3000   # meshes per generation
+
+	def _remember_mesh(self, key, mesh) -> None:
+		if len(self._meshes) >= self.MESH_CACHE:
+			self._meshes_old = self._meshes
+			self._meshes = {}
+		self._meshes[key] = mesh
+
+	def _reset_texture_mod(self, texture) -> None:
 		if texture is not None and not self._is_frost(texture):
 			# SDL's software renderer applies vertex colours to a textured mesh
 			# through the texture's own colour and alpha mod, and leaves them
@@ -1447,8 +1486,10 @@ class Aero:
 		self._rings[key] = t
 		return t
 
-	def _nine(self, t: _Tex, x: float, y: float, w: float, h: float) -> None:
-		"""Draw a sliced texture over the shape rect (x, y, w, h)."""
+	@staticmethod
+	def _nine_mesh(t: _Tex, x: float, y: float, w: float, h: float, colour: RGBA) -> tuple[list, list]:
+		"""A sliced texture over the shape rect (x, y, w, h), as one textured
+		mesh tinted by its vertex colour."""
 		p = t.pad
 		dx, dy, dw, dh = x - p, y - p, w + 2 * p, h + 2 * p
 		cx = min(t.cx, dw / 2)
@@ -1461,18 +1502,23 @@ class Aero:
 		else:
 			sys_ = (0, 0, t.h, t.h)
 			dys = (dy, dy, dy + dh, dy + dh)
-		r = self.renderer
+		r, g, b, a = colour
+		verts = []
+		idx = []
 		for j in range(3):
-			sh = sys_[j + 1] - sys_[j]
-			ddh = dys[j + 1] - dys[j]
-			if sh <= 0 or ddh <= 0:
+			if sys_[j + 1] <= sys_[j] or dys[j + 1] <= dys[j]:
 				continue
+			v0, v1 = sys_[j] / t.h, sys_[j + 1] / t.h
 			for i in range(3):
-				sw = sxs[i + 1] - sxs[i]
-				ddw = dxs[i + 1] - dxs[i]
-				if sw <= 0 or ddw <= 0:
+				if sxs[i + 1] <= sxs[i] or dxs[i + 1] <= dxs[i]:
 					continue
-				sdl3.render_texture(r, t.tex, sdl3.FRect(sxs[i], sys_[j], sw, sh), sdl3.FRect(dxs[i], dys[j], ddw, ddh))
+				u0, u1 = sxs[i] / t.w, sxs[i + 1] / t.w
+				n = len(verts)
+				verts += (
+					(dxs[i], dys[j], u0, v0, r, g, b, a), (dxs[i + 1], dys[j], u1, v0, r, g, b, a),
+					(dxs[i + 1], dys[j + 1], u1, v1, r, g, b, a), (dxs[i], dys[j + 1], u0, v1, r, g, b, a))
+				idx += (n, n + 1, n + 2, n, n + 2, n + 3)
+		return verts, idx
 
 	def ring(self, kind: str, rect: tuple[float, float, float, float], r: float, colour: RGBA) -> None:
 		x, y, w, h = rect
@@ -1482,8 +1528,16 @@ class Aero:
 		C = math.ceil(r) + pad + 1
 		h_exact = round(h) if h + 2 * pad < 2 * C + 1 else None
 		t = self._ring_tex(kind, r, h_exact)
-		_mod(t.tex, round(colour[0] * 255), round(colour[1] * 255), round(colour[2] * 255), round(colour[3] * 255))
-		self._nine(t, x, y, w, h)
+		key = (t, x, y, w, h, tuple(colour))
+		mesh = self._meshes.get(key)
+		if mesh is None:
+			mesh = self._meshes_old.pop(key, None)
+			if mesh is None:
+				mesh = self._nine_mesh(t, x, y, w, h, colour)
+			self._remember_mesh(key, mesh)
+		if mesh[0]:
+			sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
+			sdl3.render_geometry(self.renderer, t.tex, mesh[0], mesh[1])
 
 	# -- soft shadows and glows ---------------------------------------------------------------
 
