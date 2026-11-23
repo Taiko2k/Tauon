@@ -525,10 +525,16 @@ class GeneratorEditBox:
 
 	def _field(self, box: object, rect: tuple[int, int, int, int], name: str, click: bool) -> None:
 		scale = self.gui.scale
-		border = self.colours.box_text_border
-		if self.focus == name:
-			border = alpha_blend(ColourRGBA(255, 255, 255, 40), self.colours.box_text_border)
-		self.ddt.bordered_rect(rect, self.colours.box_background, border, max(1, round(scale)))
+		aero = self.tauon.aero
+		if aero.active:
+			aero.sunken(rect, aero.s(5))
+			if self.focus == name:
+				aero.ring("outer", rect, aero.s(5), aero.colour_rgba(aero.accent_colour()))
+		else:
+			border = self.colours.box_text_border
+			if self.focus == name:
+				border = alpha_blend(ColourRGBA(255, 255, 255, 40), self.colours.box_text_border)
+			self.ddt.bordered_rect(rect, self.colours.box_background, border, max(1, round(scale)))
 		self.fields.add(rect)
 		if click and self.coll(rect):
 			self.focus = name
@@ -559,9 +565,22 @@ class GeneratorEditBox:
 		if not step.known:
 			fill = alpha_blend(ColourRGBA(224, 85, 85, 45 if hover or editing else 30), self.colours.box_background)
 			key_colour = self.readable_colour(ColourRGBA(230, 140, 140, 255), fill)
-		border = alpha_blend(ColourRGBA(255, 255, 255, 70), self.colours.box_background) if lifted else self.colours.box_text_border
-		self.ddt.bordered_rect(rect, fill, border, max(1, round(scale)))
-		self.ddt.rect((rect[0], rect[1], round(3 * scale), rect[3]), stripe)
+		aero = self.tauon.aero
+		if aero.active:
+			r = aero.s(5)
+			if lifted:
+				aero.soft(rect, r, 6 * scale, 0, (0.0, 0.0, 0.0, 0.5), 0, 4 * scale)
+			aero.tile(rect, r, hover or editing or lifted)
+			if not step.known:
+				aero.shape(rect, r, (224 / 255, 85 / 255, 85 / 255, 0.22 if hover or editing else 0.15))
+			bar = max(2.0, aero.s(3))
+			aero.shape(
+				(rect[0] + aero.s(4), rect[1] + aero.s(5), bar, rect[3] - aero.s(10)), bar / 2, aero.colour_rgba(stripe))
+			fill = aero.menu_bg()
+		else:
+			border = alpha_blend(ColourRGBA(255, 255, 255, 70), self.colours.box_background) if lifted else self.colours.box_text_border
+			self.ddt.bordered_rect(rect, fill, border, max(1, round(scale)))
+			self.ddt.rect((rect[0], rect[1], round(3 * scale), rect[3]), stripe)
 		self.fields.add(rect)
 		tx = rect[0] + round(10 * scale)
 		ty = rect[1] + round(5 * scale)
@@ -586,8 +605,16 @@ class GeneratorEditBox:
 			self.fields.add(rect)
 			on = value == selected
 			fill = self.colours.box_button_background_highlight if on or self.coll(rect) else self.colours.box_button_background
-			border = alpha_blend(ColourRGBA(255, 255, 255, 50), self.colours.box_background) if on else self.colours.box_text_border
-			self.ddt.bordered_rect(rect, fill, border, max(1, round(scale)))
+			aero = self.tauon.aero
+			if aero.active:
+				if on:
+					aero.selection(rect, aero.s(5))
+				else:
+					aero.tile(rect, aero.s(5), self.coll(rect))
+				fill = aero.menu_bg()
+			else:
+				border = alpha_blend(ColourRGBA(255, 255, 255, 50), self.colours.box_background) if on else self.colours.box_text_border
+				self.ddt.bordered_rect(rect, fill, border, max(1, round(scale)))
 			colour = self.title_colour if on else self.label_colour
 			self.ddt.text((x + bw // 2, y + h // 2 - round(8 * scale), 2), label, colour, 12, bg=fill)
 			if click and self.coll(rect):
@@ -638,7 +665,10 @@ class GeneratorEditBox:
 			y = max(0, anchor[1] - h - round(4 * scale))
 		self.edit_rect = (x, y, w, h)
 		bg = self.colours.box_background
-		self.ddt.bordered_rect(self.edit_rect, bg, self.colours.box_border, max(1, round(scale)))
+		if self.tauon.aero.active:
+			self.tauon.aero.menu_glass(self.edit_rect)
+		else:
+			self.ddt.bordered_rect(self.edit_rect, bg, self.colours.box_border, max(1, round(scale)))
 		self.fields.add(self.edit_rect)
 
 		pad = round(10 * scale)
@@ -724,12 +754,36 @@ class GeneratorEditBox:
 	def _button(  # noqa: PLR0917
 		self, text: str, x: int, y: int, w: int, h: int, press: bool, *,
 		fill: ColourRGBA | None = None, fill_highlight: ColourRGBA | None = None, ink: ColourRGBA | None = None,
-		tooltip: str = "",
+		tooltip: str = "", primary: bool = False, quiet: bool = False,
 	) -> bool:
 		"""A box button that shows no hover while a menu or the step editor is open."""
+		blocked = self._menus_open() or self.editing is not None
+		aero = self.tauon.aero
+		if aero.active:
+			# Glass: the primary button is a green gel, a quiet one only shows on hover
+			rect = (x, y, w, h)
+			self.fields.add(rect)
+			hover = not blocked and self.coll(rect)
+			colour = aero.colour("TEXT")
+			if primary:
+				aero.gel(rect, h / 2, hue=135, glow=hover)
+				colour = ColourRGBA(255, 255, 255, 255)
+			elif quiet:
+				if hover:
+					aero.hover_row(rect, h / 2)
+				else:
+					colour = ink or aero.colour("MUTED")
+			else:
+				aero.button(rect, hover)
+			if hover and tooltip:
+				self.tauon.tool_tip.test(x + round(15 * self.gui.scale), y - round(28 * self.gui.scale), tooltip)
+			if primary:
+				self.ddt.text_glow = aero.text_glow()
+			self.ddt.text((x + w // 2, y + h / 2 - 9 * self.gui.scale, 2), text, colour, 212, bg=aero.menu_bg())
+			self.ddt.text_glow = None
+			return bool(hover and press)
 		fill = fill or self.colours.box_button_background
 		ink = ink or self.colours.box_button_text
-		blocked = self._menus_open() or self.editing is not None
 		if blocked:
 			return self.draw.button(
 				text, x, y, w=w, h=h, press=False, background_colour=fill, background_highlight_colour=fill,
@@ -744,10 +798,18 @@ class GeneratorEditBox:
 		scale = self.gui.scale
 		bg = self.colours.box_background
 		size = round(14 * scale)
-		self.ddt.bordered_rect((x, y + round(2 * scale), size, size), self.colours.box_button_background, self.colours.box_check_border, max(1, round(scale)))
-		if on:
-			inner = round(4 * scale)
-			self.ddt.rect((x + inner, y + round(2 * scale) + inner, size - inner * 2, size - inner * 2), self.colours.toggle_box_on)
+		aero = self.tauon.aero
+		if aero.active:
+			box = (x, y + round(2 * scale), size, size)
+			aero.sunken(box, aero.s(4))
+			if on:
+				inner = round(3 * scale)
+				aero.gel((box[0] + inner, box[1] + inner, size - inner * 2, size - inner * 2), aero.s(2), glow=False)
+		else:
+			self.ddt.bordered_rect((x, y + round(2 * scale), size, size), self.colours.box_button_background, self.colours.box_check_border, max(1, round(scale)))
+			if on:
+				inner = round(4 * scale)
+				self.ddt.rect((x + inner, y + round(2 * scale) + inner, size - inner * 2, size - inner * 2), self.colours.toggle_box_on)
 		tx = x + size + round(10 * scale)
 		self.ddt.text((tx, y), title, self.input_colour, 13, max_w=width - (tx - x), bg=bg)
 		self.ddt.text((tx, y + round(18 * scale)), subtitle, self.label_colour, 11, max_w=width - (tx - x), bg=bg)
@@ -775,6 +837,30 @@ class GeneratorEditBox:
 	def render(self) -> None:
 		if not self.active:
 			return
+		saved = self._glass_colours() if self.tauon.aero.active else None
+		try:
+			self._render()
+		finally:
+			if saved:
+				for name, colour in saved.items():
+					setattr(self.colours, name, colour)
+
+	def _glass_colours(self) -> dict[str, ColourRGBA]:
+		"""Under Aqua, swap in a clear palette while the editor draws on glass
+		(text backgrounds and fills let the glass through); returns the
+		colours to put back."""
+		solid = self.tauon.aero.menu_bg()
+		glass = {
+			"box_background": ColourRGBA(solid.r, solid.g, solid.b, 0),
+			"box_button_background": ColourRGBA(160, 225, 255, 20),
+			"box_button_background_highlight": ColourRGBA(150, 220, 255, 26),
+		}
+		saved = {name: getattr(self.colours, name) for name in glass}
+		for name, colour in glass.items():
+			setattr(self.colours, name, colour)
+		return saved
+
+	def _render(self) -> None:
 		pl = self.pctl.id_to_pl(self.playlist_id)
 		if pl is None:
 			self._close()
@@ -863,7 +949,12 @@ class GeneratorEditBox:
 		editor_click = click and self.editing is not None and self.coll(self.edit_rect)
 		under_click = click and not editor_click
 
-		self.ddt.bordered_rect(box_rect, bg, colours.box_border, max(1, round(scale)))
+		glass = self.tauon.aero.active
+		aero = self.tauon.aero
+		if glass:
+			aero.menu_glass(box_rect, dialog=True)
+		else:
+			self.ddt.bordered_rect(box_rect, bg, colours.box_border, max(1, round(scale)))
 		self.ddt.text_background_colour = bg
 		self.fields.add(box_rect)
 		cx = x + pad
@@ -897,7 +988,10 @@ class GeneratorEditBox:
 			self._label(cx, cy, _("This generator has several stages, so it's shown as one list."), inner_w)
 		cy += round(16 * scale)
 		area = (cx, cy, inner_w, area_h)
-		self.ddt.bordered_rect(area, bg, colours.box_text_border, max(1, round(scale)))
+		if glass:
+			aero.sunken(area, aero.s(8))
+		else:
+			self.ddt.bordered_rect(area, bg, colours.box_text_border, max(1, round(scale)))
 		ox, oy = cx + area_pad, cy + area_pad
 
 		# Dragging stays within the pressed chip's lane
@@ -926,7 +1020,10 @@ class GeneratorEditBox:
 					editing_rect = rect
 				if self.dragging and index == self.press_index:
 					# Leave an outline where the chip came from; the chip itself follows the pointer
-					self.ddt.bordered_rect(rect, bg, colours.box_text_border, max(1, round(scale)))
+					if glass:
+						aero.ring("outer", rect, aero.s(5), aero.RIM_SOFT)
+					else:
+						self.ddt.bordered_rect(rect, bg, colours.box_text_border, max(1, round(scale)))
 					dragged = (step, rect, key_w, value_w)
 				else:
 					over_remove = self._draw_chip(step, rect, key_w, value_w, editing=index == self.editing)
@@ -948,7 +1045,11 @@ class GeneratorEditBox:
 			add_hover = (self.coll(add) and self.input_enabled) or add_open
 			add_bg = colours.box_button_background if add_hover else bg
 			self.fields.add(add)
-			self.ddt.bordered_rect(add, add_bg, alpha_blend(ColourRGBA(255, 255, 255, 35), bg), max(1, round(scale)))
+			if glass:
+				aero.tile(add, aero.s(5), add_hover)
+				add_bg = aero.menu_bg()
+			else:
+				self.ddt.bordered_rect(add, add_bg, alpha_blend(ColourRGBA(255, 255, 255, 35), bg), max(1, round(scale)))
 			self.ddt.text(
 				(add[0] + add[2] // 2, add[1] + round(5 * scale), 2), lane["add_label"],
 				self.input_colour if add_hover else self.label_colour, 12, bg=add_bg)
@@ -986,6 +1087,7 @@ class GeneratorEditBox:
 			_("Done"), bx, cy, done_w, button_h, under_click,
 			fill=alpha_blend(ColourRGBA(40, 150, 40, 70), bg),
 			fill_highlight=alpha_blend(ColourRGBA(40, 150, 40, 110), bg),
+			primary=True,
 		):
 			self.done()
 			return
@@ -999,7 +1101,7 @@ class GeneratorEditBox:
 			bx -= convert_w + round(8 * scale)
 			if self._button(
 				convert, bx, cy, convert_w, button_h, under_click,
-				fill=bg, ink=self.label_colour,
+				fill=bg, ink=self.label_colour, quiet=True,
 				tooltip=_("Keep the current tracks and remove the generator"),
 			):
 				self.convert_to_normal()

@@ -17,6 +17,8 @@ class WindowState:
 	borderless: bool = True
 	maximized: bool = False
 	position: tuple[int, int] | None = None
+	# Show the Aqua skin's painted loading screen (t_aqua_splash) instead of the stars
+	aqua_splash: bool = False
 
 
 def parse_window_state(text: str, defaults: WindowState) -> WindowState:
@@ -61,7 +63,8 @@ def parse_window_state(text: str, defaults: WindowState) -> WindowState:
 
 	borderless = values.get("borderless", defaults.borderless)
 	maximized = values.get("maximized", defaults.maximized)
-	if not isinstance(borderless, bool) or not isinstance(maximized, bool):
+	aqua_splash = values.get("aqua_splash", defaults.aqua_splash)
+	if not isinstance(borderless, bool) or not isinstance(maximized, bool) or not isinstance(aqua_splash, bool):
 		raise ValueError("Window flags must be booleans")
 
 	return replace(
@@ -73,6 +76,7 @@ def parse_window_state(text: str, defaults: WindowState) -> WindowState:
 		borderless=borderless,
 		maximized=maximized,
 		position=position,
+		aqua_splash=aqua_splash,
 	)
 
 
@@ -93,6 +97,7 @@ def serialize_window_state(state: WindowState) -> str:
 			"borderless": state.borderless,
 			"maximized": state.maximized,
 			"position": state.position,
+			"aqua_splash": state.aqua_splash,
 		},
 		indent=2,
 	) + "\n"

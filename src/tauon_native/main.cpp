@@ -64,6 +64,8 @@ struct WindowState {
 	bool borderless = true;
 	bool maximized = false;
 	std::optional<std::pair<int, int>> position;
+	// Show the Aqua skin's painted loading screen instead of the star field
+	bool aqua_splash = false;
 };
 
 struct WindowDeleter {
@@ -701,6 +703,7 @@ WindowState load_window_state(const std::filesystem::path& path) {
 		parse_json_bool(document, "borderless", state.borderless) &&
 		parse_json_bool(document, "maximized", state.maximized) &&
 		parse_json_position(document, state.position) &&
+		parse_json_bool(document, "aqua_splash", state.aqua_splash) &&
 		state.width > 100 && state.width < 10000 &&
 		state.height > 100 && state.height < 5000 &&
 		state.scale >= 0.5 && state.scale <= 4.0 &&
@@ -1009,10 +1012,47 @@ private:
 	std::vector<int> indices_;
 };
 
-void draw_loading_screen(SDL_Renderer* renderer, SDL_Window* window, double scale, std::uint32_t seed) {
+// The Aqua skin's loading screen, painted by Python (t_aqua_splash) on an
+// earlier run and saved beside window-state.json
+SDL_Texture* load_aqua_splash(SDL_Renderer* renderer, const std::filesystem::path& path) {
+	std::error_code error;
+	if (!std::filesystem::is_regular_file(path, error)) {
+		return nullptr;
+	}
+	const auto utf8 = path.u8string();
+	const std::string name(utf8.begin(), utf8.end());
+	SDL_Surface* surface = SDL_LoadBMP(name.c_str());
+	if (surface == nullptr) {
+		std::cerr << "Tauon: could not load the Aqua splash: " << SDL_GetError() << '\n';
+		return nullptr;
+	}
+	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_DestroySurface(surface);
+	if (texture != nullptr) {
+		SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_LINEAR);
+	}
+	return texture;
+}
+
+void draw_loading_screen(
+	SDL_Renderer* renderer, SDL_Window* window, double scale, std::uint32_t seed, SDL_Texture* splash
+) {
 	int width = 0;
 	int height = 0;
 	SDL_GetWindowSizeInPixels(window, &width, &height);
+	float splash_w = 0.0f;
+	float splash_h = 0.0f;
+	if (splash != nullptr && width > 0 && height > 0 && SDL_GetTextureSize(splash, &splash_w, &splash_h) &&
+		splash_w > 0.0f && splash_h > 0.0f) {
+		// Fill the window, cropping the painted splash's overflow evenly
+		const float fit = std::max(width / splash_w, height / splash_h);
+		const float crop_w = width / fit;
+		const float crop_h = height / fit;
+		const SDL_FRect source{(splash_w - crop_w) / 2.0f, (splash_h - crop_h) / 2.0f, crop_w, crop_h};
+		SDL_RenderTexture(renderer, splash, &source, nullptr);
+		SDL_RenderPresent(renderer);
+		return;
+	}
 	StarField(renderer, static_cast<float>(width), static_cast<float>(height), static_cast<float>(scale), seed).draw();
 }
 
@@ -1116,7 +1156,12 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		// (including Cocoa), so without SDL_SyncWindow() it might not become
 		// visible until Python begins polling events.
 		const std::uint32_t splash_seed = std::random_device{}();
-		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed);
+		const std::unique_ptr<SDL_Texture, void (*)(SDL_Texture*)> splash(
+			state.window_state.aqua_splash
+				? load_aqua_splash(state.renderer.get(), state.user_data_directory / "aqua-splash.bmp")
+				: nullptr,
+			SDL_DestroyTexture);
+		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed, splash.get());
 		if (!SDL_ShowWindow(state.window.get())) {
 			std::cerr << "Tauon: failed to show the startup window: " << SDL_GetError() << '\n';
 			return false;
@@ -1134,7 +1179,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		SDL_PumpEvents();
 		// Present once more after mapping in case the video backend discarded the
 		// hidden window's drawable contents.
-		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed);
+		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed, splash.get());
 		SDL_PumpEvents();
 	}
 	return true;
