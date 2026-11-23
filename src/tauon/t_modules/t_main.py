@@ -786,6 +786,13 @@ class GuiVar:
 	#		 sdl3.stop_text_input()
 	#	 self.text_input_request = False
 
+	def artist_panel_offset(self) -> float:
+		"""Height the artist-info panel takes above the tracklist. Zero in custom
+		mode, which has no artist-info panel to reserve space for."""
+		if self.artist_info_panel and not self.custom_mode:
+			return self.artist_panel_height
+		return 0
+
 	def bottom_panel_height(self) -> float:
 		"""Height of the standard layout's bottom panel, which depends on which
 		playback panel is selected -- the Feux panel is the taller of the two."""
@@ -17551,8 +17558,7 @@ class Tauon:
 			else:
 				gui.playlist_top = gui.playlist_top_bk
 
-			if gui.artist_info_panel:
-				gui.playlist_top += gui.artist_panel_height
+			gui.playlist_top += gui.artist_panel_offset()
 
 			gui.offset_extra = 0
 			if self.draw_border and not prefs.left_window_control:
@@ -42071,6 +42077,10 @@ class StandardPlaylist:
 			gui.playlist_top += round(gui.set_height) - round(6 * gui.scale)
 		window_size[1] = round(y + h) + gui.panelBY
 		gui.show_playlist = True
+		# Size the row count to the segment (same formula as update_layout_do).
+		# Not restored: paging and show-current read it outside the render.
+		gui.playlist_view_length = int(
+			(window_size[1] - gui.panelBY - gui.playlist_top - 12 * gui.scale) // gui.playlist_row_height)
 		# Copy only this segment from the texture to the main texture, so the
 		# tracklist can't bleed past its region (see the final blit in _render_body).
 		self._clip_rect = (round(x), round(y), round(w), round(h))
@@ -42151,8 +42161,7 @@ class StandardPlaylist:
 		# When the artist-info panel occupies the top of the tracklist column,
 		# exclude its area so wheel/touch scrolling over the bio doesn't also
 		# scroll the tracklist underneath it.
-		artist_panel_offset = gui.artist_panel_height if gui.artist_info_panel else 0
-		scroll_top = gui.panelY + artist_panel_offset
+		scroll_top = gui.panelY + gui.artist_panel_offset()
 		scroll_area = (gui.playlist_left, scroll_top, gui.plw, window_size[1] - gui.panelBY - scroll_top)
 		mouse_scroll = inp.mouse_wheel != 0 and window_size[1] - gui.panelBY - 1 > inp.mouse_position[
 			1] > scroll_top - 2 and gui.playlist_left < inp.mouse_position[0] < gui.playlist_left + gui.plw \
@@ -42228,9 +42237,7 @@ class StandardPlaylist:
 			background = colours.playlist_panel_background
 			colour = readable_text_colour(alpha_blend(alpha_mod(colours.index_text, 200), background), background)
 
-			top_a = gui.panelY
-			if gui.artist_info_panel:
-				top_a += gui.artist_panel_height
+			top_a = gui.panelY + gui.artist_panel_offset()
 
 			b = window_size[1] - top_a - gui.panelBY
 			half = int(top_a + (b * 0.60))
@@ -42253,9 +42260,7 @@ class StandardPlaylist:
 		elif pctl.playlist_view_position > len(pctl.default_playlist) - 1:
 			colour = alpha_mod(colours.index_text, 200)
 
-			top_a = gui.panelY
-			if gui.artist_info_panel:
-				top_a += gui.artist_panel_height
+			top_a = gui.panelY + gui.artist_panel_offset()
 
 			b = window_size[1] - top_a - gui.panelBY
 			half = int(top_a + (b * 0.17))
@@ -43461,8 +43466,7 @@ class StandardPlaylist:
 			cw = gui.plw
 			ch = self.window_size[1] - gui.panelY - gui.panelBY
 			bar_top = cy
-			if gui.artist_info_panel:
-				bar_top += gui.artist_panel_height
+			bar_top += gui.artist_panel_offset()
 		# The columns header bar draws translucent over the art background,
 		# so rows scrolled up behind it would show through; crop them out
 		if gui.set_mode and gui.set_bar and not gui.combo_mode:
@@ -68063,9 +68067,7 @@ def main(holder: Holder) -> None:
 					window_size[1] - gui.panelY - gui.panelBY,
 				)
 				tauon.fields.add(rect)
-				tracklist_scroll_top = gui.panelY
-				if gui.artist_info_panel:
-					tracklist_scroll_top += gui.artist_panel_height
+				tracklist_scroll_top = gui.panelY + gui.artist_panel_offset()
 				if gui.set_bar and gui.set_mode:
 					# Match render_tracklist_scrollbar: the bar starts below the
 					# columns header, so its side-drag-blocking hitbox must too.
@@ -68823,9 +68825,7 @@ def main(holder: Holder) -> None:
 				# Scroll Bar
 
 				# if not prefs.scroll_enable:
-				top = gui.panelY
-				if gui.artist_info_panel:
-					top += gui.artist_panel_height
+				top = gui.panelY + gui.artist_panel_offset()
 
 				edge_top = top
 				if gui.set_bar and gui.set_mode:
