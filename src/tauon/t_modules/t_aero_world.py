@@ -1486,23 +1486,9 @@ class AeroWorld(DreamRoom):
 		sx0, sx1 = SCR_CX - sw / 2, SCR_CX + sw / 2
 		sy0, sy1 = SCR_CY - SCR_H / 2, SCR_CY + SCR_H / 2
 		z = SCR_Z
-		b, tb = 0.045, 0.105
-		fx0, fx1, fy0, fy1 = sx0 - b, sx1 + b, sy0 - b, sy1 + tb
-		zf = z - 0.004
 		if not mirror:
 			self._glow((SCR_CX, SCR_CY, z - 0.05), sw * 0.9, SCR_H * 1.05, (170, 236, 255), 80)
-		# Glass frame with a title bar, lit from above
-		q([(fx0, fy1, zf), (fx1, fy1, zf), (fx1, fy0, zf), (fx0, fy0, zf)],
-			[(240, 250, 255, 222), (216, 240, 253, 222), (168, 214, 242, 222), (190, 228, 248, 222)])
-		q([(fx0, fy1, zf), (fx1, fy1, zf), (fx1, fy1 - tb * 0.5, zf), (fx0, fy1 - tb * 0.5, zf)],
-			[(255, 255, 255, 190), (255, 255, 255, 190), (255, 255, 255, 50), (255, 255, 255, 50)])
-		e = 0.008
-		q([(fx0, fy1, zf), (fx1, fy1, zf), (fx1, fy1 - e, zf), (fx0, fy1 - e, zf)], [(255, 255, 255, 255)] * 4)
-		q([(fx0, fy1, zf), (fx0 + e, fy1, zf), (fx0 + e, fy0, zf), (fx0, fy0, zf)], [(255, 255, 255, 230)] * 4)
-		q([(sx0 - e, sy1 + e, zf), (sx1 + e, sy1 + e, zf), (sx1 + e, sy0 - e, zf), (sx0 - e, sy0 - e, zf)],
-			[(22, 50, 78, 255)] * 4)
-		for i, key in enumerate(("orb_note", "orb_next", "orb_play")):	# window buttons
-			self._spr((fx1 - 0.07 - i * 0.075, sy1 + tb * 0.52, z), 0.027, 0.027, self.tex[key])
+		# No frame of its own: the app window floats as it is
 		if mirror:
 			self._draw_app(sx0, sx1, sy0, sy1, z, 5, 3)
 			return
