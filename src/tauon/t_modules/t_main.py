@@ -8630,6 +8630,7 @@ class Tauon:
 		self.shortcuts_sheet:                     ShortcutsSheet = ShortcutsSheet(tauon=self)
 		self.message_box:                         MessageBox = MessageBox(tauon=self)
 		self.duplicate_import_box = DuplicateImportBox(self)
+		self.delete_files_box = DeleteFilesBox(self)
 		self.preset_download_box:                 PresetDownloadBox = PresetDownloadBox(tauon=self)
 		self.milk_choose:                       MilkPresetChooser = MilkPresetChooser(tauon=self)
 		self.milk_fullscreen:                   MilkFullscreen = MilkFullscreen(tauon=self)
@@ -14320,7 +14321,7 @@ class Tauon:
 				len(self.pctl.playing_playlist()) - 1,
 			)
 
-	def del_selected(self, force_delete: bool = False) -> None:
+	def del_selected(self) -> None:
 		if self.gui.showcase_mode or self.gui.radio_view:
 			return None
 		self.gui.request_frame()
@@ -14341,48 +14342,13 @@ class Tauon:
 			if not 0 <= item < len(self.pctl.default_playlist):
 				return
 
-			li.append((item, self.pctl.default_playlist[item]))  # take note for force delete
+			li.append((item, self.pctl.default_playlist[item]))
 
 			del self.pctl.default_playlist[item]
 
 		self.repair_playing_position_after_removals(removed_positions, self.pctl.active_playlist_viewing)
 
-		if force_delete:
-			# CUE tracks can share a file, so count unique paths
-			paths = list(dict.fromkeys(
-				tr.fullpath for tr in (self.pctl.get_track(item[1]) for item in li) if not tr.is_network))
-			trashed = 0
-			removed = 0
-			failed = 0
-			for path in paths:
-				try:
-					send2trash(path)
-					trashed += 1
-				except Exception:
-					logging.exception("Could not send file to trash")
-					try:
-						os.remove(path)
-						removed += 1
-					except Exception:
-						logging.exception("Error deleting file")
-						failed += 1
-			deleted = trashed + removed
-			if failed:
-				self.show_message(
-					_("Error deleting one or more files"),
-					_("Deleted {N} of {T} files").format(N=deleted, T=len(paths)), mode="error")
-			elif removed:
-				# Some bypassed the trash
-				if deleted == 1:
-					self.toast(_("Deleted 1 file"), duration=2)
-				else:
-					self.toast(_("Deleted {N} files").format(N=deleted), duration=2)
-			elif trashed == 1:
-				self.toast(_("Moved 1 file to trash"), duration=2)
-			elif trashed:
-				self.toast(_("Moved {N} files to trash").format(N=trashed), duration=2)
-		else:
-			self.undo.bk_tracks(self.pctl.active_playlist_viewing, li)
+		self.undo.bk_tracks(self.pctl.active_playlist_viewing, li)
 
 		self.reload()
 		self.tree_view_box.clear_target_pl(self.pctl.active_playlist_viewing)
@@ -14394,7 +14360,78 @@ class Tauon:
 		self.pctl.notify_database_changed()
 
 	def force_del_selected(self) -> None:
-		self.del_selected(force_delete=True)
+		playlist = self.pctl.default_playlist
+		ids = [playlist[i] for i in sorted(set(self.gui.shift_selection)) if 0 <= i < len(playlist)]
+		self.delete_track_files(ids, self.pctl.pl_to_id(self.pctl.active_playlist_viewing))
+
+	def trash_files(self, paths: list[str]) -> list[str]:
+		"""Moves files to the trash, returns the ones still on disk."""
+		failed: list[str] = []
+		for path in paths:
+			native = path.replace("/", "\\") if self.windows else path
+			try:
+				send2trash(native)
+			except Exception:
+				logging.exception("Could not send file to trash")
+			if os.path.exists(native):
+				failed.append(path)
+		return failed
+
+	def remove_deleted_tracks(self, track_ids: set[int], pl_id: int) -> None:
+		"""Drops tracks whose files are gone from a playlist."""
+		index = self.pctl.id_to_pl(pl_id)
+		if index is None or not track_ids:
+			return
+		playlist = self.pctl.multi_playlist[index].playlist_ids
+		removed = [i for i, track_id in enumerate(playlist) if track_id in track_ids]
+		for i in reversed(removed):
+			del playlist[i]
+		self.repair_playing_position_after_removals(removed, index)
+		if index == self.pctl.active_playlist_viewing:
+			self.pctl.selected_in_playlist = min(self.pctl.selected_in_playlist, len(playlist) - 1)
+			self.gui.shift_selection = [self.pctl.selected_in_playlist]
+		self.reload()
+		self.tree_view_box.clear_target_pl(index)
+		self.gui.request_tracklist_redraw()
+		self.pctl.notify_database_changed()
+
+	def delete_track_files(self, track_ids: list[int], pl_id: int) -> None:
+		"""Moves the tracks' files to the trash. Files the trash refuses are only deleted after asking."""
+		tracks = {track_id: self.pctl.get_track(track_id) for track_id in track_ids}
+		# CUE tracks can share a file, so count unique paths
+		paths = list(dict.fromkeys(tr.fullpath for tr in tracks.values() if not tr.is_network))
+		failed = self.trash_files(paths)
+		trashed = set(paths).difference(failed)
+		self.remove_deleted_tracks({t for t, tr in tracks.items() if not tr.is_network and tr.fullpath in trashed}, pl_id)
+		if len(trashed) == 1:
+			self.toast(_("Moved 1 file to trash"), duration=2)
+		elif trashed:
+			self.toast(_("Moved {N} files to trash").format(N=len(trashed)), duration=2)
+		if failed:
+			self.delete_files_box.request(
+				failed, lambda: self.delete_files_permanently(failed, tracks, pl_id), permanent=True)
+
+	def delete_files_permanently(self, paths: list[str], tracks: dict[int, TrackClass], pl_id: int) -> None:
+		removed: list[str] = []
+		for path in paths:
+			try:
+				os.remove(path.replace("/", "\\") if self.windows else path)
+				removed.append(path)
+			except Exception:
+				logging.exception("Error deleting file")
+		gone = set(removed)
+		self.remove_deleted_tracks({t for t, tr in tracks.items() if not tr.is_network and tr.fullpath in gone}, pl_id)
+		if len(removed) < len(paths):
+			if len(paths) == 1:
+				self.show_message(_("Error deleting file"), paths[0], mode="error")
+			else:
+				self.show_message(
+					_("Error deleting one or more files"),
+					_("Deleted {N} of {T} files").format(N=len(removed), T=len(paths)), mode="error")
+		elif len(removed) == 1:
+			self.toast(_("Deleted 1 file"), duration=2)
+		else:
+			self.toast(_("Deleted {N} files").format(N=len(removed)), duration=2)
 
 	def test_show(self, _: MenuTrackRef) -> bool:
 		return self.prefs.album_mode
@@ -14670,7 +14707,9 @@ class Tauon:
 			return
 		playlist = self.pctl.default_playlist
 		picked = [(i, playlist[i]) for i in sorted(set(self.gui.shift_selection)) if 0 <= i < len(playlist)]
-		paths = {self.pctl.get_track(t).fullpath for _i, t in picked if not self.pctl.get_track(t).is_network}
+		# Playlist order, CUE tracks can share a file
+		paths = list(dict.fromkeys(
+			tr.fullpath for tr in (self.pctl.get_track(t) for _i, t in picked) if not tr.is_network))
 		if not paths:
 			self.show_message(_("Cannot delete a network track"))
 			return
@@ -14679,6 +14718,7 @@ class Tauon:
 			return
 
 		viewing = self.pctl.active_playlist_viewing
+		pl_id = self.pctl.pl_to_id(viewing)
 
 		def confirm() -> None:
 			# Only delete if the same tracks are still where they were
@@ -14686,17 +14726,9 @@ class Tauon:
 			if self.pctl.active_playlist_viewing != viewing or any(i >= len(now) or now[i] != t for i, t in picked):
 				self.show_message(_("The playlist changed, nothing was deleted"))
 				return
-			self.gui.shift_selection = [i for i, _t in picked]
-			self.force_del_selected()
+			self.delete_track_files([t for _i, t in picked], pl_id)
 
-		self.gui.message_box_confirm_callback = confirm
-		self.gui.message_box_no_callback = None
-		self.gui.message_box_confirm_reference = ()
-		if len(paths) == 1:
-			text = _("Are you sure you want to delete 1 file?")
-		else:
-			text = _("Are you sure you want to delete {N} files?").format(N=len(paths))
-		self.show_message(text, mode="confirm")
+		self.delete_files_box.request(paths, confirm)
 
 	def delete_track(self, ref: MenuTrackRef) -> None:
 		"""Asks before deleting the file, holding shift skips the question."""
@@ -14711,47 +14743,10 @@ class Tauon:
 		if self.inp.key_shift_down or self.inp.key_shiftr_down:
 			self.delete_track_file(ref)
 			return
-
-		name = tr.filename if len(tr.filename) <= 60 else tr.filename[:57] + "…"
-		self.gui.message_box_confirm_callback = self.delete_track_file
-		self.gui.message_box_no_callback = None
-		self.gui.message_box_confirm_reference = (ref,)
-		self.show_message(_("Are you sure you want to delete file: {name}?").format(name=name), mode="confirm")
+		self.delete_files_box.request([tr.fullpath], lambda: self.delete_track_file(ref))
 
 	def delete_track_file(self, ref: MenuTrackRef) -> None:
-		fullpath = self.pctl.get_track(ref.track_id).fullpath
-
-		if self.windows:
-			fullpath = fullpath.replace("/", "\\")
-
-		removed_positions = [i for i, track_id in enumerate(self.pctl.default_playlist) if track_id == ref.track_id]
-		while ref.track_id in self.pctl.default_playlist:
-			self.pctl.default_playlist.remove(ref.track_id)
-		self.repair_playing_position_after_removals(removed_positions, self.pctl.active_playlist_viewing)
-
-		try:
-			send2trash(fullpath)
-
-			if os.path.exists(fullpath):
-				try:
-					os.remove(fullpath)
-					self.toast(_("File deleted"), duration=2)
-				except Exception:
-					logging.exception("Error deleting file")
-					self.show_message(_("Error deleting file"), fullpath, mode="error")
-			else:
-				self.toast(_("File moved to trash"), duration=2)
-
-		except Exception:
-			try:
-				os.remove(fullpath)
-				self.toast(_("File deleted"), duration=2)
-			except Exception:
-				logging.exception("Error deleting file")
-				self.show_message(_("Error deleting file"), fullpath, mode="error")
-
-		self.reload()
-		self.pctl.notify_database_changed()
+		self.delete_track_files([ref.track_id], ref.playlist_id)
 
 	def activate_trans_editor(self) -> None:
 		self.trans_edit_box.activate()
@@ -18120,6 +18115,7 @@ class Tauon:
 			and not self.trans_edit_box.active \
 			and not self.generator_box.active \
 			and not self.duplicate_import_box.active \
+			and not self.delete_files_box.active \
 			and not self.tracklist_layout_panel.active \
 			and not self.add_music_box.active \
 			and not self.shortcuts_sheet.active
@@ -31884,13 +31880,196 @@ class DuplicateImportBox:
 			)
 			focus_x = button_x + add_w + round(16 * scale) if self.skip_selected else button_x
 			focus_w = skip_w if self.skip_selected else add_w
-			ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
+			# Aqua's capsule buttons don't take a square outline
+			if not tauon.aero.active:
+				ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
 		finally:
 			tauon.inp.mouse_position[:] = position
 		if add or skip or self.enter:
 			self.choose(skip if add or skip else self.skip_selected)
 		self.click = False
 		self.enter = False
+
+class DeleteFilesBox:
+	"""Modal list of the files about to be deleted, with confirm and cancel."""
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon = tauon
+		self.paths: list[str] = []
+		self.labels: list[str] = []
+		self.folder = ""
+		self.permanent = False
+		self.on_confirm: Callable[[], None] | None = None
+		self.scroll = 0
+		self.wheel = 0.0
+		self.click = False
+		self.enter = False
+		self.esc = False
+		self.confirm_selected = True
+		self.mouse = (0.0, 0.0)
+
+	@property
+	def active(self) -> bool:
+		return bool(self.paths)
+
+	def request(self, paths: list[str], on_confirm: Callable[[], None], permanent: bool = False) -> None:
+		self.paths = list(paths)
+		self.on_confirm = on_confirm
+		self.permanent = permanent
+		folders = {os.path.dirname(p) for p in self.paths}
+		# Name the folder once when all files share it, else prefix each file with its folder
+		self.folder = folders.pop() if len(folders) == 1 else ""
+		self.labels = [
+			os.path.basename(p) if self.folder else os.path.join(os.path.basename(os.path.dirname(p)), os.path.basename(p))
+			for p in self.paths]
+		self.scroll = 0
+		self.wheel = 0.0
+		# Permanent deletes start on Cancel
+		self.confirm_selected = not permanent
+		self.tauon.inp.quick_drag = False
+		self.tauon.gui.playlist_hold = False
+		self.tauon.gui.request_frame()
+
+	def close(self, confirmed: bool) -> None:
+		callback = self.on_confirm
+		self.paths = []
+		self.labels = []
+		self.on_confirm = None
+		self.click = False
+		self.enter = False
+		self.esc = False
+		self.tauon.gui.request_frame()
+		if confirmed and callback:
+			callback()
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.tauon.inp
+		if inp.mouse_position[0] > -2000:
+			self.mouse = tuple(inp.mouse_position)
+		# Held until render uses them
+		self.click = self.click or inp.mouse_click
+		self.enter = self.enter or inp.key_return_press
+		self.esc = self.esc or inp.key_esc_press or inp.right_click
+		self.wheel += inp.mouse_wheel
+		if inp.key_up_press:
+			self.wheel += 1
+		if inp.key_down_press:
+			self.wheel -= 1
+		if inp.key_tab_press or inp.key_left_press or inp.key_right_press:
+			self.confirm_selected = not self.confirm_selected
+		for attribute in (
+			"mouse_click", "d_mouse_click", "mouse_up", "mouse_down", "right_click", "middle_click",
+			"key_return_press", "key_esc_press", "key_tab_press", "key_left_press", "key_right_press",
+			"key_up_press", "key_down_press", "key_del", "key_home_press", "key_end_press", "k_input",
+			"key_c_press", "key_v_press", "key_a_press", "key_s_press", "key_z_press", "key_x_press",
+			"key_backspace_press", "level_2_right_click", "level_2_enter", "touch_released",
+		):
+			setattr(inp, attribute, False)
+		inp.backspace_press = 0
+		inp.mouse_wheel = 0
+		inp.touch_scroll_y = 0
+		inp.touch_scroll_x = 0
+		inp.input_text = ""
+		inp.mouse_position[:] = [-3000.0, -3000.0]
+		self.tauon.gui.keymaps.hits.clear()
+		if self.wheel:
+			self.tauon.gui.request_frame()
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		tauon = self.tauon
+		ddt = tauon.ddt
+		scale = tauon.gui.scale
+		colours = tauon.colours
+		count = len(self.paths)
+		if self.permanent:
+			title = (
+				_("Could not move 1 file to the trash") if count == 1
+				else _("Could not move {N} files to the trash").format(N=count))
+			detail = _("Delete permanently? This can't be undone.")
+			confirm_label = _("Delete Permanently")
+		else:
+			title = (
+				_("Move 1 file to the trash?") if count == 1
+				else _("Move {N} files to the trash?").format(N=count))
+			detail = self.folder
+			confirm_label = _("Move to Trash")
+		cancel_label = _("Cancel")
+
+		row_h = round(20 * scale)
+		w = min(round(520 * scale), tauon.window_size[0] - round(20 * scale))
+		text_w = w - round(40 * scale)
+		max_rows = max(1, (tauon.window_size[1] - round(190 * scale)) // row_h)
+		rows = min(count, 12, max_rows)
+		self.scroll = max(0, min(self.scroll - int(self.wheel), count - rows))
+		self.wheel -= int(self.wheel)
+
+		detail_h = round(20 * scale) if detail else 0
+		list_h = rows * row_h + round(8 * scale)
+		h = round(106 * scale) + detail_h + list_h
+		x = (tauon.window_size[0] - w) // 2
+		y = (tauon.window_size[1] - h) // 2
+		ddt.rect((0, 0, *tauon.window_size), ColourRGBA(0, 0, 0, 130))
+		if not tauon.glass_box((x, y, w, h)):
+			ddt.rect((x - 2 * scale, y - 2 * scale, w + 4 * scale, h + 4 * scale), colours.box_text_border)
+			ddt.rect((x, y, w, h), colours.message_box_bg)
+			ddt.text_background_colour = colours.message_box_bg
+		ddt.text((x + 20 * scale, y + 14 * scale), title, colours.message_box_text, 15, max_w=text_w)
+		list_y = y + round(44 * scale)
+		if detail:
+			ddt.text((x + 20 * scale, list_y), detail, alpha_mod(colours.message_box_text, 170), 12, max_w=text_w)
+			list_y += detail_h
+
+		ddt.rect_s((x + 20 * scale, list_y, text_w, list_h), colours.box_text_border, max(1, round(scale)))
+		row_x = x + round(28 * scale)
+		label_w = text_w - round(24 * scale)
+		for i, label in enumerate(self.labels[self.scroll:self.scroll + rows]):
+			ddt.text((row_x, list_y + round(4 * scale) + i * row_h), label, colours.message_box_text, 12, max_w=label_w)
+		if count > rows:
+			# Scroll bar
+			track_x = x + 20 * scale + text_w - round(8 * scale)
+			track_h = list_h - round(8 * scale)
+			bar_h = max(round(12 * scale), track_h * rows // count)
+			bar_y = list_y + round(4 * scale) + (track_h - bar_h) * self.scroll // (count - rows)
+			ddt.rect((track_x, bar_y, round(4 * scale), bar_h), alpha_mod(colours.message_box_text, 90))
+
+		font = 212
+		confirm_w = ddt.get_text_w(confirm_label, font) + round(24 * scale)
+		cancel_w = ddt.get_text_w(cancel_label, font) + round(24 * scale)
+		button_y = y + h - round(43 * scale)
+		button_x = x + (w - confirm_w - cancel_w - round(16 * scale)) // 2
+		cancel_x = button_x + confirm_w + round(16 * scale)
+		position = tauon.inp.mouse_position[:]
+		tauon.inp.mouse_position[:] = self.mouse
+		try:
+			if self.permanent:
+				confirm = tauon.draw.button(
+					confirm_label, button_x, button_y, w=confirm_w, h=round(28 * scale), press=self.click,
+					text_highlight_colour=ColourRGBA(255, 255, 255, 255),
+					background_highlight_colour=ColourRGBA(190, 50, 50, 255))
+			else:
+				confirm = tauon.draw.button(
+					confirm_label, button_x, button_y, w=confirm_w, h=round(28 * scale), press=self.click)
+			cancel = tauon.draw.button(
+				cancel_label, cancel_x, button_y, w=cancel_w, h=round(28 * scale), press=self.click)
+			focus_x = button_x if self.confirm_selected else cancel_x
+			focus_w = confirm_w if self.confirm_selected else cancel_w
+			# Aqua's capsule buttons don't take a square outline
+			if not tauon.aero.active:
+				ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
+		finally:
+			tauon.inp.mouse_position[:] = position
+		if confirm or (self.enter and self.confirm_selected):
+			self.close(True)
+		elif cancel or self.esc or self.enter:
+			self.close(False)
+		else:
+			self.click = False
+			self.enter = False
+			self.esc = False
 
 class PresetDownloadBox:
 
@@ -67336,6 +67515,7 @@ def main(holder: Holder) -> None:
 		tauon.trans_edit_box.capture_wheel()
 		tauon.generator_box.capture_wheel()
 		tauon.duplicate_import_box.handle_input()
+		tauon.delete_files_box.handle_input()
 
 		radio_directory_search_active = gui.radio_view and radiobox.tab == 1 and not radiobox.active
 		text_entry_shortcuts_blocked = (
@@ -71388,6 +71568,7 @@ def main(holder: Holder) -> None:
 		if gui.present:
 			sdl3.set_render_target(renderer, None)
 			tauon.duplicate_import_box.render()
+			tauon.delete_files_box.render()
 			tauon.render_rounded_corners()
 			tauon.wayland_blur.sync()
 			tauon.macos_blur.sync()
