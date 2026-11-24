@@ -6,6 +6,8 @@ Changelog
 
  - Added Aqua skin
  - Added stereo crossfeed setting
+ - Added lyric word stamp support
+ - Fixed timing accuracy with lyrics
 
 ### v14.0.0
 
