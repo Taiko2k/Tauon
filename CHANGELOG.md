@@ -5,6 +5,7 @@ Changelog
 ### v14.1.0
 
  - Added Aqua skin
+ - Added stereo crossfeed setting
 
 ### v14.0.0
 
