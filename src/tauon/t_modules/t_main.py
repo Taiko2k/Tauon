@@ -28408,7 +28408,7 @@ class AlbumArt:
 		self.prefs.failed_background_artists.append(artist)
 		return None
 
-	def get_blur_im(self, track: TrackClass) -> BytesIO | bool | None:
+	def get_blur_im(self, track: TrackClass, window_size: tuple[int, int]) -> BytesIO | bool | None:
 		source_image = None
 		self.loaded_bg_type = 0
 		if self.prefs.enable_fanart_bg:
@@ -28443,12 +28443,12 @@ class AlbumArt:
 		if im.mode != "RGB":
 			im = im.convert("RGB")
 
-		ratio = self.window_size[0] / ox_size
+		ratio = window_size[0] / ox_size
 		ratio += 0.2
 
-		if (oy_size * ratio) - ((oy_size * ratio) // 4) < self.window_size[1]:
+		if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
 			logging.info("Adjust bg vertical")
-			ratio = self.window_size[1] / (oy_size - (oy_size // 4))
+			ratio = window_size[1] / (oy_size - (oy_size // 4))
 			ratio += 0.2
 
 		new_x = round(ox_size * ratio)
@@ -29146,6 +29146,10 @@ class StyleOverlay:
 		self.b_type = 0
 
 		self.window_size_int = None
+		# Main-thread copy of window_size for worker(): Custom Layout narrows
+		# window_size to a segment while drawing each widget, so reading it
+		# from the worker thread can catch a segment's size
+		self.window_size_snapshot: tuple[int, int] = (self.window_size[0], self.window_size[1])
 		self.parent_path = None
 
 		self.hole_punches: list[sdl3.FRect] = []
@@ -29187,13 +29191,14 @@ class StyleOverlay:
 				if track is None:
 					return
 
-				self.window_size_int = copy.copy(self.window_size)
+				window_size = self.window_size_snapshot
+				self.window_size_int = list(window_size)
 				self.parent_path = track.parent_folder_path
 				self.current_track_id = track.index
 				self.current_track_album = track.album
 
 				try:
-					self.im = self.album_art_gen.get_blur_im(track)
+					self.im = self.album_art_gen.get_blur_im(track, window_size)
 				except Exception:
 					logging.exception("Blur blackground error")
 					raise
@@ -29351,6 +29356,9 @@ class StyleOverlay:
 		return colour
 
 	def display(self, background: bool = False) -> None:
+		# Snapshot the real window size for worker(); called outside any
+		# Custom Layout widget draw, so window_size isn't narrowed here
+		self.window_size_snapshot = (self.window_size[0], self.window_size[1])
 		if background:
 			# True-background mode: draw an opaque base directly onto the
 			# current render target at the start of the frame; the art fades

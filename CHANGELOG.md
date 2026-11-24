@@ -2,6 +2,10 @@
 Changelog
 ---------
 
+### v14.1.0
+
+ - Added Aqua skin
+
 ### v14.0.0
 
  - Added track ban feature
