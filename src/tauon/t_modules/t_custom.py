@@ -2579,6 +2579,10 @@ class TracklistWidget(Widget):
 		gui = tauon.gui
 		inp = tauon.inp
 		rect = (round(x), round(y), round(w), round(h))
+		# Refit the columns when the segment width changes. The layout pass sizes
+		# them from the rect cached last frame, so it lags any change behind.
+		if self._last_rect is None or rect[2] != self._last_rect[2]:
+			tauon.update_set(rect[2])
 		# Input is handled inside the playlist render, so a full_render must run
 		# whenever the pointer is over the tracklist or there's a mouse event —
 		# otherwise the cheap cache_render path would swallow clicks/scroll/hover.

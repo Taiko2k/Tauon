@@ -8333,6 +8333,8 @@ class Tauon:
 		self.de_notify_support: bool            = bag.de_notify_support
 		self.old_window_position: tuple[int, int]          = bag.old_window_position
 		self.mini_mode_restore_size: tuple[int, int] | None = None
+		# update_set's last fit: (flexible column ids, widths set, unrounded weights)
+		self.column_fit: tuple[list[int], list[int], list[float]] | None = None
 		self.mini_mode_wm_forced_floating: bool = False
 		self.mini_mode_wm_was_floating: bool = False
 		# Logical size of the mini mode layout, before the lyrics drawer is added
@@ -16639,6 +16641,7 @@ class Tauon:
 				sdl3.restore_window(self.t_window)
 				sdl3.sync_window(self.t_window)
 				sdl3.pump_events()
+				self.sync_window_size()
 				self.gui.maximized = False
 				self.update_layout_do()
 
@@ -16777,6 +16780,12 @@ class Tauon:
 			sdl3.set_window_position(self.t_window, x, new_y)
 			self.mini_lyrics_lift = ((x, new_y), y - new_y)
 
+	def sync_window_size(self) -> None:
+		"""Read the main window's size back from SDL. window_size is in pixels,
+		logical_size in window units; they differ on HiDPI displays."""
+		self.logical_size[:] = sdl3.get_window_size(self.t_window)
+		self.window_size[:] = sdl3.get_window_size_in_pixels(self.t_window)
+
 	def restore_full_mode(self) -> None:
 		logging.info("RESTORE FULL")
 		self.mini_mode.save_position = list(sdl3.get_window_position(self.t_window))
@@ -16803,9 +16812,7 @@ class Tauon:
 
 		sdl3.sync_window(self.t_window)
 		sdl3.pump_events()
-		width, height = sdl3.get_window_size(self.t_window)
-		self.window_size[:] = width, height
-		self.logical_size[:] = width, height
+		self.sync_window_size()
 
 		self.inp.mouse_down = False
 		self.inp.mouse_up = False
@@ -16815,7 +16822,7 @@ class Tauon:
 			sdl3.maximize_window(self.t_window)
 			time.sleep(0.05)
 			sdl3.pump_events()
-			self.logical_size[:] = sdl3.get_window_size(self.t_window)
+			self.sync_window_size()
 			self.gui.maximized = True
 		self.gui.mini_mode_return_maximized = False
 		self.mini_mode_restore_size = None
@@ -20035,36 +20042,55 @@ class Tauon:
 		self.gui.message_box = False
 		self.gui.preview_artist_loading = ""
 
-	def column_area_width(self) -> int:
-		"""Width available to the tracklist columns. In custom mode this is the
-		Tracklist widget's segment, not gui.plw — sizing runs from menu
-		callbacks outside the widget's draw, where gui.plw holds the preset
-		value."""
-		wid = self.gui.plw
-		if self.gui.custom_mode:
-			rect = self.custom.tracklist_rect()
-			if rect:
-				wid = rect[2]
-		elif self.gui.tracklist_center_mode:
-			wid = self.gui.tracklist_highlight_width
+	def column_area_width(self, width: int | None = None) -> int:
+		"""Width available to the tracklist columns, given the tracklist's full
+		width. By default that's the Tracklist widget's segment in custom mode, not
+		gui.plw — sizing runs from menu callbacks outside the widget's draw, where
+		gui.plw holds the preset value."""
+		wid = width
+		if wid is None:
+			wid = self.gui.plw
+			if self.gui.custom_mode:
+				rect = self.custom.tracklist_rect()
+				if rect:
+					wid = rect[2]
+			elif self.gui.tracklist_center_mode:
+				wid = self.gui.tracklist_highlight_width
 		return wid - round(self.gui.pl_st_left * self.gui.scale)
 
-	def update_set(self) -> None:
-		"""This is used to scale columns when windows is resized or items added/removed"""
-		wid = self.column_area_width()
+	def fill_last_column(self, width: int | None = None) -> None:
+		"""Give the last column whatever width the others leave (after a grip drag)."""
+		pl_st = self.gui.pl_st
+		if pl_st:
+			pl_st[-1][1] = self.column_area_width(width) - sum(c[1] for c in pl_st[:-1])
 
-		total = 0
+	def update_set(self, width: int | None = None) -> None:
+		"""Scale the flexible columns to fill the tracklist width (see column_area_width)."""
+		wid = self.column_area_width(width)
+
+		flex = []
 		for item in self.gui.pl_st:
 			if item[2] is False:
-				total += item[1]
+				flex.append(item)
 			else:
 				wid -= item[1]
-
 		wid = max(75, wid)
 
-		for i in range(len(self.gui.pl_st)):
-			if self.gui.pl_st[i][2] is False and total:
-				self.gui.pl_st[i][1] = round((self.gui.pl_st[i][1] / total) * wid)  # + 1
+		# Scale from the unrounded proportions of the last fit, unless the columns
+		# changed since. Rounding each fit drifts them, worst after a squeeze to a
+		# narrow width (mini mode restore, a narrow custom segment).
+		widths = [item[1] for item in flex]
+		weights = widths
+		last = self.column_fit
+		if last and last[0] == [id(item) for item in flex] and last[1] == widths:
+			weights = last[2]
+		total = sum(weights)
+		if not total:
+			return
+		widths = [round(w / total * wid) for w in weights]
+		for item, w in zip(flex, widths, strict=True):
+			item[1] = w
+		self.column_fit = ([id(item) for item in flex], widths, weights)
 
 	def auto_size_columns(self) -> None:
 		fixed_n = 0
@@ -65731,6 +65757,8 @@ def main(holder: Holder) -> None:
 			start = left + gui.pl_st_left * gui.scale
 			run = 0
 			in_grip = False
+			# Tracklist width for column sizing; gui.plw is the live segment in custom mode
+			list_w = gui.tracklist_highlight_width if gui.tracklist_center_mode else gui.plw
 
 			if not inp.mouse_down and gui.set_hold != -1:
 				gui.set_hold = -1
@@ -65814,20 +65842,15 @@ def main(holder: Holder) -> None:
 						# pl_st_left is stored pre-scale, so convert the pixel
 						# drag delta back to base units.
 						gui.pl_st_left = gui.set_old + (inp.mouse_position[0] - gui.set_point) / gui.scale
+						# Leave the last column its minimum width
+						others = sum(c[1] for c in gui.pl_st[:-1])
+						gui.pl_st_left = min(gui.pl_st_left, (list_w - others - 25) / gui.scale)
 						# Keep a small minimum so the grip stays grabbable and
 						# doesn't slip off the left edge of the window.
 						gui.pl_st_left = max(gui.pl_st_left, 2)
 
 						gui.request_frame()
-
-						total = 0
-						for i in range(len(gui.pl_st) - 1):
-							total += gui.pl_st[i][1]
-
-						wid = gui.plw - round(gui.pl_st_left * gui.scale)
-						if gui.tracklist_center_mode:
-							wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
-						gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+						tauon.fill_last_column(list_w)
 				else:
 					if tauon.coll(m_grip):
 						in_grip = True
@@ -65838,19 +65861,13 @@ def main(holder: Holder) -> None:
 
 					if inp.mouse_down and gui.set_hold == h:
 						gui.pl_st[h - 1][1] = gui.set_old + (inp.mouse_position[0] - gui.set_point)
+						# Leave the last column its minimum width
+						others = sum(c[1] for i, c in enumerate(gui.pl_st[:-1]) if i != h - 1)
+						gui.pl_st[h - 1][1] = min(gui.pl_st[h - 1][1], tauon.column_area_width(list_w) - others - 25)
 						gui.pl_st[h - 1][1] = max(gui.pl_st[h - 1][1], 25)
 
 						gui.request_frame()
-						# gui.pl_update = 1
-
-						total = 0
-						for i in range(len(gui.pl_st) - 1):
-							total += gui.pl_st[i][1]
-
-						wid = gui.plw - round(gui.pl_st_left * gui.scale)
-						if gui.tracklist_center_mode:
-							wid = gui.tracklist_highlight_width - round(gui.pl_st_left * gui.scale)
-						gui.pl_st[len(gui.pl_st) - 1][1] = wid - total
+						tauon.fill_last_column(list_w)
 
 				run += item[1]
 
