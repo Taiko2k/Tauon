@@ -66726,16 +66726,18 @@ def main(holder: Holder) -> None:
 				#
 				elif event.type == sdl3.SDL_EVENT_WINDOW_EXPOSED:
 					# logging.info("expose")
-					gui.lowered = False
+					if gui.lowered:
+						gui.lowered = False
+						gui.request_tracklist_redraw()
 					# Wayland holds interactive-resize configures until the next frame
 					# callback and sends EXPOSED to prompt one. Without a present the
 					# size stays frozen until the drag ends.
 					gui.request_frame()
 
-				elif event.type in (sdl3.SDL_EVENT_WINDOW_HIDDEN, sdl3.SDL_EVENT_WINDOW_OCCLUDED):
-					tauon.schedule_tracklist_align()
-
-				elif event.type == sdl3.SDL_EVENT_WINDOW_MINIMIZED:
+				elif event.type in (
+					sdl3.SDL_EVENT_WINDOW_HIDDEN, sdl3.SDL_EVENT_WINDOW_OCCLUDED, sdl3.SDL_EVENT_WINDOW_MINIMIZED):
+					# Stop presenting while out of sight: a vsynced present to a hidden
+					# Wayland surface stalls the loop, and with it D-Bus dispatch
 					gui.lowered = True
 					tauon.schedule_tracklist_align()
 					# if prefs.min_to_tray:
@@ -66754,6 +66756,7 @@ def main(holder: Holder) -> None:
 
 				elif event.type == sdl3.SDL_EVENT_WINDOW_SHOWN:
 					focused = True
+					gui.lowered = False
 					gui.request_tracklist_redraw()
 					gui.request_frame()
 
@@ -66785,6 +66788,7 @@ def main(holder: Holder) -> None:
 		#         tauon.thread_manager.wake()
 		if gui.lowered:
 			gui.update = False
+			gui.level_update = False
 		# ----------------
 		# This section decides whether this iteration runs the full frame body.
 		# run_frame is recomputed from scratch every pass; anything that wants
@@ -66927,7 +66931,7 @@ def main(holder: Holder) -> None:
 
 		# Keep the scrolling spectrogram rendering every frame; the central
 		# pacer holds that at the display refresh rate.
-		if gui.spectrogram_in_widget \
+		if gui.spectrogram_in_widget and not gui.lowered \
 				and pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM):
 			gui.request_frame()
 			run_frame = True
@@ -71181,9 +71185,9 @@ def main(holder: Holder) -> None:
 			gui.request_tracklist_redraw()
 			gui.request_frame()
 
-		# Save power if the window is minimized
+		# Save power while out of sight; wake() cuts the wait short for D-Bus calls
 		if gui.lowered:
-			time.sleep(0.2)
+			tauon_native.wait_for_event(200)
 
 	# Send scrobble if pending
 	if tauon.lfm_scrobbler.queue and not tauon.lfm_scrobbler.running:
