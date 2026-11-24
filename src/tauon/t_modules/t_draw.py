@@ -176,6 +176,7 @@ class TDraw:
 		self.was_truncated = False
 
 		self._locate_cache: dict[tuple[str, int], Pango.Layout] = {}
+		self._geometry_layout: Pango.Layout | None = None
 
 	def load_image(self, g: BytesIO) -> ImageData:
 		with Image.open(g) as image:
@@ -873,6 +874,51 @@ class TDraw:
 			if not iterator.next_line():
 				break
 		return lines
+
+	def wrapped_text_geometry(
+		self, text: str, font: int, max_w: int, centre: bool, offsets: list[int],
+	) -> tuple[list[tuple[int, int, int, int]], list[tuple[int, float]]] | None:
+		"""Layout of text drawn by text() with align 4 or 5 and width max_w.
+
+		Returns rows as (top, bottom, left, right) and, for each character
+		offset, (row, x). All relative to the location given to text().
+		"""
+		if font not in self.f_dict:
+			return None
+		if self._geometry_layout is None:
+			self._geometry_layout = PangoCairo.create_layout(self.context)
+		layout = self._geometry_layout
+		# Same settings as the wrapped path of __draw_text_cairo
+		layout.set_auto_dir(False)
+		layout.set_font_description(self._font_description(font))
+		layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+		layout.set_ellipsize(Pango.EllipsizeMode.NONE)
+		layout.set_alignment(Pango.Alignment.CENTER if centre else Pango.Alignment.LEFT)
+		layout.set_width(round(max_w + 12) * Pango.SCALE)
+		layout.set_height(-1)
+		layout.set_text(text.encode("utf-8", "replace").decode(), -1)
+		y_off = round(round(layout.get_baseline() / 1000) - 13 * self.scale)
+
+		rows = []
+		iterator = layout.get_iter()
+		while True:
+			logical = iterator.get_line_extents()[1]
+			rows.append((
+				round(logical.y / Pango.SCALE) - y_off,
+				round((logical.y + logical.height) / Pango.SCALE) - y_off,
+				round(logical.x / Pango.SCALE),
+				round((logical.x + logical.width) / Pango.SCALE),
+			))
+			if not iterator.next_line():
+				break
+
+		positions = []
+		for offset in offsets:
+			index = len(text[:offset].encode("utf-8", "replace"))
+			row = layout.index_to_line_x(index, False)[0]
+			x = layout.index_to_pos(index).x / Pango.SCALE
+			positions.append((min(max(row, 0), len(rows) - 1), x))
+		return rows, positions
 
 	def measure_and_locate(self, text: str, font: int, x_pixels: float, y_pixels: float = 0) -> tuple[float, int, bool]:
 		"""this function is 100% Genuine Slop™

@@ -259,10 +259,13 @@ from tauon.t_modules.t_locale import get_translation_languages  # noqa: E402
 from tauon.t_modules.t_gallery_prefetch import GalleryPrefetch, album_is_singles, locate_scroll  # noqa: E402
 from tauon.t_modules.t_net_art import PENDING, NetArtFetcher, read_body, wants_net_art  # noqa: E402
 from tauon.t_modules.t_lyric_variants import (  # noqa: E402
+	LRC_WORD_STAMP_RE,
 	LyricVariant,
 	choose_variant,
 	merge_variants,
-	parse_lrc,
+	LyricWord,
+	estimate_words,
+	parse_lrc_lines,
 	read_embedded_variants,
 	scan_sidecar_variants,
 )
@@ -2800,7 +2803,10 @@ class PlayerCtl:
 		self.playing_time: float = 0
 		self.playback_speed_supported: bool = False
 		self.playback_tempo_supported: bool = False
-		self.last_real_position: float = 0
+		# Output delay from what phazor hands over to what's heard, in seconds
+		self.output_latency: float = 0.0
+		# Track position being heard now, or None; set by the phazor player
+		self.read_heard_time: Callable[[], float | None] = lambda: None
 		self.playlist_playing_position: int = self.bag.playlist_playing  # track in playlist that is playing
 		if self.playlist_playing_position is None:
 			self.playlist_playing_position = -1
@@ -9725,6 +9731,15 @@ class Tauon:
 		self.prefs.lyrics_centre ^= True
 		self.tauon_lyrics_relayout()
 
+	def set_lyrics_word_style(self, style: str) -> None:
+		if style in LYRICS_WORD_STYLES:
+			self.prefs.lyrics_word_style = style
+			self.gui.request_frame()
+
+	def toggle_lyrics_word_estimate(self, _ref: object = None) -> None:
+		self.prefs.lyrics_word_estimate ^= True
+		self.gui.request_frame()
+
 	def prime_fonts(self) -> None:
 		self.lyric_fonts.clear()
 		standard_font = self.prefs.linux_font
@@ -9806,13 +9821,19 @@ class Tauon:
 		self.touch_input_tracker.Q_halfheight = round(qh/2)
 		# touch input tracker is pretty low level so this keeps it from jumping the gun
 
+	def get_heard_time(self) -> float:
+		"""Track position being heard now."""
+		heard = self.pctl.read_heard_time() if self.prefs.backend == Backend.PHAZOR else None
+		if heard is None:
+			# decode_time is what phazor has handed to the output, not yet heard
+			heard = self.pctl.decode_time
+			if self.pctl.playing_state == PlayingState.PLAYING:
+				heard -= self.pctl.output_latency
+		return max(0.0, heard)
+
 	def get_real_time(self) -> float:
-		offset = self.pctl.decode_time - (self.prefs.sync_lyrics_time_offset / 1000)
-		if self.prefs.backend == Backend.PHAZOR:
-			offset -= (self.prefs.device_buffer - 120) / 1000
-		elif self.prefs.backend == Backend.GSTREAMER:
-			offset += 0.1
-		return max(0, offset)
+		"""Playback time for lyrics: what is being heard, plus the user's sync offset."""
+		return max(0, self.get_heard_time() - self.prefs.sync_lyrics_time_offset / 1000)
 
 	def draw_internal_link(self, x: int, y: int, text: str, colour: ColourRGBA, font: int) -> bool:
 		tweak = font
@@ -22919,6 +22940,8 @@ class Tauon:
 			prefs.lyrics_text_size,  # 214
 			prefs.lyrics_centre,  # 215
 			prefs.smooth_progress,  # 216
+			prefs.lyrics_word_style,  # 217
+			prefs.lyrics_word_estimate,  # 218
 		]
 
 		for slot, value in db_snapshot.items():
@@ -25514,6 +25537,7 @@ class DropShadow:
 
 def strip_lrc_formatting(lyrics: str) -> str:
 	text = ""
+	lyrics = LRC_WORD_STAMP_RE.sub("", lyrics)
 	for line in lyrics.split("\n"):
 		if len(line) < 10 or (line[0] != "[" or (line[9] != "]" and ":" not in line)) or "." not in line:
 			text += line + "\n"
@@ -25616,7 +25640,7 @@ class TimedLyricsToStatic:
 			if len(line) < 10:
 				continue
 
-			text += line.split("]")[-1].rstrip("\n") + "\n"
+			text += LRC_WORD_STAMP_RE.sub("", line.split("]")[-1]).rstrip("\n") + "\n"
 
 		self.cache_lyrics = text
 		self.cache_key = track
@@ -25644,6 +25668,12 @@ class TimedLyricsRen:
 		self.ready = False
 		self.data = []
 		self.line_heights: list[int] = []
+		# Word stamps per line (empty when a line has none), estimates made on
+		# demand, and word positions for the current layout
+		self.words: list[list[LyricWord]] = []
+		self.estimated: dict[int, list[LyricWord]] = {}
+		self.word_spans: dict[tuple, tuple[list, list[tuple[int, float, float]]] | None] = {}
+		self.word_layout_key: tuple | None = None
 
 		self.scroll_position: int = 0
 
@@ -25663,6 +25693,9 @@ class TimedLyricsRen:
 		self.index = track.index
 		self.scroll_position = 0
 		self.data.clear()
+		self.words = []
+		self.estimated = {}
+		self.word_spans = {}
 		self.temp_scale = self.gui.scale
 
 		data = self.tauon.lyric_variants.synced_lines(track)
@@ -25670,10 +25703,13 @@ class TimedLyricsRen:
 			return None
 
 		try:
-			self.data = parse_lrc(data)
+			lines = parse_lrc_lines(data)
+			self.data = [(line.time, line.text) for line in lines]
+			self.words = [line.words for line in lines]
 		except Exception:
 			logging.exception("Failed generating timed lyrics")
 			self.data = []
+			self.words = []
 		if not self.data:
 			return None
 		self.line_heights = []
@@ -25682,6 +25718,129 @@ class TimedLyricsRen:
 
 		self.ready = True
 		return True
+
+	def falls_back_to_lines(self) -> bool:
+		"""Word highlighting is chosen but this track only gets whole lines."""
+		return (
+			self.ready and self.prefs.lyrics_word_style != "line"
+			and not self.prefs.lyrics_word_estimate and not any(self.words))
+
+	def line_words(self, i: int) -> list[LyricWord]:
+		"""Words to highlight in line i; empty means highlight the whole line."""
+		if self.prefs.lyrics_word_style not in ("step", "sweep") or not 0 <= i < len(self.data):
+			return []
+		if i < len(self.words) and self.words[i]:
+			return self.words[i]
+		if not self.prefs.lyrics_word_estimate:
+			return []
+		words = self.estimated.get(i)
+		if words is None:
+			next_time = self.data[i + 1][0] if i + 1 < len(self.data) else None
+			words = estimate_words(self.data[i][1], self.data[i][0], next_time)
+			self.estimated[i] = words
+		return words
+
+	def get_word_spans(
+		self, i: int, text: str, words: list[LyricWord], font: int, max_w: int,
+	) -> tuple[list[tuple[int, int, int, int]], list[tuple[int, float, float]]] | None:
+		"""The line's rows, and (row, left, right) per word, relative to its draw location.
+		Edges reach halfway into the spaces between words, so the highlight
+		edge never lands on a glyph."""
+		key = (i, tuple((word.first, word.last) for word in words))
+		if key in self.word_spans:
+			return self.word_spans[key]
+		offsets = [o for word in words for o in (word.first, word.last)]
+		geometry = self.ddt.wrapped_text_geometry(text, font, max_w, self.prefs.lyrics_centre, offsets)
+		spans = None
+		if geometry is not None:
+			rows, positions = geometry
+			spans = []
+			for k in range(len(words)):
+				row, left = positions[k * 2]
+				end_row, right = positions[k * 2 + 1]
+				if end_row != row or right < left:
+					right = rows[row][3]
+				if k and positions[k * 2 - 1][0] == row and positions[k * 2 - 1][1] <= left:
+					left = (left + positions[k * 2 - 1][1]) / 2
+				elif left <= rows[row][2] + 1:
+					left = float(rows[row][2])
+				if k + 1 < len(words) and positions[k * 2 + 2][0] == row and positions[k * 2 + 2][1] >= right:
+					right = (right + positions[k * 2 + 2][1]) / 2
+				else:
+					right = float(rows[row][3])
+				spans.append((row, left, right))
+			spans = (rows, spans)
+		self.word_spans[key] = spans
+		return spans
+
+	def draw_word_line(
+		self, location: list[int], text: str, words: list[LyricWord], i: int, t: float,
+		font: int, allowed_width: int, bg: ColourRGBA,
+	) -> bool:
+		"""Draw the active line with sung words in the active colour. False if
+		the layout couldn't be measured, so the caller draws a plain line."""
+		layout = self.get_word_spans(i, text, words, font, location[3])
+		if layout is None:
+			return False
+		rows, spans = layout
+
+		k = -1
+		for n, word in enumerate(words):
+			if word.start <= t:
+				k = n
+		if k < 0:
+			# Nothing sung yet: split before the first word
+			row, split = spans[0][0], spans[0][1]
+		else:
+			word = words[k]
+			progress = 1.0
+			if self.prefs.lyrics_word_style == "sweep" and word.end is not None and word.end > word.start:
+				progress = min(1.0, max(0.0, (t - word.start) / (word.end - word.start)))
+			row, left, right = spans[k]
+			split = left + (right - left) * progress
+
+		renderer = self.tauon.renderer
+		old_clip = sdl3.get_render_clip_rect(renderer)
+		if old_clip is None:
+			outer = (0, 0, self.window_size[0], self.window_size[1])
+		else:
+			outer = (old_clip.x, old_clip.y, old_clip.w, old_clip.h)
+		ox, oy, ow, oh = outer
+		x0, y0 = location[0], location[1]
+		band_top = oy if row == 0 else max(oy, y0 + rows[row][0])
+		band_bottom = oy + oh if row == len(rows) - 1 else min(oy + oh, y0 + rows[row + 1][0])
+		sx = min(ox + ow, max(ox, round(x0 + split)))
+
+		sung = self.colours.active_lyric
+		unsung = self.colours.lyrics
+		parts = (
+			(sung, (ox, oy, ow, band_top - oy)),                         # rows above
+			(sung, (ox, band_top, sx - ox, band_bottom - band_top)),     # sung part of the row
+			(unsung, (sx, band_top, ox + ow - sx, band_bottom - band_top)),
+			(unsung, (ox, band_bottom, ow, oy + oh - band_bottom)),      # rows below, translations
+		)
+		try:
+			for colour, (cx, cy, cw, ch) in parts:
+				if cw <= 0 or ch <= 0:
+					continue
+				sdl3.set_render_clip_rect(renderer, sdl3.Rect(round(cx), round(cy), round(cw), round(ch)))
+				self.ddt.text(location, text, colour, font, allowed_width, bg)
+		finally:
+			sdl3.set_render_clip_rect(renderer, old_clip)
+		return True
+
+	def word_wake(self, words: list[LyricWord], t: float) -> None:
+		"""Schedule the next redraw the word highlight needs."""
+		if self.pctl.playing_state != PlayingState.PLAYING:
+			return
+		for word in words:
+			if word.start > t:
+				if not self.pctl.wake_past_time or word.start < self.pctl.wake_past_time:
+					self.pctl.wake_past_time = word.start
+				return
+			if self.prefs.lyrics_word_style == "sweep" and word.end is not None and t < word.end:
+				self.gui.request_frame()
+				return
 
 	def render(self, index: int, x: int, y: int, side_panel: bool = False, w: int = 0, h: int = 0) -> bool | None:
 		if index != self.index or self.lrm.to_reload:
@@ -25713,10 +25872,17 @@ class TimedLyricsRen:
 			reserved = switcher.begin(
 				self.pctl.master_library[index], (self.gui.rsp_x, y, self.gui.rspw, h), True, bg,
 				inset_right=5 * self.gui.scale)
-			if reserved:
-				# Keep scrolling lines out from under the chips
-				clip = sdl3.Rect(round(self.gui.rsp_x), round(y + reserved), round(self.gui.rspw), max(1, round(h - reserved)))  # noqa: RUF057
-				sdl3.set_render_clip_rect(self.tauon.renderer, clip)
+			# Keep lines inside the panel. They scroll up behind the chips, which
+			# draw on top, so there's no band cutting them off below the chips
+			outer_clip = sdl3.get_render_clip_rect(self.tauon.renderer)
+			left, top = round(self.gui.rsp_x), round(y)
+			right, bottom = left + round(self.gui.rspw), top + max(1, round(h))
+			if outer_clip is not None:
+				left, top = max(left, outer_clip.x), max(top, outer_clip.y)
+				right = min(right, outer_clip.x + outer_clip.w)
+				bottom = min(bottom, outer_clip.y + outer_clip.h)
+			sdl3.set_render_clip_rect(self.tauon.renderer, sdl3.Rect(left, top, max(1, right - left), max(1, bottom - top)))
+			# Resting position starts below the chips
 			y += max(25 * self.gui.scale, reserved)
 			y_center = y + (h/2) - (spacing)
 			allowed_width = round(w - 20 * self.gui.scale)
@@ -25734,12 +25900,12 @@ class TimedLyricsRen:
 			self.scroll_position = scroll_to
 
 
+		test_time = self.tauon.get_real_time()
 		if self.teleport_line:
 			line_active = self.teleport_line
 			self.teleport_line = None
 		else:
 			# determine active lyric
-			test_time = self.tauon.get_real_time()
 			if self.pctl.track_queue[self.pctl.queue_step] == index:
 				for i, line in enumerate(self.data):
 					if line[0] <= test_time:
@@ -25763,6 +25929,11 @@ class TimedLyricsRen:
 			self.temp_w = w
 			self.temp_side_panel = side_panel
 			self.temp_font = font_size
+
+		word_layout_key = (font_size, allowed_width, self.prefs.lyrics_centre, self.gui.scale)
+		if word_layout_key != self.word_layout_key:
+			self.word_layout_key = word_layout_key
+			self.word_spans = {}
 
 		# don't autoscroll if the new active line is not visible
 		if ( self.scroll_position > h/2 or self.scroll_position < -h/2 ) and self.temp_line != line_active:
@@ -25815,7 +25986,11 @@ class TimedLyricsRen:
 				text = line[1]
 				if text.rstrip() == "":
 					text = "♪♪♪"
-				line_h = self.ddt.text(location, text, colour, font_size, allowed_width, bg)
+				words = self.line_words(i) if i == line_active and highlight else []
+				if not words or not self.draw_word_line(location, text, words, i, test_time, font_size, allowed_width, bg):
+					self.ddt.text(location, text, colour, font_size, allowed_width, bg)
+				if words:
+					self.word_wake(words, test_time)
 
 				collider = [ round(x), round(possible_y - spacing/2), allowed_width, self.line_heights[i] ]
 				association = collider, line, i
@@ -25835,13 +26010,13 @@ class TimedLyricsRen:
 					break
 
 		if side_panel:
-			if reserved:
-				sdl3.set_render_clip_rect(self.tauon.renderer, None)
+			sdl3.set_render_clip_rect(self.tauon.renderer, outer_clip)
 			switcher.end()
 		return None
 
 LYRICS_TEXT_SIZE_MIN = -4
 LYRICS_TEXT_SIZE_MAX = 9  # Keeps "+9" within the menu stepper's fixed number box
+LYRICS_WORD_STYLES = ("line", "step", "sweep")
 
 
 class LyricVariantStore:
@@ -50373,7 +50548,8 @@ class MetaBox:
 		# lines would show through the album art box
 		# The annotations say int, but the panel geometry arrives scaled
 		# (gui.rspw is a float), so these do need rounding
-		clip = sdl3.Rect(round(x), round(y + reserved), round(w), max(1, round(h - reserved)))  # noqa: RUF057
+		# Clip at the panel top, not below the chips: lines scroll up behind them
+		clip = sdl3.Rect(round(x), round(y), round(w), max(1, round(h)))  # noqa: RUF057
 		sdl3.set_render_clip_rect(self.tauon.renderer, clip)
 		self.lyrics_ren_mini.render(
 			self.pctl.track_queue[self.pctl.queue_step], x + margin,
@@ -57179,7 +57355,8 @@ class TimedLyricsEdit:
 		self.queue_next_frame = True
 
 	def time_next_line(self, current: bool = False) -> None:
-		time = self.pctl.decode_time
+		# Stamp what's being heard as the key is pressed
+		time = self.tauon.get_heard_time()
 		if current:
 			self.alted = True
 		if (int(self.structure[self.line_active][1] < 0 or self.structure[self.line_active][1] > time) + int(current) == 1) and self.structure[self.line_active][0] != "tag":
@@ -61678,7 +61855,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 82
+	latest_db_version: float = 83
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -62394,6 +62571,10 @@ def main(holder: Holder) -> None:
 				prefs.lyrics_centre = save[215]
 			if len(save) > 216 and save[216] is not None:
 				prefs.smooth_progress = save[216]
+			if len(save) > 217 and save[217] in LYRICS_WORD_STYLES:
+				prefs.lyrics_word_style = save[217]
+			if len(save) > 218 and save[218] is not None:
+				prefs.lyrics_word_estimate = save[218]
 
 			del save
 			state_loaded = True
@@ -63350,6 +63531,22 @@ def main(holder: Holder) -> None:
 			lambda _ref=None: tauon.lyrics_text_size_step(-1), lambda _ref=None: tauon.lyrics_text_size_step(1))
 		menu.add(MenuItem(_("Centre Lyrics"), tauon.toggle_lyrics_centre, pass_ref=True, check_test=lambda: tauon.prefs.lyrics_centre))
 
+	def add_word_sync_sub(menu: Menu) -> None:
+		"""Word-by-word highlighting for synced lyrics"""
+		sub = menu.sub_number
+		menu.add_sub(_("Word Sync…"), 190)
+		timed = tauon.timed_lyrics_ren
+		for style, label in (("line", _("By Line")), ("step", _("Word Step")), ("sweep", _("Word Sweep"))):
+			menu.add_to_sub(sub, MenuItem(
+				label, lambda s=style: tauon.set_lyrics_word_style(s), no_exit=True,
+				check_test=lambda s=style: tauon.prefs.lyrics_word_style == s,
+				# Grey fill: this track falls back to whole lines
+				check_secondary_test=timed.falls_back_to_lines if style == "line" else None))
+		menu.add_to_sub(sub, MenuItem(
+			_("Estimate When Missing"), tauon.toggle_lyrics_word_estimate, no_exit=True,
+			check_test=lambda: tauon.prefs.lyrics_word_estimate,
+			disable_test=lambda: tauon.prefs.lyrics_word_style == "line"))
+
 	def add_showcase_lyrics_items(menu: Menu) -> None:
 		"""Add the shared lyrics items (fresh MenuItems per menu)"""
 		menu.add(MenuItem(_("Search for Lyrics"), tauon.get_lyric_wiki, tauon.search_lyrics_deco, pass_ref=True, pass_ref_deco=True))
@@ -63362,6 +63559,7 @@ def main(holder: Holder) -> None:
 		menu.add(MenuItem(_("Prefer Synced"), tauon.toggle_synced_lyrics, tauon.toggle_synced_lyrics_deco, pass_ref=True, pass_ref_deco=True,
 			check_test=lambda: tauon.prefs.prefer_synced_lyrics))
 		add_lyrics_text_items(menu)
+		add_word_sync_sub(menu)
 		menu.add(MenuItem(_("Lyrics Editor"), tauon.enter_timed_lyrics_edit, tauon.edit_lyrics_deco, pass_ref=True, pass_ref_deco=True))
 		misc_sub = menu.sub_number
 		menu.add_sub(_("Misc…"), 150)

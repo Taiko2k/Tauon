@@ -340,4 +340,12 @@ def database_migrate(
 			except Exception:
 				logging.exception("Failed to add rating bindings to input.txt")
 
+	if db_version <= 82:  # noqa: PLR2004
+		logging.info("Updating database to version 83")
+		# Synced lyrics now follow what's heard, so the old -150 ms default
+		# lead just made lines early. tauon.conf stores it for everyone; drop
+		# the old default and leave other values, which were chosen.
+		if prefs.sync_lyrics_time_offset == -150:  # noqa: PLR2004
+			prefs.sync_lyrics_time_offset = 0
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

@@ -16,7 +16,7 @@ import os
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NamedTuple
 
 from tauon.t_modules.t_tagscan import lyrics_are_synced
 
@@ -46,6 +46,8 @@ LANG_TOKEN_RE = re.compile(r"^[a-z]{2,3}(?:-[a-z0-9]{2,8})*$")
 QUALIFIER_TOKEN_RE = re.compile(r"^[\w-]{1,24}$")
 LRC_STAMP_RE = re.compile(r"\[(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?\]")
 LRC_ID_TAG_RE = re.compile(r"^\[[A-Za-z#]+:.*\]$")
+# Enhanced LRC word stamp: [00:12.00]<00:12.00>Some <00:12.40>words
+LRC_WORD_STAMP_RE = re.compile(r"<(\d{1,3}):(\d{1,2})(?:[.:](\d{1,3}))?>")
 
 
 def normalize_lang(code: str | None) -> str:
@@ -232,9 +234,12 @@ def _compare_text(text: str, synced: bool = False) -> str:
 	"""Text to spot duplicates by. Synced text compares by timing and words, so
 	[00:02.00] and [00:02.000] or added ID tags still match."""
 	if synced:
-		entries = parse_lrc(text.splitlines())
+		entries = parse_lrc_lines(text.splitlines())
 		if entries:
-			return "\n".join(f"{round(stamp * 100)}|{line}" for stamp, line in entries)
+			# Word stamps count, so a word-timed copy isn't merged into a line-timed one
+			return "\n".join(
+				f"{round(entry.time * 100)}|{entry.text}|{','.join(str(round(w.start * 100)) for w in entry.words)}"
+				for entry in entries)
 	return "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
 
@@ -312,12 +317,82 @@ def _stamp_seconds(match: re.Match[str]) -> float:
 	return value
 
 
-def parse_lrc(lines: Iterable[str]) -> list[tuple[float, str]]:
-	"""(seconds, text) entries from LRC lines, sorted by time.
+class LyricWord(NamedTuple):
+	"""One timed span of a synced line. first/last are character offsets into
+	the line's text (last exclusive). end is None until it's known."""
+	start: float
+	end: float | None
+	first: int
+	last: int
+
+
+class LrcLine(NamedTuple):
+	time: float
+	text: str
+	words: list[LyricWord]  # Empty unless the line has enhanced LRC word stamps
+
+
+# Longest a final word is assumed to last when nothing marks its end
+LAST_WORD_MAX = 3.0
+
+
+def split_word_stamps(text: str, line_time: float = 0.0) -> tuple[str, list[LyricWord]]:
+	"""Strip enhanced LRC <mm:ss.xx> word stamps from a line.
+
+	Each stamp times the text up to the next stamp; text before the first stamp
+	starts at line_time. A stamp followed only by spaces just ends the previous
+	word. Returns the stripped text and its words (none if the stamps go backwards).
+	"""
+	pieces: list[tuple[float, str]] = []
+	time = line_time
+	position = 0
+	for match in LRC_WORD_STAMP_RE.finditer(text):
+		pieces.append((time, text[position:match.start()]))
+		time = _stamp_seconds(match)
+		position = match.end()
+	if not pieces:
+		return text, []
+	pieces.append((time, text[position:]))
+
+	joined = "".join(piece for _, piece in pieces)
+	clean = joined.strip()
+	offset = -(len(joined) - len(joined.lstrip()))
+	words: list[LyricWord] = []
+	for start, piece in pieces:
+		first = offset + len(piece) - len(piece.lstrip())
+		last = offset + len(piece.rstrip())
+		offset += len(piece)
+		if words:
+			if start < words[-1].start:
+				return clean, []
+			if words[-1].end is None:
+				words[-1] = words[-1]._replace(end=start)
+		if last > first:
+			words.append(LyricWord(start, None, first, last))
+	return clean, words
+
+
+def _close_last_word(words: list[LyricWord], next_time: float | None) -> list[LyricWord]:
+	"""Give an unended final word an end: about twice the line's average word,
+	stopping at the next line."""
+	if not words or words[-1].end is not None:
+		return words
+	final = words[-1]
+	timed = [w.end - w.start for w in words[:-1] if w.end is not None]
+	length = min(LAST_WORD_MAX, max(0.6, 2 * sum(timed) / len(timed))) if timed else 1.0
+	end = final.start + length
+	if next_time is not None and next_time > final.start:
+		end = min(end, next_time)
+	return [*words[:-1], final._replace(end=max(end, final.start))]
+
+
+def parse_lrc_lines(lines: Iterable[str]) -> list[LrcLine]:
+	"""Synced lines from LRC text, sorted by time.
 
 	Lines sharing a timestamp are joined into one entry, as are untimed lines
 	following a timed line, so translations and romanisations stay with their
-	original line. ID tags like [ar:...] and blank lines are skipped.
+	original line. ID tags like [ar:...] and blank lines are skipped. Word
+	stamps are taken from the first line of an entry and stripped from all.
 	"""
 	entries: list[list] = []
 	by_time: dict[float, list] = {}
@@ -335,12 +410,15 @@ def parse_lrc(lines: Iterable[str]) -> list[tuple[float, str]]:
 			stamps.append(_stamp_seconds(match))
 			position = match.end()
 		if stamps:
-			text = line[position:].strip()
+			text, words = split_word_stamps(line[position:].strip(), stamps[0])
 			last = []
 			for stamp in stamps:
 				entry = by_time.get(stamp)
 				if entry is None:
-					entry = [stamp, [text]]
+					# A repeated line's word stamps move with its line stamp
+					shift = stamp - stamps[0]
+					shifted = [w._replace(start=w.start + shift, end=None if w.end is None else w.end + shift) for w in words]
+					entry = [stamp, [text], shifted if text else []]
 					by_time[stamp] = entry
 					entries.append(entry)
 				elif text:
@@ -350,9 +428,52 @@ def parse_lrc(lines: Iterable[str]) -> list[tuple[float, str]]:
 		if LRC_ID_TAG_RE.match(line):
 			last = []
 			continue
+		text = split_word_stamps(line)[0]
 		for entry in last:
-			entry[1].append(line)
+			entry[1].append(text)
 
 	entries.sort(key=lambda entry: entry[0])
-	return [(stamp, "\n".join(part for part in texts if part)) for stamp, texts in entries]
+	result: list[LrcLine] = []
+	for i, (stamp, texts, words) in enumerate(entries):
+		next_time = entries[i + 1][0] if i + 1 < len(entries) else None
+		# The first text leads the joined text, so word offsets still hold
+		text = "\n".join(part for part in texts if part)
+		result.append(LrcLine(stamp, text, _close_last_word(words, next_time) if texts[0] else []))
+	return result
+
+
+def parse_lrc(lines: Iterable[str]) -> list[tuple[float, str]]:
+	"""(seconds, text) entries from LRC lines, sorted by time. See parse_lrc_lines."""
+	return [(line.time, line.text) for line in parse_lrc_lines(lines)]
+
+
+# Scripts written without spaces between words; each character is timed alone
+UNSPACED_CHAR = "぀-ヿ㐀-䶿一-鿿豈-﫿"
+ESTIMATE_TOKEN_RE = re.compile(rf"[{UNSPACED_CHAR}]|[^\s{UNSPACED_CHAR}]+")
+# Seconds per character when spreading a line over its words
+ESTIMATE_CHAR_TIME = 0.09
+
+
+def estimate_words(text: str, start: float, next_time: float | None) -> list[LyricWord]:
+	"""Guess word timing for a line that only has a line stamp.
+
+	Words share the line's time by length. The line is assumed to take up most
+	of the gap to the next line, but no longer than a typical singing pace.
+	Only the first text line is timed, so translations below stay unswept.
+	"""
+	first_line = text.split("\n", 1)[0]
+	tokens = list(ESTIMATE_TOKEN_RE.finditer(first_line))
+	if not tokens:
+		return []
+	weights = [len(token.group()) + 1 for token in tokens]
+	total = sum(weights)
+	gap = next_time - start if next_time is not None and next_time > start else 4.0
+	span = min(gap * 0.85, max(1.0, total * ESTIMATE_CHAR_TIME))
+	words: list[LyricWord] = []
+	time = start
+	for token, weight in zip(tokens, weights, strict=True):
+		end = time + span * weight / total
+		words.append(LyricWord(time, end, token.start(), token.end()))
+		time = end
+	return words
 

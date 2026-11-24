@@ -227,7 +227,9 @@ class Prefs:
 	lyrics_language: str = ""  # Key of the last lyric variant picked in the switcher
 	lyrics_text_size: int = 0  # Points added to the lyrics fonts
 	lyrics_centre: bool = False
-	sync_lyrics_time_offset: int = -150  # in milliseconds
+	lyrics_word_style: str = "line"  # Synced lyrics highlight: "line", "step" or "sweep"
+	lyrics_word_estimate: bool = False  # Guess word timing for lines without word stamps
+	sync_lyrics_time_offset: int = 0  # In milliseconds, on top of the measured output latency
 
 	playback_follow_cursor: bool = False
 

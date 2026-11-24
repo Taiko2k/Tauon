@@ -271,6 +271,10 @@ static int frames_to_ms(int frames) {
 }
 int reset_set_value = 0;
 int reset_set_byte = 0;
+// Set when a frame read applies reset_set_value, so get_audio can split its
+// heard-position record at that frame
+bool heard_reset_hit = false;
+int heard_reset_to = 0;
 
 int rg_byte = 0;
 float rg_value_pending = 1.0;
@@ -3622,6 +3626,8 @@ static void ring_peek(float *frame, uint16_t *mask) {
 	if (reset_set && reset_set_byte == low) {
 		reset_set = false;
 		position_count = reset_set_value;
+		heard_reset_hit = true;
+		heard_reset_to = reset_set_value;
 	}
 	rg_update_boundary();
 	for (int c = 0; c < PCM_SPEAKERS; c++) frame[c] = pcm_buffer[c][low];
@@ -3726,11 +3732,52 @@ static bool read_playback_frame(float *frame, uint16_t *mask) {
 	}
 }
 
+// Heard position. Each output callback sets callback_present_ns to when the
+// first frame it asks for will reach the listener; get_audio records that
+// against the positions it played, so get_heard_position_ms() can say what is
+// audible at any moment, between callbacks too.
+typedef struct {
+	int64_t start_ns;  // first recorded frame heard
+	int64_t end_ns;    // last recorded frame finished
+	int pos_start;
+	int pos_end;
+} heard_anchor;
+#define HEARD_ANCHORS 32
+static heard_anchor heard_ring[HEARD_ANCHORS];
+static int heard_next = 0;
+static int heard_count = 0;
+static int64_t callback_present_ns = 0;          // Output thread only
+static volatile int64_t output_latency_ns = -1;  // Callback to heard, for reporting
+
+static inline int64_t mono_ns(void) {
+	struct timespec ts;
+	clock_gettime(CLOCK_MONOTONIC, &ts);
+	return (int64_t) ts.tv_sec * 1000000000LL + ts.tv_nsec;
+}
+
+// Under buffer_lock. Output frames [out_start, out_end) of this callback played
+// positions pos_start to pos_end.
+static void heard_note(int out_start, int out_end, int pos_start, int pos_end) {
+	if (callback_present_ns == 0 || out_end <= out_start || current_sample_rate <= 0) return;
+	double frame_ns = 1e9 / current_sample_rate;
+	// Frames held by the tempo stage were counted but aren't in this output
+	int held = tempo_engaged ? tempo_lookahead(&tempo) : 0;
+	heard_anchor *a = &heard_ring[heard_next];
+	a->start_ns = callback_present_ns + (int64_t) (out_start * frame_ns);
+	a->end_ns = callback_present_ns + (int64_t) (out_end * frame_ns);
+	a->pos_start = pos_start - held;
+	a->pos_end = pos_end - held;
+	heard_next = (heard_next + 1) % HEARD_ANCHORS;
+	if (heard_count < HEARD_ANCHORS) heard_count++;
+}
+
 int get_audio(int max_frames, float* buff) {
 		if (max_frames <= 0) return 0;
 		int b = 0;
 
 		buffer_lock();
+		int heard_out_start = 0;
+		int heard_pos_start = position_count;
 		int channels = output_mixer.channels;
 		memset(buff, 0, max_frames * channels * sizeof(float));
 		if (mode == RAMP_DOWN && (pre_roll_waiting_format || pre_roll_remaining > 0)) {
@@ -3745,6 +3792,7 @@ int get_audio(int max_frames, float* buff) {
 			}
 			b = pre_roll_remaining < max_frames ? (int) pre_roll_remaining : max_frames;
 			pre_roll_remaining -= b;
+			heard_out_start = b;
 			if (b == max_frames) {
 				buffer_unlock();
 				return max_frames;
@@ -3832,7 +3880,15 @@ int get_audio(int max_frames, float* buff) {
 
 				float frame[PCM_SPEAKERS];
 				uint16_t mask;
+				int pos_before = position_count;
+				heard_reset_hit = false;
 				if (!read_playback_frame(frame, &mask)) break;
+				if (heard_reset_hit) {
+					// Seek or track change lands on this frame
+					heard_note(heard_out_start, b, heard_pos_start, pos_before);
+					heard_out_start = b;
+					heard_pos_start = heard_reset_to;
+				}
 				playing_mask = mask;
 				for (int c = 0; c < PCM_SPEAKERS; c++) source_peaks[c] = fmaxf(source_peaks[c], fabsf(frame[c]));
 
@@ -3894,6 +3950,7 @@ int get_audio(int max_frames, float* buff) {
 
 
 			if (b > 0) {
+				heard_note(heard_out_start, b, heard_pos_start, position_count);
 				if (peak_roll_l > peak_l) peak_l = peak_roll_l;
 				if (peak_roll_r > peak_r) peak_r = peak_roll_r;
 				if (mode == PLAYING && b < max_frames) {
@@ -3928,8 +3985,28 @@ int get_audio(int max_frames, float* buff) {
 			return;
 
 		struct pw_time time;
-		if (pw_stream_get_time_n(global_stream, &time, sizeof(time)) == 0 && time.rate.num == 1 && time.rate.denom > 0) {
+		spa_zero(time);
+		bool timed = pw_stream_get_time_n(global_stream, &time, sizeof(time)) == 0 && time.rate.num == 1 && time.rate.denom > 0;
+		if (timed) {
 			device_rate = (int) time.rate.denom;
+		}
+		// When this buffer's first frame is heard: the graph's delay to the
+		// device (filters included) from the cycle time, then what is already
+		// queued in the stream and held in its resampler, at our rate
+		int64_t now = mono_ns();
+		if (timed && time.now > 0 && sample_rate_out > 0) {
+			int64_t delay_ns = time.delay * 1000000000LL / time.rate.denom;
+			int64_t waiting = (int64_t) time.queued;
+			#if PW_CHECK_VERSION(0, 3, 50)
+				waiting += (int64_t) time.buffered;
+			#endif
+			int64_t present = time.now + delay_ns + waiting * 1000000000LL / sample_rate_out;
+			// A report from an earlier cycle can trail now; don't place it before now
+			if (present < now) present = now;
+			callback_present_ns = present;
+			output_latency_ns = present - now;
+		} else {
+			callback_present_ns = 0;
 		}
 
 		buf = buffer->buffer;
@@ -4238,7 +4315,14 @@ int get_audio(int max_frames, float* buff) {
 #endif
 
 #ifdef MINI
+	// Callback to heard, worked out off the audio thread (see mini_refresh_latency)
+	static volatile int64_t mini_latency_ns = -1;
+	static int64_t mini_latency_checked_ns = 0;
+
 	void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
+		int64_t latency = mini_latency_ns;
+		callback_present_ns = latency >= 0 ? mono_ns() + latency : 0;
+		output_latency_ns = latency;
 		get_audio(frameCount, pOutput);
 		//if (0 < b && b < frameCount) log_msg(LOG_INFO, "ph: Buffer underrun");
 	}
@@ -4272,6 +4356,73 @@ int get_audio(int max_frames, float* buff) {
 	void my_log_callback(void* pUserData, ma_uint32 level, const char* pMessage) {
 		log_msg(LOG_INFO, "Log [%u]: %s", level, pMessage);
 		// Additional logic for handling log messages can be added here
+	}
+
+	#if defined(MA_HAS_COREAUDIO)
+	// Frames from the IOProc to the listener, as the device reports them: the IO
+	// buffer, the safety offset, the device's own latency (large on Bluetooth)
+	// and its output stream's. -1 if the device won't say.
+	static int64_t coreaudio_latency_ns(void) {
+		ma_AudioObjectGetPropertyData_proc get = (ma_AudioObjectGetPropertyData_proc) context.coreaudio.AudioObjectGetPropertyData;
+		ma_AudioObjectGetPropertyDataSize_proc get_size = (ma_AudioObjectGetPropertyDataSize_proc) context.coreaudio.AudioObjectGetPropertyDataSize;
+		AudioObjectID id = (AudioObjectID) device.coreaudio.deviceObjectIDPlayback;
+		if (get == NULL || id == 0) return -1;
+
+		AudioObjectPropertyAddress prop = {0, kAudioObjectPropertyScopeOutput, AUDIO_OBJECT_PROPERTY_ELEMENT};
+		const AudioObjectPropertySelector parts[] = {
+			kAudioDevicePropertyBufferFrameSize, kAudioDevicePropertySafetyOffset, kAudioDevicePropertyLatency,
+		};
+		UInt32 frames = 0;
+		for (size_t i = 0; i < sizeof(parts) / sizeof(parts[0]); i++) {
+			UInt32 value = 0;
+			UInt32 size = sizeof(value);
+			prop.mSelector = parts[i];
+			if (get(id, &prop, 0, NULL, &size, &value) != noErr) {
+				if (parts[i] == kAudioDevicePropertyBufferFrameSize) return -1;
+				continue;
+			}
+			frames += value;
+		}
+
+		prop.mSelector = kAudioDevicePropertyStreams;
+		UInt32 size = 0;
+		if (get_size != NULL && get_size(id, &prop, 0, NULL, &size) == noErr && size >= sizeof(AudioStreamID)) {
+			AudioStreamID streams[16];
+			if (size > sizeof(streams)) size = sizeof(streams);
+			if (get(id, &prop, 0, NULL, &size, streams) == noErr && size >= sizeof(AudioStreamID)) {
+				AudioObjectPropertyAddress stream_prop = {kAudioStreamPropertyLatency, kAudioObjectPropertyScopeGlobal, AUDIO_OBJECT_PROPERTY_ELEMENT};
+				UInt32 value = 0;
+				UInt32 value_size = sizeof(value);
+				if (get(streams[0], &stream_prop, 0, NULL, &value_size, &value) == noErr) frames += value;
+			}
+		}
+
+		Float64 rate = 0;
+		prop.mSelector = kAudioDevicePropertyNominalSampleRate;
+		prop.mScope = kAudioObjectPropertyScopeGlobal;
+		size = sizeof(rate);
+		if (get(id, &prop, 0, NULL, &size, &rate) != noErr || rate <= 0) rate = device.playback.internalSampleRate;
+		if (rate <= 0) return -1;
+		return (int64_t) (frames * 1e9 / rate);
+	}
+	#endif
+
+	// Not called from the audio thread: CoreAudio queries can block
+	static void mini_refresh_latency(void) {
+		if (ma_device_get_state(&device) == ma_device_state_uninitialized) return;
+		int64_t latency = -1;
+		#if defined(MA_HAS_COREAUDIO)
+			if (device.pContext != NULL && device.pContext->backend == ma_backend_coreaudio) latency = coreaudio_latency_ns();
+		#endif
+		if (latency < 0) {
+			// Other backends don't report it. Data handed over waits behind the
+			// rest of the device buffer, so take the whole buffer as the estimate.
+			ma_uint32 rate = device.playback.internalSampleRate;
+			ma_uint32 frames = device.playback.internalPeriodSizeInFrames * device.playback.internalPeriods;
+			if (rate > 0 && frames > 0) latency = (int64_t) ((double) frames * 1e9 / rate);
+		}
+		mini_latency_ns = latency;
+		mini_latency_checked_ns = mono_ns();
 	}
 #endif
 
@@ -4631,6 +4782,9 @@ void connect_pulse() {
 		config.notificationCallback = notification_callback;
 		config.periodSizeInMilliseconds      = config_dev_buffer / 4;
 		config.periods      = 4;   //
+		// Fill exactly what the backend asks for. A fixed-size callback goes
+		// through an extra buffer whose fill would add to the latency unseen.
+		config.noFixedSizedCallback = MA_TRUE;
 
 		ma_result result;
 		ma_channel stereo_map[2] = {MA_CHANNEL_FRONT_LEFT, MA_CHANNEL_FRONT_RIGHT};
@@ -4675,6 +4829,8 @@ void connect_pulse() {
 		sample_rate_out = device.sampleRate;
 		device_rate = (int) device.playback.internalSampleRate;
 		mini_requested_rate = sample_rate_src;
+		mini_refresh_latency();
+		log_msg(LOG_INFO, "ph: Output latency %.1f ms", mini_latency_ns >= 0 ? mini_latency_ns / 1e6 : -1.0);
 	#endif
 
 	#ifdef PIPE
@@ -6687,6 +6843,49 @@ EXPORT int get_position_ms() {
 		if (heard < 0) heard = 0;
 		return (int) ((heard / (float) current_sample_rate) * 1000.0);
 	} else return 0;
+}
+
+// Position the listener is hearing right now, in ms, or -1 when unknown
+// (stopped, loading, DSD, or nothing played yet). Unlike get_position_ms,
+// which is what has been handed to the device, this allows for the output
+// latency and moves smoothly between callbacks.
+EXPORT double get_heard_position_ms() {
+	#ifdef MINI
+		// Devices can change their latency (route changes, Bluetooth), so recheck now and then
+		if (mono_ns() - mini_latency_checked_ns > 1000000000LL) mini_refresh_latency();
+	#endif
+	double result = -1;
+	buffer_lock();
+	if (mode == STOPPED || command == START || command == LOAD || dsd_active || current_sample_rate <= 0) {
+		heard_count = 0;
+	} else if (heard_count > 0) {
+		int64_t now = mono_ns();
+		// The newest record that has started playing, else the oldest
+		for (int i = 1; i <= heard_count; i++) {
+			heard_anchor *a = &heard_ring[(heard_next - i + HEARD_ANCHORS) % HEARD_ANCHORS];
+			if (a->start_ns > now && i < heard_count) continue;
+			double pos;
+			if (now <= a->start_ns) pos = a->pos_start;
+			else if (now >= a->end_ns) pos = a->pos_end;
+			else pos = a->pos_start + (a->pos_end - a->pos_start) * (double) (now - a->start_ns) / (double) (a->end_ns - a->start_ns);
+			if (pos < 0) pos = 0;
+			result = pos * 1000.0 / current_sample_rate;
+			break;
+		}
+	}
+	buffer_unlock();
+	return result;
+}
+
+// Delay from handing audio to the output until it is heard, in ms, or -1 if
+// unknown. Measured by PipeWire and CoreAudio; estimated from the buffer size
+// on other backends.
+EXPORT double get_output_latency_ms() {
+	int64_t latency = output_latency_ns;
+	#ifdef MINI
+		if (latency < 0) latency = mini_latency_ns;
+	#endif
+	return latency >= 0 ? latency / 1e6 : -1;
 }
 
 EXPORT int set_playback_speed(float speed) {

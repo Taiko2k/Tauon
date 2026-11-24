@@ -73,6 +73,43 @@ def pcm_mask(*speakers: str) -> int:
 # Segments in the level meter; a peak of 1.0 lights all of them
 LEVEL_METER_SEGMENTS = 12
 
+# Following the backend's position (see track() in player4): share of the gap
+# closed per tick, the most moved per tick, the gap treated as a jump, and how
+# long a jump is given to show up in the output before the clock takes it
+SYNC_GAIN = 0.15
+SYNC_STEP = 0.02
+SYNC_SNAP = 0.3
+SYNC_SETTLE = 0.6
+
+
+class ClockFollow:
+	"""Keeps the player's wall-clock time on the backend's position.
+
+	Small differences are eased out over a few ticks. A large one is usually a
+	seek that hasn't reached the output yet, so it gets a moment to show up
+	before the clock jumps to it.
+	"""
+
+	def __init__(self) -> None:
+		self.off = False
+		self.timer = Timer()
+
+	def step(self, clock: float, target: float | None) -> float:
+		"""The clock after one tick toward target (None: nothing to follow)."""
+		if target is None or target < 0:
+			return clock
+		error = target - clock
+		if abs(error) < SYNC_SNAP:
+			self.off = False
+			return clock + max(-SYNC_STEP, min(SYNC_STEP, error * SYNC_GAIN))
+		if not self.off:
+			self.off = True
+			self.timer.set()
+		elif self.timer.get() > SYNC_SETTLE:
+			self.off = False
+			return target
+		return clock
+
 
 def meter_level(peak: float) -> float:
 	"""Scale a PHAzOR peak to meter segments.
@@ -1666,7 +1703,39 @@ def player4(tauon: Tauon) -> None:
 			tauon.level_train.append((0, l, r))
 			gui.level_update = True
 
-	p_sync_timer = Timer()
+	clock_follow = ClockFollow()
+	# Set once phazor is loaded, below
+	get_heard = None
+	get_latency = None
+
+	def backend_position() -> float | None:
+		"""Track position the backend has handed to the output, or None.
+
+		Heard position plus latency moves smoothly between output callbacks,
+		where get_position_ms steps once per callback.
+		"""
+		if get_heard is not None:
+			heard = get_heard()
+			if heard >= 0:
+				return (heard + max(0.0, pctl.output_latency * 1000)) / 1000 - pctl.start_time_target
+		position = aud.get_position_ms()
+		return position / 1000 - pctl.start_time_target if position > 0 else None
+
+	def read_heard_time() -> float | None:
+		"""Track position the listener hears now, or None when phazor can't say.
+
+		Called from the main thread for lyrics.
+		"""
+		if get_heard is None or tauon.chrome_mode or pctl.playing_state != PlayingState.PLAYING:
+			return None
+		heard = get_heard()
+		if heard < 0:
+			return None
+		heard = heard / 1000 - pctl.start_time_target
+		# Just after a seek or track change the output still plays what came before
+		if not -max(1.0, 2 * pctl.output_latency) <= heard - pctl.playing_time <= 0.25:
+			return None
+		return max(0.0, heard)
 
 	def track(end: bool = True) -> None:
 		# run_vis() is now driven once per loop iteration in the main player
@@ -1698,22 +1767,12 @@ def player4(tauon: Tauon) -> None:
 		pctl.total_playtime += add_time
 		position_time = add_time * applied_rate
 
-		# Wait / speed up, if we are out of sync
-		if not pre_rolling and p_sync_timer.get() > 1:
-			real_position = aud.get_position_ms() / 1000
-			if real_position and pctl.playing_time and real_position != pctl.last_real_position:
-				diff = abs(real_position - pctl.playing_time)
-				if 5 > diff > 0.11:  # in a CUE file real will be different that playing time
-					# This assumes the first track in a CUE is > 5s
-					if real_position < pctl.playing_time:
-						position_time = 0
-						p_sync_timer.force_set(2)  # wait for real to catch up again next clock
-					else:
-						position_time += 0.1
-				pctl.last_real_position = real_position  # we still want to move on if playback stalled
-			p_sync_timer.set()
-
 		pctl.playing_time += position_time
+		if get_latency is not None:
+			latency = get_latency()
+			pctl.output_latency = latency / 1000 if latency >= 0 else 0.0
+		if not pre_rolling:
+			pctl.playing_time = clock_follow.step(pctl.playing_time, backend_position())
 		pctl.decode_time = pctl.playing_time
 
 		pctl.a_time += add_time
@@ -1804,6 +1863,15 @@ def player4(tauon: Tauon) -> None:
 		applied_rate = applied_speed * applied_tempo
 
 	aud.get_device.restype = ctypes.c_char_p
+
+	# Audible position and output latency, on phazor builds that report them
+	get_heard = getattr(aud, "get_heard_position_ms", None)
+	get_latency = getattr(aud, "get_output_latency_ms", None)
+	for function in (get_heard, get_latency):
+		if function is not None:
+			function.argtypes = ()
+			function.restype = ctypes.c_double
+	pctl.read_heard_time = read_heard_time
 
 	aud.feed_raw.argtypes = (ctypes.c_int, ctypes.c_char_p)
 	aud.feed_raw.restype = None
