@@ -1577,11 +1577,15 @@ def player4(tauon: Tauon) -> None:
 		if hasattr(aud, "config_set_force_stereo"):
 			aud.config_set_force_stereo(int(prefs.force_stereo_output))
 		if set_device:
+			# Reopen the device with the new config. RESUME restarts any PAUSED
+			# output, so only resume what was playing; otherwise the next play
+			# reconnects. (phazor has no wait(); aud.wait is libc's and blocks.)
+			resume_after = tauon.player4_state in (PlayerState.PLAYING, PlayerState.URL_STREAM)
 			aud.pause()
-			aud.wait()
+			aud.wait_for_command()
 			aud.stop_out()
-			aud.wait()
-			aud.resume()
+			if resume_after:
+				aud.resume()
 		if prefs.always_ffmpeg:
 			aud.config_set_always_ffmpeg(1)
 		if prefs.volume_power < 0 or prefs.volume_power > 10:
