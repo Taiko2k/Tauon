@@ -2011,7 +2011,7 @@ class FeuxBar:
 		if aero is not None:
 			# A glass tube of gel, with a bead riding the end of the fill
 			aero.tube((bar_x, bar_y, bar_w, bar_h), progress,
-				playing=playing, bubbles=True, hover=self._on_seek)
+				playing=playing, bubbles=True, hover=self._on_seek, smooth=True)
 		elif needles:
 			self._draw_needles(bar_x, bar_y, bar_w, bar_h, h, progress, seek_bg, seek_fill, backdrop)
 		else:

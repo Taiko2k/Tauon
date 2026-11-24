@@ -160,6 +160,12 @@ def _lerp(a: float, b: float, t: float) -> float:
 	return a + (b - a) * t
 
 
+def smoothstep(t: float) -> float:
+	"""Eased 0..1 ramp, flat at both ends."""
+	t = min(1.0, max(0.0, t))
+	return t * t * (3 - 2 * t)
+
+
 def mix(a: RGBA, b: RGBA, t: float) -> RGBA:
 	if t <= 0:
 		return a
@@ -1558,16 +1564,21 @@ class Aero:
 			sdl3.destroy_texture(old.tex)
 		return t
 
-	def soft(self, rect, r: float, sigma: float, spread: float, colour: RGBA, dx: float = 0, dy: float = 0) -> None:
-		"""A CSS box-shadow drawn under (around) a shape."""
+	def soft(self, rect, r: float, sigma: float, spread: float, colour: RGBA, dx: float = 0, dy: float = 0,
+			subpixel: bool = False) -> None:
+		"""A CSS box-shadow drawn under (around) a shape. With `subpixel` the
+		texture is stretched to the exact width, so its right edge glides."""
 		x, y, w, h = rect
+		dw = w
 		w, h = round(w), round(h)
 		if w <= 0 or h <= 0 or colour[3] <= 0:
 			return
 		t = self._soft_tex(w, h, r, sigma, spread)
 		_mod(t.tex, round(colour[0] * 255), round(colour[1] * 255), round(colour[2] * 255), round(colour[3] * 255))
 		m = t.pad
-		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(round(x) - m + dx, round(y) - m + dy, w + 2 * m, h + 2 * m))
+		if not subpixel:
+			dw = w
+		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(round(x) - m + dx, round(y) - m + dy, dw + 2 * m, h + 2 * m))
 
 	# -- glass panels -------------------------------------------------------------------------------
 
@@ -1935,8 +1946,9 @@ class Aero:
 		self.ring("bottom_out", rect, r, self.RIM_SOFT)
 
 	def tube(self, rect, frac: float, *, playing: bool = False, shimmer: bool = True,
-			bead: bool = True, bubbles: bool = False, hover: bool = False) -> None:
-		"""A glass tube filled with gel to `frac`, with the bead at the fill's end."""
+			bead: bool = True, bubbles: bool = False, hover: bool = False, smooth: bool = False) -> None:
+		"""A glass tube filled with gel to `frac`, with the bead at the fill's end.
+		`smooth` places the glow and bead at sub-pixel positions, for seek bars."""
 		x, y, w, h = rect
 		r = h / 2
 		sc = self.gui.scale
@@ -1952,7 +1964,8 @@ class Aero:
 			m = self.mono
 			A = self.oacc
 			# 0 0 10px glow, clipped by the tube
-			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(lifted_hsl(H, 0.95, 0.55, 0.65), lifted_hsl(A, 0.9, 0.60, 0.45), m))
+			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(lifted_hsl(H, 0.95, 0.55, 0.65), lifted_hsl(A, 0.9, 0.60, 0.45), m),
+				subpixel=smooth)
 			# Obsidian: mercury, lit by the accent at its end
 			obs = (rgba8(245, 247, 250), rgba8(188, 196, 206), rgba8(133, 142, 153), rgba8(206, 212, 219))
 			# In the play orb's tone (dark hues lifted)
@@ -1981,7 +1994,7 @@ class Aero:
 			# without ambient motion)
 			self.schedule(1 / self.FPS)
 		if bead:
-			self.bead(x + fw, y + h / 2)
+			self.bead(x + fw, y + h / 2, subpixel=smooth)
 
 	def _bubbles(self, fr, now: float, playing: bool) -> None:
 		x, y, fw, h = fr
@@ -2265,8 +2278,9 @@ class Aero:
 		ox = round(cx - d / 2)
 		oy = round(cy - d / 2)
 		level = self.fill
-		if level > 0.02:
-			self._orb_glow(ox, oy, d, 0.3 + 0.7 * level)
+		if level > 0.005:
+			# Faded in over the first tenth, rather than switching on at 0.3
+			self._orb_glow(ox, oy, d, (0.3 + 0.7 * level) * min(1.0, level / 0.1))
 		for part, index in (("under", 0), ("liquid", -1), ("glyph", -1), ("over", 2)):
 			if part == "liquid":
 				self._liquid(cx, cy, d, level, hover)
@@ -2303,18 +2317,25 @@ class Aero:
 
 		n = 48
 		ring = [(cx + R * math.cos(math.tau * i / n), cy + R * math.sin(math.tau * i / n)) for i in range(n)]
-		poly: list[tuple[float, float]] = []
-		chord: list[tuple[float, float]] = []
-		for i in range(n):
-			p, q = ring[i], ring[(i + 1) % n]
-			fp, fq = depth(*p), depth(*q)
-			if fp >= 0:
-				poly.append(p)
-			if (fp >= 0) != (fq >= 0):
-				t = fp / (fp - fq)
-				pt = (p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t)
-				poly.append(pt)
-				chord.append(pt)
+
+		def cut(surface: float) -> tuple[list, list]:
+			"""The circle below `surface` (tilted), and where the surface meets it."""
+			poly: list[tuple[float, float]] = []
+			chord: list[tuple[float, float]] = []
+			for i in range(n):
+				p, q = ring[i], ring[(i + 1) % n]
+				fp = p[1] - (surface + tilt * (p[0] - cx))
+				fq = q[1] - (surface + tilt * (q[0] - cx))
+				if fp >= 0:
+					poly.append(p)
+				if (fp >= 0) != (fq >= 0):
+					t = fp / (fp - fq)
+					pt = (p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t)
+					poly.append(pt)
+					chord.append(pt)
+			return poly, chord
+
+		poly, chord = cut(y0)
 		if len(poly) < 3:
 			return
 		m = self.mono
@@ -2328,44 +2349,81 @@ class Aero:
 			stops = [(t, mix(c, (1.0, 1.0, 1.0, 1.0), 0.12)) for t, c in stops]
 		top = min(p[1] for p in poly)
 		span = max(1.0, cy + R - top)
+		renderer = self.renderer
+		sdl3.set_render_draw_blend_mode(renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-		def colour(py: float) -> tuple:
-			c = _stop_at(stops, (py - top) / span)
-			return (c[0], c[1], c[2], 0.94)
+		def body(pts: list, k: float) -> None:
+			if len(pts) < 3:
+				return
 
-		mx = sum(p[0] for p in poly) / len(poly)
-		my = sum(p[1] for p in poly) / len(poly)
-		verts = [(mx, my, 0.0, 0.0, *colour(my))]
-		verts += [(px, py, 0.0, 0.0, *colour(py)) for px, py in poly]
-		idx = []
-		for i in range(len(poly)):
-			idx += (0, 1 + i, 1 + (i + 1) % len(poly))
-		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
-		sdl3.render_geometry(self.renderer, None, verts, idx)
+			def colour(py: float) -> tuple:
+				c = _stop_at(stops, (py - top) / span)
+				return (c[0], c[1], c[2], 0.94 * k)
 
-		# Meniscus: a bright band just under the surface, short of the walls
-		if len(chord) == 2:
-			(ax, ay), (bx, by) = sorted(chord)
+			mx = sum(p[0] for p in pts) / len(pts)
+			my = sum(p[1] for p in pts) / len(pts)
+			verts = [(mx, my, 0.0, 0.0, *colour(my))]
+			verts += [(px, py, 0.0, 0.0, *colour(py)) for px, py in pts]
+			idx = []
+			for i in range(len(pts)):
+				idx += (0, 1 + i, 1 + (i + 1) % len(pts))
+			sdl3.render_geometry(renderer, None, verts, idx)
+
+		def meniscus(ends: list, k: float) -> None:
+			"""A bright band just under the surface, short of the walls."""
+			if len(ends) != 2 or k <= 0:
+				return
+			(ax, ay), (bx, by) = sorted(ends)
 			ix, iy = (bx - ax) * 0.08, (by - ay) * 0.08
 			ax, ay, bx, by = ax + ix, ay + iy, bx - ix, by - iy
 			band = max(1.5, 2.5 * sc)
-			hi = (1.0, 1.0, 1.0, 0.75)
+			hi = (1.0, 1.0, 1.0, 0.75 * k)
 			lo = (1.0, 1.0, 1.0, 0.0)
 			verts = [(ax, ay, 0, 0, *hi), (bx, by, 0, 0, *hi), (bx, by + band, 0, 0, *lo), (ax, ay + band, 0, 0, *lo)]
-			sdl3.render_geometry(self.renderer, None, verts, [0, 1, 2, 0, 2, 3])
+			sdl3.render_geometry(renderer, None, verts, [0, 1, 2, 0, 2, 3])
+
+		if abs(tilt) * R < 0.5:
+			# Level surface: fill the whole pixel rows under it, then the row it
+			# crosses at its coverage, so the level glides instead of stepping
+			full = math.ceil(y0)
+			cover = full - y0
+			whole, whole_chord = cut(full)
+			body(whole, 1.0)
+			part_chord: list = []
+			if cover > 0.004:
+				part, part_chord = cut(full - 1)
+				row = (math.floor(cx - R) - 1, full - 1, math.ceil(2 * R) + 3, 1)
+				old_clip = sdl3.get_render_clip_rect(renderer)
+				if old_clip is not None:
+					x0, x1 = max(row[0], old_clip.x), min(row[0] + row[2], old_clip.x + old_clip.w)
+					y_0, y_1 = max(row[1], old_clip.y), min(row[1] + row[3], old_clip.y + old_clip.h)
+					row = (x0, y_0, max(0, x1 - x0), max(0, y_1 - y_0))
+				if row[2] > 0 and row[3] > 0:
+					sdl3.set_render_clip_rect(renderer, sdl3.Rect(*row))
+					body(part, cover)
+					sdl3.set_render_clip_rect(renderer, old_clip)
+			# The highlight shared between the two rows by the same coverage
+			meniscus(whole_chord, 1.0 - cover if part_chord else 1.0)
+			meniscus(part_chord, cover)
+		else:
+			body(poly, 1.0)
+			meniscus(chord, 1.0)
 
 		# Bubbles rising through it while playing (still, without ambient motion)
 		if level > 0.2 and self.tauon.pctl.playing_state == PlayingState.PLAYING:
 			spr = self._bubble_tex()
 			moving = self.motion()
 			clock = now if moving else 0.0
+			# Bubbles arrive gradually as the level passes 0.2, not all at once
+			arrive = smoothstep(min(1.0, (level - 0.2) / 0.15))
 			for i in range(3):
 				ph = (clock * 0.3 + i / 3) % 1.0
 				by = cy + R - 2 * sc - ph * (h - 4 * sc)
 				half = math.sqrt(max(0.0, R * R - (by - cy) ** 2)) * 0.6
 				bx = cx + half * math.sin(i * 2.4 + clock * 0.8 + ph * 2.5)
 				sz = d * (0.07 + 0.025 * i)
-				a = 0.8 * min(1.0, ph * 5, (1 - ph) * 5)
+				# Eased in over the first 40% of each rise, out over the last 20%
+				a = 0.8 * arrive * min(smoothstep(min(1.0, ph / 0.4)), (1 - ph) * 5, 1.0)
 				if depth(bx, by - sz / 2) <= 0 or a <= 0:
 					continue
 				_mod(spr.tex, 255, 255, 255, round(a * 255))
@@ -2438,9 +2496,10 @@ class Aero:
 		canvas = Image.alpha_composite(canvas, _solid(size, glow_c, ig))
 		return canvas, pad
 
-	def bead(self, cx: float, cy: float, d: float | None = None) -> None:
+	def bead(self, cx: float, cy: float, d: float | None = None, *, subpixel: bool = False) -> None:
 		d = round(self.s(20) if d is None else d)
-		x = round(cx - d / 2)
+		# Sub-pixel x lets the linear-filtered sprite glide rather than step
+		x = cx - d / 2 if subpixel else round(cx - d / 2)
 		y = round(cy - d / 2)
 		m = self.mono
 		if m < 1:
@@ -3373,7 +3432,7 @@ class AquaBar:
 				self.seek_drag = False
 				if pctl.playing_ready():
 					pctl.seek_decimal(progress)
-		aero.tube(tube, progress, playing=playing, bubbles=True)
+		aero.tube(tube, progress, playing=playing, bubbles=True, smooth=True)
 		tauon.draw_ab_repeat_markers(left, tube_y, width, tube_h)
 		gui.seek_bar_rect = (left, tube_y, round(width * progress), tube_h)
 

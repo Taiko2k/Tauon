@@ -38762,7 +38762,7 @@ class BottomBarType1:
 			if aero is not None:
 				aero.tube(aero.classic_seek_rect(self.seek_bar_position, self.seek_bar_size),
 					self.seek_time / pctl.playing_length,
-					playing=pctl.playing_state == PlayingState.PLAYING, bubbles=True)
+					playing=pctl.playing_state == PlayingState.PLAYING, bubbles=True, smooth=True)
 			elif prefs.smooth_progress:
 				ddt.progress_fill(
 					self.seek_bar_position[0], self.seek_bar_position[1],
