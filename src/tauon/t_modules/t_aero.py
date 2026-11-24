@@ -1565,9 +1565,10 @@ class Aero:
 		return t
 
 	def soft(self, rect, r: float, sigma: float, spread: float, colour: RGBA, dx: float = 0, dy: float = 0,
-			subpixel: bool = False) -> None:
+			subpixel: bool = False, within: tuple | None = None) -> None:
 		"""A CSS box-shadow drawn under (around) a shape. With `subpixel` the
-		texture is stretched to the exact width, so its right edge glides."""
+		texture is stretched to the exact width, so its right edge glides.
+		`within` ((x, y, w, h), radius) clips it to that rounded rect."""
 		x, y, w, h = rect
 		dw = w
 		w, h = round(w), round(h)
@@ -1578,7 +1579,21 @@ class Aero:
 		m = t.pad
 		if not subpixel:
 			dw = w
-		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(round(x) - m + dx, round(y) - m + dy, dw + 2 * m, h + 2 * m))
+		fx, fy = round(x) - m + dx, round(y) - m + dy
+		fw, fh = dw + 2 * m, h + 2 * m
+		if within is None:
+			sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(fx, fy, fw, fh))
+			return
+		# Drawn through the rounded rect's mesh. Cut where the texture ends, so
+		# the pieces inside map exactly and those outside sample its clear edge.
+		(sx, sy, sw, sh), sr = within
+		cuts = [(1, 0, cut) for cut in (fx, fx + fw) if sx < cut < sx + sw]
+		_mod(t.tex, 255, 255, 255, 255)
+
+		def uv(px: float, py: float) -> tuple[float, float]:
+			return min(1.0, max(0.0, (px - fx) / fw)), min(1.0, max(0.0, (py - fy) / fh))
+
+		self.shape((sx, sy, sw, sh), sr, colour, texture=t.tex, uv=uv, cuts=cuts or None)
 
 	# -- glass panels -------------------------------------------------------------------------------
 
@@ -1964,8 +1979,9 @@ class Aero:
 			m = self.mono
 			A = self.oacc
 			# 0 0 10px glow, clipped by the tube
+			# Clipped to the tube's rounded ends, not just its box
 			self.soft(fr, min(r, fw / 2), 5 * sc, 0, mix(lifted_hsl(H, 0.95, 0.55, 0.65), lifted_hsl(A, 0.9, 0.60, 0.45), m),
-				subpixel=smooth)
+				subpixel=smooth, within=(rect, r))
 			# Obsidian: mercury, lit by the accent at its end
 			obs = (rgba8(245, 247, 250), rgba8(188, 196, 206), rgba8(133, 142, 153), rgba8(206, 212, 219))
 			# In the play orb's tone (dark hues lifted)
