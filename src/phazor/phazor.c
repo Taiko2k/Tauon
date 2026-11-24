@@ -103,6 +103,7 @@
 
 #include "pcm.h"
 #include "tempo.h"
+#include "bs2b.h"
 
 #include <Python.h>
 // Module method definitions (if any)
@@ -396,6 +397,7 @@ int eq_coeff_sample_rate = 0;
 bool eq_dirty = true;
 float eq_headroom_db = 0.0f;
 float eq_headroom_gain = 1.0f;
+bs2b_state bs2b = {.fcut = BS2B_DEFAULT_FCUT, .feed_db = BS2B_DEFAULT_FEED_DB, .dirty = true};
 float limiter_gain = 1.0f;
 float limiter_attack_coeff = 0.0f;
 float limiter_release_coeff = 0.0f;
@@ -3531,8 +3533,8 @@ static inline void eq_process_frame(float *frame) {
 }
 
 static inline void limiter_process(float *frame, int channels) {
-	// Shifting phases can raise the peaks of a loud master, so tempo needs this too.
-	if ((!eq_enabled || !eq_active) && !tempo_engaged) return;
+	// Shifting phases or crossfeed bass boost can raise the peaks of a loud master.
+	if ((!eq_enabled || !eq_active) && !tempo_engaged && !bs2b_is_active(&bs2b)) return;
 
 	if (current_sample_rate > 0 && limiter_coeff_sample_rate != current_sample_rate) {
 		limiter_update_coefficients(current_sample_rate);
@@ -3879,6 +3881,7 @@ int get_audio(int max_frames, float* buff) {
 				pcm_mixer_process(&output_mixer, frame, mask, out);
 				float final_vol = powf(gate * volume_on, config_volume_power);
 				for (int c = 0; c < channels; c++) out[c] *= final_vol;
+				bs2b_process_frame(&bs2b, out, channels, current_sample_rate);
 				rg_compressor_process(out, channels);
 				limiter_process(out, channels);
 				for (int c = 0; c < channels; c++) output_peaks[c] = fmaxf(output_peaks[c], fabsf(out[c]));
@@ -6656,6 +6659,18 @@ EXPORT void eq_reset() {
 	eq_headroom_gain = 1.0f;
 	eq_reset_state();
 	limiter_reset_state();
+	buffer_unlock();
+}
+
+EXPORT void bs2b_set_enable(int n) {
+	buffer_lock();
+	bs2b_state_set_enable(&bs2b, n);
+	buffer_unlock();
+}
+
+EXPORT void bs2b_set_params(int fcut, float feed_db) {
+	buffer_lock();
+	bs2b_state_set_params(&bs2b, fcut, feed_db);
 	buffer_unlock();
 }
 

@@ -212,6 +212,10 @@ class Prefs:
 	eq = [0.0] * 10
 	use_eq: bool = False
 
+	use_bs2b: bool = False
+	bs2b_fcut: int = 700
+	bs2b_feed_db: float = 4.5
+
 	bio_large: bool = False
 	discord_show: bool = False
 
