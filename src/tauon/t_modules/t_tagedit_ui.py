@@ -828,6 +828,7 @@ class TransEditBox:
 					"is_embed_cue",
 					"subsonic_folder_id",
 					"tidal_album",
+					"jellyfin_album_id",
 				):
 					setattr(track, field, getattr(scanned, field))
 			if star is not None:

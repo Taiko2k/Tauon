@@ -685,6 +685,7 @@ class Jellyfin(RemotePlaylistSource):
 		if nt.art_url_key != previous_art_key:
 			self.tauon.album_art_gen.source_cache.pop(nt.index, None)
 
+		nt.jellyfin_album_id = track.get("AlbumId")
 		artists = track.get("Artists", [])
 		nt.artist = "; ".join(artists)
 		if len(artists) > 1:
@@ -726,6 +727,23 @@ class Jellyfin(RemotePlaylistSource):
 
 		self.pctl.master_library[track_id] = nt
 		return nt
+
+	def _separate_albums(self, tracks: list[tuple[TrackClass, object]]) -> None:
+		"""Give each album its own parent_folder_path, as Tauon groups albums by folder.
+
+		Two albums that share a name, artist and year (editions, duplicates) can land in
+		one folder or under one parent and merge; AlbumId tells them apart.
+		"""
+		owners: dict[str, list[object]] = {}
+		for nt, album_id in tracks:
+			ids = owners.setdefault(nt.parent_folder_path, [])
+			if album_id not in ids:
+				ids.append(album_id)
+
+		for nt, album_id in tracks:
+			n = owners[nt.parent_folder_path].index(album_id)
+			if n:
+				nt.parent_folder_path = f"{nt.parent_folder_path} ({n + 1})"
 
 	def favourite_tracks(self) -> list[int] | None:
 		"""Track ids for the jellyfav generator code, or None if they couldn't be fetched or it was cancelled."""
@@ -870,10 +888,12 @@ class Jellyfin(RemotePlaylistSource):
 		)
 
 		fav_status: dict[TrackClass, bool] = {}
+		stored: list[tuple[TrackClass, object]] = []
 		for parent, items in grouped_items:
 			for track in items:
 				nt = self._store_track(track, existing)
 				playlist.append(nt.index)
+				stored.append((nt, track.get("AlbumId")))
 
 				# Sync favorite
 				star = self.tauon.star_store.full_get(nt.index)
@@ -881,6 +901,8 @@ class Jellyfin(RemotePlaylistSource):
 
 				if user_data:
 					fav_status[nt] = user_data.get("IsFavorite")
+
+		self._separate_albums(stored)
 
 		logging.info("Jellyfin import complete")
 		self.gui.request_frame()

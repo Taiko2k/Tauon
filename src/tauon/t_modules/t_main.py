@@ -2365,6 +2365,7 @@ _MISC_TO_FIELD = {
 	"replaygain_album_gain": "replaygain_album_gain", "replaygain_album_peak": "replaygain_album_peak",
 	"replaygain_track_gain": "replaygain_track_gain", "replaygain_track_peak": "replaygain_track_peak",
 	"subsonic-folder-id": "subsonic_folder_id", "tidal_album": "tidal_album",
+	"jellyfin-album-id": "jellyfin_album_id",
 }
 
 class TrackClass:
@@ -2383,6 +2384,7 @@ class TrackClass:
 		"musicbrainz_releasegroupid", "musicbrainz_trackid", "parent_length", "parent_size", "POPM",
 		"position", "rdat", "replaygain_album_gain", "replaygain_album_peak",
 		"replaygain_track_gain", "replaygain_track_peak", "subsonic_folder_id", "tidal_album",
+		"jellyfin_album_id",
 	]
 
 	def __init__(self) -> None:
@@ -2454,6 +2456,7 @@ class TrackClass:
 		self.replaygain_track_peak = None
 		self.subsonic_folder_id = None
 		self.tidal_album = None
+		self.jellyfin_album_id = None
 
 # Low-cardinality string fields that repeat heavily across a library (many
 # tracks share the same album/artist/folder/etc). Interning collapses the
@@ -23123,8 +23126,14 @@ class Tauon:
 				current_album = tr.album
 				current_date = track_date
 				current_artist = tr.album_artist
+				current_album_id = getattr(tr, "jellyfin_album_id", None)
 			elif tr.parent_folder_path != current_folder:
-				if tr.album == current_album and tr.album and track_date == current_date and tr.disc_number \
+				album_id = getattr(tr, "jellyfin_album_id", None)
+				if album_id is not None or current_album_id is not None:
+					# Jellyfin tracks compare by album id: names and dates can collide
+					if album_id is not None and album_id == current_album_id:
+						continue
+				elif tr.album == current_album and tr.album and track_date == current_date and tr.disc_number \
 						and tr.album_artist == current_artist \
 						and os.path.dirname(tr.parent_folder_path) == os.path.dirname(current_folder):
 					continue
@@ -23132,6 +23141,7 @@ class Tauon:
 				current_album = tr.album
 				current_date = track_date
 				current_artist = tr.album_artist
+				current_album_id = album_id
 				albums.append(i)
 
 		i = 0
