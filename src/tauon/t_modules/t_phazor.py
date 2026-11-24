@@ -1556,6 +1556,7 @@ def player4(tauon: Tauon) -> None:
 		if hasattr(aud, "config_set_dsd_direct"):
 			aud.config_set_dsd_direct(int(prefs.dsd_direct))
 		apply_eq_settings()
+		apply_bs2b_settings()
 
 	def normalise_eq_bands() -> list[float]:
 		try:
@@ -1583,6 +1584,22 @@ def player4(tauon: Tauon) -> None:
 		aud.eq_set_enable(1 if prefs.use_eq else 0)
 		for i, gain in enumerate(normalise_eq_bands()):
 			aud.eq_set_band(i, ctypes.c_float(gain))
+
+	def apply_bs2b_settings() -> None:
+		if not hasattr(aud, "bs2b_set_enable") or not hasattr(aud, "bs2b_set_params"):
+			return
+		fcut = max(300, min(2000, int(getattr(prefs, "bs2b_fcut", 700))))
+		try:
+			feed_db = float(getattr(prefs, "bs2b_feed_db", 4.5))
+		except (TypeError, ValueError):
+			feed_db = 4.5
+		if not math.isfinite(feed_db):
+			feed_db = 4.5
+		feed_db = max(1.0, min(15.0, feed_db))
+		prefs.bs2b_fcut = fcut
+		prefs.bs2b_feed_db = feed_db
+		aud.bs2b_set_params(fcut, ctypes.c_float(feed_db))
+		aud.bs2b_set_enable(1 if prefs.use_bs2b else 0)
 
 	def run_vis() -> None:
 		if gui.turbo:  # and pctl.playing_time > 0.5:
@@ -1799,6 +1816,14 @@ def player4(tauon: Tauon) -> None:
 		aud.eq_set_band.restype = None
 	except AttributeError:
 		logging.warning("PHAzOR build does not expose EQ controls")
+
+	try:
+		aud.bs2b_set_enable.argtypes = (ctypes.c_int,)
+		aud.bs2b_set_enable.restype = None
+		aud.bs2b_set_params.argtypes = (ctypes.c_int, ctypes.c_float)
+		aud.bs2b_set_params.restype = None
+	except AttributeError:
+		logging.warning("PHAzOR build does not expose bs2b crossfeed controls")
 
 	replaygain_live_controls = True
 	try:
@@ -2097,6 +2122,8 @@ def player4(tauon: Tauon) -> None:
 				if command == "seteq":
 					apply_eq_settings()
 					set_native_output_compressor()
+				if command == "setbs2b":
+					apply_bs2b_settings()
 				if command == "stop":
 					tauon.player4_state = PlayerState.STOPPED
 					tauon.chrome.stop()
@@ -2782,6 +2809,8 @@ def player4(tauon: Tauon) -> None:
 			if command == "seteq":
 				apply_eq_settings()
 				set_native_output_compressor()
+			if command == "setbs2b":
+				apply_bs2b_settings()
 
 			if command == "runstop":
 				length = aud.get_length_ms() / 1000

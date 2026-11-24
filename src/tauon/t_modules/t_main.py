@@ -34955,6 +34955,8 @@ class Over:
 			_("Pre-amp"): "preamp gain boost louder quieter volume db decibel replaygain",
 			_("Allow compression"): "limiter compressor clipping peaks distortion dynamic range replaygain",
 			_("Enable EQ"): "eq equaliser equalizer bass treble mid tone graphic frequency reset flat",
+			_("Headphone crossfeed (bs2b)"): "bs2b crossfeed binaural headphone headphones fatigue stereo spatial",
+			_("Crossfeed preset"): "bs2b crossfeed chu moy jan meier preset headphone",
 			_("Cache local files"): "cache precache nas network drive smb nfs stutter buffer copy slow disk",
 			_("Use persistent network cache"): "cache stream streaming offline jellyfin subsonic plex keep download",
 			_("Wait for entire file"): "download buffer stream streaming network full file before playing",
@@ -35650,6 +35652,32 @@ class Over:
 		dsd_new = rows.switch(prefs.dsd_direct, _("Direct DSD output"), dsd_note, disabled=not dsd_supported)
 		if dsd_supported and dsd_new != prefs.dsd_direct:
 			self.tauon.set_dsd_direct(dsd_new)
+
+		old_bs2b = prefs.use_bs2b
+		bs2b_note = (
+			_("Inactive in Direct DSD mode.")
+			if prefs.dsd_direct
+			else _("Reduces stereo fatigue on headphones. Stereo output only.")
+		)
+		prefs.use_bs2b = rows.switch(prefs.use_bs2b, _("Headphone crossfeed (bs2b)"), bs2b_note)
+		if prefs.use_bs2b != old_bs2b:
+			self.pctl.playerCommand = "setbs2b"
+			self.pctl.playerCommandReady = True
+		if prefs.use_bs2b:
+			def set_bs2b_preset(fcut: int, feed_db: float) -> None:
+				prefs.bs2b_fcut = fcut
+				prefs.bs2b_feed_db = feed_db
+				self.pctl.playerCommand = "setbs2b"
+				self.pctl.playerCommandReady = True
+
+			rows.segmented(
+				_("Crossfeed preset"),
+				(
+					(_("Default"), prefs.bs2b_fcut == 700 and abs(prefs.bs2b_feed_db - 4.5) < 0.05, lambda: set_bs2b_preset(700, 4.5)),
+					("Chu Moy", prefs.bs2b_fcut == 700 and abs(prefs.bs2b_feed_db - 6.0) < 0.05, lambda: set_bs2b_preset(700, 6.0)),
+					("Jan Meier", prefs.bs2b_fcut == 650 and abs(prefs.bs2b_feed_db - 9.5) < 0.05, lambda: set_bs2b_preset(650, 9.5)),
+				),
+			)
 
 		old_pre_roll = (prefs.use_pre_roll, prefs.pre_roll_time)
 		prefs.use_pre_roll = rows.switch(
@@ -58624,6 +58652,9 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
 	cf.update_value("force-stereo-output", prefs.force_stereo_output)
 	cf.update_value("dsd-direct", prefs.dsd_direct)
+	cf.update_value("use-bs2b", prefs.use_bs2b)
+	cf.update_value("bs2b-fcut", prefs.bs2b_fcut)
+	cf.update_value("bs2b-feed-db", prefs.bs2b_feed_db)
 	# cf.update_value("fast-scrubbing", prefs.pa_fast_seek)
 	cf.update_value("precache-local-files", prefs.precache)
 	cf.update_value("cache-use-tmp", prefs.tmp_cache)
@@ -58868,6 +58899,15 @@ def load_prefs(bag: Bag) -> None:
 		"Send DSD files to the device untouched instead of decoding them to PCM. "
 		"Requires the PipeWire backend and a DAC that accepts native DSD. "
 		"Disables volume, ReplayGain, the EQ and crossfading while a DSD track plays.")
+	prefs.use_bs2b = cf.sync_add(
+		"bool", "use-bs2b", prefs.use_bs2b,
+		"Enable Bauer stereophonic-to-binaural (bs2b) headphone crossfeed on stereo output.")
+	prefs.bs2b_fcut = cf.sync_add(
+		"int", "bs2b-fcut", prefs.bs2b_fcut,
+		"bs2b low-pass cutoff frequency in Hz (300-2000). Default: 700.")
+	prefs.bs2b_feed_db = cf.sync_add(
+		"float", "bs2b-feed-db", prefs.bs2b_feed_db,
+		"bs2b crossfeed level in dB (1.0-15.0). Default: 4.5.")
 	prefs.resample = cf.sync_add(
 		"int", "resample-quality", prefs.resample,
 		"0=best, 1=medium, 2=fast, 3=fastest. Default: 1. (applies on restart)")
