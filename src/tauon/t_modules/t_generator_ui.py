@@ -846,7 +846,7 @@ class GeneratorEditBox:
 					setattr(self.colours, name, colour)
 
 	def _glass_colours(self) -> dict[str, ColourRGBA]:
-		"""Under Aqua, swap in a clear palette while the editor draws on glass
+		"""Under Candy Factory, swap in a clear palette while the editor draws on glass
 		(text backgrounds and fills let the glass through); returns the
 		colours to put back."""
 		solid = self.tauon.aero.menu_bg()

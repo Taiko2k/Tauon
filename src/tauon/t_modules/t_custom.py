@@ -438,7 +438,7 @@ def build_spectro_lut(preset: int) -> list[bytes]:
 
 
 class GlassSpectrumWidget(Widget):
-	"""24 glass bars with lit peak caps (the Aqua side panel spectrum).
+	"""24 glass bars with lit peak caps (the Candy Factory side panel spectrum).
 	Fed from the same 24-band data as the top-panel spectrum."""
 
 	kind = "vis_glass"
@@ -448,7 +448,7 @@ class GlassSpectrumWidget(Widget):
 	single_instance = True
 
 	def draw(self, tauon: Tauon, x: float, y: float, w: float, h: float, content_rect: tuple[int, int, int, int] | None = None) -> None:
-		# Part of the Aqua skin: an empty slot otherwise
+		# Part of the Candy Factory skin: an empty slot otherwise
 		if not tauon.aero.active:
 			return
 		pad = round(10 * tauon.gui.scale)
@@ -643,7 +643,7 @@ class SpectrogramWidget(Widget):
 		cls._last_frame = now
 
 		# Background in the palette's floor colour, so sparse history blends in.
-		# Aqua lights the spectrogram additively over the glass instead:
+		# Candy Factory lights the spectrogram additively over the glass instead:
 		# its dark floor becomes the glass itself.
 		glass = tauon.aero.active
 		lut0 = cls._lut[0]
@@ -1227,7 +1227,7 @@ class TopPanelWidget(Widget):
 		# the reframed space.
 		gui = tauon.gui
 		if AERO_TOP_EXTRA and h > gui.panelY2:
-			# Aqua's glass is taller than the row: centre the row in it
+			# Candy Factory's glass is taller than the row: centre the row in it
 			# (TopPanel lays itself out from panelY)
 			panel_y = gui.panelY
 			gui.panelY = gui.panelY2 + round((h - gui.panelY2) / 2)
@@ -1273,7 +1273,7 @@ class PlaybackPanelWidget(Widget):
 		# above the top of the scratch (so it never gets blitted) and drags the
 		# title up with it.
 		if tauon.aero.active and not tauon.prefs.shuffle_lock:
-			# Aqua's own compact panel
+			# Candy Factory's own compact panel
 			tauon.aero.compact_bar.render(h)
 			return
 		panel_by = tauon.gui.panelBY
@@ -1551,7 +1551,7 @@ class FeuxBar:
 		# divider lands on it; both collapse on a narrow segment.
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
-			# Aqua: LED pills for the modes, and a speaker before the volume tube
+			# Candy Factory: LED pills for the modes, and a speaker before the volume tube
 			pod3_w = (self._s(16) + self._pill_w(a["feux-shuffle"]) + self._s(9) + self._pill_w(a["feux-repeat"])
 				+ self._s(16) + self._s(24) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
 			hairline = ColourRGBA(225, 232, 242, 22) if aero.mono > 0.5 else ColourRGBA(150, 215, 255, 26)
@@ -1794,7 +1794,7 @@ class FeuxBar:
 		mb_over = self._fg(self._tint(colours.media_buttons_over, left, mid, panel, boost=0.6), backdrop, 4.5)
 		box = self._s(32)
 		x = left + self._s(15)
-		# Aqua draws the transport as gel orbs, the play orb the largest
+		# Candy Factory draws the transport as gel orbs, the play orb the largest
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
 			box = self._s(34)
@@ -1995,7 +1995,7 @@ class FeuxBar:
 
 		progress = 0.0
 		if length > 0:
-			# Whole seconds unless smooth progress is on (Aqua's tube always is)
+			# Whole seconds unless smooth progress is on (Candy Factory's tube always is)
 			elapsed = pctl.playing_time if tauon.smooth_progress_active() else int(pctl.playing_time)
 			gui.progress_bar_w = bar_w
 			progress = min(1.0, max(0.0, elapsed / length))
@@ -2359,7 +2359,7 @@ class FeuxBar:
 			icon.render(x, mid - icon.h // 2, colour)
 
 	def _pill_w(self, icon) -> int:
-		"""Width of a Aqua mode pill: padding, LED, gap, icon, padding."""
+		"""Width of a Candy Factory mode pill: padding, LED, gap, icon, padding."""
 		return self._s(10 + 7 + 7) + round(icon.w) + self._s(10)
 
 	def _aero_pill(self, aero, x: int, mid: int, w: int, icon, on: bool, hover: bool) -> None:
@@ -4301,7 +4301,7 @@ def node_from_dict(d: dict) -> Node:
 
 # -- layout pass ------------------------------------------------------------
 
-# Aqua (t_aero): the gap between widgets and at the window edge, in
+# Candy Factory (t_aero): the gap between widgets and at the window edge, in
 # scaled px. CustomLayout keeps it in step with the skin; 0 when it's off.
 AERO_GAP = 0.0
 # ... and the gap between the outermost widgets and the window edge
@@ -4357,7 +4357,7 @@ def _aero_pull(node: Node, x: float, y: float, w: float, h: float, scale: float)
 
 
 def _gutter(node: Node, scale: float) -> float:
-	"""A node's gutter in scaled px. Under Aqua the skin's own gaps space
+	"""A node's gutter in scaled px. Under Candy Factory the skin's own gaps space
 	the widgets, so the default widget gutter is taken back out (a larger one
 	still adds on top) and the layout matches the standard one."""
 	g = node.gutter
@@ -4371,7 +4371,7 @@ def _fixed_on(node: Node, axis: str, scale: float) -> float | None:
 	gap = AERO_GAP if isinstance(node, (Leaf, TabStack)) else 0.0
 	if axis == "v" and node.lock_v:
 		if isinstance(node, Leaf) and isinstance(node.widget, TopPanelWidget):
-			# Aqua's Header Bar glass is taller than its row
+			# Candy Factory's Header Bar glass is taller than its row
 			gap += AERO_TOP_EXTRA
 		return node.fixed_h * scale + gap
 	if axis == "h" and node.lock_h:
@@ -4455,7 +4455,7 @@ def layout(node: Node, x: float, y: float, w: float, h: float, scale: float,
 	outer = (x, y, w, h)
 	gap = AERO_GAP
 	if gap:
-		# Aqua: half the gap around each widget (and each tab group), so
+		# Candy Factory: half the gap around each widget (and each tab group), so
 		# neighbours sit a full gap apart, and the whole layout moved so the
 		# outermost widgets sit AERO_EDGE from the window edge (this can grow
 		# the layout past the window when the edge gap is under half the gap)
@@ -6813,7 +6813,7 @@ class CustomLayout:
 			if isinstance(lf, Leaf) and isinstance(lf.widget, TopPanelWidget):
 				rect = self._leaf_paint_rect(lf)
 				if rect is not None and AERO_TOP_EXTRA:
-					# Aqua: the row centred in the taller glass, so the
+					# Candy Factory: the row centred in the taller glass, so the
 					# window controls and visualisers line up with the tabs
 					x, y, w, h = rect
 					row = self.gui.panelY2
@@ -6983,7 +6983,7 @@ class CustomLayout:
 		self._sync_aero_gap()
 		aero = tauon.aero if tauon.aero.active else None
 		if aero is not None:
-			# Aqua: the sky again (over anything the standard layout drew)
+			# Candy Factory: the sky again (over anything the standard layout drew)
 			aero.draw_sky()
 			aero.panel_index = 0
 		elif gui.have_art_bg:
@@ -7552,7 +7552,7 @@ class CustomLayout:
 		replace = bool(tauon.prefs.transparent_mode) and not gui.have_art_bg
 		# Blending onto a cleared target leaves colour already multiplied by
 		# alpha; composite it as such, or every soft edge comes out darker
-		# (Aqua's glows read as dark halos). Aqua only, for now.
+		# (Candy Factory's glows read as dark halos). Candy Factory only, for now.
 		premultiplied = tauon.aero.active and not replace
 		if replace:
 			sdl3.set_texture_blend_mode(scratch, sdl3.SDL_BLENDMODE_NONE)

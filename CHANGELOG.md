@@ -4,7 +4,7 @@ Changelog
 
 ### v14.1.0
 
- - Added Aqua skin
+ - Added Candy Factory skin
  - Added stereo crossfeed setting
  - Added lyric word stamp support
  - Fixed timing accuracy with lyrics

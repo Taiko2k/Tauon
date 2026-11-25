@@ -17,7 +17,7 @@ class WindowState:
 	borderless: bool = True
 	maximized: bool = False
 	position: tuple[int, int] | None = None
-	# Show the Aqua skin's painted loading screen (t_aqua_splash) instead of the stars
+	# Show the Candy Factory skin's painted loading screen (t_aqua_splash) instead of the stars
 	aqua_splash: bool = False
 
 

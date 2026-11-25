@@ -64,7 +64,7 @@ struct WindowState {
 	bool borderless = true;
 	bool maximized = false;
 	std::optional<std::pair<int, int>> position;
-	// Show the Aqua skin's painted loading screen instead of the star field
+	// Show the Candy Factory skin's painted loading screen instead of the star field
 	bool aqua_splash = false;
 };
 
@@ -1012,7 +1012,7 @@ private:
 	std::vector<int> indices_;
 };
 
-// The Aqua skin's loading screen, painted by Python (t_aqua_splash) on an
+// The Candy Factory skin's loading screen, painted by Python (t_aqua_splash) on an
 // earlier run and saved beside window-state.json
 SDL_Texture* load_aqua_splash(SDL_Renderer* renderer, const std::filesystem::path& path) {
 	std::error_code error;
@@ -1023,7 +1023,7 @@ SDL_Texture* load_aqua_splash(SDL_Renderer* renderer, const std::filesystem::pat
 	const std::string name(utf8.begin(), utf8.end());
 	SDL_Surface* surface = SDL_LoadBMP(name.c_str());
 	if (surface == nullptr) {
-		std::cerr << "Tauon: could not load the Aqua splash: " << SDL_GetError() << '\n';
+		std::cerr << "Tauon: could not load the Candy Factory splash: " << SDL_GetError() << '\n';
 		return nullptr;
 	}
 	SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);

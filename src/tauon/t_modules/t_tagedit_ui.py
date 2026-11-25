@@ -2315,7 +2315,7 @@ class TransEditBox:
 					setattr(self.colours, name, colour)
 
 	def _glass_colours(self) -> dict[str, ColourRGBA]:
-		"""Under Aqua, swap in a clear palette while the editor draws on glass
+		"""Under Candy Factory, swap in a clear palette while the editor draws on glass
 		(text backgrounds and row fills let the glass through); returns the
 		colours to put back."""
 		solid = self.tauon.aero.menu_bg()
@@ -2330,12 +2330,12 @@ class TransEditBox:
 		return saved
 
 	def _box(self, rect, scale: float) -> None:
-		"""The editor's frame or a popover's: glass under Aqua."""
+		"""The editor's frame or a popover's: glass under Candy Factory."""
 		if not self.tauon.glass_box(rect):
 			self.ddt.bordered_rect(rect, self.colours.box_background, self.colours.box_border, max(1, round(scale)))
 
 	def _field(self, rect, scale: float, fill: ColourRGBA | None = None) -> None:
-		"""A text field or progress trough: sunken glass under Aqua."""
+		"""A text field or progress trough: sunken glass under Candy Factory."""
 		if not self.tauon.glass_field(rect):
 			self.ddt.bordered_rect(
 				rect, fill or self.colours.box_background, self.colours.box_text_border, max(1, round(scale)))

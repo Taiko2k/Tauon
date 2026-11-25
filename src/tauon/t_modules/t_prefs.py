@@ -252,7 +252,7 @@ class Prefs:
 	# Whether the Feux panel's scrub bar shows the playing track's waveform
 	# as needles (see t_waveform). Scanned with FFmpeg, kept in memory only.
 	feux_panel_waveform: bool = True
-	# Advance seek bars continuously instead of once a second (Aqua always does)
+	# Advance seek bars continuously instead of once a second (Candy Factory always does)
 	smooth_progress: bool = False
 	# Width of the Feux panel's now-playing pod -- the art and title, up to the
 	# hairline the user drags. Stored unscaled (see FeuxBar.POD1_W, the default)
@@ -368,13 +368,13 @@ class Prefs:
 	theme: int = 14
 	theme_name = "Vape"
 	transparent_mode: int = 0
-	# Aqua: the glass-and-gel skin (t_aero). Exclusive with the art
+	# Candy Factory: the glass-and-gel skin (t_aero). Exclusive with the art
 	# backgrounds and window transparency
 	aero: bool = False
 	aero_motion: bool = True
 	# 0: Obsidian for dark, colourless art, Dusk otherwise; 1: always Dusk; 2: always Obsidian
 	aero_variant: int = 0
-	# Leave the gaps between Aqua's panels clear, so they float on the
+	# Leave the gaps between Candy Factory's panels clear, so they float on the
 	# desktop (the panels still frost the animated sky)
 	# The glass spectrum under the art in the right side panel
 	side_panel_spectrum: bool = False

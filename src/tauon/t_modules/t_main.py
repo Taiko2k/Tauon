@@ -803,12 +803,12 @@ class GuiVar:
 		if prefs.feux_panel:
 			height = round(FeuxBar.PANEL_H * self.scale)
 		elif prefs.aero and not prefs.shuffle_lock:
-			# Aqua's compact panel is the concept's bar, a little taller
+			# Candy Factory's compact panel is the concept's bar, a little taller
 			height = round(AquaBar.PANEL_H * self.scale)
 		else:
 			height = round(51 * self.scale)
 		if prefs.aero:
-			# Aqua floats the bar on the sky: a gap above, the edge gap below
+			# Candy Factory floats the bar on the sky: a gap above, the edge gap below
 			height += round(Aero.BOTTOM_GAP * self.scale) + round(Aero.EDGE_GAP * self.scale)
 		return height
 
@@ -1232,9 +1232,9 @@ class GuiVar:
 		# or replacing their region's pixels
 		self.have_art_bg: bool = False
 		# True while panels sit on a drawn backdrop (art background or the
-		# Aqua sky): they blend over it instead of clearing their region
+		# Candy Factory sky): they blend over it instead of clearing their region
 		self.backdrop: bool = False
-		# Glass spectrum (Aqua side panel / Custom Layout widget)
+		# Glass spectrum (Candy Factory side panel / Custom Layout widget)
 		self.glass_spec_wanted: bool = False
 		self.glass_spec_in_widget: bool = False
 		self.glass_spec: list[float] = []
@@ -6828,7 +6828,7 @@ class Menu:
 		return Decorator(self.colours.menu_text, self.colours.menu_background, None)
 
 	def glass(self) -> bool:
-		"""Aqua draws menus on glass instead of the theme's flat fill."""
+		"""Candy Factory draws menus on glass instead of the theme's flat fill."""
 		return self.tauon.aero.active
 
 	def glass_hover(self, rect: tuple[float, float, float, float]) -> None:
@@ -7583,7 +7583,7 @@ class Menu:
 		A menu opens down-right from the anchor (or upward for a
 		bottom-anchored menu). If the main column would extend past the window
 		there, it pops out into its own popup window instead of being
-		flipped/shifted to fit inside - except on Aqua's glass, where a
+		flipped/shifted to fit inside - except on Candy Factory's glass, where a
 		menu that fits in the window is flipped or slid into it so it stays
 		see-through. Judged by the main column only: an inline submenu that
 		would overflow flips left / clamps up at render time.
@@ -8597,7 +8597,7 @@ class Tauon:
 		self.radio_view:                           RadioView = RadioView(tauon=self)
 		self.view_box:                               ViewBox = ViewBox(tauon=self)
 		self.custom:                            CustomLayout = CustomLayout(tauon=self)
-		# The easter egg scenes: the Dream Room, and the Aero world for Aqua
+		# The easter egg scenes: the Dream Room, and the Aero world for Candy Factory
 		self.dream_room:                              Dreams = Dreams(tauon=self)
 		self.pref_box:                                  Over = Over(tauon=self)
 		self.fader:                                    Fader = Fader(tauon=self)
@@ -9327,7 +9327,7 @@ class Tauon:
 		re_width = round(30 * gui.scale)
 		last_width = 0
 		if self.aero.active and gui.mode == GuiMode.MAIN and not macstyle:
-			# Aqua's capsules: a 40px close and 28px others, 4px apart
+			# Candy Factory's capsules: a 40px close and 28px others, 4px apart
 			x_width = round(44 * gui.scale)
 			ma_width = mi_width = re_width = round(32 * gui.scale)
 
@@ -9343,7 +9343,7 @@ class Tauon:
 		)
 		mac_inactive = ColourRGBA(mac_inactive.r, mac_inactive.g, mac_inactive.b, 255)
 
-		# Aqua draws the buttons as gel: traffic lights as small orbs,
+		# Candy Factory draws the buttons as gel: traffic lights as small orbs,
 		# the others as glass capsules with a red gel close
 		aero = self.aero if self.aero.active and gui.mode == GuiMode.MAIN else None
 
@@ -9355,7 +9355,7 @@ class Tauon:
 			aero.mac_light(x + d / 2, y + self.gui.mac_circle.h / 2, d, (colour.r, colour.g, colour.b), False)
 
 		def icon(asset, rect: tuple, colour: ColourRGBA, dx: float, dy: float) -> None:
-			# Centred in Aqua's capsule; the usual offsets otherwise
+			# Centred in Candy Factory's capsule; the usual offsets otherwise
 			if aero is not None:
 				asset.render(round(rect[0] + (rect[2] - asset.w) / 2), round(rect[1] + (rect[3] - asset.h) / 2), colour)
 			else:
@@ -10398,7 +10398,7 @@ class Tauon:
 		self.gui.request_frame()
 
 	def glass_box(self, rect) -> bool:
-		"""Under Aqua, draw a dialog's glass over rect and point text at it.
+		"""Under Candy Factory, draw a dialog's glass over rect and point text at it.
 		Returns False otherwise, for the caller to draw its own frame."""
 		if not self.aero.active:
 			return False
@@ -10407,14 +10407,14 @@ class Tauon:
 		return True
 
 	def glass_field(self, rect) -> bool:
-		"""Under Aqua, draw a text field's sunken trough; False otherwise."""
+		"""Under Candy Factory, draw a text field's sunken trough; False otherwise."""
 		if not self.aero.active:
 			return False
 		self.aero.sunken(rect, self.aero.s(5))
 		return True
 
 	def glass_tip(self, rect) -> ColourRGBA | None:
-		"""Under Aqua, draw a tooltip's glass and return its text background;
+		"""Under Candy Factory, draw a tooltip's glass and return its text background;
 		None otherwise."""
 		if not self.aero.active:
 			return None
@@ -10524,7 +10524,7 @@ class Tauon:
 		self.gui.request_frame()
 
 	def smooth_progress_active(self) -> bool:
-		"""Whether seek bars should move continuously. Aqua's tube always does."""
+		"""Whether seek bars should move continuously. Candy Factory's tube always does."""
 		return self.prefs.smooth_progress or self.aero.active
 
 	def lsp_menu_test_queue(self) -> bool:
@@ -17448,7 +17448,7 @@ class Tauon:
 			colours.apply_transparency(
 				darkness=prefs.transparency_tracklist_darkness,
 				intensity=prefs.transparency_intensity)
-		# Aqua: see-through panels and its own text palette
+		# Candy Factory: see-through panels and its own text palette
 		if prefs.aero:
 			self.aero.apply_colours(colours)
 
@@ -17469,7 +17469,7 @@ class Tauon:
 		if prefs.aero and gui.mode == GuiMode.MAIN:
 			gui.panelBY = gui.bottom_panel_height()
 			if not gui.custom_mode:
-				# Aqua floats the top bar on the sky: edge gap, glass, gutter
+				# Candy Factory floats the top bar on the sky: edge gap, glass, gutter
 				# (2px short: the glass's shadow makes the full gap look wide)
 				gui.panelY = self.aero.edge_gap() + self.aero.top_glass_height() + self.aero.gutter() - round(2 * gui.scale)
 				gui.playlist_top = gui.panelY + (8 * gui.scale)
@@ -17544,7 +17544,7 @@ class Tauon:
 			gui.vis = 0
 			gui.turbo = False
 
-		# The glass spectrum (Aqua only) needs the vis thread too
+		# The glass spectrum (Candy Factory only) needs the vis thread too
 		gui.glass_spec_wanted = prefs.backend == Backend.PHAZOR and gui.mode == GuiMode.MAIN and self.aero.active and (
 			(gui.custom_mode and gui.glass_spec_in_widget)
 			or (not gui.custom_mode and prefs.side_panel_spectrum and gui.rsp))
@@ -17601,7 +17601,7 @@ class Tauon:
 						offset += 20
 					offset = round(offset * gui.scale)
 				elif prefs.aero:
-					# Aqua's capsules (8px margin, 44px close, 32px others)
+					# Candy Factory's capsules (8px margin, 44px close, 32px others)
 					# and a clear gap before the visualiser (14px with its own 10)
 					offset = 8 + 44 + 4
 					if self.draw_min_button:
@@ -17634,7 +17634,7 @@ class Tauon:
 
 			if prefs.aero and not gui.custom_mode:
 				# The gallery's top margin is measured from the window top, sized
-				# for the usual 30px top bar; Aqua's floating bar is taller
+				# for the usual 30px top bar; Candy Factory's floating bar is taller
 				gui.album_v_slide_value += gui.panelY - round(30 * gui.scale)
 
 			gui.gallery_scroll_field_left = window_size[0] - round(40 * gui.scale)
@@ -17757,7 +17757,7 @@ class Tauon:
 				gui.plw -= gui.rspw
 
 			if prefs.aero and not gui.custom_mode:
-				# Aqua: a gutter between the panels, a smaller gap at the window edges
+				# Candy Factory: a gutter between the panels, a smaller gap at the window edges
 				g = self.aero.gutter()
 				e = self.aero.edge_gap()
 				x = e
@@ -17805,7 +17805,7 @@ class Tauon:
 
 			# Only nudge for the left panel when the tracklist actually borders it.
 			# With the side panel on the left, the tracklist borders that instead.
-			# (Aqua's gutters separate the panels, so it keeps the full inset
+			# (Candy Factory's gutters separate the panels, so it keeps the full inset
 			# and the selection capsule keeps the same margin in every layout.)
 			if gui.lsp and not gui.rsp_on_left and not prefs.aero:
 				inset_left -= 10 * gui.scale
@@ -20610,7 +20610,7 @@ class Tauon:
 			fg2 = ColourRGBA(0, 0, 0, 70) if self.gui.tracklist_bg_is_light else ColourRGBA(255, 255, 255, 50)
 			base = self.ddt.text_background_colour
 			# alpha_blend keeps the base's alpha, so over a see-through panel
-			# (Aqua) the hint would vanish: draw it translucent there instead,
+			# (Candy Factory) the hint would vanish: draw it translucent there instead,
 			# a little stronger to hold up against the sky behind the glass
 			if base.a >= 255:
 				fg2 = alpha_blend(fg2, base)
@@ -23368,13 +23368,13 @@ class Tauon:
 		return None
 
 	def _set_aero(self, on: bool) -> None:
-		"""Switch the Aqua skin (t_aero) on or off."""
+		"""Switch the Candy Factory skin (t_aero) on or off."""
 		if bool(self.prefs.aero) == on:
 			return
 		self.prefs.aero = on
 		# The standard layout's bottom panel gains (or loses) its gutters
 		self.gui.panelBY = self.gui.bottom_panel_height()
-		# Theme reload restores the theme's own colours, or applies Aqua's
+		# Theme reload restores the theme's own colours, or applies Candy Factory's
 		self.gui.reload_theme = True
 		self.gui.update_layout = True
 		self.gui.request_frame()
@@ -23382,13 +23382,13 @@ class Tauon:
 		self.refresh_aqua_splash()
 
 	def refresh_aqua_splash(self) -> None:
-		"""Paint Aqua's loading screen for this window, if it needs it (on a
+		"""Paint Candy Factory's loading screen for this window, if it needs it (on a
 		worker thread; the native launcher shows it at the next start)."""
 		if self.prefs.aero:
 			refresh_splash(self.user_directory, (self.window_size[0], self.window_size[1]), self.gui.scale)
 
 	def set_skin_tauon(self) -> None:
-		"""Back to Tauon's own themes (from the Aqua skin)."""
+		"""Back to Tauon's own themes (from the Candy Factory skin)."""
 		self._set_aero(False)
 
 	def set_bg_style_aqua(self, mode: int = 0) -> bool | None:
@@ -25386,7 +25386,7 @@ class Drawing:
 		aero = self.tauon.aero
 		glass = aero.active and background_colour is None
 		if glass:
-			# Aqua: a glass tile (dropdowns given their own colours keep them)
+			# Candy Factory: a glass tile (dropdowns given their own colours keep them)
 			background = aero.menu_bg()
 			ink = text_colour or aero.colour("TEXT")
 		if not enabled and dim:
@@ -25425,7 +25425,7 @@ class Drawing:
 
 		aero = self.tauon.aero
 		if aero.active and background_colour is None:
-			# Aqua: a glass capsule; a hover colour of its own (a red Delete)
+			# Candy Factory: a glass capsule; a hover colour of its own (a red Delete)
 			# lights it as a gel of that hue
 			hover = self.coll(rect)
 			if hover and tooltip:
@@ -30900,7 +30900,7 @@ class SearchOverlay:
 			self, item: list[int | str | None], rect: tuple[int, int, int, int], pad: int, height: int,
 			selected: bool, label: str, kind_colour: ColourRGBA | None, thumbnail_rx: int, text_lx: int,
 			text_right: int, fonts: tuple[int, int, int], control_down: bool) -> None:
-		"""One Aqua search result, straight on the frosted backdrop: art or a gel tag for its kind
+		"""One Candy Factory search result, straight on the frosted backdrop: art or a gel tag for its kind
 		on the left, then its text; the selected row sits in a glass pill."""
 		aero = self.tauon.aero
 		ddt = self.ddt
@@ -31141,7 +31141,7 @@ class SearchOverlay:
 
 			overlay_background = ColourRGBA(12, 12, 12, 255)
 			track_in_bar_colour = ColourRGBA(244, 209, 66, 255)
-			# Aqua: the frosted sky as a backdrop, with a capsule field and the
+			# Candy Factory: the frosted sky as a backdrop, with a capsule field and the
 			# results under it in one column on the left
 			aero = self.tauon.aero
 			glass = aero.active
@@ -31880,7 +31880,7 @@ class DuplicateImportBox:
 			)
 			focus_x = button_x + add_w + round(16 * scale) if self.skip_selected else button_x
 			focus_w = skip_w if self.skip_selected else add_w
-			# Aqua's capsule buttons don't take a square outline
+			# Candy Factory's capsule buttons don't take a square outline
 			if not tauon.aero.active:
 				ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
 		finally:
@@ -32057,7 +32057,7 @@ class DeleteFilesBox:
 				cancel_label, cancel_x, button_y, w=cancel_w, h=round(28 * scale), press=self.click)
 			focus_x = button_x if self.confirm_selected else cancel_x
 			focus_w = confirm_w if self.confirm_selected else cancel_w
-			# Aqua's capsule buttons don't take a square outline
+			# Candy Factory's capsule buttons don't take a square outline
 			if not tauon.aero.active:
 				ddt.rect_s((focus_x, button_y, focus_w, round(28 * scale)), colours.box_text_border, max(1, round(scale)))
 		finally:
@@ -33023,7 +33023,7 @@ class Over:
 
 	@property
 	def settings_glass(self) -> bool:
-		"""Aqua: the window is glass and its surfaces stay translucent."""
+		"""Candy Factory: the window is glass and its surfaces stay translucent."""
 		return self.tauon.aero.active
 
 	def settings_flat(self, background: ColourRGBA) -> ColourRGBA:
@@ -36237,21 +36237,27 @@ class Over:
 	# --- Section bodies: Appearance ---
 
 	def settings_body_theme(self, rows: SettingsRows) -> None:
+		prefs = self.prefs
+		tauon = self.tauon
+		self.settings_theme_rows(rows)
+		# Tauon's own themes, or the Candy Factory skin, which brings its own look:
+		# themes and background styles only apply to Tauon
+		rows.choices(
+			_("Skin"),
+			(
+				(_("Tauon"), not prefs.aero, tauon.set_skin_tauon),
+				(_("Candy Factory"), bool(prefs.aero), tauon.set_bg_style_aqua),
+			),
+		)
+
+	def settings_theme_rows(self, rows: SettingsRows) -> None:
+		"""The Theme section above the Skin chooser: the active skin's options."""
 		gui = self.gui
 		prefs = self.prefs
 		tauon = self.tauon
 		s = gui.scale
 		accent = rows.accent
 
-		# Tauon's own themes, or the Aqua skin, which brings its own look:
-		# themes and background styles only apply to Tauon
-		rows.choices(
-			_("Skin"),
-			(
-				(_("Tauon"), not prefs.aero, tauon.set_skin_tauon),
-				(_("Aqua"), bool(prefs.aero), tauon.set_bg_style_aqua),
-			),
-		)
 		if prefs.aero:
 			rows.switch(tauon.toggle_aero_motion, _("Ambient motion"))
 			if prefs.backend == Backend.PHAZOR:
@@ -37140,7 +37146,7 @@ class Over:
 		bg = self.ddt.text_background_colour
 		self.app_icon.render(rect[0] + rows.pad, rect[1] + round(10 * s))
 		# Easter egg: the icon opens the Dream Room, or the Aero world while the
-		# Aqua skin is on (no pointer cursor on purpose)
+		# Candy Factory skin is on (no pointer cursor on purpose)
 		icon_rect = (rect[0] + rows.pad, rect[1] + round(10 * s), round(self.app_icon.w), round(self.app_icon.h))
 		if self.click and self.coll(icon_rect):
 			self.inp.global_clicked = True
@@ -43435,7 +43441,7 @@ class StandardPlaylist:
 
 			# Draw playing highlight
 			if aero is not None:
-				# Aqua: a gel row for the playing track, a glass pill for
+				# Candy Factory: a gel row for the playing track, a glass pill for
 				# the selection (no hover highlight)
 				row = aero.row_rect(track_box)
 				if playing:
@@ -43476,7 +43482,7 @@ class StandardPlaylist:
 			if not gui.set_mode:
 				left_trim = round(9 * gui.scale) if gui.custom_mode and not tauon.aero.active else 0
 				if tauon.aero.active:
-					# Aqua: the number sits 12px in from the capsule's edge
+					# Candy Factory: the number sits 12px in from the capsule's edge
 					left_trim = round(3 * gui.scale)
 				tauon.line_render(
 					tr, track_position, gui.playlist_text_offset + line_y,
@@ -43909,7 +43915,7 @@ class StandardPlaylist:
 		if self.prefs.transparent_mode and not gui.have_art_bg:
 			self.ddt.clear_rect((round(cx), round(cy), round(cw), round(ch)))
 		if self.tauon.aero.active:
-			# Aqua's playing-row gel sits under the row's text
+			# Candy Factory's playing-row gel sits under the row's text
 			self.tauon.aero.draw_tracklist_under((r.x, r.y, r.w, r.h))
 		sdl3.render_texture(self.renderer, self.gui.tracklist_texture, r, r)
 
@@ -44020,7 +44026,7 @@ class ArtBox:
 		if inset:  # The Custom Layout Art Box passes inset=False (its gutter spaces it)
 			pad = 17 * gui.scale  # Inset the square a bit
 			if reflect and tauon.aero.active:
-				# Aqua's side panel: the concept's 20px of glass around the art
+				# Candy Factory's side panel: the concept's 20px of glass around the art
 				pad = tauon.aero.side_art_inset()
 			box_w -= pad
 			box_h -= pad
@@ -44039,7 +44045,7 @@ class ArtBox:
 
 		if target_track:  # Only show if song playing or paused
 
-			# Aqua: rounded, glossed art with a drop shadow (and, in the
+			# Candy Factory: rounded, glossed art with a drop shadow (and, in the
 			# side panel, its reflection)
 			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect)
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
@@ -46342,7 +46348,7 @@ class AddMusicBox:
 		self._text = ColourRGBA(255, 255, 255, 255)
 		self._accent = ColourRGBA(255, 255, 255, 255)
 		self._line_px = 1
-		# Drawn on Aqua's glass
+		# Drawn on Candy Factory's glass
 		self._glass = False
 
 		self.page: Literal["main", "servers", "server", "picker"] = "main"
@@ -48078,7 +48084,7 @@ class PlaylistBox:
 
 			# Draw highlight
 			if tauon.aero.active:
-				# Aqua: a glass pill for the open playlist, a faint one for a drop target
+				# Candy Factory: a glass pill for the open playlist, a faint one for a drop target
 				aero = tauon.aero
 				row_rect = aero.row_rect((tab_start, yy - round(1 * gui.scale), tab_width, self.tab_h - 1))
 				if i == pctl.active_playlist_viewing or (tauon.tab_menu.active and tauon.tab_menu.reference == i):
@@ -51119,7 +51125,7 @@ class ChannelStatusView:
 		)
 
 	def box_palette(self) -> ChannelStatusPalette:
-		"""Colours that follow the theme's info box (its glass, under Aqua)"""
+		"""Colours that follow the theme's info box (its glass, under Candy Factory)"""
 		colours = self.tauon.colours
 		bg = self.tauon.aero.menu_bg() if self.tauon.aero.active else colours.box_background
 
@@ -54693,7 +54699,7 @@ class Showcase:
 		self.artist_mode: bool = False
 
 	def shelf(self) -> tuple[int, int, int, int]:
-		"""The view's own area: Aqua's glass panel for it, between the bars."""
+		"""The view's own area: Candy Factory's glass panel for it, between the bars."""
 		gui = self.gui
 		return (round(gui.playlist_left), round(gui.panelY), round(gui.plw),
 			round(self.window_size[1] - gui.panelY - gui.panelBY))
@@ -54702,7 +54708,7 @@ class Showcase:
 		if not self.tauon.aero.active:
 			self._render()
 			return
-		# Aqua's bars are translucent: keep the art and lyrics on the view's
+		# Candy Factory's bars are translucent: keep the art and lyrics on the view's
 		# own glass, rather than scrolling on underneath the bars
 		old_clip = sdl3.get_render_clip_rect(self.renderer)
 		sdl3.set_render_clip_rect(self.renderer, sdl3.Rect(*self.shelf()))
@@ -54872,7 +54878,7 @@ class Showcase:
 				timed_ready = self.tauon.timed_lyrics_ren.generate(track)
 			plain_lyrics = self.tauon.lyric_variants.plain_text(track)
 			lyrics_margin = round(24 * self.gui.scale)
-			# Lyrics wrap at the right edge of the view's area (Aqua's glass is inset from the window's)
+			# Lyrics wrap at the right edge of the view's area (Candy Factory's glass is inset from the window's)
 			shelf = self.shelf()
 			right = shelf[0] + shelf[2] if self.tauon.aero.active else self.window_size[0]
 			lyrics_rect = (gcx, self.gui.panelY, right - gcx, self.window_size[1] - self.gui.panelY - self.gui.panelBY)
@@ -59441,8 +59447,8 @@ def load_prefs(bag: Bag) -> None:
 	# The skin was called Aqualine: carry its settings over to the new keys
 	if not any(row.lstrip().startswith("aqua-") for row in cf.old):
 		cf.old = [row.replace("aqualine-", "aqua-", 1) if row.lstrip().startswith("aqualine-") else row for row in cf.old]
-	prefs.aero = cf.sync_add("bool", "aqua-style", prefs.aero, "Aqua glass-and-gel skin")
-	prefs.aero_motion = cf.sync_add("bool", "aqua-motion", prefs.aero_motion, "Animate the Aqua sky")
+	prefs.aero = cf.sync_add("bool", "aqua-style", prefs.aero, "Candy Factory glass-and-gel skin")
+	prefs.aero_motion = cf.sync_add("bool", "aqua-motion", prefs.aero_motion, "Animate the Candy Factory sky")
 	prefs.side_panel_spectrum = cf.sync_add(
 		"bool", "side-panel-spectrum", prefs.side_panel_spectrum, "Glass spectrum under the art in the side panel")
 	prefs.transparency_tracklist_darkness = cf.sync_add(
@@ -64401,11 +64407,11 @@ def main(holder: Holder) -> None:
 	mode_menu.add(MenuItem(_("Show Album Art"), tauon.toggle_feux_art,
 		check_test=lambda: prefs.feux_panel_art,
 		show_test=lambda ref=None: tauon.feux_panel_showing()))
-	# Aqua's bar has no waveform
+	# Candy Factory's bar has no waveform
 	mode_menu.add(MenuItem(_("Show Waveform"), tauon.toggle_feux_waveform,
 		check_test=lambda: prefs.feux_panel_waveform,
 		show_test=lambda ref=None: tauon.feux_panel_showing() and not tauon.aero.active))
-	# Aqua always moves smoothly
+	# Candy Factory always moves smoothly
 	mode_menu.add(MenuItem(_("Smooth Progress"), tauon.toggle_smooth_progress,
 		check_test=lambda: prefs.smooth_progress,
 		show_test=lambda ref=None: not tauon.aero.active))
@@ -64673,7 +64679,7 @@ def main(holder: Holder) -> None:
 	tauon.playlist_autoscan = True
 	tauon.thread_manager.ready("worker")
 
-	# Aqua's loading screen for the next start, if this window needs a new one
+	# Candy Factory's loading screen for the next start, if this window needs a new one
 	tauon.refresh_aqua_splash()
 
 	# Hold the splash/loading screen for a minimum duration
@@ -66094,7 +66100,7 @@ def main(holder: Holder) -> None:
 					tauon.coll((scroll_hitbox_x, sbp, scroll_hitbox_width, sbl)) and inp.mouse_position[0] != 0
 				) or scroll_hold
 				if tauon.aero.active:
-					# Aqua: a slim accent pill, no track (10px wide, 2px clear border)
+					# Candy Factory: a slim accent pill, no track (10px wide, 2px clear border)
 					bar_w = round(10 * gui.scale)
 					bx = x + width - bar_w if not prefs.tracklist_scrollbar_left else x + 1
 					tauon.aero.scroll_thumb((bx, sbp, bar_w, sbl), thumb_hover)
@@ -68408,7 +68414,7 @@ def main(holder: Holder) -> None:
 			gui.have_art_bg = prefs.art_bg and gui.mode == GuiMode.MAIN and not aero_on
 			gui.backdrop = gui.have_art_bg or aero_on
 			if aero_on:
-				# Aqua: the sky, then the standard layout's glass panels
+				# Candy Factory: the sky, then the standard layout's glass panels
 				# (custom mode lays its own down in custom.render())
 				tauon.aero.begin_frame()
 				if not gui.custom_mode:
@@ -68515,7 +68521,7 @@ def main(holder: Holder) -> None:
 					if prefs.scroll_enable:
 						side_drag_x = gui.rsp_split_x - 1 * gui.scale
 				if prefs.aero and not gui.custom_mode:
-					# Aqua: centred on the visible gap between the panels
+					# Candy Factory: centred on the visible gap between the panels
 					side_drag_x = tauon.aero.side_split_centre() - 6 * gui.scale
 				rect = (
 					side_drag_x,
@@ -69014,10 +69020,10 @@ def main(holder: Holder) -> None:
 							boxw = gui.rspw
 							available_h = max(0, window_size[1] - gui.panelY - gui.panelBY)
 							boxh = min(gui.rspw, available_h)
-							# Aqua mirrors the art below itself; the text moves
+							# Candy Factory mirrors the art below itself; the text moves
 							# down to make room. The glass spectrum takes the bottom.
 							refl = tauon.aero.side_art_text_gap() if tauon.aero.active and prefs.show_side_art else 0
-							# The spectrum is part of the Aqua skin
+							# The spectrum is part of the Candy Factory skin
 							spec_h = tauon.aero.side_spectrum_height() if prefs.side_panel_spectrum and tauon.aero.active else 0
 
 							if prefs.show_side_art:
@@ -70288,7 +70294,7 @@ def main(holder: Holder) -> None:
 					rect[0] = int(window_size[0] / 2) - int(rect[2] / 2)
 					rect2[0] = rect[0]
 
-					# Aqua: a glass box with a sunken field (a red gel one on no match)
+					# Candy Factory: a glass box with a sunken field (a red gel one on no match)
 					quick_glass = tauon.glass_box(rect)
 					quick_field = (
 						rect[0] + round(10 * gui.scale), rect[1] + round(8 * gui.scale),
@@ -71593,7 +71599,7 @@ def main(holder: Holder) -> None:
 				if not prefs.power_save or window_is_focused(tauon.t_window):
 					gui.request_frame()
 			elif tauon.aero.active:
-				# Aqua's seek tube moves continuously; its frames come
+				# Candy Factory's seek tube moves continuously; its frames come
 				# from the tube itself
 				tauon.bottom_bar1.seek_time = pctl.playing_time
 			elif prefs.smooth_progress:

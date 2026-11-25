@@ -1,4 +1,4 @@
-"""The Aqua skin's loading screen: a grey starfield.
+"""The Candy Factory skin's loading screen: a grey starfield.
 
 The native launcher shows the splash before Python starts, so it can't draw
 this itself. Instead it is painted here once, at the window's pixel size,
@@ -70,7 +70,7 @@ def refresh_splash(user_directory: Path, size: tuple[int, int], scale: float) ->
 			info = {"version": SPLASH_VERSION, "size": list(size), "scale": scale}
 			(user_directory / SPLASH_INFO_FILENAME).write_text(json.dumps(info), encoding="utf-8")
 		except Exception:
-			logging.exception("Aqua: painting the splash failed")
+			logging.exception("Candy Factory: painting the splash failed")
 		finally:
 			with _lock:
 				_running = False

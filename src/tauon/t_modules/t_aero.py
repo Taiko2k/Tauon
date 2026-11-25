@@ -1,12 +1,12 @@
 # Copyright © 2015-2026, Taiko2k captain(dot)gxj(at)gmail.com
 
-"""Aqua: an optional glass-and-gel skin in the Frutiger Aero style.
+"""Candy Factory: an optional glass-and-gel skin in the Frutiger Aero style.
 
 Everything here draws on top of Tauon's normal UI. t_main and t_custom call in
 at a handful of points while prefs.aero is on, and otherwise nothing in this
 module runs.
 
-The look is the dusk variant of the Aqua concept:
+The look is the dusk variant of the Candy Factory concept:
 
 - a sky painted from the playing album's colours, at a fifth of the window's
   logical size so that scaling it up does the blurring, with drifting light
@@ -457,7 +457,7 @@ class _Tex:
 
 
 class Aero:
-	"""The Aqua skin. One instance lives on tauon.aero."""
+	"""The Candy Factory skin. One instance lives on tauon.aero."""
 
 	GUTTER = 8          # logical px between panels
 	BOTTOM_GAP = 6      # and above the bottom bar (its glass reads as a wider gap)
@@ -853,7 +853,7 @@ class Aero:
 					pal = (*hues, dark, oacc)
 					raw.close()
 		except Exception:
-			logging.exception("Aqua: could not read art colours")
+			logging.exception("Candy Factory: could not read art colours")
 		with self._palette_lock:
 			self._palette_result = (key, pal)
 		self.gui.request_frame()
@@ -1225,7 +1225,7 @@ class Aero:
 		try:
 			result = (gen, (lw, lh), self._paint_sky(lw, lh, snap))
 		except Exception:
-			logging.exception("Aqua: sky paint failed")
+			logging.exception("Candy Factory: sky paint failed")
 			result = (gen, None, None)
 		with self._sky_job_lock:
 			self._sky_job_result = result
@@ -3238,7 +3238,7 @@ class _PresetBottom:
 			tauon.feux_bar.render(h)
 			return
 		if not prefs.shuffle_lock:
-			# Aqua's own compact panel
+			# Candy Factory's own compact panel
 			tauon.aero.compact_bar.render(h)
 			return
 		bar = tauon.bottom_bar_ao1 if prefs.shuffle_lock else tauon.bottom_bar1
@@ -3252,7 +3252,7 @@ class _PresetBottom:
 
 
 class AquaBar:
-	"""Aqua's compact playback panel: the concept's bottom bar.
+	"""Candy Factory's compact playback panel: the concept's bottom bar.
 
 	Transport orbs on the left (play larger, sitting a little high), the
 	track title, artist and times over the seek tube in the middle, and the
