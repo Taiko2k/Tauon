@@ -69294,7 +69294,8 @@ def main(holder: Holder) -> None:
 					render_tracklist_scrollbar(
 						gui.playlist_left, gui.plw, top,
 						window_size[1] - gui.panelBY,
-						window_size[1] - (30 + 22) * gui.scale)
+						# Stop the thumb at the bottom panel, whatever its height
+						window_size[1] - gui.panelBY - 1 * gui.scale)
 
 				# NEW TOP BAR
 				# C-TBR
