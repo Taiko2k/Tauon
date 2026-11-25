@@ -7,27 +7,30 @@ and the Dream Room (t_room) otherwise; `Dreams` holds both behind the one
 switch Tauon calls. (Not to be confused with t_aero, the skin itself.)
 
 Same trick as t_room (the live UI rides on a screen inside a hand-projected
-3D scene), but this screen floats over a mirror lake somewhere in 2007, at
-night, under the skin's own dusk sky.
+3D scene), but this screen hangs over a still lake at night, looking across
+the water to a city under the skin's own dusk sky.
 
 Implementation notes:
 
 * Reuses DreamRoom's camera, clipping and batching. Draw order is painter's:
-  sky -> mirrored world -> water tint -> world -> screen -> foreground ->
-  lens effects. Loose objects (fish, bubbles, discs...) are depth sorted each
-  frame and split by the screen's plane.
-* The lake is a true planar mirror: the world is drawn a second time with y
-  negated, then the water is laid over it as a translucent tint.
+  sky -> mirrored world -> water -> world -> screen -> foreground -> lens.
+  Loose objects (boats, fireflies) are depth sorted each frame and split by
+  the screen's plane.
+* The lake is a planar mirror: the world is drawn a second time with y
+  negated, then the water is laid over it as a translucent tint. Lights are
+  reflected from a copy smeared downward and cut into bands that sway, so
+  they shimmer like light on moving water.
 * The sky, water, light ribbons and glows take their colours from the skin
   (t_aero) every frame, so they follow the playing album and Obsidian. The
-  sprites are painted once in fixed night colours and tinted toward it.
-* All sprites are painted once with Pillow. Their transparent pixels are
-  given the colour of whatever is nearby, so plain alpha blending filters
-  cleanly at the edges on every renderer.
+  land and the city are painted once in neutral night tones and tinted
+  toward it.
+* All sprites are painted once with Pillow, the detailed ones at twice their
+  size and then reduced. Their transparent pixels are given the colour of
+  whatever is nearby, so plain alpha blending filters cleanly at the edges
+  on every renderer.
 """
 from __future__ import annotations
 
-import colorsys
 import math
 import random
 from typing import TYPE_CHECKING
@@ -53,20 +56,13 @@ END_EYE = (1.25, 0.95, 4.0)
 END_TGT = (0.3, 1.3, 0.0)
 
 MOON = (-20.0, 182.0, -400.0)
-MOON_R = 13.0
-
-# Clouds: azimuth and elevation in degrees, distance, half-width, texture, drift
-CLOUDS = [
-	(-48, 9, 380, 60, 0, 0.9), (-30, 5, 390, 40, 1, 0.6), (-12, 24, 330, 55, 2, 1.2), (4, 14, 370, 42, 0, 0.8),
-	(18, 6, 390, 36, 1, 0.5), (31, 19, 300, 50, 2, 1.1), (46, 11, 360, 58, 0, 0.7), (-58, 23, 340, 50, 1, 1.0),
-	(60, 26, 300, 60, 2, 1.3), (-21, 36, 280, 40, 0, 1.4),
-]
+MOON_R = 15.0
 
 # Sky gradient: height on the far plane, then the skin's hue key (1: its top
 # hue, 2: its floor hue), saturation and lightness, and lightness under Obsidian
 SKY_Z = -420.0
 SKY = [
-	(0.0, 2, 0.50, 0.25, 0.16), (24.0, 2, 0.58, 0.17, 0.12), (90.0, 1, 0.65, 0.12, 0.085),
+	(0.0, 2, 0.50, 0.27, 0.17), (34.0, 2, 0.58, 0.20, 0.13), (100.0, 1, 0.65, 0.12, 0.085),
 	(240.0, 1, 0.70, 0.07, 0.05), (560.0, 1, 0.72, 0.04, 0.03),
 ]
 
@@ -74,7 +70,7 @@ SKY = [
 # horizon's, alpha. Thin at grazing angles so the far lake is nearly a pure mirror.
 WATER = [
 	(-6.0, 0.0, 214), (1.0, 0.0, 208), (2.5, 0.05, 196), (4.5, 0.10, 178), (8.0, 0.18, 150), (14.0, 0.28, 120),
-	(26.0, 0.40, 92), (50.0, 0.55, 70), (110.0, 0.75, 54), (1000.0, 1.0, 46),
+	(26.0, 0.40, 100), (50.0, 0.55, 84), (110.0, 0.75, 72), (1000.0, 1.0, 64),
 ]
 
 # The skin's light ribbons, as swooshes across the sky: y, amplitude,
@@ -88,26 +84,38 @@ RIBBONS = [
 # Blooms on the sky, as in the skin: x, y, half-size, hue key (1, 2 or accent) + offset, strength
 BLOOMS = [(-250.0, 175.0, 250.0, 1, 15.0, 0.30), (170.0, 45.0, 270.0, 2, 0.0, 0.34), (-50.0, 250.0, 210.0, 3, 25.0, 0.24)]
 
-# Hill flats: x0, x1, height, z
-HILL_L = (-230.0, -22.0, 50.0, -95.0)
-HILL_R = (40.0, 300.0, 44.0, -95.0)
-
-# Lens flare ghosts: position along the moon->centre axis, size, hue key + offset, alpha, texture
-GHOSTS = [
-	(0.38, 0.030, (3, 0.0), 44, "ring"),
-	(0.60, 0.055, (1, 0.0), 26, "hex"),
-	(0.86, 0.016, None, 60, "soft"),
-	(1.14, 0.110, (3, 40.0), 18, "ring"),
-	(1.42, 0.070, (2, 0.0), 22, "hex"),
-	(1.80, 0.160, (1, 20.0), 14, "bokeh"),
+# Wisps of cloud: azimuth and elevation in degrees, distance, half-width, texture, drift
+CLOUDS = [
+	(-50, 16, 380, 170, 0, 0.6), (-14, 27, 360, 150, 1, 0.9), (22, 12, 390, 190, 2, 0.5),
+	(48, 22, 350, 140, 0, 0.8), (-34, 7, 395, 200, 1, 0.4), (8, 36, 330, 120, 2, 1.0),
 ]
 
-ADDITIVE = {"soft", "ring", "bokeh", "hex", "city_lights"}
+# The far shore. Everything there is an upright flat standing on the water.
+# The city: x0, x1, z; its height follows its texture's aspect.
+CITY_W, CITY_H_PX = 4096, 720
+CITY = (-330.0, 270.0, -240.0)
+CITY_Y = (CITY[1] - CITY[0]) * CITY_H_PX / CITY_W
+# Mountain ranges behind it: texture, x0, x1, height, z, palette key
+RIDGES = [
+	("ridge_far", -900.0, 900.0, 50.0, -385.0, "far"),
+	("ridge_mid", -720.0, 720.0, 36.0, -330.0, "mid"),
+]
+# Low wooded shores either side, nearer: texture, x0, x1, height, z
+SHORES = [("shore_l", -430.0, -150.0, 13.0, -175.0), ("shore_r", 190.0, 480.0, 9.0, -175.0)]
 
-# Gel buttons take the skin's hues: the accent, its top hue, its floor hue
-ORB_HUES = {"orb_play": 3, "orb_next": 1, "orb_note": 2}
+# Boats crossing the lake: z, x at T=0, speed, length
+BOATS = [(-58.0, -30.0, 0.9, 3.6), (-118.0, 70.0, -0.6, 5.6), (-170.0, -160.0, 0.45, 7.0)]
+BOAT_SPAN = (-230.0, 230.0)
 
-CIRCLE = [(math.cos(TAU * i / 12), math.sin(TAU * i / 12)) for i in range(13)]
+# Window grids: cell size, and the pane inside each cell
+WINDOWS = {
+	"punched": ((8, 12), (2, 3, 5, 8)),
+	"dense": ((6, 10), (1, 2, 4, 7)),
+	"ribbon": ((5, 11), (0, 4, 4, 7)),
+	"tall": ((10, 15), (2, 2, 7, 11)),
+}
+
+ADDITIVE = {"soft", "lights", "accent", "lights_streak", "accent_streak"}
 
 
 # ------------------------------------------------------------------ painting
@@ -129,10 +137,6 @@ def _vgrad(size: tuple[int, int], top, bottom) -> Image.Image:
 		g.point(_lut(lambda f, a=top[i], b=bottom[i]: (a + (b - a) * f) / 255.0)) for i in range(3)])
 
 
-def _hgrad(size: tuple[int, int], left, right) -> Image.Image:
-	return _vgrad((size[1], size[0]), left, right).transpose(Image.Transpose.ROTATE_90)
-
-
 def _flat(size: tuple[int, int], rgb) -> Image.Image:
 	return Image.new("RGB", size, tuple(rgb))
 
@@ -148,7 +152,7 @@ def _scale(mask: Image.Image, k: float) -> Image.Image:
 	return mask.point(_lut(lambda f: f * k))
 
 
-def _blur(im: Image.Image, r: float) -> Image.Image:
+def _blur(im: Image.Image, r) -> Image.Image:
 	return im.filter(ImageFilter.GaussianBlur(r))
 
 
@@ -176,70 +180,6 @@ def _mix(a, b, f: float) -> tuple:
 	return tuple(round(a[i] + (b[i] - a[i]) * f) for i in range(3))
 
 
-def _make_hex() -> Image.Image:
-	s = 192
-	m = Image.new("L", (s, s), 0)
-	d = ImageDraw.Draw(m)
-	pts = [(s / 2 + s * 0.44 * math.cos(TAU * i / 6 + 0.3), s / 2 + s * 0.44 * math.sin(TAU * i / 6 + 0.3))
-		for i in range(6)]
-	d.polygon(pts, fill=150)
-	d.line([*pts, pts[0]], fill=255, width=5)
-	return _layer((255, 255, 255), _blur(m, 2.5).resize((96, 96), Image.BILINEAR))
-
-
-def _make_bubble() -> Image.Image:
-	s = 256
-	rim = _radial(s, lambda r: (0.05 + 0.85 * r ** 7) if r < 0.93 else max(0.0, (1.0 - r) / 0.07) * 0.56)
-	g = Image.linear_gradient("L")
-	gh = g.transpose(Image.Transpose.ROTATE_90)
-	col = Image.merge("RGB", [
-		g.point(_lut(lambda f: (205 + 50 * math.sin(f * TAU)) / 255)),
-		gh.point(_lut(lambda f: (225 + 30 * math.sin(f * TAU + 2.0)) / 255)),
-		Image.new("L", (s, s), 255),
-	])
-	im = col.convert("RGBA")
-	im.putalpha(rim)
-	# Reflected light along the lower right of the rim
-	cres = ImageChops.multiply(
-		_radial(s, lambda r: math.exp(-((r - 0.78) / 0.07) ** 2)), g.rotate(45))
-	im.alpha_composite(_layer((255, 255, 255), _scale(cres, 0.8)))
-	# Specular highlights
-	hl = Image.new("L", (s, s), 0)
-	d = ImageDraw.Draw(hl)
-	d.ellipse((s * 0.36, s * 0.13, s * 0.64, s * 0.31), fill=235)
-	hl = hl.rotate(38, center=(s / 2, s / 2))
-	ImageDraw.Draw(hl).ellipse((s * 0.67, s * 0.69, s * 0.74, s * 0.75), fill=200)
-	im.alpha_composite(_layer((255, 255, 255), _blur(hl, 4)))
-	return im
-
-
-def _make_cloud(rnd: random.Random) -> Image.Image:
-	w, h = 512, 256
-	m = Image.new("L", (w, h), 0)
-	d = ImageDraw.Draw(m)
-	n = rnd.randint(6, 9)
-	base = h * 0.76
-	for i in range(n):
-		f = i / (n - 1)
-		r = h * (0.13 + 0.17 * math.sin(math.pi * f) ** 0.8 + rnd.uniform(-0.02, 0.05))
-		x = w * (0.18 + 0.64 * f) + rnd.uniform(-10, 10)
-		y = base - r * rnd.uniform(0.7, 1.0)
-		d.ellipse((x - r, y - r, x + r, y + r), fill=255)
-		if 0.2 < f < 0.8 and rnd.random() < 0.6:
-			r2 = r * 0.72
-			x2 = x + rnd.uniform(-22, 22)
-			y2 = y - r * 0.8
-			d.ellipse((x2 - r2, y2 - r2, x2 + r2, y2 + r2), fill=255)
-	d.rounded_rectangle((w * 0.15, base - h * 0.16, w * 0.85, base), radius=h * 0.08, fill=255)
-	# Moonlit from the upper right: a silver rim where the mask, sampled
-	# toward the lower left, runs out
-	rim = _blur(ImageChops.subtract(m, ImageChops.offset(m, -9, 13)), 7)
-	col = Image.composite(_flat((w, h), (196, 214, 236)), _vgrad((w, h), (64, 74, 100), (30, 36, 56)), _scale(rim, 1.1))
-	im = col.convert("RGBA")
-	im.putalpha(_blur(m, 4))
-	return im
-
-
 def _make_moon(rnd: random.Random) -> Image.Image:
 	s = 256
 	m = Image.new("L", (s, s), 0)
@@ -251,382 +191,271 @@ def _make_moon(rnd: random.Random) -> Image.Image:
 	return im.reduce(2)
 
 
-def _make_city(rnd: random.Random) -> tuple[Image.Image, Image.Image]:
-	"""The city at night: dark glass towers, and their lights on a layer of
-	their own (drawn additively, so they also light up the reflection)."""
-	w, h = 2048, 512
-	im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-	li = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-	d = ImageDraw.Draw(im)
-	dl = ImageDraw.Draw(li)
-	tints = [(28, 46, 66), (22, 38, 58), (38, 60, 82), (18, 30, 48), (32, 54, 74), (24, 44, 62)]
-	lamps = [(255, 222, 168), (196, 234, 255), (255, 242, 218), (170, 226, 255)]
-	tree = (12, 34, 40, 255)
-
-	def lighter(c):
-		return (*_mix(c, (150, 204, 232), 0.2), 255)
-
-	def windows(x0, y0, x1, y1, lit: float) -> None:
-		col = rnd.choice(lamps)
-		y = y0 + 7
-		while y < y1 - 5:
-			if rnd.random() < 0.8:
-				x = x0 + 5
-				while x < x1 - 6:
-					if rnd.random() < lit:
-						dl.rectangle((x, y, x + 3, y + 4), fill=(*col, rnd.randint(110, 255)))
-					x += 9
-			y += 11
-
-	def beacon(x, y) -> None:
-		dl.ellipse((x - 4, y - 4, x + 4, y + 4), fill=(255, 70, 70, 255))
-
-	g = h
-	x = 20.0
-	while x < w - 70:
-		c = abs(x / w - 0.5) * 2
-		top = h * (0.22 + 0.70 * (1 - c) ** 1.5)
-		bw = rnd.uniform(36, 84)
-		bh = top * rnd.uniform(0.42, 1.0)
-		tint = rnd.choice(tints)
-		style = rnd.choice(("slab", "slab", "sail", "needle", "eco", "twin"))
-		lit = rnd.uniform(0.15, 0.5)
-		y0 = g - bh
-		if style == "slab":
-			d.rounded_rectangle((x, y0, x + bw, g + 60), radius=bw * 0.3, fill=(*tint, 255))
-			d.rounded_rectangle((x + bw * 0.62, y0 + bw * 0.1, x + bw, g + 60), radius=bw * 0.3, fill=lighter(tint))
-			windows(x + bw * 0.1, y0 + bw * 0.3, x + bw * 0.9, g, lit)
-			if rnd.random() < 0.45:
-				d.ellipse((x + bw * 0.12, y0 - bw * 0.14, x + bw * 0.88, y0 + bw * 0.2), fill=tree)
-			elif bh > h * 0.5:
-				beacon(x + bw * 0.5, y0 + 3)
-		elif style == "sail":
-			d.pieslice((x - bw, g - bh, x + bw, g + bh), 270, 360, fill=(*tint, 255))
-			d.pieslice((x - bw * 0.45, g - bh * 0.88, x + bw * 0.45, g + bh * 0.88), 270, 360, fill=lighter(tint))
-			# A lit seam up the sail's curve
-			dl.arc((x - bw * 0.72, g - bh * 0.94, x + bw * 0.72, g + bh * 0.94), 272, 358, fill=(*rnd.choice(lamps), 200), width=3)
-		elif style == "needle":
-			d.rectangle((x + bw * 0.42, y0, x + bw * 0.58, g), fill=(*tint, 255))
-			d.polygon([(x + bw * 0.2, g), (x + bw * 0.8, g), (x + bw * 0.58, g - bh * 0.3), (x + bw * 0.42, g - bh * 0.3)],
-				fill=(*tint, 255))
-			sy = y0 + bh * 0.2
-			r = bw * 0.36
-			d.ellipse((x + bw * 0.5 - r, sy - r, x + bw * 0.5 + r, sy + r), fill=lighter(tint))
-			dl.rectangle((x + bw * 0.5 - r * 0.9, sy - 2, x + bw * 0.5 + r * 0.9, sy + 2), fill=(*rnd.choice(lamps), 255))
-			d.line((x + bw * 0.5, y0, x + bw * 0.5, y0 - bh * 0.16), fill=(*tint, 255), width=3)
-			beacon(x + bw * 0.5, y0 - bh * 0.16)
-		elif style == "eco":
-			for k in range(3):
-				tw = bw * (1 - 0.24 * k)
-				ty = g - bh * (k + 1) / 3
-				x0 = x + (bw - tw) / 2
-				d.rectangle((x0, ty, x0 + tw, g), fill=(*tint, 255))
-				d.rectangle((x0 + tw * 0.66, ty, x0 + tw, g), fill=lighter(tint))
-				windows(x0, ty + 6, x0 + tw, ty + bh / 3, lit)
-				d.ellipse((x0 - 5, ty - 9, x0 + tw * 0.4, ty + 7), fill=tree)
-				d.ellipse((x0 + tw * 0.5, ty - 7, x0 + tw + 5, ty + 6), fill=tree)
-		else:
-			for k, hk in ((0.0, 1.0), (0.6, 0.84)):
-				x0 = x + bw * k
-				d.rounded_rectangle((x0, g - bh * hk, x0 + bw * 0.4, g + 60), radius=bw * 0.14, fill=(*tint, 255))
-				d.rectangle((x0 + bw * 0.26, g - bh * hk + bw * 0.14, x0 + bw * 0.4, g), fill=lighter(tint))
-				windows(x0, g - bh * hk + 8, x0 + bw * 0.4, g, lit)
-			d.rectangle((x + bw * 0.3, g - bh * 0.62, x + bw * 0.7, g - bh * 0.56), fill=lighter(tint))
-			dl.rectangle((x + bw * 0.3, g - bh * 0.6, x + bw * 0.7, g - bh * 0.58), fill=(*rnd.choice(lamps), 230))
-		x += bw * rnd.uniform(0.8, 1.4)
-	for i in range(7):	# biodomes, lit from inside
-		cx = rnd.uniform(0.08, 0.92) * w
-		r = rnd.uniform(40, 92)
-		d.pieslice((cx - r, g - r * 0.8, cx + r, g + r * 0.8), 180, 360, fill=(34, 62, 80, 255))
-		dl.pieslice((cx - r * 0.7, g - r * 0.42, cx + r * 0.7, g + r * 0.42), 180, 360, fill=(120, 230, 210, 26))
-		d.arc((cx - r * 0.86, g - r * 0.68, cx + r * 0.86, g + r * 0.68), 205, 290, fill=(120, 170, 200, 255), width=5)
-	for x in range(0, w, 13):	# parkland along the shore, and its lamps
-		r = rnd.uniform(8, 19)
-		d.ellipse((x - r, g - r * 1.5, x + r, g + r), fill=(*_mix((8, 26, 32), (18, 44, 50), rnd.random()), 255))
-		if rnd.random() < 0.2:
-			dl.ellipse((x - 3, g - 12, x + 3, g - 6), fill=(255, 226, 170, 220))
-	im = im.reduce(2)
-	rgb = Image.blend(im.convert("RGB"), _flat(im.size, (26, 44, 62)), 0.15)
-	rgb.putalpha(im.getchannel("A"))
-	li = li.reduce(2)
-	glow = li.filter(ImageFilter.GaussianBlur(3))
-	glow.putalpha(_scale(glow.getchannel("A"), 0.8))
-	glow.alpha_composite(li)
-	return rgb, glow
-
-
-def _make_hills(rnd: random.Random, size, taper: str, far: bool) -> tuple[Image.Image, list[float]]:
-	"""A range of rolling hills. Returns the image and its surface profile
-	(0..1 of the image height, sampled every 8 px)."""
-	w, h = size
-	p1, p2, p3 = rnd.random(), rnd.random(), rnd.random()
-	prof = []
-	for x in range(0, w + 8, 8):
-		u = x / w
-		v = 0.50 + 0.26 * math.sin(TAU * (u * 1.1 + p1)) + 0.13 * math.sin(TAU * (u * 2.7 + p2)) \
-			+ 0.05 * math.sin(TAU * (u * 6.1 + p3))
-		env = 1.0
-		if taper == "right":
-			env = _smooth(min(1.0, (1.0 - u) / 0.4))
-		elif taper == "left":
-			env = _smooth(min(1.0, u / 0.4))
-		prof.append(max(0.03, v) * env)
-	top = max(prof)
-	prof = [0.93 * v / top for v in prof]
-	m = Image.new("L", size, 0)
-	pts = [(i * 8, h - prof[i] * h) for i in range(len(prof))]
-	ImageDraw.Draw(m).polygon([*pts, (w, h + 2), (0, h + 2)], fill=255)
-
-	col = _vgrad(size, (34, 70, 74), (8, 24, 34))
-	mot = _fbm(size, rnd, (12, 3))
-	col = ImageChops.multiply(col, Image.merge("RGB", [mot.point(_lut(lambda f: 0.74 + 0.26 * f))] * 3))
-	# Moonlit shoulders (facing up-right) and deeper shade on the far sides
-	lit = _blur(ImageChops.subtract(m, ImageChops.offset(m, -12, 16)), 9)
-	col = Image.composite(_flat(size, (96, 142, 156)), col, _scale(lit, 0.6))
-	shade = _blur(ImageChops.subtract(m, ImageChops.offset(m, 14, 10)), 12)
-	col = Image.composite(_flat(size, (4, 12, 22)), col, _scale(shade, 0.5))
+def _make_wisp(rnd: random.Random) -> Image.Image:
+	"""A thin band of cloud drawn out by the wind, its top edge silvered by the moon."""
+	w, h = 1024, 192
+	g = Image.linear_gradient("L")
+	band = g.point(_lut(lambda f: math.exp(-((f - 0.55) / 0.2) ** 2))).resize((w, h))
+	ends = g.transpose(Image.Transpose.ROTATE_90).point(_lut(lambda f: math.sin(math.pi * f) ** 0.8)).resize((w, h))
+	n = _fbm((w, h), rnd, (6, 3), False, ((2, 0.45), (4, 0.30), (8, 0.18)))
+	dens = ImageChops.multiply(n.point(_lut(lambda f: _smooth(min(1.0, max(0.0, (f - 0.36) / 0.42))))),
+		ImageChops.multiply(band, ends))
+	# Smear it sideways, as high wind does
+	dens = dens.resize((w // 8, h), Image.BOX).resize((w, h), Image.BICUBIC)
+	dens = _blur(dens, 1.5)
+	rim = _blur(ImageChops.subtract(dens, ImageChops.offset(dens, 0, 6)), 2)
+	col = Image.composite(_flat((w, h), (236, 240, 248)), _flat((w, h), (112, 120, 140)), _scale(rim, 2.2))
 	im = col.convert("RGBA")
-	im.putalpha(_blur(m, 0.9))
-
-	if not far:
-		d = ImageDraw.Draw(im)
-		for k in range(9):	# stands of round trees
-			u0 = rnd.uniform(0.05, 0.95)
-			for i in range(rnd.randint(4, 9)):
-				u = u0 + rnd.uniform(-0.035, 0.035)
-				j = int(u * w / 8)
-				if not 0 <= j < len(prof) or prof[j] < 0.2:
-					continue
-				r = rnd.uniform(6, 12)
-				x = u * w
-				y = h - prof[j] * h + rnd.uniform(4, 70)
-				d.ellipse((x - r, y - r * 1.9, x + r, y), fill=(20, 48, 54, 255))
-				d.ellipse((x - r * 0.5, y - r * 1.8, x + r * 0.9, y - r * 0.5), fill=(38, 76, 82, 255))
-		for k in range(160):	# glow-worms
-			u = rnd.random()
-			j = int(u * w / 8)
-			y = h - prof[j] * h + rnd.uniform(10, prof[j] * h)
-			if prof[j] > 0.1 and y < h:
-				im.putpixel((int(u * w) % w, int(y)), rnd.choice(((150, 236, 220, 255), (200, 236, 255, 255))))
-	else:
-		rgb = Image.blend(im.convert("RGB"), _flat(size, (26, 46, 66)), 0.5)
-		rgb.putalpha(im.getchannel("A"))
-		im = rgb
-	return im, prof
+	im.putalpha(_scale(dens, 0.9))
+	return im
 
 
-def _draw_tree(d: ImageDraw.ImageDraw, x: float, y: float, h: float, rnd: random.Random) -> None:
-	d.polygon([(x - 0.06 * h, y), (x + 0.06 * h, y), (x + 0.035 * h, y - 0.55 * h), (x - 0.035 * h, y - 0.55 * h)],
-		fill=(40, 34, 40, 255))
-	blobs = [(rnd.uniform(-0.2, 0.2) * h, -(0.62 + rnd.uniform(0, 0.3)) * h, rnd.uniform(0.2, 0.3) * h) for i in range(7)]
-	for (bx, by, r) in blobs:
-		d.ellipse((x + bx - r, y + by - r, x + bx + r, y + by + r), fill=(10, 34, 40, 255))
-	for (bx, by, r) in blobs:
-		r2 = r * 0.78
-		d.ellipse((x + bx + r * 0.16 - r2, y + by - r * 0.18 - r2, x + bx + r * 0.16 + r2, y + by - r * 0.18 + r2),
-			fill=(20, 56, 60, 255))
-	for (bx, by, r) in blobs[:5]:
-		r2 = r * 0.36
-		d.ellipse((x + bx + r * 0.4 - r2, y + by - r * 0.46 - r2, x + bx + r * 0.4 + r2, y + by - r * 0.46 + r2),
-			fill=(52, 100, 110, 255))
+def _ridge_profile(rnd: random.Random, n_pow: int, rough: float) -> list[float]:
+	"""Midpoint displacement: a jagged 0..1 line of 2**n_pow + 1 points."""
+	n = 2 ** n_pow
+	pts = [0.0] * (n + 1)
+	pts[0], pts[n] = rnd.random(), rnd.random()
+	step, amp = n, 1.0
+	while step > 1:
+		half = step // 2
+		for i in range(half, n, step):
+			pts[i] = (pts[i - half] + pts[i + half]) / 2 + rnd.uniform(-amp, amp)
+		amp *= rough
+		step = half
+	lo, hi = min(pts), max(pts)
+	return [(p - lo) / (hi - lo) for p in pts]
 
 
-def _make_island(rnd: random.Random, house: bool) -> Image.Image:
-	s = 1024
-	size = (s, s)
-	cx = s * 0.5
-	rim = s * 0.47
-	rx = s * 0.42
-	# Rocky underside, tapering to a point
-	left, right = [], []
-	n = 10
-	for i in range(n + 1):
-		f = i / n
-		wd = rx * (1 - f) ** 0.62
-		y = rim + s * 0.46 * f ** 0.9
-		left.append((cx - wd * (1 + rnd.uniform(-0.1, 0.1)) + rnd.uniform(-20, 20) * f, y))
-		right.append((cx + wd * (1 + rnd.uniform(-0.1, 0.1)) + rnd.uniform(-20, 20) * f, y))
-	m = Image.new("L", size, 0)
-	ImageDraw.Draw(m).polygon(left + right[::-1], fill=255)
-	rock = _vgrad(size, (70, 66, 80), (18, 18, 28))
-	rd = ImageDraw.Draw(rock)
-	for i in range(34):	# strata
-		x = cx + rnd.uniform(-1, 1) * rx
-		y1 = rim + rnd.uniform(40, 420)
-		c = rnd.choice(((46, 42, 54), (92, 90, 106), (34, 32, 44)))
-		rd.line((x, rim - 10, x + rnd.uniform(-30, 30), y1), fill=c, width=rnd.randint(5, 16))
-	rock = _blur(rock, 2.2)
-	rock = ImageChops.multiply(rock, _hgrad(size, (130, 136, 160), (255, 255, 255)))
-	rock = rock.convert("RGBA")
-	rock.putalpha(m)
-	im = Image.new("RGBA", size, (0, 0, 0, 0))
-	im.alpha_composite(rock)
-	d = ImageDraw.Draw(im)
-	turf = (16, 48, 48, 255)
-	for i in range(11):	# hanging vines
-		x = cx + rnd.uniform(-0.95, 0.95) * rx
-		ln = rnd.uniform(60, 230)
-		d.line((x, rim, x + rnd.uniform(-12, 12), rim + ln * 0.5, x + rnd.uniform(-22, 22), rim + ln),
-			fill=(14, 40, 44, 255), width=5)
-	d.ellipse((cx - rx * 1.05, rim - s * 0.062, cx + rx * 1.05, rim + s * 0.062), fill=turf)
-	for i in range(18):	# turf spilling over the rim
-		x = cx + rnd.uniform(-1.0, 1.0) * rx
-		d.ellipse((x - rnd.uniform(18, 34), rim, x + rnd.uniform(18, 34), rim + rnd.uniform(40, 96)), fill=turf)
-	dome = (cx - rx * 1.03, rim - s * 0.19, cx + rx * 1.03, rim + s * 0.19)
-	d.pieslice(dome, 180, 360, fill=(24, 62, 62, 255))
-	dm = Image.new("L", size, 0)
-	ImageDraw.Draw(dm).pieslice(dome, 180, 360, fill=255)
-	hl = Image.new("L", size, 0)
-	ImageDraw.Draw(hl).ellipse((cx - rx * 0.3, rim - s * 0.2, cx + rx * 0.95, rim - s * 0.05), fill=255)
-	im.alpha_composite(_layer((88, 140, 150), ImageChops.multiply(_blur(hl, 26), dm)))
-	d = ImageDraw.Draw(im)
-	if house:
-		hx, hy = cx + rx * 0.3, rim - s * 0.125
-		d.rectangle((hx, hy - 78, hx + 150, hy), fill=(118, 130, 148, 255))
-		# A lamp on inside (scene adds its glow)
-		d.rectangle((hx + 14, hy - 62, hx + 96, hy - 16), fill=(255, 222, 160, 255))
-		d.polygon([(hx + 14, hy - 62), (hx + 60, hy - 62), (hx + 30, hy - 16), (hx + 14, hy - 16)], fill=(255, 240, 206, 255))
-		d.rectangle((hx - 12, hy - 90, hx + 164, hy - 78), fill=(146, 156, 172, 255))
-		_draw_tree(d, cx - rx * 0.36, rim - s * 0.15, s * 0.26, rnd)
-		_draw_tree(d, cx - rx * 0.72, rim - s * 0.085, s * 0.15, rnd)
-	else:
-		_draw_tree(d, cx - rx * 0.08, rim - s * 0.17, s * 0.32, rnd)
-		_draw_tree(d, cx + rx * 0.56, rim - s * 0.105, s * 0.17, rnd)
-	return im.reduce(2)
+def _make_ridge(rnd: random.Random, size: tuple[int, int], rough: float, floor: float, swell: float) -> Image.Image:
+	"""A mountain range as a silhouette in greys, for tinting: its crests
+	catch the moon. ``floor`` is the lowest the line goes (0..1 of the height)."""
+	w, h = size
+	ss = 2
+	prof = _ridge_profile(rnd, 9, rough)
+	n = len(prof) - 1
+	p1, p2 = rnd.random(), rnd.random()
+	vals = []
+	for i, v in enumerate(prof):
+		u = i / n
+		# Group the peaks into massifs with a slow swell
+		big = 0.5 + 0.3 * math.sin(TAU * (u * 1.3 + p1)) + 0.2 * math.sin(TAU * (u * 2.9 + p2))
+		vals.append(v * (1.0 - swell + swell * big))
+	top = max(vals)
+	m = Image.new("L", (w * ss, h * ss), 0)
+	pts = [(i * w * ss / n, h * ss * (1.0 - (floor + (1.0 - floor) * v / top))) for i, v in enumerate(vals)]
+	ImageDraw.Draw(m).polygon([*pts, (w * ss, h * ss + 2), (0, h * ss + 2)], fill=255)
+	m = m.reduce(ss)
+	# Grey body, a little lighter up high, with faint gullies; a lit rim along the crests
+	body = ImageChops.multiply(_vgrad((w, h), (214, 214, 214), (168, 168, 168)),
+		Image.merge("RGB", [_fbm((w, h), rnd, (24, 3)).point(_lut(lambda f: 0.9 + 0.1 * f))] * 3))
+	rim = _blur(ImageChops.subtract(m, ImageChops.offset(m, 0, 3)), 1.6)
+	im = Image.composite(_flat((w, h), (255, 255, 255)), body, _scale(rim, 1.4)).convert("RGBA")
+	im.putalpha(m)
+	return im
 
 
-def _make_fish(kind: str, rnd: random.Random) -> Image.Image:
-	"""A side-on fish, head at the left edge."""
-	w, h = 768, 384
-	size = (w, h)
-	cy = h * 0.5
-	body, belly, fin, tail = {
-		"clown": ((255, 112, 16), (255, 176, 70), (250, 120, 24, 255), (250, 120, 24, 255)),
-		"tang": ((22, 100, 236), (70, 160, 252), (30, 110, 240, 255), (255, 222, 44, 255)),
-		"yellow": ((255, 218, 36), (255, 242, 130), (255, 208, 30, 255), (255, 208, 30, 255)),
-		"koi": ((252, 252, 254), (236, 240, 248), (255, 214, 190, 255), (255, 196, 160, 255)),
-		"tetra": ((176, 200, 226), (236, 244, 252), (200, 220, 240, 255), (255, 70, 60, 255)),
-	}[kind]
-	ry = h * (0.345 if kind == "yellow" else 0.22 if kind == "tetra" else 0.30)
-	bx0, bx1 = w * 0.04, w * 0.72
-	im = Image.new("RGBA", size, (0, 0, 0, 0))
-	d = ImageDraw.Draw(im)
-	tl = 0.99 if kind == "koi" else 0.95
-	d.polygon([(w * 0.62, cy), (w * tl, cy - h * 0.36), (w * (tl - 0.09), cy), (w * tl, cy + h * 0.36)], fill=tail)
-	d.polygon([(w * 0.24, cy - ry * 0.8), (w * 0.42, cy - ry * 1.42), (w * 0.62, cy - ry * 0.5)], fill=fin)
-	d.polygon([(w * 0.36, cy + ry * 0.8), (w * 0.47, cy + ry * 1.36), (w * 0.58, cy + ry * 0.5)], fill=fin)
-	m = Image.new("L", size, 0)
-	ImageDraw.Draw(m).ellipse((bx0, cy - ry, bx1, cy + ry), fill=255)
-	skin = _vgrad(size, body, belly)
-	sd = ImageDraw.Draw(skin)
-	if kind == "clown":
-		for bx in (0.25, 0.44, 0.63):
-			d0 = w * 0.012
-			sd.rectangle((w * bx - d0, 0, w * (bx + 0.07) + d0, h), fill=(24, 20, 20))
-			sd.rectangle((w * bx, 0, w * (bx + 0.07), h), fill=(255, 255, 255))
-	elif kind == "tang":
-		sd.arc((w * 0.2, cy - ry * 0.75, w * 0.86, cy + ry * 1.5), 175, 320, fill=(10, 16, 46), width=30)
-		sd.ellipse((w * 0.34, cy - ry * 0.25, w * 0.5, cy + ry * 0.2), fill=(30, 110, 240))
-	elif kind == "koi":
-		for i in range(5):
-			x = w * rnd.uniform(0.12, 0.6)
-			y = cy + ry * rnd.uniform(-0.9, 0.3)
-			r = w * rnd.uniform(0.04, 0.09)
-			sd.ellipse((x - r * 1.5, y - r, x + r * 1.5, y + r), fill=rnd.choice(((244, 84, 28), (255, 130, 30), (30, 30, 36))))
-		skin = _blur(skin, 3)
-	elif kind == "tetra":
-		sd.rectangle((w * 0.1, cy - h * 0.05, w * 0.7, cy + h * 0.02), fill=(0, 232, 255))
-		sd.rectangle((w * 0.45, cy + h * 0.02, w * 0.72, cy + h * 0.1), fill=(255, 60, 60))
-	skin = skin.convert("RGBA")
-	skin.putalpha(m)
-	im.alpha_composite(skin)
-	gl = Image.new("L", size, 0)
-	ImageDraw.Draw(gl).ellipse((bx0 + w * 0.08, cy - ry * 0.86, bx1 - w * 0.1, cy - ry * 0.3), fill=150)
-	im.alpha_composite(_layer((255, 255, 255), ImageChops.multiply(_blur(gl, 9), m)))
-	d = ImageDraw.Draw(im)
-	d.polygon([(w * 0.30, cy + ry * 0.1), (w * 0.43, cy + ry * 0.34), (w * 0.32, cy + ry * 0.5)], fill=fin)
-	ex, ey, er = w * 0.15, cy - ry * 0.22, min(ry * 0.22, h * 0.07)
-	d.ellipse((ex - er, ey - er, ex + er, ey + er), fill=(255, 255, 255, 255))
-	d.ellipse((ex - er * 0.55, ey - er * 0.55, ex + er * 0.55, ey + er * 0.55), fill=(12, 14, 24, 255))
-	d.ellipse((ex - er * 0.42, ey - er * 0.5, ex - er * 0.02, ey - er * 0.1), fill=(255, 255, 255, 255))
-	return im.reduce(3)
+def _make_shore(rnd: random.Random, size: tuple[int, int]) -> Image.Image:
+	"""A low wooded shore: a gentle line roughened by treetops."""
+	w, h = size
+	ss = 2
+	m = Image.new("L", (w * ss, h * ss), 0)
+	d = ImageDraw.Draw(m)
+	p1, p2 = rnd.random(), rnd.random()
+	pts = []
+	for i in range(0, w * ss + 8, 8):
+		u = i / (w * ss)
+		v = 0.45 + 0.2 * math.sin(TAU * (u * 1.4 + p1)) + 0.1 * math.sin(TAU * (u * 3.7 + p2))
+		v *= _smooth(min(1.0, u / 0.15)) * _smooth(min(1.0, (1.0 - u) / 0.15))
+		pts.append((i, h * ss * (1.0 - v * 0.8)))
+	d.polygon([*pts, (w * ss, h * ss + 2), (0, h * ss + 2)], fill=255)
+	for (x, y) in pts[::2]:	# treetops along the line
+		if y < h * ss * 0.95:
+			r = rnd.uniform(4, 11)
+			d.ellipse((x - r, y - r * 1.3, x + r, y + r), fill=255)
+	m = m.reduce(ss)
+	im = _flat((w, h), (200, 200, 200)).convert("RGBA")
+	im.putalpha(m)
+	return im
 
 
-def _make_leaf() -> Image.Image:
-	"""A dewy leaf hanging from its stem at the top edge."""
-	w, h = 300, 600
-	n = 30
-	mid, left, right = [], [], []
-	for i in range(n + 1):
-		s = i / n
-		y = _lerp(h * 0.05, h * 0.97, s)
-		x = w * 0.5 + w * 0.05 * math.sin(math.pi * s)
-		hw = w * 0.42 * math.sin(math.pi * s ** 0.78) ** 0.9
-		mid.append((x, y))
-		left.append((x - hw, y))
-		right.append((x + hw, y))
+def _window_grid(cell: tuple[int, int], pane: tuple[int, int, int, int], size=(256, 768)) -> Image.Image:
+	"""L image of a facade's window grid: one pane in each cell."""
+	cw, ch = cell
+	tile = Image.new("L", cell, 0)
+	ImageDraw.Draw(tile).rectangle(pane, fill=255)
+	w, h = size
+	row = Image.new("L", (w, ch), 0)
+	for x in range(0, w, cw):
+		row.paste(tile, (x, 0))
+	out = Image.new("L", size, 0)
+	for y in range(0, h, ch):
+		out.paste(row, (0, y))
+	return out
+
+
+def _lit_cells(rnd: random.Random, cols: int, rows: int, density: float, cluster: tuple[int, int]) -> Image.Image:
+	"""Which windows are lit, one pixel per window: offices light up in blocks."""
+	r = Image.frombytes("L", (cols, rows), rnd.randbytes(cols * rows))
+	cc, cr = -(-cols // cluster[0]), -(-rows // cluster[1])
+	c = Image.frombytes("L", (cc, cr), rnd.randbytes(cc * cr)).resize(
+		(cc * cluster[0], cr * cluster[1]), Image.NEAREST).crop((0, 0, cols, rows))
+	thr = c.point(_lut(lambda f: density * (0.15 + 1.7 * f * f)))
+	lit = ImageChops.subtract(thr, r).point(lambda v: 255 if v else 0)
+	bright = Image.frombytes("L", (cols, rows), rnd.randbytes(cols * rows)).point(lambda v: 110 + v * 145 // 255)
+	return ImageChops.multiply(lit, bright)
+
+
+def _make_city(rnd: random.Random) -> tuple[Image.Image, Image.Image, Image.Image, list[tuple[float, float, float]]]:
+	"""The far shore's skyline: two rows of towers in greys (tinted when
+	drawn), their lit windows, the accent lights on their crowns, and where
+	their aircraft warning lights are (u, v across the texture, blink phase;
+	a negative phase is a steady light)."""
+	W, H = CITY_W, CITY_H_PX
+	body = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+	lights = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+	accent = Image.new("L", (W, H), 0)
+	bd, ld, ad = ImageDraw.Draw(body), ImageDraw.Draw(lights), ImageDraw.Draw(accent)
+	grids = {k: (cell, _window_grid(cell, pane)) for k, (cell, pane) in WINDOWS.items()}
+	kinds = ["punched"] * 7 + ["dense"] * 5 + ["ribbon"] * 5 + ["tall"] * 3
+	lamps = [(255, 214, 150), (255, 230, 190), (210, 232, 255), (255, 196, 124), (236, 244, 255)]
+	beacons: list[tuple[float, float, float]] = []
+	base = H - 14	# the embankment's top
+
+	def envelope(u: float) -> float:
+		# Two downtowns, either side of where the screen hangs
+		return 0.10 + 0.80 * math.exp(-((u - 0.72) / 0.10) ** 2) + 0.52 * math.exp(-((u - 0.16) / 0.07) ** 2)
+
+	def windows(xa, ya, xb, yb, kind, density, lamp, dim, glass=True) -> None:
+		(cw, ch), grid = grids[kind]
+		cols = int((xb - xa - 6) // cw)
+		rows = int((yb - ya - 4) // ch)
+		if cols < 1 or rows < 1:
+			return
+		gw, gh = cols * cw, rows * ch
+		ox, oy = int(xa + (xb - xa - gw) / 2), int(ya + 5)
+		g = grid.crop((0, 0, gw, gh))
+		box = (ox, oy, ox + gw, oy + gh)
+		if glass:	# unlit panes, a shade off the facade
+			body.paste((84, 92, 108, 255), box, _scale(g, 0.2))
+		lit = _lit_cells(rnd, cols, rows, density, (8, 1) if kind == "ribbon" else (3, 2)).resize((gw, gh), Image.NEAREST)
+		a = ImageChops.multiply(lit, g)
+		if dim < 1.0:
+			a = _scale(a, dim)
+		lights.paste(Image.new("RGBA", (gw, gh), (*lamp, 255)), box, a)
+
+	def tower(x0: float, bw: float, bh: float, back: bool) -> None:
+		top = base - bh
+		x1 = x0 + bw
+		v = rnd.randint(-6, 6)
+		c = (40 + v, 46 + v, 58 + v) if back else (24 + v, 28 + v, 36 + v)
+		# A setback tower narrows as it rises: tiers, widest first
+		tiers = [(x0, top, x1)]
+		if bh > 250 and rnd.random() < 0.55:
+			k = rnd.randint(1, 2)
+			tiers = [(x0 + bw * 0.13 * i, top + bh * 0.2 * (k - i), x1 - bw * 0.13 * i) for i in range(k + 1)]
+		if not back:	# hide what stands behind
+			lights.paste((0, 0, 0, 0), (int(x0), int(top), int(x1) + 1, H))
+			accent.paste(0, (int(x0), int(top), int(x1) + 1, H))
+		kind = rnd.choice(kinds)
+		lamp = rnd.choice(lamps)
+		density = rnd.uniform(0.1, 0.42)
+		dim = 0.7 if back else 1.0
+		for i, (xa, ya, xb) in enumerate(tiers):
+			# Lit from the upper left by the moon: a paler left face, a dark right edge
+			bd.rectangle((xa, ya, xb, H), fill=(*c, 255))
+			bd.rectangle((xa, ya, xa + (xb - xa) * 0.2, H), fill=(c[0] + 9, c[1] + 10, c[2] + 13, 255))
+			bd.rectangle((xb - 3, ya, xb, H), fill=(c[0] - 8, c[1] - 8, c[2] - 8, 255))
+			bd.line((xa, ya, xb, ya), fill=(c[0] + 22, c[1] + 26, c[2] + 32, 255), width=2)
+			yb = tiers[i - 1][1] if i else base
+			windows(xa, ya, xb, yb, kind, density, lamp, dim)
+			windows(xa, ya, xb, yb, kind, density * 0.12, rnd.choice(lamps), dim, glass=False)
+		xa, ya, xb = tiers[-1]
+		cx = (xa + xb) / 2
+		tw = xb - xa
+		crown = rnd.random()
+		if bh > 300 and crown < 0.3:	# spire
+			h = bh * rnd.uniform(0.08, 0.16)
+			bd.polygon([(cx - tw * 0.12, ya), (cx, ya - h), (cx + tw * 0.12, ya)], fill=(*c, 255))
+			ad.line((cx, ya - h * 0.85, cx, ya), fill=120, width=2)
+			beacons.append((cx / W, (ya - h) / H, rnd.uniform(0, 6)))
+		elif bh > 200 and crown < 0.6:	# mast and plant room
+			bd.rectangle((cx - tw * 0.25, ya - 12, cx + tw * 0.2, ya), fill=(*c, 255))
+			h = rnd.uniform(30, 80)
+			bd.line((cx, ya - 12, cx, ya - 12 - h), fill=(*c, 255), width=3)
+			beacons.append((cx / W, (ya - 12 - h) / H, rnd.uniform(0, 6) if rnd.random() < 0.6 else -1.0))
+		elif bh > 200 and crown < 0.8:	# a slanted top, lit along its edge
+			h = tw * rnd.uniform(0.2, 0.5)
+			pts = [(xa, ya), (xb, ya - h), (xb, ya)] if rnd.random() < 0.5 else [(xa, ya - h), (xb, ya), (xa, ya)]
+			bd.polygon(pts, fill=(*c, 255))
+			ad.line((pts[0], pts[1]), fill=210, width=3)
+		elif bh > 120:
+			bd.rectangle((cx - tw * 0.3, ya - 8, cx + tw * 0.1, ya), fill=(*c, 255))
+		# Some of the tall ones are lit up: a crown band, or their corners
+		if bh > 280 and rnd.random() < 0.55:
+			if rnd.random() < 0.6:
+				ad.rectangle((xa + 2, ya + 4, xb - 2, ya + 8), fill=230)
+				ad.rectangle((xa + 2, ya + 14, xb - 2, ya + 16), fill=150)
+			else:
+				for xx in (xa + 1, xb - 2):
+					ad.line((xx, ya, xx, ya + bh * 0.35), fill=170, width=2)
+
+	for back in (True, False):
+		x = rnd.uniform(-30.0, 0.0)
+		while x < W:
+			bw = rnd.uniform(44, 120) if back else rnd.uniform(56, 150)
+			e = envelope((x + bw / 2) / W) * (1.0 if back else 0.55)
+			bh = (base - 40) * e * rnd.uniform(0.5, 1.0) + rnd.uniform(16, 44)
+			tower(x, bw, bh, back)
+			x += bw + (rnd.uniform(-bw * 0.35, 4.0) if back else rnd.uniform(0.0, 10.0))
+
+	# The embankment, and the promenade's lamps along it
+	bd.rectangle((0, base, W, H), fill=(14, 16, 20, 255))
+	lights.paste((0, 0, 0, 0), (0, base, W, H))
+	accent.paste(0, (0, base, W, H))
+	x = rnd.uniform(0, 20)
+	while x < W:
+		ld.ellipse((x - 2, base - 6, x + 2, base - 2), fill=(255, 206, 140, 255))
+		x += rnd.uniform(22, 30)
+
+	body = body.reduce(2)
+	lights = lights.reduce(2)
+	accent = _layer((255, 255, 255), accent.reduce(2))
+	out = []
+	for im in (lights, accent):	# a soft halo around each light
+		glow = im.convert("RGBa").filter(ImageFilter.GaussianBlur(2.5)).convert("RGBA")
+		glow.putalpha(_scale(glow.getchannel("A"), 0.7))
+		glow.alpha_composite(im)
+		out.append(glow)
+	return body, out[0], out[1], beacons
+
+
+def _streak(im: Image.Image, boost: float) -> Image.Image:
+	"""Lights as rippled water reflects them: drawn out vertically into streaks."""
+	w, h = im.size
+	s = im.convert("RGBa").resize((w // 2, h // 2), Image.BOX).filter(ImageFilter.GaussianBlur((0.8, 12))).convert("RGBA")
+	s.putalpha(s.getchannel("A").point(_lut(lambda f: min(1.0, f * boost))))
+	return s
+
+
+def _make_boat() -> Image.Image:
+	"""A small motor cruiser side on, bow to the right, cabin lights on."""
+	w, h = 384, 144
 	im = Image.new("RGBA", (w, h), (0, 0, 0, 0))
 	d = ImageDraw.Draw(im)
-	d.polygon(left + mid[::-1], fill=(176, 238, 88, 255))
-	d.polygon(mid + right[::-1], fill=(98, 204, 60, 255))
-	m = im.getchannel("A")
-	shade = _vgrad((w, h), (255, 255, 235), (150, 215, 170))
-	rgb = ImageChops.multiply(im.convert("RGB"), shade)
-	im = rgb.convert("RGBA")
-	im.putalpha(m)
-	d = ImageDraw.Draw(im)
-	vein = (226, 250, 170, 255)
-	for k in range(2, 26, 3):
-		j = min(n, k + 4)
-		d.line((*mid[k], *_mix3(mid[j], left[j], 0.86)), fill=vein, width=3)
-		d.line((*mid[k], *_mix3(mid[j], right[j], 0.86)), fill=(170, 232, 120, 255), width=3)
-	d.line(mid, fill=vein, width=6)
-	d.line((mid[0][0], 0, *mid[1]), fill=(120, 170, 60, 255), width=9)
-	for (fx, fy, r) in ((0.36, 0.34, 20), (0.62, 0.52, 15), (0.42, 0.68, 11), (0.6, 0.27, 8)):	# dew
-		x, y = w * fx, h * fy
-		d.ellipse((x - r, y - r, x + r, y + r), fill=(60, 150, 64, 255))
-		d.ellipse((x - r * 0.84, y - r * 0.9, x + r * 0.84, y + r * 0.74), fill=(150, 226, 120, 255))
-		d.ellipse((x - r * 0.2, y + r * 0.1, x + r * 0.7, y + r * 0.72), fill=(214, 250, 180, 255))
-		d.ellipse((x - r * 0.6, y - r * 0.66, x - r * 0.05, y - r * 0.2), fill=(255, 255, 255, 255))
-	return im.reduce(3)
-
-
-def _mix3(a, b, f: float) -> tuple[float, float]:
-	return (a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f)
-
-
-def _make_orb(rgb, glyph: str) -> Image.Image:
-	"""A glossy gel button."""
-	s = 384
-	size = (s, s)
-	m = Image.new("L", size, 0)
-	ImageDraw.Draw(m).ellipse((8, 8, s - 8, s - 8), fill=255)
-	shade = _radial(s, lambda r: 1.0 - 0.62 * r ** 2.4)
-	base = ImageChops.multiply(_flat(size, rgb), Image.merge("RGB", [shade] * 3))
-	# Light pooling in the lower half, as through coloured gel
-	glow = Image.new("L", size, 0)
-	glow.paste(_radial(256, lambda r: max(0.0, 1.0 - r) ** 1.4).resize((int(s * 0.8), int(s * 0.5))), (int(s * 0.1), int(s * 0.46)))
-	base = Image.composite(_flat(size, _mix(rgb, (255, 255, 255), 0.72)), base, _scale(glow, 0.8))
-	im = base.convert("RGBA")
-	d = ImageDraw.Draw(im)
-	white = (255, 255, 255, 255)
-	if glyph == "play":
-		d.polygon([(s * 0.41, s * 0.36), (s * 0.41, s * 0.72), (s * 0.71, s * 0.54)], fill=white)
-	elif glyph == "next":
-		d.polygon([(s * 0.30, s * 0.38), (s * 0.30, s * 0.70), (s * 0.51, s * 0.54)], fill=white)
-		d.polygon([(s * 0.50, s * 0.38), (s * 0.50, s * 0.70), (s * 0.71, s * 0.54)], fill=white)
-	else:	# beamed quavers
-		for nx in (0.36, 0.60):
-			d.ellipse((s * (nx - 0.075), s * 0.62, s * (nx + 0.04), s * 0.72), fill=white)
-			d.rectangle((s * (nx + 0.015), s * 0.36, s * (nx + 0.04), s * 0.67), fill=white)
-		d.polygon([(s * 0.375, s * 0.36), (s * 0.64, s * 0.33), (s * 0.64, s * 0.40), (s * 0.375, s * 0.43)], fill=white)
-	d.ellipse((8, 8, s - 8, s - 8), outline=(*_mix(rgb, (0, 0, 0), 0.5), 255), width=5)
-	gloss = Image.new("L", size, 0)
-	ImageDraw.Draw(gloss).ellipse((s * 0.17, s * 0.05, s * 0.83, s * 0.50), fill=255)
-	gloss = ImageChops.multiply(gloss, Image.linear_gradient("L").resize(size).point(_lut(lambda f: 0.88 - 1.7 * f)))
-	im.alpha_composite(_layer((255, 255, 255), _blur(gloss, 1.5)))
-	im.putalpha(_blur(m, 1.5))
+	hull = (16, 18, 24, 255)
+	d.polygon([(10, 92), (w - 8, 86), (w - 40, 118), (30, 120)], fill=hull)
+	d.polygon([(110, 92), (130, 58), (270, 56), (300, 88)], fill=(22, 24, 32, 255))
+	d.rectangle((150, 30, 230, 58), fill=(20, 22, 30, 255))
+	d.line((190, 30, 190, 4), fill=hull, width=4)
+	for x in range(142, 286, 22):	# cabin windows
+		d.rectangle((x, 66, x + 14, 78), fill=(255, 214, 150, 255))
+	d.line((30, 100, w - 30, 96), fill=(46, 52, 64, 255), width=3)	# sheer line, catching the moon
 	return im.reduce(2)
+
+
+def _make_vignette() -> Image.Image:
+	a = _radial(256, lambda r: 0.62 * _smooth(min(1.0, max(0.0, (r - 0.45) / 0.95))))
+	return _layer((0, 0, 0), a)
 
 
 def _bleed(im: Image.Image) -> Image.Image:
@@ -659,36 +488,28 @@ def _bleed(im: Image.Image) -> Image.Image:
 	return out
 
 
-def build_images(seed: int = 2007) -> tuple[dict[str, Image.Image], dict[str, list[float]]]:
-	"""Paint every sprite. Pure Pillow, no renderer needed."""
+def build_images(seed: int = 2007) -> tuple[dict[str, Image.Image], list[tuple[float, float, float]]]:
+	"""Paint every sprite. Pure Pillow, no renderer needed. Also returns the
+	city's aircraft warning lights."""
 	rnd = random.Random(seed)
-	white = (255, 255, 255)
 	out: dict[str, Image.Image] = {
-		"soft": _layer(white, _radial(128, lambda r: max(0.0, 1.0 - r) ** 2.0)),
-		"ring": _layer(white, _radial(128, lambda r: math.exp(-((r - 0.78) / 0.05) ** 2))),
-		"bokeh": _layer(white, _radial(128, lambda r: 0.0 if r > 0.95 else
-			(0.5 + 0.5 * math.exp(-((r - 0.86) / 0.05) ** 2)) * min(1.0, (0.95 - r) / 0.05))),
-		"hex": _make_hex(),
-		"bubble": _make_bubble(),
+		"soft": _layer((255, 255, 255), _radial(128, lambda r: max(0.0, 1.0 - r) ** 2.0)),
 		"moon": _make_moon(rnd),
-		"leaf": _make_leaf(),
-		# Neutral gel, tinted in the skin's hues when drawn (ORB_HUES)
-		"orb_play": _make_orb((196, 200, 206), "play"),
-		"orb_next": _make_orb((196, 200, 206), "next"),
-		"orb_note": _make_orb((196, 200, 206), "note"),
+		"boat": _make_boat(),
+		"vignette": _make_vignette(),
 	}
-	out["city"], out["city_lights"] = _make_city(rnd)
+	out["city"], out["lights"], out["accent"], beacons = _make_city(rnd)
+	out["lights_streak"] = _streak(out["lights"], 3.0)
+	out["accent_streak"] = _streak(out["accent"], 2.5)
+	# The towers' reflection: soft, as rippled water gives it back
+	out["city_reflect"] = out["city"].convert("RGBa").filter(ImageFilter.GaussianBlur((1.5, 6))).convert("RGBA")
+	out["ridge_far"] = _make_ridge(rnd, (2048, 160), 0.56, 0.25, 0.6)
+	out["ridge_mid"] = _make_ridge(rnd, (2048, 128), 0.52, 0.15, 0.7)
+	out["shore_l"] = _make_shore(rnd, (1024, 64))
+	out["shore_r"] = _make_shore(rnd, (1024, 64))
 	for i in range(3):
-		out[f"cloud{i}"] = _make_cloud(rnd)
-	for kind in ("clown", "tang", "yellow", "koi", "tetra"):
-		out[kind] = _make_fish(kind, rnd)
-	out["island0"] = _make_island(rnd, False)
-	out["island1"] = _make_island(rnd, True)
-	prof: dict[str, list[float]] = {}
-	out["hills_far"], prof["far"] = _make_hills(rnd, (1024, 192), "none", True)
-	out["hills_l"], prof["l"] = _make_hills(rnd, (1536, 384), "right", False)
-	out["hills_r"], prof["r"] = _make_hills(rnd, (1536, 384), "left", False)
-	return out, prof
+		out[f"wisp{i}"] = _make_wisp(rnd)
+	return out, beacons
 
 
 # --------------------------------------------------------------------- scene
@@ -711,7 +532,7 @@ class AeroWorld(DreamRoom):
 	def __init__(self, tauon: Tauon) -> None:
 		super().__init__(tauon)
 		self.tex: dict = {}
-		self.hill_prof: dict[str, list[float]] = {}
+		self.beacons: list[tuple[float, float, float]] = []
 		self._mirror = False
 		self._fade = 1.0		# alpha scale for whatever is being drawn
 		self._front = 0.0		# fade for things nearer than the screen (0 at t=0)
@@ -721,6 +542,7 @@ class AeroWorld(DreamRoom):
 		self._scr_w = 1.0
 		self._flare_vis = 0.0
 		self._fb = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, -1.0), 1.0)
+		self.pal: dict = {}
 
 		rnd = random.Random(1999)
 		u = rnd.uniform
@@ -729,78 +551,27 @@ class AeroWorld(DreamRoom):
 		self.clouds = []
 		for (az, el, dist, hw, k, sp) in CLOUDS:
 			a = math.radians(az)
-			self.clouds.append([dist * math.sin(a), dist * math.tan(math.radians(el)), -dist * math.cos(a), hw, f"cloud{k}", sp])
+			self.clouds.append([dist * math.sin(a), dist * math.tan(math.radians(el)), -dist * math.cos(a), hw, f"wisp{k}", sp])
 		self.clouds.sort(key=lambda c: c[2])
 
-		# Floating islands: x, y, z, half-size, texture, bob phase, waterfall
-		self.islands_far = [(-58.0, 31.0, -150.0, 17.0, "island1", 1.0), (84.0, 58.0, -265.0, 24.0, "island0", 3.0)]
-		self.islands = [(-8.8, 5.9, -16.0, 3.9, "island0", 0.0, True), (13.5, 8.6, -36.0, 6.8, "island1", 2.0, True)]
-
-		# Bubbles: [x, y, z, radius, rise, phase]
-		self.bubbles = [[u(-7.0, 8.0), u(0.0, 7.0), u(-13.0, 3.6), 0.03 + 0.4 * rnd.random() ** 3.2, u(0.05, 0.22), u(0, 9)]
-			for i in range(30)]
-		# Fireflies: [x, y, z, phase, size] (more are added below)
+		# Stars on the far plane, thinning toward the horizon: x, y, size, phase, twinkle, warm
+		self.stars = [(u(-900.0, 900.0), 25.0 + 535.0 * rnd.random() ** 1.4, u(1.0, 2.8), u(0, 9), u(0.4, 1.8),
+			rnd.random() < 0.2) for i in range(280)]
+		# Fireflies along the near shore: [x, y, z, phase, size]
 		self.motes = [[u(-2.5, 4.5), u(0.2, 3.0), u(-2.0, 4.0), u(0, 9), u(0.008, 0.022)] for i in range(24)]
-
-		# Fish on elliptical circuits: cx, cz, rx, rz, y, bob, speed, theta0, length, texture.
-		# They swim under the lake: only the mirror pass draws them, at depth y
-		self.fish = [
-			(0.3, -0.6, 4.6, 2.3, 1.72, 0.22, 0.22, 0.00, 0.56, "clown"),
-			(0.3, -0.6, 4.6, 2.3, 1.95, 0.22, 0.22, 0.42, 0.44, "clown"),
-			(0.3, -0.6, 4.6, 2.3, 1.60, 0.22, 0.22, 0.74, 0.36, "clown"),
-			(1.0, -2.2, 7.5, 3.6, 3.05, 0.30, -0.13, 1.00, 0.86, "tang"),
-			(1.0, -2.2, 7.5, 3.6, 2.70, 0.30, -0.13, 1.45, 0.66, "tang"),
-			(-2.4, -3.0, 3.2, 1.7, 0.72, 0.14, 0.30, 2.00, 0.40, "yellow"),
-			(-2.4, -3.0, 3.2, 1.7, 0.95, 0.14, 0.30, 2.60, 0.32, "yellow"),
-			(10.0, -72.0, 62.0, 12.0, 23.0, 2.5, 0.034, 1.20, 13.0, "koi"),
-		]
-		# Neon tetra school: offsets from the school's centre + phase
-		self.tetras = [(u(-0.7, 0.7), u(-0.3, 0.3), u(-0.5, 0.5), u(0, 9)) for i in range(16)]
-		# Compact discs: centre, radius, phase
-		self.discs = [((3.7, 3.2, -4.6), 0.62, 0.0), ((-5.6, 4.5, -10.0), 1.05, 2.0), ((10.5, 9.5, -30.0), 3.0, 4.0)]
-		# Stray glass windows adrift: centre, width, height, phase
-		self.panes = [
-			((-4.3, 3.3, -7.0), 1.7, 1.05, 0.0), ((5.8, 5.4, -12.5), 2.3, 1.45, 1.7), ((-11.5, 8.2, -24.0), 3.2, 2.0, 3.1),
-			((4.6, 1.9, -3.4), 0.95, 0.62, 4.6), ((1.8, 7.0, -18.0), 2.6, 1.6, 5.9),
-		]
-		# Glass stepping tiles back toward where the camera settles: x, z, size, phase
-		self.tiles = [(0.05, 0.64, 0.34, 0.0), (0.20, 1.22, 0.36, 1.0), (0.42, 1.80, 0.38, 2.0), (0.68, 2.38, 0.40, 3.0),
-			(0.96, 2.96, 0.42, 4.0)]
-		# Gel buttons bobbing on the lake: x, z, radius, texture, phase
-		self.orbs = [(-1.95, -1.3, 0.34, "orb_play", 0.0), (1.85, -2.7, 0.42, "orb_next", 2.2), (2.35, 0.7, 0.2, "orb_note", 4.1)]
-		# Sun glitter on the water: distance, lateral, phase, speed, size
+		self.motes += [[u(-6.0, 7.0), u(0.15, 3.2), u(-9.0, 3.5), u(0, 9), u(0.008, 0.024)] for i in range(64)]
+		# Moonlight glinting on the water: distance, lateral, phase, speed, size
 		self.glitter = [(3.0 * 60.0 ** rnd.random(), u(-1, 1), u(0, 9), u(1.5, 5.0), u(0.5, 1.5)) for i in range(64)]
-		self.sparkles = [(u(-26.0, 26.0), u(-60.0, 3.0), u(0, 9), u(0.8, 2.6)) for i in range(40)]
-		# Ripple sources: x, z, period, phase, max radius, strength
-		self.ripples = [
-			(SCR_CX, SCR_Z, 5.0, 0.0, 2.6, 96), (SCR_CX, SCR_Z, 5.0, 0.33, 2.6, 96), (SCR_CX, SCR_Z, 5.0, 0.66, 2.6, 96),
-			(-6.3, -16.0, 2.4, 0.0, 2.4, 120), (-6.3, -16.0, 2.4, 0.5, 2.4, 120),
-			(17.8, -36.0, 2.8, 0.2, 4.0, 120), (17.8, -36.0, 2.8, 0.7, 4.0, 120),
-		]
+		self.sparkles = [(u(-26.0, 26.0), u(-60.0, 3.0), u(0, 9), u(0.8, 2.6)) for i in range(30)]
 		# Reeds framing the settled shot: screen x (-1..1), distance, height, lean, phase, width
 		self.blades = []
 		for side in (-1, 1):
-			for i in range(11):
+			for i in range(8):
 				f = rnd.random()
 				self.blades.append((
-					side * (1.02 - 0.42 * f * f), u(0.95, 1.5), u(0.16, 0.36) + 0.34 * (1 - f) * rnd.random(),
-					-side * u(0.04, 0.30), u(0, 9), u(0.012, 0.022), rnd.random() < 0.45))
+					side * (1.02 - 0.36 * f * f), u(0.95, 1.5), u(0.14, 0.32) + 0.3 * (1 - f) * rnd.random(),
+					-side * u(0.04, 0.26), u(0, 9), u(0.009, 0.016)))
 		self.blades.sort(key=lambda b: -b[1])
-		# Leaves on a bough hanging in from the top right: along (0..1), angle, size, phase
-		self.leaves = [(0.05 + 0.92 * i / 8 + u(-0.03, 0.03), u(-0.6, 0.6) + (0.5 if i % 2 else -0.4), u(0.07, 0.12), u(0, 9))
-			for i in range(9)]
-		# Bokeh drifting across the lens: x, y, radius, hue key (0 is the pale light), alpha, phase
-		self.bokeh = [(rnd.choice((u(0.0, 0.25), u(0.75, 1.0))), u(0.0, 1.0), u(0.03, 0.09),
-			rnd.choice((0, 1, 3)), u(10, 26), u(0, 9)) for i in range(10)]
-		self.turbines: list[tuple] = []
-		rnd = random.Random(2009)
-		u = rnd.uniform
-		# Stars on the far plane, thinning toward the horizon: x, y, size, phase, twinkle
-		self.stars = [(u(-900.0, 900.0), 30.0 + 530.0 * rnd.random() ** 1.5, u(1.8, 3.6), u(0, 9), u(0.5, 2.0))
-			for i in range(190)]
-		# More fireflies, spread over the lake and the shore
-		self.motes += [[u(-6.0, 7.0), u(0.15, 3.2), u(-9.0, 3.5), u(0, 9), u(0.008, 0.024)] for i in range(64)]
-		self.pal: dict = {}
 
 	# ----------------------------------------------------------------- assets
 
@@ -815,19 +586,9 @@ class AeroWorld(DreamRoom):
 	def _ensure_assets(self) -> None:
 		if self.tex:
 			return
-		images, self.hill_prof = build_images()
+		images, self.beacons = build_images()
 		for name, im in images.items():
 			self.tex[name] = self._upload(im, name in ADDITIVE)
-		# Wind turbines standing on the near hills: x, base y, z, height, phase, speed
-		for (key, hill, spots) in (("l", HILL_L, (0.42, 0.60, 0.76)), ("r", HILL_R, (0.30, 0.50))):
-			x0, x1, hh, z = hill
-			prof = self.hill_prof[key]
-			for i, f in enumerate(spots):
-				base = prof[int(f * (len(prof) - 1))] * hh - 1.0
-				self.turbines.append((_lerp(x0, x1, f), base, z + 1.0, 9.0 + 2.0 * (i % 2), f * 20.0, 0.7 + 0.25 * i))
-		for i, (x, z) in enumerate(((-8.0, -150.0), (14.0, -172.0), (37.0, -196.0))):	# and a few offshore
-			self.turbines.append((x, 0.0, z, 15.0, i * 2.0, 0.9 + 0.2 * i))
-		self.turbines.sort(key=lambda t: t[2])
 
 	# ------------------------------------------------------------- primitives
 
@@ -884,7 +645,7 @@ class AeroWorld(DreamRoom):
 		else:
 			batch.idx += (base, base + 1, base + 2)
 
-	def _flat_strip(self, x0, x1, y_top, z, tex, n, flip=False, col=(255, 255, 255), additive=False) -> None:
+	def _flat_strip(self, x0, x1, y_top, z, tex, n, col=(255, 255, 255), additive=False) -> None:
 		"""A textured upright flat standing on the water, cut into columns so
 		the affine texture mapping stays straight."""
 		q = self._quad
@@ -892,10 +653,26 @@ class AeroWorld(DreamRoom):
 		for i in range(n):
 			f0, f1 = i / n, (i + 1) / n
 			xa, xb = x0 + (x1 - x0) * f0, x0 + (x1 - x0) * f1
-			if flip:
-				f0, f1 = 1.0 - f0, 1.0 - f1
 			q([(xa, y_top, z), (xb, y_top, z), (xb, 0.0, z), (xa, 0.0, z)], cols,
 				uvs=[(f0, 0.0), (f1, 0.0), (f1, 1.0), (f0, 1.0)], texture=tex, additive=additive)
+
+	def _shimmer_strip(self, x0, x1, y_top, z, tex, col, T, bands=18, n=6, additive=True) -> None:
+		"""A flat as the lake reflects it (mirror pass): cut into bands that
+		sway sideways, more the further they reach from the shore, like light
+		on moving water."""
+		q = self._quad
+		cols = [(*col, 255)] * 4
+		span = x1 - x0
+		for b in range(bands):
+			v0, v1 = b / bands, (b + 1) / bands
+			ya, yb = y_top * (1.0 - v0), y_top * (1.0 - v1)
+			reach = 1.0 - (v0 + v1) / 2
+			dx = (0.2 + 1.6 * reach) * (math.sin(T * 0.9 + b * 1.7) + 0.5 * math.sin(T * 2.3 + b * 3.1))
+			for i in range(n):
+				f0, f1 = i / n, (i + 1) / n
+				xa, xb = x0 + span * f0 + dx, x0 + span * f1 + dx
+				q([(xa, ya, z), (xb, ya, z), (xb, yb, z), (xa, yb, z)], cols,
+					uvs=[(f0, v0), (f1, v0), (f1, v1), (f0, v1)], texture=tex, additive=additive)
 
 	def _proj(self, p) -> tuple[float, float] | None:
 		ex, ey, ez = self._eye
@@ -975,13 +752,6 @@ class AeroWorld(DreamRoom):
 			c[0] += c[5] * dt
 			if c[0] > -c[2] * 1.4:
 				c[0] = c[2] * 1.4
-		for b in self.bubbles:
-			b[1] += b[4] * dt
-			b[0] += math.sin(T * 0.7 + b[5]) * 0.05 * dt
-			if b[1] > 7.5:
-				b[1] = -b[3]
-				b[0] = random.uniform(-7.0, 8.0)
-				b[2] = random.uniform(-13.0, 3.6)
 		for m in self.motes:
 			m[0] += (0.03 + math.sin(T * 0.21 + m[3]) * 0.02) * dt
 			m[1] += math.sin(T * 0.13 + m[3] * 2) * 0.02 * dt
@@ -1018,10 +788,15 @@ class AeroWorld(DreamRoom):
 		glow = tone(hues[3], 0.85, 0.70, keep=True)
 		p["glow"] = glow
 		p["ice"] = _mix((214, 232, 250), glow, 0.25)
-		p["lamp"] = _mix((255, 255, 255), glow, 0.3)
-		p["tint"] = _mix((255, 255, 255), tone(cool, 0.45, 0.75), 0.35)
+		p["lamp"] = _mix((255, 255, 255), glow, 0.15)
+		p["haze"] = _mix((255, 196, 140), glow, 0.35)	# the city's light, on its own haze
+		# The land in the sky's own hue: far ranges just darker than the
+		# horizon behind them, nearer ones darker still
+		p["far"] = _mix(deep, horizon, 0.3)
+		p["mid"] = _mix(deep, horizon, 0.1)
+		p["near"] = _mix(deep, (0, 0, 0), 0.4)
+		p["city"] = _mix((255, 255, 255), tone(cool, 0.45, 0.75), 0.35)
 		p["cloud"] = _mix((255, 255, 255), tone(cool, 0.5, 0.7), 0.45)
-		p["hue"] = {0: p["ice"], **{k: tone(h, 0.8, 0.7, keep=k == 3) for k, h in hues.items()}}
 
 		# The skin's ribbons: its top hue, the accent, the top hue moved on;
 		# silver under Obsidian, bar the accent's
@@ -1065,28 +840,29 @@ class AeroWorld(DreamRoom):
 			self._spr((x, y, SKY_Z + 8.0), hw, hw, soft, col, a, add=True)
 		# Stars, fading out into the glow over the horizon
 		ice = pal["ice"]
-		for (x, y, s, ph, sp) in self.stars:
-			a = 255.0 * (0.55 + 0.45 * math.sin(T * sp + ph)) * min(1.0, y / 130.0)
-			self._spr((x, y, SKY_Z + 6.0), s, s, soft, ice, a, add=True)
+		warm = (255, 236, 214)
+		for (x, y, s, ph, sp, w) in self.stars:
+			a = 255.0 * (0.7 + 0.3 * math.sin(T * sp + ph)) * min(1.0, y / 140.0)
+			self._spr((x, y, SKY_Z + 6.0), s, s, soft, warm if w else ice, a, add=True)
 
-		self._spr(MOON, 210.0, 210.0, soft, pal["glow"], 30, add=True)
-		self._spr(MOON, 64.0, 64.0, soft, ice, 72, add=True)
-		self._spr(MOON, MOON_R * 1.7, MOON_R * 1.7, soft, (255, 255, 255), 110, add=True)
+		self._spr(MOON, 220.0, 220.0, soft, pal["glow"], 24, add=True)
+		self._spr(MOON, 70.0, 70.0, soft, ice, 54, add=True)
+		self._spr(MOON, MOON_R * 1.8, MOON_R * 1.8, soft, (255, 255, 255), 90, add=True)
 		self._spr(MOON, MOON_R, MOON_R, tex["moon"], (255, 255, 255), 255)
 		if not mirror:
-			sx, sy, sz = MOON
-			for i in range(12):	# faint moonbeams
-				a = i * TAU / 12 + T * 0.016 + 0.3 * math.sin(i * 1.9)
-				hw = 0.030 * (1.0 + 0.5 * math.sin(i * 1.7))
-				ln = 300.0 + 100.0 * math.sin(i * 2.3)
-				q([(sx, sy, sz), (sx + math.cos(a - hw) * ln, sy + math.sin(a - hw) * ln, sz),
-					(sx + math.cos(a + hw) * ln, sy + math.sin(a + hw) * ln, sz)],
-					[(*ice, 13), (*ice, 0), (*ice, 0)], additive=True)
 			self._aurora(T)
 
 		cloud = pal["cloud"]
 		for (x, y, z, hw, key, sp) in self.clouds:
-			self._spr((x, y, z), hw, hw * 0.5, tex[key], cloud, 226)
+			self._spr((x, y, z), hw, hw * 0.1875, tex[key], cloud, 170)
+
+		if not mirror:
+			# An airliner, very high up, crossing every so often
+			k = (T / 80.0) % 1.0
+			p = (-640.0 + 1280.0 * k, 132.0 + 36.0 * k, -372.0)
+			self._spr(p, 1.0, 1.0, soft, (255, 255, 255), 150)
+			self._spr(p, 1.6, 1.6, soft, (255, 60, 50), 140 * (0.5 + 0.5 * math.sin(T * 3.0)), add=True)
+			self._spr(p, 3.2, 3.2, soft, (255, 255, 255), 255 * max(0.0, math.sin(T * 4.6)) ** 40, add=True)
 
 	def _aurora(self, T: float) -> None:
 		q = self._quad
@@ -1116,67 +892,47 @@ class AeroWorld(DreamRoom):
 		q = self._quad
 		g = self._flat_strip
 		tex = self.tex
+		pal = self.pal
 		mirror = self._mirror
-		n = 6 if mirror else 12
-		tint = self.pal["tint"]
+		n = 6 if mirror else 10
 
-		# Hazy far range, the texture mirrored about the middle so it joins up
-		g(-760.0, 0.0, 44.0, -330.0, tex["hills_far"], 8, col=tint)
-		g(0.0, 760.0, 44.0, -330.0, tex["hills_far"], 8, True, col=tint)
-		x, y, z, hw, key, ph = self.islands_far[1]
-		self._spr((x, y + math.sin(T * 0.2 + ph) * 1.5, z), hw, hw, tex[key], _mix(tint, (90, 110, 130), 0.4), 235)
+		for (key, x0, x1, ht, z, colour) in RIDGES:
+			g(x0, x1, ht, z, tex[key], 8, col=pal[colour])
 
-		# The city on the water, and its lights
-		g(-80.0, 190.0, 64.0, -240.0, tex["city"], n, col=tint)
-		g(-80.0, 190.0, 64.0, -240.0, tex["city_lights"], n, col=self.pal["lamp"], additive=True)
-		x, y, z, hw, key, ph = self.islands_far[0]
-		self._spr((x, y + math.sin(T * 0.25 + ph) * 1.0, z), hw, hw, tex[key], _mix(tint, (90, 110, 130), 0.25), 250)
+		# The city's glow on the haze above it
+		x0, x1, z = CITY
+		haze = pal["haze"]
+		hz = z - 6.0
+		q([(x0 - 60.0, 70.0, hz), (x1 + 60.0, 70.0, hz), (x1 + 60.0, 0.0, hz), (x0 - 60.0, 0.0, hz)],
+			[(*haze, 0), (*haze, 0), (*haze, 40), (*haze, 40)], additive=True)
 
-		# Near hills either side of the gap
-		for (key, (x0, x1, hh, z)) in (("hills_l", HILL_L), ("hills_r", HILL_R)):
-			g(x0, x1, hh, z, tex[key], n, col=tint)
-
+		if mirror:
+			self._shimmer_strip(x0, x1, CITY_Y, z, tex["city_reflect"], pal["city"], T, additive=False)
+			self._shimmer_strip(x0, x1, CITY_Y, z + 0.5, tex["lights_streak"], pal["lamp"], T)
+			self._shimmer_strip(x0, x1, CITY_Y, z + 0.5, tex["accent_streak"], pal["glow"], T)
+		else:
+			g(x0, x1, CITY_Y, z, tex["city"], n, col=pal["city"])
+			g(x0, x1, CITY_Y, z + 0.5, tex["lights"], n, col=pal["lamp"], additive=True)
+			g(x0, x1, CITY_Y, z + 0.5, tex["accent"], n, col=pal["glow"], additive=True)
 		soft = tex["soft"]
-		for (x, y0, z, ht, ph, sp) in self.turbines:
-			y1 = y0 + ht
-			tw = ht * 0.028
-			q([(x - tw * 0.45, y1, z), (x + tw * 0.45, y1, z), (x + tw, y0, z), (x - tw, y0, z)],
-				[(58, 70, 88, 255), (92, 108, 126, 255), (64, 78, 96, 255), (36, 46, 60, 255)])
-			ln = ht * 0.56
-			for k in range(3):
-				a = T * sp + ph + k * TAU / 3
-				dx, dy = math.cos(a), math.sin(a)
-				nx, ny = -dy, dx
-				q([(x + nx * tw, y1 + ny * tw, z + 0.3), (x + dx * ln + nx * tw * 0.25, y1 + dy * ln + ny * tw * 0.25, z + 0.3),
-					(x + dx * ln - nx * tw * 0.25, y1 - ny * tw * 0.25 + dy * ln, z + 0.3), (x - nx * tw, y1 - ny * tw, z + 0.3)],
-					[(96, 112, 132, 250), (70, 84, 102, 250), (70, 84, 102, 250), (60, 72, 90, 250)])
-			# Aircraft warning light on the nacelle
-			blink = max(0.0, math.sin(T * 1.6 + ph)) ** 6
-			if blink > 0.02:
-				self._spr((x, y1 + tw, z + 0.4), ht * 0.09, ht * 0.09, soft, (255, 60, 50), 255.0 * blink, add=True)
+		for (bu, bv, ph) in self.beacons:
+			a = 1.0 if ph < 0 else max(0.0, math.sin(T * 1.4 + ph)) ** 4
+			if a > 0.02:
+				p = (x0 + (x1 - x0) * bu, CITY_Y * (1.0 - bv), z + 1.0)
+				self._spr(p, 0.9, 0.9, soft, (255, 70, 56), 255.0 * a, add=True)
+				self._spr(p, 3.0, 3.0, soft, (255, 50, 40), 60.0 * a, add=True)
+
+		for (key, x0, x1, ht, z) in SHORES:
+			g(x0, x1, ht, z, tex[key], 4, col=pal["near"])
 
 		if not mirror:
 			# Mist along the far shore softens the horizon
-			mist = self.pal["mist"]
-			for (ya, yb) in ((0.0, 9.0), (0.0, -3.0)):
+			mist = pal["mist"]
+			for (ya, yb) in ((0.0, 7.0), (0.0, -3.0)):
 				q([(-900.0, yb, -232.0), (900.0, yb, -232.0), (900.0, ya, -232.0), (-900.0, ya, -232.0)],
-					[(*mist, 0), (*mist, 0), (*mist, 64), (*mist, 64)])
+					[(*mist, 0), (*mist, 0), (*mist, 44), (*mist, 44)])
 
 	# ------------------------------------------------------------------ water
-
-	def _ring(self, x: float, z: float, r: float, th: float, a: float) -> None:
-		if a < 2.0:
-			return
-		q = self._quad
-		ice = self.pal["ice"]
-		c1 = (*ice, a * 0.7)
-		c0 = (*ice, 0)
-		ro = r + th
-		px, pz = CIRCLE[0]
-		for (cx, cz) in CIRCLE[1:]:
-			q([(x + px * r, 0.012, z + pz * r), (x + cx * r, 0.012, z + cz * r),
-				(x + cx * ro, 0.012, z + cz * ro), (x + px * ro, 0.012, z + pz * ro)], [c1, c1, c0, c0], additive=True)
-			px, pz = cx, cz
 
 	def _water(self, T: float) -> None:
 		q = self._quad
@@ -1200,7 +956,7 @@ class AeroWorld(DreamRoom):
 			tw = math.sin(T * sp + ph)
 			if tw <= 0.0:
 				continue
-			a = 190.0 * tw * tw
+			a = 170.0 * tw * tw
 			cx = ex + dx * d + nx * lat * d * 0.07
 			cz = ez + dz * d + nz * lat * d * 0.07
 			hw = 0.03 * d * size
@@ -1213,21 +969,9 @@ class AeroWorld(DreamRoom):
 			tw = math.sin(T * sp + ph)
 			if tw > 0.55:
 				s = 0.012 * (4.0 + ez - z) ** 0.9
-				self._spr((x, 0.02, z), s * 2.2, s * 0.5, soft, ice, 200 * (tw - 0.55) * 2.2, add=True)
+				self._spr((x, 0.02, z), s * 2.2, s * 0.5, soft, ice, 170 * (tw - 0.55) * 2.2, add=True)
 
-		# Ripples: under the screen, under the waterfalls, and where things land
-		for (x, z, period, ph, rmax, strength) in self.ripples:
-			age = (T / period + ph) % 1.0
-			self._ring(x, z, rmax * age, rmax * (0.03 + 0.07 * age), strength * (1.0 - age) ** 1.5)
-		for i in range(3):	# stray drops
-			cyc = T / 3.7 + i * 0.37
-			k = math.floor(cyc)
-			age = cyc - k
-			hx = math.sin(k * 12.9898 + i * 78.233) * 43758.5453
-			hz = math.sin(k * 39.3468 + i * 11.135) * 24634.6345
-			self._ring(-3.0 + 7.0 * (hx - math.floor(hx)), -5.0 + 8.0 * (hz - math.floor(hz)), 1.1 * age, 0.02 + 0.05 * age,
-				150.0 * (1.0 - age) ** 2)
-		self._glow((SCR_CX, 0.008, SCR_Z + 0.1), self._scr_w * 0.9, 1.3, pal["glow"], 50.0 * self._e, axis="y")
+		self._glow((SCR_CX, 0.008, SCR_Z + 0.1), self._scr_w * 0.9, 1.3, pal["glow"], 42.0 * self._e, axis="y")
 
 	# --------------------------------------------------------- loose objects
 
@@ -1235,38 +979,18 @@ class AeroWorld(DreamRoom):
 		"""Everything adrift near the screen, sorted far to near:
 		(view depth, world z, draw function, args)."""
 		items: list[tuple] = []
-		tex = self.tex
 		ex, ey, ez = self._eye
 		fx, fy, fz = self._fwd
-		sin, cos = math.sin, math.cos
-		hues = self.pal["hue"]
+		sin = math.sin
 
 		def put(p, fn, *args) -> None:
 			items.append(((p[0] - ex) * fx + (p[1] - ey) * fy + (p[2] - ez) * fz, p[2], fn, args))
 
-		for (x, y, z, hw, key, ph, fall) in self.islands:
-			p = (x, y + sin(T * 0.4 + ph) * 0.22, z)
-			put(p, self._island, p, hw, key, ph, T)
-		for (c, r, ph) in self.discs:
-			p = (c[0], c[1] + sin(T * 0.5 + ph) * 0.15 * r, c[2])
-			put(p, self._disc, p, r, T * 0.35 + ph, 0.5 + 0.3 * sin(T * 0.23 + ph), T * 0.11 + ph)
-		for (c, w, h, ph) in self.panes:
-			p = (c[0] + sin(T * 0.13 + ph) * 0.3, c[1] + sin(T * 0.31 + ph) * 0.12, c[2])
-			put(p, self._pane, p, w, h, 0.55 * sin(T * 0.21 + ph))
-		for (x, z, s, ph) in self.tiles:
-			put((x, 0.0, z), self._tile, x, 0.035 + 0.012 * sin(T * 0.9 + ph), z, s)
-		for (x, z, r, key, ph) in self.orbs:
-			p = (x, r * 0.5 + 0.03 * sin(T * 1.3 + ph), z)
-			put(p, self._spr, p, r, r, tex[key], hues[ORB_HUES[key]], 255.0, 0.1 * sin(T * 0.9 + ph))
-		bub = tex["bubble"]
-		for (x, y, z, r, sp, ph) in self.bubbles:
-			wob = 1.0 + 0.05 * sin(T * 2.1 + ph)
-			put((x, y, z), self._spr, (x, y, z), r * wob, r / wob, bub, (196, 224, 246), 200.0)
-		# Two big bubbles with something caught inside
-		p = (5.3, 2.7 + 0.2 * sin(T * 0.37), -6.6)
-		put(p, self._bubble_world, p, 1.25, tex["island0"], 0.8)
-		p = (-3.3, 2.35 + 0.12 * sin(T * 0.5 + 2), -3.4)
-		put(p, self._bubble_world, p, 0.52, tex["orb_note"], 0.26, hues[ORB_HUES["orb_note"]])
+		lo, hi = BOAT_SPAN
+		for (z, x0, sp, ln) in BOATS:
+			x = lo + (x0 - lo + sp * T) % (hi - lo)
+			put((x, 0.0, z), self._boat, x, z, ln, 1 if sp > 0 else -1, T)
+
 		# Fireflies, glowing in and out: warm yellow-green, nudged toward the accent
 		glow = _mix((200, 255, 96), self.pal["glow"], 0.15)
 		for (x, y, z, ph, s) in self.motes:
@@ -1274,161 +998,45 @@ class AeroWorld(DreamRoom):
 			if a > 0.01:
 				put((x, y, z), self._firefly, (x, y, z), s, glow, a)
 
-		moonlit = (112, 126, 158)
-		for (cx, cz, rx, rz, y, bob, sp, th0, ln, key) in self.fish:
-			th = th0 * TAU + T * sp
-			hx, hz = -rx * sin(th), rz * cos(th)
-			if sp < 0:
-				hx, hz = -hx, -hz
-			hl = math.hypot(hx, hz)
-			p = (cx + rx * cos(th), y + bob * sin(th * 2.0 + th0 * 9.0), cz + rz * sin(th))
-			put(p, self._below, self._fish, p, hx / hl, hz / hl, ln, tex[key], T * (2.0 if ln > 5 else 7.0) + th0 * 20.0, moonlit)
-		# The tetra school wanders as one
-		sx = 2.2 + 2.6 * sin(T * 0.21)
-		sy = 1.15 + 0.4 * sin(T * 0.33)
-		sz = -1.0 + 2.4 * sin(T * 0.17 + 1.0)
-		right = cos(T * 0.21) > 0
-		tetra = tex["tetra"]
-		for (ox, oy, oz, ph) in self.tetras:
-			p = (sx + ox + 0.08 * sin(T * 1.7 + ph), sy + oy + 0.05 * sin(T * 2.3 + ph), sz + oz)
-			put(p, self._below, self._spr, p, 0.075, 0.0375, tetra, (255, 255, 255), 255.0, 0.0, False, right)
-
 		items.sort(key=lambda it: -it[0])
 		return items
 
-	def _island(self, p, hw, key, ph, T) -> None:
+	def _boat(self, x, z, ln, dirn, T) -> None:
+		"""A boat under way: its hull and cabin lights, its navigation lights
+		(and their long reflections), and a faint wake."""
 		tex = self.tex
-		self._spr(p, hw, hw, tex[key], (255, 255, 255), 255.0)
-		if key == "island1":	# lamplight from the house's window
-			self._spr((p[0] + hw * 0.36, p[1] + hw * 0.39, p[2] + 0.05), hw * 0.3, hw * 0.24, tex["soft"],
-				(255, 206, 140), 150.0, add=True)
-		# A waterfall off the rim, all the way down to the lake
-		q = self._quad
-		x, top, z = p[0] + hw * 0.62, p[1] + hw * 0.02, p[2] + 0.05
-		w = hw * 0.07
-		f = self._fade
-		ice = self.pal["ice"]
-		q([(x - w, top, z), (x + w, top, z), (x + w * 1.7, 0.0, z), (x - w * 1.7, 0.0, z)],
-			[(*ice, 120 * f), (*ice, 120 * f), (*ice, 60 * f), (*ice, 60 * f)])
-		if self._mirror:
+		hw = ln * 0.5
+		hh = hw * 72 / 192
+		bob = 0.03 * math.sin(T * 1.3 + z)
+		self._spr((x, hh * 0.62 + bob, z), hw, hh, tex["boat"], (255, 255, 255), 255.0, 0.0, False, dirn < 0)
+		soft = tex["soft"]
+		mirror = self._mirror
+		# Masthead (white), and the side light toward us: green to starboard
+		stretch = 4.0 if mirror else 1.0
+		mast = (x - dirn * hw * 0.01, hh * 1.92 + bob, z)
+		side = (x + dirn * hw * 0.55, hh * 0.85 + bob, z)
+		self._spr(mast, 0.34, 0.34 * stretch, soft, (255, 250, 236), 255.0, add=True)
+		self._spr(side, 0.3, 0.3 * stretch, soft, (60, 255, 110) if dirn < 0 else (255, 60, 50), 255.0, add=True)
+		self._spr((x, hh * 0.9 + bob, z), hw * 0.7, hh * 0.6 * stretch, soft, (255, 196, 120), 60.0, add=True)
+		if mirror:
 			return
-		for i in range(9):
-			k = (T * 0.5 + i / 9 + ph) % 1.0
-			y = top * (1.0 - k * k)
-			ln = 0.3 + top * 0.18 * k
-			xo = x + w * 1.3 * math.sin(i * 7.3 + ph * 5.0) * (0.5 + 0.5 * k)
-			sw = w * 0.22
-			q([(xo - sw, y, z), (xo + sw, y, z), (xo + sw, y - ln, z), (xo - sw, y - ln, z)],
-				[(*ice, 0), (*ice, 0), (*ice, 120 * f), (*ice, 120 * f)], additive=True)
-		self._spr((x, w * 2.0, z), w * 9.0, w * 4.0, tex["soft"], ice, 90.0 + 25.0 * math.sin(T * 3.0), add=True)
-
-	def _below(self, fn, *args) -> None:
-		"""Draw only in the mirror pass, i.e. beneath the water's surface."""
-		if self._mirror:
-			fn(*args)
-
-	def _bubble_world(self, p, r, inner, inner_r, col=(220, 228, 240)) -> None:
-		self._spr(p, inner_r, inner_r, inner, col, 255.0)
-		self._spr(p, r, r, self.tex["bubble"], (196, 224, 246), 220.0)
+		# Wake: two lines fanning out behind the stern
+		q = self._quad
+		ice = self.pal["ice"]
+		sx = x - dirn * hw * 0.9
+		for side_z in (-1.0, 1.0):
+			for k in range(3):
+				f0, f1 = k / 3, (k + 1) / 3
+				xa, xb = sx - dirn * ln * 2.5 * f0, sx - dirn * ln * 2.5 * f1
+				za, zb = z + side_z * ln * 0.35 * f0, z + side_z * ln * 0.35 * f1
+				w = 0.05 * ln
+				q([(xa, 0.01, za - w), (xb, 0.01, zb - w), (xb, 0.01, zb + w), (xa, 0.01, za + w)],
+					[(*ice, 70 * (1 - f0)), (*ice, 70 * (1 - f1)), (*ice, 70 * (1 - f1)), (*ice, 70 * (1 - f0))], additive=True)
 
 	def _firefly(self, p, s, col, a) -> None:
 		soft = self.tex["soft"]
 		self._spr(p, s * 7.0, s * 7.0, soft, col, 120.0 * a, add=True)
 		self._spr(p, s * 1.4, s * 1.4, soft, _mix(col, (255, 255, 255), 0.6), 255.0 * a, add=True)
-
-	def _fish(self, p, hx, hz, ln, tex, w, col=(255, 255, 255)) -> None:
-		"""A fish as a ribbon along its heading, with a wave running down the body."""
-		q = self._quad
-		x, y, z = p
-		px, pz = -hz, hx
-		hh = ln * 0.25
-		a = 255.0 * self._fade
-		cols = [(*col, a)] * 4
-		n = 4
-		bx = bz = 0.0
-		for k in range(n + 1):
-			s = k / n
-			lat = ln * 0.11 * (s * s + 0.1) * math.sin(w - s * 3.2)
-			cx = x - hx * (s - 0.45) * ln + px * lat
-			cz = z - hz * (s - 0.45) * ln + pz * lat
-			if k:
-				s0 = (k - 1) / n
-				q([(bx, y + hh, bz), (cx, y + hh, cz), (cx, y - hh, cz), (bx, y - hh, bz)], cols,
-					uvs=[(s0, 0.0), (s, 0.0), (s, 1.0), (s0, 1.0)], texture=tex)
-			bx, bz = cx, cz
-
-	def _disc(self, c, rad, yaw, tilt, spin) -> None:
-		"""A compact disc, iridescent and slowly tumbling."""
-		q = self._quad
-		cx, cy, cz = c
-		cyw, syw = math.cos(yaw), math.sin(yaw)
-		ct, st = math.cos(tilt), math.sin(tilt)
-		ax, ay, az = cyw, 0.0, -syw
-		bx, by, bz = syw * st, ct, cyw * st
-		f = self._fade
-		r0, r1, r2 = rad * 0.14, rad * 0.34, rad
-		n = 14
-		mirror = self._mirror
-		hsv = colorsys.hsv_to_rgb
-		pd = pc_in = pc_out = None
-		for i in range(n + 1):
-			a = TAU * i / n
-			ca, sa = math.cos(a), math.sin(a)
-			d = (ax * ca + bx * sa, ay * ca + by * sa, az * ca + bz * sa)
-			glint = max(0.0, math.cos(a * 2.0 - spin * 3.0)) ** 10
-			sat = 0.5 * (1.0 - glint)
-			r, g, b = hsv((i / n * 2.0 + spin) % 1.0, sat * 0.8, 0.46 + 0.54 * glint)
-			c_out = (r * 255, g * 255, b * 255, 210 * f)
-			r, g, b = hsv((i / n * 2.0 + spin + 0.22) % 1.0, sat * 0.6, 0.42 + 0.58 * glint)
-			c_in = (r * 255, g * 255, b * 255, 210 * f)
-			if pd is not None and not mirror:
-				q([(cx + pd[0] * r0, cy + pd[1] * r0, cz + pd[2] * r0), (cx + d[0] * r0, cy + d[1] * r0, cz + d[2] * r0),
-					(cx + d[0] * r1, cy + d[1] * r1, cz + d[2] * r1), (cx + pd[0] * r1, cy + pd[1] * r1, cz + pd[2] * r1)],
-					[(120, 150, 180, 110 * f)] * 4)
-			if pd is not None:
-				q([(cx + pd[0] * r1, cy + pd[1] * r1, cz + pd[2] * r1), (cx + d[0] * r1, cy + d[1] * r1, cz + d[2] * r1),
-					(cx + d[0] * r2, cy + d[1] * r2, cz + d[2] * r2), (cx + pd[0] * r2, cy + pd[1] * r2, cz + pd[2] * r2)],
-					[pc_in, c_in, c_out, pc_out])
-			pd, pc_in, pc_out = d, c_in, c_out
-
-	def _pane(self, c, w, h, yaw) -> None:
-		"""An empty glass window, drifting off on its own."""
-		q = self._quad
-		x, y, z = c
-		rx, rz = math.cos(yaw) * w * 0.5, -math.sin(yaw) * w * 0.5
-		hh = h * 0.5
-		f = self._fade
-		tl, tr = (x - rx, y + hh, z - rz), (x + rx, y + hh, z + rz)
-		br, bl = (x + rx, y - hh, z + rz), (x - rx, y - hh, z - rz)
-		# The skin's glass: a dark tint, a sheen over the top, cyan rims
-		q([tl, tr, br, bl], [(14, 40, 62, 120 * f), (10, 32, 52, 104 * f), (6, 22, 40, 126 * f), (8, 26, 46, 136 * f)])
-		tb = h * 0.3
-		q([tl, tr, (tr[0], tr[1] - tb, tr[2]), (tl[0], tl[1] - tb, tl[2])],
-			[(190, 235, 255, 60 * f), (190, 235, 255, 44 * f), (190, 235, 255, 6 * f), (190, 235, 255, 8 * f)])
-		e = h * 0.018
-		edge = [(180, 232, 255, 150 * f)] * 4
-		dim = [(150, 215, 255, 54 * f)] * 4
-		q([tl, tr, (tr[0], tr[1] - e, tr[2]), (tl[0], tl[1] - e, tl[2])], edge)
-		q([bl, br, (br[0], br[1] + e, br[2]), (bl[0], bl[1] + e, bl[2])], dim)
-		ex, ez = rx / w * e * 2.0, rz / w * e * 2.0
-		q([tl, (tl[0] + ex, tl[1], tl[2] + ez), (bl[0] + ex, bl[1], bl[2] + ez), bl], edge)
-		q([(tr[0] - ex, tr[1], tr[2] - ez), tr, br, (br[0] - ex, br[1], br[2] - ez)], dim)
-
-	def _tile(self, x, y, z, s) -> None:
-		if self._mirror:
-			return
-		q = self._quad
-		f = self._fade
-		h = s * 0.5
-		q([(x - h, y, z - h), (x + h, y, z - h), (x + h, y, z + h), (x - h, y, z + h)],
-			[(60, 110, 140, 110 * f), (24, 60, 88, 90 * f), (12, 36, 58, 120 * f), (30, 70, 100, 90 * f)])
-		e = s * 0.045
-		edge = [(180, 232, 255, 160 * f)] * 4
-		q([(x - h, y, z - h), (x + h, y, z - h), (x + h, y, z - h + e), (x - h, y, z - h + e)], edge)
-		q([(x - h, y, z - h), (x - h + e, y, z - h), (x - h + e, y, z + h), (x - h, y, z + h)], edge)
-		q([(x - h, y, z + h - e), (x + h, y, z + h - e), (x + h, y, z + h), (x - h, y, z + h)], [(150, 215, 255, 70 * f)] * 4)
-		q([(x - h, y - 0.025, z + h), (x + h, y - 0.025, z + h), (x + h, y, z + h), (x - h, y, z + h)],
-			[(40, 90, 124, 110 * f)] * 4)
 
 	# ----------------------------------------------------------------- screen
 
@@ -1440,13 +1048,13 @@ class AeroWorld(DreamRoom):
 		sy0, sy1 = SCR_CY - SCR_H / 2, SCR_CY + SCR_H / 2
 		z = SCR_Z
 		if not mirror:
-			self._glow((SCR_CX, SCR_CY, z - 0.05), sw * 0.9, SCR_H * 1.05, self.pal["glow"], 64)
+			self._glow((SCR_CX, SCR_CY, z - 0.05), sw * 0.9, SCR_H * 1.05, self.pal["glow"], 48)
 		# No frame of its own: the app window floats as it is
 		if mirror:
 			self._draw_app(sx0, sx1, sy0, sy1, z, 5, 3)
 			return
 		self._draw_app(sx0, sx1, sy0, sy1, z)
-		a = 20.0 * self._front
+		a = 16.0 * self._front
 		q([(sx0, sy1, z), (sx0 + sw * 0.56, sy1, z), (sx0 + sw * 0.30, sy0, z), (sx0, sy0, z)],
 			[(255, 255, 255, a), (255, 255, 255, a * 0.4), (255, 255, 255, 0), (255, 255, 255, a * 0.5)], additive=True)
 
@@ -1457,18 +1065,15 @@ class AeroWorld(DreamRoom):
 		if f <= 0.01:
 			return
 		q = self._quad
-		tex = self.tex
 		rx, ry, rz = self._right
-		bubble, soft = tex["bubble"], tex["soft"]
-		ice = self.pal["ice"]
 		self._fade = f
 		a = 255.0 * f
 		tanh = math.tan(FOV / 2)
-		fr, fu = self._fb[1], self._fb[2]
-		for (xn, d, hn, lean, ph, wd, dew) in self.blades:
+		fr = self._fb[1]
+		for (xn, d, hn, lean, ph, wd) in self.blades:
 			bx, by, bz = self._fview(xn, -1.0, d)
 			ht = max(0.2, by + hn * tanh * d * 2.0)
-			sway = math.sin(T * 1.1 + ph) * 0.035 + math.sin(T * 2.3 + ph * 2.0) * 0.012
+			sway = math.sin(T * 0.9 + ph) * 0.03 + math.sin(T * 2.1 + ph * 2.0) * 0.01
 			n = 4
 			pl = pr = None
 			pcl = pcr = None
@@ -1480,36 +1085,14 @@ class AeroWorld(DreamRoom):
 				pz = bz + fr[2] * off
 				w = wd * (1.0 - s ** 1.6) + 0.0015
 				# Near-black silhouettes, the moon catching one edge
-				if s < 0.5:
-					c = _mix((2, 10, 14), (8, 28, 34), s * 2.0)
-				else:
-					c = _mix((8, 28, 34), (26, 60, 66), s * 2.0 - 1.0)
-				cl = (min(255, c[0] + 16), min(255, c[1] + 26), min(255, c[2] + 34), a)
+				c = _mix((2, 8, 12), (14, 34, 40), s)
+				cl = (min(255, c[0] + 14), min(255, c[1] + 22), min(255, c[2] + 30), a)
 				cr = (*c, a)
 				left = (px - rx * w, py, pz - rz * w)
 				right = (px + rx * w, py, pz + rz * w)
 				if pl is not None:
 					q([pl, left, right, pr], [pcl, cl, cr, pcr])
-				if dew and k == 2:
-					self._spr((px, py, pz), 0.017, 0.019, bubble, (170, 210, 236), 230.0)
-					self._spr((px - 0.004, py + 0.006, pz), 0.012, 0.012, soft, ice, 200.0, add=True)
 				pl, pr, pcl, pcr = left, right, cl, cr
-
-		# A leafy bough reaching in from the top right, against the moonlit sky
-		d = 1.05
-		p0 = self._fview(1.15, 1.10, d)
-		p1 = self._fview(0.56, 0.86, d)
-		bw = 0.009
-		q([(p0[0], p0[1] + bw, p0[2]), (p1[0], p1[1] + bw * 0.3, p1[2]), (p1[0], p1[1] - bw * 0.3, p1[2]), (p0[0], p0[1] - bw, p0[2])],
-			[(20, 18, 22, a), (30, 28, 32, a), (14, 12, 16, a), (10, 10, 14, a)])
-		leaf = tex["leaf"]
-		for (s, ang, size, ph) in self.leaves:
-			th = ang + 0.09 * math.sin(T * 1.3 + ph) + 0.03 * math.sin(T * 2.9 + ph)
-			hx, hy = math.sin(th) * size, -math.cos(th) * size
-			sag = 0.02 * math.sin(math.pi * s)
-			c = (_lerp(p0[0], p1[0], s) + fr[0] * hx + fu[0] * hy, _lerp(p0[1], p1[1], s) - sag + fr[1] * hx + fu[1] * hy,
-				_lerp(p0[2], p1[2], s) + fr[2] * hx + fu[2] * hy)
-			self._spr(c, size * 0.5, size, leaf, (46, 72, 80), 255.0, th)
 		self._fade = 1.0
 
 	# ------------------------------------------------------------------- lens
@@ -1535,24 +1118,15 @@ class AeroWorld(DreamRoom):
 					target = 0.0	# the moon is behind the screen
 		self._flare_vis += (target - self._flare_vis) * 0.12
 		v = self._flare_vis * f
-		hues = pal["hue"]
 		if v > 0.01 and pr is not None:
+			# A faint anamorphic streak through the moon
 			self._fade = v
 			soft = tex["soft"]
-			# A cool anamorphic streak, and ghosts in the skin's hues
-			s2(sx, sy, h * 0.45, h * 0.45, soft, pal["glow"], 22, add=True)
-			s2(sx, sy, h * 0.95, h * 0.008, soft, pal["ice"], 130, add=True)
-			s2(sx, sy, h * 0.008, h * 0.22, soft, pal["ice"], 50, add=True)
-			dx, dy = self._cx - sx, self._cy - sy
-			for (k, size, hue, a, key) in GHOSTS:
-				col = (255, 255, 255) if hue is None else _mix(hues[hue[0]], (255, 255, 255), 0.2)
-				s2(sx + dx * k, sy + dy * k, h * size, h * size, tex[key], col, a, add=True)
+			s2(sx, sy, h * 0.8, h * 0.006, soft, pal["ice"], 90, add=True)
+			s2(sx, sy, h * 0.3, h * 0.3, soft, pal["glow"], 14, add=True)
 		self._fade = f
 		if f > 0.01:
-			bk = tex["bokeh"]
-			for (bx, by, r, key, a, ph) in self.bokeh:
-				s2((bx + 0.03 * math.sin(T * 0.11 + ph)) * w, (by + 0.05 * math.sin(T * 0.07 + ph * 2.0)) * h,
-					r * h, r * h, bk, hues[key], a * (0.7 + 0.3 * math.sin(T * 0.5 + ph)), add=True)
+			s2(w * 0.5, h * 0.5, w * 0.5, h * 0.5, tex["vignette"], (255, 255, 255), 255.0)
 		self._fade = 1.0
 		self.batch.flush()
 
@@ -1575,17 +1149,17 @@ class AeroWorld(DreamRoom):
 		self._front = min(1.0, e * 2.5)
 		self._fb = (END_EYE, *_basis(END_EYE, END_TGT), aspect)
 
-		# Camera: straight back out of the screen, lifting over the stepping
-		# tiles, then settling low over the water off to one side.
+		# Camera: straight back out of the screen, lifting a little, then
+		# settling low over the water off to one side.
 		d0 = (SCR_H / 2) / math.tan(FOV / 2)
 		eye = (
-			_lerp(SCR_CX, END_EYE[0], e) + math.sin(T * 0.23) * 0.10 * e,
-			_lerp(SCR_CY, END_EYE[1], e) + 0.38 * math.sin(math.pi * e) + math.sin(T * 0.19 + 1.7) * 0.04 * e,
-			_lerp(SCR_Z + d0, END_EYE[2], e) + math.sin(T * 0.15 + 0.6) * 0.08 * e,
+			_lerp(SCR_CX, END_EYE[0], e) + math.sin(T * 0.23) * 0.08 * e,
+			_lerp(SCR_CY, END_EYE[1], e) + 0.3 * math.sin(math.pi * e) + math.sin(T * 0.19 + 1.7) * 0.03 * e,
+			_lerp(SCR_Z + d0, END_EYE[2], e) + math.sin(T * 0.15 + 0.6) * 0.06 * e,
 		)
 		tgt = (
-			_lerp(SCR_CX, END_TGT[0], e) + math.sin(T * 0.17 + 4.0) * 0.03 * e,
-			_lerp(SCR_CY, END_TGT[1], e) + math.sin(T * 0.21 + 2.2) * 0.02 * e,
+			_lerp(SCR_CX, END_TGT[0], e) + math.sin(T * 0.17 + 4.0) * 0.02 * e,
+			_lerp(SCR_CY, END_TGT[1], e) + math.sin(T * 0.21 + 2.2) * 0.015 * e,
 			SCR_Z,
 		)
 		self._camera(eye, tgt)
