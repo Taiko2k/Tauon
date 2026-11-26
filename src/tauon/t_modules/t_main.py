@@ -17700,7 +17700,9 @@ class Tauon:
 				gui.turbo = False
 
 		if gui.mode == GuiMode.MAIN:
-			if not gui.maximized and not gui.lowered:
+			# A fullscreen window is screen sized: keep the size to restore to
+			if not gui.maximized and not gui.lowered and not gui.fullscreen \
+					and not sdl3.get_window_flags(self.t_window) & sdl3.SDL_WINDOW_FULLSCREEN:
 				gui.save_size[0] = self.logical_size[0]
 				gui.save_size[1] = self.logical_size[1]
 
@@ -18246,6 +18248,7 @@ class Tauon:
 			and not self.search_over.active \
 			and not self.milk_choose.active \
 			and not self.milk_fullscreen.active \
+			and not self.video.fullscreen.active \
 			and not self.gui.box_over \
 			and not self.trans_edit_box.active \
 			and not self.generator_box.active \
@@ -44727,6 +44730,10 @@ class ArtBox:
 
 		# Draw picture metadata; keep it up while the art's own menus are open
 		art_menu_open = tauon.picture_menu.active or tauon.milky_menu.active
+		if video_rect is not None and self.coll(video_rect) \
+			and (tauon.is_level_zero() or (art_menu_open and tauon.is_level_zero(include_menus=False))) \
+			and gui.message_box is False and gui.layer_focus == 0:
+			tauon.video.draw_overlay(video_rect)
 		if showc is not None and self.coll(border) \
 			and (tauon.is_level_zero() or (art_menu_open and tauon.is_level_zero(include_menus=False))) \
 			and gui.message_box is False \
@@ -55292,6 +55299,10 @@ def draw_showcase_art_box(
 			else:
 				tauon.picture_menu.activate(in_reference=track)
 			inp.right_click = False
+
+	if video_rect is not None and tauon.coll(video_rect) and gui.message_box is False \
+		and (tauon.is_level_zero() or (tauon.picture_menu.active and tauon.is_level_zero(include_menus=False))):
+		tauon.video.draw_overlay(video_rect)
 
 
 class Showcase:
@@ -67941,6 +67952,9 @@ def main(holder: Holder) -> None:
 				gui.request_frame()
 				run_frame = True
 
+		if tauon.video.fullscreen.active and gui.mode != GuiMode.MAIN:
+			tauon.video.fullscreen.close()
+
 		# Milkdrop fullscreen view: the visualiser animates every frame.
 		if tauon.milk_fullscreen.active:
 			if gui.mode != GuiMode.MAIN:
@@ -68526,6 +68540,8 @@ def main(holder: Holder) -> None:
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
+
+			tauon.video.fullscreen.handle_input()
 
 			# Transfer click register to menus
 			if inp.mouse_click:
@@ -69177,6 +69193,8 @@ def main(holder: Holder) -> None:
 
 			if tauon.milk_fullscreen.active:
 				tauon.milk_fullscreen.handle_input()
+
+			tauon.video.fullscreen.handle_input()
 
 			if gui.mode == GuiMode.MAIN:
 				ddt.text_background_colour = colours.playlist_panel_background
@@ -70920,6 +70938,7 @@ def main(holder: Holder) -> None:
 					radiobox.render()
 
 				tauon.milk_fullscreen.render()
+				tauon.video.fullscreen.render()
 
 				tauon.milk_choose.render()
 
@@ -71885,7 +71904,8 @@ def main(holder: Holder) -> None:
 		# gui.vis = 5
 		# gui.level_update = True
 
-		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active and not tauon.milk_fullscreen.active:
+		if gui.level_update is True and not resize_mode and gui.mode != GuiMode.MINI and not tauon.dream_room.active \
+				and not tauon.milk_fullscreen.active and not tauon.video.fullscreen.active:
 			gui.level_update = False
 
 			sdl3.set_render_target(renderer, None)

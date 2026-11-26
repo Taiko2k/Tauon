@@ -7,7 +7,10 @@ Changelog
  - Added Candy Factory skin
  - Added stereo crossfeed setting
  - Added lyric word stamp support
+ - Added replay gain scan to tag editor
+ - Added video playback support
  - Fixed timing accuracy with lyrics
+ - Fixed window reopening at screen size after quitting in fullscreen
 
 ### v14.0.0
 

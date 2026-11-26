@@ -19,9 +19,11 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from tauon.t_modules import t_native as sdl3
-from tauon.t_modules.t_enums import PlayingState
+from tauon.t_modules.t_enums import GuiMode, PlayingState
+from tauon.t_modules.t_extra import ColourRGBA
 
 if TYPE_CHECKING:
+	from tauon.t_modules.t_draw import TDraw
 	from tauon.t_modules.t_main import Tauon, TrackClass
 
 VIDEO_EXTENSIONS = {"mp4", "m4v", "webm", "mkv", "avi", "mov"}
@@ -34,6 +36,9 @@ QUEUE_FRAMES = 4
 _SHOWINFO = re.compile(r"\]\s+n:\s*\d+\s+pts:\s*\S+\s+pts_time:(\S+).*?\ss:(\d+)x(\d+)")
 _DURATION = re.compile(r"^\s*Duration:\s*(\d+):(\d+):(\d+(?:\.\d+)?)")
 _METADATA = re.compile(r"^\s{4}(\w+)\s*:\s?(.*)$")
+# Stream #0:0(und): Video: h264 (High) (avc1 / 0x31637661), yuv420p, 1920x1080 [SAR 1:1 DAR 16:9], 23.98 fps
+_VIDEO_STREAM = re.compile(r"Stream #0:\d+\S*: Video: (\w+).*?, (\d+)x(\d+)")
+_STREAM_FPS = re.compile(r", (\d+(?:\.\d+)?k?) (fps|tbr)\b")
 _NO_VIDEO = ("matches no streams", "does not contain any stream")
 
 
@@ -43,6 +48,38 @@ def startup_info() -> subprocess.STARTUPINFO | None:
 	info = subprocess.STARTUPINFO()
 	info.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 	return info
+
+
+def fps_label(fps: float) -> str:
+	text = f"{fps:.2f}".rstrip("0").rstrip(".")
+	return _("{rate} fps").format(rate=text)
+
+
+def draw_fullscreen_icon(ddt: TDraw, rect: tuple[int, int, int, int], scale: float, colour: ColourRGBA) -> None:
+	"""Four corner brackets"""
+	x, y, w, h = rect
+	t = max(1, round(1.5 * scale))
+	arm = round(w * 0.4)
+	for cx, cy, dx, dy in ((x, y, 1, 1), (x + w, y, -1, 1), (x, y + h, 1, -1), (x + w, y + h, -1, -1)):
+		left = cx if dx > 0 else cx - arm
+		top = cy if dy > 0 else cy - t
+		ddt.rect((left, top, arm, t), colour)
+		left = cx if dx > 0 else cx - t
+		top = cy if dy > 0 else cy - arm
+		ddt.rect((left, top, t, arm), colour)
+
+
+def draw_window_icon(ddt: TDraw, rect: tuple[int, int, int, int], scale: float, colour: ColourRGBA) -> None:
+	"""A window frame with a title bar, filled by the picture"""
+	x, y, w, h = rect
+	t = max(1, round(scale))
+	bar = max(2, round(2.5 * scale))
+	ddt.rect((x, y, w, bar), colour)
+	ddt.rect((x, y + h - t, w, t), colour)
+	ddt.rect((x, y, t, h), colour)
+	ddt.rect((x + w - t, y, t, h), colour)
+	pad = t * 2
+	ddt.rect((x + pad, y + bar + t, w - pad * 2, h - bar - t - pad), colour)
 
 
 def fit(box: tuple[int, int], aspect: float) -> tuple[int, int]:
@@ -110,6 +147,11 @@ class VideoDecoder:
 		self.produced = 0
 		self.last_pts = start
 		self.errors: deque[str] = deque(maxlen=12)
+		# The source stream as FFmpeg reports it: codec, size and frame rate
+		self.codec = ""
+		self.source_size: tuple[int, int] | None = None
+		self.source_fps: float | None = None
+		self._pts_seen: list[float] = []
 
 		bw = max(2, min(box[0], MAX_EDGE))
 		bh = max(2, min(box[1], MAX_EDGE))
@@ -129,10 +171,27 @@ class VideoDecoder:
 		threading.Thread(target=self._read_log, daemon=True).start()
 		threading.Thread(target=self._read_frames, daemon=True).start()
 
+	def _parse_stream(self, line: str) -> None:
+		match = _VIDEO_STREAM.search(line)
+		if not match or "attached pic" in line:
+			return
+		self.codec = match.group(1)
+		self.source_size = (int(match.group(2)), int(match.group(3)))
+		rates = {kind: value for value, kind in _STREAM_FPS.findall(line)}
+		rate = rates.get("fps") or rates.get("tbr")
+		if rate:
+			self.source_fps = float(rate[:-1]) * 1000 if rate.endswith("k") else float(rate)
+
 	def _read_log(self) -> None:
+		inputs = True
 		try:
 			for raw in self.proc.stderr:
 				line = raw.decode(errors="replace").rstrip()
+				if inputs:
+					if line.startswith(("Stream mapping:", "Output #")):
+						inputs = False
+					elif not self.source_size:
+						self._parse_stream(line)
 				match = _SHOWINFO.search(line)
 				if match:
 					try:
@@ -143,6 +202,8 @@ class VideoDecoder:
 						if pts is None:
 							pts = self.headers[-1][0] + 1 / 30 if self.headers else self.last_pts - self.start
 						self.headers.append((pts, int(match.group(2)), int(match.group(3))))
+						if len(self._pts_seen) < 25:
+							self._pts_seen.append(pts)
 						self.cond.notify_all()
 				elif "Parsed_showinfo" not in line or "checksum" in line:
 					# showinfo's other per-frame lines aren't worth keeping
@@ -205,6 +266,15 @@ class VideoDecoder:
 		with self.cond:
 			return self.frames[0].pts if self.frames else None
 
+	def frame_rate(self) -> float | None:
+		"""The stream's stated rate, or one measured from the first frames"""
+		if self.source_fps:
+			return self.source_fps
+		seen = self._pts_seen
+		if len(seen) >= 10 and seen[-1] > seen[0]:
+			return (len(seen) - 1) / (seen[-1] - seen[0])
+		return None
+
 	def no_video_stream(self) -> bool:
 		return self.finished and self.produced == 0 and any(
 			text in line for line in self.errors for text in _NO_VIDEO)
@@ -258,6 +328,9 @@ class VideoPlayer:
 		self.wake_at = 0.0
 		self.checksum_option = True
 		self.no_video: set[str] = set()
+		# codec, source size and frame rate of the video on screen
+		self.info: tuple[str, tuple[int, int] | None, float | None] = ("", None, None)
+		self.fullscreen = VideoFullscreen(tauon, self)
 		self._ffmpeg: str | None = None
 		self._ffmpeg_checked = -1000.0
 
@@ -306,6 +379,7 @@ class VideoPlayer:
 		self.has_frame = False
 		self.frame_pts = None
 		self.requests.clear()
+		self.info = ("", None, None)
 
 	def destroy_texture(self) -> None:
 		if self.texture is not None:
@@ -434,14 +508,18 @@ class VideoPlayer:
 
 		if decoder is not None:
 			playing = self.pctl.playing_state == PlayingState.PLAYING
+			# A frame is due a loop period early: the loop notices the wake up to
+			# one period late and the present waits up to a refresh, so on average
+			# it reaches the screen on time rather than always behind.
+			lead = self.tauon.frame_pace()
 			# Paused, the first frame after a seek lands just past the position
-			frame = decoder.take(position + (0.01 if playing else 0.1))
+			frame = decoder.take(position + (lead if playing else max(lead, 0.1)))
 			if frame is not None:
 				self._upload(frame)
 			if not decoder.finished:
 				if playing:
 					next_pts = decoder.next_pts()
-					self._wake(1 / 60 if next_pts is None else min(1.0, next_pts - position))
+					self._wake(1 / 60 if next_pts is None else min(1.0, next_pts - lead - position))
 				elif (self.frame_pts is None or abs(self.frame_pts - position) > 0.25) and decoder.next_pts() is None:
 					self._wake(1 / 30)
 
@@ -453,3 +531,183 @@ class VideoPlayer:
 		dy = round(rect[1] + (rect[3] - dh) / 2)
 		sdl3.render_texture(self.renderer, self.texture, None, sdl3.FRect(dx, dy, dw, dh))
 		return dx, dy, dw, dh
+
+	def source_info(self) -> tuple[str, tuple[int, int] | None, float | None]:
+		decoder = self.decoder
+		if decoder is not None and decoder.codec:
+			rate = decoder.frame_rate() or self.info[2]
+			self.info = (decoder.codec, decoder.source_size, rate)
+		return self.info
+
+	def draw_overlay(self, rect: tuple[int, int, int, int]) -> None:
+		"""Hover tags over the video: frame rate top left, fullscreen buttons bottom right.
+
+		Shift adds the codec and source size, as it adds detail to the art's tags.
+		"""
+		tauon = self.tauon
+		ddt = tauon.ddt
+		inp = tauon.inp
+		scale = self.gui.scale
+		x, y, w, h = rect
+		tag_h = round(18 * scale)
+		inset = round(10 * scale)
+		text_x = round(6 * scale)
+		back = ColourRGBA(8, 8, 8, 255)
+		text_bg = ColourRGBA(30, 30, 30, 255)
+		ink = ColourRGBA(200, 200, 200, 255)
+
+		codec, size, fps = self.source_info()
+		lines = [fps_label(fps)] if fps else []
+		if inp.key_shift_down:
+			if codec:
+				lines.append(codec)
+			if size:
+				lines.append(f"{size[0]}×{size[1]}")
+		ty = y + inset
+		for line in lines:
+			tw = ddt.get_text_w(line, 12) + round(12 * scale)
+			ddt.rect_a((x + inset, ty), (tw, tag_h), back)
+			ddt.text((x + inset + text_x, ty), line, ink, 12, bg=text_bg)
+			ty += tag_h
+
+		size = round(24 * scale)
+		gap = round(4 * scale)
+		if size * 2 + gap + inset * 2 > w or tag_h + size + inset * 3 > h:
+			return
+		buttons = ((_("Fullscreen"), True, draw_fullscreen_icon), (_("Fill Window"), False, draw_window_icon))
+		right = x + w - inset
+		by = y + h - inset - size
+		for label, desktop, draw_icon in buttons:
+			bx = right - size
+			hover = tauon.coll((bx, by, size, size))
+			ddt.rect((bx, by, size, size), ColourRGBA(55, 55, 55, 255) if hover else back)
+			icon = round(12 * scale)
+			edge = (size - icon) // 2
+			draw_icon(ddt, (bx + edge, by + edge, icon, icon), scale, ColourRGBA(240, 240, 240, 255) if hover else ink)
+			if hover:
+				tip_w = ddt.get_text_w(label, 13) + 20 * scale
+				tauon.tool_tip.test(bx + size - tip_w, by - 30 * scale, label)
+				if inp.mouse_click:
+					inp.mouse_click = False
+					self.fullscreen.activate(desktop)
+			right = bx - gap
+
+class VideoFullscreen:
+	"""The playing video over the whole window, or the whole screen.
+
+	Any click or Escape leaves. Keyboard shortcuts keep working; the pointer is
+	muted so the UI underneath never reacts.
+	"""
+
+	def __init__(self, tauon: Tauon, player: VideoPlayer) -> None:
+		self.tauon = tauon
+		self.player = player
+		self.gui = tauon.gui
+		self.inp = tauon.inp
+		self.active = False
+		self._entered_window_fullscreen = False
+		# The pointer is muted for the UI underneath; this keeps where it really is
+		self.pointer: tuple[float, float] = (-1.0, -1.0)
+		# Clicks held for the window controls, which are drawn after input handling
+		self._click = False
+		self._up = False
+		self._ab = False
+
+	def _controls_shown(self) -> bool:
+		"""Fill Window shows Tauon's window controls while the pointer is near the top"""
+		return not self.gui.fullscreen and self.tauon.draw_border \
+			and 0 <= self.pointer[1] < round(48 * self.gui.scale)
+
+	def _controls_rect(self) -> tuple[int, int, int, int]:
+		scale = self.gui.scale
+		width = round(110 * scale)
+		x = 0 if self.tauon.prefs.left_window_control else self.tauon.window_size[0] - width
+		return x, 0, width, round(32 * scale)
+
+	def activate(self, desktop: bool) -> None:
+		if self.active or self.gui.mode != GuiMode.MAIN:
+			return
+		self.active = True
+		if desktop and not self.gui.fullscreen:
+			self.gui.fullscreen = True
+			self._entered_window_fullscreen = True
+			sdl3.set_window_fullscreen_mode(self.tauon.t_window, None)
+			sdl3.set_window_fullscreen(self.tauon.t_window, True)
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		if not self.active:
+			return
+		self.active = False
+		# Only leave OS fullscreen if this view entered it and it's still set
+		if self._entered_window_fullscreen and self.gui.fullscreen:
+			self.gui.fullscreen = False
+			sdl3.set_window_fullscreen(self.tauon.t_window, False)
+		self._entered_window_fullscreen = False
+		self.gui.request_frame()
+
+	def handle_input(self) -> None:
+		if not self.active:
+			return
+		inp = self.inp
+		# Runs more than once a frame; later passes see the muted pointer
+		if inp.mouse_position[0] > -2999:
+			self.pointer = (inp.mouse_position[0], inp.mouse_position[1])
+		on_controls = False
+		if self._controls_shown():
+			x, y, w, h = self._controls_rect()
+			on_controls = x <= self.pointer[0] < x + w and y <= self.pointer[1] < y + h
+			# A press without a motion event in between was recorded at the muted position
+			if inp.click_location[0] <= -2999:
+				inp.click_location = list(self.pointer)
+		if inp.key_esc_press:
+			inp.key_esc_press = False
+			self.close()
+		elif on_controls and inp.mouse_click:
+			self._click = True
+		elif inp.mouse_click or inp.right_click or inp.middle_click:
+			self.close()
+		if on_controls:
+			self._up |= inp.mouse_up
+			self._ab |= inp.ab_click
+		inp.mouse_click = False
+		inp.d_mouse_click = False
+		inp.right_click = False
+		inp.middle_click = False
+		inp.mouse_wheel = 0
+		inp.mouse_position[0] = -3000.0
+		inp.mouse_position[1] = -3000.0
+
+	def render(self) -> None:
+		if not self.active:
+			return
+		tauon = self.tauon
+		pctl = tauon.pctl
+		track = pctl.playing_object()
+		if pctl.playing_state not in (PlayingState.PLAYING, PlayingState.PAUSED) \
+				or not self.player.is_video_file(track) or track.fullpath in self.player.no_video \
+				or (self._entered_window_fullscreen and not self.gui.fullscreen):
+			# Stopped, moved on to audio, or the window left fullscreen behind our back
+			self.close()
+			return
+		w, h = tauon.window_size
+		tauon.ddt.rect((0, 0, w, h), ColourRGBA(0, 0, 0, 255))
+		self.player.draw(track, (0, 0, w, h), "fullscreen")
+		if self._controls_shown():
+			self._draw_controls()
+		self._click = self._up = self._ab = False
+
+	def _draw_controls(self) -> None:
+		"""The window controls on a patch of top panel, with the real pointer handed back to them"""
+		tauon = self.tauon
+		inp = self.inp
+		panel = tauon.colours.top_panel_background
+		tauon.ddt.rect(self._controls_rect(), ColourRGBA(panel.r, panel.g, panel.b, 255))
+		saved = (list(inp.mouse_position), inp.mouse_click, inp.mouse_up, inp.ab_click)
+		inp.mouse_position[:] = self.pointer
+		inp.mouse_click, inp.mouse_up, inp.ab_click = self._click, self._up, self._ab
+		try:
+			tauon.draw_window_tools()
+		finally:
+			inp.mouse_position[:] = saved[0]
+			inp.mouse_click, inp.mouse_up, inp.ab_click = saved[1:]
