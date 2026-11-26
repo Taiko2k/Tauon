@@ -4292,6 +4292,50 @@ class PlayerCtl:
 		self.gui.request_tracklist_redraw()
 
 	@database_write
+	def album_span(self, playlist: list[int], position: int) -> tuple[int, int]:
+		"""First and last rows of the folder run around a playlist row."""
+		folder = self.get_track(playlist[position]).parent_folder_path
+		first = position
+		while first > 0 and self.get_track(playlist[first - 1]).parent_folder_path == folder:
+			first -= 1
+		last = position
+		while last < len(playlist) - 1 and self.get_track(playlist[last + 1]).parent_folder_path == folder:
+			last += 1
+		return first, last
+
+	def album_repeat_target(self, step: int, force: bool = False) -> tuple[int, bool] | None:
+		"""Row that Next (step 1) or Previous (step -1) plays while repeat album loops in order, and whether it wrapped.
+
+		None when repeat album isn't looping the playing album, so the normal step applies.
+		"""
+		if not (self.repeat_mode and self.album_repeat_mode) or self.random_mode:
+			return None
+		pp = self.playing_playlist()
+		position = self.playlist_playing_position
+		if not force and self.track_queue:
+			playing = self.track_queue[self.queue_step]
+			if not (0 <= position < len(pp) and pp[position] == playing):
+				if playing not in pp:
+					return None
+				position = pp.index(playing)
+		if not 0 <= position < len(pp):
+			return None
+
+		first, last = self.album_span(pp, position)
+		size = last - first + 1
+		skip_banned = self.skips_banned(pp, shuffle=False)
+		for n in range(1, size + 1):
+			target = first + (position - first + step * n) % size
+			if not (skip_banned and self.is_banned(pp[target])):
+				wrapped = target <= position if step > 0 else target >= position
+				return target, wrapped
+		return None
+
+	def album_repeat_wraps_to(self, track_id: int | None) -> bool:
+		"""Whether the next track is repeat album looping back to the album's start."""
+		wrap = self.album_repeat_target(1)
+		return track_id is not None and wrap is not None and wrap[1] and self.playing_playlist()[wrap[0]] == track_id
+
 	def back(self) -> None:
 
 		play = True
@@ -4310,8 +4354,16 @@ class PlayerCtl:
 			self.left_index = self.track_queue[self.queue_step]
 
 		self.gui.update_spec = 0
+		album_wrap = self.album_repeat_target(-1)
+		if album_wrap is not None:
+			# Repeat album keeps Previous inside the playing album
+			self.playlist_playing_position = album_wrap[0]
+			self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
+			self.queue_step = len(self.track_queue) - 1
+			self.play_target(jump=True, play=play)
+
 		# Move up
-		if self.random_mode is False and len(self.playing_playlist()) > self.playlist_playing_position > 0:
+		elif self.random_mode is False and len(self.playing_playlist()) > self.playlist_playing_position > 0:
 
 			if len(self.track_queue) > 0 and self.playing_playlist()[self.playlist_playing_position] != \
 					self.track_queue[
@@ -4638,7 +4690,7 @@ class PlayerCtl:
 				if self.stop_mode == StopMode.ALBUM:
 					tr = self.playing_object()
 					i = self.advance(dry=True)
-					if i is None:
+					if i is None or self.album_repeat_wraps_to(i):
 						self.stop(run=True)
 						self.stop_mode = StopMode.OFF
 						stopped = True
@@ -4653,7 +4705,7 @@ class PlayerCtl:
 					stopped = True
 				if self.stop_mode == StopMode.ALBUM_PERSIST:
 					i = self.advance(dry=True)
-					if i is None:
+					if i is None or self.album_repeat_wraps_to(i):
 						self.stop(run=True)
 						stopped = True
 					else:
@@ -4684,6 +4736,11 @@ class PlayerCtl:
 					if self.playlist_playing_position > len(pp) - 1:
 						self.playlist_playing_position = 0  # TODO(Taiko): Hack fix, race condition bug?
 
+					if not self.random_mode:
+						# advance() loops the album itself
+						self.advance(quiet=True, end=True)
+						return
+
 					ti = self.get_track(pp[self.playlist_playing_position])
 
 					i = self.playlist_playing_position
@@ -4698,15 +4755,7 @@ class PlayerCtl:
 							return
 						following += 1
 
-					# We need to backtrack to see where the folder begins
-					i -= 1
-					while i >= 0:
-						nt = self.get_track(pp[i])
-						if ti.parent_folder_path != nt.parent_folder_path:
-							i += 1
-							break
-						i -= 1
-					i = max(i, 0)
+					i, _last = self.album_span(pp, i)
 
 					if skip_banned:
 						first = i
@@ -5213,6 +5262,15 @@ class PlayerCtl:
 			else:
 				self.play_target(jump=not end, play=play)
 
+
+		# Repeat album keeps Next inside the playing album
+		elif (album_wrap := self.album_repeat_target(1, force=force)) is not None:
+			if dry:
+				return self.playing_playlist()[album_wrap[0]]
+			self.playlist_playing_position = album_wrap[0]
+			self.track_queue.append(self.playing_playlist()[self.playlist_playing_position])
+			self.queue_step = len(self.track_queue) - 1
+			self.play_target(jump=not end, play=play)
 
 		# If not random mode, Step down 1 on the playlist
 		elif self.random_mode is False and len(self.playing_playlist()) > 0:
