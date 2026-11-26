@@ -62,6 +62,7 @@ import subprocess
 import sys
 import threading
 import time
+import unicodedata
 
 # import type_enforced
 import urllib.error
@@ -26727,6 +26728,73 @@ class MiniLyrics:
 			(x, y + round(2 * scale), w, h - round(4 * scale)), font,
 			x + w // 2, w - pad * 2, True, round((8 if self.synced else 2) * scale), bg, colour_for)
 
+def is_word_char(char: str) -> bool:
+	"""Letters, digits and apostrophes make up words for cursor jumps."""
+	return char in "'’" or unicodedata.category(char)[0] in "LNM"
+
+def word_start_before(text: str, index: int) -> int:
+	"""Start of the word before index, skipping spaces and punctuation first."""
+	while index > 0 and not is_word_char(text[index - 1]):
+		index -= 1
+	while index > 0 and is_word_char(text[index - 1]):
+		index -= 1
+	return index
+
+def word_end_after(text: str, index: int) -> int:
+	"""End of the word after index, skipping spaces and punctuation first."""
+	while index < len(text) and not is_word_char(text[index]):
+		index += 1
+	while index < len(text) and is_word_char(text[index]):
+		index += 1
+	return index
+
+def text_edit_shortcuts(box: TextBox | TextBox2 | MultiLineTextBox, inp: Input, delete_key: bool = True) -> bool:
+	"""Word and line shortcuts shared by the text boxes.
+
+	Ctrl (Option on macOS) with Left/Right moves by word, with Backspace/Delete erases a word.
+	Cmd on macOS does the same to the line start or end. Shift extends the selection.
+	The box's cursor_position and selection count from the end of its text.
+	Returns True when a key was used, so the box skips its plain key handling.
+	"""
+	if macos:
+		word = inp.key_lalt or inp.key_ralt
+		line = inp.key_ctrl_down or inp.key_rctrl_down
+	else:
+		word = inp.key_ctrl_down or inp.key_rctrl_down
+		line = False
+	if not (word or line):
+		return False
+
+	text = box.text
+	box.cursor_position = min(max(box.cursor_position, 0), len(text))
+	box.selection = min(max(box.selection, 0), len(text))
+	index = len(text) - box.cursor_position
+
+	def target(forward: bool) -> int:
+		if line:
+			if forward:
+				end = text.find("\n", index)
+				return len(text) if end < 0 else end
+			return text.rfind("\n", 0, index) + 1
+		return word_end_after(text, index) if forward else word_start_before(text, index)
+
+	if inp.key_left_press != inp.key_right_press:
+		box.cursor_position = len(text) - target(inp.key_right_press)
+		if not (inp.key_shift_down or inp.key_shiftr_down):
+			box.selection = box.cursor_position
+		return True
+
+	erase_forward = delete_key and inp.key_del
+	if inp.backspace_press or erase_forward:
+		if box.selection != box.cursor_position:
+			box.eliminate_selection()
+			return True
+		start, end = sorted((index, target(bool(erase_forward and not inp.backspace_press))))
+		box.text = text[:start] + text[end:]
+		box.cursor_position = box.selection = len(box.text) - start
+		return True
+	return False
+
 class MultiLineTextBox:
 	cursor = True
 
@@ -27091,63 +27159,15 @@ class MultiLineTextBox:
 					return None
 				return self.text[len(self.text) - self.cursor_position]
 
-			def d() -> None:
-				self.text = self.text[0: len(self.text) - self.cursor_position-1] + self.text[len(
-					self.text) - self.cursor_position:]
-				self.selection = self.cursor_position
-
-			def d2() -> None:
-				self.text = self.text[0:len(self.text) - self.cursor_position] + self.text[len(
-					self.text) - self.cursor_position + 1:]
-				if self.cursor_position > 0:
-					self.cursor_position -= 1
-				self.selection = self.cursor_position
-
 			if self.inp.backspace_press or self.inp.key_right_press or \
-				self.inp.key_left_press or self.inp.key_return_press:
+				self.inp.key_left_press or self.inp.key_return_press or self.inp.key_del:
 				self.temp_x_pos = None
 				autoscroll = True
 
-			# Ctrl + Backspace to delete word
-			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
-					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
-				self.text):
-				while g() is not None and g() not in (" ", "\n"):
-					d()
-				while g() in (" ", "\n") and g() is not None:
-					d()
-
-			# Ctrl + left to move cursor back a word
-			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
-				while g() in (" ", "\n"):
-					self.cursor_position += 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position += 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g() in (" ", "\n"):
-						self.cursor_position -= 1
-						if not self.inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
-
-			# Ctrl + right to move cursor forward a word
-			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
-				while g2() in (" ", "\n"):
-					self.cursor_position -= 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position -= 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g2() in (" ", "\n"):
-						self.cursor_position += 1
-						if not self.inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
+			# Word and line jumps and erases
+			shortcut = text_edit_shortcuts(self, self.inp)
+			if shortcut:
+				pass
 
 			# Handle normal backspace
 			elif self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
@@ -27162,7 +27182,7 @@ class MultiLineTextBox:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if self.inp.key_right_press:
+			if self.inp.key_right_press and not shortcut:
 				autoscroll = True
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					if self.selection != self.cursor_position:
@@ -27174,7 +27194,7 @@ class MultiLineTextBox:
 					if self.cursor_position > 0:
 						self.cursor_position -= 1
 
-			if self.inp.key_left_press:
+			if self.inp.key_left_press and not shortcut:
 				autoscroll = True
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					if self.selection != self.cursor_position:
@@ -27240,14 +27260,7 @@ class MultiLineTextBox:
 				self.gui.cursor_want = 2
 
 			# Delete key to remove text in front of cursor
-			if self.inp.key_del and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
-				self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position > 0:
-				autoscroll = True
-				while g2() is not None and g2() not in (" ", "\n"):
-					d2()
-				while g2() in (" ", "\n") and g2() is not None:
-					d2()
-			elif self.inp.key_del:
+			if self.inp.key_del and not shortcut:
 				autoscroll = True
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
@@ -27465,61 +27478,10 @@ class TextBox2:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[len(
 					self.text) - self.cursor_position:]
 
-			def g() -> str | None:
-				if len(self.text) == 0 or self.cursor_position == len(self.text):
-					return None
-				return self.text[len(self.text) - self.cursor_position - 1]
-
-			def g2() -> str | None:
-				if len(self.text) == 0 or self.cursor_position == 0:
-					return None
-				return self.text[len(self.text) - self.cursor_position]
-
-			def d() -> None:
-				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[len(
-					self.text) - self.cursor_position:]
-				self.selection = self.cursor_position
-
-			# Ctrl + Backspace to delete word
-			if self.inp.backspace_press and (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and \
-					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
-				self.text):
-				while g() == " ":
-					d()
-				while g() != " " and g() is not None:
-					d()
-
-			# Ctrl + left to move cursor back a word
-			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_left_press:
-				while g() == " ":
-					self.cursor_position += 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position += 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g() == " ":
-						self.cursor_position -= 1
-						if not self.inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
-
-			# Ctrl + right to move cursor forward a word
-			elif (self.inp.key_ctrl_down or self.inp.key_rctrl_down) and self.inp.key_right_press:
-				while g2() == " ":
-					self.cursor_position -= 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position -= 1
-					if not self.inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g2() == " ":
-						self.cursor_position += 1
-						if not self.inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
+			# Word and line jumps and erases
+			shortcut = text_edit_shortcuts(self, self.inp)
+			if shortcut:
+				pass
 
 			# Handle normal backspace
 			elif self.inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
@@ -27534,13 +27496,13 @@ class TextBox2:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if self.inp.key_right_press:
+			if self.inp.key_right_press and not shortcut:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if self.inp.key_left_press:
+			if self.inp.key_left_press and not shortcut:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
 				if not self.inp.key_shift_down and not self.inp.key_shiftr_down:
@@ -27581,7 +27543,7 @@ class TextBox2:
 				self.gui.cursor_want = 2
 
 			# Delete key to remove text in front of cursor
-			if self.inp.key_del:
+			if self.inp.key_del and not shortcut:
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				else:
@@ -27856,7 +27818,7 @@ class TextBox:
 	def draw(
 		self, x: int, y: int, colour: list[int], active: bool = True, secret: bool = False,
 		font: int = 13, width: int = 0, click: bool = False, selection_height: float = 18, big: bool = False,
-		view_width: int = 0) -> None:
+		view_width: int = 0, arrow_keys_need_modifier: bool = False) -> None:
 		inp = self.inp
 		ddt = self.ddt
 		gui = self.gui
@@ -27864,6 +27826,8 @@ class TextBox:
 		# A little bit messy
 		# For now, this is set up so where 'width' is set > 0, the cursor position becomes editable,
 		# otherwise it is fixed to end
+		# arrow_keys_need_modifier (quick search): plain arrows, Home, End and Delete stay with the
+		# playlist; the cursor only moves with Shift, Ctrl or (macOS) Option/Cmd held
 
 		selection_height *= self.gui.scale
 
@@ -27878,8 +27842,11 @@ class TextBox:
 				rect = (x - 3, y - 15 * gui.scale, width - 3, 35 * gui.scale)
 				select_rect = (x - 50 * gui.scale, y - 15 * gui.scale, width + 50 * gui.scale, 35 * gui.scale)
 
+			self.cursor_position = min(max(self.cursor_position, 0), len(self.text))
+			self.selection = min(max(self.selection, 0), len(self.text))
+
 			# Activate Menu
-			if self.coll(rect) and (inp.right_click or inp.level_2_right_click):
+			if not arrow_keys_need_modifier and self.coll(rect) and (inp.right_click or inp.level_2_right_click):
 				self.tauon.field_menu.activate(self)
 
 			if click and self.tauon.field_menu.active:
@@ -27892,61 +27859,10 @@ class TextBox:
 				self.text = self.text[0: len(self.text) - self.cursor_position] + self.inp.input_text + self.text[
 					len(self.text) - self.cursor_position:]
 
-			def g() -> str | None:
-				if len(self.text) == 0 or self.cursor_position == len(self.text):
-					return None
-				return self.text[len(self.text) - self.cursor_position - 1]
-
-			def g2() -> str | None:
-				if len(self.text) == 0 or self.cursor_position == 0:
-					return None
-				return self.text[len(self.text) - self.cursor_position]
-
-			def d() -> None:
-				self.text = self.text[0: len(self.text) - self.cursor_position - 1] + self.text[
-					len(self.text) - self.cursor_position:]
-				self.selection = self.cursor_position
-
-			# Ctrl + Backspace to delete word
-			if inp.backspace_press and (inp.key_ctrl_down or inp.key_rctrl_down) and \
-					self.cursor_position == self.selection and len(self.text) > 0 and self.cursor_position < len(
-				self.text):
-				while g() == " ":
-					d()
-				while g() != " " and g() is not None:
-					d()
-
-			# Ctrl + left to move cursor back a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_left_press:
-				while g() == " ":
-					self.cursor_position += 1
-					if not inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g() is not None and g() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position += 1
-					if not inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g() == " ":
-						self.cursor_position -= 1
-						if not inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
-
-			# Ctrl + right to move cursor forward a word
-			elif (inp.key_ctrl_down or inp.key_rctrl_down) and inp.key_right_press:
-				while g2() == " ":
-					self.cursor_position -= 1
-					if not inp.key_shift_down:
-						self.selection = self.cursor_position
-				while g2() is not None and g2() not in " !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~":
-					self.cursor_position -= 1
-					if not inp.key_shift_down:
-						self.selection = self.cursor_position
-					if g2() == " ":
-						self.cursor_position += 1
-						if not inp.key_shift_down:
-							self.selection = self.cursor_position
-						break
+			# Word and line jumps and erases
+			shortcut = text_edit_shortcuts(self, inp, delete_key=not arrow_keys_need_modifier)
+			if shortcut:
+				pass
 
 			# Handle normal backspace
 			elif inp.backspace_press and len(self.text) > 0 and self.cursor_position < len(self.text):
@@ -27961,13 +27877,15 @@ class TextBox:
 				self.eliminate_selection()
 
 			# Left and right arrow keys to move cursor
-			if inp.key_right_press:
+			arrows = not shortcut and (
+				not arrow_keys_need_modifier or inp.key_shift_down or inp.key_shiftr_down)
+			if inp.key_right_press and arrows:
 				if self.cursor_position > 0:
 					self.cursor_position -= 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
 
-			if inp.key_left_press:
+			if inp.key_left_press and arrows:
 				if self.cursor_position < len(self.text):
 					self.cursor_position += 1
 				if not inp.key_shift_down and not inp.key_shiftr_down:
@@ -28000,7 +27918,7 @@ class TextBox:
 			self.fields.add(rect)
 
 			# Delete key to remove text in front of cursor
-			if inp.key_del:
+			if inp.key_del and not shortcut and not arrow_keys_need_modifier:
 				if self.selection != self.cursor_position:
 					self.eliminate_selection()
 				else:
@@ -28010,11 +27928,11 @@ class TextBox:
 						self.cursor_position -= 1
 					self.selection = self.cursor_position
 
-			if inp.key_home_press:
+			if inp.key_home_press and not arrow_keys_need_modifier:
 				self.cursor_position = len(self.text)
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
-			if inp.key_end_press:
+			if inp.key_end_press and not arrow_keys_need_modifier:
 				self.cursor_position = 0
 				if not inp.key_shift_down and not inp.key_shiftr_down:
 					self.selection = self.cursor_position
@@ -70790,12 +70708,13 @@ def main(holder: Holder) -> None:
 					if quick_glass:
 						search_over.search_text.draw(
 							quick_field[0] + round(12 * gui.scale), quick_field[1] + round(4.5 * gui.scale),
-							tauon.aero.colour("TEXT"), font=213, view_width=quick_field[2] - round(24 * gui.scale),
+							tauon.aero.colour("TEXT"), font=213, width=quick_field[2] - round(24 * gui.scale),
+							arrow_keys_need_modifier=True,
 						)
 					else:
 						search_over.search_text.draw(
 							rect[0] + 8 * gui.scale, rect[1] + 6 * gui.scale, colours.grey(250), font=213,
-							view_width=rect[2] - 16 * gui.scale,
+							width=rect[2] - 16 * gui.scale, arrow_keys_need_modifier=True,
 						)
 
 					if (
