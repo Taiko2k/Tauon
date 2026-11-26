@@ -3,8 +3,11 @@
 # The format is FUNCTIONNAME KEYNAME MODIFIERS(optional)
 # Modifiers can be ONE or TWO of Shift, Ctrl or Alt.
 #
-# Note that modifier, return, direction, ctrl+c/x/v/a/z, escape and delete keys currently have hard coded functions.
-# Note that you should not bind letter/number keys without a modifier as this is used to trigger the search overlay.
+# A function listed with no key is unbound. The select functions use the arrow keys if not listed at all.
+#
+# Text fields, dialogs and menus always use the arrow, return, escape and delete keys and ctrl+c/x/v/a/z.
+# Letter and number keys without a modifier open the search overlay, unless they are bound here.
+# Keys that type a character still type in quick search instead of switching playlist or selection.
 #
 # Note that global hotkeys are not supported. You may be able to assign global hotkeys in your desktop environment
 # to controls exposed via MPRIS2.
@@ -45,8 +48,14 @@ goto-previous ' Ctrl
 goto-top Home Shift
 goto-bottom End Shift
 
+select-up Up
+select-down Down
 shift-up Up Shift
 shift-down Down Shift
+
+# Move in the gallery with keyboard control. Elsewhere the key goes on to cycle-playlist.
+select-left Left
+select-right Right
 
 info-show I Ctrl
 info-playing P Ctrl

@@ -348,4 +348,30 @@ def database_migrate(
 		if prefs.sync_lyrics_time_offset == -150:  # noqa: PLR2004
 			prefs.sync_lyrics_time_offset = 0
 
+	if db_version <= 83:  # noqa: PLR2004
+		logging.info("Updating database to version 84")
+		# The arrow keys in the main view became select-* functions. KeyMap gives
+		# them their defaults when input.txt doesn't list them, so this only
+		# writes them out where the user can see and rebind them.
+		keymap_file = config_directory / "input.txt"
+		if install_directory != config_directory and keymap_file.is_file():
+			try:
+				lines = keymap_file.read_text(encoding="utf_8").splitlines()
+				functions = {line.split()[0] for line in lines if line.strip() and line[0] not in " #"}
+				new_binds = [
+					f"{function} {key}"
+					for function, key in (
+						("select-up", "Up"), ("select-down", "Down"),
+						("select-left", "Left"), ("select-right", "Right"),
+					)
+					if function not in functions
+				]
+				if new_binds:
+					comment = "# Move in the gallery with select-left/right. Elsewhere the key goes on to cycle-playlist."
+					keymap_file.write_text("\n".join([*lines, "", comment, *new_binds]) + "\n", encoding="utf_8")
+					gui.keymaps.maps.clear()
+					gui.keymaps.load()
+			except Exception:
+				logging.exception("Failed to add select bindings to input.txt")
+
 	return master_library, multi_playlist, p_force_queue, theme, prefs, gui, gen_codes, radio_playlists

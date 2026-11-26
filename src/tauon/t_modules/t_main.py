@@ -1741,19 +1741,46 @@ def key_label(name: str) -> str:
 	return KEY_LABELS.get(name.lower(), name)
 
 class KeyMap:
+	# Bindings for functions an input.txt doesn't mention, so older files keep
+	# working. A bare function name in the file leaves it unbound.
+	DEFAULTS: ClassVar[dict[str, list[tuple[str, list[str]]]]] = {
+		"select-up":    [("Up", [])],
+		"select-down":  [("Down", [])],
+		"select-left":  [("Left", [])],
+		"select-right": [("Right", [])],
+	}
 
 	def __init__(self, bag: Bag, inp: Input) -> None:
 		self.bag: Bag = bag
 		self.inp: Input = inp
-		self.hits: list[str | sdl3.SDL_Scancode] = []  # The keys hit this frame
-		self.maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}  # Loaded from input.txt
+		# The keys hit this frame, plus "@function" entries from trigger()
+		self.hits: list[str | sdl3.SDL_Scancode] = []
+		self.used: list[str | sdl3.SDL_Scancode] = []  # Hits taken by consume() this frame
+		# Loaded from input.txt: (code, modifiers, whether the key types a character)
+		self.maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str], bool]]] = {}
 		# The same bindings with the key names as written, for display
 		self.labels: dict[str, list[tuple[str, list[str]]]] = {}
 
+	def _code(self, name: str) -> str | sdl3.SDL_Scancode:
+		"""The hit code for a key name, or 0 if SDL doesn't know it."""
+		if name in ("MB4", "MB5"):
+			return name
+		if self.bag.prefs.use_scancodes:
+			return sdl3.get_scancode_from_name(name.encode())
+		return sdl3.get_key_from_name(name.encode())
+
 	def load(self) -> None:
 		# Built aside and swapped in so a reload never leaves half a keymap
-		maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str]]]] = {}
+		maps: dict[str, list[tuple[str | sdl3.SDL_Scancode, list[str], bool]]] = {}
 		labels: dict[str, list[tuple[str, list[str]]]] = {}
+
+		def add(function: str, name: str, mod: list[str]) -> None:
+			key = self._code(name)
+			if key == 0:
+				return
+			maps[function].append((key, mod, self.types_text(name, mod)))
+			labels[function].append((name, mod))
+
 		path = self.bag.dirs.config_directory / "input.txt"
 		with path.open(encoding="utf_8") as f:
 			content = f.read().splitlines()
@@ -1764,28 +1791,20 @@ class KeyMap:
 					continue
 
 				items = p.split()
-				if 1 < len(items) < 5:
+				if len(items) < 5:
 					function = items[0]
+					# Mentioned at all, so the defaults don't apply
+					maps.setdefault(function, [])
+					labels.setdefault(function, [])
+					if len(items) > 1:
+						add(function, items[1], [m.lower() for m in items[2:]])
 
-					if items[1] in ("MB4", "MB5"):
-						key = items[1]
-					else:
-						if self.bag.prefs.use_scancodes:
-							key = sdl3.get_scancode_from_name(items[1].encode())
-						else:
-							key = sdl3.get_key_from_name(items[1].encode())
-						if key == 0:
-							continue
-
-					mod: list[str] = []
-
-					if len(items) > 2:
-						mod.append(items[2].lower())
-					if len(items) > 3:
-						mod.append(items[3].lower())
-
-					maps.setdefault(function, []).append((key, mod))
-					labels.setdefault(function, []).append((items[1], mod))
+		for function, binds in self.DEFAULTS.items():
+			if function not in maps:
+				maps[function] = []
+				labels[function] = []
+				for name, mod in binds:
+					add(function, name, mod)
 		self.maps = maps
 		self.labels = labels
 
@@ -1802,20 +1821,60 @@ class KeyMap:
 		bindings = self.describe(function)
 		return "+".join(bindings[0]) if bindings else None
 
-	def test(self, function: str) -> bool:
+	@staticmethod
+	def types_text(name: str, mod: list[str]) -> bool:
+		"""Whether a binding is a key that types a character, e.g. "H" or "H Shift"."""
+		return (len(name) == 1 or name.lower() == "space") and set(mod) <= {"shift"}
+
+	def _mods_match(self, mod: list[str]) -> bool:
 		inp = self.inp
+		return (
+			bool(inp.key_ctrl_down or inp.key_rctrl_down) == ("ctrl" in mod)
+			and bool(inp.key_shift_down or inp.key_shiftr_down) == ("shift" in mod)
+			and bool(inp.key_lalt or inp.key_ralt) == ("alt" in mod)
+		)
+
+	def _match(self, function: str, typing: bool) -> str | sdl3.SDL_Scancode | None:
+		"""The hit that fires function this frame, or None."""
 		if not self.hits:
-			return False
-		if function not in self.maps:
-			return False
+			return None
+		trigger = "@" + function
+		if trigger in self.hits:
+			return trigger
+		for code, mod, text in self.maps.get(function, []):
+			if code in self.hits and self._mods_match(mod) and not (typing and text):
+				return code
+		return None
 
-		for code, mod in self.maps[function]:
-			if code in self.hits:
-				ctrl = (inp.key_ctrl_down or inp.key_rctrl_down) * 1
-				shift = (inp.key_shift_down or inp.key_shiftr_down) * 10
-				alt = (inp.key_lalt or inp.key_ralt) * 100
+	def test(self, function: str, typing: bool = False) -> bool:
+		"""Whether function's key was hit this frame.
 
-				if ctrl + shift + alt == ("ctrl" in mod) * 1 + ("shift" in mod) * 10 + ("alt" in mod) * 100:
+		typing: a text field has focus, so bindings that type a character don't fire.
+		"""
+		return self._match(function, typing) is not None
+
+	def consume(self, function: str, typing: bool = False) -> bool:
+		"""Like test(), but the key is used up, so later tests this frame don't see it."""
+		code = self._match(function, typing)
+		if code is None:
+			return False
+		self.hits.remove(code)
+		self.used.append(code)
+		return True
+
+	def new_frame(self) -> None:
+		self.hits.clear()
+		self.used.clear()
+
+	def trigger(self, function: str) -> None:
+		"""Fire function this frame without a key, e.g. from a gamepad."""
+		self.hits.append("@" + function)
+
+	def text_key_bound(self) -> bool:
+		"""Whether a key hit this frame types a character and is also bound to a function."""
+		for binds in self.maps.values():
+			for code, mod, text in binds:
+				if text and (code in self.hits or code in self.used) and self._mods_match(mod):
 					return True
 		return False
 
@@ -31244,7 +31303,8 @@ class SearchOverlay:
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
 					and not self.tauon.add_music_box.active and not self.tauon.about_box.active \
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now \
-					and not (gui.radio_view and self.tauon.radiobox.tab == 1):
+					and not (gui.radio_view and self.tauon.radiobox.tab == 1) \
+					and not gui.keymaps.text_key_bound():
 
 				# Divert to artist list if mouse over
 				if gui.lsp and prefs.left_panel_mode == "artist list" and gui.lsp_x + 2 < inp.mouse_position[0] < gui.lsp_x + gui.lspw \
@@ -47505,8 +47565,6 @@ class ShortcutsSheet:
 	# Keys handled in code rather than input.txt
 	FIXED: dict[str, list[list[str]]] = {
 		"_enter":      [["Enter"]],
-		"_up":         [["↑"]],
-		"_down":       [["↓"]],
 		"_delete":     [["Delete"]],
 		"_select-all": [["Ctrl", "A"]],
 		"_copy":       [["Ctrl", "C"]],
@@ -47667,7 +47725,8 @@ class ShortcutsSheet:
 				(_("Go to playlist 1 to 9"), ("jump-playlist-1", "jump-playlist-9"), "…"),
 				(_("Show the playing track"), ("goto-playing",)),
 				(_("Show the previous track"), ("goto-previous",)),
-				(_("Move the selection"), ("_up", "_down")),
+				(_("Move the selection"), ("select-up", "select-down")),
+				(_("Gallery left / right"), ("select-left", "select-right")),
 				(_("Extend the selection"), ("shift-up", "shift-down")),
 				(_("Playlist top / bottom"), ("goto-top", "goto-bottom")),
 				(_("Page up / down"), ("pageup", "pagedown")),
@@ -62483,7 +62542,7 @@ def main(holder: Holder) -> None:
 
 	# Library and loader Variables--------------------------------------------------------
 	db_version: float = 0.0
-	latest_db_version: float = 83
+	latest_db_version: float = 84
 
 	rename_files_previous = ""
 	rename_folder_previous = ""
@@ -66899,7 +66958,7 @@ def main(holder: Holder) -> None:
 		# time.sleep(100)
 
 		if inp.k_input:
-			keymaps.hits.clear()
+			keymaps.new_frame()
 
 			inp.d_mouse_click = False
 			inp.right_click = False
@@ -67047,18 +67106,23 @@ def main(holder: Holder) -> None:
 						pctl.stop()
 					else:
 						inp.key_esc_press = True
+				# The D-pad acts like the arrows' default bindings, whatever they're rebound to
 				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_UP:
 					inp.key_up_press = True
+					keymaps.trigger("select-up")
 				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_DOWN:
 					inp.key_down_press = True
+					keymaps.trigger("select-down")
 				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_LEFT:
 					if gui.album_tab_mode:
 						inp.key_left_press = True
+						keymaps.trigger("select-left")
 					elif (tauon.is_level_zero() or gui.quick_search_mode) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(1)
 				elif event.gbutton.button == sdl3.SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
 					if gui.album_tab_mode:
 						inp.key_right_press = True
+						keymaps.trigger("select-right")
 					elif (tauon.is_level_zero() or gui.quick_search_mode) and not gui.timed_lyrics_editing_now:
 						pctl.cycle_playlist_pinned(-1)
 			elif event.type == sdl3.SDL_EVENT_RENDER_TARGETS_RESET:
@@ -67940,8 +68004,10 @@ def main(holder: Holder) -> None:
 			if c_yax_timer.get() >= 0:
 				if c_yax == -1:
 					inp.key_up_press = True
+					keymaps.trigger("select-up")
 				if c_yax == 1:
 					inp.key_down_press = True
+					keymaps.trigger("select-down")
 				c_yax_timer.force_set(-0.01)
 				gui.delay_frame(0.02)
 				inp.k_input = True
@@ -68009,15 +68075,33 @@ def main(holder: Holder) -> None:
 							pctl.switch_playlist(n - 1)
 					n += 1
 
-				if keymaps.test("cycle-playlist-left"):
-					if gui.album_tab_mode and inp.key_left_press:
-						pass
-					elif tauon.is_level_zero() or gui.quick_search_mode:
+				# The gallery takes its keys first while it has keyboard control;
+				# anything it doesn't use falls through, e.g. Left to cycle-playlist-left
+				if (
+					prefs.album_mode
+					and gui.album_tab_mode
+					and not gui.quick_search_mode
+					and not tauon.search_over.active
+				):
+					if keymaps.consume("select-left"):
+						gal_left = True
+						inp.key_left_press = False
+					if keymaps.consume("select-right"):
+						gal_right = True
+						inp.key_right_press = False
+					if keymaps.consume("select-up"):
+						gal_up = True
+						inp.key_up_press = False
+					if keymaps.consume("select-down"):
+						gal_down = True
+						inp.key_down_press = False
+
+				# Quick search is a text field, so keys that type stay with it
+				if keymaps.test("cycle-playlist-left", typing=gui.quick_search_mode):
+					if tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(1)
-				if keymaps.test("cycle-playlist-right"):
-					if gui.album_tab_mode and inp.key_right_press:
-						pass
-					elif tauon.is_level_zero() or gui.quick_search_mode:
+				if keymaps.test("cycle-playlist-right", typing=gui.quick_search_mode):
+					if tauon.is_level_zero() or gui.quick_search_mode:
 						pctl.cycle_playlist_pinned(-1)
 
 				if keymaps.test("toggle-console"):
@@ -68093,27 +68177,6 @@ def main(holder: Holder) -> None:
 				# On macOS, the key labeled Delete reports as BACKSPACE in SDL.
 				# Require Command+Backspace here so plain Backspace keeps its normal meaning.
 				macos_delete_shortcut = macos and inp.key_ctrl_down and inp.key_backspace_press and not gui.quick_search_mode
-
-				if not gui.quick_search_mode and not tauon.search_over.active:
-					if (
-						prefs.album_mode
-						and gui.album_tab_mode
-						and not inp.key_ctrl_down
-						and not inp.key_meta
-						and not inp.key_lalt
-					):
-						if inp.key_left_press:
-							gal_left = True
-							inp.key_left_press = False
-						if inp.key_right_press:
-							gal_right = True
-							inp.key_right_press = False
-						if inp.key_up_press:
-							gal_up = True
-							inp.key_up_press = False
-						if inp.key_down_press:
-							gal_down = True
-							inp.key_down_press = False
 
 				if not tauon.search_over.active:
 					if inp.key_del or macos_delete_shortcut:
@@ -71036,22 +71099,13 @@ def main(holder: Holder) -> None:
 						tauon.search_clear_timer.set()
 				# Arrows still move the selection under the track info box, which follows it
 				elif not tauon.search_over.active and tauon.is_level_zero(include_menus=False, ignore_track_box=True):
-					if inp.key_up_press and (
-						(
-							not inp.key_shiftr_down
-							and not inp.key_shift_down
-							and not inp.key_ctrl_down
-							and not inp.key_rctrl_down
-							and not inp.key_meta
-							and not inp.key_lalt
-							and not inp.key_ralt
-						)
-						or (keymaps.test("shift-up"))
-					):
+					# shift-up/down extend the selection in the main loop; the view follows here
+					extend_up = keymaps.test("shift-up")
+					if keymaps.test("select-up") or extend_up:
 						pctl.show_selected()
 						gui.request_tracklist_redraw()
 
-						if not keymaps.test("shift-up"):
+						if not extend_up:
 							if pctl.selected_in_playlist > 0:
 								pctl.selected_in_playlist -= 1
 							gui.shift_selection = []
@@ -71069,23 +71123,14 @@ def main(holder: Holder) -> None:
 						pctl.selected_in_playlist = min(pctl.selected_in_playlist, len(pctl.default_playlist))
 						tauon.sync_track_box_to_selected()
 
+					extend_down = keymaps.test("shift-down")
 					if pctl.selected_in_playlist < len(pctl.default_playlist) and (
-						(
-							inp.key_down_press
-							and not inp.key_shiftr_down
-							and not inp.key_shift_down
-							and not inp.key_ctrl_down
-							and not inp.key_rctrl_down
-							and not inp.key_meta
-							and not inp.key_lalt
-							and not inp.key_ralt
-						)
-						or keymaps.test("shift-down")
+						keymaps.test("select-down") or extend_down
 					):
 						pctl.show_selected()
 						gui.request_tracklist_redraw()
 
-						if not keymaps.test("shift-down"):
+						if not extend_down:
 							if pctl.selected_in_playlist < len(pctl.default_playlist) - 1:
 								pctl.selected_in_playlist += 1
 							gui.shift_selection = []
