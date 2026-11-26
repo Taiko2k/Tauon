@@ -27,6 +27,7 @@ from tauon.t_modules.t_musicbrainz_lookup import (
 	MusicBrainzLookupError,
 	stage_album,
 )
+from tauon.t_modules.t_rgscan import Measurement, ScanCancelledError, ScanError, measure_all, replaygain_entries
 from tauon.t_modules.t_tagedit import ARTWORK_TYPES, MAIN_FIELDS, VALUE_FIELDS, TagChanges, TagEditSession, TagEntry
 
 if TYPE_CHECKING:
@@ -82,6 +83,7 @@ class TransEditBox:
 		self.row_key: str | None = None
 		self.row_value_index: int | None = None
 		self.row_value_slots: dict[Path, tuple[int, bool]] | None = None
+		self.row_paths: set[Path] | None = None  # files a collapsed row edits
 		self.row_focus_new = False
 		self.row_original = ""
 		self.row_expected = ""
@@ -103,11 +105,13 @@ class TransEditBox:
 		self.tools_menu = None
 		self.presets_menu = None
 		self.undo_icon = None
+		self.trash_icon = None
 		self.scope_scroll = 0.0
 		self.scope_query = ""
 		self.scope_dragging = False
 		self.scope_drag_offset = 0.0
 		self.wheel_pending = 0.0
+		self.right_click_pending = False
 		self.scope_filter = TextBox2(tauon)
 		self.scope_anchor = (0, 0, 0, 0)
 		self.notice = ""
@@ -132,11 +136,20 @@ class TransEditBox:
 		self.rename_scroll = 0
 		self.rename_cache: tuple[tuple, list[tuple[TrackClass, str, str]]] | None = None
 		self.path_cache: tuple[int, list[Path]] | None = None
+		self.rg_cancel = threading.Event()
+		self.rg_lock = threading.Lock()
+		self.rg_running = False
+		self.rg_done = 0
+		self.rg_file = ""
+		self.rg_total = 0
+		self.rg_result: tuple[TagEditSession, dict[Path, Measurement] | None, str | None] | None = None
+		self.rg_album = True
 
 	def activate(self) -> None:
 		if self.gui.write_tag_in_progress:
 			return
 		self._cancel_lookup()
+		self._cancel_replaygain()
 		with self.load_lock:
 			self.load_cancel.set()
 			self.load_result = None
@@ -241,30 +254,32 @@ class TransEditBox:
 			self.show_message(_("Cannot open tag editor"), str(failure), mode="error")
 
 	def _loading_screen(self, x: int, y: int, width: int) -> None:
-		scale = self.gui.scale
 		with self.load_lock:
 			done, filename = self.load_done, self.load_file
-		total = len(self.tracks)
+		heading = _("Reading tags… {N}/{T}").format(N=done, T=len(self.tracks))
+		if self._progress_screen(
+			x, y, width, heading=heading, detail=filename, fraction=done / max(1, len(self.tracks)), button=_("Close")
+		):
+			self._close()
+
+	def _progress_screen(
+		self, x: int, y: int, width: int, *, heading: str, detail: str, fraction: float, button: str
+	) -> bool:
+		"""Draw a heading, detail line and progress bar; return True when the button or Esc is pressed."""
+		scale = self.gui.scale
+		self.ddt.text((x, y), heading, self.input_colour, 13, max_w=width, bg=self.colours.box_background)
 		self.ddt.text(
-			(x, y),
-			_("Reading tags… {N}/{T}").format(N=done, T=total),
-			self.input_colour,
-			13,
-			max_w=width,
-			bg=self.colours.box_background,
-		)
-		self.ddt.text(
-			(x, y + round(25 * scale)), filename, self.label_colour, 11, max_w=width, bg=self.colours.box_background
+			(x, y + round(25 * scale)), detail, self.label_colour, 11, max_w=width, bg=self.colours.box_background
 		)
 		bar = (x, y + round(55 * scale), width, round(14 * scale))
 		self._field(bar, scale, self.colours.box_thumb_background)
 		inset = round(2 * scale)
 		self.ddt.rect(
-			(bar[0] + inset, bar[1] + inset, round((width - 2 * inset) * done / max(1, total)), bar[3] - 2 * inset),
+			(bar[0] + inset, bar[1] + inset, round((width - 2 * inset) * min(1.0, fraction)), bar[3] - 2 * inset),
 			CONTROL_GREY,
 		)
 		if (not self.gui.message_box and self.inp.key_esc_press) or self.draw.button(
-			_("Close"),
+			button,
 			x + width - round(84 * scale),
 			self.editor_bottom - round(54 * scale),
 			w=round(84 * scale),
@@ -272,7 +287,9 @@ class TransEditBox:
 			press=not self.gui.message_box and self.inp.mouse_click,
 		):
 			self.inp.key_esc_press = False
-			self._close()
+			self.inp.mouse_click = False
+			return True
+		return False
 
 	def _scan(self, track: TrackClass) -> TrackClass:
 		from tauon.t_modules.t_main import TrackClass  # noqa: PLC0415
@@ -469,7 +486,8 @@ class TransEditBox:
 					for path, change in self.session.value_changes(
 						self.row_key, value, slots=self.row_value_slots
 					).items():
-						updates.setdefault(path, TagChanges()).entries.update(change.entries)
+						if self.row_paths is None or path in self.row_paths:
+							updates.setdefault(path, TagChanges()).entries.update(change.entries)
 				else:
 					for doc in self.session.scope_documents:
 						updates.setdefault(doc.path, TagChanges()).entries[self.row_key] = self.row_box.text
@@ -513,7 +531,8 @@ class TransEditBox:
 		self.row_values = self.session.common_values(entry.key) if entry.editable else []
 		self.row_is_list = entry.editable and (entry.kind in ("text", "JSON text values") or entry.lyrics)
 		self.row_original = entry.value
-		if self.row_is_list and all(
+		self.row_paths = self._collapsed_paths(entry) if self.row_is_list else None
+		if self.row_is_list and self.row_paths is None and all(
 			self.session.effective_document(doc).supports_multiple_values(
 				self.session.effective_document(doc).portable_key(entry.key)
 			)
@@ -558,7 +577,16 @@ class TransEditBox:
 		rows = []
 		documents = [self.session.effective_document(doc) for doc in self.session.scope_documents]
 		appending = self.row_key is not None and self.row_value_index == -1 and self.row_value_slots is not None
+		seen = set()
 		for entry in self.session.entries(lyrics):
+			# Formats spell the same tag differently; list it once
+			try:
+				identity = documents[0].portable_key(entry.key)
+			except ValueError:
+				identity = entry.key
+			if identity in seen:
+				continue
+			seen.add(identity)
 			if (
 				not entry.editable
 				or entry.kind not in ("text", "JSON text values")
@@ -579,6 +607,11 @@ class TransEditBox:
 				lists.append(items)
 			else:
 				if appending and entry.key == self.row_key and not any(lists):
+					continue
+				if len({tuple(items) for items in lists if items}) > 1:
+					# Files disagree: one row for the key rather than one per value
+					if not (appending and entry.key == self.row_key):
+						rows.append(replace(entry, value="<Multiple values>"))
 					continue
 				identities = {}
 				for items in lists:
@@ -608,6 +641,61 @@ class TransEditBox:
 			rows.append(TagEntry(self.row_key, self.row_box.text or _("New value"), lyrics=is_lyric, value_index=-1))
 			rows.sort(key=lambda row: row.key)
 		return rows
+
+	def _collapsed_paths(self, entry: TagEntry) -> set[Path] | None:
+		"""Files holding a key whose values differ between them, or None if the key isn't collapsed."""
+		if entry.value_index is not None or entry.value_match is not None or len(self.session.scope_documents) < 2:
+			return None
+		holders = {}
+		for original in self.session.scope_documents:
+			doc = self.session.effective_document(original)
+			try:
+				native = doc.portable_key(entry.key)
+			except ValueError:
+				return None
+			if native in doc.tags:
+				holders[original.path] = tuple(doc.text_values(native) or ())
+		return set(holders) if len(set(holders.values())) > 1 else None
+
+	def _entry_present(self, entry: TagEntry) -> bool:
+		"""Whether any file in scope still holds the entry; a staged removal leaves the row for undo."""
+		for original in self.session.scope_documents:
+			doc = self.session.effective_document(original)
+			try:
+				if doc.portable_key(entry.key) in doc.tags:
+					return True
+			except ValueError:
+				continue
+		return False
+
+	def _delete_row(self, entry: TagEntry) -> None:
+		"""Stage removal of a Misc entry in every file in scope; a value row removes just that value."""
+		if not self._flush_fields():
+			return
+		try:
+			updates = {}
+			for original in self.session.scope_documents:
+				doc = self.session.effective_document(original)
+				native = doc.portable_key(entry.key)
+				if native not in doc.tags:
+					continue
+				if entry.value_match is None:
+					updates[original.path] = TagChanges(entries={entry.key: ""})
+					continue
+				values = doc.text_values(native) or []
+				matches = [index for index, value in enumerate(values) if value == entry.value_match]
+				if entry.value_occurrence < len(matches):
+					del values[matches[entry.value_occurrence]]
+					updates[original.path] = TagChanges(entries={entry.key: values})
+			self.session.stage_tracks(updates)
+		except Exception as error:
+			logging.exception("Could not remove tag entry")
+			self.show_message(_("Cannot remove tag"), str(error), mode="error")
+			return
+		if self.row_key == entry.key:
+			self.row_key = None
+		self.notice = ""
+		self.gui.request_frame()
 
 	def _add_misc_key(self, key: str) -> None:
 		if not self._flush_fields():
@@ -870,6 +958,177 @@ class TransEditBox:
 			logging.exception("Could not fix Mojibake in tag editor")
 			self.show_message(_("Could not fix Mojibake"), str(error), mode="error")
 
+	def replaygain_scan(self) -> None:
+		self._close_tools()
+		if self.gui.write_tag_in_progress or self.lookup_running or self.rg_running or not self._flush_fields():
+			return
+		if not self.tauon.test_ffmpeg():
+			return
+		documents = self.session.documents
+		albums = {self.session.effective_document(doc).main_value("album") for doc in documents}
+		if len(albums) > 1:
+			self.tauon.show_choice(
+				_("These files have different album names. Analyse them as one album?"),
+				_("Album gain would be measured across all {N} files in the tag editor.").format(N=len(documents)),
+				[
+					(_("Analyse as one album"), self._start_replaygain),
+					(_("Track gain only"), partial(self._start_replaygain, album=False)),
+					(_("Cancel"), None),
+				],
+			)
+			return
+		siblings = self._album_siblings() if len(documents) == 1 else 0
+		if siblings:
+			self._confirm_replaygain(
+				_("Only one track of this album is selected. Analyse it anyway?"),
+				_("{N} more tracks of “{A}” are in this folder; album gain will only reflect this track.").format(
+					N=siblings, A=next(iter(albums))
+				),
+			)
+			return
+		self._start_replaygain()
+
+	def _album_siblings(self) -> int:
+		"""Count other library files in the single selected file's folder with the same album."""
+		doc = self.session.documents[0]
+		album = self.session.effective_document(doc).main_value("album")
+		if not album:
+			return 0
+		siblings = set()
+		for track in self.pctl.master_library.values():
+			if track.album != album or track.is_network or not track.fullpath:
+				continue
+			try:
+				path = Path(track.fullpath).resolve()
+			except OSError:
+				continue
+			if path.parent == doc.path.parent and path != doc.path:
+				siblings.add(path)
+		return len(siblings)
+
+	def _confirm_replaygain(self, question: str, detail: str) -> None:
+		self.gui.message_box_confirm_callback = self._start_replaygain
+		self.gui.message_box_no_callback = None
+		self.gui.message_box_confirm_reference = ()
+		self.show_message(question, detail, mode="confirm")
+
+	def _start_replaygain(self, *, album: bool = True) -> None:
+		if (
+			not self.active
+			or self.loading
+			or self.session is None
+			or self.rg_running
+			or self.lookup_running
+			or self.gui.write_tag_in_progress
+		):
+			return
+		ffmpeg = self.tauon.get_ffmpeg()
+		if ffmpeg is None:
+			return
+		session = self.session
+		paths = [doc.path for doc in session.documents]
+		cancel = threading.Event()
+		with self.rg_lock:
+			self.rg_cancel = cancel
+			self.rg_result = None
+			self.rg_done, self.rg_file, self.rg_total = 0, "", len(paths)
+		self.rg_running = True
+		self.rg_album = album
+		self.notice = ""
+		self.gui.request_frame()
+
+		def progress(done: int, path: Path) -> None:
+			with self.rg_lock:
+				if self.rg_cancel is cancel:
+					self.rg_done, self.rg_file = done, path.name
+			self.gui.request_frame()
+
+		def scan() -> None:
+			measurements, error = None, None
+			try:
+				measurements = measure_all(str(ffmpeg), paths, cancel, progress)
+			except ScanCancelledError:
+				return
+			except ScanError as failure:
+				error = str(failure)
+			except Exception as failure:
+				logging.exception("ReplayGain analysis failed")
+				error = str(failure)
+			with self.rg_lock:
+				if self.rg_cancel is cancel and not cancel.is_set():
+					self.rg_result = (session, measurements, error)
+			self.gui.request_frame()
+
+		threading.Thread(target=scan, name="tauon-replaygain", daemon=True).start()
+
+	def _cancel_replaygain(self) -> None:
+		with self.rg_lock:
+			self.rg_cancel.set()
+			self.rg_result = None
+		self.rg_running = False
+
+	def _replaygain_screen(self, x: int, y: int, width: int) -> None:
+		with self.rg_lock:
+			done, filename, total = self.rg_done, self.rg_file, self.rg_total
+		heading = _("Analysing ReplayGain… {N}/{T}").format(N=done, T=total)
+		if self._progress_screen(
+			x, y, width, heading=heading, detail=filename, fraction=done / max(1, total), button=_("Cancel")
+		):
+			self._cancel_replaygain()
+			self.gui.request_frame()
+
+	def _finish_replaygain(self) -> None:
+		with self.rg_lock:
+			completed, self.rg_result = self.rg_result, None
+		if completed is None:
+			return
+		self.rg_running = False
+		session, measurements, error = completed
+		if session is not self.session:
+			return
+		if error is not None:
+			self.show_message(_("Could not analyse ReplayGain"), error, mode="error")
+			return
+		try:
+			album = list(measurements.values())
+			updates = {}
+			for doc in session.documents:
+				entries = replaygain_entries(
+					session.effective_document(doc), measurements[doc.path], album if self.rg_album else None
+				)
+				if entries:
+					updates[doc.path] = TagChanges(entries=entries)
+			session.stage_tracks(updates)
+		except Exception as failure:
+			logging.exception("Could not stage ReplayGain tags")
+			self.show_message(_("Could not stage ReplayGain tags"), str(failure), mode="error")
+			return
+		self._load_fields()
+		self.row_key = None
+		silent = sum(1 for measurement in album if measurement.loudness is None)
+		if updates and not self.rg_album:
+			message = (
+				_("Track ReplayGain measured for 1 file; review, then Write tags to save.")
+				if len(updates) == 1
+				else _("Track ReplayGain measured for {N} files; review, then Write tags to save.").format(
+					N=len(updates)
+				)
+			)
+		elif updates:
+			message = (
+				_("ReplayGain measured for 1 file; review, then Write tags to save.")
+				if len(updates) == 1
+				else _("ReplayGain measured for {N} files; review, then Write tags to save.").format(N=len(updates))
+			)
+		elif silent < len(album):
+			message = _("ReplayGain tags are already up to date.")
+		else:
+			message = ""
+		if silent:
+			message = (message + " " + _("{N} silent files skipped.").format(N=silent)).strip()
+		self.notice = message
+		self.gui.request_frame()
+
 	def _close_tools(self) -> None:
 		self._close_menu(self.tools_menu)
 
@@ -952,6 +1211,7 @@ class TransEditBox:
 			self.tools_menu = Menu(self.tauon, 200)
 			self.tools_menu.add(MenuItem(_("Upgrade ID3 tags to v2.4"), self.upgrade_id3))
 			self.tools_menu.add(MenuItem(_("Fix Mojibake"), self.fix_mojibake))
+			self.tools_menu.add(MenuItem(_("Analyse ReplayGain"), self.replaygain_scan))
 			self.tools_menu.add(
 				MenuItem(
 					_("Automatically split slashes"),
@@ -1820,9 +2080,12 @@ class TransEditBox:
 		list_y = y
 		row_height = round((22 if compact else 24) * scale)
 		button_height = round((21 if compact else 23) * scale)
+		trash_width = round(24 * scale)
 		for entry in rows[self.row_page * page_size : (self.row_page + 1) * page_size]:
 			rect = (x, y, width, row_height - round(scale))
 			self.fields.add(rect)
+			trash_rect = (x + width - trash_width, y, trash_width, rect[3])
+			deletable = entry.editable and entry.value_index != -1 and self._entry_present(entry)
 			background = self.colours.box_background
 			if self._row_selected(entry):
 				self.ddt.rect(rect, self.colours.box_button_background_highlight)
@@ -1840,11 +2103,16 @@ class TransEditBox:
 				entry.value.replace("\n", " / ") if entry.editable else entry.kind,
 				self.label_colour,
 				11,
-				max_w=width * 0.54,
+				max_w=width * 0.55 - trash_width,
 				bg=background,
 			)
+			if deletable:
+				self._trash_icon(trash_rect, background)
 			if self._entry_edited(entry.key):
 				self._edited_outline(rect)
+			if deletable and self.inp.mouse_click and self.coll(trash_rect):
+				self.inp.mouse_click = False
+				self._delete_row(entry)
 			if self.inp.mouse_click and self.coll(rect):
 				self._select_row(entry)
 				self.inp.mouse_click = False
@@ -1978,6 +2246,20 @@ class TransEditBox:
 			bounded=True,
 		)
 		self._row_edit_controls(rect)
+
+	def _trash_icon(self, rect: tuple[int, int, int, int], background: ColourRGBA) -> None:
+		from tauon.t_modules.t_main import asset_loader  # noqa: PLC0415
+
+		if self.trash_icon is None:
+			self.trash_icon = asset_loader(self.tauon.bag, self.tauon.bag.loaded_asset_dc, "tag-trash.png", True)
+		self.fields.add(rect)
+		hover = self.input_enabled and self.coll(rect)
+		colour = self.readable_colour(self.colours.box_input_text if hover else CONTROL_GREY, background)
+		self.trash_icon.render(
+			rect[0] + (rect[2] - self.trash_icon.w) / 2,
+			rect[1] + (rect[3] - self.trash_icon.h) / 2,
+			colour,
+		)
 
 	def _row_edit_controls(self, rect: tuple[int, int, int, int]) -> None:
 		if self._entry_edited(self.row_key):
@@ -2267,6 +2549,7 @@ class TransEditBox:
 		self.loading = False
 		self.active = False
 		self.gui.box_over = False
+		self._cancel_replaygain()
 		self._close_lookup()
 		self.preview.destruct()
 		self._close_tools()
@@ -2298,6 +2581,12 @@ class TransEditBox:
 				self.wheel_pending += wheel
 				self.gui.request_frame()
 			self.inp.mouse_wheel = 0
+			# The modal owns right-clicks; panels behind would open their own menus
+			if getattr(self.inp, "right_click", False):
+				self.right_click_pending = True
+				self.gui.request_frame()
+			self.inp.right_click = False
+			self.inp.level_2_right_click = False
 			self.inp.mouse_wheel_precise = False
 
 	def render(self) -> None:
@@ -2305,11 +2594,15 @@ class TransEditBox:
 			return
 		self.inp.mouse_wheel = getattr(self.inp, "mouse_wheel", 0) + self.wheel_pending
 		self.wheel_pending = 0.0
+		# Only the editor's own text fields see the right-click
+		self.inp.right_click = self.inp.level_2_right_click = self.right_click_pending
+		self.right_click_pending = False
 		saved = self._glass_colours() if self.tauon.aero.active else None
 		try:
 			self._render()
 		finally:
 			self.inp.mouse_wheel = 0
+			self.inp.right_click = self.inp.level_2_right_click = False
 			if saved:
 				for name, colour in saved.items():
 					setattr(self.colours, name, colour)
@@ -2370,6 +2663,7 @@ class TransEditBox:
 						self.show_message(_("Could not load album tracks"), album.preview_error, mode="error")
 		if self.write_result is not None:
 			self._finish_write()
+		self._finish_replaygain()
 		message_open = self.gui.message_box
 		if not message_open:
 			if self.gui.level_2_click:
@@ -2389,6 +2683,7 @@ class TransEditBox:
 		if (
 			not message_open
 			and not self.gui.write_tag_in_progress
+			and not self.rg_running
 			and not (menu_open or presets_open or art_open or self.scope_open or self.lookup_open)
 			and self.inp.mouse_click
 			and not self.coll((x, y, width, height))
@@ -2420,6 +2715,9 @@ class TransEditBox:
 			return
 		if self.gui.write_tag_in_progress:
 			self.ddt.text((body_x, body_y), _("Writing tags…"), self.input_colour, 13, bg=self.colours.box_background)
+			return
+		if self.rg_running:
+			self._replaygain_screen(body_x, body_y, body_width)
 			return
 		if self.inp.key_esc_press and not message_open:
 			self.inp.key_esc_press = False

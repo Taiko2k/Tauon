@@ -932,6 +932,8 @@ class GuiVar:
 		self.message_box_use_reference: bool = True
 		self.message_box_confirm_callback = None
 		self.message_box_no_callback = None
+		# Labelled buttons for show_choice; replaces Yes/No while set
+		self.message_box_choices: list[tuple[str, Callable[[], None] | None]] | None = None
 
 		self.save_size = [450, 310]
 		self.show_playlist: bool = True
@@ -20484,10 +20486,16 @@ class Tauon:
 		self.enter_showcase_view(track_id=ref.track_id)
 		self.inp.mouse_click = False
 
+	def show_choice(self, line1: str, line2: str, choices: list[tuple[str, Callable[[], None] | None]]) -> None:
+		"""A confirm box with one button per choice; a None callback just closes it."""
+		self.show_message(line1, line2, mode="confirm")
+		self.gui.message_box_choices = list(choices)
+
 	def show_message(self, line1: str, line2: str ="", line3: str = "", mode: str = "info") -> None:
 		# Each is drawn as a single line. Server replies and exception text can run to several.
 		line1, line2, line3 = (" ".join(str(line).split()) for line in (line1, line2, line3))
 		self.gui.message_box = True
+		self.gui.message_box_choices = None
 		self.gui.message_text = line1
 		self.gui.message_mode = mode
 		self.gui.message_subtext = line2
@@ -31895,6 +31903,9 @@ class MessageBox:
 		self.message_bubble_icon   = asset_loader(bag, bag.loaded_asset_dc, "bubble.png")
 		self.message_download_icon = asset_loader(bag, bag.loaded_asset_dc, "ddl.png")
 
+	def choice_widths(self) -> list[float]:
+		return [self.ddt.get_text_w(label, 212) + 18 * self.gui.scale for label, _callback in self.gui.message_box_choices]
+
 	def confirm_text_lines(self) -> int:
 		return bool(self.gui.message_subtext) + bool(self.gui.message_subtext2)
 
@@ -31905,6 +31916,8 @@ class MessageBox:
 		w = max(w1, w2, w3)
 
 		w = max(w, 210 * self.gui.scale)
+		if self.gui.message_mode == "confirm" and getattr(self.gui, "message_box_choices", None):
+			w = max(w, sum(self.choice_widths()) + 12 * self.gui.scale * (len(self.gui.message_box_choices) - 1) + 40 * self.gui.scale)
 		# Text that doesn't fit is cut short with an ellipsis rather than running off the window
 		w = min(w, self.window_size[0] - 24 * self.gui.scale)
 
@@ -31967,6 +31980,20 @@ class MessageBox:
 					ddt.text((x + 63 * gui.scale, line_y), line, self.colours.message_box_text, 12, text_w)
 					line_y += 20 * gui.scale
 			button_y = y + (32 + self.confirm_text_lines() * 20) * gui.scale
+			choices = getattr(gui, "message_box_choices", None)
+			if choices:
+				gap = 12 * gui.scale
+				widths = self.choice_widths()
+				button_x = x + (w - sum(widths) - gap * (len(widths) - 1)) / 2
+				for (label, callback), button_w in zip(choices, widths, strict=True):
+					if self.draw.button(label, round(button_x), button_y, w=round(button_w)):
+						gui.message_box = False
+						gui.message_box_choices = None
+						if callback:
+							callback()
+						break
+					button_x += button_w + gap
+				return
 			if self.draw.button("Yes", (w // 2 + x) - 70 * gui.scale, button_y, w=60*gui.scale):
 				gui.message_box = False
 				if gui.message_box_confirm_callback:
