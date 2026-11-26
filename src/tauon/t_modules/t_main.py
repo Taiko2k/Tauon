@@ -28367,6 +28367,8 @@ class AlbumArt:
 
 		# What get_blur_im last loaded: 0 = album art, 1 = artist background
 		self.loaded_bg_type: int = 0
+		# Source image size of that load, for re-fitting it to a resized window
+		self.loaded_bg_source_size: tuple[int, int] = (1, 1)
 
 		# State for display(async_hold=True), see display_async()
 		self.async_lock: threading.LockType = threading.Lock()
@@ -28895,6 +28897,18 @@ class AlbumArt:
 		self.prefs.failed_background_artists.append(artist)
 		return None
 
+	@staticmethod
+	def blur_size(ox_size: int, oy_size: int, window_size: tuple[int, int] | list[int]) -> tuple[int, int]:
+		"""Size the art background is scaled to for a window size"""
+		ratio = window_size[0] / ox_size
+		ratio += 0.2
+
+		if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
+			ratio = window_size[1] / (oy_size - (oy_size // 4))
+			ratio += 0.2
+
+		return round(ox_size * ratio), round(oy_size * ratio)
+
 	def get_blur_im(self, track: TrackClass, window_size: tuple[int, int]) -> BytesIO | bool | None:
 		source_image = None
 		self.loaded_bg_type = 0
@@ -28930,16 +28944,8 @@ class AlbumArt:
 		if im.mode != "RGB":
 			im = im.convert("RGB")
 
-		ratio = window_size[0] / ox_size
-		ratio += 0.2
-
-		if (oy_size * ratio) - ((oy_size * ratio) // 4) < window_size[1]:
-			logging.info("Adjust bg vertical")
-			ratio = window_size[1] / (oy_size - (oy_size // 4))
-			ratio += 0.2
-
-		new_x = round(ox_size * ratio)
-		new_y = round(oy_size * ratio)
+		new_x, new_y = self.blur_size(ox_size, oy_size, window_size)
+		self.loaded_bg_source_size = (ox_size, oy_size)
 
 		im = im.resize((new_x, new_y))
 		source_image.close()
@@ -29632,6 +29638,13 @@ class StyleOverlay:
 		self.a_type = 0
 		self.b_type = 0
 
+		# Source image sizes, so the textures can be stretched to fit a
+		# resized window until the re-render at the new size fades in
+		self.a_source: tuple[int, int] = (1, 1)
+		self.b_source: tuple[int, int] = (1, 1)
+		self.resize_seen: tuple[int, int] = (self.window_size[0], self.window_size[1])
+		self.resize_timer: Timer = Timer()
+
 		self.window_size_int = None
 		# Main-thread copy of window_size for worker(): Custom Layout narrows
 		# window_size to a segment while drawing each widget, so reading it
@@ -29842,6 +29855,19 @@ class StyleOverlay:
 			colour = hls_pull_contrast(colour, backdrop, floor * strength * boost)
 		return colour
 
+	def place_rect(self, rect: sdl3.FRect, source: tuple[int, int], bg_type: int) -> None:
+		"""Fit a background texture's rect to the current window. Matches
+		the size it's rendered at, so it only stretches while the window
+		differs from the size it was made for."""
+		ww, wh = self.window_size[0], self.window_size[1]
+		rect.w, rect.h = self.album_art_gen.blur_size(source[0], source[1], (ww, wh))
+		rect.y = 0 if bg_type == 1 else 0 - rect.h // 4
+		# Center image
+		if ww < 900 * self.gui.scale:
+			rect.x = (ww // 2) - rect.w // 2
+		else:
+			rect.x = -40
+
 	def display(self, background: bool = False) -> None:
 		# Snapshot the real window size for worker(); called outside any
 		# Custom Layout widget draw, so window_size isn't narrowed here
@@ -29889,14 +29915,18 @@ class StyleOverlay:
 			self._fade_step = 0
 
 			if self.a_texture is not None:
+				if self.b_texture is not None:
+					sdl3.destroy_texture(self.b_texture)
 				self.b_texture = self.a_texture
 				self.b_rect = self.a_rect
 				self.b_type = self.a_type
+				self.b_source = self.a_source
 				self.sample_b = self.sample_a
 
 			self.a_texture = c
 			self.a_rect = dst
 			self.a_type = self.album_art_gen.loaded_bg_type
+			self.a_source = self.album_art_gen.loaded_bg_source_size
 			self.sample_a = self.sample_source
 
 			self.stage = 2
@@ -29941,14 +29971,24 @@ class StyleOverlay:
 			sdl3.set_render_draw_color(self.renderer, 0, 0, 0, 255)
 			sdl3.render_clear(self.renderer)
 
-		if self.a_texture is not None and self.window_size_int != self.window_size:
-			self.flush()
+		size = (self.window_size[0], self.window_size[1])
+		if size != self.resize_seen:
+			self.resize_seen = size
+			self.resize_timer.set()
+			self.gui.delay_frame(0.35)
+		if (
+				self.a_texture is not None and self.stage == 2 and self.b_texture is None
+				and not self.go_to_sleep and self.window_size_int != list(size)
+				and self.resize_timer.get() > 0.3):
+			# Resizing has settled: re-render at the new size, which
+			# crossfades in over the stretched old texture
+			self.stage = 0
+			self.gui.style_worker_timer.set()
+			self.thread_manager.ready("style")
 
 		if self.b_texture is not None:
 
-			self.b_rect.y = 0 - self.b_rect.h // 4
-			if self.b_type == 1:
-				self.b_rect.y = 0
+			self.place_rect(self.b_rect, self.b_source, self.b_type)
 
 			if t < 0.4:
 				if background:
@@ -29964,14 +30004,14 @@ class StyleOverlay:
 				sdl3.destroy_texture(self.b_texture)
 				self.b_texture = None
 				self.b_rect = None
+				# A resize may have been held back by the crossfade
+				self.gui.request_frame()
 			else:
 				self.gui.request_frame()
 
 		if self.a_texture is not None:
 
-			self.a_rect.y = 0 - self.a_rect.h // 4
-			if self.a_type == 1:
-				self.a_rect.y = 0
+			self.place_rect(self.a_rect, self.a_source, self.a_type)
 
 			if t < 0.4:
 				fade = round(t / 0.4 * 255)
@@ -30009,12 +30049,6 @@ class StyleOverlay:
 					self.go_to_sleep = False
 					self.flush()
 					return
-
-			# Center image
-			if self.window_size[0] < 900 * self.gui.scale:
-				self.a_rect.x = (self.window_size[0] // 2) - self.a_rect.w // 2
-			else:
-				self.a_rect.x = -40
 
 			if background:
 				# Drawn straight onto the frame background; panel translucency
