@@ -6365,7 +6365,9 @@ void *main_loop(void *thread_id) {
 							fade_lockout = false;
 							fade_mini = 0.0;
 
-							reset_set_byte = p;
+							// The new track is written from high, under the fade, so
+							// its position starts there, not where the fade ends
+							reset_set_byte = high;
 							if (!reset_set) {
 								reset_set = true;
 								reset_set_value = 0;
