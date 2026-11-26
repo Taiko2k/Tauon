@@ -214,7 +214,7 @@ class FFRun:
 		# step and keeps sources deeper than 16 bit (DSD, 24 bit FLAC, hi-res ALAC) intact.
 		# WAV carries the channel layout FFmpeg settles on.
 		cmd += [
-			"-i", uri.decode(), "-af", FFMPEG_LAYOUT_FILTER,
+			"-i", uri.decode(), "-vn", "-sn", "-dn", "-af", FFMPEG_LAYOUT_FILTER,
 			"-acodec", "pcm_f32le", "-f", "wav", "-ar", f"{samplerate}", "-"]
 		startupinfo = None
 		if sys.platform == "win32":

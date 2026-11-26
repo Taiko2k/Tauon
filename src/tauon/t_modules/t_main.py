@@ -370,6 +370,7 @@ from tauon.t_modules.t_ratings import (  # noqa: E402
 from tauon.t_modules.t_remote_playlists import RemotePlaylist  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
 from tauon.t_modules.t_waveform import WaveformCache  # noqa: E402
+from tauon.t_modules.t_video import VIDEO_EXTENSIONS, VideoPlayer, ffmpeg_probe  # noqa: E402
 from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
 from tauon.t_modules.t_windows_blur import WindowsBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -8881,6 +8882,7 @@ class Tauon:
 		self.player4_state:       PlayerState = PlayerState.STOPPED
 		self.cachement:              Cachement = Cachement(self)
 		self.milky:                      Milky = Milky(self)
+		self.video:                VideoPlayer = VideoPlayer(self)
 
 		#self.recorded_songs = []
 
@@ -9177,52 +9179,43 @@ class Tauon:
 		draw_marker(self.pctl.ab_repeat_b, ColourRGBA(0, 255, 255, 255))
 
 	def scan_ffprobe(self, nt: TrackClass) -> None:
+		"""Length and container tags of a file Mutagen can't read, such as a video"""
+		duration = 0.0
+		tags: dict[str, str] = {}
+		ffprobe = self.get_ffprobe()
 		startupinfo = None
 		if self.windows:
 			startupinfo = subprocess.STARTUPINFO()
 			startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format=duration", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.length = float(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a duration")
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=title", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.title = str(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a title")
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=artist", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.artist = str(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a artist")
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=album", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.album = str(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a album")
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=date", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.date = str(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a date")
-		try:
-			result = subprocess.run(
-				[self.get_ffprobe(), "-v", "error", "-show_entries", "format_tags=track", "-of",
-				"default=noprint_wrappers=1:nokey=1", nt.fullpath], stdout=subprocess.PIPE, startupinfo=startupinfo, check=True)
-			nt.track_number = str(result.stdout.decode())
-		except Exception:
-			logging.exception("FFPROBE couldn't supply a track")
+		if ffprobe:
+			try:
+				result = subprocess.run(
+					[str(ffprobe), "-v", "error", "-show_entries", "format=duration:format_tags", "-of", "json", nt.fullpath],
+					stdout=subprocess.PIPE, startupinfo=startupinfo, check=True, timeout=20)
+				info = json.loads(result.stdout.decode(errors="replace")).get("format", {})
+				duration = float(info.get("duration", 0) or 0)
+				tags = {str(k).lower(): str(v).strip() for k, v in info.get("tags", {}).items()}
+			except Exception:
+				logging.exception("FFprobe couldn't read %s", nt.fullpath)
+		else:
+			ffmpeg = self.get_ffmpeg()
+			if ffmpeg:
+				try:
+					duration, tags = ffmpeg_probe(str(ffmpeg), nt.fullpath)
+				except Exception:
+					logging.exception("FFmpeg couldn't read %s", nt.fullpath)
+		nt.length = duration
+		nt.size = os.path.getsize(nt.fullpath)
+		if nt.length > 0:
+			nt.bitrate = int(nt.size / nt.length * 8 / 1024)
+		nt.title = tags.get("title", "")
+		nt.artist = tags.get("artist", "")
+		nt.album = tags.get("album", "")
+		nt.album_artist = tags.get("album_artist", "")
+		nt.date = tags.get("date", "") or tags.get("year", "")
+		nt.genre = tags.get("genre", "")
+		nt.comment = tags.get("comment", "")
+		nt.track_number = tags.get("track", "")
 
 	def hit_callback(self, point_x, point_y):
 		gui          = self.gui
@@ -14067,6 +14060,7 @@ class Tauon:
 			return
 
 		load_prefs(bag=self.bag)
+		self.video.apply_formats()
 		self.gui.opened_config_file = False
 
 		self.ddt.force_subpixel_text = self.prefs.force_subpixel_text
@@ -44651,7 +44645,15 @@ class ArtBox:
 		result = 1
 		show_vis = False
 
-		if target_track:  # Only show if song playing or paused
+		# A playing video file shows its picture in place of the art and visualiser
+		video_rect = None
+		if target_track:
+			video_rect = tauon.video.draw(target_track, rect, "art_box", fast=gui.side_drag or quick_draw)
+		if video_rect is not None:
+			result = 0
+			gui.art_drawn_rect = video_rect
+			gui.art_aspect_ratio = tauon.video.aspect(target_track) or 1
+		elif target_track:  # Only show if song playing or paused
 
 			# Candy Factory: rounded, glossed art with a drop shadow (and, in the
 			# side panel, its reflection)
@@ -44708,14 +44710,14 @@ class ArtBox:
 
 				if show_vis:
 					tauon.milky.projectm.load_next = "random"
-				else:
+				elif video_rect is None:
 					tauon.album_art_gen.cycle_offset(target_track)
 
 					if self.pctl.mpris:
 						self.pctl.mpris.update(force=True)
 
 		# Activate picture context menu on right click
-		if inp.right_click and tauon.prefs.milk and not gui.milkdrop_in_widget and self.coll(rect):
+		if inp.right_click and tauon.prefs.milk and not gui.milkdrop_in_widget and video_rect is None and self.coll(rect):
 			self.tauon.milky_menu.activate(in_reference=target_track)
 		elif tight_border and gui.art_drawn_rect:
 			if inp.right_click and self.coll(gui.art_drawn_rect) and target_track:
@@ -55255,10 +55257,12 @@ def draw_showcase_art_box(
 	ddt.rect(rect, tauon.colours.playlist_panel_background)
 	tauon.style_overlay.hole_punches.append(sdl3.FRect(round(x), round(y), round(box_w), round(box_h)))
 
-	tauon.album_art_gen.display(track, (x, y), (box_w, box_h))
+	video_rect = tauon.video.draw(track, rect, "showcase")
+	if video_rect is None:
+		tauon.album_art_gen.display(track, (x, y), (box_w, box_h))
 	show_vis = False
 
-	if tauon.prefs.milk and tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
+	if video_rect is None and tauon.prefs.milk and tauon.pctl.playing_state in (PlayingState.PLAYING, PlayingState.URL_STREAM, PlayingState.PAUSED):
 		if tauon.pctl.a_time < 1.3:
 			if 1 < tauon.pctl.a_time < 1.3:
 				tauon.milky.render(discard=True)
@@ -55277,13 +55281,13 @@ def draw_showcase_art_box(
 		if inp.mouse_click and inp.key_focused == 0:
 			if show_vis:
 				tauon.milky.projectm.load_next = "random"
-			else:
+			elif video_rect is None:
 				tauon.album_art_gen.cycle_offset(track)
 				if tauon.pctl.mpris:
 					tauon.pctl.mpris.update(force=True)
 
 		if inp.right_click:
-			if tauon.prefs.milk:
+			if tauon.prefs.milk and video_rect is None:
 				tauon.milky_menu.activate(in_reference=track)
 			else:
 				tauon.picture_menu.activate(in_reference=track)
@@ -55429,11 +55433,13 @@ class Showcase:
 				available_h = self.window_size[1] - self.gui.panelY - self.gui.panelBY
 				box_w = min(round(self.window_size[0] * 0.756), round(954 * self.gui.scale))
 				box_w = max(round(280 * self.gui.scale), box_w)
-				box_h = round(box_w * 0.45)
+				# A playing video sets the box to its own shape
+				box_aspect = self.tauon.video.aspect(track) or 1 / 0.45
+				box_h = round(box_w / box_aspect)
 				max_box_h = max(round(160 * self.gui.scale), available_h - round(150 * self.gui.scale))
 				if box_h > max_box_h:
 					box_h = max_box_h
-					box_w = round(box_h / 0.45)
+					box_w = round(box_h * box_aspect)
 				x = round((self.window_size[0] - box_w) / 2)
 				y = round(self.gui.panelY + max(round(22 * self.gui.scale), (available_h - box_h - round(108 * self.gui.scale)) / 2))
 				draw_showcase_art_box(self.tauon, track, x, y, box_w, box_h)
@@ -60036,11 +60042,8 @@ def load_prefs(bag: Bag) -> None:
 		"Prevent system suspend during playback")
 	prefs.allow_video_formats = cf.sync_add(
 		"bool", "allow-video-formats", prefs.allow_video_formats,
-		"Allow the import of MP4 and WEBM formats")
-	if prefs.allow_video_formats:
-		for item in bag.formats.VID:
-			if item not in bag.formats.DA:
-				bag.formats.DA.add(item)
+		"Allow the import of video files (MP4, MKV, WEBM, AVI, MOV) when FFmpeg is available")
+	# Added to the import formats by VideoPlayer.apply_formats once FFmpeg is found
 
 	cf.br()
 	cf.add_text("[HiDPI]")
@@ -62663,7 +62666,7 @@ def main(holder: Holder) -> None:
 			"VGM":   ColourRGBA(0,   128, 255, 255),  # Deep blue
 			"VGZ":   ColourRGBA(0,   128, 255, 255),  # Deep blue
 		},
-		VID = {"mp4", "webm"},
+		VID = set(VIDEO_EXTENSIONS),
 		MOD = MOD_Formats,
 		GME = GME_Formats,
 		DA = {
@@ -63643,6 +63646,7 @@ def main(holder: Holder) -> None:
 		bag=bag,
 		gui=gui,
 	)
+	tauon.video.apply_formats()
 	if show_upgrade_splash:
 		prefs.show_nag = True
 
@@ -71467,6 +71471,7 @@ def main(holder: Holder) -> None:
 
 			# Render Menus-------------------------------
 			tauon.draw_popup_menus()
+			tauon.video.tick()
 
 			if tauon.view_box.active:
 				tauon.view_box.render()
