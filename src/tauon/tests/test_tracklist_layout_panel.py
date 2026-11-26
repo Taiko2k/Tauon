@@ -15,7 +15,7 @@ def make_panel(set_mode: bool = False, scale: int = 1, coll: bool = False) -> Tr
 	panel.prefs = SimpleNamespace(
 		ui_scale=scale, playlist_font_size=15, playlist_row_height=22 * scale, tracklist_y_text_offset=0,
 		row_title_genre=False, row_title_format=1, column_album_art_full_height=False, tracklist_scrollbar_left=False,
-		tracklist_hide_artist=False)
+		tracklist_hide_artist=False, tracklist_dim_brackets=False)
 	panel.tauon = Mock()
 	panel.ddt = Mock()
 	panel.ddt.get_text_w.side_effect = lambda text, font: len(text) * 10
@@ -67,6 +67,19 @@ def test_hide_artist_chip_toggles_pref() -> None:
 	assert chip[2]() is False
 	chip[1]()
 	assert panel.prefs.tracklist_hide_artist is True
+	assert chip[2]() is True
+
+
+@pytest.mark.parametrize("set_mode", [False, True])
+def test_dim_brackets_chip_applies_to_both_views(set_mode: bool) -> None:
+	panel = make_panel(set_mode=set_mode)
+	panel._redraw = Mock()
+	_title, mode, chip = next(
+		(title, mode, chip) for row in panel.chip_rows() for title, mode, chips in row for chip in chips
+		if chip[0] == "Dim brackets")
+	assert mode == ""
+	chip[1]()
+	assert panel.prefs.tracklist_dim_brackets is True
 	assert chip[2]() is True
 
 

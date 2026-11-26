@@ -229,6 +229,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	j_chars,
 	lastfm_artist_names,
 	mac_styles,
+	neutral_ink,
 	normalise_stream_url,
 	point_distance,
 	point_proximity_test,
@@ -242,6 +243,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	seconds_to_day_hms,
 	shooter,
 	sleep_timeout,
+	split_title_brackets,
 	star_count,
 	star_count3,
 	subtract_rect,
@@ -22351,6 +22353,39 @@ class Tauon:
 			self.pctl.mpris.update(force=True)
 		return None
 
+	def draw_track_title(
+		self, location: tuple[float, float], title: str, colour: ColourRGBA, font: int,
+		max_w: int, prefix: str = "", playing: bool = False,
+	) -> int:
+		"""Draw a tracklist title, with bracketed parts in a muted neutral
+		when the dim-brackets setting is on. Returns the drawn width and leaves
+		ddt.was_truncated set for the whole title."""
+		ddt = self.ddt
+		runs = split_title_brackets(title) if self.prefs.tracklist_dim_brackets else []
+		# Candy Factory's playing gel isn't the background the ink is derived from
+		if len(runs) < 2 or (playing and self.aero.active):
+			return ddt.text(location, prefix + title, colour, font, max_w=max_w)
+
+		bg = ddt.text_background_colour
+		sample = self.style_overlay.tracklist_sample
+		if bg.a < 255 and sample is not None:
+			bg = alpha_blend(bg, sample)
+		dim = neutral_ink(colour, bg)
+
+		x, y = location
+		left = max_w
+		runs[0] = (prefix + runs[0][0], runs[0][1])
+		for text, bracketed in runs:
+			if left < 1:
+				ddt.was_truncated = True
+				break
+			w = ddt.text((x, y), text, dim if bracketed else colour, font, max_w=left)
+			x += w
+			left -= w
+			if ddt.was_truncated:
+				break
+		return round(x - location[0])
+
 	def line_render(self, n_track: TrackClass, p_track: TrackClass, y: int, this_line_playing, album_fade: int, start_x: int, width: int, style: int = 1, ry=None) -> None:
 		timec   = self.colours.bar_time
 		titlec  = self.colours.title_text
@@ -22583,17 +22618,22 @@ class Tauon:
 					(start_x, y), indexLine,
 					alpha_mod(indexc, album_fade), self.gui.row_font_size)
 
+			prefix = ""
 			if dash and n_track.artist and n_track.title:
-				line = n_track.artist + " - " + n_track.title
+				prefix = n_track.artist + " - "
 
 			# Without an artist, the title starts where the artist would have
 			title_shift = 6 * self.gui.scale if hide_artist else 0
-			self.ddt.text(
-				(start_x + 33 * self.gui.scale - title_shift + artistoffset, y),
-				line,
-				alpha_mod(titlec, album_fade),
-				self.gui.row_font_size,
-				width - 71 * self.gui.scale + title_shift - artistoffset - star_x - 20 * self.gui.scale - 2)
+			title_max_w = width - 71 * self.gui.scale + title_shift - artistoffset - star_x - 20 * self.gui.scale - 2
+			title_location = (start_x + 33 * self.gui.scale - title_shift + artistoffset, y)
+			if n_track.title:
+				self.draw_track_title(
+					title_location, n_track.title, alpha_mod(titlec, album_fade),
+					self.gui.row_font_size, title_max_w, prefix, playing=this_line_playing is True)
+			else:
+				self.ddt.text(
+					title_location, line, alpha_mod(titlec, album_fade),
+					self.gui.row_font_size, title_max_w)
 
 			line = get_display_time(n_track.length)
 
@@ -44147,12 +44187,17 @@ class StandardPlaylist:
 							# 		ddt.rect(quick_box, [0, 0, 0, 40], True)
 							# 		ddt.rect(quick_box, alpha_mod(colours.playlist_panel_background, 150), True)
 
-							ddt.text(
-								(text_x, y + y_off),
-								text,
-								colour,
-								font,
-								max_w=wid)
+							if item[0] == "Title" and n_track.title:
+								tauon.draw_track_title(
+									(text_x, y + y_off), text, colour, font, wid,
+									playing=this_line_playing is True)
+							else:
+								ddt.text(
+									(text_x, y + y_off),
+									text,
+									colour,
+									font,
+									max_w=wid)
 
 							# Magnet Mode: draw a " - " separator after this column when
 							# the next packed column shares its colour (readability).
@@ -46224,6 +46269,10 @@ class TracklistLayoutPanel:
 		self.prefs.tracklist_hide_artist ^= True
 		self._redraw()
 
+	def _toggle_dim_brackets(self) -> None:
+		self.prefs.tracklist_dim_brackets ^= True
+		self._redraw()
+
 	def _toggle_whole_stars(self) -> None:
 		self.prefs.rating_whole_stars ^= True
 		self._redraw()
@@ -46298,6 +46347,7 @@ class TracklistLayoutPanel:
 		return [
 			[(_("Tracklist"), "", [
 				(_("Only current album"), pr.toggle_album_only, pr.album_only_enabled),
+				(_("Dim brackets"), self._toggle_dim_brackets, lambda: bool(prefs.tracklist_dim_brackets)),
 			])],
 			[(_("Track rows"), "standard", track_rows)],
 			[(_("Ratings"), "", [
@@ -59481,6 +59531,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("column-album-art-full-height", prefs.column_album_art_full_height)
 	cf.update_value("album-title-style", prefs.tracklist_title_style)
 	cf.update_value("tracklist-hide-artist", prefs.tracklist_hide_artist)
+	cf.update_value("tracklist-dim-brackets", prefs.tracklist_dim_brackets)
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("tracklist-current-album-only", prefs.tracklist_album_only)
@@ -59940,6 +59991,10 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "tracklist-hide-artist",
 		prefs.tracklist_hide_artist,
 		"Standard view track rows show the title without the artist.")
+	prefs.tracklist_dim_brackets = cf.sync_add(
+		"bool", "tracklist-dim-brackets",
+		prefs.tracklist_dim_brackets,
+		"Draw bracketed parts of track titles, like '(feat. ...)', in a muted colour.")
 	prefs.left_align_album_artist_title = cf.sync_add(
 		"bool", "left-aligned-album-artist-title",
 		prefs.left_align_album_artist_title,

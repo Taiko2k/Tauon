@@ -998,6 +998,77 @@ def hls_raise_lightness(colour: ColourRGBA, floor: float, knee: float = 0.55) ->
 	return hls_pull_contrast(colour, ColourRGBA(0, 0, 0, colour.a), floor, knee)
 
 
+_TITLE_OPEN = "([{（【［〔"
+_TITLE_CLOSE = ")]}）】］〕"
+
+
+def split_title_brackets(title: str) -> list[tuple[str, bool]]:
+	"""Split a title into (text, is_bracketed) runs.
+
+	Top-level bracket groups are bracketed runs, except one that opens the
+	title ("(I Can't Get No) Satisfaction"). An unclosed group runs to the end."""
+	runs: list[tuple[str, bool]] = []
+	depth = 0
+	start = 0
+	dim = False
+	for i, ch in enumerate(title):
+		if ch in _TITLE_OPEN:
+			if depth == 0 and title[:i].strip():
+				if i > start:
+					runs.append((title[start:i], False))
+				start = i
+				dim = True
+			depth += 1
+		elif ch in _TITLE_CLOSE and depth:
+			depth -= 1
+			if depth == 0 and dim:
+				runs.append((title[start:i + 1], True))
+				start = i + 1
+				dim = False
+	if start < len(title):
+		runs.append((title[start:], dim))
+	return runs
+
+
+_neutral_ink_cache: dict[tuple[int, ...], ColourRGBA] = {}
+
+
+def neutral_ink(text: ColourRGBA, background: ColourRGBA, weight: float = 0.4) -> ColourRGBA:
+	"""A muted, near-grey ink for secondary text next to `text` on `background`.
+
+	Its contrast against the background is `weight` of the way (on a log
+	scale) from the background to `text`, at least 2:1 where the text has
+	more, so it reads dimmer than the main text on dark and light themes
+	alike. The hue comes from the
+	background at low saturation, so it sits in the theme instead of being a
+	flat grey. Alpha is taken from `text`."""
+	key = (text.r, text.g, text.b, background.r, background.g, background.b, round(weight * 100))
+	cached = _neutral_ink_cache.get(key)
+	if cached is None:
+		bg_l = rel_luminance(background) + 0.05
+		fg_l = rel_luminance(text) + 0.05
+		# Contrast to aim for, with a readable floor that stays below the text's own
+		contrast = max(fg_l, bg_l) / min(fg_l, bg_l)
+		contrast = max(contrast ** weight, min(2.0, contrast ** 0.7))
+		target = (bg_l * contrast if fg_l > bg_l else bg_l / contrast) - 0.05
+		h, _l, s = colorsys.rgb_to_hls(background.r / 255, background.g / 255, background.b / 255)
+		s = min(s, 0.3) * 0.5
+		low, high = 0.0, 1.0
+		for _i in range(14):
+			mid = (low + high) / 2
+			r, g, b = colorsys.hls_to_rgb(h, mid, s)
+			if rel_luminance(ColourRGBA(round(r * 255), round(g * 255), round(b * 255), 255)) < target:
+				low = mid
+			else:
+				high = mid
+		r, g, b = colorsys.hls_to_rgb(h, (low + high) / 2, s)
+		cached = ColourRGBA(round(r * 255), round(g * 255), round(b * 255), 255)
+		if len(_neutral_ink_cache) > 256:
+			_neutral_ink_cache.clear()
+		_neutral_ink_cache[key] = cached
+	return ColourRGBA(cached.r, cached.g, cached.b, text.a)
+
+
 def rgb_add_hls(source: ColourRGBA, h: float = 0, l: float = 0, s: float = 0) -> ColourRGBA:
 	c = colorsys.rgb_to_hls(source.r / 255, source.g / 255, source.b / 255)
 	colour = colorsys.hls_to_rgb(c[0] + h, min(max(c[1] + l, 0), 1), min(max(c[2] + s, 0), 1))

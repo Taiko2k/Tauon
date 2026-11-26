@@ -317,6 +317,8 @@ class Prefs:
 	tracklist_title_style: str = "compact"
 	# Standard view track rows show the title without the artist
 	tracklist_hide_artist: bool = False
+	# Bracketed parts of track titles, e.g. "(feat. …)", drawn in a muted neutral
+	tracklist_dim_brackets: bool = True
 
 	meta_persists_stop: bool = False
 	meta_shows_selected: bool = False
