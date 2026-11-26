@@ -2622,9 +2622,13 @@ class Aero:
 		The record is its own layer so it can wobble inside the glass."""
 		x, y, w, h = rect
 		d = max(8, round(min(h, self.s(26))))
-		ox = round(x + w / 2 - d / 2)
-		oy = round(y + h / 2 - d / 2)
-		angle = self._menu_wobble_angle()
+		self.marble(x + w / 2, y + h / 2, d, hover=hover, pressed=pressed, angle=self._menu_wobble_angle())
+
+	def marble(self, cx: float, cy: float, d: int, *, hover: bool = False, pressed: bool = False,
+			angle: float = 0.0) -> None:
+		"""The menu button's marble, d px across, its record tilted by angle degrees."""
+		ox = round(cx - d / 2)
+		oy = round(cy - d / 2)
 		for i, part in enumerate(("under", "disc", "over")):
 			t = self._cached(("menu_icon", part, d, hover, pressed),
 				lambda i=i: self._menu_icon_part(d, hover, pressed, i))
@@ -2648,8 +2652,11 @@ class Aero:
 		self.schedule(1 / self.FPS_FAST)
 
 	def _menu_wobble_angle(self) -> float:
-		"""The record's tilt now, in degrees: a damped rock."""
-		el = time.monotonic() - getattr(self, "_wobble_start", -10.0)
+		return self.wobble_angle(getattr(self, "_wobble_start", -10.0))
+
+	def wobble_angle(self, start: float) -> float:
+		"""A record's tilt now, in degrees: a damped rock from start (monotonic)."""
+		el = time.monotonic() - start
 		if el < 0 or el > self.WOBBLE_TIME:
 			return 0.0
 		self.schedule(1 / self.FPS_FAST)

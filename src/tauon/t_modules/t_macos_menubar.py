@@ -571,9 +571,10 @@ class MacMenuBar:
 		self.refresh_states()
 
 	def open_about(self) -> None:
-		self.tauon.activate_info_box()
-		self.tauon.pref_box.show_settings_section("system", "about")
-		self.tauon.gui.request_frame()
+		# Settings is modal and would sit under the box
+		if self.tauon.pref_box.enabled:
+			self.tauon.pref_box.close()
+		self.tauon.about_box.open()
 		self.refresh_states()
 
 	def open_online_manual(self) -> None:

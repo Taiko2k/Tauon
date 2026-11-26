@@ -342,7 +342,7 @@ from tauon.t_modules.t_server_sync import (  # noqa: E402
 )
 from tauon.t_modules.t_stream import StreamEnc  # noqa: E402
 from tauon.t_modules.t_subsonic import SubsonicService  # noqa: E402
-from tauon.t_modules.t_svgout import render_icons  # noqa: E402
+from tauon.t_modules.t_svgout import render_icons, render_svg  # noqa: E402
 from tauon.t_modules.t_asf import asf_pictures  # noqa: E402
 from tauon.t_modules.t_tagscan import (  # noqa: E402
 	Ape,
@@ -8660,6 +8660,7 @@ class Tauon:
 		self.gallery_pulse_top:                   EdgePulse2 = EdgePulse2(tauon=self)
 		self.art_box:                             ArtBox = ArtBox(tauon=self)
 		self.nagbox:                              NagBox = NagBox(tauon=self)
+		self.about_box:                           AboutBox = AboutBox(tauon=self)
 
 		if not self.macos and not self.windows:
 			self.gnome = Gnome(tauon=self)
@@ -18118,6 +18119,7 @@ class Tauon:
 			and not self.delete_files_box.active \
 			and not self.tracklist_layout_panel.active \
 			and not self.add_music_box.active \
+			and not self.about_box.active \
 			and not self.shortcuts_sheet.active
 
 	def get_radio_art(self) -> None:
@@ -31087,7 +31089,7 @@ class SearchOverlay:
 					not control_down and not self.tauon.radiobox.active and \
 					not gui.quick_search_mode and not self.tauon.pref_box.enabled and not gui.rename_playlist_box \
 					and not gui.rename_folder_box and inp.input_text.isalnum() and not gui.box_over \
-					and not self.tauon.add_music_box.active \
+					and not self.tauon.add_music_box.active and not self.tauon.about_box.active \
 					and not self.tauon.trans_edit_box.active and not gui.timed_lyrics_editing_now \
 					and not (gui.radio_view and self.tauon.radiobox.tab == 1):
 
@@ -32387,6 +32389,251 @@ class NagBox:
 
 		if self.drawer.button(_("Close"), close_x, button_y, w=close_w, h=button_h, press=self.gui.level_2_click):
 			self.dismiss()
+
+class AboutBox:
+	"""Centred box with the version, copyright and project links, opened from
+	the main menu (and macOS's About item). A click outside or Esc closes it.
+	The icon is an easter egg: it opens the Dream Room, or the Aero world
+	under Candy Factory (no pointer cursor on purpose)."""
+
+	ICON = 64     # default skin's icon, logical px
+	MARBLE = 72   # Candy Factory's marble
+	# The app icon's warm arc (t_menu_disc.WARM), along the default box's top edge
+	STRIP = ((0x7b, 0x3f, 0xa5), (0xbb, 0x4f, 0x91), (0xe8, 0x66, 0x78), (0xfa, 0x8a, 0x55), (0xff, 0xc8, 0x57))
+
+	def __init__(self, tauon: Tauon) -> None:
+		self.tauon       = tauon
+		self.gui         = tauon.gui
+		self.ddt         = tauon.ddt
+		self.coll        = tauon.coll
+		self.fields      = tauon.fields
+		self.colours     = tauon.colours
+		self.window_size = tauon.window_size
+		self.active = False
+		# Set by the main loop when a left click lands inside the box
+		self.click = False
+		self.rect = (0, 0, 0, 0)
+		self.opened = 0.0
+		self.copied = -10.0
+		self._icon_tex = None
+		self._icon_size = 0
+
+	def open(self) -> None:
+		self.active = True
+		self.click = False
+		self.opened = time.monotonic()
+		self.copied = -10.0
+		self.gui.request_frame()
+
+	def close(self) -> None:
+		self.active = False
+		self.click = False
+		self.gui.request_frame()
+
+	def inside(self) -> bool:
+		return self.active and self.coll(self.rect)
+
+	@staticmethod
+	def links() -> tuple[tuple[str, str], ...]:
+		return (
+			(_("Open website"), "https://tauonmusicbox.rocks"),
+			(_("Source code"), "https://github.com/Taiko2k/Tauon"),
+			(_("Contributors"), "https://github.com/Taiko2k/Tauon/graphs/contributors?all=1"),
+			(_("Open GPL license"), "https://www.gnu.org/licenses/gpl-3.0.html"),
+		)
+
+	def _icon(self, size: int):
+		"""The app icon drawn from its SVG at size px, or None if that fails."""
+		if self._icon_size != size:
+			if self._icon_tex is not None:
+				sdl3.destroy_texture(self._icon_tex)
+			self._icon_tex = None
+			self._icon_size = size
+			try:
+				png = render_svg(str(self.tauon.bag.dirs.svg_directory / "app-icon.svg"), size)
+				with Image.open(io.BytesIO(png)) as image:
+					image = image.convert("RGBA")
+					self._icon_tex = sdl3.create_texture_from_rgba(self.tauon.renderer, size, size, image.tobytes())
+				sdl3.set_texture_blend_mode(self._icon_tex, sdl3.SDL_BLENDMODE_BLEND)
+			except Exception:
+				logging.exception("Failed to draw the app icon for About")
+		return self._icon_tex
+
+	def _strip(self, x: int, y: int, w: int, h: int) -> None:
+		"""A horizontal gradient through STRIP, as one mesh."""
+		stops = self.STRIP
+		verts = []
+		idx = []
+		for i, (r, g, b) in enumerate(stops):
+			px = x + w * i / (len(stops) - 1)
+			c = (r / 255, g / 255, b / 255, 1.0)
+			verts.append((px, y, 0.0, 0.0, *c))
+			verts.append((px, y + h, 0.0, 0.0, *c))
+			if i:
+				n = i * 2
+				idx += (n - 2, n, n - 1, n - 1, n, n + 1)
+		sdl3.set_render_draw_blend_mode(self.tauon.renderer, sdl3.SDL_BLENDMODE_BLEND)
+		sdl3.render_geometry(self.tauon.renderer, None, verts, idx)
+
+	def render(self) -> None:
+		tauon = self.tauon
+		gui = self.gui
+		ddt = self.ddt
+		s = gui.scale
+		aero = tauon.aero
+		glass = aero.active
+		if glass:
+			bg = aero.menu_bg()
+			text = aero.colour("TEXT")
+			muted = aero.colour("MUTED")
+			accent = None
+		else:
+			bg = self.colours.menu_background
+			text = readable_text_colour(self.colours.menu_text, bg)
+			muted = readable_text_colour(alpha_blend(alpha_mod(text, 150), bg), bg)
+			accent = self.colours.toggle_box_on
+		line = max(1, round(s))
+
+		pad = round(24 * s)
+		gap = round(8 * s)
+		button_h = round(32 * s)
+		icon_h = round(self.MARBLE * s)
+		w = min(round(420 * s), self.window_size[0] - round(32 * s))
+		inner = w - pad * 2
+		h = (
+			round(30 * s) + icon_h + round(12 * s)  # icon
+			+ round(28 * s) + round(30 * s)          # name, version
+			+ round(18 * s) + round(36 * s)          # copyright, warranty
+			+ round(18 * s) + line + round(18 * s)   # rule
+			+ button_h * 2 + gap + pad              # links
+			+ button_h + round(12 * s))              # donate
+		x = (self.window_size[0] - w) // 2
+		y = (self.window_size[1] - h) // 2
+		self.rect = (x, y, w, h)
+		cx = x + w // 2
+
+		if glass:
+			aero.menu_glass(self.rect, dialog=True)
+		else:
+			border = rgb_add_hls(bg, 0, -0.12, -0.1) if Menu.background_is_light(bg) else rgb_add_hls(bg, 0, 0.1, 0)
+			ddt.bordered_rect(self.rect, bg, border, line)
+			self._strip(x + line, y + line, w - line * 2, round(3 * s))
+		ddt.text_background_colour = bg
+		self.fields.add(self.rect)
+
+		# Icon
+		yy = y + round(30 * s)
+		if glass:
+			d = round(self.MARBLE * s)
+			aero.marble(cx, yy + icon_h / 2, d, angle=aero.wobble_angle(self.opened))
+		else:
+			d = round(self.ICON * s)
+			tex = self._icon(d)
+			if tex is not None:
+				sdl3.render_texture(tauon.renderer, tex, None, sdl3.FRect(cx - d // 2, yy + (icon_h - d) // 2, d, d))
+			else:
+				icon = tauon.pref_box.app_icon
+				d = round(icon.w)
+				icon.render(cx - d // 2, yy + (icon_h - d) // 2)
+		icon_rect = (cx - d // 2, yy + (icon_h - d) // 2, d, d)
+		if self.click and self.coll(icon_rect):
+			self.close()
+			if tauon.prefs.aero:
+				tauon.dream_room.toggle_aero()
+			else:
+				tauon.dream_room.toggle()
+			return
+		yy += icon_h + round(12 * s)
+
+		ddt.text((cx, yy, 2), "Tauon", text, 219, bg=bg)
+		yy += round(28 * s)
+
+		# Version chip: click to copy
+		copied = time.monotonic() - self.copied < 1.5
+		label = "✓ " + _("Copied") if copied else tauon.t_version
+		chip_w = ddt.get_text_w(label, 12) + round(22 * s)
+		chip_h = round(22 * s)
+		chip = (cx - chip_w // 2, yy, chip_w, chip_h)
+		self.fields.add(chip)
+		hover = self.coll(chip)
+		if glass:
+			aero.tile(chip, chip_h / 2, hover)
+			chip_bg = bg
+			chip_text = text if hover or copied else muted
+		else:
+			chip_bg = alpha_blend(alpha_mod(accent, 45 if hover else 20 if copied else 0), bg)
+			edge = alpha_blend(alpha_mod(accent, 160), bg) if hover or copied else alpha_blend(alpha_mod(text, 45), bg)
+			ddt.bordered_rect(chip, chip_bg, edge, line)
+			chip_text = readable_text_colour(text if hover or copied else muted, chip_bg)
+		ddt.text((cx, yy + chip_h // 2 - round(9 * s), 2), label, chip_text, 12, bg=chip_bg)
+		if hover:
+			gui.cursor_want = 3
+			tauon.tool_tip.test(chip[0] + chip_w + round(6 * s), yy - round(4 * s), _("Copy version"))
+			if self.click:
+				copy_to_clipboard(tauon.t_version)
+				self.copied = time.monotonic()
+				gui.request_frame()
+				gui.delay_frame(1.55)
+		yy += round(30 * s)
+
+		yy += round(4 * s)
+		ddt.text((cx, yy, 2), "Copyright © 2015-2026 Taiko2k", muted, 11, bg=bg, max_w=inner)
+		yy += round(18 * s)
+		ddt.text(
+			(cx, yy, 2), _("This program comes with absolutely no warranty."), muted, 11, bg=bg, max_w=inner)
+		yy += round(32 * s)
+
+		# Rule
+		rule = (x + pad, yy, inner, line)
+		if glass:
+			aero.shape(rule, 0, aero.STAR)
+		else:
+			ddt.rect(rule, alpha_blend(alpha_mod(text, 35), bg))
+		yy += line + round(18 * s)
+
+		# Links, two by two
+		button_w = (inner - gap) // 2
+		for i, (title, url) in enumerate(self.links()):
+			bx = x + pad + (i % 2) * (button_w + gap)
+			by = yy + (i // 2) * (button_h + gap)
+			rect = (bx, by, button_w, button_h)
+			self.fields.add(rect)
+			hover = self.coll(rect)
+			if glass:
+				aero.tile(rect, round(8 * s), hover)
+				fill = bg
+				colour = text
+			else:
+				fill = self.colours.menu_highlight_background if hover else bg
+				edge = alpha_blend(alpha_mod(text, 90 if hover else 55), bg)
+				ddt.bordered_rect(rect, fill, edge, line)
+				colour = readable_text_colour(text if hover else alpha_blend(alpha_mod(text, 215), fill), fill)
+			ddt.text((bx + button_w // 2, by + button_h // 2 - round(9 * s), 2), title, colour, 212, bg=fill, max_w=button_w - round(12 * s))
+			if hover:
+				gui.cursor_want = 3
+				if self.click:
+					webbrowser.open(url, new=2, autoraise=True)
+
+		# Donate, full width under the links
+		yy += button_h * 2 + gap + round(12 * s)
+		rect = (x + pad, yy, inner, button_h)
+		self.fields.add(rect)
+		hover = self.coll(rect)
+		if glass:
+			aero.tile(rect, round(8 * s), hover)
+			fill = bg
+			colour = text
+		else:
+			fill = self.colours.menu_highlight_background if hover else bg
+			ddt.bordered_rect(rect, fill, alpha_blend(alpha_mod(text, 90 if hover else 55), bg), line)
+			colour = readable_text_colour(text if hover else alpha_blend(alpha_mod(text, 215), fill), fill)
+		ddt.text((x + w // 2, yy + button_h // 2 - round(9 * s), 2), "♥ " + _("Donate"), colour, 212, bg=fill, max_w=inner - round(12 * s))
+		if hover:
+			gui.cursor_want = 3
+			if self.click:
+				webbrowser.open(NagBox.DONATE_URL, new=2, autoraise=True)
+
+		self.click = False
 
 class PowerTag:
 
@@ -35316,7 +35563,6 @@ class Over:
 				SettingsSection("files", _("Files"), self.settings_body_files),
 				SettingsSection("input", _("Input and export"), self.settings_body_input),
 				SettingsSection("diagnostics", _("Diagnostics"), self.settings_body_diagnostics),
-				SettingsSection("about", _("About"), self.settings_body_about),
 			]),
 		]
 
@@ -35457,10 +35703,8 @@ class Over:
 			_("Save lyrics edits to tags"): "lyrics tags metadata id3 save edits write",
 			_("Enable debug mode"): "debug logging log developer verbose troubleshoot",
 			_("Toggle Console"): "console log debug fps developer terminal",
-			_("Open website"): "website homepage tauonmusicbox",
-			_("Source code"): "source code github repository git",
-			_("Contributors"): "contributors credits authors developers",
-			_("Open GPL license"): "license licence gpl copyright legal",
+			# Main menu › About
+			_("About"): "version website homepage source code github repository contributors credits authors license licence gpl copyright",
 		}
 		for level in range(1, 4):
 			keywords[_("Level {N}").format(N=level)] = "album chart cascade level across rows size"
@@ -37139,47 +37383,6 @@ class Over:
 			if console_show:
 				tauon.console.fps.reset()
 
-	def settings_body_about(self, rows: SettingsRows) -> None:
-		s = self.gui.scale
-		icon_h = max(round(self.app_icon.h), round(48 * s))
-		rect = rows.custom(icon_h + round(20 * s))
-		bg = self.ddt.text_background_colour
-		self.app_icon.render(rect[0] + rows.pad, rect[1] + round(10 * s))
-		# Easter egg: the icon opens the Dream Room, or the Aero world while the
-		# Candy Factory skin is on (no pointer cursor on purpose)
-		icon_rect = (rect[0] + rows.pad, rect[1] + round(10 * s), round(self.app_icon.w), round(self.app_icon.h))
-		if self.click and self.coll(icon_rect):
-			self.inp.global_clicked = True
-			if self.prefs.aero:
-				self.tauon.dream_room.toggle_aero()
-			else:
-				self.tauon.dream_room.toggle()
-		text_x = rect[0] + rows.pad + round(self.app_icon.w) + round(14 * s)
-		self.ddt.text((text_x, rect[1] + round(12 * s)), "Tauon", self.colours.box_text, 215, bg=bg)
-		version_y = rect[1] + round(32 * s)
-		version_w = self.ddt.get_text_w(self.t_version, 12)
-		version_rect = (text_x - round(4 * s), version_y - round(2 * s), version_w + round(8 * s), round(18 * s))
-		self.fields.add(version_rect)
-		version_hover = self.coll(version_rect)
-		version_colour = rows.accent if version_hover else self.colours.box_sub_text
-		self.ddt.text((text_x, version_y), self.t_version, version_colour, 12, bg=bg)
-		if version_hover:
-			self.gui.cursor_want = 3
-			if self.click:
-				self.inp.global_clicked = True
-				copy_to_clipboard(self.t_version)
-				self.show_message(_("Copied version to clipboard"), self.t_version, mode="done")
-		self.ddt.text((text_x, rect[1] + round(50 * s)), "Copyright © 2015-2026 Taiko2k", self.colours.box_text_label, 11, bg=bg)
-		rows.note(_("This program comes with absolutely no warranty."))
-		rows.tiles(
-			(
-				(_("Open website"), lambda: webbrowser.open("https://tauonmusicbox.rocks", new=2, autoraise=True), False),
-				(_("Source code"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon", new=2, autoraise=True), False),
-				(_("Contributors"), lambda: webbrowser.open("https://github.com/Taiko2k/Tauon/graphs/contributors", new=2, autoraise=True), False),
-				(_("Open GPL license"), lambda: webbrowser.open("https://www.gnu.org/licenses/gpl-3.0.html", new=2, autoraise=True), False),
-			),
-		)
-
 	# --- Page rendering ---
 
 	def render_settings_group(self, group: SettingsGroup, x: int, y: int, w: int) -> int:
@@ -37323,7 +37526,8 @@ class Over:
 			seen.add((title, where))
 			hint = item.hint_text()
 			hint = hint if isinstance(hint, str) else ""
-			entries.append((f"menu/{where}/{title}", SettingsEntry(title, "", hint, "menus", "", _("Menus"), where)))
+			keywords = f"{hint} {self.settings_keywords.get(title, '')}"
+			entries.append((f"menu/{where}/{title}", SettingsEntry(title, "", keywords, "menus", "", _("Menus"), where)))
 
 		for menu, place in self.settings_menu_places():
 			if not isinstance(menu, Menu):
@@ -64506,7 +64710,7 @@ def main(holder: Holder) -> None:
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
 	# The manual link lives in the sheet now
 	x_menu.add(MenuItem(_("Keyboard Shortcuts"), tauon.shortcuts_sheet.open, hint=lambda: gui.keymaps.hint("show-shortcuts")))
-	x_menu.add(MenuItem(_("Show Release Notes"), tauon.nagbox.show))
+	x_menu.add(MenuItem(_("About"), tauon.about_box.open))
 	x_menu.add(MenuItem(_("Exit"), tauon.exit, hint="Alt+F4", set_ref="User clicked menu exit button", pass_ref=+True))
 	x_menu.add(MenuItem(_("Disengage Quick Add"), tauon.stop_quick_add, show_test=tauon.show_stop_quick_add))
 	x_menu.add(MenuItem(_("Exit Shuffle Lockdown"), tauon.toggle_shuffle_layout, tauon.toggle_shuffle_layout_deco, show_test=tauon.exit_shuffle_layout))
@@ -67623,6 +67827,10 @@ def main(holder: Holder) -> None:
 				tauon.add_music_box.back()
 				inp.key_esc_press = False
 
+			if inp.key_esc_press and tauon.about_box.active:
+				tauon.about_box.close()
+				inp.key_esc_press = False
+
 			if inp.key_esc_press and tauon.shortcuts_sheet.active:
 				tauon.shortcuts_sheet.close()
 				inp.key_esc_press = False
@@ -67924,6 +68132,20 @@ def main(holder: Holder) -> None:
 					inp.mouse_click = False
 					inp.right_click = False
 					music_box.close()
+
+			about_box = tauon.about_box
+			about_box.click = False
+			if about_box.active:
+				if about_box.inside():
+					if inp.mouse_click:
+						about_box.click = True
+						inp.mouse_click = False
+					inp.right_click = False
+					inp.mouse_wheel = 0
+				elif inp.mouse_click or inp.right_click:
+					inp.mouse_click = False
+					inp.right_click = False
+					about_box.close()
 
 			layout_panel = tauon.tracklist_layout_panel
 			layout_panel.click = False
@@ -70806,6 +71028,9 @@ def main(holder: Holder) -> None:
 
 			if tauon.add_music_box.active:
 				tauon.add_music_box.render()
+
+			if tauon.about_box.active:
+				tauon.about_box.render()
 
 			if tauon.shortcuts_sheet.active:
 				tauon.shortcuts_sheet.render()

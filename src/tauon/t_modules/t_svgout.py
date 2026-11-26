@@ -17,6 +17,7 @@
 #     You should have received a copy of the GNU General Public License
 #     along with Tauon Music Box.  If not, see <http://www.gnu.org/licenses/>.
 
+import io
 import logging
 import os
 
@@ -25,6 +26,21 @@ from gi import require_version
 
 require_version("Rsvg", "2.0")
 from gi.repository import Rsvg
+
+
+def render_svg(path: str, size: int) -> bytes:
+	"""PNG bytes of an SVG drawn into a size px square."""
+	svg = Rsvg.Handle.new_from_file(path)
+	surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, size, size)
+	viewport = Rsvg.Rectangle()
+	viewport.x = 0
+	viewport.y = 0
+	viewport.width = size
+	viewport.height = size
+	svg.render_document(cairo.Context(surface), viewport)
+	out = io.BytesIO()
+	surface.write_to_png(out)
+	return out.getvalue()
 
 
 def render_icons(source_directory: str, output_directory: str, scale: int) -> None:
