@@ -345,6 +345,21 @@ def get_global_mouse_state() -> tuple[int, float, float]:
 	return tauon_native.get_mouse_state(True)
 
 
+SDL_KMOD_SHIFT = 0x0003
+_get_global_modifiers = getattr(tauon_native, "get_global_modifiers", None)
+
+
+def get_global_modifiers(window) -> int | None:
+	"""Modifier keys held now, even while another app has keyboard focus; None where unknown (Wayland)."""
+	if _get_global_modifiers is None:
+		return None
+	try:
+		mods = _get_global_modifiers(window)
+	except (TypeError, ValueError):
+		return None
+	return mods if isinstance(mods, int) else None
+
+
 create_system_cursor = tauon_native.create_system_cursor
 set_cursor = tauon_native.set_cursor
 create_color_cursor = tauon_native.create_color_cursor

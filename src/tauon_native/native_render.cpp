@@ -15,6 +15,10 @@
 #endif
 #include <windows.h>
 #include <shobjidl.h>
+#elif defined(__APPLE__)
+#include <CoreGraphics/CoreGraphics.h>
+#else
+#include <dlfcn.h>
 #endif
 
 #include "native_render.h"
@@ -903,6 +907,56 @@ PyObject* native_get_mouse_state(PyObject*, PyObject* value) {
 	return Py_BuildValue("(Iff)", buttons, x, y);
 }
 
+// Modifier keys held right now, even while another app has keyboard focus
+// (a drag from a file manager). SDL_Keymod bits, or None where unknown.
+PyObject* native_get_global_modifiers(PyObject*, PyObject* value) {
+	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window", true);
+	if (PyErr_Occurred()) return nullptr;
+	unsigned int mods = SDL_KMOD_NONE;
+#if defined(_WIN32)
+	(void)window;
+	if (GetAsyncKeyState(VK_SHIFT) & 0x8000) mods |= SDL_KMOD_SHIFT;
+	if (GetAsyncKeyState(VK_CONTROL) & 0x8000) mods |= SDL_KMOD_CTRL;
+	if (GetAsyncKeyState(VK_MENU) & 0x8000) mods |= SDL_KMOD_ALT;
+	if ((GetAsyncKeyState(VK_LWIN) | GetAsyncKeyState(VK_RWIN)) & 0x8000) mods |= SDL_KMOD_GUI;
+#elif defined(__APPLE__)
+	(void)window;
+	const CGEventFlags flags = CGEventSourceFlagsState(kCGEventSourceStateCombinedSessionState);
+	if (flags & kCGEventFlagMaskShift) mods |= SDL_KMOD_SHIFT;
+	if (flags & kCGEventFlagMaskControl) mods |= SDL_KMOD_CTRL;
+	if (flags & kCGEventFlagMaskAlternate) mods |= SDL_KMOD_ALT;
+	if (flags & kCGEventFlagMaskCommand) mods |= SDL_KMOD_GUI;
+#else
+	// X11 only: borrow the libX11 SDL already loaded. Wayland has no global query.
+	using XQueryPointerFn = int (*)(void*, unsigned long, unsigned long*, unsigned long*, int*, int*, int*, int*, unsigned int*);
+	static XQueryPointerFn query_pointer = [] {
+		void* lib = dlopen("libX11.so.6", RTLD_NOW | RTLD_NOLOAD);
+		return lib != nullptr ? reinterpret_cast<XQueryPointerFn>(dlsym(lib, "XQueryPointer")) : nullptr;
+	}();
+	if (window == nullptr || query_pointer == nullptr) Py_RETURN_NONE;
+	const SDL_PropertiesID props = SDL_GetWindowProperties(window);
+	void* display = SDL_GetPointerProperty(props, SDL_PROP_WINDOW_X11_DISPLAY_POINTER, nullptr);
+	const Sint64 xid = SDL_GetNumberProperty(props, SDL_PROP_WINDOW_X11_WINDOW_NUMBER, 0);
+	if (display == nullptr || xid == 0) Py_RETURN_NONE;
+	unsigned long root = 0;
+	unsigned long child = 0;
+	int root_x = 0;
+	int root_y = 0;
+	int win_x = 0;
+	int win_y = 0;
+	unsigned int mask = 0;
+	if (!query_pointer(display, static_cast<unsigned long>(xid), &root, &child, &root_x, &root_y, &win_x, &win_y, &mask)) {
+		Py_RETURN_NONE;
+	}
+	// ShiftMask, ControlMask, Mod1Mask (Alt), Mod4Mask (Super)
+	if (mask & (1u << 0)) mods |= SDL_KMOD_SHIFT;
+	if (mask & (1u << 2)) mods |= SDL_KMOD_CTRL;
+	if (mask & (1u << 3)) mods |= SDL_KMOD_ALT;
+	if (mask & (1u << 6)) mods |= SDL_KMOD_GUI;
+#endif
+	return PyLong_FromUnsignedLong(mods);
+}
+
 PyObject* native_set_texture_color_mod(PyObject*, PyObject* args) {
 	PyObject* texture_value = nullptr;
 	unsigned char red = 0;
@@ -1581,6 +1635,7 @@ PyMethodDef native_render_methods[] = {
 	NATIVE_METHOD("sync_window", native_sync_window, METH_O),
 	NATIVE_METHOD("get_window_position", native_get_window_position, METH_O),
 	NATIVE_METHOD("get_mouse_state", native_get_mouse_state, METH_O),
+	NATIVE_METHOD("get_global_modifiers", native_get_global_modifiers, METH_O),
 	NATIVE_METHOD("set_texture_color_mod", native_set_texture_color_mod, METH_VARARGS),
 	NATIVE_METHOD("create_system_cursor", native_create_system_cursor, METH_O),
 	NATIVE_METHOD("set_cursor", native_set_cursor, METH_O),

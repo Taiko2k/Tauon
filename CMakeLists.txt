@@ -77,7 +77,7 @@ endif()
 # such as a locally built SDL3 prefix.
 set_target_properties(tauon-native PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 if(APPLE)
-	target_link_libraries(tauon-native PRIVATE "-framework CoreFoundation")
+	target_link_libraries(tauon-native PRIVATE "-framework CoreFoundation" "-framework CoreGraphics")
 	# GObject typelibs name their libraries by leaf name (libglib-2.0.0.dylib),
 	# which dlopen resolves through the launcher's rpaths. The python
 	# executable finds Homebrew's through its framework's /opt/homebrew/lib

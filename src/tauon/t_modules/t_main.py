@@ -898,6 +898,10 @@ class GuiVar:
 		self.maximized:         bool = False
 		self.side_drag:         bool = False
 		self.ext_drop_mode:     bool = False
+		# Shift held during an external drag: drop inserts at a row instead of appending
+		self.ext_drop_shift:    bool = False
+		# (playlist uuid, insert index, tracklist region) from the last tracklist render
+		self.ext_drop_insert: tuple[int, int, tuple[float, float, float, float]] | None = None
 		self.quick_search_mode: bool = False
 		self.b_info_bar:        bool = False
 		self.editline: str = ""
@@ -24214,11 +24218,50 @@ class Tauon:
 				return pl
 		return self.pctl.active_playlist_viewing
 
+	def after_drop_insert(self, order: LoadClass, pl: int, position: int) -> None:
+		"""Shift indexes past tracks a drop just inserted at position in playlist pl."""
+		count = len(order.tracks)
+		# The rest of the same drop goes after these, keeping the dropped file order
+		for item in self.load_orders:
+			if (
+				item is not order
+				and item.drop_action is order.drop_action
+				and item.playlist == order.playlist
+				and item.playlist_position is not None
+				and item.playlist_position >= position
+			):
+				item.playlist_position += count
+		pctl = self.pctl
+		if pl == pctl.active_playlist_playing and pctl.playlist_playing_position >= position:
+			pctl.playlist_playing_position += count
+		if pl == pctl.active_playlist_viewing:
+			if pctl.selected_in_playlist >= position:
+				pctl.selected_in_playlist += count
+			self.gui.shift_selection = [i + count if i >= position else i for i in self.gui.shift_selection]
+
+	def drop_shift_down(self) -> bool:
+		"""Shift during an external drag. The source app usually keeps keyboard focus, so ask the OS."""
+		mods = sdl3.get_global_modifiers(self.t_window)
+		if mods is not None:
+			return bool(mods & sdl3.SDL_KMOD_SHIFT)
+		return self.inp.key_shift_down or self.inp.key_shiftr_down
+
+	def update_drop_shift(self) -> None:
+		"""Track Shift while files are dragged over the window; redraw the tracklist when it changes."""
+		shift = self.gui.ext_drop_mode and self.drop_shift_down()
+		if not shift:
+			self.gui.ext_drop_insert = None
+		if shift != self.gui.ext_drop_shift:
+			self.gui.ext_drop_shift = shift
+			self.gui.request_tracklist_redraw()
+			self.gui.request_frame()
+
 	def drop_file(self, target: str) -> None:
 		"""Deprecated, move to individual UI components"""
 		i_x = self.inp.mouse_position[0]
 		i_y = self.inp.mouse_position[1]
 		self.gui.drop_playlist_target = 0
+		insert_position = None
 		#logging.info(event.drop)
 
 		if i_y < self.gui.panelY and not self.gui.new_playlist_cooldown and self.gui.mode == GuiMode.MAIN:
@@ -24268,10 +24311,19 @@ class Tauon:
 					self.gui.new_playlist_cooldown = True
 		else:
 			self.gui.drop_playlist_target = self.pctl.active_playlist_viewing
+			# Shift-drop on the tracklist inserts at the marked row
+			insert = self.gui.ext_drop_insert
+			if (
+				insert is not None
+				and self.coll(insert[2])
+				and insert[0] == self.pctl.multi_playlist[self.gui.drop_playlist_target].uuid_int
+			):
+				insert_position = insert[1]
 
 		load_order = LoadClass()
 		load_order.target = target.replace("\\", "/")
 		load_order.playlist = self.pctl.multi_playlist[self.gui.drop_playlist_target].uuid_int
+		load_order.playlist_position = insert_position
 		load_order.drop_action = self.drop_import_action or DropImportAction()
 
 		if self.flatpak_mode:
@@ -41794,6 +41846,45 @@ class StandardPlaylist:
 		self._album_start_seen = None
 		self.gui.request_tracklist_redraw()
 
+	def _ext_drop_slot(self, list_items: list[tuple]) -> tuple[int, float]:
+		"""Playlist index a Shift-held external drop inserts at, and the y of its marker line.
+
+		Upper half of a track row inserts before it, lower half after; a folder or
+		disc title inserts before its first track. Above the first row or below the
+		last one goes before or after the visible rows (the playlist start or end).
+		"""
+		gui = self.gui
+		row_h = gui.playlist_row_height
+		line = 1 * gui.scale
+		mouse_y = self.inp.mouse_position[1]
+
+		if not list_items:
+			album = self._current_album_bounds()
+			index = album[0] if album is not None else min(max(self.pctl.playlist_view_position, 0), len(self.pctl.default_playlist))
+			return index, gui.playlist_top
+
+		last_after = None
+		for item in list_items:
+			kind, position, number = item[0], item[1], item[6]
+			top = gui.playlist_top + row_h * number - gui.playlist_scroll_pixels
+			if kind == 0:
+				height = row_h * (1 + self._tracklist_spacer_rows[position])
+				last_after = (position + 1, top + row_h - line)
+				if mouse_y < top + row_h / 2:
+					return position, top - line
+				if mouse_y < top + height:
+					return last_after
+			else:
+				rows = self._tracklist_title_rows[position] if kind == 1 else self._tracklist_sub_rows[position]
+				height = row_h * rows
+				if mouse_y < top + height:
+					# Same slot either way; put the line on the nearer edge
+					return position, (top - line) if mouse_y < top + height / 2 else (top + height - line)
+
+		if last_after is None:
+			return list_items[-1][1], gui.playlist_top
+		return last_after
+
 	def _current_album_bounds(self) -> tuple[int, int] | None:
 		"""Track range of the folder group holding the playing track (or the
 		selection when this playlist isn't playing), when album-only is on."""
@@ -43447,6 +43538,14 @@ class StandardPlaylist:
 				break
 		# `number` is rebound by the draw loop below, so keep the row count for empty-space hit testing
 		rows_used = number
+
+		# Shift held while dragging files in from outside: pick the insert slot under the mouse
+		drop_marker_y = None
+		if gui.ext_drop_mode and gui.ext_drop_shift:
+			region = (left, gui.panelY, width, window_size[1] - gui.panelY - gui.panelBY)
+			if self.coll(region):
+				insert_index, drop_marker_y = self._ext_drop_slot(list_items)
+				gui.ext_drop_insert = (pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int, insert_index, region)
 		# ---------------------------------------------------------------------------------------
 
 		# For every track in view
@@ -44174,6 +44273,11 @@ class StandardPlaylist:
 					sdl3.set_render_clip_rect(self.renderer, old_clip)
 				continue
 			tauon.gall_ren.render(track, location, art_size, max_height=draw_height)
+
+		if drop_marker_y is not None:
+			ddt.rect(
+				(left + gui.highlight_left, drop_marker_y, highlight_width, 3 * gui.scale),
+				ColourRGBA(80, 200, 180, 255))
 
 		# This is a bit hacky since its only generated after drawing
 		# Used to keep track of how many tracks are actually in view
@@ -67007,6 +67111,7 @@ def main(holder: Holder) -> None:
 						tauon.drop_import_action = None
 			elif event.type == sdl3.SDL_EVENT_DROP_BEGIN:
 				gui.ext_drop_mode = True
+				gui.ext_drop_insert = None
 				tauon.drop_import_action = DropImportAction(complete=False)
 			elif event.type == sdl3.SDL_EVENT_DROP_POSITION:
 				inp.mouse_position[0] = int(event.drop.x / logical_size[0] * window_size[0])
@@ -67014,10 +67119,13 @@ def main(holder: Holder) -> None:
 				mouse_moved = True
 				gui.mouse_unknown = False
 				gui.ext_drop_mode = True
+				tauon.update_drop_shift()
 				gui.request_tracklist_redraw()
 				gui.request_frame()
 			elif event.type == sdl3.SDL_EVENT_DROP_COMPLETE:
 				gui.ext_drop_mode = False
+				gui.ext_drop_shift = False
+				gui.ext_drop_insert = None
 				if tauon.drop_import_action is not None:
 					tauon.drop_import_action.complete = True
 					tauon.drop_import_action = None
@@ -69066,9 +69174,10 @@ def main(holder: Holder) -> None:
 							# logging.info(order.tracks)
 							if order.playlist_position is not None:
 								# logging.info(order.playlist_position)
-								pctl.multi_playlist[target_pl].playlist_ids[
-									order.playlist_position : order.playlist_position
-								] = order.tracks
+								position = min(order.playlist_position, len(pctl.multi_playlist[target_pl].playlist_ids))
+								pctl.multi_playlist[target_pl].playlist_ids[position:position] = order.tracks
+								if order.drop_action is not None and order.tracks:
+									tauon.after_drop_insert(order, target_pl, position)
 							# else:
 
 							else:
@@ -69177,6 +69286,10 @@ def main(holder: Holder) -> None:
 					if not gui.showcase_mode:
 						showcase.timed_lyrics_edit.continuous = False
 
+					# Shift can change mid-drag without a drop position event
+					if gui.ext_drop_mode:
+						tauon.update_drop_shift()
+
 					if gui.pl_update:
 						gui.rendered_playlist_position = pctl.playlist_view_position
 
@@ -69209,7 +69322,8 @@ def main(holder: Holder) -> None:
 
 					rect = (gui.playlist_left, gui.panelY, gui.plw, window_size[1] - (gui.panelBY + gui.panelY))
 
-					if gui.ext_drop_mode and tauon.coll(rect):
+					# Shift-insert shows its own marker line instead of the append border
+					if gui.ext_drop_mode and tauon.coll(rect) and gui.ext_drop_insert is None:
 						ddt.rect_si(rect, ColourRGBA(80, 200, 180, 255), round(3 * gui.scale))
 					tauon.fields.add(rect)
 
