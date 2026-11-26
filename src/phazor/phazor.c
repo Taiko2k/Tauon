@@ -502,6 +502,7 @@ enum bit_perfect_reason {
 	BP_UNVERIFIED = 1 << 17,      // not a reason: what follows PHAzOR could not be checked
 	BP_NO_SOURCE = 1 << 18,       // not a reason: lossy, rendered or DSD, so no stored PCM to match
 	BP_SPEED = 1 << 19,           // playback speed, which resamples
+	BP_PENDING = 1 << 20,         // not a reason: FFmpeg has not reported the source yet
 };
 
 #ifdef PIPE
@@ -2954,7 +2955,8 @@ void start_ffmpeg(char uri[], int start_ms) {
 	buffer_unlock();
 
 	int status = 0;
-	if (ff_start != NULL) status = ff_start(uri, start_ms, sample_rate_out);
+	// Avoiding resampling, FFmpeg keeps the source's rate (0 leaves out -ar)
+	if (ff_start != NULL) status = ff_start(uri, start_ms, config_resample == 0 ? 0 : sample_rate_out);
 	else {
 		log_msg(LOG_ERROR, "pa: FFmpeg callback is NULL");
 		return;
@@ -6444,6 +6446,16 @@ void pump_decode() {
 			ffm_fill -= used;
 			memmove(ffm_buffer, ffm_buffer + used, ffm_fill);
 			ffm_header_done = true;
+			// At the source's own rate, adopt it before queuing anything, as
+			// the native decoders do, so the device re-clocks first and the
+			// opening block isn't resampled
+			if (config_resample == 0 && ffm_rate != sample_rate_src) {
+				buffer_lock();
+				src_reset(pcm_src);
+				sample_rate_src = ffm_rate;
+				buffer_unlock();
+				return;
+			}
 		}
 
 		int frame_bytes = ffm_channels * 4;
@@ -7505,6 +7517,17 @@ EXPORT int get_dsd_rate() {
 	return dsd_active ? (int) dsd_info.rate : 0;
 }
 
+// The layouts FFmpeg is allowed to output, as in t_phazor's
+// FFMPEG_LAYOUT_FILTER; anything else it remixes to one of these
+static bool ffmpeg_layout_kept(const char *layout) {
+	static const char *kept[] = {
+		"mono", "stereo", "2.1", "3.0", "3.0(back)", "4.0", "quad", "quad(side)", "3.1", "5.0", "5.0(side)",
+		"4.1", "5.1", "5.1(side)", "6.0", "hexagonal", "6.1", "6.1(back)", "7.0", "7.1", "octagonal",
+	};
+	for (size_t i = 0; i < sizeof(kept) / sizeof(*kept); i++) if (strcmp(layout, kept[i]) == 0) return true;
+	return false;
+}
+
 static bool bit_perfect_mixer(const pcm_mixer *mixer, uint16_t mask) {
 	if (mixer->source_mask != mask) return false;
 	// Each source speaker lands whole on one output, which takes nothing else
@@ -7563,8 +7586,14 @@ EXPORT int get_bit_perfect() {
 	// Decoded lossy audio, a rendered module or chip tune, or DSD made into
 	// PCM: what plays is the decoder's own output, not samples the file holds
 	if (codec == MPG || codec == VORBIS || codec == OPUS || codec == FEED || codec == MPT || codec == GME
-			|| codec == DSD_RAW || (codec == FFMPEG && bits == 0 && !is_float)) {
+			|| codec == DSD_RAW || (codec == FFMPEG && ffm_source_codec[0] && (bits <= 1 && !is_float))) {
 		reasons |= BP_NO_SOURCE;
+	}
+	if (codec == FFMPEG) {
+		// Its log has the source format; until then nothing can be said
+		if (!ffm_source_codec[0]) reasons |= BP_PENDING;
+		// A layout PHAzOR can't place is remixed by FFmpeg's aformat filter
+		else if (ffm_source_layout[0] && !ffmpeg_layout_kept(ffm_source_layout)) reasons |= BP_MIX;
 	}
 
 	if (gate != 1.0f || fade_mini < 1.0f || fade_fill > 0 || mode == RAMP_DOWN) reasons |= BP_FADE;

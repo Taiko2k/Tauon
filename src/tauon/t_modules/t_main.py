@@ -51660,6 +51660,7 @@ class ChannelStatusView:
 	SIGNAL_HEIGHT = 26  # unscaled height of draw_signal()
 	BP_UNVERIFIED = 1 << 17  # PHAzOR could not see past its own output
 	BP_NO_SOURCE = 1 << 18  # lossy, rendered or DSD: no stored PCM to be bit-perfect to
+	BP_PENDING = 1 << 20  # FFmpeg hasn't reported the source format yet
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -52097,6 +52098,12 @@ class ChannelStatusView:
 			if line_x >= info_x:
 				break
 
+	def ffmpeg_remixed(self) -> bool:
+		"""FFmpeg had a layout PHAzOR can't place and remixed it to one it can"""
+		return (
+			self.via_ffmpeg and bool(self.source_layout)
+			and self.source_layout != "mono" and self.source_layout not in PCM_LAYOUT_NAMES.values())
+
 	def bit_perfect_reasons(self) -> list[str]:
 		"""What is changing the samples, from PHAzOR's bit_perfect_reason mask"""
 		reasons = self.bit_perfect
@@ -52108,7 +52115,7 @@ class ChannelStatusView:
 			(1 << 5, _("Tempo")),
 			(1 << 6, _("Resampled") + (" (FFmpeg)" if self.via_ffmpeg else " (PHAzOR)")),
 			(1 << 7, _("Device resamples")),
-			(1 << 8, _("Channels mixed")),
+			(1 << 8, _("Channels mixed") + (" (FFmpeg)" if self.ffmpeg_remixed() else "")),
 			(1 << 9, _("Over 24 bit")),
 			(1 << 10, _("Fading")),
 			(1 << 11, _("PipeWire volume")),
@@ -52141,10 +52148,13 @@ class ChannelStatusView:
 		state: tuple[ColourRGBA, ColourRGBA] | None = None
 		unverified = self.bit_perfect >= 0 and bool(self.bit_perfect & self.BP_UNVERIFIED)
 		no_source = self.bit_perfect >= 0 and bool(self.bit_perfect & self.BP_NO_SOURCE)
+		pending = self.bit_perfect >= 0 and bool(self.bit_perfect & self.BP_PENDING)
 		if self.bit_perfect < 0:
 			status = "?"
 		elif self.bit_perfect & 1:
 			status = _("IDLE")
+		elif pending:
+			status, state = _("CHECKING"), (palette.track, palette.label)
 		elif self.bit_perfect & ~(self.BP_UNVERIFIED | self.BP_NO_SOURCE) == 0:
 			# Nothing added, but only a lossless source has samples to match
 			status, state = (_("UNALTERED"), palette.direct) if no_source else (_("BIT-PERFECT"), palette.output)
@@ -52168,6 +52178,9 @@ class ChannelStatusView:
 		elif reasons:
 			ddt.text(
 				(line_x, row_y + text_y), " · ".join(reasons), palette.label, 311,
+				max_w=info_x - line_x, bg=bg)
+		elif pending:
+			ddt.text((line_x, row_y + text_y), _("Waiting for FFmpeg to report the source"), palette.label, 311,
 				max_w=info_x - line_x, bg=bg)
 		elif state is not None:
 			if self.dsd_direct:
@@ -60043,7 +60056,7 @@ def load_prefs(bag: Bag) -> None:
 	#	"In hz. Default: 48000, alt: 44100. (restart app to apply change)")
 	prefs.avoid_resampling = cf.sync_add(
 		"bool", "avoid_resampling", prefs.avoid_resampling,
-		"Only implemented for FLAC, MP3, OGG, OPUS")
+		"Asks the output device to run at each track's own sample rate.")
 	prefs.bit_perfect = cf.sync_add(
 		"bool", "target-bit-perfect", prefs.bit_perfect,
 		"Send PCM to the device unchanged. Keeps volume at 100% and turns off ReplayGain, the EQ, "

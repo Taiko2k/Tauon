@@ -153,7 +153,8 @@ def audio_data_offset(buf: bytes | bytearray) -> int | None:
 
 
 # FFmpeg's standard layouts that PHAzOR can place, by FFmpeg name. FFmpeg is
-# limited to these and downmixes anything else to the closest one.
+# limited to these and downmixes anything else to the closest one. phazor.c's
+# ffmpeg_layout_kept() lists the same names.
 PCM_LAYOUTS = {
 	"stereo": pcm_mask("FL", "FR"),
 	"2.1": pcm_mask("FL", "FR", "LFE"),
@@ -215,7 +216,11 @@ class FFRun:
 		# WAV carries the channel layout FFmpeg settles on.
 		cmd += [
 			"-i", uri.decode(), "-vn", "-sn", "-dn", "-af", FFMPEG_LAYOUT_FILTER,
-			"-acodec", "pcm_f32le", "-f", "wav", "-ar", f"{samplerate}", "-"]
+			"-acodec", "pcm_f32le", "-f", "wav"]
+		# 0 keeps the source's rate, when PHAzOR is avoiding resampling
+		if samplerate > 0:
+			cmd += ["-ar", f"{samplerate}"]
+		cmd += ["-"]
 		startupinfo = None
 		if sys.platform == "win32":
 			startupinfo = subprocess.STARTUPINFO()
