@@ -37,7 +37,7 @@ def _track(track_id: int, album_id: str, folder: str, album: str, number: str) -
 
 
 def _sortable(library: dict[int, TrackClass]) -> SimpleNamespace:
-	return SimpleNamespace(
+	sortable = SimpleNamespace(
 		gui=SimpleNamespace(request_tracklist_redraw=lambda: None),
 		pctl=SimpleNamespace(
 			master_library=library,
@@ -45,6 +45,8 @@ def _sortable(library: dict[int, TrackClass]) -> SimpleNamespace:
 			index_key=lambda i: (int(library[i].disc_number or 1), int(library[i].track_number or 0)),
 		),
 	)
+	sortable.sort_album_tracks = lambda playlist, pause=False: Tauon.sort_album_tracks(sortable, playlist, pause)
+	return sortable
 
 
 def test_same_named_albums_in_sibling_folders_stay_apart() -> None:

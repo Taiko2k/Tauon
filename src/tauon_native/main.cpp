@@ -34,6 +34,7 @@
 
 #include "ipc.h"
 #include "native_render.h"
+#include "native_scan.h"
 
 #if defined(__APPLE__)
 #include <mach-o/dyld.h>
@@ -1785,7 +1786,7 @@ PyModuleDef bridge_module = {
 
 PyMODINIT_FUNC PyInit_tauon_native() {
 	PyObject* module = PyModule_Create(&bridge_module);
-	if (module == nullptr || add_native_render_methods(module) != 0) {
+	if (module == nullptr || add_native_render_methods(module) != 0 || add_native_scan_methods(module) != 0) {
 		Py_XDECREF(module);
 		return nullptr;
 	}

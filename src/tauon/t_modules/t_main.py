@@ -8429,6 +8429,9 @@ class Tauon:
 		self.after_scan: list[TrackClass] = []
 		# Import batches waiting for their tag scan before the full sort: (playlist uuid, track ids)
 		self.import_resorts: list[tuple[int, list[int]]] = []
+		# Batches the worker has sorted, waiting for the main thread: (playlist, batch, sorted)
+		self.import_resorts_sorted: list[tuple[int, list[int], list[int]]] = []
+		self.import_resort_lock = threading.Lock()
 		self.import_resort_checked: float = 0.0
 		self.cancel_tag_scan: bool = False
 		self.quick_import_done: list[str] = []
@@ -11072,6 +11075,7 @@ class Tauon:
 			self.gui.tc_cancel = True
 		if self.pctl.loading_in_progress:
 			self.gui.im_cancel = True
+			tauon_native.cancel_scan_folder()
 		if self.gui.sync_progress:
 			self.gui.stop_sync = True
 			self.gui.sync_progress = _("Aborting Sync")
@@ -18545,8 +18549,6 @@ class Tauon:
 		}
 		duplicate_count = 0
 		for item in orders:
-			if not item.preserve_order and self.prefs.import_sort_tracks:
-				self.sort_import_batch(item.tracks)
 			seen = seen_by_playlist.get(item.playlist)
 			if seen is not None:
 				duplicate_count += len(item.tracks) - len(unique_playlist_tracks(item.tracks, seen))
@@ -23165,13 +23167,21 @@ class Tauon:
 
 	@database_write
 	def sort_track_2(self, pl: int, custom_list: list[int] | None = None) -> None:
+		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
+		self.sort_album_tracks(playlist)
+		self.gui.request_tracklist_redraw()
+
+	def sort_album_tracks(self, playlist: list[int], pause: bool = False) -> None:
+		"""Sort each album's run of tracks by disc and track number, in place.
+		With pause, yields to other threads now and then, for use off the main thread."""
 		current_folder = ""
 		current_album = ""
 		current_date = ""
 		albums: list[int] = []
-		playlist = self.pctl.multi_playlist[pl].playlist_ids if custom_list is None else custom_list
 
 		for i in range(len(playlist)):
+			if pause and i % 500 == 499:
+				time.sleep(0.001)
 			tr = self.pctl.master_library[playlist[i]]
 			track_date = (tr.rdat if tr.rdat is not None else tr.date)
 			if i == 0:
@@ -23200,12 +23210,12 @@ class Tauon:
 
 		i = 0
 		while i < len(albums) - 1:
+			if pause and i % 100 == 99:
+				time.sleep(0.001)
 			playlist[albums[i]:albums[i + 1]] = sorted(playlist[albums[i]:albums[i + 1]], key=self.pctl.index_key)
 			i += 1
 		if len(albums) > 0:
 			playlist[albums[i]:] = sorted(playlist[albums[i]:], key=self.pctl.index_key)
-
-		self.gui.request_tracklist_redraw()
 
 	def key_filepath(self, index: int) -> tuple[str, str]:
 		track = self.pctl.master_library[index]
@@ -23236,15 +23246,24 @@ class Tauon:
 		)
 
 	def sort_import_batch(self, tracks: list[int]) -> None:
-		"""First pass on a fresh import, before tags are read: file name order."""
-		tracks.sort(key=self.key_import_filename)
+		"""First pass on a fresh import, before tags are read: file name order.
+		Runs on the worker thread, pausing now and then so the UI stays smooth."""
+		keys = {}
+		for i, track_id in enumerate(tracks):
+			keys[track_id] = self.key_import_filename(track_id)
+			if i % 500 == 499:
+				time.sleep(0.001)
+		tracks.sort(key=keys.__getitem__)
 
 	def queue_import_resort(self, playlist_uuid: int, tracks: list[int]) -> None:
 		if tracks:
-			self.import_resorts.append((playlist_uuid, list(tracks)))
+			with self.import_resort_lock:
+				self.import_resorts.append((playlist_uuid, list(tracks)))
+			self.thread_manager.ready("worker")
 
-	def run_import_resorts(self) -> None:
-		"""Sort import batches by disc and track number once their tags are read."""
+	def sort_import_resorts(self) -> None:
+		"""Worker thread: sort import batches by disc and track number once their
+		tags are read, leaving the result for the main thread to apply."""
 		if not self.import_resorts:
 			return
 		pending: set[int] = set()
@@ -23254,21 +23273,47 @@ class Tauon:
 				return
 			self.import_resort_checked = now
 			pending = {track.index for track in list(self.after_scan)}
-		for job in list(self.import_resorts):
-			if pending and not pending.isdisjoint(job[1]):
-				continue
-			self.import_resorts.remove(job)
+		with self.import_resort_lock:
+			jobs = [job for job in self.import_resorts if not pending or pending.isdisjoint(job[1])]
+		for job in jobs:
+			block = list(job[1])
+			try:
+				self.sort_import_batch(block)
+				self.sort_album_tracks(block, pause=True)
+			except KeyError:
+				# A track was removed meanwhile; keep file name order
+				block = None
+			with self.import_resort_lock:
+				# Unless the job was cancelled while sorting
+				for k, queued in enumerate(self.import_resorts):
+					if queued is job:
+						del self.import_resorts[k]
+						if block is not None:
+							self.import_resorts_sorted.append((job[0], job[1], block))
+						break
+		if self.import_resorts_sorted:
+			self.gui.request_frame()
+
+	def run_import_resorts(self) -> None:
+		"""Main thread: apply import batches the worker has sorted."""
+		if not self.import_resorts_sorted:
+			return
+		with self.import_resort_lock:
+			ready = self.import_resorts_sorted[:]
+			self.import_resorts_sorted.clear()
+		for job in ready:
 			self.resort_import_batch(*job)
 
 	def cancel_tag_scans(self) -> None:
 		"""Stop the queued tag scan; batches left unscanned keep their file name order."""
 		pending = {track.index for track in list(self.after_scan)}
-		self.import_resorts[:] = [job for job in self.import_resorts if pending.isdisjoint(job[1])]
+		with self.import_resort_lock:
+			self.import_resorts[:] = [job for job in self.import_resorts if pending.isdisjoint(job[1])]
 		self.cancel_tag_scan = True
 		self.thread_manager.ready("worker")
 
 	@database_write
-	def resort_import_batch(self, playlist_uuid: int, batch: list[int]) -> None:
+	def resort_import_batch(self, playlist_uuid: int, batch: list[int], block: list[int]) -> None:
 		pl = self.pctl.id_to_pl(playlist_uuid)
 		if pl is None:
 			return
@@ -23280,9 +23325,6 @@ class Tauon:
 				break
 		else:
 			return
-		block = list(batch)
-		self.sort_import_batch(block)
-		self.sort_track_2(0, block)
 		if block == batch:
 			return
 
@@ -61217,6 +61259,10 @@ def worker1(tauon: Tauon) -> None:
 
 			return 1
 
+		return add_audio_file(path, force_scan)
+
+	def add_audio_file(path: str, force_scan: bool = False) -> None:
+		"""Import an audio file without checking it exists; the tag scan does that"""
 		gui.to_got += 1
 		gui.request_frame()
 
@@ -61235,10 +61281,6 @@ def worker1(tauon: Tauon) -> None:
 			else:
 				tauon.added.append(de)
 				return None
-
-		time.sleep(0.002)
-
-		# audio = auto.File(path)
 
 		nt = TrackClass()
 
@@ -61289,7 +61331,6 @@ def worker1(tauon: Tauon) -> None:
 				if imported_track_id in pctl.master_library:
 					pctl.jump(imported_track_id)
 					gui.auto_play_import = False
-		return None
 
 	def pre_get(direc: str) -> None:
 		"""Count the approx number of files to be imported"""
@@ -61300,47 +61341,58 @@ def worker1(tauon: Tauon) -> None:
 				return
 			gui.request_frame()
 
+	def sort_names(names: list, key: Callable | None = None) -> list:
+		if tauon.use_natsort:
+			return natsort.os_sorted(names, key=key)
+		return sorted(names, key=key)
+
 	def gets(direc: str, force_scan: bool = False) -> None:
-		if os.path.basename(direc) == "__MACOSX":
+		"""Import a folder tree in sorted order, subfolders before files"""
+		if os.path.basename(direc) == "__MACOSX" or gui.im_cancel:
 			return
 
+		# The walk runs natively without the GIL; the header shows its file count
+		count = gui.to_got
+		gui.to_got = "walk"
+		gui.request_frame()
 		try:
-			items_in_dir = os.listdir(direc)
-			if tauon.use_natsort:
-				items_in_dir = natsort.os_sorted(items_in_dir)
-			else:
-				items_in_dir.sort()
-		except PermissionError:
-			logging.exception("Permission error accessing one or more files")
-			tauon.show_message(_("Permission error accessing one or more files"), mode="warning")
-			return
+			result = tauon_native.scan_folder(direc)
 		except Exception:
 			logging.exception("Unknown error accessing one or more files")
+			result = None
+		finally:
+			gui.to_got = count
+		if result is None:
 			return
 
-		for q in range(len(items_in_dir)):
-			if items_in_dir[q][0] == ".":
-				continue
-			if os.path.isdir(os.path.join(direc, items_in_dir[q])):
-				gets(os.path.join(direc, items_in_dir[q]))
-			if gui.im_cancel:
-				return
+		tree, errors = result
+		for path, message, _permission in errors:
+			logging.error(f"Could not read {path}: {message}")
+		if any(error[2] for error in errors):
+			tauon.show_message(_("Permission error accessing one or more files"), mode="warning")
 
-		for q in range(len(items_in_dir)):
-			if items_in_dir[q][0] == ".":
-				continue
-			if os.path.isdir(os.path.join(direc, items_in_dir[q])) is False:
+		added = 0
 
-				if os.path.splitext(items_in_dir[q])[1][1:].lower() in bag.formats.DA:
-					if len(items_in_dir[q]) > 2 and items_in_dir[q][0:2] == "._":
-						continue
+		def add_tree(folder: str, node: tuple) -> bool:
+			nonlocal added
+			files, folders = node
+			for name, child in sort_names(folders, key=lambda item: item[0]):
+				if not add_tree(os.path.join(folder, name), child):
+					return False
+			for name in sort_names(files):
+				ext = os.path.splitext(name)[1][1:]
+				if ext.lower() in bag.formats.DA:
+					add_audio_file(os.path.join(folder, name), force_scan)
+					added += 1
+					if added % 250 == 0:
+						time.sleep(0.001)
+				elif ext in {"CUE", "cue"}:
+					add_from_cue(os.path.join(folder, name).replace("\\", "/"))
+				if gui.im_cancel:
+					return False
+			return True
 
-					add_file(os.path.join(direc, items_in_dir[q]).replace("\\", "/"), force_scan)
-				elif os.path.splitext(items_in_dir[q])[1][1:] in {"CUE", "cue"}:
-					add_from_cue(os.path.join(direc, items_in_dir[q]).replace("\\", "/"))
-
-			if gui.im_cancel:
-				return
+		add_tree(direc, tree)
 
 	def cache_paths() -> tuple[dict, dict]:
 		dic = {}
@@ -61445,6 +61497,7 @@ def worker1(tauon: Tauon) -> None:
 		or tauon.transcode_list \
 		or tauon.to_scan \
 		or tauon.lrclib_uploads \
+		or tauon.import_resorts \
 		or tauon.loaderCommandReady:
 			active_timer.set()
 		elif active_timer.get() > 5:
@@ -61477,8 +61530,9 @@ def worker1(tauon: Tauon) -> None:
 				# Tags such as disc numbers shape the tracklist layout; rebuild it once scanning ends
 				pctl.db_inc += 1
 				gui.request_tracklist_redraw()
-				gui.request_frame()  # let pending import re-sorts run
 				tauon.cancel_tag_scan = False
+
+		tauon.sort_import_resorts()
 
 		if tauon.playlist_autoscan:
 			pl_folder_autoscan()
@@ -61813,6 +61867,8 @@ def worker1(tauon: Tauon) -> None:
 								del order.tracks[i]
 
 					tauon.added = []
+					if not order.preserve_order and prefs.import_sort_tracks:
+						tauon.sort_import_batch(order.tracks)
 					active_drop_action = None
 					order.stage = 2
 					tauon.loaderCommandReady = False
@@ -68996,10 +69052,8 @@ def main(holder: Holder) -> None:
 								continue
 							target_pl = 0
 
-							# File name order now; disc and track order once tags are read
+							# The worker put these in file name order; disc and track order once tags are read
 							sort_import = not order.preserve_order and prefs.import_sort_tracks
-							if sort_import:
-								tauon.sort_import_batch(order.tracks)
 
 							for p, playlist in enumerate(pctl.multi_playlist):
 								if playlist.uuid_int == order.playlist:

@@ -41,6 +41,7 @@ add_executable(tauon-native
 	src/tauon_native/ipc.cpp
 	src/tauon_native/main.cpp
 	src/tauon_native/native_render.cpp
+	src/tauon_native/native_scan.cpp
 )
 
 target_compile_features(tauon-native PRIVATE cxx_std_17)

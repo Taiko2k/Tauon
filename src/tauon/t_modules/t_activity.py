@@ -9,6 +9,8 @@ import time
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import tauon_native
+
 from tauon.t_modules import t_native as sdl3
 
 from tauon.t_modules.t_extra import ColourRGBA, alpha_blend, alpha_mod
@@ -105,6 +107,8 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 		elif gui.to_got == "ex":
 			title = _("Extracting Archive…")
 		detail = _("{N} tracks imported").format(N=count) if count is not None else ""
+		if gui.to_got == "walk":
+			detail = _("{N} files found").format(N=tauon_native.scan_folder_progress())
 		if gui.im_cancel:
 			detail = _("Stopping import…")
 		rows.append(Activity("import", title, amber, detail, cancel=not gui.im_cancel))
@@ -273,6 +277,7 @@ class ActivityPopover:
 		gui = tauon.gui
 		if key == "import":
 			gui.im_cancel = True
+			tauon_native.cancel_scan_folder()
 		elif key == "scan":
 			tauon.cancel_tag_scans()
 		elif key in ("plex", "subsonic", "jellyfin"):
