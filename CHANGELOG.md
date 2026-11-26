@@ -2,7 +2,7 @@
 Changelog
 ---------
 
-### v14.1.0
+### v15.0.0
 
  - Added Candy Factory skin
  - Added stereo crossfeed setting
@@ -13,7 +13,7 @@ Changelog
  - Added shift-drop to insert files at a tracklist row
  - Added rebindable arrow keys to input.txt
  - Added dimming of bracketed text in track titles
- - Added bit-perfect status to Audio Info and a Target bit-perfect setting
+ - Added bit-perfect setting
  - Improved folder import speed
  - Previous and next now stay within the album on repeat album
  - Fixed art background disapear on drag

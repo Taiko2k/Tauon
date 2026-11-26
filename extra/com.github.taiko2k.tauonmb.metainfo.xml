@@ -103,6 +103,18 @@
 
   <releases>
 
+    <release version="15.0.0" date="2026-11-27">
+      <description>
+        <ul>
+          <li>Added Candy Factory skin</li>
+          <li>Added video playback support</li>
+          <li>Added replay gain scan to tag editor</li>
+          <li>Added bit-perfect status and a Target bit-perfect setting</li>
+          <li>Improved folder import speed</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="14.0.0" date="2026-11-17">
       <description>
         <ul>
