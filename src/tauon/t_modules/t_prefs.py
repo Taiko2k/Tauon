@@ -518,6 +518,9 @@ class Prefs:
 
 	use_gamepad: bool = True
 	avoid_resampling: bool = False
+	# Keep PCM bit for bit on its way out: overrides volume, ReplayGain, the
+	# EQ, crossfeed, playback speed and crossfades
+	bit_perfect: bool = False
 	force_stereo_output: bool = False
 	# Send DSD to the device as DSD instead of decoding it to PCM. PipeWire only,
 	# and only with a DAC that takes native DSD.

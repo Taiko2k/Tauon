@@ -4118,7 +4118,7 @@ class PlayerCtl:
 		self.jump_time = random_start
 		if play:
 			self.playerCommand = "open"
-			if not self.prefs.use_jump_crossfade:
+			if not self.prefs.use_jump_crossfade or self.prefs.bit_perfect:
 				self.playerSubCommand = "now"
 			self.playerCommandReady = True
 			self.playing_state = PlayingState.PLAYING
@@ -14286,7 +14286,9 @@ class Tauon:
 	def audio_info_rect(self) -> tuple[int, int, int, int]:
 		scale = self.gui.scale
 		w = min(round(600 * scale), self.window_size[0] - round(20 * scale))
-		h = round((52 + ChannelStatusView.ROWS_HEIGHT + 26 + ChannelStatusView.GAIN_HEIGHT + 4) * scale)
+		h = round((
+			52 + ChannelStatusView.ROWS_HEIGHT + 26 + ChannelStatusView.GAIN_HEIGHT
+			+ ChannelStatusView.SIGNAL_HEIGHT + 4) * scale)
 		return round(self.window_size[0] / 2 - w / 2), round(self.window_size[1] / 2 - h / 2), w, h
 
 	def menu_paste(self, ref: MenuTrackRef) -> None:
@@ -36585,8 +36587,19 @@ class Over:
 				restart=True,
 			)
 
+		old_bit_perfect = prefs.bit_perfect
+		prefs.bit_perfect = rows.switch(
+			prefs.bit_perfect, _("Target bit-perfect"),
+			_("Overrides volume, ReplayGain, EQ, crossfeed, speed and crossfades."))
+		if prefs.bit_perfect != old_bit_perfect:
+			self.pctl.playerCommand = "reload"
+			self.pctl.playerCommandReady = True
+
 		old_resample = prefs.avoid_resampling
-		prefs.avoid_resampling = rows.switch(prefs.avoid_resampling, _("Avoid resampling"))
+		resample_shown = rows.switch(
+			prefs.avoid_resampling or prefs.bit_perfect, _("Avoid resampling"), disabled=prefs.bit_perfect)
+		if not prefs.bit_perfect:
+			prefs.avoid_resampling = resample_shown
 		if prefs.avoid_resampling != old_resample:
 			self.pctl.playerCommand = "reload"
 			self.pctl.playerCommandReady = True
@@ -51644,6 +51657,9 @@ class ChannelStatusView:
 
 	ROWS_HEIGHT = 76  # unscaled height of draw()
 	GAIN_HEIGHT = 48  # unscaled height of draw_gain()
+	SIGNAL_HEIGHT = 26  # unscaled height of draw_signal()
+	BP_UNVERIFIED = 1 << 17  # PHAzOR could not see past its own output
+	BP_NO_SOURCE = 1 << 18  # lossy, rendered or DSD: no stored PCM to be bit-perfect to
 
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon = tauon
@@ -51667,6 +51683,12 @@ class ChannelStatusView:
 		self.output_backend = ""
 		self.via_ffmpeg = False
 		self.via_pipewire = False
+		# Bitmask of PHAzOR's bit_perfect_reason, -1 when this build cannot tell
+		self.bit_perfect = -1
+		# Sink PipeWire plays us into, and its device rate and bits
+		self.route_name = ""
+		self.route_rate = 0
+		self.route_bits = 0
 		# The live bitrate is shown as its average over each half second
 		self.live_kbps = 0
 		self.kbps_sum = 0
@@ -51730,6 +51752,15 @@ class ChannelStatusView:
 			c_backend = ctypes.create_string_buffer(32)
 			aud.get_output_backend(c_backend, 32)
 			self.output_backend = c_backend.value.decode(errors="replace")
+		self.bit_perfect = aud.get_bit_perfect() if hasattr(aud, "get_bit_perfect") else -1
+		if hasattr(aud, "get_bit_perfect_route"):
+			c_name = ctypes.create_string_buffer(128)
+			c_route_rate = ctypes.c_int(0)
+			c_route_bits = ctypes.c_int(0)
+			known = aud.get_bit_perfect_route(c_name, 128, ctypes.byref(c_route_rate), ctypes.byref(c_route_bits))
+			self.route_name = c_name.value.decode(errors="replace") if known else ""
+			self.route_rate = c_route_rate.value
+			self.route_bits = c_route_bits.value
 
 	@staticmethod
 	def overlay_palette() -> ChannelStatusPalette:
@@ -52065,6 +52096,99 @@ class ChannelStatusView:
 			line_x += ddt.text((line_x, line_y), text, colour, 311, max_w=info_x - line_x, bg=bg) or 0
 			if line_x >= info_x:
 				break
+
+	def bit_perfect_reasons(self) -> list[str]:
+		"""What is changing the samples, from PHAzOR's bit_perfect_reason mask"""
+		reasons = self.bit_perfect
+		names = (
+			(1 << 1, _("Volume {percent}%").format(percent=round(self.tauon.pctl.player_volume))),
+			(1 << 2, _("Gain")),
+			(1 << 3, _("EQ")),
+			(1 << 4, _("Crossfeed")),
+			(1 << 5, _("Tempo")),
+			(1 << 6, _("Resampled") + (" (FFmpeg)" if self.via_ffmpeg else " (PHAzOR)")),
+			(1 << 7, _("Device resamples")),
+			(1 << 8, _("Channels mixed")),
+			(1 << 9, _("Over 24 bit")),
+			(1 << 10, _("Fading")),
+			(1 << 11, _("PipeWire volume")),
+			(1 << 12, _("Other audio playing")),
+			(1 << 13, _("Through {name}").format(name=self.route_name) if self.route_name else _("Through a filter")),
+			(1 << 14, _("Device takes {bits} bit").format(bits=self.route_bits)),
+			(1 << 15, _("Bluetooth codec")),
+			(1 << 16, _("Dither")),
+			(1 << 19, _("Speed")),
+		)
+		return [name for bit, name in names if reasons & bit]
+
+	def draw_signal(self, x: int, y: int, w: int, palette: ChannelStatusPalette) -> None:
+		"""Draw whether the output is bit-perfect, SIGNAL_HEIGHT tall, in the same columns as draw()"""
+		gui = self.gui
+		ddt = self.ddt
+		label_w = round(56 * gui.scale)
+		info_w = round(160 * gui.scale)
+		gap = round(3 * gui.scale)
+		chip_h = round(18 * gui.scale)
+		text_y = round(1 * gui.scale)
+		area_x = round(x + 10 * gui.scale + label_w)
+		area_w = round(w - 20 * gui.scale - label_w - info_w)
+		chip_w = (area_w - gap * (len(PCM_SPEAKER_NAMES) - 1)) // len(PCM_SPEAKER_NAMES)
+		label_x = x + 10 * gui.scale
+		info_x = round(x + w - 10 * gui.scale)
+		bg = palette.background
+
+		reasons: list[str] = []
+		state: tuple[ColourRGBA, ColourRGBA] | None = None
+		unverified = self.bit_perfect >= 0 and bool(self.bit_perfect & self.BP_UNVERIFIED)
+		no_source = self.bit_perfect >= 0 and bool(self.bit_perfect & self.BP_NO_SOURCE)
+		if self.bit_perfect < 0:
+			status = "?"
+		elif self.bit_perfect & 1:
+			status = _("IDLE")
+		elif self.bit_perfect & ~(self.BP_UNVERIFIED | self.BP_NO_SOURCE) == 0:
+			# Nothing added, but only a lossless source has samples to match
+			status, state = (_("UNALTERED"), palette.direct) if no_source else (_("BIT-PERFECT"), palette.output)
+		else:
+			# Grey: what changes the sound is often wanted, so it isn't a warning
+			status, state = _("ALTERED"), (palette.track, palette.label)
+			reasons = self.bit_perfect_reasons()
+
+		row_y = round(y + 4 * gui.scale)
+		ddt.text((label_x, row_y + text_y), _("Signal"), palette.label, 311, bg=bg)
+		status_w = max(chip_w * 2 + gap, ddt.get_text_w(status, 311) + round(12 * gui.scale))
+		status_bg = palette.track if state is None else state[0]
+		ddt.rect((area_x, row_y, status_w, chip_h), status_bg)
+		ddt.text(
+			(area_x + status_w // 2, row_y + text_y, 2), status, palette.dim if state is None else palette.lit, 311,
+			bg=status_bg)
+
+		line_x = area_x + status_w + round(10 * gui.scale)
+		if self.bit_perfect < 0:
+			ddt.text((line_x, row_y + text_y), _("Needs a newer build of PHAzOR"), palette.label, 311, bg=bg)
+		elif reasons:
+			ddt.text(
+				(line_x, row_y + text_y), " · ".join(reasons), palette.label, 311,
+				max_w=info_x - line_x, bg=bg)
+		elif state is not None:
+			if self.dsd_direct:
+				text = _("DSD sent as is")
+			elif no_source:
+				if self.codec in ("openmpt", "gme"):
+					text = _("Rendered source, nothing added")
+				elif self.codec.startswith("dsd"):
+					text = _("DSD converted to PCM, nothing added")
+				else:
+					text = _("Lossy source, nothing added")
+				if not unverified:
+					text += " · " + _("straight to {device}").format(device=self.route_name or _("the device"))
+			elif unverified:
+				# miniaudio, or PipeWire before the sink has reported in
+				text = _("Leaves PHAzOR as decoded; the sound server is not checked")
+			else:
+				text = _("Straight to {device}").format(device=self.route_name or _("the device"))
+				if self.route_rate > 0 and self.route_bits > 0:
+					text += f"  {self.rate_text(self.route_rate)} {self.route_bits} bit"
+			ddt.text((line_x, row_y + text_y), text, palette.label, 311, max_w=info_x - line_x, bg=bg)
 
 
 class ArtistInfoBox:
@@ -59677,6 +59801,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("output-samplerate", prefs.samplerate)
 	cf.update_value("resample-quality", prefs.resample)
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
+	cf.update_value("target-bit-perfect", prefs.bit_perfect)
 	cf.update_value("force-stereo-output", prefs.force_stereo_output)
 	cf.update_value("dsd-direct", prefs.dsd_direct)
 	cf.update_value("use-bs2b", prefs.use_bs2b)
@@ -59919,6 +60044,10 @@ def load_prefs(bag: Bag) -> None:
 	prefs.avoid_resampling = cf.sync_add(
 		"bool", "avoid_resampling", prefs.avoid_resampling,
 		"Only implemented for FLAC, MP3, OGG, OPUS")
+	prefs.bit_perfect = cf.sync_add(
+		"bool", "target-bit-perfect", prefs.bit_perfect,
+		"Send PCM to the device unchanged. Keeps volume at 100% and turns off ReplayGain, the EQ, "
+		"crossfeed, playback speed and crossfades, and avoids resampling.")
 	prefs.force_stereo_output = cf.sync_add(
 		"bool", "force-stereo-output", prefs.force_stereo_output,
 		"Downmix PCM audio to stereo instead of using the output device's speaker layout.")
@@ -70250,6 +70379,11 @@ def main(holder: Holder) -> None:
 							(x + round(18 * gui.scale), gain_y - round(2 * gui.scale), w - round(36 * gui.scale), 1),
 							palette.track)
 						tauon.channel_status.draw_gain(x + 8 * gui.scale, gain_y, w - 16 * gui.scale, palette)
+						signal_y = gain_y + round(ChannelStatusView.GAIN_HEIGHT * gui.scale)
+						ddt.rect(
+							(x + round(18 * gui.scale), signal_y - round(2 * gui.scale), w - round(36 * gui.scale), 1),
+							palette.track)
+						tauon.channel_status.draw_signal(x + 8 * gui.scale, signal_y, w - 16 * gui.scale, palette)
 
 						if pctl.playing_state == PlayingState.PLAYING:
 							gui.delay_frame(0.05)

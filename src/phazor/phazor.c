@@ -52,6 +52,9 @@
 	#include <spa/param/audio/format-utils.h>
 	#include <spa/param/audio/dsd.h>
 	#include <spa/pod/builder.h>
+	#include <spa/pod/parser.h>
+	#include <spa/pod/iter.h>
+	#include <spa/param/props.h>
 	#include <spa/utils/result.h>
 #endif
 
@@ -347,6 +350,8 @@ int config_resample_quality = 2;
 int config_resample = 1;
 int config_always_ffmpeg = 0;
 int config_volume_power = 2;
+// Target bit-perfect: software volume stays at 100%
+int config_bit_perfect = 0;
 int config_feed_samplerate = 48000;
 int config_min_buffer = 30000;
 int config_stream_buffer_mb = 50;  // In-memory file/stream buffer size in MB
@@ -475,6 +480,30 @@ int flac_got_rate = 0;
 #endif
 
 
+// Reasons get_bit_perfect() gives for samples not reaching the device as decoded
+enum bit_perfect_reason {
+	BP_IDLE = 1 << 0,             // nothing playing
+	BP_VOLUME = 1 << 1,           // volume below 100%, or ramping
+	BP_GAIN = 1 << 2,             // ReplayGain, pre-amp or its compressor
+	BP_EQ = 1 << 3,
+	BP_CROSSFEED = 1 << 4,
+	BP_TEMPO = 1 << 5,
+	BP_RESAMPLE = 1 << 6,         // PHAzOR or FFmpeg resamples
+	BP_DEVICE_RESAMPLE = 1 << 7,  // the sound server or device runs at another rate
+	BP_MIX = 1 << 8,              // channels mixed or dropped for the device
+	BP_DEPTH = 1 << 9,            // over 24 bit, more than a float holds
+	BP_FADE = 1 << 10,            // a fade or crossfade is under way
+	BP_SERVER_VOLUME = 1 << 11,   // PipeWire scales the stream or sink in software
+	BP_SERVER_MIX = 1 << 12,      // another stream is playing into the same sink
+	BP_SERVER_ROUTE = 1 << 13,    // routed through a virtual sink or filter
+	BP_DEVICE_DEPTH = 1 << 14,    // the device format holds fewer bits than the source
+	BP_BLUETOOTH = 1 << 15,       // re-encoded for a Bluetooth codec
+	BP_DITHER = 1 << 16,          // PipeWire adds dither or noise
+	BP_UNVERIFIED = 1 << 17,      // not a reason: what follows PHAzOR could not be checked
+	BP_NO_SOURCE = 1 << 18,       // not a reason: lossy, rendered or DSD, so no stored PCM to match
+	BP_SPEED = 1 << 19,           // playback speed, which resamples
+};
+
 #ifdef PIPE
 	pthread_t pw_thread;
 	pthread_mutex_t pipe_devices_mutex;
@@ -538,8 +567,51 @@ int flac_got_rate = 0;
 		int pcm_channels;
 		int pcm_map[PCM_MAX_CHANNELS];
 		int announced;   // keeps the capability out of the log on every re-probe
+		// For the bit-perfect check: what the sink does to what it is sent
+		int hw_rate;     // rate and depth the device runs at, 0 until known
+		int hw_bits;     // significant bits, so F32 counts as 24
+		int soft_volume; // 1 unity, 0 scaled in software, -1 unknown
+		int dither;      // 1 when audioconvert adds dither or noise
+		int is_device;   // has a device.api, so it is not a virtual sink
+		int bluetooth;
+		char description[128];
 	};
 	struct dsd_probe dsd_probes[MAX_DEVICES] = {0};
+
+	// Links and playback streams, to see where our stream goes and what else
+	// is mixed into the same sink. Written on the PipeWire thread under
+	// pipe_devices_mutex.
+	#define MAX_LINKS 256
+	struct pipe_link {
+		uint32_t id;
+		uint32_t out_node;
+		uint32_t in_node;
+		int used;
+	};
+	struct pipe_link pipe_links[MAX_LINKS] = {0};
+
+	struct stream_probe {
+		uint32_t id;
+		struct pw_proxy *proxy;
+		struct spa_hook listener;
+		int used;
+		int running;
+	};
+	struct stream_probe stream_probes[MAX_DEVICES] = {0};
+
+	// Volume set on our own stream, such as a per-app slider: 1 unity, 0 not
+	int pipe_stream_volume_unity = 1;
+
+	// What get_bit_perfect() reports for the PipeWire side, refreshed on the
+	// PipeWire thread whenever the graph around our stream changes
+	struct pipe_route_status {
+		int known;          // our stream is linked and its sink is probed
+		int reasons;        // BP_SERVER_* bits
+		int hw_rate;
+		int hw_bits;
+		char name[128];     // sink, or the node we are routed through
+	};
+	struct pipe_route_status pipe_route = {0};
 
 	// node.name of the sink the session manager would pick for us, read from
 	// the "default" metadata object. Needed because the device preference is
@@ -646,11 +718,96 @@ int flac_got_rate = 0;
 		pipe_probe_pcm_layout(probe, count, map);
 	}
 
+	static void pipe_refresh_route();
+
+	// Bits a sample format carries exactly. F32 holds 24, so a 24 bit
+	// source passes through it unchanged.
+	static int spa_format_bits(uint32_t format) {
+		switch (format) {
+			case SPA_AUDIO_FORMAT_S8: case SPA_AUDIO_FORMAT_U8: case SPA_AUDIO_FORMAT_U8P:
+				return 8;
+			case SPA_AUDIO_FORMAT_S16_LE: case SPA_AUDIO_FORMAT_S16_BE: case SPA_AUDIO_FORMAT_S16P:
+			case SPA_AUDIO_FORMAT_U16_LE: case SPA_AUDIO_FORMAT_U16_BE:
+				return 16;
+			case SPA_AUDIO_FORMAT_S24_LE: case SPA_AUDIO_FORMAT_S24_BE: case SPA_AUDIO_FORMAT_S24P:
+			case SPA_AUDIO_FORMAT_S24_32_LE: case SPA_AUDIO_FORMAT_S24_32_BE: case SPA_AUDIO_FORMAT_S24_32P:
+			case SPA_AUDIO_FORMAT_U24_LE: case SPA_AUDIO_FORMAT_U24_BE:
+			case SPA_AUDIO_FORMAT_U24_32_LE: case SPA_AUDIO_FORMAT_U24_32_BE:
+			case SPA_AUDIO_FORMAT_F32_LE: case SPA_AUDIO_FORMAT_F32_BE: case SPA_AUDIO_FORMAT_F32P:
+				return 24;
+			case SPA_AUDIO_FORMAT_S32_LE: case SPA_AUDIO_FORMAT_S32_BE: case SPA_AUDIO_FORMAT_S32P:
+			case SPA_AUDIO_FORMAT_U32_LE: case SPA_AUDIO_FORMAT_U32_BE:
+				return 32;
+			case SPA_AUDIO_FORMAT_F64_LE: case SPA_AUDIO_FORMAT_F64_BE: case SPA_AUDIO_FORMAT_F64P:
+				return 53;
+			default:
+				return 0;
+		}
+	}
+
+	static int volumes_unity(const struct spa_pod *pod) {
+		float volumes[SPA_AUDIO_MAX_CHANNELS];
+		uint32_t n = spa_pod_copy_array(pod, SPA_TYPE_Float, volumes, SPA_AUDIO_MAX_CHANNELS);
+		if (n == 0) return -1;
+		for (uint32_t i = 0; i < n; i++) if (volumes[i] != 1.0f) return 0;
+		return 1;
+	}
+
+	// softVolumes is the part of the sink volume audioconvert applies to the
+	// samples; with a hardware mixer it stays at 1. A sink without it scales
+	// by channelVolumes in software.
+	static void pipe_probe_props(struct dsd_probe *probe, const struct spa_pod *param) {
+		if (!spa_pod_is_object(param)) return;
+		int soft = -1, channel = -1, dither = -1;
+		const struct spa_pod_prop *prop;
+		SPA_POD_OBJECT_FOREACH((const struct spa_pod_object *) param, prop) {
+			if (prop->key == SPA_PROP_softVolumes) soft = volumes_unity(&prop->value);
+			else if (prop->key == SPA_PROP_channelVolumes) channel = volumes_unity(&prop->value);
+			else if (prop->key == SPA_PROP_params) {
+				// Key and value pairs, among them audioconvert's dither settings
+				struct spa_pod_parser parser;
+				struct spa_pod_frame frame;
+				spa_pod_parser_pod(&parser, &prop->value);
+				if (spa_pod_parser_push_struct(&parser, &frame) < 0) continue;
+				while (true) {
+					const char *key;
+					struct spa_pod *value;
+					if (spa_pod_parser_get_string(&parser, &key) < 0) break;
+					if (spa_pod_parser_get_pod(&parser, &value) < 0) break;
+					if (spa_streq(key, "dither.method")) {
+						const char *method;
+						if (spa_pod_get_string(value, &method) == 0) {
+							if (dither < 0) dither = 0;
+							if (!spa_streq(method, "none")) dither = 1;
+						}
+					} else if (spa_streq(key, "dither.noise")) {
+						int32_t noise;
+						if (spa_pod_get_int(value, &noise) == 0) {
+							if (dither < 0) dither = 0;
+							if (noise > 0) dither = 1;
+						}
+					}
+				}
+			}
+		}
+		// A sink can report several Props objects; only take what each one has
+		pthread_mutex_lock(&pipe_devices_mutex);
+		if (soft >= 0) probe->soft_volume = soft;
+		else if (channel >= 0) probe->soft_volume = channel;
+		if (dither >= 0) probe->dither = dither;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		pipe_refresh_route();
+	}
+
 	// Read the configured PCM layout and advertised DSD capability.
 	static void node_param_cb(void *data, int seq, uint32_t id, uint32_t index,
 			uint32_t next, const struct spa_pod *param) {
 		struct dsd_probe *probe = data;
 		if (param == NULL) return;
+		if (id == SPA_PARAM_Props) {
+			pipe_probe_props(probe, param);
+			return;
+		}
 		uint32_t media_type, media_subtype;
 		if (spa_format_parse(param, &media_type, &media_subtype) < 0 || media_type != SPA_MEDIA_TYPE_audio) return;
 		if (id == SPA_PARAM_Format && media_subtype == SPA_MEDIA_SUBTYPE_raw) {
@@ -663,6 +820,11 @@ int flac_got_rate = 0;
 			int map[PCM_MAX_CHANNELS];
 			for (uint32_t c = 0; c < info.channels; c++) map[c] = pcm_from_spa(info.position[c]);
 			pipe_probe_pcm_layout(probe, info.channels, map);
+			pthread_mutex_lock(&pipe_devices_mutex);
+			probe->hw_rate = (int) info.rate;
+			probe->hw_bits = spa_format_bits(info.format);
+			pthread_mutex_unlock(&pipe_devices_mutex);
+			pipe_refresh_route();
 			return;
 		}
 		if (id != SPA_PARAM_EnumFormat || media_subtype != SPA_MEDIA_SUBTYPE_dsd) return;
@@ -689,6 +851,9 @@ int flac_got_rate = 0;
 			if (info->params[i].id == SPA_PARAM_Format && (info->params[i].flags & SPA_PARAM_INFO_READ)) {
 				pw_node_enum_params((struct pw_node *) probe->proxy, 0, SPA_PARAM_Format, 0, UINT32_MAX, NULL);
 			}
+			if (info->params[i].id == SPA_PARAM_Props && (info->params[i].flags & SPA_PARAM_INFO_READ)) {
+				pw_node_enum_params((struct pw_node *) probe->proxy, 0, SPA_PARAM_Props, 0, UINT32_MAX, NULL);
+			}
 			if (info->params[i].id != SPA_PARAM_EnumFormat) continue;
 			if (!(info->params[i].flags & SPA_PARAM_INFO_READ)) continue;
 			pthread_mutex_lock(&pipe_devices_mutex);
@@ -705,7 +870,7 @@ int flac_got_rate = 0;
 		.param = node_param_cb,
 	};
 
-	static void dsd_probe_add(uint32_t id) {
+	static void dsd_probe_add(uint32_t id, const struct spa_dict *props) {
 		int slot = -1;
 		pthread_mutex_lock(&pipe_devices_mutex);
 		for (int i = 0; i < MAX_DEVICES; i++) {
@@ -724,6 +889,13 @@ int flac_got_rate = 0;
 		dsd_probes[slot].used = 1;
 		dsd_probes[slot].dsd_capable = 0;
 		dsd_probes[slot].announced = 0;
+		dsd_probes[slot].soft_volume = -1;
+		dsd_probes[slot].dither = -1;
+		const char *api = spa_dict_lookup(props, "device.api");
+		dsd_probes[slot].is_device = api != NULL;
+		dsd_probes[slot].bluetooth = api != NULL && strncmp(api, "bluez", 5) == 0;
+		const char *description = spa_dict_lookup(props, PW_KEY_NODE_DESCRIPTION);
+		snprintf(dsd_probes[slot].description, sizeof(dsd_probes[slot].description), "%s", description ? description : "");
 		pthread_mutex_unlock(&pipe_devices_mutex);
 
 		struct pw_proxy *proxy = pw_registry_bind(
@@ -808,7 +980,149 @@ int flac_got_rate = 0;
 		buffer_unlock();
 	}
 
+	static void stream_info_cb(void *data, const struct pw_node_info *info) {
+		struct stream_probe *probe = data;
+		if (info == NULL || !(info->change_mask & PW_NODE_CHANGE_MASK_STATE)) return;
+		pthread_mutex_lock(&pipe_devices_mutex);
+		probe->running = info->state == PW_NODE_STATE_RUNNING;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		pipe_refresh_route();
+	}
+
+	static const struct pw_node_events stream_probe_events = {
+		PW_VERSION_NODE_EVENTS,
+		.info = stream_info_cb,
+	};
+
+	static void stream_probe_add(uint32_t id) {
+		int slot = -1;
+		pthread_mutex_lock(&pipe_devices_mutex);
+		for (int i = 0; i < MAX_DEVICES; i++) {
+			if (stream_probes[i].used && stream_probes[i].id == id) {
+				pthread_mutex_unlock(&pipe_devices_mutex);
+				return;
+			}
+			if (slot < 0 && !stream_probes[i].used) slot = i;
+		}
+		if (slot >= 0) {
+			stream_probes[slot].id = id;
+			stream_probes[slot].used = 1;
+			stream_probes[slot].running = 0;
+		}
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		if (slot < 0) return;
+		struct pw_proxy *proxy = pw_registry_bind(registry, id, PW_TYPE_INTERFACE_Node, PW_VERSION_NODE, 0);
+		if (proxy == NULL) {
+			pthread_mutex_lock(&pipe_devices_mutex);
+			spa_zero(stream_probes[slot]);
+			pthread_mutex_unlock(&pipe_devices_mutex);
+			return;
+		}
+		stream_probes[slot].proxy = proxy;
+		spa_zero(stream_probes[slot].listener);
+		pw_node_add_listener((struct pw_node *) proxy, &stream_probes[slot].listener,
+			&stream_probe_events, &stream_probes[slot]);
+	}
+
+	static bool stream_probe_remove(uint32_t id) {
+		for (int i = 0; i < MAX_DEVICES; i++) {
+			if (!stream_probes[i].used || stream_probes[i].id != id) continue;
+			spa_hook_remove(&stream_probes[i].listener);
+			if (stream_probes[i].proxy) pw_proxy_destroy(stream_probes[i].proxy);
+			pthread_mutex_lock(&pipe_devices_mutex);
+			spa_zero(stream_probes[i]);
+			pthread_mutex_unlock(&pipe_devices_mutex);
+			return true;
+		}
+		return false;
+	}
+
+	static void pipe_link_add(uint32_t id, const struct spa_dict *props) {
+		const char *out = spa_dict_lookup(props, PW_KEY_LINK_OUTPUT_NODE);
+		const char *in = spa_dict_lookup(props, PW_KEY_LINK_INPUT_NODE);
+		if (out == NULL || in == NULL) return;
+		pthread_mutex_lock(&pipe_devices_mutex);
+		for (int i = 0; i < MAX_LINKS; i++) {
+			if (pipe_links[i].used) continue;
+			pipe_links[i].id = id;
+			pipe_links[i].out_node = (uint32_t) strtoul(out, NULL, 10);
+			pipe_links[i].in_node = (uint32_t) strtoul(in, NULL, 10);
+			pipe_links[i].used = 1;
+			break;
+		}
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		pipe_refresh_route();
+	}
+
+	static bool pipe_link_remove(uint32_t id) {
+		bool found = false;
+		pthread_mutex_lock(&pipe_devices_mutex);
+		for (int i = 0; i < MAX_LINKS; i++) {
+			if (pipe_links[i].used && pipe_links[i].id == id) {
+				spa_zero(pipe_links[i]);
+				found = true;
+				break;
+			}
+		}
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		return found;
+	}
+
+	// Follow our stream's links to the node it plays into and note what that
+	// node does to it. PipeWire thread only.
+	static void pipe_refresh_route() {
+		uint32_t own = global_stream ? pw_stream_get_node_id(global_stream) : PW_ID_ANY;
+		struct pipe_route_status route = {0};
+		pthread_mutex_lock(&pipe_devices_mutex);
+		uint32_t target = PW_ID_ANY;
+		if (own != PW_ID_ANY) {
+			for (int i = 0; i < MAX_LINKS; i++) {
+				if (pipe_links[i].used && pipe_links[i].out_node == own) {
+					target = pipe_links[i].in_node;
+					break;
+				}
+			}
+		}
+		if (target != PW_ID_ANY) {
+			route.known = 1;
+			struct dsd_probe *sink = NULL;
+			for (int i = 0; i < MAX_DEVICES; i++) {
+				if (dsd_probes[i].used && dsd_probes[i].id == target) sink = &dsd_probes[i];
+			}
+			if (sink == NULL) {
+				// A filter or loopback rather than a sink
+				route.reasons |= BP_SERVER_ROUTE;
+			} else {
+				snprintf(route.name, sizeof(route.name), "%s", sink->description);
+				if (!sink->is_device) route.reasons |= BP_SERVER_ROUTE;
+				if (sink->bluetooth) route.reasons |= BP_BLUETOOTH;
+				if (sink->soft_volume == 0) route.reasons |= BP_SERVER_VOLUME;
+				if (sink->dither == 1) route.reasons |= BP_DITHER;
+				route.hw_rate = sink->hw_rate;
+				route.hw_bits = sink->hw_bits;
+			}
+			if (!pipe_stream_volume_unity) route.reasons |= BP_SERVER_VOLUME;
+			// Another stream running into the same node is summed with ours
+			for (int i = 0; i < MAX_LINKS && !(route.reasons & BP_SERVER_MIX); i++) {
+				struct pipe_link *link = &pipe_links[i];
+				if (!link->used || link->in_node != target || link->out_node == own) continue;
+				for (int j = 0; j < MAX_DEVICES; j++) {
+					if (stream_probes[j].used && stream_probes[j].id == link->out_node && stream_probes[j].running) {
+						route.reasons |= BP_SERVER_MIX;
+						break;
+					}
+				}
+			}
+		}
+		pipe_route = route;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+	}
+
 	static void registry_event_remove_global(void *data, uint32_t id) {
+		if (pipe_link_remove(id) || stream_probe_remove(id)) {
+			pipe_refresh_route();
+			return;
+		}
 		bool removed_active_sink = false;
 		uint32_t stream_node_id = PW_ID_ANY;
 
@@ -836,6 +1150,7 @@ int flac_got_rate = 0;
 		}
 		pthread_mutex_unlock(&pipe_devices_mutex);
 		dsd_probe_remove(id);
+		pipe_refresh_route();
 
 		/* IMPORTANT: handle stream loss OUTSIDE the mutex */
 		if (removed_active_sink && global_stream) {
@@ -866,6 +1181,11 @@ int flac_got_rate = 0;
 			return;
 		}
 
+		if (spa_streq(type, PW_TYPE_INTERFACE_Link)) {
+			pipe_link_add(id, props);
+			return;
+		}
+
 		if (!spa_streq(type, PW_TYPE_INTERFACE_Node)) return;
 
 		//log_msg(LOG_INFO, "object: id:%u type:%s/%d", id, type, version);
@@ -874,6 +1194,11 @@ int flac_got_rate = 0;
 		media_class = spa_dict_lookup(props, PW_KEY_MEDIA_CLASS);
 		if (media_class == NULL)
 			return;
+
+		if (spa_streq(media_class, "Stream/Output/Audio")) {
+			stream_probe_add(id);
+			return;
+		}
 
 		if (spa_streq(media_class, "Audio/Sink")) {
 
@@ -905,7 +1230,7 @@ int flac_got_rate = 0;
 			log_msg(LOG_INFO, "Found audio sink: %s (%s)", name, description);
 			pthread_mutex_unlock(&pipe_devices_mutex);
 			// Ask this sink whether it can carry DSD
-			dsd_probe_add(id);
+			dsd_probe_add(id, props);
 
 		}
 	}
@@ -3647,7 +3972,12 @@ static bool source_peek(float *frame, uint16_t *mask) {
 		tempo_reset(&tempo, sample_rate_out);
 		tempo_engaged = true;
 	}
-	if (tempo_engaged) tempo.rate = playback_tempo;
+	if (tempo_engaged) {
+		tempo.rate = playback_tempo;
+		// Back at normal tempo: play out what the stage holds, then bypass it.
+		// At a rate of 1 it still reshapes the audio, so it can't just stay.
+		if (playback_tempo == 1.0f && !tempo.finishing && !tempo.drained) tempo_finish(&tempo);
+	}
 	if (!tempo_engaged) {
 		if (get_buff_fill() <= 0) return false;
 		ring_peek(frame, mask);
@@ -3671,7 +4001,9 @@ static bool source_peek(float *frame, uint16_t *mask) {
 		ring_advance();
 	}
 	if (mode == ENDING && tempo_wants_input(&tempo)) tempo_finish(&tempo);
-	return tempo_peek(&tempo, frame, mask);
+	if (tempo_peek(&tempo, frame, mask)) return true;
+	// Just played out: go on from the ring in this same callback, not a gap
+	return tempo.drained ? source_peek(frame, mask) : false;
 }
 
 static void source_advance() {
@@ -3935,7 +4267,7 @@ int get_audio(int max_frames, float* buff) {
 				}
 				float out[PCM_MAX_CHANNELS];
 				pcm_mixer_process(&output_mixer, frame, mask, out);
-				float final_vol = powf(gate * volume_on, config_volume_power);
+				float final_vol = config_bit_perfect ? gate : powf(gate * volume_on, config_volume_power);
 				for (int c = 0; c < channels; c++) out[c] *= final_vol;
 				bs2b_process_frame(&bs2b, out, channels, current_sample_rate);
 				rg_compressor_process(out, channels);
@@ -4076,6 +4408,22 @@ int get_audio(int max_frames, float* buff) {
 			log_msg(LOG_ERROR, "PipeWire stream lost (%s)", error ? error : "no error");
 			pulse_connected = false;
 		}
+		pipe_refresh_route();
+	}
+
+	// Volume and channel volumes on our own stream, such as a per-app slider
+	// in pavucontrol, which audioconvert applies to our samples
+	static void on_control_info(void *data, uint32_t id, const struct pw_stream_control *control) {
+		static int volume_unity = 1, channels_unity = 1;
+		if (control == NULL || (id != SPA_PROP_volume && id != SPA_PROP_channelVolumes)) return;
+		int unity = 1;
+		for (uint32_t i = 0; i < control->n_values; i++) if (control->values[i] != 1.0f) unity = 0;
+		if (id == SPA_PROP_volume) volume_unity = unity;
+		else channels_unity = unity;
+		pthread_mutex_lock(&pipe_devices_mutex);
+		pipe_stream_volume_unity = volume_unity && channels_unity;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		pipe_refresh_route();
 	}
 
 	// PipeWire tells us the format it actually negotiated here. The requested
@@ -4169,6 +4517,7 @@ int get_audio(int max_frames, float* buff) {
 		PW_VERSION_STREAM_EVENTS,
 		.process = on_process,
 		.state_changed = on_stream_state_changed,
+		.control_info = on_control_info,
 		.param_changed = on_param_changed,
 	};
 
@@ -4315,16 +4664,65 @@ int get_audio(int max_frames, float* buff) {
 #endif
 
 #ifdef MINI
+// Float samples to little endian integers of `bytes` each (1 is unsigned 8
+// bit, 3 is packed 24 bit). Scales by a power of two and rounds, so a sample
+// decoded from an integer of that size or smaller converts back to exactly
+// that integer: the inverse of the decoders' division by 2^(depth-1).
+static void pcm_float_to_int(const float *src, void *dst, int count, int bytes) {
+	unsigned char *out = dst;
+	for (int i = 0; i < count; i++) {
+		double x = src[i];
+		if (!isfinite(x)) x = 0.0;
+		if (bytes == 1) {
+			double v = nearbyint(x * 128.0);
+			out[i] = (unsigned char) (int) (fmin(fmax(v, -128.0), 127.0) + 128.0);
+		} else if (bytes == 2) {
+			int16_t v = (int16_t) fmin(fmax(nearbyint(x * 32768.0), -32768.0), 32767.0);
+			memcpy(out + i * 2, &v, 2);
+		} else if (bytes == 3) {
+			int32_t v = (int32_t) fmin(fmax(nearbyint(x * 8388608.0), -8388608.0), 8388607.0);
+			out[i * 3] = (unsigned char) (v & 0xFF);
+			out[i * 3 + 1] = (unsigned char) ((v >> 8) & 0xFF);
+			out[i * 3 + 2] = (unsigned char) ((v >> 16) & 0xFF);
+		} else {
+			int32_t v = (int32_t) fmin(fmax(nearbyint(x * 2147483648.0), -2147483648.0), 2147483647.0);
+			memcpy(out + i * 4, &v, 4);
+		}
+	}
+}
+
 	// Callback to heard, worked out off the audio thread (see mini_refresh_latency)
 	static volatile int64_t mini_latency_ns = -1;
 	static int64_t mini_latency_checked_ns = 0;
+
+	// Bytes per sample when the device takes integers; 0 when it takes float.
+	// miniaudio's own float to integer conversion scales by 2^(n-1) - 1 and
+	// truncates, which moves nearly every sample by one step, so we open the
+	// device in its native format and convert here instead.
+	static int mini_int_bytes = 0;
+	static int mini_device_bits = 0;  // significant bits the device format holds
+	#define MINI_SCRATCH_FRAMES 4096
+	static float mini_scratch[MINI_SCRATCH_FRAMES * PCM_MAX_CHANNELS];
 
 	void data_callback(ma_device* pDevice, void* pOutput, const void* pInput, ma_uint32 frameCount) {
 		int64_t latency = mini_latency_ns;
 		callback_present_ns = latency >= 0 ? mono_ns() + latency : 0;
 		output_latency_ns = latency;
-		get_audio(frameCount, pOutput);
-		//if (0 < b && b < frameCount) log_msg(LOG_INFO, "ph: Buffer underrun");
+		if (mini_int_bytes == 0) {
+			get_audio(frameCount, pOutput);
+			return;
+		}
+		int channels = (int) pDevice->playback.channels;
+		unsigned char *out = pOutput;
+		ma_uint32 done = 0;
+		while (done < frameCount) {
+			int frames = (int) (frameCount - done);
+			if (frames > MINI_SCRATCH_FRAMES) frames = MINI_SCRATCH_FRAMES;
+			get_audio(frames, mini_scratch);
+			pcm_float_to_int(mini_scratch, out + (size_t) done * channels * mini_int_bytes,
+				frames * channels, mini_int_bytes);
+			done += (ma_uint32) frames;
+		}
 	}
 
 	void notification_callback(const ma_device_notification* pNotification) {
@@ -4769,7 +5167,7 @@ void connect_pulse() {
 
 		ma_device_config config = ma_device_config_init(ma_device_type_playback);
 		if (n > -1) config.playback.pDeviceID = &pPlaybackDeviceInfos[n].id;
-		config.playback.format   = ma_format_f32;   // Set to ma_format_unknown to use the device's native format.
+		config.playback.format   = ma_format_unknown;  // native, so miniaudio does not convert (see data_callback)
 		config.playback.channels = config_force_stereo ? 2 : 0;
 		#if defined(MA_HAS_PULSEAUDIO) && MA_VERSION_MINOR == 11 && MA_VERSION_REVISION >= 22
 			// The stream is opened with a PulseAudio standard map rather than the
@@ -4828,6 +5226,14 @@ void connect_pulse() {
 
 		sample_rate_out = device.sampleRate;
 		device_rate = (int) device.playback.internalSampleRate;
+		switch (device.playback.format) {
+			case ma_format_u8: mini_int_bytes = 1; mini_device_bits = 8; break;
+			case ma_format_s16: mini_int_bytes = 2; mini_device_bits = 16; break;
+			case ma_format_s24: mini_int_bytes = 3; mini_device_bits = 24; break;
+			case ma_format_s32: mini_int_bytes = 4; mini_device_bits = 32; break;
+			default: mini_int_bytes = 0; mini_device_bits = 24; break;  // f32
+		}
+		log_msg(LOG_INFO, "ph: Device format %s", ma_get_format_name(device.playback.format));
 		mini_requested_rate = sample_rate_src;
 		mini_refresh_latency();
 		log_msg(LOG_INFO, "ph: Output latency %.1f ms", mini_latency_ns >= 0 ? mini_latency_ns / 1e6 : -1.0);
@@ -7097,6 +7503,119 @@ EXPORT int get_dsd_direct_active() {
 // DSD bit rate of the playing track, e.g. 2822400 for DSD64, else 0
 EXPORT int get_dsd_rate() {
 	return dsd_active ? (int) dsd_info.rate : 0;
+}
+
+static bool bit_perfect_mixer(const pcm_mixer *mixer, uint16_t mask) {
+	if (mixer->source_mask != mask) return false;
+	// Each source speaker lands whole on one output, which takes nothing else
+	for (int s = 0; s < PCM_SPEAKERS; s++) {
+		if (!(mask & (1u << s))) continue;
+		int hits = 0;
+		for (int c = 0; c < mixer->channels; c++) {
+			float wt = mixer->weights[c][s];
+			if (wt == 0.0f) continue;
+			if (wt != 1.0f) return false;
+			for (int o = 0; o < PCM_SPEAKERS; o++) if (o != s && mixer->weights[c][o] != 0.0f) return false;
+			hits++;
+		}
+		if (hits != 1) return false;
+	}
+	return true;
+}
+
+// Bitmask of bit_perfect_reason, 0 when the PCM PHAzOR plays reaches the
+// device as decoded. On PipeWire this follows our stream to its sink; on
+// other backends BP_UNVERIFIED says only PHAzOR's own path was checked.
+EXPORT int get_bit_perfect() {
+	if (dsd_active) return 0;
+	if (mode == STOPPED) return BP_IDLE;
+	int reasons = 0;
+	buffer_lock();
+	if (!config_bit_perfect && (volume_want != 1.0f || volume_on != 1.0f)) reasons |= BP_VOLUME;
+	if (rg_output_base != 1.0f || rg_output_correction != 1.0f || rg_output_correction_target != 1.0f
+			|| (rg_compressor_enabled && rg_compressor_gain != 1.0f)) {
+		reasons |= BP_GAIN;
+	}
+	if (eq_enabled && eq_active) reasons |= BP_EQ;
+	if (bs2b_is_active(&bs2b)) reasons |= BP_CROSSFEED;
+	if (tempo_engaged) reasons |= BP_TEMPO;
+	if (speed_engaged || playback_speed != 1.0f) reasons |= BP_SPEED;
+
+	int out_rate = current_sample_rate > 0 ? current_sample_rate : sample_rate_out;
+	int src_rate = codec == FFMPEG ? ffm_source_rate : sample_rate_src;
+	if (src_rate > 0 && out_rate > 0 && src_rate != out_rate) reasons |= BP_RESAMPLE;
+	if (device_rate > 0 && out_rate > 0 && device_rate != out_rate) reasons |= BP_DEVICE_RESAMPLE;
+
+	if (playing_mask != 0 && !bit_perfect_mixer(&output_mixer, playing_mask)) reasons |= BP_MIX;
+
+	int bits = 0;
+	bool is_float = false;
+	if (codec == FFMPEG) {
+		bits = ffm_source_bits;
+		is_float = ffm_source_float;
+	} else if (codec == FLAC) bits = flac_bits;
+	else if (codec == WAVE) bits = wave_depth;
+	else if (codec == WAVPACK) {
+		bits = wp_bit;
+		is_float = wp_float;
+	}
+	if (is_float ? bits > 32 : bits > 24) reasons |= BP_DEPTH;
+	// Decoded lossy audio, a rendered module or chip tune, or DSD made into
+	// PCM: what plays is the decoder's own output, not samples the file holds
+	if (codec == MPG || codec == VORBIS || codec == OPUS || codec == FEED || codec == MPT || codec == GME
+			|| codec == DSD_RAW || (codec == FFMPEG && bits == 0 && !is_float)) {
+		reasons |= BP_NO_SOURCE;
+	}
+
+	if (gate != 1.0f || fade_mini < 1.0f || fade_fill > 0 || mode == RAMP_DOWN) reasons |= BP_FADE;
+	buffer_unlock();
+
+	#ifdef PIPE
+		pthread_mutex_lock(&pipe_devices_mutex);
+		struct pipe_route_status route = pipe_route;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		if (!route.known) {
+			reasons |= BP_UNVERIFIED;
+		} else {
+			reasons |= route.reasons;
+			if (route.hw_rate > 0 && out_rate > 0 && route.hw_rate != out_rate) reasons |= BP_DEVICE_RESAMPLE;
+			// A float source is held exactly by a float device, so only an
+			// integer source can lose bits here
+			int need = is_float ? 24 : bits;
+			if (route.hw_bits > 0 && need > 0 && route.hw_bits < need) reasons |= BP_DEVICE_DEPTH;
+			if (route.hw_rate <= 0 || route.hw_bits <= 0) reasons |= BP_UNVERIFIED;
+		}
+	#else
+		// Only what miniaudio opened is known, not what the backend does after
+		reasons |= BP_UNVERIFIED;
+		int need = is_float ? 24 : bits;
+		if (mini_device_bits > 0 && need > 0 && mini_device_bits < need) reasons |= BP_DEVICE_DEPTH;
+	#endif
+	return reasons;
+}
+
+// The sink PipeWire plays our stream into, and the rate and significant
+// bits its device runs at. Returns 1 when known; always 0 off PipeWire.
+EXPORT int get_bit_perfect_route(char *name, int size, int *rate, int *bits) {
+	if (name != NULL && size > 0) name[0] = '\0';
+	*rate = 0;
+	*bits = 0;
+	#ifdef PIPE
+		pthread_mutex_lock(&pipe_devices_mutex);
+		struct pipe_route_status route = pipe_route;
+		pthread_mutex_unlock(&pipe_devices_mutex);
+		if (!route.known) return 0;
+		if (name != NULL && size > 0) snprintf(name, size, "%s", route.name);
+		*rate = route.hw_rate;
+		*bits = route.hw_bits;
+		return 1;
+	#else
+		return 0;
+	#endif
+}
+
+EXPORT void config_set_bit_perfect(int n) {
+	config_bit_perfect = n != 0;
 }
 
 // Raw DSD bytes per channel currently buffered. Diagnostics, and lets a test

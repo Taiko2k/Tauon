@@ -1475,7 +1475,7 @@ def player4(tauon: Tauon) -> None:
 	replaygain_live_controls = False
 
 	def equalizer_compressor_wanted() -> bool:
-		if not prefs.use_eq:
+		if not prefs.use_eq or prefs.bit_perfect:
 			return False
 		try:
 			return any(float(gain) > 0.01 for gain in (getattr(prefs, "eq", []) or []))
@@ -1485,6 +1485,7 @@ def player4(tauon: Tauon) -> None:
 	def output_compressor_wanted() -> bool:
 		return (
 			replaygain_live_controls
+			and not prefs.bit_perfect
 			and prefs.replay_allow_compression
 			and (
 				prefs.replay_gain != 0
@@ -1504,6 +1505,10 @@ def player4(tauon: Tauon) -> None:
 
 	def calc_rg(track: TrackClass | None, *, update_status: bool = True) -> float:
 		allow_compression = output_compressor_wanted()
+		if prefs.bit_perfect:
+			if update_status:
+				set_replaygain_status(None, 1.0)
+			return 1.0
 		if prefs.replay_gain == 0 or track is None:
 			multiplier = replaygain_multiplier(
 				None,
@@ -1591,7 +1596,9 @@ def player4(tauon: Tauon) -> None:
 		if prefs.volume_power < 0 or prefs.volume_power > 10:
 			prefs.volume_power = 2
 		aud.config_set_volume_power(prefs.volume_power)
-		aud.config_set_resample(prefs.avoid_resampling ^ True)
+		aud.config_set_resample(0 if prefs.avoid_resampling or prefs.bit_perfect else 1)
+		if hasattr(aud, "config_set_bit_perfect"):
+			aud.config_set_bit_perfect(int(prefs.bit_perfect))
 		if hasattr(aud, "config_set_stream_buffer"):
 			aud.config_set_stream_buffer(prefs.stream_buffer)
 		if hasattr(aud, "config_set_dsd_direct"):
@@ -1622,7 +1629,7 @@ def player4(tauon: Tauon) -> None:
 	def apply_eq_settings() -> None:
 		if not hasattr(aud, "eq_set_enable") or not hasattr(aud, "eq_set_band"):
 			return
-		aud.eq_set_enable(1 if prefs.use_eq else 0)
+		aud.eq_set_enable(1 if prefs.use_eq and not prefs.bit_perfect else 0)
 		for i, gain in enumerate(normalise_eq_bands()):
 			aud.eq_set_band(i, ctypes.c_float(gain))
 
@@ -1640,7 +1647,7 @@ def player4(tauon: Tauon) -> None:
 		prefs.bs2b_fcut = fcut
 		prefs.bs2b_feed_db = feed_db
 		aud.bs2b_set_params(fcut, ctypes.c_float(feed_db))
-		aud.bs2b_set_enable(1 if prefs.use_bs2b else 0)
+		aud.bs2b_set_enable(1 if prefs.use_bs2b and not prefs.bit_perfect else 0)
 
 	def run_vis() -> None:
 		if gui.turbo:  # and pctl.playing_time > 0.5:
@@ -1852,13 +1859,13 @@ def player4(tauon: Tauon) -> None:
 
 	def apply_playback_speed() -> None:
 		nonlocal applied_speed, applied_tempo, applied_rate
-		wanted = 1.0 if tauon.chrome_mode else pctl.playback_speed
+		wanted = 1.0 if tauon.chrome_mode or prefs.bit_perfect else pctl.playback_speed
 		if set_speed is not None and wanted != applied_speed:
 			if set_speed(wanted):
 				applied_speed = wanted
 			else:
 				pctl.set_playback_speed(applied_speed)
-		wanted = 1.0 if tauon.chrome_mode else pctl.playback_tempo
+		wanted = 1.0 if tauon.chrome_mode or prefs.bit_perfect else pctl.playback_tempo
 		if set_tempo is not None and wanted != applied_tempo:
 			if set_tempo(wanted):
 				applied_tempo = wanted
@@ -2268,6 +2275,9 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "reload":
 				set_config()
+				# Target bit-perfect may have changed the gain, speed or compressor
+				apply_live_replaygain(loaded_track)
+				apply_playback_speed()
 			if command == "set-device":
 				set_config(set_device=True)
 			if command == "replaygain":
@@ -2662,7 +2672,7 @@ def player4(tauon: Tauon) -> None:
 						pctl.commit = None
 						continue
 
-					if tauon.player4_state == PlayerState.PLAYING and prefs.use_jump_crossfade:
+					if tauon.player4_state == PlayerState.PLAYING and prefs.use_jump_crossfade and not prefs.bit_perfect:
 						fade = 1
 
 					logging.info("Transition jump")
