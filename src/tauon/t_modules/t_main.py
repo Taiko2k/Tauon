@@ -24767,6 +24767,8 @@ class Tauon:
 
 # Tracks per request when listing a PLEX library
 PLEX_PAGE_SIZE = 1000
+# Bumped when the stored listing changes shape, so cached listings refetch once
+PLEX_LISTING_VERSION = 2
 # The setting holding each server's transcode kbps, and the kbps offered
 STREAM_BITRATE_PREFS = {"JELY": "jelly_stream_bitrate", "SUB": "subsonic_stream_bitrate", "PLEX": "plex_stream_bitrate"}
 STREAM_BITRATES = (320, 192, 128, 96)
@@ -25057,7 +25059,7 @@ class PlexService:
 	def library_stamp(self, section_key: str | None = None) -> str | None:
 		"""Changes whenever the library might have, or None when it can't be read."""
 		try:
-			return " ".join(
+			return f"v{PLEX_LISTING_VERSION} " + " ".join(
 				f"{s.key}:{s.updatedAt.timestamp() if s.updatedAt else 0}:{s.totalViewSize(libtype='track')}"
 				for s in self.music_sections(section_key))
 		except Exception:
@@ -25131,6 +25133,7 @@ class PlexService:
 		nt = TrackClass()
 		nt.index = id
 		nt.track_number = track.index
+		nt.disc_number = str(track.parentIndex) if getattr(track, "parentIndex", None) else ""
 		nt.file_ext = "PLEX"
 		nt.parent_folder_path = parent
 		nt.parent_folder_name = parent
@@ -25204,6 +25207,10 @@ class PlexService:
 		for section in sections:
 			# Fetch all tracks in one paged listing instead of one request per album
 			albums = {album.ratingKey: album for album in section.search(libtype="album", container_size=1000)}
+			# Plex lists an album's discs interleaved by track number; regroup by album, disc, track
+			order: dict[int, tuple[int, int, int]] = {}
+			album_rank: dict = {}
+			section_ids: list[int] = []
 
 			for track in self._section_tracks(section):
 				if not track.duration:
@@ -25216,12 +25223,17 @@ class PlexService:
 				album_artist = (album.parentTitle if album else None) or track_artist
 				nt = self._store_track(
 					track, existing, album_artist, track_artist, album.year if album else None, ratings)
-				playlist.append(nt.index)
+				rank = album_rank.setdefault(track.parentRatingKey, len(album_rank))
+				order[nt.index] = (rank, track.parentIndex or 1, track.index or 0)
+				section_ids.append(nt.index)
 
 				self.gui.to_got += 1
 				if self.gui.to_got % 100 == 0:
 					self.gui.request_frame()
 					self.gui.request_tracklist_redraw()
+
+			section_ids.sort(key=order.__getitem__)
+			playlist.extend(section_ids)
 
 		self._send_ratings(ratings)
 		self.gui.request_frame()
