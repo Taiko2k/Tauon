@@ -5980,6 +5980,15 @@ class CustomLayout:
 					return
 				self._open_cell_menu(inp)
 				self._consume(inp)
+			# Menu-bar style: hovering the corner button while the main menu is
+			# open switches to the layout menu (TopPanel handles the reverse).
+			menu = getattr(self.tauon, "layout_menu", None)
+			if not gui.custom_edit and menu is not None and not menu.active and self.tauon.x_menu.active \
+					and self._corner_button_hit(inp.mouse_position[0], inp.mouse_position[1]):
+				self.tauon.x_menu.active = False
+				x, y, w, h = self._corner_rect()
+				menu.activate(position=[x, y + h])
+				gui.request_frame()
 			return
 
 		# Corner layout/edit button — clickable in BOTH view and edit mode; opens
@@ -7356,6 +7365,8 @@ class CustomLayout:
 			if not self.tauon.coll(zone):
 				return
 		x, y, w, h = self._corner_rect()
+		# Redraw on entry, for hover-switching from the main menu
+		self.tauon.fields.add((x, y, w, h))
 		# Match the standard corner panel-switcher button it replaces: the same
 		# dimmed corner_button colour, corner_button_active while edit mode is
 		# on or the layout menu is open, and no background or hover treatment.

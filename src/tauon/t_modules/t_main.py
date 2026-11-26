@@ -38530,6 +38530,10 @@ class TopPanel:
 		mrect = (round(wwx + 9 * gui.scale), round(yy + 3 * gui.scale), round(34 * gui.scale), round(25 * gui.scale))
 		self.fields.add(mrect)
 		mhit = self.coll(mrect)
+
+		def open_x_menu() -> None:
+			tauon.x_menu.activate(position=(mrect[0], gui.panelY))
+
 		if mhit and (inp.mouse_click or inp.right_click):
 			inp.mouse_click = False
 			inp.right_click = False
@@ -38538,10 +38542,16 @@ class TopPanel:
 			elif not tauon.x_menu.click_dismissed:
 				# click_dismissed: this same click already closed the menu's
 				# popup window (event loop) — don't instantly reopen it.
-				tauon.x_menu.activate(position=(mrect[0], gui.panelY))
+				open_x_menu()
+				# Animate on an explicit click only, not a hover-switch
 				self.menu_disc.trigger()
 				if tauon.aero.active:
 					tauon.aero.menu_wobble()
+		elif mhit and tauon.layout_menu.active and not tauon.x_menu.active:
+			# Menu-bar style: hovering here while the layout menu is open switches to this one
+			tauon.layout_menu.active = False
+			open_x_menu()
+			gui.request_frame()
 		idle = tauon.style_overlay.tint_from_background(
 			colours.corner_button, mrect[0] + mrect[2] // 2, mrect[1] + mrect[3] // 2, 0.2,
 			colours.top_panel_background)
@@ -38624,6 +38634,11 @@ class TopPanel:
 			if self.coll(lrect) and inp.mouse_click and not self.tauon.layout_menu.click_dismissed:
 				inp.mouse_click = False
 				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
+			elif self.coll(lrect) and tauon.x_menu.active and not self.tauon.layout_menu.active:
+				# Hover-switch from the main menu, as above
+				tauon.x_menu.active = False
+				self.tauon.layout_menu.activate(position=(lrect[0], lrect[1] + lrect[3]))
+				gui.request_frame()
 			if self.coll(lrect) and not self.tauon.layout_menu.active:
 				ox, oy = inp.view_offset
 				tauon.tool_tip.test(lrect[0] + ox, lrect[1] + lrect[3] + 4 * gui.scale + oy, _("Layouts"))
