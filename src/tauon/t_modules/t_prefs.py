@@ -269,7 +269,7 @@ class Prefs:
 	failed_background_artists: list[str] = field(default_factory=list)
 
 	artist_list: bool = False
-	auto_sort: bool = False
+	import_sort_tracks: bool = True
 
 	transcode_inplace: bool = False
 

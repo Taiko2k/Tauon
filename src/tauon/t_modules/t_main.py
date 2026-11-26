@@ -8427,6 +8427,10 @@ class Tauon:
 		self.album_dex_pl_uuid:       int = -1  # uuid_int of the playlist album_dex was built for
 		self.to_scan:           list[int] = []
 		self.after_scan: list[TrackClass] = []
+		# Import batches waiting for their tag scan before the full sort: (playlist uuid, track ids)
+		self.import_resorts: list[tuple[int, list[int]]] = []
+		self.import_resort_checked: float = 0.0
+		self.cancel_tag_scan: bool = False
 		self.quick_import_done: list[str] = []
 		self.rating_job: RatingJob | None = None
 		self.move_jobs: list[tuple[str, str, bool, str, LoadClass]] = []
@@ -18539,8 +18543,8 @@ class Tauon:
 		}
 		duplicate_count = 0
 		for item in orders:
-			if not item.preserve_order:
-				self.sort_track_2(None, item.tracks)
+			if not item.preserve_order and self.prefs.import_sort_tracks:
+				self.sort_import_batch(item.tracks)
 			seen = seen_by_playlist.get(item.playlist)
 			if seen is not None:
 				duplicate_count += len(item.tracks) - len(unique_playlist_tracks(item.tracks, seen))
@@ -22940,6 +22944,7 @@ class Tauon:
 			prefs.smooth_progress,  # 216
 			prefs.lyrics_word_style,  # 217
 			prefs.lyrics_word_estimate,  # 218
+			[(uuid, list(ids)) for uuid, ids in list(self.import_resorts)],  # 219
 		]
 
 		for slot, value in db_snapshot.items():
@@ -23219,6 +23224,84 @@ class Tauon:
 			target[:] = natsort.os_sorted(target, key=self.key_fullpath)
 		else:
 			target.sort(key=self.key_filepath)
+
+	def key_import_filename(self, index: int) -> tuple[list[int | str], list[int | str]]:
+		"""Natural folder then file name order, so "2.flac" sorts before "10.flac"."""
+		track = self.pctl.master_library[index]
+		return (
+			[tryint(c) for c in re.split(r"(\d+)", track.parent_folder_path.lower())],
+			[tryint(c) for c in re.split(r"(\d+)", track.filename.lower())],
+		)
+
+	def sort_import_batch(self, tracks: list[int]) -> None:
+		"""First pass on a fresh import, before tags are read: file name order."""
+		tracks.sort(key=self.key_import_filename)
+
+	def queue_import_resort(self, playlist_uuid: int, tracks: list[int]) -> None:
+		if tracks:
+			self.import_resorts.append((playlist_uuid, list(tracks)))
+
+	def run_import_resorts(self) -> None:
+		"""Sort import batches by disc and track number once their tags are read."""
+		if not self.import_resorts:
+			return
+		pending: set[int] = set()
+		if self.after_scan:
+			now = time.monotonic()
+			if now - self.import_resort_checked < 0.5:
+				return
+			self.import_resort_checked = now
+			pending = {track.index for track in list(self.after_scan)}
+		for job in list(self.import_resorts):
+			if pending and not pending.isdisjoint(job[1]):
+				continue
+			self.import_resorts.remove(job)
+			self.resort_import_batch(*job)
+
+	def cancel_tag_scans(self) -> None:
+		"""Stop the queued tag scan; batches left unscanned keep their file name order."""
+		pending = {track.index for track in list(self.after_scan)}
+		self.import_resorts[:] = [job for job in self.import_resorts if pending.isdisjoint(job[1])]
+		self.cancel_tag_scan = True
+		self.thread_manager.ready("worker")
+
+	@database_write
+	def resort_import_batch(self, playlist_uuid: int, batch: list[int]) -> None:
+		pl = self.pctl.id_to_pl(playlist_uuid)
+		if pl is None:
+			return
+		ids = self.pctl.multi_playlist[pl].playlist_ids
+		n = len(batch)
+		# The batch may have shifted, but leave it alone if the user edited it
+		for start in range(len(ids) - n + 1):
+			if ids[start] == batch[0] and ids[start:start + n] == batch:
+				break
+		else:
+			return
+		block = list(batch)
+		self.sort_import_batch(block)
+		self.sort_track_2(0, block)
+		if block == batch:
+			return
+
+		# Remap positions that point into the block
+		slots: dict[int, deque[int]] = {}
+		for k, track_id in enumerate(block):
+			slots.setdefault(track_id, deque()).append(start + k)
+		moved = {start + k: slots[track_id].popleft() for k, track_id in enumerate(batch)}
+		ids[start:start + n] = block
+
+		pctl = self.pctl
+		if pctl.active_playlist_playing == pl:
+			pctl.playlist_playing_position = moved.get(pctl.playlist_playing_position, pctl.playlist_playing_position)
+		if pctl.active_playlist_viewing == pl:
+			pctl.selected_in_playlist = moved.get(pctl.selected_in_playlist, pctl.selected_in_playlist)
+			self.gui.shift_selection = [moved.get(i, i) for i in self.gui.shift_selection]
+		pctl.update_shuffle_pool(playlist_uuid)
+		self.reload_albums()
+		self.tree_view_box.clear_target_pl(pl)
+		self.gui.request_tracklist_redraw()
+		self.gui.request_frame()
 
 	def toggle_gimage(self, mode: int = 0) -> bool | None:
 		if mode == 1:
@@ -35643,6 +35726,7 @@ class Over:
 			_("Extract archives"): "zip rar 7z archive extract unzip unpack drag drop import",
 			_("Enable download monitor"): "downloads folder watch monitor bandcamp import new music",
 			_("Trash archive after extraction"): "delete remove trash archive zip after extract cleanup",
+			_("Sort tracks on import"): "sort order track number disc cd file order filename drag drop add folder file manager",
 			_("Always extract to Music folder"): "music folder destination extract location",
 			_("Record radio"): "record radio stream capture save split internet radio recording",
 			_("Display separator"): "artist artists multiple multi value join joiner separator delimiter semicolon dot bullet",
@@ -36770,6 +36854,9 @@ class Over:
 		rows.switch(tauon.toggle_ex_del, _("Trash archive after extraction"), disabled=not extract_archives_enabled)
 		rows.switch(tauon.toggle_music_ex, _("Always extract to Music folder"), disabled=not extract_archives_enabled)
 		prefs = self.prefs
+		prefs.import_sort_tracks = rows.switch(
+			prefs.import_sort_tracks, _("Sort tracks on import"),
+			_("Sorts new tracks by file name, then by disc and track number once tags are read. Off keeps the order they were added in."))
 		auto_rec_old = prefs.auto_rec
 		prefs.auto_rec = rows.switch(prefs.auto_rec, _("Record radio"), _("Recorded tracks go to \"Saved Radio Tracks\"."))
 		if prefs.auto_rec != auto_rec_old and prefs.auto_rec:
@@ -59353,7 +59440,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("left-aligned-album-artist-title", prefs.left_align_album_artist_title)
 	cf.update_value("tracklist-scrollbar-left", prefs.tracklist_scrollbar_left)
 	cf.update_value("tracklist-current-album-only", prefs.tracklist_album_only)
-	cf.update_value("import-auto-sort", prefs.auto_sort)
+	cf.update_value("import-sort-tracks", prefs.import_sort_tracks)
 
 	cf.update_value("artist-display-separator", prefs.artist_joiner)
 	cf.update_value("artist-split-semicolon", prefs.artist_split_semicolon)
@@ -59821,9 +59908,9 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "tracklist-current-album-only",
 		prefs.tracklist_album_only,
 		"Only show the current album in the main tracklist.")
-	prefs.auto_sort = cf.sync_add(
-		"bool", "import-auto-sort", prefs.auto_sort,
-		"This setting is deprecated and will be removed in a future version")
+	prefs.import_sort_tracks = cf.sync_add(
+		"bool", "import-sort-tracks", prefs.import_sort_tracks,
+		"Sort imported tracks by file name, then by disc and track number once tags are read. Off keeps the order they were added in.")
 
 	cf.br()
 	cf.add_text("[transcode]")
@@ -61168,7 +61255,7 @@ def worker1(tauon: Tauon) -> None:
 			loaded_paths_cache[nt.fullpath] = nt.index
 			imported_track_id = nt.index
 
-			if prefs.auto_sort or force_scan:
+			if force_scan:
 				tauon.tag_scan(nt)
 			else:
 				tauon.after_scan.append(nt)
@@ -61368,6 +61455,9 @@ def worker1(tauon: Tauon) -> None:
 		if tauon.after_scan:
 			i = 0
 			while tauon.after_scan:
+				if tauon.cancel_tag_scan:
+					tauon.after_scan.clear()
+					break
 				i += 1
 
 				if i > 123:
@@ -61389,6 +61479,8 @@ def worker1(tauon: Tauon) -> None:
 				# Tags such as disc numbers shape the tracklist layout; rebuild it once scanning ends
 				pctl.db_inc += 1
 				gui.request_tracklist_redraw()
+				gui.request_frame()  # let pending import re-sorts run
+				tauon.cancel_tag_scan = False
 
 		if tauon.playlist_autoscan:
 			pl_folder_autoscan()
@@ -62442,6 +62534,7 @@ def main(holder: Holder) -> None:
 
 	#after_scan, search_string_cache, search_dia_string_cache = load_savefile(latest_db_version, user_directory, bag, prefs, gui)
 	after_scan: list[TrackClass] = []
+	import_resorts: list[tuple[int, list[int]]] = []
 	search_string_cache          = {}
 	search_dia_string_cache      = {}
 	state_path1 = user_directory / "state.p"
@@ -62755,8 +62848,6 @@ def main(holder: Holder) -> None:
 				prefs.failed_artists = save[123]
 			if len(save) > 124 and save[124] is not None:
 				prefs.artist_list = save[124]
-			if len(save) > 125 and save[125] is not None:
-				prefs.auto_sort = save[125]
 			if len(save) > 126 and save[126] is not None:
 				prefs.lyrics_enables = save[126]
 			if len(save) > 127 and save[127] is not None:
@@ -62936,6 +63027,8 @@ def main(holder: Holder) -> None:
 				prefs.transcode_copy_art = save[205]
 			if len(save) > 206 and save[206] is not None:
 				prefs.feux_panel_waveform = save[206]
+			if len(save) > 219 and save[219] is not None:
+				import_resorts = [(uuid, list(ids)) for uuid, ids in save[219]]
 			if len(save) > 207 and save[207] is not None:
 				prefs.libre_fm_token = save[207]
 			if len(save) > 208 and save[208] is not None:
@@ -63249,7 +63342,14 @@ def main(holder: Holder) -> None:
 	scale_assets(tauon, bag, gui, prefs.scale_want)
 	tauon.update_window_minimum_size()
 
-	tauon.after_scan              = after_scan
+	# The saved scan queue unpickles as copies; scan the library's own tracks instead.
+	# Fill in place, StarStore holds a reference to this list.
+	library = tauon.pctl.master_library
+	tauon.after_scan[:] = [
+		library[track.index] for track in after_scan
+		if track.index in library and library[track.index].fullpath == track.fullpath
+	]
+	tauon.import_resorts[:] = import_resorts
 	tauon.search_string_cache     = search_string_cache
 	tauon.search_dia_string_cache = search_dia_string_cache
 	signal.signal(signal.SIGINT, tauon.signal_handler)
@@ -68892,6 +68992,7 @@ def main(holder: Holder) -> None:
 				# End of gallery view
 				# --------------------------------------------------------------------------
 				# Main Playlist:
+				tauon.run_import_resorts()
 				if len(tauon.load_orders) > 0:
 					for i, order in enumerate(tauon.load_orders):
 						if order.stage == 2:
@@ -68899,9 +69000,10 @@ def main(holder: Holder) -> None:
 								continue
 							target_pl = 0
 
-							# Sort the tracks by track number
-							if not order.preserve_order:
-								tauon.sort_track_2(None, order.tracks)
+							# File name order now; disc and track order once tags are read
+							sort_import = not order.preserve_order and prefs.import_sort_tracks
+							if sort_import:
+								tauon.sort_import_batch(order.tracks)
 
 							for p, playlist in enumerate(pctl.multi_playlist):
 								if playlist.uuid_int == order.playlist:
@@ -68932,6 +69034,9 @@ def main(holder: Holder) -> None:
 
 							else:
 								pctl.multi_playlist[target_pl].playlist_ids += order.tracks
+
+							if sort_import:
+								tauon.queue_import_resort(order.playlist, order.tracks)
 
 							pctl.update_shuffle_pool(pctl.multi_playlist[target_pl].uuid_int)
 
@@ -68980,14 +69085,6 @@ def main(holder: Holder) -> None:
 							else:
 								if not order.preserve_order and _("New Playlist") in pctl.multi_playlist[target_pl].title:
 									tauon.auto_name_pl(target_pl)
-
-								if prefs.auto_sort and not order.preserve_order:
-									if pctl.multi_playlist[target_pl].locked:
-										tauon.show_message(_("Auto sort skipped because playlist is locked."))
-									else:
-										logging.info("Auto sorting")
-										tauon.standard_sort(target_pl)
-										tauon.year_sort(target_pl)
 
 							if not tauon.load_orders:
 								pctl.loading_in_progress = False

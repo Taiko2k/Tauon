@@ -112,8 +112,9 @@ def collect_activities(tauon: Tauon) -> list[Activity]:
 	# step once the import is done, with progress counted from the queue's peak
 	scan_progress = scan_countdown.progress(len(tauon.after_scan))
 	if tauon.after_scan and not pctl.loading_in_progress:
-		rows.append(Activity("scan", _("Scanning Tags…"), green,
-			_("{N} remaining").format(N=len(tauon.after_scan)), progress=scan_progress))
+		stopping = tauon.cancel_tag_scan
+		rows.append(Activity("scan", _("Stopping tag scan…") if stopping else _("Scanning Tags…"), green,
+			_("{N} remaining").format(N=len(tauon.after_scan)), progress=scan_progress, cancel=not stopping))
 	if tauon.playlist_autoscan:
 		rows.append(Activity("playlists", _("Auto-importing playlists…"), IMPLICIT_COLOUR, implicit=True))
 	if tauon.move_in_progress:
@@ -272,6 +273,8 @@ class ActivityPopover:
 		gui = tauon.gui
 		if key == "import":
 			gui.im_cancel = True
+		elif key == "scan":
+			tauon.cancel_tag_scans()
 		elif key in ("plex", "subsonic", "jellyfin"):
 			# The playlist being fetched keeps what it had
 			getattr(tauon, key).cancel_scan = True
