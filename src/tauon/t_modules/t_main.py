@@ -5019,11 +5019,15 @@ class PlayerCtl:
 				self.album_shuffle_mode or self.prefs.album_shuffle_lock_mode):
 			# self.queue_step += 1
 			new_step = self.queue_step + 1
+			# No history yet (fresh profile, or every entry removed) leaves queue_step at 0
+			if not self.track_queue:
+				new_step = 0
 
 			if new_step == len(self.track_queue):
 				skip_banned = self.skips_banned(self.playing_playlist(), shuffle=True)
 
-				if self.album_repeat_mode and self.repeat_mode:
+				# Album repeat needs a current album; without one, pick any track
+				if self.album_repeat_mode and self.repeat_mode and self.track_queue:
 					# Album shuffle mode
 					pp = self.playing_playlist()
 					k = self.playlist_playing_position
