@@ -32895,7 +32895,7 @@ class AboutBox:
 			edge = alpha_blend(alpha_mod(accent, 160), bg) if hover or copied else alpha_blend(alpha_mod(text, 45), bg)
 			ddt.bordered_rect(chip, chip_bg, edge, line)
 			chip_text = readable_text_colour(text if hover or copied else muted, chip_bg)
-		ddt.text((cx, yy + chip_h // 2 - round(9 * s), 2), label, chip_text, 12, bg=chip_bg)
+		ddt.text((cx, yy + chip_h // 2 - round(8 * s + 1), 2), label, chip_text, 12, bg=chip_bg)
 		if hover:
 			gui.cursor_want = 3
 			tauon.tool_tip.test(chip[0] + chip_w + round(6 * s), yy - round(4 * s), _("Copy version"))
