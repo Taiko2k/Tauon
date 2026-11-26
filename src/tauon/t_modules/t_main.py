@@ -17230,7 +17230,9 @@ class Tauon:
 		self.gui.heart_row_icon.render(x, yy, ColourRGBA(244, 100, 100, 255))
 
 	def display_ban_icon(self, x: int, yy: int) -> None:
-		self.gui.ban_row_icon.render(x, yy - 1 * self.gui.scale, ColourRGBA(70, 70, 70, 255))
+		# Candy Factory's glass is dark, so use its muted text colour
+		colour = self.colours.artist_text if self.aero.active else ColourRGBA(70, 70, 70, 255)
+		self.gui.ban_row_icon.render(x, yy - 1 * self.gui.scale, colour)
 
 	def display_folder_ban_icon(self, x: int, yy: int) -> None:
 		self.gui.ban_row_icon.render(x, yy - 1 * self.gui.scale, self.colours.star_line)
@@ -32620,7 +32622,6 @@ class AboutBox:
 				icon.render(cx - d // 2, yy + (icon_h - d) // 2)
 		icon_rect = (cx - d // 2, yy + (icon_h - d) // 2, d, d)
 		if self.click and self.coll(icon_rect):
-			self.close()
 			if tauon.prefs.aero:
 				tauon.dream_room.toggle_aero()
 			else:
@@ -35715,14 +35716,14 @@ class Over:
 			_("Layout files"): "layout layouts custom tlayout folder share import export files open",
 			_("Gallery thumbnail size and titles"): "gallery album art grid covers thumbnails bigger smaller size titles",
 			_("Tracklist columns, font size and row height"): "tracklist columns font text size row height bigger smaller density compact",
-			_("Track menu search links"): "wikipedia bandcamp genius sonemic rym search links context menu",
+			_("Track menu search links"): "wikipedia bandcamp genius rym rate your music search links context menu",
 			_("Tabs and top-panel visualiser"): "tabs playlist tabs top panel visualiser visualizer spectrum level meter",
 			_("Centred side panel and art zoom"): "side panel centered centred art zoom fit cover milkdrop",
 			_("Showcase visualiser and wide mode"): "showcase visualiser visualizer wide mode lyrics",
 			# Library
 			_("Auto fetch artist data"): "artist info biography bio wikipedia fetch download panel",
 			_("Auto reload playlists"): "reload refresh rescan watch folder generator update",
-			_("Ignore \"The\" when sorting artists"): "the article prefix sort order artist album artist list alphabetical",
+			_("Ignore leading \"The\" when sorting artists"): "the article prefix sort order artist album artist list alphabetical",
 			_("Extract archives"): "zip rar 7z archive extract unzip unpack drag drop import",
 			_("Enable download monitor"): "downloads folder watch monitor bandcamp import new music",
 			_("Trash archive after extraction"): "delete remove trash archive zip after extract cleanup",
@@ -36375,7 +36376,7 @@ class Over:
 		bs2b_note = (
 			_("Inactive in Direct DSD mode.")
 			if prefs.dsd_direct
-			else _("Reduces stereo fatigue on headphones. Stereo output only.")
+			else _("Reduces stereo fatigue on headphones.")
 		)
 		prefs.use_bs2b = rows.switch(prefs.use_bs2b, _("Headphone crossfeed (bs2b)"), bs2b_note)
 		if prefs.use_bs2b != old_bs2b:
@@ -36429,8 +36430,8 @@ class Over:
 		)
 		tauon = self.tauon
 		skip_old = (prefs.ban_skip_shuffle, prefs.ban_skip_normal)
-		prefs.ban_skip_shuffle = rows.switch(prefs.ban_skip_shuffle, _("Skip bans in shuffle"), _("Leave banned tracks and folders out of shuffle."))
-		prefs.ban_skip_normal = rows.switch(prefs.ban_skip_normal, _("Skip bans in normal playback"), _("Step over banned tracks and folders."))
+		prefs.ban_skip_shuffle = rows.switch(prefs.ban_skip_shuffle, _("Skip bans in shuffle"))
+		prefs.ban_skip_normal = rows.switch(prefs.ban_skip_normal, _("Skip bans in normal playback"))
 		if skip_old != (prefs.ban_skip_shuffle, prefs.ban_skip_normal):
 			tauon.queue_box.drop_banned_auto_items()
 		play_lock_old = prefs.block_suspend
@@ -36761,7 +36762,7 @@ class Over:
 			set_scale(self.settings_scale_preview_value)
 			self.settings_scale_preview_value = None
 		rows.switch(self.toggle_x_scale, _("Auto scale"))
-		rows.switch(tauon.toggle_smooth_scroll, _("Smooth scrolling"), _("Use inertial scrolling"), disabled=prefs.macos)
+		rows.switch(tauon.toggle_smooth_scroll, _("Smooth scrolling"), disabled=prefs.macos)
 		prefs.smooth_scroll_speed = rows.slider(
 			_("Smooth scroll speed"), prefs.smooth_scroll_speed, 0.25, 10.0, 0.05, lambda number: f"{number:.2f}x")
 
@@ -36830,7 +36831,7 @@ class Over:
 	def settings_body_elsewhere(self, rows: SettingsRows) -> None:
 		rows.pointer(_("Gallery thumbnail size and titles"), _("Right-click the gallery"), "album grid covers bigger smaller")
 		rows.pointer(_("Tracklist columns, font size and row height"), _("Right-click a track › Layout…"), "rows bigger smaller text")
-		rows.pointer(_("Track menu search links"), _("Right-click a track › Layout…"), "wikipedia bandcamp genius sonemic")
+		rows.pointer(_("Track menu search links"), _("Right-click a track › Layout…"), "wikipedia bandcamp genius rym")
 		rows.pointer(_("Tabs and top-panel visualiser"), _("Right-click the top panel"), "spectrum meter")
 		rows.pointer(_("Centred side panel and art zoom"), _("Right-click the side-panel art"), "cover milkdrop")
 		rows.pointer(_("Showcase visualiser and wide mode"), _("Right-click the showcase view"), "lyrics")
@@ -36841,10 +36842,9 @@ class Over:
 		prefs = self.prefs
 		rows.switch(self.tauon.toggle_auto_artist_dl, _("Auto fetch artist data"), _("Fetch artist data while the panel is open."))
 		prefs.always_auto_update_playlists = rows.switch(
-			prefs.always_auto_update_playlists, _("Auto reload playlists"), _("Rescan playlists when you return to them."))
+			prefs.always_auto_update_playlists, _("Auto reload playlists"), _("Regenerate smart playlists when you return to them."))
 		rows.switch(
-			self.tauon.toggle_sort_ignore_the, _("Ignore \"The\" when sorting artists"),
-			_("Sorts \"The Beatles\" under B, including in the artist list."))
+			self.tauon.toggle_sort_ignore_the, _("Ignore leading \"The\" when sorting artists"))
 
 	def settings_body_imports(self, rows: SettingsRows) -> None:
 		tauon = self.tauon
@@ -36855,10 +36855,9 @@ class Over:
 		rows.switch(tauon.toggle_music_ex, _("Always extract to Music folder"), disabled=not extract_archives_enabled)
 		prefs = self.prefs
 		prefs.import_sort_tracks = rows.switch(
-			prefs.import_sort_tracks, _("Sort tracks on import"),
-			_("Sorts new tracks by file name, then by disc and track number once tags are read. Off keeps the order they were added in."))
+			prefs.import_sort_tracks, _("Sort tracks on import"))
 		auto_rec_old = prefs.auto_rec
-		prefs.auto_rec = rows.switch(prefs.auto_rec, _("Record radio"), _("Recorded tracks go to \"Saved Radio Tracks\"."))
+		prefs.auto_rec = rows.switch(prefs.auto_rec, _("Record radio"))
 		if prefs.auto_rec != auto_rec_old and prefs.auto_rec:
 			self.show_message(
 				_("Tracks will now be recorded. Restart any playback for change to take effect."),
@@ -36939,7 +36938,7 @@ class Over:
 			prefs.transcode_bitrate = int(rows.stepper(
 				_("Bitrate"), prefs.transcode_bitrate, 32, 320, step=8,
 				formatter=lambda number: f"{int(number)} kbps"))
-		prefs.transcode_embed_art = rows.switch(prefs.transcode_embed_art, _("Embed album art"), _("Add the album cover to each transcoded file."))
+		prefs.transcode_embed_art = rows.switch(prefs.transcode_embed_art, _("Embed album art"))
 		prefs.transcode_copy_art = rows.switch(prefs.transcode_copy_art, _("Copy album art"), _("Save the album cover as cover.jpg in the output folder."))
 		rows.action(_("Output folder"), ((_("Open"), tauon.open_encode_out, False),))
 		rows.switch(tauon.toggle_transcode_output, _("Save to output folder"))
@@ -37376,7 +37375,7 @@ class Over:
 
 	def settings_body_lyrics(self, rows: SettingsRows) -> None:
 		prefs = self.prefs
-		prefs.auto_lyrics = rows.switch(prefs.auto_lyrics, _("Auto-search lyrics"), _("Auto-search when lyrics enabled"))
+		prefs.auto_lyrics = rows.switch(prefs.auto_lyrics, _("Auto-search lyrics"))
 		search_lyrics = rows.switch(prefs.search_lyrics, _("Search within lyrics"), _("Global search also matches lyrics text"))
 		if search_lyrics != prefs.search_lyrics:
 			prefs.search_lyrics = search_lyrics
@@ -37432,7 +37431,6 @@ class Over:
 				(_("Same folder"), not custom_folder, export_beside),
 				(_("Chosen folder"), custom_folder, export_custom),
 			),
-			hint=_("Where exported playlist files are saved."),
 		)
 		if not custom_folder:
 			return
@@ -64373,9 +64371,6 @@ def main(holder: Holder) -> None:
 	gui.rename_tracks_icon.xoff = 1
 	gui.mod_folder_icon.colour = ColourRGBA(229, 98, 98, 255)
 	gui.transcode_icon.colour = ColourRGBA(239, 74, 157, 255)
-	son_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "sonemic-g.png"))
-	son_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "sonemic-gs.png")
-	son_icon.xoff = 1
 	band_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "band.png", True))
 	band_icon.xoff = 0
 	band_icon.yoff = 1
@@ -64432,7 +64427,7 @@ def main(holder: Holder) -> None:
 
 	track_menu.add_to_sub(2, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
 	track_menu.add_to_sub(2, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True))
-	track_menu.add_to_sub(2, MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon))
+	track_menu.add_to_sub(2, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
 	track_menu.add_to_sub(2, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Folder heading menu (the reference is the folder's first track)
@@ -64477,7 +64472,7 @@ def main(holder: Holder) -> None:
 
 	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
 	folder_menu.add_to_sub(2, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
-	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon))
+	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
 	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Selection menu (the reference is the right-clicked track)
@@ -64571,7 +64566,7 @@ def main(holder: Holder) -> None:
 
 	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
 	gallery_menu.add_to_sub(3, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
-	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on Sonemic"), tauon.ser_rym, pass_ref=True, icon=son_icon))
+	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
 	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Folder navigator items that used to be added alongside
@@ -67927,7 +67922,8 @@ def main(holder: Holder) -> None:
 				tauon.add_music_box.back()
 				inp.key_esc_press = False
 
-			if inp.key_esc_press and tauon.about_box.active:
+			# Esc is the Dream Room's while it's out
+			if inp.key_esc_press and tauon.about_box.active and not tauon.dream_room.active:
 				tauon.about_box.close()
 				inp.key_esc_press = False
 

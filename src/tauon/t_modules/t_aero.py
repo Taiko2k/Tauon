@@ -2243,7 +2243,9 @@ class Aero:
 
 	# -- the liquid play orb ------------------------------------------------------------
 
-	PLAYTIME_FULL = 180.0  # a track's total play time (seconds) that fills the orb
+	# Total play time (seconds) that fills the orb: the scrobble threshold,
+	# half the track or this, whichever is less
+	PLAYTIME_FULL = 240.0
 	CATCH_UP = 0.5     # orbs per second the level moves after a track change
 	DRAIN_TIME = 1.5   # seconds to drain a full orb when playback stops
 	EASE_ZONE = 0.15   # within this of its target the level slows down
@@ -2256,7 +2258,8 @@ class Aero:
 		track = pctl.playing_object()
 		if track is None:
 			return 0.0
-		return min(1.0, self.tauon.star_store.get(track.index) / self.PLAYTIME_FULL)
+		full = min(track.length / 2, self.PLAYTIME_FULL) if track.length > 0 else self.PLAYTIME_FULL
+		return min(1.0, self.tauon.star_store.get(track.index) / full)
 
 	def _step_fill(self, dt: float) -> bool:
 		"""Move the liquid toward the playing track's total play time (a
