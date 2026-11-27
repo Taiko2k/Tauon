@@ -32,6 +32,7 @@ class Config:
 	def __init__(self) -> None:
 		self.live = []
 		self.old = []
+		self.read_only_logged = False
 
 	def reset(self) -> None:
 		self.live.clear()
@@ -58,10 +59,21 @@ class Config:
 				self.old = f.readlines()
 
 	def dump(self, path: str) -> None:
-		# if os.path.exists(path) and not os.access("test.conf", os.W_OK):
-		# 	logging.error("Config file cannot be written")
-		# 	return
+		# Write through a symlink rather than replacing it
+		target = os.path.realpath(path)
+		# A read-only file, such as one Nix home-manager links in, is managed
+		# outside Tauon: keep reading it, but don't try to save over it
+		if os.path.exists(target) and not os.access(target, os.W_OK):
+			if not self.read_only_logged:
+				logging.warning("%s is read-only, so settings changed in Tauon won't be saved to it", path)
+				self.read_only_logged = True
+			return
+		try:
+			self._write(target)
+		except OSError:
+			logging.exception("Failed to save %s", path)
 
+	def _write(self, path: str) -> None:
 		with atomic_save(path, "w") as f:
 			for item in self.live:
 				if item[0] == "comment":

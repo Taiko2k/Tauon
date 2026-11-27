@@ -58,11 +58,30 @@ window, renderer, texture upload, secondary-window lifecycle, and event path.
 
 ## Window state
 
-The launcher reads `window-state.json` from Tauon's user-data directory before
+The launcher reads `window-state.json` from Tauon's state directory before
 creating the window. Python atomically rewrites the same file when application
 state is saved. The versioned document contains the restored size, scale,
 opacity, border mode, maximized state, and optional `[x, y]` position. Set
 `TAUON_USER_DATA_DIR` to override the directory for packaging or testing.
+
+## User directories
+
+Installed Linux builds follow the XDG Base Directory spec:
+
+| Directory | Default | Holds |
+|---|---|---|
+| Data | `$XDG_DATA_HOME/TauonMusicBox` | Library, playlists, themes, artist pictures |
+| Config | `$XDG_CONFIG_HOME/TauonMusicBox` | `tauon.conf`, `input.txt`, the `x11` and `debug` flags |
+| State | `$XDG_STATE_HOME/TauonMusicBox` | Window state, logs, the Candy Factory splash, lyrics editor autosaves |
+| Cache | `$XDG_CACHE_HOME/TauonMusicBox` | Downloaded art, rendered icons |
+
+On each launch the launcher moves any of the config and state files still in
+the data directory to their new place, without replacing anything already
+there. Windows, macOS, portable installs, source checkouts and
+`TAUON_USER_DATA_DIR` keep config and state in the data directory.
+
+A read-only `tauon.conf` (for example one linked in by Nix home-manager) is
+read but never saved over.
 
 The former Python-pickle `window.p` format is intentionally not read or
 migrated.

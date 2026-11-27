@@ -141,8 +141,12 @@ if str(install_directory).startswith("/usr/") and Path("/usr/share/TauonMusicBox
 # The native launcher resolves the user data directory (installed, portable or
 # source checkout) before Python starts, since it needs it for the window state
 user_directory = Path(_tauon_native.user_data_directory())
+# Split out under XDG on installed Linux builds, otherwise the same as user_directory
+config_directory = Path(_tauon_native.config_directory())
+state_directory = Path(_tauon_native.state_directory())
 
-debug = bool((user_directory / "debug").is_file())
+# Older instructions said to put the debug flag in the data directory
+debug = (config_directory / "debug").is_file() or (user_directory / "debug").is_file()
 
 # INFO+ to std_err
 # TODO(Martin): This hereabout section is wonk, setting INFO on streamhandler removes formatting for DEBUG
@@ -150,24 +154,24 @@ logging.getLogger().handlers[0].setLevel(logging.DEBUG if debug else logging.INF
 
 asset_directory = install_directory / "assets"
 
-if not user_directory.is_dir():
-	user_directory.mkdir(parents=True)
+for directory in (user_directory, config_directory, state_directory):
+	directory.mkdir(parents=True, exist_ok=True)
 
 if debug:
-	file_handler = logging.FileHandler(user_directory / "tauon.log")
+	file_handler = logging.FileHandler(state_directory / "tauon.log")
 	file_handler.setLevel(logging.DEBUG)
 	# Millisecond times and thread names, for timing issues
 	file_handler.setFormatter(logging.Formatter(
 		"%(asctime)s.%(msecs)03d [%(levelname)s] [%(threadName)s] %(message)s", "%H:%M:%S"))
 	logging.getLogger().addHandler(file_handler)
-	logging.info(f"Debug mode enabled - saving log to {user_directory / 'tauon.log'}")
+	logging.info(f"Debug mode enabled - saving log to {state_directory / 'tauon.log'}")
 
 # Bundled builds leave SIGPIPE at its default action, which kills the process
 # without a trace. Dump the stacks first, then die as before (#2407).
 sigpipe_log = None
 if hasattr(signal, "SIGPIPE") and signal.getsignal(signal.SIGPIPE) == signal.SIG_DFL:
 	try:
-		sigpipe_log = (user_directory / "tauon-sigpipe.log").open("a", encoding="utf-8")
+		sigpipe_log = (state_directory / "tauon-sigpipe.log").open("a", encoding="utf-8")
 		faulthandler.register(signal.SIGPIPE, file=sigpipe_log, all_threads=True, chain=True)
 	except OSError:
 		logging.exception("Failed to set up the SIGPIPE stack dump")
@@ -231,7 +235,7 @@ maximized = False
 old_window_position: tuple[int, int] | None = None
 window_state_loaded = False
 
-window_state_path = user_directory / WINDOW_STATE_FILENAME
+window_state_path = state_directory / WINDOW_STATE_FILENAME
 if window_state_path.is_file() and not fs_mode:
 	try:
 		window_state = load_window_state(
@@ -291,6 +295,8 @@ holder = Holder(
 	old_window_position=old_window_position,
 	install_directory=install_directory,
 	user_directory=user_directory,
+	config_directory=config_directory,
+	state_directory=state_directory,
 	phone=phone,
 	window_title=window_title,
 	fs_mode=fs_mode,
@@ -312,7 +318,7 @@ if __name__ == "__main__":
 	except Exception as e:
 		crash_logger = logging.getLogger("crash_logger")
 		crash_logger.setLevel(logging.DEBUG)
-		crash_log_path = user_directory / "tauon-crash.log"
+		crash_log_path = state_directory / "tauon-crash.log"
 		file_handler = logging.FileHandler(crash_log_path)
 		crash_logger.addHandler(file_handler)
 		crash_logger.handlers[0].setFormatter(CustomLoggingFormatter(color=False))

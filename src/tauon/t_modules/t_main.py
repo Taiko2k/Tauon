@@ -8489,6 +8489,7 @@ class Tauon:
 		self._wayland_wm_ipc_warned: bool = False
 		self.cache_directory: Path              = bag.dirs.cache_directory
 		self.config_directory: Path             = bag.dirs.config_directory
+		self.state_directory: Path              = bag.dirs.state_directory
 		self.user_directory: Path               = bag.dirs.user_directory
 		self.install_directory: Path            = bag.dirs.install_directory
 		self.music_directory: Path              = bag.dirs.music_directory
@@ -23170,9 +23171,9 @@ class Tauon:
 					borderless=self.draw_border,
 					maximized=gui.maximized,
 					position=old_position,
-					aqua_splash=bool(prefs.aero) and splash_ready(self.user_directory),
+					aqua_splash=bool(prefs.aero) and splash_ready(self.state_directory),
 				)
-				with atomic_save(self.user_directory / WINDOW_STATE_FILENAME, "w") as file:
+				with atomic_save(self.state_directory / WINDOW_STATE_FILENAME, "w") as file:
 					file.write(serialize_window_state(window_state))
 
 			with atomic_save(self.user_directory / "lyrics_substitutions.json", "w") as file:
@@ -23709,7 +23710,7 @@ class Tauon:
 		"""Paint Candy Factory's loading screen for this window, if it needs it (on a
 		worker thread; the native launcher shows it at the next start)."""
 		if self.prefs.aero:
-			refresh_splash(self.user_directory, (self.window_size[0], self.window_size[1]), self.gui.scale)
+			refresh_splash(self.state_directory, (self.window_size[0], self.window_size[1]), self.gui.scale)
 
 	def set_skin_tauon(self) -> None:
 		"""Back to Tauon's own themes (from the Candy Factory skin)."""
@@ -54410,7 +54411,7 @@ class ProjectM:
 
 	def log_preset_load_event(self, event: str, preset: Path, fade: bool) -> None:
 		try:
-			log_path = self.tauon.user_directory / "milkdrop-preset-load.log"
+			log_path = self.tauon.state_directory / "milkdrop-preset-load.log"
 			timestamp = time.strftime("%Y-%m-%d %H:%M:%S")
 			previous = str(self.loaded_preset) if self.loaded_preset else ""
 			exists = preset.is_file()
@@ -57725,7 +57726,7 @@ class TimedLyricsEdit:
 
 	def delete_autosaves(self) -> None:
 		count = 0
-		target = self.tauon.config_directory / "lyrics-editor"
+		target = self.tauon.state_directory / "lyrics-editor"
 		if not target.is_dir():
 			return
 		for child in target.iterdir():
@@ -58312,7 +58313,7 @@ class TimedLyricsEdit:
 				ddt.text((x,y), _("⚠️ Overwriting"), self.colours.box_button_text_highlight, 211)
 
 	def autosave(self) -> None:
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.state_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.parent.is_dir():
 			target.parent.mkdir()
 		with open(target, "w", encoding="utf-8") as lyrics_file:
@@ -58324,7 +58325,7 @@ class TimedLyricsEdit:
 		self.autosaved = True
 
 	def autoload(self) -> None:
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
+		target = Path( self.tauon.state_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(".csv")
 		if not target.is_file():
 			return
 		with target.open(encoding="utf-8-sig", errors="replace") as lyrics_file:
@@ -58339,7 +58340,7 @@ class TimedLyricsEdit:
 
 	def visit_backup(self, synced: bool = True) -> None:
 		suffix = ".csv" if synced else ".txt"
-		target = Path( self.tauon.config_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(suffix)
+		target = Path( self.tauon.state_directory / "lyrics-editor" / str( self.struct_track )).with_suffix(suffix)
 		if not target.parent.is_dir() and not synced:
 			target.parent.mkdir()
 		elif not target.is_file():
@@ -59555,6 +59556,7 @@ class Directories:
 	locale_directory:       Path
 	user_directory:         Path
 	config_directory:       Path
+	state_directory:        Path
 	cache_directory:        Path
 	home_directory:         Path
 	music_directory:        Path
@@ -60776,7 +60778,7 @@ def scale_assets(tauon: Tauon, bag: Bag, gui: GuiVar, scale_want: int, force: bo
 	if render:
 		if scaled_asset_directory.exists():
 			shutil.rmtree(scaled_asset_directory)
-		scaled_asset_directory.mkdir()
+		scaled_asset_directory.mkdir(parents=True)
 		logging.info("Rendering icons...")
 		render_icons(str(svg_directory), str(scaled_asset_directory), scale_want)
 		with open(keyfile, "w", encoding="utf-8") as f:
@@ -62553,6 +62555,8 @@ def main(holder: Holder) -> None:
 	old_window_position    = holder.old_window_position
 	install_directory      = holder.install_directory
 	user_directory         = holder.user_directory
+	config_directory       = holder.config_directory
+	state_directory        = holder.state_directory
 	phone                  = holder.phone
 	window_default_size    = holder.window_default_size
 	window_title           = holder.window_title
@@ -62627,13 +62631,11 @@ def main(holder: Holder) -> None:
 					mac_minimize = v[2]
 
 	# Set data folders (portable mode)
-	config_directory = user_directory
 	cache_directory = user_directory / "cache"
 	home_directory = os.path.join(os.path.expanduser("~"))
 
 	asset_directory = install_directory / "assets"
 	svg_directory = install_directory / "assets" / "svg"
-	scaled_asset_directory = user_directory / "scaled-icons"
 
 	music_directory = Path("~").expanduser() / "Music"
 	if not music_directory.is_dir():
@@ -62685,14 +62687,6 @@ def main(holder: Holder) -> None:
 	# If we're installed, use home data locations
 	if install_mode:
 		cache_directory  = Path(GLib.get_user_cache_dir()) / "TauonMusicBox"
-		#user_directory   = Path(GLib.get_user_data_dir()) / "TauonMusicBox"
-		config_directory = user_directory
-
-	#	if not user_directory.is_dir():
-	#		os.makedirs(user_directory)
-
-		if not config_directory.is_dir():
-			os.makedirs(config_directory)
 
 		if snap_mode:
 			logging.info("Installed as Snap")
@@ -62705,9 +62699,8 @@ def main(holder: Holder) -> None:
 			os.makedirs(user_directory / "encoder")
 	else:
 		logging.info("Running in portable mode")
-		config_directory = user_directory
 
-	milkdrop_preset_load_log = user_directory / "milkdrop-preset-load.log"
+	milkdrop_preset_load_log = state_directory / "milkdrop-preset-load.log"
 	if milkdrop_preset_load_log.exists():
 		try:
 			milkdrop_preset_load_log.unlink()
@@ -62719,6 +62712,11 @@ def main(holder: Holder) -> None:
 		logging.info("Clearing old cache directory")
 		logging.info(cache_directory)
 		shutil.rmtree(str(cache_directory))
+
+	# Rendered from the SVG assets, so it's cache. Older versions kept it in the data directory.
+	scaled_asset_directory = cache_directory / "scaled-icons"
+	if (user_directory / "scaled-icons").is_dir() and not (user_directory / "scaled-icons").is_symlink():
+		shutil.rmtree(user_directory / "scaled-icons", ignore_errors=True)
 
 	n_cache_dir = cache_directory / "network"
 	e_cache_dir = cache_directory / "export"
@@ -62799,6 +62797,7 @@ def main(holder: Holder) -> None:
 		locale_directory=locale_directory,
 		user_directory=user_directory,
 		config_directory=config_directory,
+		state_directory=state_directory,
 		cache_directory=cache_directory,
 		home_directory=home_directory,
 		music_directory=music_directory,
@@ -62821,6 +62820,7 @@ def main(holder: Holder) -> None:
 		logging.error(f"Locale directory MISSING:  {locale_directory}")
 	logging.info(f"Userdata directory:        {user_directory}")
 	logging.info(f"Config directory:          {config_directory}")
+	logging.info(f"State directory:           {state_directory}")
 	logging.info(f"Cache directory:           {cache_directory}")
 	logging.info(f"Home directory:            {home_directory}")
 	logging.info(f"Music directory:           {music_directory}")
@@ -63107,8 +63107,8 @@ def main(holder: Holder) -> None:
 	del radio_playlists
 
 	# If scaled-icons directory exists, use it even for initial loading
-	if (user_directory / "scaled-icons").exists() and bag.prefs.ui_scale != 1:
-		bag.dirs.scaled_asset_directory = user_directory / "scaled-icons"
+	if (cache_directory / "scaled-icons").exists() and bag.prefs.ui_scale != 1:
+		bag.dirs.scaled_asset_directory = cache_directory / "scaled-icons"
 
 	gui = GuiVar(
 		bag=bag,

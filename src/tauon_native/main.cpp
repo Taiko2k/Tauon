@@ -96,6 +96,9 @@ struct NativeState {
 	std::filesystem::path executable_path;
 	std::filesystem::path sdl_library_path;
 	std::filesystem::path user_data_directory;
+	// The same as user_data_directory unless split out under XDG
+	std::filesystem::path config_directory;
+	std::filesystem::path state_directory;
 	WindowState window_state;
 	bool sdl_initialised = false;
 	bool hidden = false;
@@ -466,22 +469,49 @@ void migrate_legacy_portable_user_data(const std::filesystem::path& executable) 
 	std::cerr << "Tauon: moved old portable user data to " << current.string() << '\n';
 }
 
-std::filesystem::path user_data_directory(const char* executable_argument) {
+struct UserDirectories {
+	std::filesystem::path data;
+	std::filesystem::path config;
+	std::filesystem::path state;
+	// Config and state live in their own XDG base directories
+	bool split = false;
+};
+
+UserDirectories single_user_directory(const std::filesystem::path& directory) {
+	return {directory, directory, directory, false};
+}
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+// The spec says to ignore empty or relative values
+std::filesystem::path xdg_base_directory(const char* variable, const std::filesystem::path& default_under_home) {
+	if (const auto value = environment_path(variable); value && value->is_absolute()) {
+		return *value;
+	}
+	if (const auto home = environment_path("HOME"); home && !home->empty()) {
+		return *home / default_under_home;
+	}
+	return {};
+}
+#endif
+
+// Override, portable and source checkout profiles keep everything in one
+// folder. Installed Linux builds split config and state out under XDG.
+UserDirectories user_directories(const char* executable_argument) {
 	if (const auto override_path = environment_path("TAUON_USER_DATA_DIR")) {
-		return *override_path;
+		return single_user_directory(*override_path);
 	}
 
 	const std::filesystem::path executable = current_executable_path(executable_argument);
 	if (has_portable_marker(executable)) {
-		return portable_user_data_directory(executable);
+		return single_user_directory(portable_user_data_directory(executable));
 	}
 
 #if defined(_WIN32)
 	if (const auto local_app_data = environment_path("LOCALAPPDATA")) {
-		return *local_app_data / "TauonMusicBox";
+		return single_user_directory(*local_app_data / "TauonMusicBox");
 	}
 	if (const auto app_data = environment_path("APPDATA")) {
-		return *app_data / "TauonMusicBox";
+		return single_user_directory(*app_data / "TauonMusicBox");
 	}
 #elif !defined(__APPLE__)
 	// A launcher inside a source checkout (its build tree or virtual
@@ -490,18 +520,91 @@ std::filesystem::path user_data_directory(const char* executable_argument) {
 	if (!is_bundled_install(executable)) {
 		const std::filesystem::path project_root = source_checkout_root(executable);
 		if (!project_root.empty()) {
-			return project_root / "user-data";
+			return single_user_directory(project_root / "user-data");
 		}
 	}
 #endif
 
+	std::filesystem::path data;
 	if (const auto xdg_data_home = environment_path("XDG_DATA_HOME")) {
-		return *xdg_data_home / "TauonMusicBox";
+		data = *xdg_data_home / "TauonMusicBox";
+	} else if (const auto home = environment_path("HOME")) {
+		data = *home / ".local" / "share" / "TauonMusicBox";
+	} else {
+		return single_user_directory(std::filesystem::current_path() / "user-data");
 	}
-	if (const auto home = environment_path("HOME")) {
-		return *home / ".local" / "share" / "TauonMusicBox";
+
+#if !defined(_WIN32) && !defined(__APPLE__)
+	const std::filesystem::path config_home = xdg_base_directory("XDG_CONFIG_HOME", ".config");
+	const std::filesystem::path state_home = xdg_base_directory("XDG_STATE_HOME", std::filesystem::path(".local") / "state");
+	if (!config_home.empty() && !state_home.empty()) {
+		return {data, config_home / "TauonMusicBox", state_home / "TauonMusicBox", true};
 	}
-	return std::filesystem::current_path() / "user-data";
+#endif
+	return single_user_directory(data);
+}
+
+std::filesystem::path user_data_directory(const char* executable_argument) {
+	return user_directories(executable_argument).data;
+}
+
+// Moves what older versions kept in the data directory to the config and state
+// directories. Each launch only moves what is still in the old place, and an
+// existing file at the new place is never replaced.
+void migrate_to_split_directories(const UserDirectories& directories) {
+	if (!directories.split) {
+		return;
+	}
+	const std::pair<const char*, const std::filesystem::path*> items[] = {
+		{"tauon.conf", &directories.config},
+		{"input.txt", &directories.config},
+		{"x11", &directories.config},
+		{"debug", &directories.config},
+		{"window-state.json", &directories.state},
+		{"aqua-splash.bmp", &directories.state},
+		{"aqua-splash.json", &directories.state},
+		{"lyrics-editor", &directories.state},
+		{"tauon.log", &directories.state},
+		{"tauon-crash.log", &directories.state},
+		{"tauon-sigpipe.log", &directories.state},
+		{"milkdrop-preset-load.log", &directories.state},
+	};
+	for (const auto& [name, target_directory] : items) {
+		const std::filesystem::path source = directories.data / name;
+		std::error_code error;
+		// symlink_status, so a link the user made is moved rather than followed
+		if (!std::filesystem::exists(std::filesystem::symlink_status(source, error))) {
+			continue;
+		}
+		const std::filesystem::path target = *target_directory / name;
+		if (std::filesystem::exists(std::filesystem::symlink_status(target, error))) {
+			std::cerr << "Tauon: leaving " << source.string() << " because " << target.string() << " already exists\n";
+			continue;
+		}
+		std::filesystem::create_directories(*target_directory, error);
+		if (error) {
+			std::cerr << "Tauon: unable to create " << target_directory->string() << ": " << error.message() << '\n';
+			return;
+		}
+		std::filesystem::rename(source, target, error);
+		if (error == std::errc::cross_device_link) {
+			error.clear();
+			std::filesystem::copy(
+				source, target,
+				std::filesystem::copy_options::recursive | std::filesystem::copy_options::copy_symlinks,
+				error
+			);
+			if (!error) {
+				std::filesystem::remove_all(source, error);
+			}
+		}
+		if (error) {
+			std::cerr << "Tauon: unable to move " << source.string() << " to " << target.string() << ": "
+				<< error.message() << '\n';
+			continue;
+		}
+		std::cerr << "Tauon: moved " << source.string() << " to " << target.string() << '\n';
+	}
 }
 
 enum class InstanceLockResult {
@@ -792,13 +895,13 @@ void configure_sdl_metadata() {
 #endif
 }
 
-void configure_video_environment(const std::filesystem::path& user_data_directory) {
+void configure_video_environment(const std::filesystem::path& config_directory) {
 	set_environment("SDL_VIDEO_WAYLAND_ALLOW_LIBDECOR", "0");  // emergency crash workaround
 	if (std::getenv("SDL_VIDEODRIVER") != nullptr) {
 		return;
 	}
 	std::error_code error;
-	if (std::filesystem::exists(user_data_directory / "x11", error)) {
+	if (std::filesystem::exists(config_directory / "x11", error)) {
 		std::cerr << "Tauon: forcing X11 due to user preference\n";
 		set_environment("SDL_VIDEODRIVER", "x11");
 		return;
@@ -1099,9 +1202,24 @@ void draw_loading_screen(
 }
 
 bool initialise_native_app(NativeState& state, int argc, char** argv) {
-	state.user_data_directory = user_data_directory(argv[0]);
-	state.window_state = load_window_state(state.user_data_directory / "window-state.json");
-	configure_video_environment(state.user_data_directory);
+	// Under the instance lock, so no running instance has these files open
+	const UserDirectories directories = user_directories(argv[0]);
+	migrate_to_split_directories(directories);
+	state.user_data_directory = directories.data;
+	state.config_directory = directories.config;
+	state.state_directory = directories.state;
+	// Fall back to the data directory when a sandbox can't write the XDG one
+	for (std::filesystem::path* directory : {&state.config_directory, &state.state_directory}) {
+		std::error_code directory_error;
+		std::filesystem::create_directories(*directory, directory_error);
+		if (directory_error) {
+			std::cerr << "Tauon: unable to create " << directory->string() << ", using "
+				<< state.user_data_directory.string() << ": " << directory_error.message() << '\n';
+			*directory = state.user_data_directory;
+		}
+	}
+	state.window_state = load_window_state(state.state_directory / "window-state.json");
+	configure_video_environment(state.config_directory);
 	configure_sdl_metadata();
 	if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
 		const std::string error = SDL_GetError();
@@ -1152,7 +1270,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 	SDL_DestroyProperties(window_properties);
 	if (!state.window) {
 		const std::string error = SDL_GetError();
-		const std::filesystem::path x11_preference = state.user_data_directory / "x11";
+		const std::filesystem::path x11_preference = state.config_directory / "x11";
 		std::error_code remove_error;
 		if (error == "x11 not available" && std::filesystem::remove(x11_preference, remove_error)) {
 			// Known issue on Flatpak - https://github.com/Taiko2k/Tauon/issues/1034
@@ -1203,7 +1321,7 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 		const std::uint32_t splash_seed = std::random_device{}();
 		const std::unique_ptr<SDL_Texture, void (*)(SDL_Texture*)> splash(
 			state.window_state.aqua_splash
-				? load_aqua_splash(state.renderer.get(), state.user_data_directory / "aqua-splash.bmp")
+				? load_aqua_splash(state.renderer.get(), state.state_directory / "aqua-splash.bmp")
 				: nullptr,
 			SDL_DestroyTexture);
 		draw_loading_screen(state.renderer.get(), state.window.get(), state.window_state.scale, splash_seed, splash.get());
@@ -1335,6 +1453,22 @@ PyObject* bridge_user_data_directory(PyObject*, PyObject*) {
 		return nullptr;
 	}
 	return python_path(g_state->user_data_directory);
+}
+
+PyObject* bridge_config_directory(PyObject*, PyObject*) {
+	if (g_state == nullptr || g_state->config_directory.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's config directory is unavailable");
+		return nullptr;
+	}
+	return python_path(g_state->config_directory);
+}
+
+PyObject* bridge_state_directory(PyObject*, PyObject*) {
+	if (g_state == nullptr || g_state->state_directory.empty()) {
+		PyErr_SetString(PyExc_RuntimeError, "Tauon's state directory is unavailable");
+		return nullptr;
+	}
+	return python_path(g_state->state_directory);
 }
 
 PyObject* bridge_executable_directory(PyObject*, PyObject*) {
@@ -1790,6 +1924,8 @@ PyMethodDef bridge_methods[] = {
 	{"renderer_name", bridge_renderer_name, METH_NOARGS, "Return the main renderer name."},
 	{"sdl_library_path", bridge_sdl_library_path, METH_NOARGS, "Return the SDL library used by the native executable."},
 	{"user_data_directory", bridge_user_data_directory, METH_NOARGS, "Return Tauon's native-resolved user data directory."},
+	{"config_directory", bridge_config_directory, METH_NOARGS, "Return the directory holding tauon.conf and input.txt."},
+	{"state_directory", bridge_state_directory, METH_NOARGS, "Return the directory holding logs, window state and other disposable state."},
 	{"executable_directory", bridge_executable_directory, METH_NOARGS, "Return the directory containing the native executable."},
 	{"bundled_library_directory", bridge_bundled_library_directory, METH_NOARGS, "Return the bundle's shared library directory, or None outside a bundle."},
 	{"portable_mode", bridge_portable_mode, METH_NOARGS, "Return whether a portable marker was found beside the executable."},
@@ -2019,7 +2155,7 @@ int run_python(NativeState& state, int argc, char** argv) {
 			"print('Tauon smoke: secondary renderer passed', flush=True)\n"
 			"assert isinstance(tauon_native.poll_events(), list)\n"
 			"print('Tauon smoke: event polling passed', flush=True)\n"
-			"state_path = Path(tauon_native.user_data_directory()) / 'window-state.json'\n"
+			"state_path = Path(tauon_native.state_directory()) / 'window-state.json'\n"
 			"if state_path.is_file():\n"
 			"    state = json.loads(state_path.read_text(encoding='utf-8'))\n"
 			"    if not state.get('maximized', False):\n"

@@ -29,30 +29,30 @@ _lock = threading.Lock()
 _running = False
 
 
-def splash_path(user_directory: Path) -> Path:
-	return user_directory / SPLASH_FILENAME
+def splash_path(directory: Path) -> Path:
+	return directory / SPLASH_FILENAME
 
 
-def splash_ready(user_directory: Path) -> bool:
-	return splash_path(user_directory).is_file()
+def splash_ready(directory: Path) -> bool:
+	return splash_path(directory).is_file()
 
 
-def _needs_paint(user_directory: Path, size: tuple[int, int], scale: float) -> bool:
-	if not splash_ready(user_directory):
+def _needs_paint(directory: Path, size: tuple[int, int], scale: float) -> bool:
+	if not splash_ready(directory):
 		return True
 	try:
-		info = json.loads((user_directory / SPLASH_INFO_FILENAME).read_text(encoding="utf-8"))
+		info = json.loads((directory / SPLASH_INFO_FILENAME).read_text(encoding="utf-8"))
 	except (OSError, ValueError):
 		return True
 	return info != {"version": SPLASH_VERSION, "size": list(size), "scale": scale}
 
 
-def refresh_splash(user_directory: Path, size: tuple[int, int], scale: float) -> None:
+def refresh_splash(directory: Path, size: tuple[int, int], scale: float) -> None:
 	"""Paint the splash on a worker thread if the saved one is missing, from
 	an older design, or for another window size."""
 	global _running
 	size = (int(size[0]), int(size[1]))
-	if size[0] < 100 or size[1] < 100 or not _needs_paint(user_directory, size, scale):
+	if size[0] < 100 or size[1] < 100 or not _needs_paint(directory, size, scale):
 		return
 	with _lock:
 		if _running:
@@ -63,12 +63,12 @@ def refresh_splash(user_directory: Path, size: tuple[int, int], scale: float) ->
 		global _running
 		try:
 			image = paint_splash(size, scale)
-			path = splash_path(user_directory)
+			path = splash_path(directory)
 			temp = path.with_suffix(".tmp")
 			image.save(temp, "BMP")
 			os.replace(temp, path)
 			info = {"version": SPLASH_VERSION, "size": list(size), "scale": scale}
-			(user_directory / SPLASH_INFO_FILENAME).write_text(json.dumps(info), encoding="utf-8")
+			(directory / SPLASH_INFO_FILENAME).write_text(json.dumps(info), encoding="utf-8")
 		except Exception:
 			logging.exception("Candy Factory: painting the splash failed")
 		finally:

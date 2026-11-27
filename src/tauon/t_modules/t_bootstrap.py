@@ -30,6 +30,8 @@ class Holder:
 	old_window_position:    tuple[int, int] | None # X Y res
 	install_directory:      Path
 	user_directory:         Path
+	config_directory:       Path # tauon.conf, input.txt
+	state_directory:        Path # logs, window state, splash
 	phone:                  bool
 	window_default_size:    tuple[int, int] # X Y res
 	window_title:           str
