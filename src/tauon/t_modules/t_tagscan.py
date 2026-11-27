@@ -586,37 +586,42 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 			return int(value[0]), int(value[1])
 		raise TypeError(f"Expected an MP4 number pair for {key}")
 
+	# Freeform names are case sensitive in mutagen but taggers vary (rsgain writes upper case)
+	freeform = {native.lower(): native for native in tags if native.startswith("----:")}
+
+	def freeform_key(name: str) -> str | None:
+		return freeform.get("----:com.apple.itunes:" + name.lower())
+
 	def get_freeform_texts(name: str) -> list[str]:
-		key = next((native for native in tags if native.lower() == name), None)
+		key = freeform_key(name)
 		return [value.decode("utf-8") for value in tags[key]] if key is not None else []
 
 	track.title = get_text("\xa9nam")
 	track.album = get_text("\xa9alb")
 	set_artist_values(
 		track, "artist", [str(value) for value in tags.get("\xa9ART", [])],
-		get_freeform_texts("----:com.apple.itunes:artists"))
+		get_freeform_texts("artists"))
 	set_artist_values(
 		track, "album_artist", [str(value) for value in tags.get("aART", [])],
-		get_freeform_texts("----:com.apple.itunes:albumartists"))
+		get_freeform_texts("albumartists"))
 	track.composer = get_text("\xa9wrt")
-	label_key = next((native for native in tags if native.lower() == "----:com.apple.itunes:label"), None)
-	track.label = "; ".join(value.decode("utf-8") for value in tags[label_key]) if label_key is not None else ""
+	track.label = "; ".join(get_freeform_texts("label"))
 	track.date = get_text("\xa9day")
 	track.comment = get_text("\xa9cmt")
 	track.genre = get_text("\xa9gen")
 	if "\xa9lyr" in tags:
 		track.lyrics = get_text("\xa9lyr")
-	for name in ("----:com.apple.itunes:originaldate", "----:com.apple.itunes:originalyear"):
-		key = next((native for native in tags if native.lower() == name), None)
+	for name in ("originaldate", "originalyear"):
+		key = freeform_key(name)
 		if key is not None:
 			process_odat(track, get_bytes(key).decode("utf-8"))
 			break
-	for key in ("----:com.apple.iTunes:FMPS_RATING", "----:com.apple.iTunes:fmps_rating"):
-		if key in tags:
-			track.FMPS_Rating = parse_fmps(get_bytes(key))
-			break
-	if "----:com.apple.iTunes:SYNCEDLYRICS" in tags:
-		track.synced = get_bytes("----:com.apple.iTunes:SYNCEDLYRICS").decode("utf-8")
+	key = freeform_key("fmps_rating")
+	if key is not None:
+		track.FMPS_Rating = parse_fmps(get_bytes(key))
+	key = freeform_key("syncedlyrics")
+	if key is not None:
+		track.synced = get_bytes(key).decode("utf-8")
 
 	track.track_total = ""
 	track.track_number = ""
@@ -635,37 +640,32 @@ def read_mp4_tags(tags: mutagen.mp4.MP4Tags, track: TrackClass) -> None:
 			track.disc_total = str(number[1])
 
 	freeform_fields = {
-		"----:com.apple.iTunes:MusicBrainz Track Id": "musicbrainz_recordingid",
-		"----:com.apple.iTunes:MusicBrainz Release Track Id": "musicbrainz_trackid",
-		"----:com.apple.iTunes:MusicBrainz Album Id": "musicbrainz_albumid",
-		"----:com.apple.iTunes:MusicBrainz Release Group Id": "musicbrainz_releasegroupid",
+		"MusicBrainz Track Id": "musicbrainz_recordingid",
+		"MusicBrainz Release Track Id": "musicbrainz_trackid",
+		"MusicBrainz Album Id": "musicbrainz_albumid",
+		"MusicBrainz Release Group Id": "musicbrainz_releasegroupid",
 	}
-	for key, attr in freeform_fields.items():
-		if key in tags:
+	for name, attr in freeform_fields.items():
+		key = freeform_key(name)
+		if key is not None:
 			setattr(track, attr, get_bytes(key).decode())
 
-	subtitle_key = "----:com.apple.iTunes:DISCSUBTITLE"
-	track.disc_subtitle = get_bytes(subtitle_key).decode() if subtitle_key in tags else ""
+	key = freeform_key("discsubtitle")
+	track.disc_subtitle = get_bytes(key).decode() if key is not None else ""
 
-	artist_ids = "----:com.apple.iTunes:MusicBrainz Artist Id"
-	if artist_ids in tags:
-		track.musicbrainz_artistids = [value.decode() for value in tags[artist_ids]]
+	artist_ids = get_freeform_texts("MusicBrainz Artist Id")
+	if artist_ids:
+		track.musicbrainz_artistids = artist_ids
 
-	gain_fields = {
-		"----:com.apple.iTunes:replaygain_track_gain": "replaygain_track_gain",
-		"----:com.apple.iTunes:replaygain_album_gain": "replaygain_album_gain",
-	}
-	for key, attr in gain_fields.items():
-		if key in tags:
-			setattr(track, attr, parse_replaygain_db(get_bytes(key)))
+	for name in ("replaygain_track_gain", "replaygain_album_gain"):
+		key = freeform_key(name)
+		if key is not None:
+			setattr(track, name, parse_replaygain_db(get_bytes(key)))
 
-	peak_fields = {
-		"----:com.apple.iTunes:replaygain_track_peak": "replaygain_track_peak",
-		"----:com.apple.iTunes:replaygain_album_peak": "replaygain_album_peak",
-	}
-	for key, attr in peak_fields.items():
-		if key in tags:
-			setattr(track, attr, float(get_bytes(key).decode()))
+	for name in ("replaygain_track_peak", "replaygain_album_peak"):
+		key = freeform_key(name)
+		if key is not None:
+			setattr(track, name, float(get_bytes(key).decode()))
 
 
 class Flac(TrackFile):
