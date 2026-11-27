@@ -15,6 +15,7 @@ Changelog
  - Added dimming of bracketed text in track titles
  - Added bit-perfect setting
  - Added disable volume control setting
+ - Added add to playlist to track menu
  - Improved folder import speed
  - Previous and next now stay within the album on repeat album
  - XDG Config and State are now used
