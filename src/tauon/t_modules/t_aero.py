@@ -1345,6 +1345,20 @@ class Aero:
 
 	# -- meshes ---------------------------------------------------------------------------
 
+	# While set, drawing that falls wholly outside this rect is skipped (a
+	# scrolled page's hidden rows); an empty rect skips everything
+	cull: tuple[float, float, float, float] | None = None
+
+	def culled(self, rect, margin: float = 0.0) -> bool:
+		c = self.cull
+		if c is None:
+			return False
+		if c[2] <= 0 or c[3] <= 0:
+			return True
+		x, y, w, h = rect
+		return (x + w + margin <= c[0] or y + h + margin <= c[1]
+			or x - margin >= c[0] + c[2] or y - margin >= c[1] + c[3])
+
 	def shape(self, rect: tuple[float, float, float, float], radii, colour=None, *,
 			grad: Gradient | None = None, grads: tuple = (), texture=None, uv=None,
 			cuts: list | None = None) -> None:
@@ -1352,7 +1366,7 @@ class Aero:
 		gradients whose product is the vertex colour; `texture` with `uv`
 		((x, y) -> (u, v)) samples a texture through it."""
 		x, y, w, h = rect
-		if w <= 0 or h <= 0:
+		if w <= 0 or h <= 0 or (self.cull is not None and self.culled(rect)):
 			return
 		if not isinstance(radii, tuple) or len(radii) != 4:
 			radii = (radii, radii, radii, radii)
@@ -1520,7 +1534,7 @@ class Aero:
 
 	def ring(self, kind: str, rect: tuple[float, float, float, float], r: float, colour: RGBA) -> None:
 		x, y, w, h = rect
-		if w <= 0 or h <= 0 or colour[3] <= 0:
+		if w <= 0 or h <= 0 or colour[3] <= 0 or (self.cull is not None and self.culled(rect, 3)):
 			return
 		pad = 3
 		C = math.ceil(r) + pad + 1
@@ -1573,6 +1587,8 @@ class Aero:
 		dw = w
 		w, h = round(w), round(h)
 		if w <= 0 or h <= 0 or colour[3] <= 0:
+			return
+		if self.cull is not None and self.culled(rect, sigma * 3 + max(0.0, spread) + 3 + max(abs(dx), abs(dy))):
 			return
 		t = self._soft_tex(w, h, r, sigma, spread)
 		_mod(t.tex, round(colour[0] * 255), round(colour[1] * 255), round(colour[2] * 255), round(colour[3] * 255))
@@ -1732,6 +1748,8 @@ class Aero:
 	def band(self, rect, R: float, t: float, colour: RGBA) -> None:
 		"""A rounded rect's border, t px wide, as one mesh: unlike a filled
 		shape under an inset one, nothing shows through a translucent fill."""
+		if self.cull is not None and self.culled(rect):
+			return
 		x, y, w, h = rect
 		seg = max(6, min(16, round(R / 1.2)))
 		outer = rounded_poly(x, y, w, h, (R, R, R, R), seg)
@@ -1757,6 +1775,8 @@ class Aero:
 
 	def tile(self, rect, r: float, hover: bool) -> None:
 		"""A glass button face: the selection pill, fainter at rest."""
+		if self.cull is not None and self.culled(rect, 3):
+			return
 		x, y, w, h = rect
 		k = 1.0 if hover else 0.55
 		top, bot = self.SEL_TOP, self.SEL_BOT
@@ -1892,6 +1912,8 @@ class Aero:
 
 	def selection(self, rect, r: float | None = None) -> None:
 		"""Glass pill: the selected row, mode toggles, active tabs."""
+		if self.cull is not None and self.culled(rect, 3):
+			return
 		r = self.s(6) if r is None else r
 		x, y, w, h = rect
 		self.shape(rect, r, grad=vgrad(y, h, [(0.0, self.SEL_TOP), (1.0, self.SEL_BOT)]))
@@ -1900,6 +1922,8 @@ class Aero:
 
 	def gel(self, rect, r: float | None = None, hue: float | None = None, glow: bool = True) -> None:
 		"""The playing row's gel: a hard step at the midline."""
+		if self.cull is not None and self.culled(rect, 24 * self.gui.scale):
+			return
 		r = self.s(6) if r is None else r
 		H = self.acc if hue is None else hue
 		m = self.mono if hue is None else 0.0
@@ -1954,6 +1978,8 @@ class Aero:
 
 	def sunken(self, rect, r: float) -> None:
 		"""A recessed track: sunken fill, inner shadow, ring and lower lip."""
+		if self.cull is not None and self.culled(rect, 3):
+			return
 		self.shape(rect, r, self.SUNKEN)
 		m = self.mono
 		self.ring("inset_top_shadow", rect, r, mix(rgba8(0, 20, 40, 0.35), rgba8(0, 0, 0, 0.45), m))
@@ -2184,6 +2210,8 @@ class Aero:
 
 	def _blit(self, t: _Tex, x: float, y: float, alpha: float = 1.0) -> None:
 		"""Draw a cached raster with its top-left (less its pad) at (x, y)."""
+		if self.cull is not None and self.culled((x - t.pad, y - t.pad, t.w, t.h)):
+			return
 		_mod(t.tex, 255, 255, 255, round(alpha * 255))
 		sdl3.render_texture(self.renderer, t.tex, None, sdl3.FRect(x - t.pad, y - t.pad, t.w, t.h))
 
@@ -2585,6 +2613,8 @@ class Aero:
 			disabled: bool = False) -> None:
 		"""An on/off switch: a sunken track that fills with gel (in colour's
 		hue, else the accent) under a glass knob."""
+		if self.cull is not None and self.culled(rect, 6 * self.gui.scale):
+			return
 		x, y, w, h = rect
 		r = h / 2
 		if on and not disabled:

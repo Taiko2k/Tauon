@@ -33532,6 +33532,11 @@ class Over:
 		self.stats_pl = 0
 		self.stats_pl_albums = 0
 		self.stats_pl_length = 0
+		self.stats_pl_key: tuple | None = None
+		self.stats_key: tuple | None = None
+		self.chart_albums_key: tuple | None = None
+		self.chart_albums_timer = Timer()
+		self.chart_albums = 0
 
 		self.lyrics_panel = False
 		self.account_view = 0
@@ -37263,9 +37268,14 @@ class Over:
 			label = _("Start Sync") if prefs.bypass_transcode else _("Start Transcode and Sync")
 			rows.action("", ((label, start_sync, True),))
 
+	STATS_REFRESH = 30  # seconds, for edits that keep every playlist's length
+
 	def update_settings_stats(self) -> None:
+		# Counting walks every track, so only when the playlists change size
 		pctl = self.pctl
-		if self.stats_pl != pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int or self.stats_pl_timer.get() > 5:
+		pl_key = (pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int, id(pctl.default_playlist), len(pctl.default_playlist))
+		if self.stats_pl_key != pl_key or self.stats_pl_timer.get() > self.STATS_REFRESH:
+			self.stats_pl_key = pl_key
 			self.stats_pl = pctl.multi_playlist[pctl.active_playlist_viewing].uuid_int
 			self.stats_pl_timer.set()
 			album_names = set()
@@ -37287,7 +37297,9 @@ class Over:
 			for item in pctl.default_playlist:
 				self.stats_pl_length += pctl.master_library[item].length
 
-		if self.stats_timer.get() > 5:
+		key = (len(pctl.master_library), len(pctl.multi_playlist), sum(len(pl.playlist_ids) for pl in pctl.multi_playlist))
+		if self.stats_key != key or self.stats_timer.get() > self.STATS_REFRESH:
+			self.stats_key = key
 			album_names = set()
 			folder_names = set()
 			count = 0
@@ -37353,6 +37365,18 @@ class Over:
 		except Exception:
 			logging.exception("Error draw ext bar")
 
+	def settings_chart_albums(self) -> int:
+		"""Albums in the viewed playlist. reload_albums walks the whole
+		playlist, so it's redone only when the playlist changes size."""
+		pctl = self.pctl
+		pl = pctl.multi_playlist[pctl.active_playlist_viewing]
+		key = (pl.uuid_int, id(pl.playlist_ids), len(pl.playlist_ids), self.prefs.gallery_combine_disc)
+		if self.chart_albums_key != key or self.chart_albums_timer.get() > self.STATS_REFRESH:
+			self.chart_albums_key = key
+			self.chart_albums_timer.set()
+			self.chart_albums = len(self.tauon.reload_albums(quiet=True, return_playlist=pctl.active_playlist_viewing))
+		return self.chart_albums
+
 	def settings_body_chart(self, rows: SettingsRows) -> None:
 		gui = self.gui
 		prefs = self.prefs
@@ -37379,7 +37403,7 @@ class Over:
 				shoot.start()
 				gui.generating_chart = True
 
-		dex = self.tauon.reload_albums(quiet=True, return_playlist=self.pctl.active_playlist_viewing)
+		albums = self.settings_chart_albums()
 		rows.readout(_("From playlist"), self.pctl.multi_playlist[self.pctl.active_playlist_viewing].title)
 		rows.segmented(
 			_("Layout"),
@@ -37425,10 +37449,10 @@ class Over:
 		prefs.chart_text = rows.switch(prefs.chart_text, _("Include album titles"))
 		prefs.topchart_sorts_played = rows.switch(prefs.topchart_sorts_played, _("Sort by top played"))
 
-		short = len(dex) < count
+		short = albums < count
 		summary = _("{N} albums").format(N=count)
 		if short:
-			summary += " · " + _("only {N} in the playlist").format(N=len(dex))
+			summary += " · " + _("only {N} in the playlist").format(N=albums)
 		warn = self.settings_readable_colour(ColourRGBA(255, 120, 125, 255), self.ddt.text_background_colour, 4.5)
 		rows.readout(_("Chart size"), summary, warn if short else None)
 		if gui.generating_chart:
@@ -37791,11 +37815,15 @@ class Over:
 		self.settings_clip = None
 		self.settings_doc_origin = 0
 		self.settings_surveying = True
+		# Nothing of the survey is shown, so the skin needn't draw any of it
+		saved_cull = self.tauon.aero.cull
+		self.tauon.aero.cull = (0, 0, 0, 0)
 		try:
 			for group in self.settings_groups:
 				self.render_settings_group(group, x, 0, w)
 		finally:
 			self.click, self.right_click, self.coll, self.settings_clip, self.settings_doc_origin, self.settings_text_seen = saved
+			self.tauon.aero.cull = saved_cull
 			self.settings_surveying = False
 			self.settings_needs_survey = False
 
@@ -38119,6 +38147,8 @@ class Over:
 		self.settings_clip = view_rect
 		self.coll = lambda rect: base_coll(rect) and coll_point(inp.mouse_position, view_rect)
 		ddt.text_background_colour = colours.box_background
+		# The skin's meshes are rebuilt for every row that moves, so skip the scrolled-away ones
+		aero.cull = view_rect
 		try:
 			if searching:
 				doc_h = self.render_settings_search(doc_x, doc_origin, doc_w)
@@ -38127,6 +38157,7 @@ class Over:
 		finally:
 			self.coll = base_coll
 			self.settings_clip = None
+			aero.cull = None
 		self.settings_doc_height = doc_h + pad * 2
 
 		sdl3.set_render_target(self.renderer, current_target)
