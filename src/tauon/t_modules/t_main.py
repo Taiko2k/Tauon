@@ -373,6 +373,7 @@ from tauon.t_modules.t_remote_playlists import RemotePlaylist  # noqa: E402
 from tauon.t_modules.t_macos_blur import MacOSBlur  # noqa: E402
 from tauon.t_modules.t_waveform import WaveformCache  # noqa: E402
 from tauon.t_modules.t_video import VIDEO_EXTENSIONS, VideoPlayer, ffmpeg_probe  # noqa: E402
+from tauon.t_modules.t_wayland_activation import WaylandActivation  # noqa: E402
 from tauon.t_modules.t_wayland_blur import WaylandBlur  # noqa: E402
 from tauon.t_modules.t_windows_blur import WindowsBlur  # noqa: E402
 from tauon.t_modules.t_webserve import (  # noqa: E402
@@ -8610,6 +8611,8 @@ class Tauon:
 		# only, a no-op everywhere else). It reads the wanted state from prefs
 		# each frame, so setting changes need not notify it
 		self.wayland_blur: WaylandBlur                   = WaylandBlur(self)
+		# Activation tokens so apps Tauon opens can take focus (Wayland only)
+		self.wayland_activation: WaylandActivation       = WaylandActivation(self)
 		self.macos_blur: MacOSBlur                       = MacOSBlur(self)
 		self.windows_blur: WindowsBlur                   = WindowsBlur(self)
 		self.snap_mode: bool                            = bag.snap_mode
@@ -11004,7 +11007,8 @@ class Tauon:
 			subprocess.Popen(["open", "-R", track.fullpath])
 		else:
 			# D-Bus calls can block while a portal or file manager starts
-			threading.Thread(target=reveal_file, args=(track.fullpath,), daemon=True).start()
+			token = self.wayland_activation.request_token()
+			threading.Thread(target=reveal_file, args=(track.fullpath, token), daemon=True).start()
 
 	def menu_open_folder(self, ref: MenuTrackRef) -> None:
 		self.open_folder(ref.track_id)
@@ -67540,6 +67544,7 @@ def main(holder: Holder) -> None:
 		inp.mouse_click = False
 		# gui.update = 2
 
+		tauon.wayland_activation.drain()
 		for event in sdl3.poll_events():
 			# if event.type == sdl3.SDL_SYSWMEVENT:
 			#      logging.info(event.syswm.msg.contents) # Not implemented by pysdl2
@@ -72742,6 +72747,7 @@ def main(holder: Holder) -> None:
 	tauon.clear_img_cache(False)
 
 	tauon.wayland_blur.shutdown()
+	tauon.wayland_activation.shutdown()
 	tauon.macos_blur.shutdown()
 	tauon.windows_blur.shutdown()
 

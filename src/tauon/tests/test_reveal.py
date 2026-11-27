@@ -26,11 +26,13 @@ class FakeObject:
 
 	def OpenDirectory(self, parent, fd, options, **_kw):
 		self.bus.calls.append(("OpenDirectory", parent))
+		self.bus.options.append(options)
 
 	def ShowItems(self, uris, startup_id, **_kw):
 		if self.bus.manager_error:
 			raise FakeDBusException("no reply")
 		self.bus.calls.append(("ShowItems", uris))
+		self.bus.startup_ids.append(startup_id)
 
 
 class FakeBus:
@@ -40,6 +42,8 @@ class FakeBus:
 		self.portal_error = portal_error
 		self.manager_error = manager_error
 		self.calls = []
+		self.options = []
+		self.startup_ids = []
 		self.closed = False
 
 	def name_has_owner(self, name):
@@ -61,7 +65,7 @@ def setup(monkeypatch, tmp_path):
 	track.parent.mkdir()
 	track.write_bytes(b"x")
 	opened = []
-	monkeypatch.setattr(t_reveal, "open_parent", lambda path: opened.append(path))
+	monkeypatch.setattr(t_reveal, "open_parent", lambda path, token=None: opened.append(path))
 
 	def use(bus):
 		fake = types.ModuleType("dbus")
@@ -115,3 +119,33 @@ def test_missing_file_skips_dbus(setup):
 	use(bus)
 	assert t_reveal.reveal_file(path + ".gone") == "xdg-open"
 	assert bus.calls == []
+
+
+def test_token_reaches_portal_and_file_manager(setup):
+	path, _opened, use = setup
+	bus = FakeBus({t_reveal.PORTAL_NAME})
+	use(bus)
+	t_reveal.reveal_file(path, "tok-1")
+	assert bus.options == [{"activation_token": "tok-1"}]
+
+	bus = FakeBus({t_reveal.FILE_MANAGER_NAME})
+	use(bus)
+	t_reveal.reveal_file(path, "tok-2")
+	assert bus.startup_ids == ["tok-2"]
+
+
+def test_no_token_sends_empty_values(setup):
+	path, _opened, use = setup
+	bus = FakeBus({t_reveal.PORTAL_NAME})
+	use(bus)
+	t_reveal.reveal_file(path)
+	assert bus.options == [{}]
+
+
+def test_xdg_open_gets_token_in_env(monkeypatch, tmp_path):
+	launched = []
+	monkeypatch.setattr(t_reveal.subprocess, "Popen", lambda args, env=None: launched.append((args, env)))
+	t_reveal.open_parent(str(tmp_path / "a.flac"), "tok-3")
+	t_reveal.open_parent(str(tmp_path / "a.flac"))
+	assert launched[0][1]["XDG_ACTIVATION_TOKEN"] == "tok-3"
+	assert launched[1][1] is None
