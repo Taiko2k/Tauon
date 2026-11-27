@@ -44690,7 +44690,7 @@ class ArtBox:
 		self.fields  = tauon.fields
 		self.colours = tauon.colours
 
-	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True, draw_background: bool = True, reflect: float = 0) -> None:
+	def draw(self, x: int, y: int, w: int, h: int, target_track: TrackClass | None = None, tight_border: bool = False, default_border: tuple[int, int, int, int] | None = None, inset: bool = True, quick_draw: bool = False, draw_border: bool = True, draw_background: bool = True, reflect: float = 0, reflect_clip: float | None = None) -> None:
 		tauon   = self.tauon
 		ddt     = self.ddt
 		colours = self.colours
@@ -44740,11 +44740,13 @@ class ArtBox:
 			result = 0
 			gui.art_drawn_rect = video_rect
 			gui.art_aspect_ratio = tauon.video.aspect(target_track) or 1
+			if reflect and tauon.aero.active:
+				tauon.video.draw_reflection(video_rect, reflect, reflect_clip)
 		elif target_track:  # Only show if song playing or paused
 
 			# Candy Factory: rounded, glossed art with a drop shadow (and, in the
 			# side panel, its reflection)
-			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect)
+			tauon.aero.set_art_style(r=tauon.aero.s(6), shadow="large", reflect=reflect, reflect_clip=reflect_clip)
 			result = tauon.album_art_gen.display(target_track, (rect[0], rect[1]), (box_w, box_h), gui.side_drag or quick_draw, async_hold=True, caller_id="art_box")
 			tauon.aero.end_art_style()
 			showc = tauon.album_art_gen.get_info(target_track)
@@ -69957,7 +69959,8 @@ def main(holder: Holder) -> None:
 								)
 
 								tauon.art_box.draw(rsp_x, gui.panelY, boxw, boxh, target_track=target_track,
-									reflect=tauon.aero.reflection_height() if refl else 0)
+									reflect=tauon.aero.reflection_height() if refl else 0,
+									reflect_clip=gui.panelY + available_h)
 
 							else:
 								meta_box.draw(

@@ -2953,9 +2953,10 @@ class Aero:
 	# -- art ----------------------------------------------------------------------------------------
 
 	def art(self, tex, rect, r: float | None = None, *, gloss: bool = True, shadow: str | None = "large",
-			reflect: float = 0.0, ring: bool = True) -> None:
+			reflect: float = 0.0, reflect_clip: float | None = None, ring: bool = True) -> None:
 		"""Album art with rounded corners, a diagonal glare, a ring, a drop
-		shadow and optionally a wet-floor reflection `reflect` px tall."""
+		shadow and optionally a wet-floor reflection `reflect` px tall, cut
+		off at y `reflect_clip`."""
 		x, y, w, h = rect
 		if w < 2 or h < 2:
 			return
@@ -2969,19 +2970,30 @@ class Aero:
 			self.soft(rect, r, 4 * sc, -3 * sc, mix(rgba8(0, 20, 40, 0.5), rgba8(0, 0, 0, 0.6), self.mono), 0, 3 * sc)
 		self.shape(rect, r, texture=tex, uv=lambda px, py: ((px - x) / w, (py - y) / h))
 		if reflect > 0:
-			gap = self.s(3)
-			ry = y + h + gap
-			rh = min(reflect, h)
-			# Flipped: the reflection's top shows the art's bottom row
-			g = vgrad(ry, rh, [(0.0, (1, 1, 1, 0.42)), (0.85, (1, 1, 1, 0.0)), (1.0, (1, 1, 1, 0.0))])
-			self.shape((x, ry, w, rh), (r, r, 0, 0), grad=g, texture=tex,
-				uv=lambda px, py: ((px - x) / w, 1 - (py - ry) / h))
+			self.reflection(tex, rect, r, reflect, reflect_clip)
 		if gloss:
 			# linear-gradient(160deg, white .5 0%, white .1 38%, transparent 38.5%)
 			g = Gradient(rect, 160, [(0.0, (1, 1, 1, 0.5)), (0.38, (1, 1, 1, 0.1)), (0.385, (1, 1, 1, 0.0)), (1.0, (1, 1, 1, 0.0))])
 			self.shape(rect, r, grad=g)
 		if ring:
 			self.ring("outer", rect, r, mix(rgba8(0, 20, 40, 0.4), rgba8(0, 0, 0, 0.5), self.mono))
+
+	def reflection(self, tex, rect, r: float, reflect: float, clip: float | None = None) -> None:
+		"""Wet-floor reflection of `tex` (drawn in `rect`) below it, cut off at y `clip`."""
+		x, y, w, h = rect
+		if w < 2 or h < 2:
+			return
+		ry = y + h + self.s(3)
+		rh = min(reflect, h)
+		# The fade keeps its full length; the clip only cuts it short
+		g = vgrad(ry, rh, [(0.0, (1, 1, 1, 0.42)), (0.85, (1, 1, 1, 0.0)), (1.0, (1, 1, 1, 0.0))])
+		if clip is not None:
+			rh = min(rh, clip - ry)
+		if rh < 1:
+			return
+		# Flipped: the reflection's top shows the art's bottom row
+		self.shape((x, ry, w, rh), (r, r, 0, 0), grad=g, texture=tex,
+			uv=lambda px, py: ((px - x) / w, 1 - (py - ry) / h))
 
 	def set_art_style(self, **style) -> None:
 		"""Ask for the next album art drawn through AlbumArt to be drawn with
@@ -3309,7 +3321,7 @@ class AquaBar:
 	# Quiet transport: one hero play orb, the rest etched glyphs on the glass
 	PLAY_D = 52
 	SIDE_D = 34
-	PLAY_LIFT = 0
+	PLAY_LIFT = 1
 	# The whole transport sits this much below the panel's centre line
 	TRANSPORT_DROP = 3
 
@@ -3328,7 +3340,7 @@ class AquaBar:
 		(tip or tauon.tool_tip2).test(sx, sy, text)
 
 	def width_right(self, a: dict) -> int:
-		volume = 0 if self.tauon.prefs.volume_locked else self._s(30) + self._s(96) + self._s(14)
+		volume = 0 if self.tauon.prefs.volume_locked else self._s(30) + self._s(96) + self._s(22)
 		return (self.tauon.feux_bar._pill_w(a["feux-shuffle"]) + self._s(8)
 			+ self.tauon.feux_bar._pill_w(a["feux-repeat"]) + self._s(16)
 			+ volume + round(a["feux-menu"].w))
@@ -3579,7 +3591,7 @@ class AquaBar:
 		level = min(100, max(0, pctl.player_volume)) / 100
 		aero.tube(vol, level, shimmer=False)
 		gui.volume_bar_rect = (vol[0], vol[1], round(vol_w * level), tube_h)
-		x += vol_w + self._s(14)
+		x += vol_w + self._s(22)
 		self._draw_menu(a, x, top, mid)
 
 	def _draw_menu(self, a: dict, x: float, top: float, mid: float) -> None:

@@ -532,6 +532,15 @@ class VideoPlayer:
 		sdl3.render_texture(self.renderer, self.texture, None, sdl3.FRect(dx, dy, dw, dh))
 		return dx, dy, dw, dh
 
+	def draw_reflection(self, rect: tuple[int, int, int, int], height: float, clip: float | None = None) -> None:
+		"""Candy Factory's wet-floor reflection under the frame drawn at rect."""
+		if self.texture is None or not self.has_frame:
+			return
+		# The frame draws opaque; the reflection's fade needs blending
+		sdl3.set_texture_blend_mode(self.texture, sdl3.SDL_BLENDMODE_BLEND)
+		self.tauon.aero.reflection(self.texture, rect, 0, height, clip)
+		sdl3.set_texture_blend_mode(self.texture, sdl3.SDL_BLENDMODE_NONE)
+
 	def source_info(self) -> tuple[str, tuple[int, int] | None, float | None]:
 		decoder = self.decoder
 		if decoder is not None and decoder.codec:
