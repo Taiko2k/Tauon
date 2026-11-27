@@ -17,6 +17,7 @@ Changelog
  - Added disable volume control setting
  - Improved folder import speed
  - Previous and next now stay within the album on repeat album
+ - XDG Config and State are now used
  - Fixed art background disapear on drag
  - Fixed timing accuracy with lyrics
  - Fixed window reopening at screen size after quitting in fullscreen
