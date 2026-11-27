@@ -1769,6 +1769,18 @@ class Aero:
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 		sdl3.render_geometry(self.renderer, None, verts, idx)
 
+	def time_elapsed_colour(self) -> ColourRGBA:
+		"""The elapsed time: mostly the accent, lifted toward the text colour
+		so it stands out from the length beside it."""
+		accent = mix(hsl(self.acc, 0.65, 0.72), hsl(self.oacc, 0.65, 0.74), self.mono)
+		return to_colour(mix(accent, self.TEXT, 0.4))
+
+	def time_total_colour(self) -> ColourRGBA:
+		"""The track/album length beside the elapsed time: as light as the
+		muted text, with more of the accent, so it reads but stays secondary."""
+		tint = mix(hsl(self.acc, 0.75, 0.74), hsl(self.oacc, 0.75, 0.74), self.mono)
+		return to_colour(mix(self.MUTED, tint, 0.35))
+
 	def accent_colour(self) -> ColourRGBA:
 		"""The accent as a theme colour (Obsidian's highlight accent there)."""
 		return to_colour(mix(hsl(self.acc, 0.85, 0.6), hsl(self.oacc, 0.85, 0.62), self.mono))
@@ -3354,7 +3366,6 @@ class AquaBar:
 		aero = tauon.aero
 		feux = tauon.feux_bar
 		a = feux._load_assets()
-		from tauon.t_modules.t_extra import get_display_time
 
 		w = round(tauon.window_size[0])
 		h = round(height) if height is not None else round(tauon.window_size[1])
@@ -3452,13 +3463,31 @@ class AquaBar:
 		tube_y = round(mid + block / 2 - tube_h)
 		length = pctl.playing_length
 
+		# The shared time mode, as on the other panels; a click cycles it
 		if length > 0 and pctl.playing_state != PlayingState.STOPPED:
-			times = f"{get_display_time(pctl.playing_time)} / {get_display_time(length)}"
+			time_text, total_text = feux._time_texts()
+			times = time_text if total_text is None else f"{time_text} / {total_text}"
 		else:
 			times = ""
-		times_w = ddt.get_text_w(times, 212) if times else 0
+		times_w = feux._time_w(times) if times else 0
 		if times:
-			ddt.text((right + 1, feux._text_y(212, line_y), 1), times, muted_c, 212)
+			time_y = feux._text_y(212, line_y)
+			time_end = right + 1
+			if total_text is not None:
+				total_c = aero.time_total_colour()
+				total_w = feux._time_w(total_text)
+				slash_w = ddt.get_text_w(" / ", 212)
+				total_x = time_end - total_w
+				ddt.text((total_x, time_y), total_text, total_c, 212)
+				ddt.text((total_x - slash_w, time_y), " / ", total_c, 212)
+				time_end = total_x - slash_w
+			ddt.text((time_end, time_y, 1), time_text, aero.time_elapsed_colour(), 212)
+			times_rect = (round(right - times_w - self._s(4)), round(line_y - self._s(10)), round(times_w + self._s(8)), self._s(20))
+			tauon.fields.add(times_rect)
+			if tauon.coll(times_rect) and inp.mouse_click:
+				gui.display_time_mode = (gui.display_time_mode + 1) % 4
+				inp.mouse_click = False
+				gui.request_frame()
 		text_room = width - times_w - self._s(12)
 		if track is not None and text_room > self._s(30):
 			title = track.title or track.filename

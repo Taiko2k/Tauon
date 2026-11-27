@@ -1472,6 +1472,37 @@ class FeuxBar:
 		pixels = points * 4 / 3  # Pango points at 96 dpi
 		return round(centre - 13 * self.gui.scale + pixels * 0.35)
 
+	def _time_texts(self) -> tuple[str, str | None]:
+		"""The readout for gui.display_time_mode, as (time, total or None)."""
+		gui = self.gui
+		pctl = self.pctl
+		mode = gui.display_time_mode
+		if mode == 0:
+			return get_display_time(pctl.playing_time), None
+		if mode == 1:
+			if pctl.playing_state == PlayingState.STOPPED:
+				return "-" + get_display_time(0), None
+			return "-" + get_display_time(pctl.playing_length - pctl.playing_time), None
+		if mode == 2:
+			text_time = get_display_time(pctl.playing_time)
+			text_total = get_display_time(pctl.playing_length)
+		else:
+			self.tauon.bottom_bar1.update_dtm3()
+			text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
+			text_total = get_display_time(gui.dtm3_total)
+		if pctl.playing_state == PlayingState.STOPPED:
+			text_total = get_display_time(0)
+		elif pctl.playing_state == PlayingState.URL_STREAM:
+			text_total = "-- : --"
+		return text_time, text_total
+
+	def _time_w(self, text: str) -> int:
+		"""Width of a time readout measured with the font's widest digit, so
+		the scrub bar's end doesn't shift as the seconds tick."""
+		ddt = self.ddt
+		wide = max("0123456789", key=lambda d: ddt.get_text_w(d, 212))
+		return max(ddt.get_text_w(text, 212), ddt.get_text_w(text.translate(str.maketrans("0123456789", wide * 10)), 212))
+
 	def _tip(self, tip: ToolTip, x: float, y: float, text: str) -> None:
 		"""Tooltips are drawn later in the frame, at real screen coordinates,
 		so a widget rendering in its own local space has to convert first."""
@@ -1941,19 +1972,49 @@ class FeuxBar:
 
 		# TIMES + SCRUB BAR
 		length = pctl.playing_length
-		elapsed = get_display_time(pctl.playing_time)
 		time_colour = self._fg(self._tint(colours.time_playing, x, mid, panel, boost=0.6), backdrop, 4.5)
 		if aero is not None:
-			time_colour = to_colour(aero.MUTED)
+			time_colour = aero.time_elapsed_colour()
 
 		show_time = right - x > self._s(200)
-		el_w = ddt.get_text_w(elapsed, 212) if show_time else 0
+		# The readout follows the compact panel's time mode: elapsed, remaining,
+		# elapsed / length, or album elapsed / album length. The total is
+		# dropped only when it would squeeze the scrub bar too short.
+		time_text, total_text = self._time_texts()
+		time_w = slash_w = total_w = 0
+		if show_time:
+			time_w = self._time_w(time_text)
+			if total_text is not None:
+				slash_w = ddt.get_text_w(" / ", 212)
+				total_w = self._time_w(total_text)
+				if right - x - self._s(26) - time_w - slash_w - total_w < self._s(100):
+					total_text = None
+					slash_w = total_w = 0
+		el_w = time_w + slash_w + total_w
 		bar_x = x
 		bar_right = right - self._s(14) - (el_w + self._s(12) if show_time else 0)
 		bar_w = bar_right - bar_x
 
 		if show_time:
-			ddt.text((right - self._s(14) + 1, self._text_y(212, mid), 1), elapsed, time_colour, 212)
+			time_end = right - self._s(14) + 1
+			text_y = self._text_y(212, mid)
+			if total_text is not None:
+				total_x = time_end - total_w
+				# The compact panel's grey, not the accent the elapsed time takes
+				sub_colour = self._fg(self._tint(colours.time_sub, total_x, mid, panel, boost=0.6), backdrop, 3.0)
+				if aero is not None:
+					sub_colour = aero.time_total_colour()
+				ddt.text((total_x, text_y), total_text, sub_colour, 212)
+				ddt.text((total_x - slash_w, text_y), " / ", sub_colour, 212)
+				time_end = total_x - slash_w
+			ddt.text((time_end, text_y, 1), time_text, time_colour, 212)
+
+			rect = (bar_right + self._s(4), mid - self._s(13), right - bar_right - self._s(8), self._s(26))
+			self.fields.add(rect)
+			if self.coll(rect) and inp.mouse_click:
+				gui.display_time_mode = (gui.display_time_mode + 1) % 4
+				inp.mouse_click = False
+				gui.request_frame()
 
 		self._on_seek = False
 		if lock:
