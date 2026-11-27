@@ -1578,7 +1578,8 @@ def player4(tauon: Tauon) -> None:
 		return multiplier
 
 	def set_config(set_device: bool = False) -> None:
-		aud.config_set_dev_buffer(prefs.device_buffer)
+		# 0 lets the backend pick
+		aud.config_set_dev_buffer(prefs.device_buffer if prefs.device_buffer_custom else 0)
 		aud.config_set_fade_duration(prefs.cross_fade_time)
 		if hasattr(aud, "config_set_pre_roll"):
 			aud.config_set_pre_roll(prefs.pre_roll_time if prefs.use_pre_roll else 0)
@@ -1736,6 +1737,14 @@ def player4(tauon: Tauon) -> None:
 				return (heard + max(0.0, pctl.output_latency * 1000)) / 1000 - pctl.start_time_target
 		position = aud.get_position_ms()
 		return position / 1000 - pctl.start_time_target if position > 0 else None
+
+	def output_delay() -> float:
+		"""Seconds from handing audio to the device to hearing it, 0 if unknown."""
+		if get_latency is not None:
+			latency = get_latency()
+			if latency >= 0:
+				return latency / 1000
+		return 0.0
 
 	def read_heard_time() -> float | None:
 		"""Track position the listener hears now, or None when phazor can't say.
@@ -2536,10 +2545,15 @@ def player4(tauon: Tauon) -> None:
 
 					transition_timer = Timer()
 					transition_time = 0.0
+					# remain counts to the end being handed to the device; the
+					# listener reaches it output_delay() later. How far the new
+					# track has been handed when the UI switches over.
+					past_join = 0.0
 
 					if loaded_track and loaded_track.file_ext.lower() in tauon.formats.GME:
-						# GME formats dont have a physical end so we don't do gapless
-						while transition_time <= remain - prefs.device_buffer / 1000 * applied_rate:
+						# GME formats dont have a physical end so we don't do gapless.
+						# Stop once the end has been heard.
+						while transition_time <= remain + output_delay() * applied_rate:
 							apply_playback_speed()
 							transition_time += transition_timer.hit() * applied_rate
 							if pctl.commit:
@@ -2566,7 +2580,9 @@ def player4(tauon: Tauon) -> None:
 						elapsed = transition_timer.hit()
 						if tauon.player4_state != PlayerState.PAUSED:
 							transition_time += elapsed * applied_rate
-							if transition_time > remain - prefs.device_buffer / 1000 * applied_rate:
+							# Switch over when the join is heard
+							if transition_time > remain + output_delay() * applied_rate:
+								past_join = transition_time - remain
 								break
 						if pctl.commit and tauon.player4_state == PlayerState.PLAYING:
 							track(end=False)
@@ -2670,7 +2686,8 @@ def player4(tauon: Tauon) -> None:
 					loaded_track = target_object
 					loaded_track_streamed = stream_url is not None
 					loaded_track_growing = growing_unfinished = False
-					pctl.playing_time = pctl.jump_time
+					# Where backend_position() has the new track by now
+					pctl.playing_time = pctl.jump_time + past_join
 				else:
 					if pctl.commit and subcommand != "repeat":
 						pctl.advance(quiet=True, end=True)

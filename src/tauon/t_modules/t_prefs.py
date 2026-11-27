@@ -208,6 +208,7 @@ class Prefs:
 	spec2_colour_mode = 0
 
 	device_buffer = 80
+	device_buffer_custom: bool = False  # off: the backend picks
 
 	eq = [0.0] * 10
 	use_eq: bool = False

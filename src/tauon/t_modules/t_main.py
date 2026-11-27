@@ -35933,6 +35933,8 @@ class Over:
 			_("Audio stack"): "pulseaudio pulse pipewire alsa backend linux sound server",
 			_("Avoid resampling"): "bit perfect bitperfect sample rate samplerate hi-res hires high resolution native khz 44.1 48 96 192 exclusive quality",
 			_("Force stereo output"): "surround 5.1 7.1 multichannel downmix two channel 2.0 speakers",
+			_("Custom device buffer"): "latency crackling crackle stutter underrun xrun quantum pipewire pulseaudio period buffer size",
+			_("Device buffer"): "latency crackling crackle stutter underrun xrun quantum milliseconds ms buffer size",
 			_("Direct DSD output"): "dsd dop sacd native passthrough bitstream dac",
 			_("Pre-roll silence"): "gap delay clipped cut off start beginning dac wake silence padding",
 			_("Pre-roll duration"): "gap delay silence length seconds dac clipped start",
@@ -36644,6 +36646,18 @@ class Over:
 		old_force_stereo = prefs.force_stereo_output
 		prefs.force_stereo_output = rows.switch(prefs.force_stereo_output, _("Force stereo output"))
 		if prefs.force_stereo_output != old_force_stereo:
+			self.pctl.playerCommand = "set-device"
+			self.pctl.playerCommandReady = True
+
+		old_buffer = (prefs.device_buffer_custom, prefs.device_buffer)
+		prefs.device_buffer_custom = rows.switch(
+			prefs.device_buffer_custom, _("Custom device buffer"),
+			_("Raise it if playback crackles under load. Adds latency."))
+		if prefs.device_buffer_custom:
+			prefs.device_buffer = rows.stepper(
+				_("Device buffer"), prefs.device_buffer, 20, 1000, step=20,
+				formatter=lambda value: f"{value} ms")
+		if old_buffer != (prefs.device_buffer_custom, prefs.device_buffer):
 			self.pctl.playerCommand = "set-device"
 			self.pctl.playerCommandReady = True
 
@@ -59901,6 +59915,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("use-pre-roll", prefs.use_pre_roll)
 	cf.update_value("pre-roll-time", prefs.pre_roll_time)
 	cf.update_value("device-buffer-ms", prefs.device_buffer)
+	cf.update_value("device-buffer-custom", prefs.device_buffer_custom)
 	cf.update_value("output-samplerate", prefs.samplerate)
 	cf.update_value("resample-quality", prefs.resample)
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
@@ -60141,7 +60156,14 @@ def load_prefs(bag: Bag) -> None:
 		"Pre-roll silence in milliseconds. Min: 100, Max: 10000, Default: 1500.")
 	prefs.pre_roll_time = max(100, min(10000, prefs.pre_roll_time))
 
-	prefs.device_buffer = cf.sync_add("int", "device-buffer-ms", prefs.device_buffer, "Default: 80")
+	prefs.device_buffer = cf.sync_add(
+		"int", "device-buffer-ms", prefs.device_buffer,
+		"Used when device-buffer-custom is on. Min: 20, Max: 1000, Default: 80")
+	prefs.device_buffer = max(20, min(1000, prefs.device_buffer))
+	# A buffer already edited by hand stays in use
+	prefs.device_buffer_custom = cf.sync_add(
+		"bool", "device-buffer-custom", prefs.device_buffer_custom or prefs.device_buffer != 80,
+		"Use device-buffer-ms instead of the backend's own buffer size.")
 	#prefs.samplerate = cf.sync_add(
 	#	"int", "output-samplerate", prefs.samplerate,
 	#	"In hz. Default: 48000, alt: 44100. (restart app to apply change)")

@@ -342,7 +342,7 @@ float peak_roll_r = 0.;
 float gate = 1.0;  // Used for ramping
 
 int config_fast_seek = 0;
-int config_dev_buffer = 80;
+int config_dev_buffer = 0;  // ms, 0 = automatic
 int config_fade_jump = 1;
 char config_output_sink[256]; // 256 just a conservative guess
 int config_fade_duration = 700;
@@ -4819,6 +4819,10 @@ static void pcm_float_to_int(const float *src, void *dst, int count, int bytes) 
 			// rest of the device buffer, so take the whole buffer as the estimate.
 			ma_uint32 rate = device.playback.internalSampleRate;
 			ma_uint32 frames = device.playback.internalPeriodSizeInFrames * device.playback.internalPeriods;
+			// On PulseAudio a period is tlength, the whole target buffer
+			if (device.pContext != NULL && device.pContext->backend == ma_backend_pulseaudio) {
+				frames = device.playback.internalPeriodSizeInFrames;
+			}
 			if (rate > 0 && frames > 0) latency = (int64_t) ((double) frames * 1e9 / rate);
 		}
 		mini_latency_ns = latency;
@@ -5050,6 +5054,20 @@ int disconnect_pulse() {
 			pw_properties_set(mutable_props, PW_KEY_NODE_RATE, NULL);
 		}
 
+		// Ask for a quantum of a quarter of the device buffer, the same period
+		// the other backends use. Automatic (0) leaves it to the graph default.
+		// PipeWire clamps it to its own min/max quantum.
+		if (dsd_active || config_dev_buffer <= 0) {
+			pw_properties_set(mutable_props, PW_KEY_NODE_LATENCY, NULL);
+		} else {
+			int latency_rate = pipe_set_samplerate > 0 ? pipe_set_samplerate : 48000;
+			int period_ms = config_dev_buffer < 4 ? 1 : config_dev_buffer / 4;
+			int quantum = (int) ((int64_t) period_ms * latency_rate / 1000);
+			if (quantum < 32) quantum = 32;
+			pw_properties_setf(mutable_props, PW_KEY_NODE_LATENCY, "%d/%d", quantum, latency_rate);
+			log_msg(LOG_INFO, "ph: Requesting PipeWire quantum %d/%d", quantum, latency_rate);
+		}
+
 		// Set the target device if selected
 		if (selected_index != -1) {
 			pthread_mutex_lock(&pipe_devices_mutex);
@@ -5180,8 +5198,14 @@ void connect_pulse() {
 		config.sampleRate        = set_samplerate;           // Set to 0 to use the device's native sample rate.
 		config.dataCallback      = data_callback;   // This function will be called when miniaudio needs more data.
 		config.notificationCallback = notification_callback;
-		config.periodSizeInMilliseconds      = config_dev_buffer / 4;
-		config.periods      = 4;   //
+		// config_dev_buffer is the whole device buffer, in 4 periods. miniaudio's
+		// PulseAudio backend sets tlength (the server's target fill) to a single
+		// period, so give it the whole buffer as the period there.
+		// 0 is automatic. miniaudio's own PulseAudio default is a ~25 ms tlength,
+		// which crackles under load, so automatic means 80 ms here.
+		ma_uint32 dev_buffer_ms = config_dev_buffer <= 0 ? 80 : config_dev_buffer < 4 ? 4 : (ma_uint32) config_dev_buffer;
+		config.periodSizeInMilliseconds = context.backend == ma_backend_pulseaudio ? dev_buffer_ms : dev_buffer_ms / 4;
+		config.periods = 4;
 		// Fill exactly what the backend asks for. A fixed-size callback goes
 		// through an extra buffer whose fill would add to the latency unseen.
 		config.noFixedSizedCallback = MA_TRUE;
