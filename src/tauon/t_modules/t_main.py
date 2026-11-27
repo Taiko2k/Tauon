@@ -6874,6 +6874,8 @@ class Menu:
 		self.reference: object | None = 0
 		self.items: list[MenuItem | None] = []
 		self.subs: list[list[MenuItem]] = []
+		# Submenus refilled on each activate(): sub index -> item factory
+		self.sub_builders: dict[int, Callable[[], list[MenuItem]]] = {}
 		self.selected = -1
 		self.up: bool = False
 		self.down: bool = False
@@ -7030,11 +7032,23 @@ class Menu:
 		self.items.append(None)
 		self._widths_dirty = True
 
-	def add_sub(self, title: str, width: int, show_test=None) -> None:
+	def add_sub(self, title: str, width: int, show_test=None, builder: Callable[[], list[MenuItem]] | None = None) -> None:
+		"""Add a submenu. A builder refills its items each time the menu opens."""
 		self.items.append(MenuItem(title, self.deco, sub_menu_width=width, show_test=show_test, is_sub_menu=True, sub_menu_number=self.sub_number))
+		if builder is not None:
+			self.sub_builders[self.sub_number] = builder
 		self.sub_number += 1
 		self.subs.append([])
 		self._widths_dirty = True
+
+	def rebuild_subs(self) -> None:
+		for index, builder in self.sub_builders.items():
+			items = builder()
+			for item in items:
+				if item.render_func is None:
+					item.render_func = self.deco
+			self.subs[index] = items
+			self._widths_dirty = True
 
 	def add_to_sub(self, sub_menu_index: int, menu_item: MenuItem) -> None:
 		if menu_item.render_func is None:
@@ -7704,6 +7718,7 @@ class Menu:
 		self.popup_window = None
 		self.slider_held = None
 		self.slider_value_item = None
+		self.rebuild_subs()
 		self.rescale()
 		self.update_widths()
 
@@ -14679,6 +14694,44 @@ class Tauon:
 	def selection_track_ids(self) -> list[int]:
 		playlist = self.pctl.default_playlist
 		return [playlist[i] for i in self.gui.shift_selection if 0 <= i < len(playlist)]
+
+	def add_to_playlist_menu_items(self) -> list[MenuItem]:
+		"""Add to Playlist submenu: New Playlist, then every playlist."""
+		viewing = self.pctl.active_playlist_viewing
+		items = [MenuItem(_("New Playlist"), self.add_selection_to_new_playlist)]
+		for i, playlist in enumerate(self.pctl.multi_playlist):
+			items.append(MenuItem(
+				playlist.title, self.add_selection_to_playlist, args=playlist.uuid_int,
+				disable_test=lambda i=i: i == viewing))
+		return items
+
+	def add_selection_to_playlist(self, _ref: object, playlist_id: int) -> None:
+		"""Append the selected tracks to the end of a playlist."""
+		pl = self.pctl.id_to_pl(playlist_id)
+		if pl is None or pl == self.pctl.active_playlist_viewing:
+			return
+		playlist = self.pctl.default_playlist
+		tracks = [playlist[i] for i in sorted(set(self.gui.shift_selection)) if 0 <= i < len(playlist)]
+		if not tracks:
+			return
+		title = self.pctl.multi_playlist[pl].title
+
+		def added(count: int) -> None:
+			if not count:
+				return
+			for adds in (self.top_panel.adds, self.playlist_box.adds):
+				adds.append([playlist_id, count, Timer()])
+			self.toast(_("Added to {name}").format(name=title))
+			if self.pctl.gen_codes.get(playlist_id) and "self" not in self.pctl.gen_codes[playlist_id]:
+				self.clear_gen_ask(playlist_id)
+
+		self.add_playlist_tracks(playlist_id, tracks, added)
+
+	def add_selection_to_new_playlist(self) -> None:
+		playlist = self.pctl.default_playlist
+		positions = [i for i in sorted(set(self.gui.shift_selection)) if 0 <= i < len(playlist)]
+		if positions:
+			self.drop_tracks_to_new_playlist(positions)
 
 	def selection_one_folder(self, _ref: object = None) -> bool:
 		"""Whether every selected track is from the same folder."""
@@ -65060,6 +65113,7 @@ def main(holder: Holder) -> None:
 	track_menu.add_sub(_("Rating…"), 140)  # sub 0
 	track_menu.add(MenuItem(_("Ban Track"), tauon.toggle_track_ban, tauon.ban_track_deco, pass_ref=True, pass_ref_deco=True, icon=gui.ban_icon))
 	track_menu.br()
+	track_menu.add_sub(_("Add to Playlist"), 190, builder=tauon.add_to_playlist_menu_items)  # sub 1
 	track_menu.add(MenuItem(_("Add to Queue"), tauon.add_to_queue, pass_ref=True, hint="MB3"))
 	track_menu.add(MenuItem(_("Play Next"), tauon.add_to_queue_next, pass_ref=True))
 	track_menu.add(MenuItem(_("Show in Gallery"), tauon.menu_show_in_gal, pass_ref=True, show_test=tauon.test_show))
@@ -65067,16 +65121,15 @@ def main(holder: Holder) -> None:
 	track_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon, disable_test=tauon.edit_tags_disable_test))
 	track_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection, disable_test=tauon.rescan_disable_test))
 	track_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-	track_menu.add_sub(_("More…"), 180)  # sub 1
+	track_menu.add_sub(_("More…"), 180)  # sub 2
 	track_menu.br()
-	track_menu.add(MenuItem(_("Cut"), tauon.s_cut))
+	track_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	track_menu.add(MenuItem(_("Copy"), tauon.s_copy))
 	track_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
-	track_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	track_menu.add(MenuItem(_("Delete Track File"), tauon.delete_track, pass_ref=True, pass_ref_deco=True, icon=gui.delete_icon,
 		disable_test=tauon.delete_track_disable_test))
 	track_menu.br()
-	track_menu.add_sub(_("Search…"), 200)  # sub 2
+	track_menu.add_sub(_("Search…"), 200)  # sub 3
 	track_menu.add(MenuItem(_('Copy "Artist - Track"'), tauon.clip_ar_tr, pass_ref=True))
 	track_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
 	track_menu.br()
@@ -65087,17 +65140,17 @@ def main(holder: Holder) -> None:
 			star_labels[n], lambda n=n: tauon.rate_selection(n), check_test=lambda n=n: tauon.selection_rated(n)))
 	track_menu.add_to_sub(0, MenuItem(star_labels[0], lambda: tauon.rate_selection(0)))
 
-	track_menu.add_to_sub(1, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
+	track_menu.add_to_sub(2, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
 		icon=gui.transcode_icon, disable_test=tauon.transcode_disable_test))
-	track_menu.add_to_sub(1, MenuItem(_("Lyrics…"), tauon.show_lyrics_menu, pass_ref=True))
-	track_menu.add_to_sub(1, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
-	track_menu.add_to_sub(1, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
-	track_menu.add_to_sub(1, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
+	track_menu.add_to_sub(2, MenuItem(_("Lyrics…"), tauon.show_lyrics_menu, pass_ref=True))
+	track_menu.add_to_sub(2, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	track_menu.add_to_sub(2, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
+	track_menu.add_to_sub(2, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 
-	track_menu.add_to_sub(2, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
-	track_menu.add_to_sub(2, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True))
-	track_menu.add_to_sub(2, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
-	track_menu.add_to_sub(2, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
+	track_menu.add_to_sub(3, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
+	track_menu.add_to_sub(3, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True))
+	track_menu.add_to_sub(3, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
+	track_menu.add_to_sub(3, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Folder heading menu (the reference is the folder's first track)
 	folder_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon, disable_test=tauon.menu_open_folder_disable_test))
@@ -65105,6 +65158,7 @@ def main(holder: Holder) -> None:
 	folder_menu.add_sub(_("Rating…"), 140)  # sub 0
 	folder_menu.add(MenuItem(_("Ban Folder"), tauon.toggle_folder_ban, tauon.ban_folder_deco, pass_ref=True, pass_ref_deco=True, icon=gui.ban_folder_icon))
 	folder_menu.br()
+	folder_menu.add_sub(_("Add to Playlist"), 190, builder=tauon.add_to_playlist_menu_items)  # sub 1
 	folder_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True, hint="MB3"))
 	folder_menu.add(MenuItem(_("Play Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 	folder_menu.add(MenuItem(_("Show in Gallery"), tauon.menu_show_in_gal, pass_ref=True, show_test=tauon.test_show))
@@ -65112,15 +65166,14 @@ def main(holder: Holder) -> None:
 	folder_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon, disable_test=tauon.edit_tags_disable_test))
 	folder_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection, disable_test=tauon.rescan_disable_test))
 	folder_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-	folder_menu.add_sub(_("More…"), 180)  # sub 1
+	folder_menu.add_sub(_("More…"), 180)  # sub 2
 	folder_menu.br()
-	folder_menu.add(MenuItem(_("Cut"), tauon.s_cut))
+	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	folder_menu.add(MenuItem(_("Copy"), tauon.s_copy))
 	folder_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
-	folder_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	folder_menu.add(MenuItem(_("Delete Files"), tauon.delete_selected_files, icon=gui.delete_icon, disable_test=tauon.delete_files_disable_test))
 	folder_menu.br()
-	folder_menu.add_sub(_("Search…"), 200)  # sub 2
+	folder_menu.add_sub(_("Search…"), 200)  # sub 3
 	folder_menu.add(MenuItem(_('Copy "Artist - Album"'), tauon.clip_title, pass_ref=True))
 	folder_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
 	folder_menu.br()
@@ -65133,16 +65186,16 @@ def main(holder: Holder) -> None:
 			check_test=lambda n=n: tauon.folder_rated(folder_menu.reference, n)))
 	folder_menu.add_to_sub(0, MenuItem(star_labels[0], tauon.rate_folder, args=0))
 
-	folder_menu.add_to_sub(1, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
+	folder_menu.add_to_sub(2, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
 		icon=gui.transcode_icon, disable_test=tauon.transcode_disable_test))
-	folder_menu.add_to_sub(1, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
-	folder_menu.add_to_sub(1, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
-	folder_menu.add_to_sub(1, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
+	folder_menu.add_to_sub(2, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	folder_menu.add_to_sub(2, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
+	folder_menu.add_to_sub(2, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 
-	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
-	folder_menu.add_to_sub(2, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
-	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
-	folder_menu.add_to_sub(2, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
+	folder_menu.add_to_sub(3, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
+	folder_menu.add_to_sub(3, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
+	folder_menu.add_to_sub(3, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
+	folder_menu.add_to_sub(3, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Selection menu (the reference is the right-clicked track)
 	selection_menu.add(MenuItem(_("Open Folder"), tauon.menu_open_folder, pass_ref=True, pass_ref_deco=True, icon=gui.folder_icon,
@@ -65152,6 +65205,7 @@ def main(holder: Holder) -> None:
 	selection_menu.add_sub(_("Rating…"), 140)  # sub 0
 	selection_menu.add(MenuItem(_("Ban Tracks"), tauon.toggle_selection_ban, tauon.ban_selection_deco, icon=ban_sel_icon))
 	selection_menu.br()
+	selection_menu.add_sub(_("Add to Playlist"), 190, builder=tauon.add_to_playlist_menu_items)  # sub 1
 	selection_menu.add(MenuItem(_("Add to Queue"), tauon.add_selected_to_queue_multi, tauon.selection_queue_deco))
 	selection_menu.add(MenuItem(_("Play Next"), tauon.add_selection_to_queue_next))
 	selection_menu.br()
@@ -65160,12 +65214,11 @@ def main(holder: Holder) -> None:
 	# Folder tools only when the selection is within one folder
 	selection_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon,
 		disable_test=tauon.rename_folders_disable_test, show_test=tauon.selection_one_folder))
-	selection_menu.add_sub(_("More…"), 180)  # sub 1
+	selection_menu.add_sub(_("More…"), 180)  # sub 2
 	selection_menu.br()
-	selection_menu.add(MenuItem(_("Cut"), tauon.s_cut))
+	selection_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	selection_menu.add(MenuItem(_("Copy"), tauon.s_copy))
 	selection_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
-	selection_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	selection_menu.add(MenuItem(_("Delete Files"), tauon.delete_selected_files, icon=gui.delete_icon, disable_test=tauon.delete_files_disable_test))
 	selection_menu.br()
 	selection_menu.add(MenuItem(_("Layout…"), layout_panel_opener(selection_menu)))
@@ -65175,10 +65228,10 @@ def main(holder: Holder) -> None:
 			star_labels[n], lambda n=n: tauon.rate_selection(n), check_test=lambda n=n: tauon.selection_rated(n)))
 	selection_menu.add_to_sub(0, MenuItem(star_labels[0], lambda: tauon.rate_selection(0)))
 
-	selection_menu.add_to_sub(1, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
+	selection_menu.add_to_sub(2, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
 		icon=gui.transcode_icon, disable_test=tauon.transcode_disable_test,
 		show_test=tauon.selection_one_folder))
-	selection_menu.add_to_sub(1, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
+	selection_menu.add_to_sub(2, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
 
 	# Gallery album menu: the folder heading layout with the gallery's own items
 	# after Open Folder. The reference is the album's first track, and the
@@ -65195,21 +65248,21 @@ def main(holder: Holder) -> None:
 	gallery_menu.add_sub(_("Rating…"), 140)  # sub 1
 	gallery_menu.add(MenuItem(_("Ban Folder"), tauon.toggle_folder_ban, tauon.ban_folder_deco, pass_ref=True, pass_ref_deco=True, icon=gallery_ban_icon))
 	gallery_menu.br()
+	gallery_menu.add_sub(_("Add to Playlist"), 190, builder=tauon.add_to_playlist_menu_items)  # sub 2
 	gallery_menu.add(MenuItem(_("Add Album to Queue"), tauon.menu_add_album_to_queue, pass_ref=True, hint="MB3"))
 	gallery_menu.add(MenuItem(_("Play Next"), tauon.add_album_to_queue_fc, pass_ref=True))
 	gallery_menu.br()
 	gallery_menu.add(MenuItem(_("Edit Tags…"), tauon.activate_trans_editor, icon=gui.edit_tags_icon, disable_test=tauon.edit_tags_disable_test))
 	gallery_menu.add(MenuItem(_("Rescan Tags"), tauon.reload_metadata_selection, disable_test=tauon.rescan_disable_test))
 	gallery_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
-	gallery_menu.add_sub(_("More…"), 180)  # sub 2
+	gallery_menu.add_sub(_("More…"), 180)  # sub 3
 	gallery_menu.br()
-	gallery_menu.add(MenuItem(_("Cut"), tauon.s_cut))
+	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	gallery_menu.add(MenuItem(_("Copy"), tauon.s_copy))
 	gallery_menu.add(MenuItem(_("Paste"), tauon.menu_paste, tauon.paste_deco, pass_ref=True))
-	gallery_menu.add(MenuItem(_("Remove"), tauon.del_selected))
 	gallery_menu.add(MenuItem(_("Delete Files"), tauon.delete_selected_files, icon=gui.delete_icon, disable_test=tauon.delete_files_disable_test))
 	gallery_menu.br()
-	gallery_menu.add_sub(_("Search…"), 200)  # sub 3
+	gallery_menu.add_sub(_("Search…"), 200)  # sub 4
 	gallery_menu.add(MenuItem(_('Copy "Artist - Album"'), tauon.clip_title, pass_ref=True))
 	gallery_menu.add(MenuItem(_("Copy TIDAL Album URL"), tauon.tidal_copy_album, show_test=tauon.is_tidal_track, pass_ref=True))
 
@@ -65227,16 +65280,16 @@ def main(holder: Holder) -> None:
 			check_test=lambda n=n: tauon.folder_rated(gallery_menu.reference, n)))
 	gallery_menu.add_to_sub(1, MenuItem(star_labels[0], tauon.rate_folder, args=0))
 
-	gallery_menu.add_to_sub(2, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
+	gallery_menu.add_to_sub(3, MenuItem(_("Transcode Folder"), tauon.convert_folder, tauon.transcode_deco, pass_ref=True, pass_ref_deco=True,
 		icon=gui.transcode_icon, disable_test=tauon.transcode_disable_test))
-	gallery_menu.add_to_sub(2, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
-	gallery_menu.add_to_sub(2, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
-	gallery_menu.add_to_sub(2, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
+	gallery_menu.add_to_sub(3, MenuItem(_("Fix Mojibake"), tauon.intel_moji, pass_ref=True))
+	gallery_menu.add_to_sub(3, MenuItem(_("Locate Missing Files…"), tauon.relocate_box.activate, pass_ref=True, pass_ref_deco=True, disable_test=tauon.relocate_box.disable_test))
+	gallery_menu.add_to_sub(3, MenuItem(_("Vacuum Playtimes"), tauon.vacuum_playtimes, pass_ref=True, show_test=inp.test_shift))
 
-	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
-	gallery_menu.add_to_sub(3, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
-	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
-	gallery_menu.add_to_sub(3, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
+	gallery_menu.add_to_sub(4, MenuItem(_("Search Artist on Wikipedia"), tauon.ser_wiki, pass_ref=True))
+	gallery_menu.add_to_sub(4, MenuItem(_("Search Track on Genius"), tauon.ser_gen, pass_ref=True, disable_test=lambda: True))  # Needs a single track
+	gallery_menu.add_to_sub(4, MenuItem(_("Search Artist on RYM"), tauon.ser_rym, pass_ref=True))
+	gallery_menu.add_to_sub(4, MenuItem(_("Search Artist on Bandcamp"), tauon.ser_band, pass_ref=True, icon=band_icon))
 
 	# Folder navigator items that used to be added alongside
 	folder_tree_menu.add(MenuItem(_("Modify Folder…"), tauon.rename_folders, pass_ref=True, pass_ref_deco=True, icon=gui.mod_folder_icon, disable_test=tauon.rename_folders_disable_test))
