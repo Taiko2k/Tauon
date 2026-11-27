@@ -29,6 +29,7 @@ import base64
 import bisect
 import builtins
 import colorsys
+import contextlib
 import copy
 import ctypes
 import ctypes.util
@@ -1339,6 +1340,7 @@ class GuiVar:
 		self.sync_files_total = 0
 		self.sync_files_done = 0
 		self.sync_transcode_folder: list[int] | None = None
+		self.sync_transcode_name: str | None = None
 		self.sync_transcode_failed = False
 
 		self.bar_hover_timer = Timer()
@@ -13087,6 +13089,7 @@ class Tauon:
 			self.gui.sync_progress = ""
 			self.gui.stop_sync = False
 			self.gui.sync_transcode_folder = None
+			self.gui.sync_transcode_name = None
 			self.gui.sync_transcode_failed = False
 			self.gui.sync_folders_total = self.gui.sync_folders_done = 0
 			self.gui.sync_files_total = self.gui.sync_files_done = 0
@@ -13120,6 +13123,9 @@ class Tauon:
 			self.show_message(_("Sync canceled"), mode="warning")
 			return
 
+		failed = False
+		aborted = False
+
 		# Find the folder names the transcode function would name them
 		for folder in folders:
 			name = encode_folder_name(self.pctl.get_track(folder[0]))
@@ -13127,6 +13133,11 @@ class Tauon:
 				if self.pctl.get_track(item).album != self.pctl.get_track(folder[0]).album:
 					name = os.path.basename(self.pctl.get_track(folder[0]).parent_folder_path)
 					break
+			if name in folder_dict:
+				self.show_message(
+					_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
+				failed = True
+				continue
 			folder_names.append(name)
 			folder_dict[name] = folder
 
@@ -13143,22 +13154,36 @@ class Tauon:
 					shutil.rmtree(path / d_folder)
 
 		# -------
-		# Find todos
-		todos: list[str] = []
+		# Find todos, per file, so a partial folder gets only what it lacks
+		todos: list[tuple[str, Path | None, list[str]]] = []
 		for folder in folder_names:
-			if folder not in d_folder_names:
-				todos.append(folder)
-				logging.info(f"Want to add: {folder}")
+			if self.gui.stop_sync:
+				break
+			tracks = folder_dict[folder]
+			device_keys = sync_device_keys(sync_folder_files(path / folder)) if folder in d_folder_names else set()
+			if self.prefs.bypass_transcode or (self.prefs.smart_bypass and 0 < self.pctl.get_track(tracks[0]).bitrate <= 128):
+				source_parent = Path(self.pctl.get_track(tracks[0]).parent_folder_path)
+				if not source_parent.is_dir():
+					self.show_message(_("One or more folders is missing"))
+					failed = True
+					continue
+				source_files = sync_folder_files(source_parent, clean=False)
+				missing = [name for name in source_files if not sync_on_device(device_keys, name)]
+				bypass_source: Path | None = source_parent
 			else:
-				logging.error(f"Already exists: {folder}")
+				missing = [name for name in self.sync_output_names(tracks) if not sync_on_device(device_keys, name)]
+				bypass_source = None
+			if missing:
+				todos.append((folder, bypass_source, missing))
+				logging.info(f"Want to add {len(missing)} files to: {folder}")
+			else:
+				logging.info(f"Already synced: {folder}")
 
 		self.gui.sync_folders_total = len(todos)
 		self.gui.request_frame()
-		failed = False
-		aborted = False
 		# -----
 		# Prepare and copy
-		for i, item in enumerate(todos):
+		for i, (item, bypass_source, missing) in enumerate(todos):
 			self.gui.sync_progress = _("Copying files to device")
 			self.gui.sync_files_total = self.gui.sync_files_done = 0
 			self.gui.sync_speed = 0
@@ -13172,84 +13197,76 @@ class Tauon:
 				aborted = True
 				break
 
-			if self.prefs.bypass_transcode or (self.prefs.smart_bypass and 0 < self.pctl.get_track(folder_dict[item][0]).bitrate <= 128):
+			folder_failed = False
+			if bypass_source is not None:
 				logging.info("Smart bypass...")
-
-				source_parent = Path(self.pctl.get_track(folder_dict[item][0]).parent_folder_path)
-				if source_parent.exists():
-					if (path / item).exists():
-						self.show_message(
-							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
-						failed = True
-						continue
-
-					(path / item).mkdir()
-					encode_done = source_parent
-				else:
-					self.show_message(_("One or more folders is missing"))
-					failed = True
-					continue
+				encode_done = bypass_source
+				copy_names = missing
 			else:
 				encode_done = self.prefs.encoder_output / item
-				# TODO(Martin): We should make sure that the length of the source and target matches or is greater, not just that the dir exists and is not empty!
-				if not encode_done.exists() or not any(encode_done.iterdir()):
+				names = self.sync_output_names(folder_dict[item])
+				cached = sync_folder_files(encode_done)
+				if not all(cached.get(name) for name in missing):
 					logging.info("Need to transcode")
 					remain = len(todos) - i
 					if remain > 1:
 						self.gui.sync_progress = _("{N} Folders Remaining").format(N=str(remain))
 					else:
 						self.gui.sync_progress = _("{N} Folder Remaining").format(N=str(remain))
-					self.gui.sync_transcode_folder = folder_dict[item]
+					# Only the tracks the device lacks
+					wanted = {names[name] for name in missing}
+					batch = [track for track in folder_dict[item] if track in wanted]
+					self.gui.sync_transcode_folder = batch
+					self.gui.sync_transcode_name = item
 					self.gui.sync_transcode_failed = False
-					self.queue_transcode([folder_dict[item]])
+					self.queue_transcode([batch])
 					while self.transcode_list:
 						if self.gui.stop_sync:
 							del self.transcode_list[1:]
 							self.gui.tc_cancel = True
 						time.sleep(1)
 					self.gui.sync_transcode_folder = None
+					self.gui.sync_transcode_name = None
 					if self.gui.stop_sync:
 						break
-					if self.gui.sync_transcode_failed:
-						failed = True
-						continue
+					# Copy what did encode, the rest is retried next sync
+					folder_failed = self.gui.sync_transcode_failed
+					cached = sync_folder_files(encode_done)
 				else:
 					logging.warning("A transcode is already done")
+				copy_names = [name for name in missing if cached.get(name)]
+				folder_failed |= len(copy_names) < len(missing)
+				if copy_names:
+					device_keys = sync_device_keys(sync_folder_files(path / item))
+					copy_names += [
+						name for name in cached
+						if name not in names and name.startswith("cover.") and not sync_on_device(device_keys, name)]
 
-				if encode_done.exists():
-					if (path / item).exists():
-						self.show_message(
-							_("Sync warning"), _("Multiple folders to sync have the same name. Skipping."), mode="warning")
-						failed = True
-						continue
+			if not copy_names:
+				failed = True
+				continue
+			(path / item).mkdir(exist_ok=True)
 
-					(path / item).mkdir()
-				else:
-					failed = True
-					continue
-
-			files = [entry for entry in encode_done.iterdir() if entry.is_file()]
-			self.gui.sync_files_total = len(files)
+			self.gui.sync_files_total = len(copy_names)
 			self.gui.sync_progress = _("Copying files to device")
 			self.gui.request_frame()
-			folder_failed = False
-			for source_file in files:
+			for file in copy_names:
 				if self.gui.stop_sync:
 					break
-				file = source_file.name
+				source_file = encode_done / file
 				logging.info(f"Copy file {file} to {path / item}…")
 				self.sync_file_timer.set()
 				try:
 					size = source_file.stat().st_size
 					try:
-						shutil.copyfile(source_file, path / item / file)
+						sync_copy_file(source_file, path / item / file)
 					except OSError as e:
 						if e.errno != 22:
 							raise
-						sanitized_file = re.sub(r'[<>:"/\\|?*]', "_", file)
+						sanitized_file = sync_sanitize(file)
 						if sanitized_file == file:
 							raise
-						shutil.copyfile(source_file, path / item / sanitized_file)
+						sync_copy_file(source_file, path / item / sanitized_file)
 						logging.warning(f"Had to rename {file} to {sanitized_file} on the output! Probably a FS limitation!")
 				except Exception:
 					logging.exception("Unknown error trying to copy file")
@@ -13281,6 +13298,13 @@ class Tauon:
 				self.show_message(_("Sync finished with errors"), mode="warning")
 			else:
 				self.show_message(_("Sync completed"), mode="done")
+
+	def sync_output_names(self, tracks: list[int]) -> dict[str, int]:
+		"""File names a sync transcode writes, mapped to their track."""
+		codec = self.prefs.transcode_codec
+		if codec == "opus" and self.prefs.transcode_opus_as:
+			codec = "ogg"
+		return {encode_track_name(self.pctl.get_track(track)) + "." + codec: track for track in tracks}
 
 	def auto_sync(self, pl: int) -> None:
 		shoot_dl = threading.Thread(target=self.auto_sync_thread, args=([pl]))
@@ -60809,6 +60833,57 @@ def encode_track_name(track_object: TrackClass) -> str:
 		return filename_safe(out_line)
 	return os.path.splitext(track_object.filename)[0]
 
+# Plain audio formats, the base of what imports accept
+AUDIO_EXTENSIONS = frozenset({
+	"mp3", "wav", "opus", "flac", "ape", "aiff",
+	"m4a", "m4b", "ogg", "oga", "aac", "tta", "wv", "wma",
+	"dsf", "dff",
+})
+
+def sync_sanitize(name: str) -> str:
+	"""The name sync falls back to on file systems that reject some characters."""
+	return re.sub(r'[<>:"/\\|?*]', "_", name)
+
+def sync_folder_files(folder: Path, clean: bool = True) -> dict[str, int]:
+	"""Sizes of the files in a folder, removing copies a sync left unfinished."""
+	files: dict[str, int] = {}
+	if not folder.is_dir():
+		return files
+	for entry in os.scandir(folder):
+		if not entry.is_file():
+			continue
+		if entry.name.endswith(".tauon-part"):
+			if clean:
+				with contextlib.suppress(OSError):
+					os.remove(entry.path)
+			continue
+		files[entry.name] = entry.stat().st_size
+	return files
+
+def sync_match_key(name: str) -> str:
+	"""Audio files match by name alone, so changing the transcode codec doesn't sync a second copy."""
+	stem, ext = os.path.splitext(name)
+	return stem if ext[1:].lower() in AUDIO_EXTENSIONS else name
+
+def sync_device_keys(device_files: dict[str, int]) -> set[str]:
+	"""Match keys for the non-empty files on the device."""
+	return {sync_match_key(name) for name, size in device_files.items() if size}
+
+def sync_on_device(device_keys: set[str], name: str) -> bool:
+	"""Whether the device has this file, under its own or its fallback name."""
+	return sync_match_key(name) in device_keys or sync_match_key(sync_sanitize(name)) in device_keys
+
+def sync_copy_file(source: Path, target: Path) -> None:
+	"""Copy under a temporary name, so an interrupted copy never looks finished."""
+	part = target.with_name(target.name + ".tauon-part")
+	try:
+		shutil.copyfile(source, part)
+		os.replace(part, target)
+	except BaseException:
+		with contextlib.suppress(OSError):
+			part.unlink()
+		raise
+
 def encode_folder_name(track_object: TrackClass) -> str:
 	folder_name = track_object.artist + " - " + track_object.album
 
@@ -62219,6 +62294,10 @@ def worker1(tauon: Tauon) -> None:
 						folder_name = ref_track_object.parent_folder_name
 						break
 
+				# Sync may send part of a folder, which must keep the whole folder's name
+				if folder_items is gui.sync_transcode_folder and gui.sync_transcode_name:
+					folder_name = gui.sync_transcode_name
+
 				logging.info(f"Transcoding folder: {folder_name}")
 
 				# Remove any existing matching folder
@@ -62895,11 +62974,7 @@ def main(holder: Holder) -> None:
 		VID = set(VIDEO_EXTENSIONS),
 		MOD = MOD_Formats,
 		GME = GME_Formats,
-		DA = {
-			"mp3", "wav", "opus", "flac", "ape", "aiff",
-			"m4a", "m4b", "ogg", "oga", "aac", "tta", "wv", "wma",
-			"dsf", "dff",
-		} | MOD_Formats | GME_Formats,
+		DA = set(AUDIO_EXTENSIONS) | MOD_Formats | GME_Formats,
 		Archive = Archive_Formats,
 	)
 
