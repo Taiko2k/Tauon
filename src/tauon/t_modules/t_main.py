@@ -68248,6 +68248,10 @@ def main(holder: Holder) -> None:
 		if inp.mouse_wheel or inp.k_input or gui.pl_update or gui.update or tauon.top_panel.adds:  # or mouse_moved:
 			run_frame = True
 
+		# Media keys arrive while hidden, when gui.update is cleared
+		if inp.media_key:
+			run_frame = True
+
 		if not tauon.smooth_scroll.enabled():
 			tauon.smooth_scroll.reset_disabled_motion()
 
