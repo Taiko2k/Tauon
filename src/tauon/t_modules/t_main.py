@@ -312,6 +312,7 @@ from tauon.t_modules.t_relocate import (  # noqa: E402
 	normalise as relocate_normalise,
 	remainder as relocate_remainder,
 )
+from tauon.t_modules.t_reveal import reveal_file  # noqa: E402
 from tauon.t_modules.t_scrobble_queue import (  # noqa: E402
 	LASTFM,
 	LIBREFM,
@@ -10999,14 +11000,11 @@ class Tauon:
 		if self.windows:
 			line = r'explorer /select,"{}"'.format(track.fullpath.replace("/", "\\"))
 			subprocess.Popen(line)
+		elif self.macos:
+			subprocess.Popen(["open", "-R", track.fullpath])
 		else:
-			line = track.parent_folder_path
-			line += "/"
-			if self.macos:
-				line = track.fullpath
-				subprocess.Popen(["open", "-R", line])
-			else:
-				subprocess.Popen(["xdg-open", line])
+			# D-Bus calls can block while a portal or file manager starts
+			threading.Thread(target=reveal_file, args=(track.fullpath,), daemon=True).start()
 
 	def menu_open_folder(self, ref: MenuTrackRef) -> None:
 		self.open_folder(ref.track_id)
