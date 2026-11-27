@@ -71,10 +71,16 @@ def fit_to_bounds(
 class SecondaryWindow:
 	"""A borderless popup window with its own renderer and draw context."""
 
-	def __init__(self, tauon: Tauon, *, popup: bool = True, transparent: bool = True, high_dpi: bool = True, focusable: bool = True) -> None:
+	def __init__(
+		self, tauon: Tauon, *, popup: bool = True, transparent: bool = True, high_dpi: bool = True,
+		focusable: bool = True, tooltip: bool = False,
+	) -> None:
 		self.tauon = tauon
 		self.parent: sdl3.LP_SDL_Window = tauon.t_window
 		self.popup = popup
+		# A tooltip popup never takes input: the pointer passes through it to the
+		# main window, so hovering under it does not end the hover that shows it.
+		self.tooltip = tooltip
 		self.transparent = transparent
 		self.high_dpi = high_dpi
 		# A non-focusable window never steals keyboard focus from the parent, so
@@ -166,7 +172,7 @@ class SecondaryWindow:
 			# the display (flipping/sliding near edges) - which is exactly the
 			# edge handling we want, against the real screen rather than the
 			# main window bounds.
-			flags |= sdl3.SDL_WINDOW_POPUP_MENU
+			flags |= sdl3.SDL_WINDOW_TOOLTIP if self.tooltip else sdl3.SDL_WINDOW_POPUP_MENU
 			self.window = sdl3.create_popup_window(
 				self.parent, self._to_points(offset_x), self._to_points(offset_y),
 				self._to_points(w), self._to_points(h), flags,
@@ -245,6 +251,10 @@ class SecondaryWindow:
 		keeps routing all mouse events to this window and the main window goes
 		unresponsive.
 		"""
+		# A tooltip never takes the capture, and releasing it would break a drag
+		# in the main window.
+		if self.tooltip:
+			return
 		# SDL popup windows cannot own a per-window mouse grab. Attempting to
 		# release one raises "Operation invalid on popup windows" on macOS.
 		sdl3.capture_mouse(False)
@@ -255,7 +265,8 @@ class SecondaryWindow:
 			sdl3.hide_window(self.window)
 			# Hiding does not reliably hand input focus back to the parent, so
 			# raise it explicitly.
-			sdl3.raise_window(self.parent)
+			if not self.tooltip:
+				sdl3.raise_window(self.parent)
 		self.visible = False
 
 	def destroy(self) -> None:

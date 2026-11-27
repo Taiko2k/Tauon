@@ -8714,6 +8714,11 @@ class Tauon:
 		self.menu_popup = None
 		self.submenu_popup = None
 		self.active_pointer_window = None
+		# Tooltip window for a tip that would run off the main window (see draw_tip).
+		# Closed by end_tip_frame on any frame that does not draw into it.
+		self.tip_popup = None
+		self.tip_popup_used = False
+		self.tip_popup_failed = False
 
 		self.smooth_scroll:                     SmoothScroll = SmoothScroll(tauon=self)
 		self.lb:                                ListenBrainz = ListenBrainz(tauon=self)
@@ -10568,13 +10573,71 @@ class Tauon:
 		self.aero.sunken(rect, self.aero.s(5))
 		return True
 
-	def glass_tip(self, rect) -> ColourRGBA | None:
-		"""Under Candy Factory, draw a tooltip's glass and return its text background;
-		None otherwise."""
-		if not self.aero.active:
-			return None
-		self.aero.menu_glass(rect)
-		return self.aero.menu_bg()
+	def draw_tip(
+		self, rect, text: str, font: int, fill: ColourRGBA, *, text_y: float, border: ColourRGBA | None = None,
+	) -> None:
+		"""Draw a one-line tooltip at rect (x, y, w, h), its border outside rect.
+
+		A tip that would run off the main window is drawn in its own tooltip
+		window instead, like a context menu, kept inside the display's usable area.
+		"""
+		from tauon.t_modules.t_window import SecondaryWindow, fit_to_bounds
+
+		x, y, w, h = (round(v) for v in rect)
+		b = max(1, round(self.gui.scale)) if border is not None else 0
+		ox, oy, ow, oh = x - b, y - b, w + b * 2, h + b * 2
+		win_w, win_h = self.inp.view_window or (self.window_size[0], self.window_size[1])
+		inside = ox >= 0 and oy >= 0 and ox + ow <= win_w and oy + oh <= win_h
+
+		# Pointer outside the window: the hover is stale, so don't pop out over other apps
+		if inside or self.tip_popup_failed or not self.gui.mouse_in_window:
+			self._paint_tip(self.ddt, None, (x, y, w, h), b, text, font, fill, text_y, border)
+			return
+
+		if self.tip_popup is None:
+			self.tip_popup = SecondaryWindow(self, focusable=False, tooltip=True)
+		popup = self.tip_popup
+		bounds = popup.usable_bounds()  # None on Wayland, where the compositor constrains it
+		if bounds is not None:
+			ox, oy = fit_to_bounds(bounds, (ox, oy, ow, oh))
+		if not popup.show(ow, oh, ox, oy):
+			# No popup windows here: slide the tip into the main window instead
+			self.close_tip_popup()
+			self.tip_popup_failed = True
+			x = max(b, min(x, win_w - w - b))
+			y = max(b, min(y, win_h - h - b))
+			self._paint_tip(self.ddt, None, (x, y, w, h), b, text, font, fill, text_y, border)
+			return
+
+		popup.begin_frame()
+		self._paint_tip(popup.ddt, popup.renderer, (b, b, w, h), b, text, font, fill, text_y, border)
+		popup.end_frame()
+		self.tip_popup_used = True
+
+	def _paint_tip(self, ddt: TDraw, renderer, rect, b: int, text: str, font: int, fill: ColourRGBA, text_y: float, border: ColourRGBA | None) -> None:
+		x, y, w, h = rect
+		if self.aero.active:
+			# Candy Factory draws tips on menu glass
+			self.aero.menu_glass(rect, renderer)
+			bg = self.aero.menu_bg()
+		else:
+			if border is not None:
+				ddt.rect((x - b, y - b, w + b * 2, h + b * 2), border)
+			ddt.rect(rect, fill)
+			bg = fill
+		ddt.text((x + w // 2, y + text_y, 2), text, self.colours.menu_text, font, bg=bg)
+
+	def close_tip_popup(self) -> None:
+		if self.tip_popup is not None:
+			self._destroy_secondary(self.tip_popup)
+			self.tip_popup = None
+		self.tip_popup_used = False
+
+	def end_tip_frame(self) -> None:
+		"""Close the tooltip window if no tip drew into it this frame."""
+		if not self.tip_popup_used:
+			self.close_tip_popup()
+		self.tip_popup_used = False
 
 	def ex_tool_tip(self, x: int, y: float, text1_width: int, text: str, font: int) -> None:
 		text2_width = self.ddt.get_text_w(text, font)
@@ -10588,13 +10651,9 @@ class Tauon:
 
 		x -= int(w / 2)
 
-		bg = self.glass_tip((x, y, w, h))
-		if bg is None:
-			bg = self.colours.menu_background
-			border = 1 * self.gui.scale
-			self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
-			self.ddt.rect((x, y, w, h), bg)
-		p = self.ddt.text((x + int(w / 2), y + 3 * self.gui.scale, 2), text, self.colours.menu_text, 312, bg=bg)
+		self.draw_tip(
+			(x, y, w, h), text, 312, self.colours.menu_background,
+			text_y=3 * self.gui.scale, border=self.colours.grey(60))
 
 	def menu_standard_or_grey(self, enabled: bool) -> Decorator:
 		line_colour = self.colours.menu_text if enabled else self.colours.menu_text_disabled
@@ -30199,13 +30258,9 @@ class ToolTip:
 	def render(self) -> None:
 		if self.called is True:
 			if self.timer.get() > self.trigger:
-				bg = self.tauon.glass_tip((self.x, self.y, self.w, self.h))
-				if bg is None:
-					bg = self.colours.box_button_background
-					self.ddt.rect((self.x, self.y, self.w, self.h), bg)
-				self.ddt.text(
-					(self.x + int(self.w / 2), self.y + 4 * self.gui.scale, 2), self.text,
-					self.colours.menu_text, self.font, bg=bg)
+				self.tauon.draw_tip(
+					(self.x, self.y, self.w, self.h), self.text, self.font,
+					self.colours.box_button_background, text_y=4 * self.gui.scale)
 			else:
 				# self.gui.update += 1
 				pass
@@ -30279,14 +30334,9 @@ class ToolTip3:
 		y = self.y
 		h = self.height
 
-		bg = self.tauon.glass_tip((x, y, w, h))
-		if bg is None:
-			bg = self.colours.menu_background
-			border = 1 * self.gui.scale
-			self.ddt.rect((x - border, y - border, w + border * 2, h + border * 2), self.colours.grey(60))
-			self.ddt.rect((x, y, w, h), bg)
-		p = self.ddt.text(
-			(x + int(w / 2), y + 3 * self.gui.scale, 2), self.text, self.colours.menu_text, 312, bg=bg)
+		self.tauon.draw_tip(
+			(x, y, w, h), self.text, 312, self.colours.menu_background,
+			text_y=3 * self.gui.scale, border=self.colours.grey(60))
 
 		if not self.coll(self.rect):
 			self.show = False
@@ -68120,6 +68170,7 @@ def main(holder: Holder) -> None:
 					# so it does not linger over other apps).
 					close_all_menus()
 					tauon.close_menu_popup()  # no-op if nothing is open
+					tauon.close_tip_popup()
 					inp.key_focused = 1
 					gui.request_frame()
 
@@ -71850,6 +71901,7 @@ def main(holder: Holder) -> None:
 
 			tauon.tool_tip.render()
 			tauon.tool_tip2.render()
+			tauon.end_tip_frame()
 
 			if tauon.console.fps_only:
 				tauon.console.diagnostic_tick()
