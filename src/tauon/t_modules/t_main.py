@@ -1312,7 +1312,6 @@ class GuiVar:
 		self.revert_icon      = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "revert.png", True))
 		self.radiorandom_icon = MenuIcon(asset_loader(self.bag, self.bag.loaded_asset_dc, "radiorandom.png", True))
 
-		self.last_fm_icon       = asset_loader(self.bag, self.bag.loaded_asset_dc, "as.png", True)
 		self.power_bar_icon     = asset_loader(self.bag, self.bag.loaded_asset_dc, "power.png", True)
 		self.mac_circle         = asset_loader(self.bag, self.bag.loaded_asset_dc, "macstyle.png", True)
 
@@ -16186,19 +16185,11 @@ class Tauon:
 			bg = self.colours.menu_background
 		return Decorator(self.colours.menu_text, bg, line)
 
-	def lastfm_colour(self) -> ColourRGBA | None:
-		if not self.prefs.scrobble_hold:
-			return ColourRGBA(250, 50, 50, 255)
-		return None
-
 	def lastfm_menu_test(self, _: int) -> bool:
 		return bool(
 			(self.prefs.auto_lfm and self.prefs.last_fm_token is not None)
 			or (self.prefs.auto_libre_fm and self.prefs.libre_fm_token is not None)
 			or self.prefs.enable_lb or self.prefs.maloja_enable)
-
-	def lb_mode(self) -> bool:
-		return self.prefs.enable_lb
 
 	def get_album_art_url(self, tr: TrackClass) -> str | None:
 		artist = tr.album_artist
@@ -65351,37 +65342,7 @@ def main(holder: Holder) -> None:
 	theme_files = os.listdir(str(tauon.install_directory / "theme"))
 	theme_files.sort()
 
-	lastfm_icon = MenuIcon(gui.last_fm_icon)
-
-	if gui.scale in (2, 1.25):
-		lastfm_icon.xoff = 0
-	else:
-		lastfm_icon.xoff = -1
-
-	lastfm_icon.yoff = 1
-
-	lastfm_icon.colour = ColourRGBA(249, 70, 70, 255)
-	lastfm_icon.colour_callback = tauon.lastfm_colour
-
-	lb_icon = MenuIcon(asset_loader(bag, bag.loaded_asset_dc, "lb-g.png"))
-	lb_icon.base_asset = asset_loader(bag, bag.loaded_asset_dc, "lb-gs.png")
-
-	lb_icon.mode_callback = tauon.lb_mode
-
-	lb_icon.xoff = 3
-	lb_icon.yoff = -1
-
-	if gui.scale == 1.25:
-		lb_icon.yoff = 0
-
-	if prefs.auto_lfm or prefs.auto_libre_fm:
-		listen_icon = lastfm_icon
-	elif tauon.lb.enable:
-		listen_icon = lb_icon
-	else:
-		listen_icon = None
-
-	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, icon=listen_icon, show_test=tauon.lastfm_menu_test))
+	x_menu.add(MenuItem("LFM", tauon.lastfm.toggle, tauon.last_fm_menu_deco, show_test=tauon.lastfm_menu_test))
 	#x_menu.add(MenuItem(_("Synced Lyrics Editor"), tauon.view_box.activate_synced_lyric_editor)) #show_test=tauon.exit_shuffle_layout))
 	#x_menu.add(MenuItem(_("Donate"), open_donate_link))
 	# The manual link lives in the sheet now
