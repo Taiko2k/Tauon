@@ -650,6 +650,12 @@ PyObject* native_get_window_size(PyObject*, PyObject* args) {
 	return Py_BuildValue("(ii)", width, height);
 }
 
+PyObject* native_get_window_display_scale(PyObject*, PyObject* value) {
+	SDL_Window* window = pointer_from_python<SDL_Window>(value, "window");
+	if (window == nullptr) return nullptr;
+	return PyFloat_FromDouble(SDL_GetWindowDisplayScale(window));
+}
+
 PyObject* native_set_window_size(PyObject*, PyObject* args) {
 	PyObject* window_value = nullptr;
 	int width = 0;
@@ -1608,6 +1614,7 @@ PyMethodDef native_render_methods[] = {
 	NATIVE_METHOD("destroy_window", native_destroy_window, METH_O),
 	NATIVE_METHOD("get_window_id", native_get_window_id, METH_O),
 	NATIVE_METHOD("get_window_size", native_get_window_size, METH_VARARGS),
+	NATIVE_METHOD("get_window_display_scale", native_get_window_display_scale, METH_O),
 	NATIVE_METHOD("set_window_size", native_set_window_size, METH_VARARGS),
 	NATIVE_METHOD("set_window_position", native_set_window_position, METH_VARARGS),
 	NATIVE_METHOD("set_window_mouse_grab", native_set_window_mouse_grab, METH_VARARGS),

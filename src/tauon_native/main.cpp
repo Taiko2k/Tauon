@@ -67,6 +67,8 @@ struct WindowState {
 	std::optional<std::pair<int, int>> position;
 	// Show the Candy Factory skin's painted loading screen instead of the star field
 	bool aqua_splash = false;
+	// False when there was no valid saved state, i.e. the first launch
+	bool from_file = false;
 };
 
 struct WindowDeleter {
@@ -713,7 +715,46 @@ WindowState load_window_state(const std::filesystem::path& path) {
 		std::cerr << "Tauon: ignoring invalid window state file: " << path << '\n';
 		return WindowState{};
 	}
+	state.from_file = true;
 	return state;
+}
+
+// With no saved state, size the window and splash for the display's scale.
+// Windows and X11 use pixels for window units, so the default size is scaled
+// by the OS setting there; elsewhere the units already follow it.
+void apply_default_window_scale(SDL_Window* window, WindowState& window_state) {
+	const float display_scale = SDL_GetWindowDisplayScale(window);
+	if (display_scale <= 0.0f) {
+		return;
+	}
+	window_state.scale = display_scale;
+	const char* driver = SDL_GetCurrentVideoDriver();
+	if (driver == nullptr) {
+		return;
+	}
+	const std::string_view name(driver);
+	if (name != "windows" && name != "x11") {
+		return;
+	}
+	const float density = SDL_GetWindowPixelDensity(window);
+	const float content_scale = density > 0.0f ? display_scale / density : display_scale;
+	if (content_scale < 1.05f) {
+		return;
+	}
+	int width = static_cast<int>(kDefaultWidth * content_scale + 0.5f);
+	int height = static_cast<int>(kDefaultHeight * content_scale + 0.5f);
+	const SDL_DisplayID display = SDL_GetDisplayForWindow(window);
+	SDL_Rect usable{};
+	if (display != 0 && SDL_GetDisplayUsableBounds(display, &usable)) {
+		width = std::min(width, usable.w * 9 / 10);
+		height = std::min(height, usable.h * 9 / 10);
+	}
+	SDL_SetWindowSize(window, width, height);
+	if (display != 0) {
+		SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+	}
+	window_state.width = width;
+	window_state.height = height;
 }
 
 void set_environment(const char* name, const std::string& value) {
@@ -1120,6 +1161,9 @@ bool initialise_native_app(NativeState& state, int argc, char** argv) {
 			show_startup_error("Window creation failed: " + error);
 		}
 		return false;
+	}
+	if (!state.window_state.from_file && (flags & SDL_WINDOW_FULLSCREEN) == 0) {
+		apply_default_window_scale(state.window.get(), state.window_state);
 	}
 	SDL_SetWindowOpacity(state.window.get(), static_cast<float>(state.window_state.opacity));
 	if (state.window_state.maximized && (flags & SDL_WINDOW_FULLSCREEN) == 0) {

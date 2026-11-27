@@ -17420,7 +17420,7 @@ class Tauon:
 			sdl3.set_window_size(self.t_window, size[0], size[1])
 
 	def reload_scale(self, skip_render: bool = False) -> None:
-		auto_scale(self.bag)
+		auto_scale(self.bag, self.t_window)
 
 		scale = self.prefs.scale_want
 
@@ -34671,7 +34671,7 @@ class Over:
 		if mode == 1:
 			return self.prefs.x_scale
 		self.prefs.x_scale ^= True
-		auto_scale(self.bag)
+		auto_scale(self.bag, self.t_window)
 		self.gui.update_layout = True
 		return None
 
@@ -60667,16 +60667,21 @@ def load_prefs(bag: Bag) -> None:
 		"string", "chart-font", prefs.chart_font,
 		"Format is fontname + size. Default is Monospace 10")
 
-def auto_scale(bag: Bag) -> None:
+def auto_scale(bag: Bag, window) -> None:
 	prefs = bag.prefs
 	old = prefs.scale_want
 
 	if prefs.x_scale:
-		prefs.scale_want = bag.window_size[0] / bag.logical_size[0]
+		# Pixel density times the OS scale setting. Density alone is always 1 on
+		# Windows and X11, where the setting is only in the content scale.
+		scale = sdl3.get_window_display_scale(window)
+		if scale <= 0:
+			scale = bag.window_size[0] / bag.logical_size[0]
+		prefs.scale_want = scale
 
 	prefs.scale_want = round(round(prefs.scale_want / 0.05) * 0.05, 2)
 	if prefs.x_scale and old != prefs.scale_want:
-		logging.info("Applying scale based on buffer size")
+		logging.info("Applying scale from the window's display scale")
 
 	if prefs.scale_want == 0.95:
 		prefs.scale_want = 1.0
@@ -63879,7 +63884,7 @@ def main(holder: Holder) -> None:
 	if db_version > 0 and db_version < latest_db_version:
 		clear_icon_cache(bag.dirs.scaled_asset_directory)
 
-	auto_scale(bag)
+	auto_scale(bag, t_window)
 	scale_assets(tauon, bag, gui, prefs.scale_want)
 	tauon.update_window_minimum_size()
 
@@ -67989,9 +67994,15 @@ def main(holder: Holder) -> None:
 				elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 					# sdl3.SDL_WINDOWEVENT_DISPLAY_CHANGED logs new display ID as data1 (0 or 1 or 2...), it not width, and data 2 is always 0
 					pass
+				elif event.type == sdl3.SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+					# OS scale setting changed, or the window moved to a display with another scale
+					auto_scale(bag, t_window)
+					tauon.update_window_minimum_size(only_if_changed=True)
+					gui.update_layout = True
+					gui.request_frame()
 				elif event.type == sdl3.SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
 					window_size[:] = sdl3.get_window_size_in_pixels(t_window)
-					auto_scale(bag)
+					auto_scale(bag, t_window)
 					tauon.update_window_minimum_size(only_if_changed=True)
 					gui.text_input_area_default = False  # default spot depends on window size
 					gui.update_layout = True

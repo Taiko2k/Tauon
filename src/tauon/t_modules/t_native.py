@@ -57,6 +57,7 @@ SDL_EVENT_WINDOW_MINIMIZED, SDL_EVENT_WINDOW_MAXIMIZED, SDL_EVENT_WINDOW_RESTORE
 SDL_EVENT_WINDOW_MOUSE_ENTER, SDL_EVENT_WINDOW_MOUSE_LEAVE = 524, 525
 SDL_EVENT_WINDOW_FOCUS_GAINED, SDL_EVENT_WINDOW_FOCUS_LOST = 526, 527
 SDL_EVENT_WINDOW_CLOSE_REQUESTED, SDL_EVENT_WINDOW_DISPLAY_CHANGED, SDL_EVENT_WINDOW_OCCLUDED, SDL_EVENT_WINDOW_LAST = 528, 531, 534, 538
+SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED = 532
 SDL_GAMEPAD_AXIS_LEFTY, SDL_GAMEPAD_AXIS_RIGHTX, SDL_GAMEPAD_AXIS_RIGHTY, SDL_GAMEPAD_AXIS_LEFT_TRIGGER = 1, 2, 3, 4
 SDL_GAMEPAD_BUTTON_SOUTH, SDL_GAMEPAD_BUTTON_EAST, SDL_GAMEPAD_BUTTON_WEST, SDL_GAMEPAD_BUTTON_NORTH = 0, 1, 2, 3
 SDL_GAMEPAD_BUTTON_LEFT_SHOULDER, SDL_GAMEPAD_BUTTON_RIGHT_SHOULDER = 9, 10
@@ -312,6 +313,11 @@ def get_window_size(window) -> tuple[int, int]:
 
 def get_window_size_in_pixels(window) -> tuple[int, int]:
 	return tauon_native.get_window_size(window, True)
+
+
+def get_window_display_scale(window) -> float:
+	"""Content scale for the window in pixels: pixel density times the OS scale setting."""
+	return tauon_native.get_window_display_scale(window)
 
 
 set_window_size = tauon_native.set_window_size

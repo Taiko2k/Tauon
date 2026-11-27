@@ -229,6 +229,7 @@ if phone:
 
 maximized = False
 old_window_position: tuple[int, int] | None = None
+window_state_loaded = False
 
 window_state_path = user_directory / WINDOW_STATE_FILENAME
 if window_state_path.is_file() and not fs_mode:
@@ -244,6 +245,7 @@ if window_state_path.is_file() and not fs_mode:
 		scale = window_state.scale
 		maximized = window_state.maximized
 		old_window_position = window_state.position
+		window_state_loaded = True
 	except (OSError, ValueError):
 		logging.exception("Ignoring invalid window state file: %s", window_state_path)
 else:
@@ -253,7 +255,9 @@ else:
 window_title = t_title
 t_window = _tauon_native.window_address()
 sdl3.set_window_bordered(t_window, not draw_border)
-sdl3.set_window_size(t_window, logical_size[0], logical_size[1])
+# Without saved state the launcher already sized the window for the display scale
+if window_state_loaded or phone:
+	sdl3.set_window_size(t_window, logical_size[0], logical_size[1])
 
 if old_window_position is not None and not fs_mode:
 	sdl3.set_window_position(t_window, old_window_position[0], old_window_position[1])
