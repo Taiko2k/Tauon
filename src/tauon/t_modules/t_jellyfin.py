@@ -1158,7 +1158,7 @@ class Jellyfin(RemotePlaylistSource):
 			"CanSeek": True,
 			"ItemId": track.url_key,
 			"IsPaused": self.pctl.playing_state == 2,
-			"IsMuted": self.pctl.player_volume == 0,
+			"IsMuted": self.pctl.output_volume == 0,
 			"PositionTicks": int(self.pctl.playing_time * 10000000),
 			"PlayMethod": "DirectStream",
 			"PlaySessionId": "0",

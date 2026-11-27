@@ -3975,7 +3975,14 @@ class PlayerCtl:
 
 		return 0
 
+	@property
+	def output_volume(self) -> float:
+		"""Volume sent to the backend: full while volume control is locked"""
+		return 100 if self.prefs.volume_locked else self.player_volume
+
 	def toggle_mute(self) -> None:
+		if self.prefs.volume_locked:
+			return
 		if self.player_volume > 0:
 			self.volume_store = self.player_volume
 			self.player_volume = 0
@@ -36595,6 +36602,15 @@ class Over:
 			self.pctl.playerCommand = "reload"
 			self.pctl.playerCommandReady = True
 
+		# Bit-perfect keeps volume at 100%, so this shows on and greyed out
+		old_locked = prefs.volume_locked
+		volume_shown = rows.switch(
+			prefs.volume_locked, _("Disable volume control"), disabled=prefs.bit_perfect)
+		if not prefs.bit_perfect:
+			prefs.disable_volume = volume_shown
+		if prefs.volume_locked != old_locked:
+			self.pctl.set_volume()
+
 		old_resample = prefs.avoid_resampling
 		resample_shown = rows.switch(
 			prefs.avoid_resampling or prefs.bit_perfect, _("Avoid resampling"), disabled=prefs.bit_perfect)
@@ -39788,7 +39804,7 @@ class BottomBarType1:
 		if gui.buffering_visible() and pctl.buffering_percent:
 			ddt.rect_a((self.seek_bar_position[0], self.seek_bar_position[1] + self.seek_bar_size[1] - round(3 * gui.scale)), (self.seek_bar_size[0] * pctl.buffering_percent / 100, round(3 * gui.scale)), ColourRGBA(255, 255, 255, 50))
 		# Volume mouse wheel control -----------------------------------------
-		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
+		if self.inp.mouse_wheel != 0 and not prefs.volume_locked and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 \
 		and not coll_point(self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			pctl.player_volume += scroll_distance * prefs.volume_wheel_increment
@@ -39800,8 +39816,17 @@ class BottomBarType1:
 			pctl.player_volume = int(pctl.player_volume)
 			pctl.set_volume()
 
+		# With volume locked, the playback menu, shuffle and repeat slide right
+		# so the menu ends where the slider did
+		vol_shift = 0
+		if prefs.volume_locked:
+			vol_shift = round((59 if window_size[0] < 670 * gui.scale else 153) * gui.scale)
+		mode_offset = right_offset - vol_shift
+
 		# Volume Bar 2 ------------------------------------------------
-		if window_size[0] < 670 * gui.scale:
+		if prefs.volume_locked:
+			gui.volume_bar_rect = (0, 0, 0, 0)
+		elif window_size[0] < 670 * gui.scale:
 			x = window_size[0] - right_offset - 207 * gui.scale
 			y = window_size[1] - round(14 * gui.scale)
 
@@ -39951,11 +39976,11 @@ class BottomBarType1:
 		if not prefs.hide_bottom_title:
 			gui.show_bottom_title = True
 
-		if gui.show_bottom_title and pctl.playing_state != PlayingState.STOPPED and window_size[0] > 820 * gui.scale:
+		if gui.show_bottom_title and pctl.playing_state != PlayingState.STOPPED and window_size[0] > 820 * gui.scale - vol_shift:
 			line = pctl.title_text()
 
 			x = self.seek_bar_position[0] + 1
-			mx = window_size[0] - 710 * gui.scale
+			mx = window_size[0] - 710 * gui.scale + vol_shift
 			# if self.gui.bb_show_art:
 			#  x += 10 * self.gui.scale
 			#  mx -= self.gui.panelBY - 10
@@ -39967,7 +39992,7 @@ class BottomBarType1:
 
 		if (inp.mouse_click or inp.right_click) and self.coll((
 				self.seek_bar_position[0] - 10 * gui.scale, self.seek_bar_position[1] + 20 * gui.scale,
-				window_size[0] - 710 * gui.scale, 30 * gui.scale)):
+				window_size[0] - 710 * gui.scale + vol_shift, 30 * gui.scale)):
 			# if pctl.playing_state == PlayingState.URL_STREAM:
 			# 	copy_to_clipboard(pctl.tag_meta)
 			# 	self.show_message("Copied text to clipboard")
@@ -40208,7 +40233,7 @@ class BottomBarType1:
 
 			# menu button
 
-			x = window_size[0] - 252 * gui.scale - right_offset
+			x = window_size[0] - 252 * gui.scale - mode_offset
 			y = window_size[1] - round(26 * gui.scale)
 			rpbc = md_off
 			rect = (x - 9 * gui.scale, y - 5 * gui.scale, 40 * gui.scale, 25 * gui.scale)
@@ -40234,7 +40259,7 @@ class BottomBarType1:
 			if self.mode == 0 and window_size[0] > 530 * gui.scale:
 
 				# shuffle button
-				x = window_size[0] - 318 * gui.scale - right_offset
+				x = window_size[0] - 318 * gui.scale - mode_offset
 				y = window_size[1] - 27 * gui.scale
 
 				rect = (x - 5 * gui.scale, y - 5 * gui.scale, 60 * gui.scale, 25 * gui.scale)
@@ -40294,7 +40319,7 @@ class BottomBarType1:
 				#ddt.rect_a((x, y), (48 * gui.scale, 3 * gui.scale), rpbc)
 
 				# REPEAT
-				x = window_size[0] - round(380 * gui.scale) - right_offset
+				x = window_size[0] - round(380 * gui.scale) - mode_offset
 				y = window_size[1] - round(27 * gui.scale)
 
 				rpbc = md_off
@@ -40455,7 +40480,7 @@ class BottomBarType_ao1:
 		# ddt.rect_r(rect, [255, 255, 255, 20])
 
 		# Volume mouse wheel control -----------------------------------------
-		if self.inp.mouse_wheel != 0 and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(
+		if self.inp.mouse_wheel != 0 and not self.prefs.volume_locked and self.inp.mouse_position[1] > self.seek_bar_position[1] + 4 and not coll_point(
 			self.inp.mouse_position, self.seek_bar_position + self.seek_bar_size):
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment
@@ -40475,7 +40500,7 @@ class BottomBarType_ao1:
 				self.tauon.mode_menu.activate()
 
 		# Volume Bar 2 ------------------------------------------------
-		if True:
+		if not self.prefs.volume_locked:
 			x = self.window_size[0] - right_offset - 120 * self.gui.scale
 			y = self.window_size[1] - round(21 * self.gui.scale)
 
@@ -40807,7 +40832,7 @@ class MiniMode:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel() and not self.prefs.volume_locked:
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -41049,7 +41074,7 @@ class MiniMode2:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel() and not self.prefs.volume_locked:
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -41175,6 +41200,9 @@ class MiniMode3:
 			seek_w = 0
 			volume_r = [0, 0, 0, 0]
 			volume_w = 0
+		# Repeat sits left of the volume bar, shuffle right of it
+		modes_l = 0
+		modes_r = 0
 
 		w = self.window_size[0]
 		h = self.tauon.mini_mode_base_height()
@@ -41218,7 +41246,7 @@ class MiniMode3:
 			self.pctl.play_pause()
 
 		# Volume change on scroll
-		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel() and not self.prefs.volume_locked:
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -41333,7 +41361,9 @@ class MiniMode3:
 			volume_r_hit = [volume_r[0], volume_r[1] - 5 * self.gui.scale, volume_r[2], volume_r[3] + 10 * self.gui.scale]
 
 			# Test click to volume
-			if (self.inp.mouse_up or self.inp.mouse_down) and self.coll(volume_r_hit):
+			if self.prefs.volume_locked:
+				pass
+			elif (self.inp.mouse_up or self.inp.mouse_down) and self.coll(volume_r_hit):
 				self.gui.update_on_drag = True
 				click_x = self.inp.mouse_position[0]
 				click_x = min(click_x, volume_r[0] + volume_r[2])
@@ -41347,7 +41377,8 @@ class MiniMode3:
 				self.pctl.player_volume = int(volume * 100)
 				self.pctl.set_volume()
 
-			self.ddt.rect(volume_r, ColourRGBA(255, 255, 255, 32))
+			if not self.prefs.volume_locked:
+				self.ddt.rect(volume_r, ColourRGBA(255, 255, 255, 32))
 
 			#if self.volume_timer.get() < 0.9:
 			progress_w = self.pctl.player_volume * (volume_w - (4 * self.gui.scale)) / 100
@@ -41357,7 +41388,16 @@ class MiniMode3:
 			volume_r[1] += 2 * self.gui.scale
 			volume_r[3] -= 4 * self.gui.scale
 
-			self.ddt.rect(volume_r, volume_colour)
+			if not self.prefs.volume_locked:
+				self.ddt.rect(volume_r, volume_colour)
+
+			modes_l = volume_r[0]
+			modes_r = volume_r[0] + volume_w
+			if self.prefs.volume_locked:
+				# No bar: repeat and shuffle close up as a centred pair
+				gap = round(16 * self.gui.scale)
+				modes_l = w // 2 - gap // 2
+				modes_r = modes_l + gap
 
 
 		left_area = (1, y1, volume_r[0] - 1, 45 * self.gui.scale)
@@ -41384,7 +41424,7 @@ class MiniMode3:
 				self.window_size[0] - self.right_slide.w - 16 * self.gui.scale, y1 + 10 * self.gui.scale, ColourRGBA(255, 255, 255, hint))
 
 		# Shuffle
-		shuffle_area = (volume_r[0] + volume_w, volume_r[1] - 10 * self.gui.scale, 50 * self.gui.scale, 30 * self.gui.scale)
+		shuffle_area = (modes_r, volume_r[1] - 10 * self.gui.scale, 50 * self.gui.scale, 30 * self.gui.scale)
 		# self.fields.add(shuffle_area)
 		# self.ddt.rect_r(shuffle_area, [255, 0, 0, 100], True)
 
@@ -41396,7 +41436,7 @@ class MiniMode3:
 			if self.pctl.random_mode:
 				colour = ColourRGBA(255, 255, 255, 190)
 
-			sx = volume_r[0] + volume_w + 12 * self.gui.scale
+			sx = modes_r + 12 * self.gui.scale
 			sy = volume_r[1] - 3 * self.gui.scale
 			self.tauon.mini_mode.shuffle.render(sx, sy, colour)
 
@@ -41407,7 +41447,7 @@ class MiniMode3:
 			# sy += 4 * self.gui.scale
 			# self.ddt.rect_a((sx, sy), (28 * self.gui.scale, 2 * self.gui.scale), colour)
 
-		shuffle_area = (volume_r[0] - 41 * self.gui.scale, volume_r[1] - 10 * self.gui.scale, 40 * self.gui.scale, 30 * self.gui.scale)
+		shuffle_area = (modes_l - 41 * self.gui.scale, volume_r[1] - 10 * self.gui.scale, 40 * self.gui.scale, 30 * self.gui.scale)
 		if True: #self.coll(control_hit_area) and not self.prefs.shuffle_lock:
 			colour = ColourRGBA(255, 255, 255, 20)
 			if self.inp.mouse_click and self.coll(shuffle_area):
@@ -41415,7 +41455,7 @@ class MiniMode3:
 			if self.pctl.repeat_mode:
 				colour = ColourRGBA(255, 255, 255, 190)
 
-			sx = volume_r[0] - 39 * self.gui.scale
+			sx = modes_l - 39 * self.gui.scale
 			sy = volume_r[1] - 1 * self.gui.scale
 			self.tauon.mini_mode.repeat.render(sx, sy, colour)
 
@@ -41773,7 +41813,7 @@ class MiniModeSignal:
 		track = self.pctl.playing_object()
 		playlist = self.pctl.default_playlist
 
-		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel():
+		if self.inp.mouse_wheel != 0 and not lyrics.owns_wheel() and not self.prefs.volume_locked:
 			self.volume_timer.set()
 			scroll_distance = self.smooth_scroll.scroll("volume bar")
 			self.pctl.player_volume += scroll_distance * self.prefs.volume_wheel_increment * 3
@@ -59815,6 +59855,7 @@ def save_prefs(bag: Bag) -> None:
 	cf.update_value("resample-quality", prefs.resample)
 	cf.update_value("avoid_resampling", prefs.avoid_resampling)
 	cf.update_value("target-bit-perfect", prefs.bit_perfect)
+	cf.update_value("disable-volume-control", prefs.disable_volume)
 	cf.update_value("force-stereo-output", prefs.force_stereo_output)
 	cf.update_value("dsd-direct", prefs.dsd_direct)
 	cf.update_value("use-bs2b", prefs.use_bs2b)
@@ -60061,6 +60102,9 @@ def load_prefs(bag: Bag) -> None:
 		"bool", "target-bit-perfect", prefs.bit_perfect,
 		"Send PCM to the device unchanged. Keeps volume at 100% and turns off ReplayGain, the EQ, "
 		"crossfeed, playback speed and crossfades, and avoids resampling.")
+	prefs.disable_volume = cf.sync_add(
+		"bool", "disable-volume-control", prefs.disable_volume,
+		"Hide the volume sliders and play at 100% volume. Always on with target-bit-perfect.")
 	prefs.force_stereo_output = cf.sync_add(
 		"bool", "force-stereo-output", prefs.force_stereo_output,
 		"Downmix PCM audio to stereo instead of using the output device's speaker layout.")
@@ -68316,11 +68360,13 @@ def main(holder: Holder) -> None:
 				inp.k_input = True
 		if c_xay != 0:
 			if c_xay_timer.get() >= 0:
-				if c_xay == -1:
+				if prefs.volume_locked:
+					pass
+				elif c_xay == -1:
 					pctl.player_volume += 1
 					pctl.player_volume = min(pctl.player_volume, 100)
 					pctl.set_volume()
-				if c_xay == 1:
+				elif c_xay == 1:
 					if pctl.player_volume > 1:
 						pctl.player_volume -= 1
 					else:
@@ -68870,7 +68916,7 @@ def main(holder: Holder) -> None:
 					if keymaps.test("random-track-start"):
 						pctl.advance(rr=True)
 
-					if keymaps.test("vol-down"):
+					if keymaps.test("vol-down") and not prefs.volume_locked:
 						if pctl.player_volume > 3:
 							pctl.player_volume -= 3
 						else:
@@ -68880,7 +68926,7 @@ def main(holder: Holder) -> None:
 					if keymaps.test("toggle-mute"):
 						pctl.toggle_mute()
 
-					if keymaps.test("vol-up"):
+					if keymaps.test("vol-up") and not prefs.volume_locked:
 						pctl.player_volume += 3
 						pctl.player_volume = min(pctl.player_volume, 100)
 						pctl.set_volume()

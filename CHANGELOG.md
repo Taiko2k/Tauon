@@ -14,6 +14,7 @@ Changelog
  - Added rebindable arrow keys to input.txt
  - Added dimming of bracketed text in track titles
  - Added bit-perfect setting
+ - Added disable volume control setting
  - Improved folder import speed
  - Previous and next now stay within the album on repeat album
  - Fixed art background disapear on drag

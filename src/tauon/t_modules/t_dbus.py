@@ -73,7 +73,7 @@ class MPRIS(dbus.service.Object):
 			"LoopStatus": self.get_loop_status(),
 			"Rate": 1.0,
 			"Shuffle": self.pctl.random_mode,
-			"Volume": self.pctl.player_volume / 100,
+			"Volume": self.pctl.output_volume / 100,
 			"Position": dbus.Int64(0),
 			"MinimumRate": 1.0,
 			"MaximumRate": 1.0,
@@ -109,8 +109,8 @@ class MPRIS(dbus.service.Object):
 				self.player_properties["PlaybackStatus"] = "Paused"
 				changed["PlaybackStatus"] = self.player_properties["PlaybackStatus"]
 
-		if self.pctl.player_volume / 100 != self.player_properties["Volume"]:
-			self.player_properties["Volume"] = self.pctl.player_volume / 100
+		if self.pctl.output_volume / 100 != self.player_properties["Volume"]:
+			self.player_properties["Volume"] = self.pctl.output_volume / 100
 			changed["Volume"] = self.player_properties["Volume"]
 
 		track = self.pctl.playing_object()
@@ -239,7 +239,7 @@ class MPRIS(dbus.service.Object):
 	def Set(self, interface_name: str, property_name: str, value: str) -> None:
 		if interface_name == "org.mpris.MediaPlayer2.Player":
 			self.tauon.wake()
-			if property_name == "Volume":
+			if property_name == "Volume" and not self.tauon.prefs.volume_locked:
 				self.pctl.player_volume = min(max(int(value * 100), 0), 100)
 				self.pctl.set_volume()
 				self.gui.request_frame()

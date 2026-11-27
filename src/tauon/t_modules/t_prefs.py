@@ -291,6 +291,11 @@ class Prefs:
 	artist_split_bullet:     bool = False
 
 	@property
+	def volume_locked(self) -> bool:
+		"""Volume is fixed at 100%: by Disable volume control, or always under Target bit-perfect"""
+		return self.disable_volume or self.bit_perfect
+
+	@property
 	def artist_split_separators(self) -> list[str]:
 		"""Separators that split single-value artist tags."""
 		return [
@@ -521,6 +526,8 @@ class Prefs:
 	# Keep PCM bit for bit on its way out: overrides volume, ReplayGain, the
 	# EQ, crossfeed, playback speed and crossfades
 	bit_perfect: bool = False
+	# Hide the volume sliders and play at full volume
+	disable_volume: bool = False
 	force_stereo_output: bool = False
 	# Send DSD to the device as DSD instead of decoding it to PCM. PipeWire only,
 	# and only with a DAC that takes native DSD.

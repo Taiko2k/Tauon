@@ -1558,6 +1558,9 @@ class FeuxBar:
 		else:
 			pod3_w = (self._s(16) + a["feux-shuffle"].w + self._s(9) + a["feux-repeat"].w
 				+ self._s(16) + self._s(self.VOL_W) + self._s(16) + a["feux-menu"].w + self._s(18))
+		if tauon.prefs.volume_locked:
+			# No volume bar (or speaker): the modes sit next to the menu
+			pod3_w -= self._s(self.VOL_W) + self._s(9) +(self._s(24) if aero is not None else 0)
 		show_right = w > pod3_w + self._s(430)
 		if not show_right:
 			pod3_w = 0
@@ -1604,7 +1607,7 @@ class FeuxBar:
 
 		# Wheel anywhere over the panel that isn't the scrub bar sets volume,
 		# as it does on the standard bar.
-		if inp.mouse_wheel != 0 and self.coll((0, top, w, h)) and not self._on_seek:
+		if inp.mouse_wheel != 0 and self.coll((0, top, w, h)) and not self._on_seek and not tauon.prefs.volume_locked:
 			pctl.player_volume = min(100, max(0, pctl.player_volume + (
 				inp.mouse_wheel * self.tauon.prefs.volume_wheel_increment)))
 			pctl.set_volume()
@@ -2245,49 +2248,54 @@ class FeuxBar:
 		x -= self._s(16)
 
 		# VOLUME (bar only, no speaker)
-		vol_w = self._s(self.VOL_W)
-		bar_h = self._s(self.BAR_H)
-		if aero is not None:
-			bar_h = self._s(14)
-		x -= vol_w
-		vol_x = x
-		vol_y = mid - bar_h // 2
-		vol_bg = self._tint(colours.volume_bar_background, vol_x + vol_w / 2, mid, panel, boost=0.6)
-		vol_fill = self._fg(colours.volume_bar_fill, alpha_blend(vol_bg, backdrop), 1.6)
-
-		hit = (vol_x, vol_y - self._s(9), vol_w, bar_h + self._s(18))
-		self.fields.add(hit)
-		if self.coll(hit):
-			inp.global_clicked = True
-			if inp.mouse_click:
-				self.vol_drag = True
-			if inp.right_click:
-				pctl.toggle_mute()
-				inp.right_click = False
-		if self.vol_drag:
-			gui.update_on_drag = True
-			gui.request_frame()
-			value = min(1.0, max(0.0, (inp.mouse_position[0] - vol_x) / max(1, vol_w)))
-			pctl.player_volume = int(value * 100)
-			if not inp.mouse_down:
-				self.vol_drag = False
-				pctl.set_volume(True)
-			else:
-				pctl.set_volume(False)
-
-		filled = round(vol_w * min(100, max(0, pctl.player_volume)) / 100)
-		if aero is not None:
-			aero.tube((vol_x, vol_y, vol_w, bar_h), min(100, max(0, pctl.player_volume)) / 100,
-				shimmer=False, bubbles=False)
-			# Speaker, in the bar's text colour
-			x -= self._s(24)
-			aero.speaker(x + self._s(2), mid, self._s(17), to_colour(aero.TEXT))
+		if tauon.prefs.volume_locked:
+			gui.volume_bar_rect = (0, 0, 0, 0)
+			# Keep repeat's hitbox clear of the menu's
+			x -= self._s(7)
 		else:
-			ddt.rect((vol_x, vol_y, vol_w, bar_h), vol_bg)
-			if filled > 0:
-				ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
-		gui.volume_bar_rect = (vol_x, vol_y, filled, bar_h)
-		x -= self._s(16)
+			vol_w = self._s(self.VOL_W)
+			bar_h = self._s(self.BAR_H)
+			if aero is not None:
+				bar_h = self._s(14)
+			x -= vol_w
+			vol_x = x
+			vol_y = mid - bar_h // 2
+			vol_bg = self._tint(colours.volume_bar_background, vol_x + vol_w / 2, mid, panel, boost=0.6)
+			vol_fill = self._fg(colours.volume_bar_fill, alpha_blend(vol_bg, backdrop), 1.6)
+
+			hit = (vol_x, vol_y - self._s(9), vol_w, bar_h + self._s(18))
+			self.fields.add(hit)
+			if self.coll(hit):
+				inp.global_clicked = True
+				if inp.mouse_click:
+					self.vol_drag = True
+				if inp.right_click:
+					pctl.toggle_mute()
+					inp.right_click = False
+			if self.vol_drag:
+				gui.update_on_drag = True
+				gui.request_frame()
+				value = min(1.0, max(0.0, (inp.mouse_position[0] - vol_x) / max(1, vol_w)))
+				pctl.player_volume = int(value * 100)
+				if not inp.mouse_down:
+					self.vol_drag = False
+					pctl.set_volume(True)
+				else:
+					pctl.set_volume(False)
+
+			filled = round(vol_w * min(100, max(0, pctl.player_volume)) / 100)
+			if aero is not None:
+				aero.tube((vol_x, vol_y, vol_w, bar_h), min(100, max(0, pctl.player_volume)) / 100,
+					shimmer=False, bubbles=False)
+				# Speaker, in the bar's text colour
+				x -= self._s(24)
+				aero.speaker(x + self._s(2), mid, self._s(17), to_colour(aero.TEXT))
+			else:
+				ddt.rect((vol_x, vol_y, vol_w, bar_h), vol_bg)
+				if filled > 0:
+					ddt.rect((vol_x, vol_y, filled, bar_h), vol_fill)
+			gui.volume_bar_rect = (vol_x, vol_y, filled, bar_h)
+			x -= self._s(16)
 
 		# Shuffle lockdown takes both mode buttons away (see _draw_transport).
 		# The pod keeps the width it measured them at, so the volume bar and

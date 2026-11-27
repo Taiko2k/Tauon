@@ -3298,9 +3298,10 @@ class AquaBar:
 		(tip or tauon.tool_tip2).test(sx, sy, text)
 
 	def width_right(self, a: dict) -> int:
+		volume = 0 if self.tauon.prefs.volume_locked else self._s(30) + self._s(96) + self._s(14)
 		return (self.tauon.feux_bar._pill_w(a["feux-shuffle"]) + self._s(8)
 			+ self.tauon.feux_bar._pill_w(a["feux-repeat"]) + self._s(16)
-			+ self._s(30) + self._s(96) + self._s(14) + round(a["feux-menu"].w))
+			+ volume + round(a["feux-menu"].w))
 
 	def render(self, height: float | None = None) -> None:
 		tauon = self.tauon
@@ -3467,7 +3468,7 @@ class AquaBar:
 		if inp.right_click and tauon.coll(panel):
 			tauon.mode_menu.activate()
 			inp.right_click = False
-		if inp.mouse_wheel != 0 and tauon.coll(panel) and not self.on_seek:
+		if inp.mouse_wheel != 0 and tauon.coll(panel) and not self.on_seek and not tauon.prefs.volume_locked:
 			pctl.player_volume = min(100, max(0, pctl.player_volume + inp.mouse_wheel * tauon.prefs.volume_wheel_increment))
 			pctl.set_volume()
 			gui.request_frame()
@@ -3514,6 +3515,11 @@ class AquaBar:
 			x += pw + self._s(16)
 		else:
 			x += feux._pill_w(a["feux-shuffle"]) + self._s(8) + feux._pill_w(a["feux-repeat"]) + self._s(16)
+
+		if tauon.prefs.volume_locked:
+			gui.volume_bar_rect = (0, 0, 0, 0)
+			self._draw_menu(a, x, top, mid)
+			return
 
 		# Volume: speaker, then the tube (clear of the grip, which overhangs
 		# the tube's start at low volume)

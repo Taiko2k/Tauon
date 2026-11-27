@@ -1891,7 +1891,7 @@ def player4(tauon: Tauon) -> None:
 
 	aud.feed_raw.argtypes = (ctypes.c_int, ctypes.c_char_p)
 	aud.feed_raw.restype = None
-	aud.set_volume(int(pctl.player_volume))
+	aud.set_volume(int(pctl.output_volume))
 
 	try:
 		aud.eq_set_enable.argtypes = (ctypes.c_int,)
@@ -2195,7 +2195,7 @@ def player4(tauon: Tauon) -> None:
 				if command == "pauseoff":
 					tauon.chrome.play()
 					tauon.player4_state = PlayerState.PLAYING
-				if command == "volume":
+				if command == "volume" and not prefs.volume_locked:
 					tauon.chrome.volume(round(pctl.player_volume / 100, 3))
 					tauon.player4_state = PlayerState.PLAYING
 				if command == "seek":
@@ -2255,7 +2255,7 @@ def player4(tauon: Tauon) -> None:
 		if pctl.playerCommandReady and pctl.playerCommand == "volume":
 			pctl.playerCommand = ""
 			pctl.playerCommandReady = False
-			aud.ramp_volume(int(pctl.player_volume), 750)
+			aud.ramp_volume(int(pctl.output_volume), 750)
 
 		# Command processing
 		if pctl.playerCommandReady:
@@ -2314,7 +2314,7 @@ def player4(tauon: Tauon) -> None:
 				download_failed = False
 				set_min_buffer(default_min_buffer)
 				if tauon.player4_state == PlayerState.PAUSED:
-					aud.set_volume(int(pctl.player_volume))
+					aud.set_volume(int(pctl.output_volume))
 
 				stall_timer.set()
 				pctl.download_time = 0
@@ -2603,7 +2603,7 @@ def player4(tauon: Tauon) -> None:
 							aud.resume()
 							player_timer.set()
 						if pctl.playerCommandReady and pctl.playerCommand == "volume":
-							aud.ramp_volume(int(pctl.player_volume), 750)
+							aud.ramp_volume(int(pctl.output_volume), 750)
 							pctl.playerCommandReady = False
 							pctl.playerCommand = ""
 						if pctl.playerCommandReady and pctl.playerCommand == "replaygain":
@@ -2911,8 +2911,8 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "stop":
 				if prefs.use_pause_fade and tauon.player4_state != PlayerState.URL_STREAM:
-					if pctl.player_volume > 5:
-						speed = fade_time / (int(pctl.player_volume) / 100)
+					if pctl.output_volume > 5:
+						speed = fade_time / (int(pctl.output_volume) / 100)
 					else:
 						speed = fade_time / (5 / 100)
 
@@ -2926,7 +2926,7 @@ def player4(tauon: Tauon) -> None:
 				pctl.output_compression_reduction_db = 0
 				aud.stop()
 				time.sleep(0.1)
-				aud.set_volume(int(pctl.player_volume))
+				aud.set_volume(int(pctl.output_volume))
 
 				# Clear any buffering indicator; the play loop will not run now
 				if gui.buffering:
@@ -2940,8 +2940,8 @@ def player4(tauon: Tauon) -> None:
 
 			if command == "pauseon":
 				if prefs.use_pause_fade:
-					if pctl.player_volume > 5:
-						speed = fade_time / (int(pctl.player_volume) / 100)
+					if pctl.output_volume > 5:
+						speed = fade_time / (int(pctl.output_volume) / 100)
 					else:
 						speed = fade_time / (5 / 100)
 
@@ -2961,20 +2961,20 @@ def player4(tauon: Tauon) -> None:
 				else:
 					player_timer.set()
 					if prefs.use_pause_fade:
-						if pctl.player_volume > 5:
-							speed = fade_time / (int(pctl.player_volume) / 100)
+						if pctl.output_volume > 5:
+							speed = fade_time / (int(pctl.output_volume) / 100)
 						else:
 							speed = fade_time / (5 / 100)
 
-						aud.ramp_volume(int(pctl.player_volume), int(speed))
+						aud.ramp_volume(int(pctl.output_volume), int(speed))
 					aud.resume()
 					stall_timer.set()
 					tauon.player4_state = PlayerState.PLAYING
 
 			if command == "unload":
 				if prefs.use_pause_fade:
-					if pctl.player_volume > 5:
-						speed = fade_time / (int(pctl.player_volume) / 100)
+					if pctl.output_volume > 5:
+						speed = fade_time / (int(pctl.output_volume) / 100)
 					else:
 						speed = fade_time / (5 / 100)
 

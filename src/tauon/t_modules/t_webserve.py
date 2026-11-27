@@ -1177,7 +1177,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/setvolume/"):
 				key = path[16:]
-				if key.isdigit():
+				if key.isdigit() and not tauon.prefs.volume_locked:
 					volume = int(key)
 					volume = max(volume, 0)
 					volume = min(volume, 100)
@@ -1191,7 +1191,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 
 			elif path.startswith("/api1/setvolumerel/"):
 				key = path[19:]
-				if key.lstrip("-").isdigit() and key.count("-") < 2:
+				if key.lstrip("-").isdigit() and key.count("-") < 2 and not tauon.prefs.volume_locked:
 					volume = pctl.player_volume + int(key)
 					volume = max(volume, 0)
 					volume = min(volume, 100)
@@ -1281,7 +1281,7 @@ def webserve2(pctl: PlayerCtl, album_art_gen: AlbumArt, tauon: Tauon) -> None:
 					"repeat": pctl.repeat_mode is True,
 					"progress": 0,
 					"auto_stop": tauon.pctl.stop_mode != StopMode.OFF,
-					"volume": pctl.player_volume,
+					"volume": pctl.output_volume,
 					"playlist": str(tauon.get_playing_playlist_id()),
 					"playlist_length": len(pctl.multi_playlist[pctl.active_playlist_playing].playlist_ids),
 				}
