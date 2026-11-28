@@ -19,9 +19,8 @@ msgstr ""
 "Generated-By: pygettext.py 1.5\n"
 
 #: src/tauon/t_modules/t_activity.py:104
-#, fuzzy
 msgid "Importing tracks"
-msgstr "导入曲目"
+msgstr "正在导入曲目"
 
 #: src/tauon/t_modules/t_activity.py:106
 msgid "Importing XSPF playlist"
@@ -32,34 +31,28 @@ msgid "Extracting Archive…"
 msgstr "正在提取档案…"
 
 #: src/tauon/t_modules/t_activity.py:109
-#, fuzzy
 msgid "{N} tracks imported"
-msgstr "已导入 {N} 个评分"
+msgstr "已导入 {N} 首曲目"
 
 #: src/tauon/t_modules/t_activity.py:111
-#, fuzzy
 msgid "{N} files found"
-msgstr "已处理 {N} 个文件"
+msgstr "找到 {N} 个文件"
 
 #: src/tauon/t_modules/t_activity.py:113
-#, fuzzy
 msgid "Stopping import…"
-msgstr "停止…"
+msgstr "正在停止导入…"
 
 #: src/tauon/t_modules/t_activity.py:120
-#, fuzzy
 msgid "Scanning Tags…"
-msgstr "正在扫描 Scrobbles…"
+msgstr "正在扫描标签…"
 
 #: src/tauon/t_modules/t_activity.py:120
-#, fuzzy
 msgid "Stopping tag scan…"
-msgstr "停止转码…"
+msgstr "正在停止标签扫描…"
 
 #: src/tauon/t_modules/t_activity.py:121 src/tauon/t_modules/t_activity.py:132
-#, fuzzy
 msgid "{N} remaining"
-msgstr "剩余 {N} 个文件夹"
+msgstr "剩余 {N}"
 
 #: src/tauon/t_modules/t_activity.py:123
 msgid "Auto-importing playlists…"
@@ -70,42 +63,36 @@ msgid "File copy in progress…"
 msgstr "正在复制文件…"
 
 #: src/tauon/t_modules/t_activity.py:128
-#, fuzzy
 msgid "Cleaning database"
-msgstr "清理数据库！"
+msgstr "正在清理数据库"
 
 #: src/tauon/t_modules/t_activity.py:131
-#, fuzzy
 msgid "Rescanning Tags…"
-msgstr "正在重新扫描文件夹…"
+msgstr "正在重新扫描标签…"
 
 #: src/tauon/t_modules/t_activity.py:134
 msgid "Accessing PLEX library…"
 msgstr "访问 PLEX 库…"
 
 #: src/tauon/t_modules/t_activity.py:134
-#, fuzzy
 msgid "Updating PLEX library…"
-msgstr "访问 PLEX 库…"
+msgstr "正在更新 PLEX 媒体库…"
 
 #: src/tauon/t_modules/t_activity.py:135
-#, fuzzy
 msgid "Accessing Subsonic library…"
-msgstr "访问 PLEX 库…"
+msgstr "正在访问 Subsonic 媒体库…"
 
 #: src/tauon/t_modules/t_activity.py:135
-#, fuzzy
 msgid "Updating Subsonic library…"
-msgstr "Subsonic 媒体库。"
+msgstr "正在更新 Subsonic 媒体库…"
 
 #: src/tauon/t_modules/t_activity.py:137
 msgid "Accessing JELLYFIN library…"
 msgstr "访问 JELLYFIN 库…"
 
 #: src/tauon/t_modules/t_activity.py:137
-#, fuzzy
 msgid "Updating JELLYFIN library…"
-msgstr "访问 JELLYFIN 库…"
+msgstr "正在更新 JELLYFIN 媒体库…"
 
 #: src/tauon/t_modules/t_activity.py:146 src/tauon/t_modules/t_activity.py:188
 #: src/tauon/t_modules/t_main.py:37404
@@ -113,23 +100,20 @@ msgid "Stopping…"
 msgstr "停止…"
 
 #: src/tauon/t_modules/t_activity.py:148
-#, fuzzy
 msgid "Processing tracks…"
-msgstr "正在加载国家/地区…"
+msgstr "正在处理曲目…"
 
 #: src/tauon/t_modules/t_activity.py:150
 msgid "{N} of {total} changed tracks"
-msgstr ""
+msgstr "{N} / {total} 首已更改的曲目"
 
 #: src/tauon/t_modules/t_activity.py:152
-#, fuzzy
 msgid "{N} of {total} tracks"
-msgstr "{N} 曲目"
+msgstr "{N} / {total} 首曲目"
 
 #: src/tauon/t_modules/t_activity.py:154
-#, fuzzy
 msgid "{N} tracks scanned"
-msgstr "{N} 曲目"
+msgstr "已扫描 {N} 首曲目"
 
 #: src/tauon/t_modules/t_activity.py:162
 msgid "Chromecast Mode"
@@ -137,26 +121,23 @@ msgstr "Chromecast 模式"
 
 #: src/tauon/t_modules/t_activity.py:166
 msgid "{done} / {total} files"
-msgstr ""
+msgstr "{done} / {total} 个文件"
 
 #: src/tauon/t_modules/t_activity.py:168
-#, fuzzy
 msgid "Preparing…"
-msgstr "搜索中…"
+msgstr "正在准备…"
 
 #: src/tauon/t_modules/t_activity.py:168
-#, fuzzy
 msgid "Transcoding…"
-msgstr "转码"
+msgstr "正在转码…"
 
 #: src/tauon/t_modules/t_activity.py:169
-#, fuzzy
 msgid "Syncing to device"
-msgstr "同步到设备"
+msgstr "正在同步到设备"
 
 #: src/tauon/t_modules/t_activity.py:171
 msgid "{done} / {total} folders"
-msgstr ""
+msgstr "{done} / {total} 个文件夹"
 
 #: src/tauon/t_modules/t_activity.py:177
 msgid "Stopping transcode…"
@@ -167,73 +148,64 @@ msgid "Transcoding"
 msgstr "转码"
 
 #: src/tauon/t_modules/t_activity.py:179
-#, fuzzy
 msgid "1 album remaining"
-msgstr "专辑评分"
+msgstr "剩余 1 张专辑"
 
 #: src/tauon/t_modules/t_activity.py:179
-#, fuzzy
 msgid "{N} albums remaining"
-msgstr "剩余 {N} 个文件夹"
+msgstr "剩余 {N} 张专辑"
 
 #: src/tauon/t_modules/t_activity.py:184 src/tauon/t_modules/t_activity.py:191
 msgid "{done} / {total} tracks"
-msgstr ""
+msgstr "{done} / {total} 首曲目"
 
 #: src/tauon/t_modules/t_activity.py:190
 msgid "Writing ratings to files"
-msgstr ""
+msgstr "正在将评分写入文件"
 
 #: src/tauon/t_modules/t_activity.py:195
 msgid "Uploading lyrics to LRCLIB…"
 msgstr "正在上传歌词到 LRCLIB…"
 
 #: src/tauon/t_modules/t_activity.py:202
-#, fuzzy
 msgid "{done} / {total} loved tracks"
-msgstr "用户没有喜欢的曲目。"
+msgstr "{done} / {total} 首喜爱的曲目"
 
 #: src/tauon/t_modules/t_activity.py:204
-#, fuzzy
 msgid "Getting your loved tracks…"
-msgstr "正在获取好友数据…"
+msgstr "正在获取你喜爱的曲目…"
 
 #: src/tauon/t_modules/t_activity.py:204
-#, fuzzy
 msgid "Stopping loved tracks scan…"
-msgstr "停止转码…"
+msgstr "正在停止喜爱曲目扫描…"
 
 #: src/tauon/t_modules/t_activity.py:212
 msgid "{done} / {total} friends"
-msgstr ""
+msgstr "{done} / {total} 位好友"
 
 #: src/tauon/t_modules/t_activity.py:216
-#, fuzzy
 msgid "Scanning friends' loves…"
-msgstr "正在扫描 Scrobbles…"
+msgstr "正在扫描好友的喜爱…"
 
 #: src/tauon/t_modules/t_activity.py:216
-#, fuzzy
 msgid "Stopping friend loves scan…"
-msgstr "停止转码…"
+msgstr "正在停止好友喜爱扫描…"
 
 #: src/tauon/t_modules/t_activity.py:224
-#, fuzzy
 msgid "Matching to library…"
-msgstr "访问 PLEX 库…"
+msgstr "正在与媒体库匹配…"
 
 #: src/tauon/t_modules/t_activity.py:227
 msgid "{done} / {total} scrobbles"
-msgstr ""
+msgstr "{done} / {total} 条播放记录"
 
 #: src/tauon/t_modules/t_activity.py:229
 msgid "Scanning Scrobbles…"
 msgstr "正在扫描 Scrobbles…"
 
 #: src/tauon/t_modules/t_activity.py:229
-#, fuzzy
 msgid "Stopping scrobble scan…"
-msgstr "停止转码…"
+msgstr "正在停止播放记录扫描…"
 
 #: src/tauon/t_modules/t_activity.py:233 src/tauon/t_modules/t_main.py:36026
 #: src/tauon/t_modules/t_main.py:37629 src/tauon/t_modules/t_main.py:37633
@@ -247,12 +219,11 @@ msgstr "网络错误。请稍后重试。"
 
 #: src/tauon/t_modules/t_activity.py:237
 msgid "Loves and ratings waiting"
-msgstr ""
+msgstr "喜爱和评分等待同步"
 
 #: src/tauon/t_modules/t_activity.py:238
-#, fuzzy
 msgid "Can't reach {servers}. Will try again later."
-msgstr "网络错误。请稍后重试。"
+msgstr "无法连接 {servers}，稍后将重试。"
 
 #: src/tauon/t_modules/t_activity.py:241
 msgid "{N} listening along"
@@ -264,28 +235,24 @@ msgid "Aborting Sync"
 msgstr "中止同步"
 
 #: src/tauon/t_modules/t_activity.py:369 src/tauon/t_modules/t_activity.py:445
-#, fuzzy
 msgid "Activity"
 msgstr "活动"
 
 #: src/tauon/t_modules/t_activity.py:447
-#, fuzzy
 msgid "{N} active"
-msgstr "非活动"
+msgstr "{N} 项进行中"
 
 #: src/tauon/t_modules/t_activity.py:473
 msgid "Overall"
-msgstr ""
+msgstr "总体"
 
 #: src/tauon/t_modules/t_activity.py:482
-#, fuzzy
 msgid "Current album"
-msgstr "当前播放列表"
+msgstr "当前专辑"
 
 #: src/tauon/t_modules/t_activity.py:482
-#, fuzzy
 msgid "Current folder"
-msgstr "目标文件夹"
+msgstr "当前文件夹"
 
 #: src/tauon/t_modules/t_aero.py:3400 src/tauon/t_modules/t_custom.py:1853
 #: src/tauon/t_modules/t_main.py:38893
@@ -304,11 +271,11 @@ msgstr "重复关闭"
 
 #: src/tauon/t_modules/t_aero.py:3426
 msgid "Pause, Right-click: Stop"
-msgstr ""
+msgstr "暂停，右键：停止"
 
 #: src/tauon/t_modules/t_aero.py:3426
 msgid "Play, Right-click: Stop"
-msgstr ""
+msgstr "播放，右键：停止"
 
 #: src/tauon/t_modules/t_aero.py:3432 src/tauon/t_modules/t_custom.py:1946
 msgid "Forward"
@@ -344,33 +311,31 @@ msgstr "单曲循环"
 
 #: src/tauon/t_modules/t_chrome.py:261
 msgid "Unable to cast this audio format"
-msgstr ""
+msgstr "无法投放此音频格式"
 
 #: src/tauon/t_modules/t_chrome.py:262
-#, fuzzy
 msgid "Check that the file and FFmpeg are available."
-msgstr "请确认源文件仍然可用，然后重试。"
+msgstr "请检查文件和 FFmpeg 是否可用。"
 
 #: src/tauon/t_modules/t_chrome.py:267
 msgid "Unable to convert audio for Chromecast"
-msgstr ""
+msgstr "无法为 Chromecast 转换音频"
 
 #: src/tauon/t_modules/t_custom.py:144
 msgid "Unsupported Widget"
-msgstr ""
+msgstr "不支持的组件"
 
 #: src/tauon/t_modules/t_custom.py:159
 msgid "Unsupported widget: %s"
-msgstr ""
+msgstr "不支持的组件：%s"
 
 #: src/tauon/t_modules/t_custom.py:179 src/tauon/t_modules/t_custom.py:4119
-#, fuzzy
 msgid "Art Box"
-msgstr "显示艺术图"
+msgstr "封面框"
 
 #: src/tauon/t_modules/t_custom.py:213 src/tauon/t_modules/t_custom.py:4134
 msgid "Visualiser: Milkdrop"
-msgstr ""
+msgstr "可视化：Milkdrop"
 
 #: src/tauon/t_modules/t_custom.py:229
 msgid "MilkDrop is disabled"
@@ -387,7 +352,7 @@ msgstr "自动循环"
 
 #: src/tauon/t_modules/t_custom.py:311 src/tauon/t_modules/t_custom.py:4136
 msgid "Visualiser: Bars"
-msgstr ""
+msgstr "可视化：频谱条"
 
 #: src/tauon/t_modules/t_custom.py:338 src/tauon/t_modules/t_custom.py:576
 msgid "Visualiser requires the Phazor backend"
@@ -395,22 +360,19 @@ msgstr "可视化需要 Phazor 后端"
 
 #: src/tauon/t_modules/t_custom.py:445 src/tauon/t_modules/t_custom.py:4140
 msgid "Visualiser: Glass Spectrum"
-msgstr ""
+msgstr "可视化：玻璃频谱"
 
 #: src/tauon/t_modules/t_custom.py:497 src/tauon/t_modules/t_custom.py:4138
-#, fuzzy
 msgid "Visualiser: Spectrogram"
-msgstr "时频谱"
+msgstr "可视化：声谱图"
 
 #: src/tauon/t_modules/t_custom.py:1213 src/tauon/t_modules/t_custom.py:4147
-#, fuzzy
 msgid "Header Bar"
-msgstr "隐藏栏"
+msgstr "标题栏"
 
 #: src/tauon/t_modules/t_custom.py:1254 src/tauon/t_modules/t_custom.py:4142
-#, fuzzy
 msgid "Playback Panel"
-msgstr "播放与缓存"
+msgstr "播放面板"
 
 #: src/tauon/t_modules/t_custom.py:1745 src/tauon/t_modules/t_main.py:14701
 #: src/tauon/t_modules/t_main.py:21373
@@ -440,14 +402,12 @@ msgid "Stop"
 msgstr "停止"
 
 #: src/tauon/t_modules/t_custom.py:2439 src/tauon/t_modules/t_custom.py:4144
-#, fuzzy
 msgid "Playback panel: Feux"
-msgstr "播放与缓存"
+msgstr "播放面板：Feux"
 
 #: src/tauon/t_modules/t_custom.py:2479 src/tauon/t_modules/t_custom.py:4120
-#, fuzzy
 msgid "Playlist List"
-msgstr "播放列表为空"
+msgstr "播放列表列表"
 
 #: src/tauon/t_modules/t_custom.py:2486 src/tauon/t_modules/t_custom.py:4126
 #: src/tauon/t_modules/t_main.py:37732 src/tauon/t_modules/t_main.py:64370
@@ -465,35 +425,29 @@ msgid "Folder Navigator"
 msgstr "文件夹导航器"
 
 #: src/tauon/t_modules/t_custom.py:2511 src/tauon/t_modules/t_custom.py:4132
-#, fuzzy
 msgid "Artist Info"
-msgstr "艺术家："
+msgstr "艺术家信息"
 
 #: src/tauon/t_modules/t_custom.py:2538 src/tauon/t_modules/t_custom.py:4129
-#, fuzzy
 msgid "Track: Titles"
-msgstr "曲目标题"
+msgstr "曲目：标题"
 
 #: src/tauon/t_modules/t_custom.py:2549 src/tauon/t_modules/t_custom.py:4130
-#, fuzzy
 msgid "Track: Titles (Centred)"
-msgstr "曲目 + 封面（反向）"
+msgstr "曲目：标题（居中）"
 
 #: src/tauon/t_modules/t_custom.py:2562 src/tauon/t_modules/t_custom.py:4128
-#, fuzzy
 msgid "Lyrics Box"
-msgstr "歌词文字"
+msgstr "歌词框"
 
 #: src/tauon/t_modules/t_custom.py:2609 src/tauon/t_modules/t_custom.py:4111
 #: src/tauon/t_modules/t_main.py:46789
-#, fuzzy
 msgid "Tracklist"
-msgstr "曲目"
+msgstr "曲目列表"
 
 #: src/tauon/t_modules/t_custom.py:2712 src/tauon/t_modules/t_custom.py:4131
-#, fuzzy
 msgid "Track: Details"
-msgstr "曲目标题"
+msgstr "曲目：详情"
 
 #: src/tauon/t_modules/t_custom.py:2721 src/tauon/t_modules/t_main.py:15608
 #: src/tauon/t_modules/t_main.py:70812 src/tauon/t_modules/t_main.py:70818
@@ -584,20 +538,17 @@ msgid "Comment"
 msgstr "注释"
 
 #: src/tauon/t_modules/t_custom.py:2861 src/tauon/t_modules/t_custom.py:4113
-#, fuzzy
 msgid "Gallery: Classic"
-msgstr "收藏"
+msgstr "收藏：经典"
 
 #: src/tauon/t_modules/t_custom.py:3014 src/tauon/t_modules/t_custom.py:4115
-#, fuzzy
 msgid "Gallery: Compact"
-msgstr "画廊面板：背景"
+msgstr "收藏：紧凑"
 
 #: src/tauon/t_modules/t_custom.py:3182 src/tauon/t_modules/t_custom.py:3632
 #: src/tauon/t_modules/t_custom.py:4117
-#, fuzzy
 msgid "Albumflow"
-msgstr "专辑"
+msgstr "专辑流"
 
 #: src/tauon/t_modules/t_custom.py:3976
 msgid "No albums"
@@ -633,74 +584,71 @@ msgstr "无法锁定：该方向上没有可分割布局的元素"
 
 #: src/tauon/t_modules/t_custom.py:6514
 msgid "Delete these cells and the widgets in them?"
-msgstr ""
+msgstr "删除这些单元格及其中的组件？"
 
 #: src/tauon/t_modules/t_custom.py:6527
 msgid "Remove tab '%s' and everything on it?"
-msgstr ""
+msgstr "移除标签页“%s”及其上的所有内容？"
 
 #: src/tauon/t_modules/t_custom.py:6579 src/tauon/t_modules/t_main.py:64432
 msgid "Remove Stack"
 msgstr "移除堆栈"
 
 #: src/tauon/t_modules/t_custom.py:6581
-#, fuzzy
 msgid "Remove Whole Layout…"
-msgstr "重命名布局…"
+msgstr "移除整个布局…"
 
 #: src/tauon/t_modules/t_custom.py:6583
-#, fuzzy
 msgid "Remove Tabs (%d)"
-msgstr "删除"
+msgstr "移除标签页（%d）"
 
 #: src/tauon/t_modules/t_custom.py:6585
 msgid "Remove Columns (%d)"
-msgstr ""
+msgstr "移除列（%d）"
 
 #: src/tauon/t_modules/t_custom.py:6586
-#, fuzzy
 msgid "Remove Rows (%d)"
-msgstr "移除边框"
+msgstr "移除行（%d）"
 
 #: src/tauon/t_modules/t_custom.py:6596
 msgid "Everything here is removed"
-msgstr ""
+msgstr "此处的所有内容都会被移除"
 
 #: src/tauon/t_modules/t_custom.py:6603
 msgid "This tab is removed"
-msgstr ""
+msgstr "此标签页会被移除"
 
 #: src/tauon/t_modules/t_custom.py:6604
 msgid "Neighbours grow into this space"
-msgstr ""
+msgstr "相邻区域会扩展到此空间"
 
 #: src/tauon/t_modules/t_custom.py:6609
 msgid "Leaves an empty cell"
-msgstr ""
+msgstr "留下一个空单元格"
 
 #: src/tauon/t_modules/t_custom.py:6616
 msgid "Height lock"
-msgstr ""
+msgstr "锁定高度"
 
 #: src/tauon/t_modules/t_custom.py:6616
 msgid "Width lock"
-msgstr ""
+msgstr "锁定宽度"
 
 #: src/tauon/t_modules/t_custom.py:6618
 msgid "Height lock applies to this whole stack"
-msgstr ""
+msgstr "高度锁定作用于整个堆叠"
 
 #: src/tauon/t_modules/t_custom.py:6618
 msgid "Width lock applies to this whole stack"
-msgstr ""
+msgstr "宽度锁定作用于整个堆叠"
 
 #: src/tauon/t_modules/t_custom.py:6625
 msgid "Edges inside here drag in view mode"
-msgstr ""
+msgstr "此处的边缘可在查看模式下拖动"
 
 #: src/tauon/t_modules/t_custom.py:6631
 msgid "The tab switcher owns the border"
-msgstr ""
+msgstr "边框由标签页切换器控制"
 
 #: src/tauon/t_modules/t_custom.py:6697
 msgid "Load '%s' template? Replaces this layout."
@@ -724,39 +672,36 @@ msgstr "空标签"
 
 #: src/tauon/t_modules/t_custom.py:7739
 msgid "Release over another cell, or an edge of one, to move %s"
-msgstr ""
+msgstr "在另一个单元格或其边缘上松开，以移动 %s"
 
 #: src/tauon/t_modules/t_custom.py:7764
-#, fuzzy
 msgid "Drag a widget to move it"
-msgstr "拖曳文件到此以导入"
+msgstr "拖动组件以移动它"
 
 #: src/tauon/t_modules/t_custom.py:7764
 msgid "Esc to finish"
-msgstr ""
+msgstr "按 Esc 完成"
 
 #: src/tauon/t_modules/t_custom.py:7764
 msgid "Right-click a cell to edit"
-msgstr ""
+msgstr "右键单击单元格进行编辑"
 
 #: src/tauon/t_modules/t_custom.py:7767
 msgid "Hover a menu item to see what it changes"
-msgstr ""
+msgstr "将鼠标悬停在菜单项上可查看它的作用"
 
 #: src/tauon/t_modules/t_custom.py:7848
 msgid "Empty cell · click to add"
-msgstr ""
+msgstr "空单元格 · 点击添加"
 
 #: src/tauon/t_modules/t_custom.py:7850 src/tauon/t_modules/t_custom.py:7919
 #: src/tauon/t_modules/t_main.py:20649 src/tauon/t_modules/t_main.py:20651
-#, fuzzy
 msgid "Empty"
-msgstr "空标签"
+msgstr "空"
 
 #: src/tauon/t_modules/t_custom.py:7859
-#, fuzzy
 msgid "Tabs"
-msgstr "显示标签"
+msgstr "标签页"
 
 #: src/tauon/t_modules/t_custom.py:7861 src/tauon/t_modules/t_main.py:36137
 #: src/tauon/t_modules/t_main.py:37568
@@ -770,74 +715,68 @@ msgid "Columns"
 msgstr "列"
 
 #: src/tauon/t_modules/t_custom.py:7864
-#, fuzzy
 msgid "Empty cell"
-msgstr "空槽位"
+msgstr "空单元格"
 
 #: src/tauon/t_modules/t_custom.py:7896
-#, fuzzy
 msgid "New cell"
-msgstr "新建槽位"
+msgstr "新单元格"
 
 #: src/tauon/t_modules/t_custom.py:7982
 msgid "Fixed height: %d px"
-msgstr ""
+msgstr "固定高度：%d px"
 
 #: src/tauon/t_modules/t_custom.py:7982
 msgid "Fixed width: %d px"
-msgstr ""
+msgstr "固定宽度：%d px"
 
 #: src/tauon/t_modules/t_custom.py:7984
-#, fuzzy
 msgid "Square Max: %d px"
-msgstr "最大方形"
+msgstr "正方形最大：%d px"
 
 #: src/tauon/t_modules/t_custom.py:7986
 msgid "Flexible height: %d px"
-msgstr ""
+msgstr "弹性高度：%d px"
 
 #: src/tauon/t_modules/t_custom.py:7986
 msgid "Flexible width: %d px"
-msgstr ""
+msgstr "弹性宽度：%d px"
 
 #: src/tauon/t_modules/t_custom.py:7988
-#, fuzzy
 msgid "resizable in view mode"
-msgstr "禁用宽屏模式"
+msgstr "可在查看模式下调整大小"
 
 #: src/tauon/t_modules/t_custom.py:7995
-#, fuzzy
 msgid "Drag to resize"
-msgstr "自动调整大小"
+msgstr "拖动以调整大小"
 
 #: src/tauon/t_modules/t_custom.py:8002
-#, fuzzy
 msgid "%s is already there"
-msgstr "曲目已被喜欢"
+msgstr "%s 已在此处"
 
 #: src/tauon/t_modules/t_custom.py:8005
 msgid "Release to move %s into this empty cell"
-msgstr ""
+msgstr "松开以将 %s 移入此空单元格"
 
 #: src/tauon/t_modules/t_custom.py:8006
 msgid "Release to swap %s with %s"
-msgstr ""
+msgstr "松开以将 %s 与 %s 交换"
 
 #: src/tauon/t_modules/t_custom.py:8008
 msgid "Release to move %s left of %s"
-msgstr ""
+msgstr "松开以将 %s 移到 %s 左侧"
 
 #: src/tauon/t_modules/t_custom.py:8009
 msgid "Release to move %s right of %s"
-msgstr ""
+msgstr "松开以将 %s 移到 %s 右侧"
 
 #: src/tauon/t_modules/t_custom.py:8010
 msgid "Release to move %s above %s"
-msgstr ""
+msgstr "松开以将 %s 移到 %s 上方"
 
 #: src/tauon/t_modules/t_custom.py:8011
 msgid "Release to move %s below %s"
-msgstr ""
+msgstr "松开以将 %s 移到 %s 下方"
 
 #: src/tauon/t_modules/t_discord.py:311 src/tauon/t_modules/t_discord.py:376
 #: src/tauon/t_modules/t_discord.py:587
@@ -894,122 +833,112 @@ msgid "Unknown"
 msgstr "未知"
 
 #: src/tauon/t_modules/t_extra.py:1191
-#, fuzzy
 msgid "The server refused the login. Check the username and password."
-msgstr "检查用户名和密码。"
+msgstr "服务器拒绝登录。请检查用户名和密码。"
 
 #: src/tauon/t_modules/t_extra.py:1193
 msgid "The server refused the request (403)."
-msgstr ""
+msgstr "服务器拒绝了请求（403）。"
 
 #: src/tauon/t_modules/t_extra.py:1195
 msgid "The server couldn't find it (404)."
-msgstr ""
+msgstr "服务器找不到该内容（404）。"
 
 #: src/tauon/t_modules/t_extra.py:1197
 msgid "The server is limiting requests. Try again shortly."
-msgstr ""
+msgstr "服务器正在限制请求。请稍后重试。"
 
 #: src/tauon/t_modules/t_extra.py:1199
 msgid "The server had a problem ({code})."
-msgstr ""
+msgstr "服务器出现问题（{code}）。"
 
 #: src/tauon/t_modules/t_extra.py:1200
-#, fuzzy
 msgid "The server returned an error ({code})."
-msgstr "Maloja 服务器返回错误。"
+msgstr "服务器返回错误（{code}）。"
 
 #: src/tauon/t_modules/t_extra.py:1232
-#, fuzzy
 msgid "Couldn't make a secure connection to the server."
-msgstr "无法与服务器建立连接。"
+msgstr "无法与服务器建立安全连接。"
 
 #: src/tauon/t_modules/t_extra.py:1235
 msgid "Couldn't find the server. Check the address and your connection."
-msgstr ""
+msgstr "找不到服务器。请检查地址和网络连接。"
 
 #: src/tauon/t_modules/t_extra.py:1237
 msgid "The server took too long to respond."
-msgstr ""
+msgstr "服务器响应超时。"
 
 #: src/tauon/t_modules/t_extra.py:1239
 msgid "The server refused the connection. Is it running?"
-msgstr ""
+msgstr "服务器拒绝连接。它是否正在运行？"
 
 #: src/tauon/t_modules/t_extra.py:1242
-#, fuzzy
 msgid "No network connection."
-msgstr "未连接。"
+msgstr "无网络连接。"
 
 #: src/tauon/t_modules/t_extra.py:1246
-#, fuzzy
 msgid "The connection to the server was lost."
-msgstr "连接到 Maloja 服务器已成功。"
+msgstr "与服务器的连接已断开。"
 
 #: src/tauon/t_modules/t_extra.py:1254
 msgid "The server sent a reply that couldn't be read."
-msgstr ""
+msgstr "服务器返回了无法读取的响应。"
 
 #: src/tauon/t_modules/t_extra.py:1256
-#, fuzzy
 msgid "Couldn't reach the server."
-msgstr "连接到 Plex 服务器。"
+msgstr "无法连接到服务器。"
 
 #: src/tauon/t_modules/t_extra.py:1258
-#, fuzzy
 msgid "File not found."
-msgstr "找不到文件夹"
+msgstr "找不到文件。"
 
 #: src/tauon/t_modules/t_extra.py:1260
 msgid "Permission denied."
-msgstr ""
+msgstr "权限被拒绝。"
 
 #: src/tauon/t_modules/t_extra.py:1278
-#, fuzzy
 msgid "The server returned an error."
-msgstr "Maloja 服务器返回错误。"
+msgstr "服务器返回错误。"
 
 #: src/tauon/t_modules/t_generator.py:106
-#, fuzzy
 msgid "unknown code"
-msgstr "未知曲目"
+msgstr "未知代码"
 
 #: src/tauon/t_modules/t_generator.py:159
 msgid "after"
-msgstr ""
+msgstr "晚于"
 
 #: src/tauon/t_modules/t_generator.py:161
 msgid "before"
-msgstr ""
+msgstr "早于"
 
 #: src/tauon/t_modules/t_generator.py:163
-#, fuzzy
 msgid "more than"
-msgstr "不用了，谢谢"
+msgstr "多于"
 
 #: src/tauon/t_modules/t_generator.py:164
 msgid "less than"
-msgstr ""
+msgstr "少于"
 
 #: src/tauon/t_modules/t_generator.py:165
 msgid "exactly"
-msgstr ""
+msgstr "正好"
 
 #: src/tauon/t_modules/t_generator.py:166
 msgid "at least"
-msgstr ""
+msgstr "至少"
 
 #: src/tauon/t_modules/t_generator.py:167
 msgid "at most"
-msgstr ""
+msgstr "至多"
 
 #: src/tauon/t_modules/t_generator.py:201
 msgid "Only"
-msgstr ""
+msgstr "仅"
 
 #: src/tauon/t_modules/t_generator.py:203
 msgid "only"
-msgstr ""
+msgstr "仅限"
 
 #: src/tauon/t_modules/t_generator.py:222
 #: src/tauon/t_modules/t_generator.py:243
@@ -1019,70 +948,61 @@ msgstr ""
 #: src/tauon/t_modules/t_generator.py:436
 #: src/tauon/t_modules/t_generator.py:437
 #: src/tauon/t_modules/t_generator.py:626
-#, fuzzy
 msgid "Sort"
-msgstr "分类"
+msgstr "排序"
 
 #: src/tauon/t_modules/t_generator.py:223
 #: src/tauon/t_modules/t_generator.py:226
 msgid "{name}, {order} first"
-msgstr ""
+msgstr "{name}，{order}优先"
 
 #: src/tauon/t_modules/t_generator.py:225
 #: src/tauon/t_modules/t_generator.py:245
 msgid "sort by"
-msgstr ""
+msgstr "排序方式"
 
 #: src/tauon/t_modules/t_generator.py:230
-#, fuzzy
 msgid "{order} first"
-msgstr "歌曲优先"
+msgstr "{order}优先"
 
 #: src/tauon/t_modules/t_generator.py:238
 #: src/tauon/t_modules/t_generator.py:248
 msgid "A-Z"
-msgstr ""
+msgstr "A-Z"
 
 #: src/tauon/t_modules/t_generator.py:238
 #: src/tauon/t_modules/t_generator.py:248
 msgid "Z-A"
-msgstr ""
+msgstr "Z-A"
 
 #: src/tauon/t_modules/t_generator.py:303
-#, fuzzy
 msgid "{N} min"
-msgstr "剩余 {N} 个文件夹"
+msgstr "{N} 分钟"
 
 #: src/tauon/t_modules/t_generator.py:310
-#, fuzzy
 msgid "Playlist"
-msgstr "播放列表："
+msgstr "播放列表"
 
 #: src/tauon/t_modules/t_generator.py:310
-#, fuzzy
 msgid "from playlist"
-msgstr "获取播放列表"
+msgstr "来自播放列表"
 
 #: src/tauon/t_modules/t_generator.py:311
-#, fuzzy
 msgid "from this playlist"
-msgstr "没有艺术家"
+msgstr "来自此播放列表"
 
 #: src/tauon/t_modules/t_generator.py:311
 #: src/tauon/t_modules/t_generator.py:567
-#, fuzzy
 msgid "This playlist"
-msgstr "获取播放列表"
+msgstr "此播放列表"
 
 #: src/tauon/t_modules/t_generator.py:312
-#, fuzzy
 msgid "Sources"
-msgstr "源代码"
+msgstr "来源"
 
 #: src/tauon/t_modules/t_generator.py:312
-#, fuzzy
 msgid "clear the sources"
-msgstr "封面来源。"
+msgstr "清空来源"
 
 #: src/tauon/t_modules/t_generator.py:312 src/tauon/t_modules/t_main.py:35056
 #: src/tauon/t_modules/t_main.py:37737 src/tauon/t_modules/t_main.py:64952
@@ -1091,40 +1011,34 @@ msgid "Clear"
 msgstr "清空"
 
 #: src/tauon/t_modules/t_generator.py:315
-#, fuzzy
 msgid "take all tracks"
-msgstr "添加所有曲目"
+msgstr "选取所有曲目"
 
 #: src/tauon/t_modules/t_generator.py:315
 #: src/tauon/t_modules/t_generator.py:571
 #: src/tauon/t_modules/t_generator_ui.py:471
-#, fuzzy
 msgid "All tracks"
-msgstr "添加所有曲目"
+msgstr "所有曲目"
 
 #: src/tauon/t_modules/t_generator.py:316
-#, fuzzy
 msgid "take tracks by"
-msgstr "曲目列表"
+msgstr "选取艺术家的曲目"
 
 #: src/tauon/t_modules/t_generator.py:319
-#, fuzzy
 msgid "Genre (exact)"
-msgstr "类型："
+msgstr "流派（精确）"
 
 #: src/tauon/t_modules/t_generator.py:319
-#, fuzzy
 msgid "Genre (multi)"
-msgstr "类型："
+msgstr "流派（多值）"
 
 #: src/tauon/t_modules/t_generator.py:320
 msgid "take tracks in genre"
-msgstr ""
+msgstr "选取流派中的曲目"
 
 #: src/tauon/t_modules/t_generator.py:321
-#, fuzzy
 msgid "take tracks matching"
-msgstr "曲目评分"
+msgstr "选取匹配的曲目"
 
 #: src/tauon/t_modules/t_generator.py:321 src/tauon/t_modules/t_main.py:45970
 #: src/tauon/t_modules/t_main.py:48083 src/tauon/t_modules/t_main.py:53308
@@ -1132,241 +1046,212 @@ msgid "Search"
 msgstr "搜索"
 
 #: src/tauon/t_modules/t_generator.py:322
-#, fuzzy
 msgid "Folder"
-msgstr "打开文件夹"
+msgstr "文件夹"
 
 #: src/tauon/t_modules/t_generator.py:322
-#, fuzzy
 msgid "take the folder matching"
-msgstr "删除目标中的其他文件夹"
+msgstr "选取匹配的文件夹"
 
 #: src/tauon/t_modules/t_generator.py:324
 msgid "Label (exact)"
-msgstr ""
+msgstr "厂牌（精确）"
 
 #: src/tauon/t_modules/t_generator.py:324 src/tauon/t_modules/t_main.py:15627
 #: src/tauon/t_modules/t_main.py:31829 src/tauon/t_modules/t_tagedit_ui.py:1912
 msgid "Label"
-msgstr ""
+msgstr "厂牌"
 
 #: src/tauon/t_modules/t_generator.py:325
-#, fuzzy
 msgid "take tracks on label"
-msgstr "设为不可调整大小的堆栈"
+msgstr "选取厂牌的曲目"
 
 #: src/tauon/t_modules/t_generator.py:326
-#, fuzzy
 msgid "File type"
-msgstr "文件已删除"
+msgstr "文件类型"
 
 #: src/tauon/t_modules/t_generator.py:326
 msgid "take files of type"
-msgstr ""
+msgstr "选取文件类型"
 
 #: src/tauon/t_modules/t_generator.py:329
 msgid "take the Plex library"
-msgstr ""
+msgstr "选取 Plex 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:330
-#, fuzzy
 msgid "take Plex library"
-msgstr "网络媒体库。"
+msgstr "选取 Plex 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:330
 #: src/tauon/t_modules/t_generator.py:586
-#, fuzzy
 msgid "Plex library"
-msgstr "网络媒体库。"
+msgstr "Plex 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:331
-#, fuzzy
 msgid "Plex playlist"
-msgstr "下一个播放列表"
+msgstr "Plex 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:331
-#, fuzzy
 msgid "take Plex playlist"
-msgstr "播放下一个播放列表"
+msgstr "选取 Plex 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:332
 msgid "take the Jellyfin library"
-msgstr ""
+msgstr "选取 Jellyfin 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:333
-#, fuzzy
 msgid "Jellyfin playlist"
-msgstr "获取播放列表"
+msgstr "Jellyfin 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:333
-#, fuzzy
 msgid "take Jellyfin playlist"
-msgstr "播放列表中的曲目"
+msgstr "选取 Jellyfin 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:334
 msgid "take Jellyfin library"
-msgstr ""
+msgstr "选取 Jellyfin 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:334
 #: src/tauon/t_modules/t_generator.py:587
-#, fuzzy
 msgid "Jellyfin library"
-msgstr "Jellyfin 身份验证错误"
+msgstr "Jellyfin 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:336
-#, fuzzy
 msgid "Jellyfin favourite tracks"
-msgstr "Jellyfin 身份验证错误"
+msgstr "Jellyfin 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:337
 msgid "take Jellyfin favourite tracks"
-msgstr ""
+msgstr "选取 Jellyfin 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:339
 msgid "Jellyfin favourite albums"
-msgstr ""
+msgstr "Jellyfin 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:340
 msgid "take Jellyfin favourite albums"
-msgstr ""
+msgstr "选取 Jellyfin 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:341
-#, fuzzy
 msgid "take the Satellite playlist"
-msgstr "获取指定名称的播放列表。"
+msgstr "选取 Satellite 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:342
-#, fuzzy
 msgid "Satellite playlist"
-msgstr "所选播放列表："
+msgstr "Satellite 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:342
-#, fuzzy
 msgid "take Satellite playlist"
-msgstr "所选播放列表："
+msgstr "选取 Satellite 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:343
-#, fuzzy
 msgid "take the Subsonic library"
-msgstr "Subsonic 媒体库。"
+msgstr "选取 Subsonic 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:344
-#, fuzzy
 msgid "Subsonic playlist"
-msgstr "Subsonic 媒体库。"
+msgstr "Subsonic 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:344
-#, fuzzy
 msgid "take Subsonic playlist"
-msgstr "设置为同步播放列表"
+msgstr "选取 Subsonic 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:345
-#, fuzzy
 msgid "take Subsonic library"
-msgstr "Subsonic 媒体库。"
+msgstr "选取 Subsonic 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:345
 #: src/tauon/t_modules/t_generator.py:589
-#, fuzzy
 msgid "Subsonic library"
-msgstr "Subsonic 媒体库。"
+msgstr "Subsonic 媒体库"
 
 #: src/tauon/t_modules/t_generator.py:347
 msgid "Subsonic favourite tracks"
-msgstr ""
+msgstr "Subsonic 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:348
 msgid "take Subsonic favourite tracks"
-msgstr ""
+msgstr "选取 Subsonic 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:350
 msgid "Subsonic favourite albums"
-msgstr ""
+msgstr "Subsonic 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:351
 msgid "take Subsonic favourite albums"
-msgstr ""
+msgstr "选取 Subsonic 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:352
-#, fuzzy
 msgid "Tidal playlist"
-msgstr "目标播放列表"
+msgstr "Tidal 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:352
-#, fuzzy
 msgid "take Tidal playlist"
-msgstr "播放列表中的曲目"
+msgstr "选取 Tidal 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:353
-#, fuzzy
 msgid "Tidal albums"
-msgstr "专辑总数"
+msgstr "Tidal 专辑"
 
 #: src/tauon/t_modules/t_generator.py:353
 msgid "take Tidal favourite albums"
-msgstr ""
+msgstr "选取 Tidal 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:354
-#, fuzzy
 msgid "Tidal tracks"
-msgstr "添加所有曲目"
+msgstr "Tidal 曲目"
 
 #: src/tauon/t_modules/t_generator.py:354
 msgid "take Tidal favourite tracks"
-msgstr ""
+msgstr "选取 Tidal 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:355
-#, fuzzy
 msgid "Tidal artist"
-msgstr "曲目评分"
+msgstr "Tidal 艺术家"
 
 #: src/tauon/t_modules/t_generator.py:355
-#, fuzzy
 msgid "take Tidal artist"
-msgstr "原始"
+msgstr "选取 Tidal 艺术家"
 
 #: src/tauon/t_modules/t_generator.py:356
 msgid "Tidal mix"
-msgstr ""
+msgstr "Tidal 混音"
 
 #: src/tauon/t_modules/t_generator.py:356
 msgid "take Tidal mix"
-msgstr ""
+msgstr "选取 Tidal 混音"
 
 #: src/tauon/t_modules/t_generator.py:359
-#, fuzzy
 msgid "Not in"
-msgstr "尚未"
+msgstr "不在其中"
 
 #: src/tauon/t_modules/t_generator.py:359
 msgid "minus anything in"
-msgstr ""
+msgstr "排除以下中的内容"
 
 #: src/tauon/t_modules/t_generator.py:360
 msgid "Keep matching"
-msgstr ""
+msgstr "保留匹配项"
 
 #: src/tauon/t_modules/t_generator.py:360
 msgid "keep only matches for"
-msgstr ""
+msgstr "仅保留匹配"
 
 #: src/tauon/t_modules/t_generator.py:361
-#, fuzzy
 msgid "Exclude matching"
-msgstr "播放响度匹配。"
+msgstr "排除匹配项"
 
 #: src/tauon/t_modules/t_generator.py:361
 msgid "drop matches for"
-msgstr ""
+msgstr "去除匹配"
 
 #: src/tauon/t_modules/t_generator.py:362
-#, fuzzy
 msgid "Comment has"
-msgstr "注释"
+msgstr "备注包含"
 
 #: src/tauon/t_modules/t_generator.py:362
 msgid "keep comments containing"
-msgstr ""
+msgstr "保留备注包含"
 
 #: src/tauon/t_modules/t_generator.py:363
 #: src/tauon/t_modules/t_generator.py:366
@@ -1377,7 +1262,7 @@ msgstr "年份"
 
 #: src/tauon/t_modules/t_generator.py:367
 msgid "date contains"
-msgstr ""
+msgstr "日期包含"
 
 #: src/tauon/t_modules/t_generator.py:370
 #: src/tauon/t_modules/t_generator.py:411
@@ -1387,7 +1272,6 @@ msgstr "评分"
 
 #: src/tauon/t_modules/t_generator.py:371
 #: src/tauon/t_modules/t_generator.py:632
-#, fuzzy
 msgid "Album rating"
 msgstr "专辑评分"
 
@@ -1396,9 +1280,8 @@ msgid "Play count"
 msgstr "播放次数"
 
 #: src/tauon/t_modules/t_generator.py:374
-#, fuzzy
 msgid "{N} s"
-msgstr "{N} 专辑"
+msgstr "{N} 秒"
 
 #: src/tauon/t_modules/t_generator.py:374
 #: src/tauon/t_modules/t_generator.py:415
@@ -1408,53 +1291,50 @@ msgstr "播放时间"
 
 #: src/tauon/t_modules/t_generator.py:375
 msgid "seconds"
-msgstr ""
+msgstr "秒"
 
 #: src/tauon/t_modules/t_generator.py:376
 #: src/tauon/t_modules/t_generator.py:377
 #: src/tauon/t_modules/t_generator.py:441
 msgid "minutes"
-msgstr ""
+msgstr "分钟"
 
 #: src/tauon/t_modules/t_generator.py:376
 #: src/tauon/t_modules/t_generator.py:417
 #: src/tauon/t_modules/t_generator.py:635
 msgid "Length"
-msgstr ""
+msgstr "时长"
 
 #: src/tauon/t_modules/t_generator.py:377
 #: src/tauon/t_modules/t_generator.py:418
 #: src/tauon/t_modules/t_generator.py:636
-#, fuzzy
 msgid "Album length"
-msgstr "专辑封面"
+msgstr "专辑时长"
 
 #: src/tauon/t_modules/t_generator.py:380
 #: src/tauon/t_modules/t_generator.py:391
 #: src/tauon/t_modules/t_generator.py:419
 #: src/tauon/t_modules/t_generator.py:637
-#, fuzzy
 msgid "Modified"
-msgstr "文件已修改"
+msgstr "修改时间"
 
 #: src/tauon/t_modules/t_generator.py:381
 msgid "last {N} days"
-msgstr ""
+msgstr "最近 {N} 天"
 
 #: src/tauon/t_modules/t_generator.py:381
 #: src/tauon/t_modules/t_generator.py:384
 msgid "over {N} days ago"
-msgstr ""
+msgstr "{N} 天以前"
 
 #: src/tauon/t_modules/t_generator.py:383
 #: src/tauon/t_modules/t_generator.py:394
-#, fuzzy
 msgid "modified"
-msgstr "文件已修改"
+msgstr "修改于"
 
 #: src/tauon/t_modules/t_generator.py:384
 msgid "in the last {N} days"
-msgstr ""
+msgstr "最近 {N} 天内"
 
 #: src/tauon/t_modules/t_generator.py:387 src/tauon/t_modules/t_main.py:6672
 msgid "days"
@@ -1463,23 +1343,22 @@ msgstr "天"
 #: src/tauon/t_modules/t_generator.py:392
 #: src/tauon/t_modules/t_generator.py:395
 msgid "before {D}"
-msgstr ""
+msgstr "{D} 之前"
 
 #: src/tauon/t_modules/t_generator.py:392
 #: src/tauon/t_modules/t_generator.py:395
 msgid "since {D}"
-msgstr ""
+msgstr "{D} 以来"
 
 #: src/tauon/t_modules/t_generator.py:398
 msgid "YYYY-MM-DD"
-msgstr ""
+msgstr "YYYY-MM-DD"
 
 #: src/tauon/t_modules/t_generator.py:400
 msgid "Skips"
-msgstr ""
+msgstr "跳过次数"
 
 #: src/tauon/t_modules/t_generator.py:401
-#, fuzzy
 msgid "loved tracks"
 msgstr "喜爱的曲目"
 
@@ -1492,9 +1371,8 @@ msgid "Loved"
 msgstr "喜欢"
 
 #: src/tauon/t_modules/t_generator.py:402
-#, fuzzy
 msgid "tracks with lyrics"
-msgstr "带歌词的曲目"
+msgstr "有歌词的曲目"
 
 #: src/tauon/t_modules/t_generator.py:402
 #: src/tauon/t_modules/t_generator.py:614
@@ -1503,148 +1381,133 @@ msgstr "有歌词"
 
 #: src/tauon/t_modules/t_generator.py:403
 msgid "tracks released on this day"
-msgstr ""
+msgstr "在今天这一日发行的曲目"
 
 #: src/tauon/t_modules/t_generator.py:403
 #: src/tauon/t_modules/t_generator.py:615
 #: src/tauon/t_modules/t_generator.py:669
 msgid "On this day"
-msgstr ""
+msgstr "历史上的今天"
 
 #: src/tauon/t_modules/t_generator.py:404
-#, fuzzy
 msgid "rated tracks"
-msgstr "喜爱的曲目"
+msgstr "已评分曲目"
 
 #: src/tauon/t_modules/t_generator.py:404
 #: src/tauon/t_modules/t_generator.py:616
 msgid "Rated"
-msgstr ""
+msgstr "已评分"
 
 #: src/tauon/t_modules/t_generator.py:405
-#, fuzzy
 msgid "unrated tracks"
-msgstr "反转曲目"
+msgstr "未评分曲目"
 
 #: src/tauon/t_modules/t_generator.py:405
 #: src/tauon/t_modules/t_generator.py:617
-#, fuzzy
 msgid "Unrated"
-msgstr "生成："
+msgstr "未评分"
 
 #: src/tauon/t_modules/t_generator.py:406
-#, fuzzy
 msgid "CUE sheet tracks"
-msgstr "喜爱的曲目"
+msgstr "CUE 表单曲目"
 
 #: src/tauon/t_modules/t_generator.py:406
 #: src/tauon/t_modules/t_generator.py:619
-#, fuzzy
 msgid "CUE tracks"
-msgstr "{N} 曲目"
+msgstr "CUE 曲目"
 
 #: src/tauon/t_modules/t_generator.py:407
 msgid "hi-res files"
-msgstr ""
+msgstr "高解析度文件"
 
 #: src/tauon/t_modules/t_generator.py:407
 #: src/tauon/t_modules/t_generator.py:618
 msgid "Hi-res"
-msgstr ""
+msgstr "高解析度"
 
 #: src/tauon/t_modules/t_generator.py:410
 #: src/tauon/t_modules/t_generator.py:419
 #: src/tauon/t_modules/t_generator.py:420
 msgid "newest"
-msgstr ""
+msgstr "最新"
 
 #: src/tauon/t_modules/t_generator.py:410
 #: src/tauon/t_modules/t_generator.py:419
 #: src/tauon/t_modules/t_generator.py:420
 msgid "oldest"
-msgstr ""
+msgstr "最旧"
 
 #: src/tauon/t_modules/t_generator.py:411
 msgid "highest"
-msgstr ""
+msgstr "最高"
 
 #: src/tauon/t_modules/t_generator.py:411
 msgid "lowest"
-msgstr ""
+msgstr "最低"
 
 #: src/tauon/t_modules/t_generator.py:413
-#, fuzzy
 msgid "Album rating, highest first"
-msgstr "专辑评分"
+msgstr "专辑评分，最高优先"
 
 #: src/tauon/t_modules/t_generator.py:414
 msgid "sort by album rating, highest first"
-msgstr ""
+msgstr "按专辑评分排序，最高优先"
 
 #: src/tauon/t_modules/t_generator.py:415
 #: src/tauon/t_modules/t_generator.py:416
 msgid "least"
-msgstr ""
+msgstr "最少"
 
 #: src/tauon/t_modules/t_generator.py:415
 #: src/tauon/t_modules/t_generator.py:416
 msgid "most"
-msgstr ""
+msgstr "最多"
 
 #: src/tauon/t_modules/t_generator.py:416
 #: src/tauon/t_modules/t_generator.py:634
-#, fuzzy
 msgid "Album play time"
-msgstr "专辑播放时间：>, <"
+msgstr "专辑播放时间"
 
 #: src/tauon/t_modules/t_generator.py:417
 #: src/tauon/t_modules/t_generator.py:418
 msgid "longest"
-msgstr ""
+msgstr "最长"
 
 #: src/tauon/t_modules/t_generator.py:417
 #: src/tauon/t_modules/t_generator.py:418
-#, fuzzy
 msgid "shortest"
-msgstr "分类"
+msgstr "最短"
 
 #: src/tauon/t_modules/t_generator.py:420
 #: src/tauon/t_modules/t_generator.py:638 src/tauon/t_modules/t_main.py:47774
-#, fuzzy
 msgid "Imported"
-msgstr "导入"
+msgstr "导入时间"
 
 #: src/tauon/t_modules/t_generator.py:421
 #: src/tauon/t_modules/t_generator.py:640
-#, fuzzy
 msgid "Artist | Album"
-msgstr "复制\"艺术家 - 专辑\""
+msgstr "艺术家 | 专辑"
 
 #: src/tauon/t_modules/t_generator.py:422
 #: src/tauon/t_modules/t_generator.py:641
-#, fuzzy
 msgid "Album artist | Album"
-msgstr "专辑艺术家"
+msgstr "专辑艺术家 | 专辑"
 
 #: src/tauon/t_modules/t_generator.py:427
-#, fuzzy
 msgid "sort by column"
-msgstr "按列名排序：>, <"
+msgstr "按列排序"
 
 #: src/tauon/t_modules/t_generator.py:429
-#, fuzzy
 msgid "Ascending"
-msgstr "升序排序"
+msgstr "升序"
 
 #: src/tauon/t_modules/t_generator.py:429
-#, fuzzy
 msgid "Descending"
-msgstr "降序排序"
+msgstr "降序"
 
 #: src/tauon/t_modules/t_generator.py:431
-#, fuzzy
 msgid "shuffle tracks"
-msgstr "随机播放曲目"
+msgstr "随机打乱曲目"
 
 #: src/tauon/t_modules/t_generator.py:431
 #: src/tauon/t_modules/t_generator.py:433 src/tauon/t_modules/t_main.py:33122
@@ -1654,9 +1517,8 @@ msgid "Tracks"
 msgstr "曲目"
 
 #: src/tauon/t_modules/t_generator.py:432
-#, fuzzy
 msgid "shuffle albums"
-msgstr "随机播放专辑"
+msgstr "随机打乱专辑"
 
 #: src/tauon/t_modules/t_generator.py:432
 #: src/tauon/t_modules/t_generator.py:434 src/tauon/t_modules/t_main.py:37469
@@ -1664,47 +1526,39 @@ msgid "Albums"
 msgstr "专辑"
 
 #: src/tauon/t_modules/t_generator.py:433
-#, fuzzy
 msgid "reverse the order"
-msgstr "移除边框"
+msgstr "反转顺序"
 
 #: src/tauon/t_modules/t_generator.py:433
 #: src/tauon/t_modules/t_generator.py:434
-#, fuzzy
 msgid "Reverse"
-msgstr "返回"
+msgstr "反转"
 
 #: src/tauon/t_modules/t_generator.py:434
-#, fuzzy
 msgid "reverse album order"
-msgstr "反转专辑"
+msgstr "反转专辑顺序"
 
 #: src/tauon/t_modules/t_generator.py:435
-#, fuzzy
 msgid "sort by file path"
 msgstr "按文件路径排序"
 
 #: src/tauon/t_modules/t_generator.py:435
 #: src/tauon/t_modules/t_generator.py:643
-#, fuzzy
 msgid "File path"
-msgstr "路径"
+msgstr "文件路径"
 
 #: src/tauon/t_modules/t_generator.py:436
-#, fuzzy
 msgid "sort by track number"
-msgstr "排序曲目编号"
+msgstr "按曲目编号排序"
 
 #: src/tauon/t_modules/t_generator.py:436
 #: src/tauon/t_modules/t_generator.py:642
-#, fuzzy
 msgid "Track number"
-msgstr "曲编号"
+msgstr "曲目编号"
 
 #: src/tauon/t_modules/t_generator.py:437
-#, fuzzy
 msgid "sort by year per artist"
-msgstr "按艺术家排序年份"
+msgstr "按每位艺术家的年份排序"
 
 #: src/tauon/t_modules/t_generator.py:437
 #: src/tauon/t_modules/t_generator.py:644
@@ -1713,239 +1567,211 @@ msgstr "按艺术家排序年份"
 
 #: src/tauon/t_modules/t_generator.py:440
 msgid "keep the first {N} tracks"
-msgstr ""
+msgstr "保留前 {N} 首曲目"
 
 #: src/tauon/t_modules/t_generator.py:440
 #: src/tauon/t_modules/t_generator.py:441
 #: src/tauon/t_modules/t_generator.py:649
 msgid "Limit"
-msgstr ""
+msgstr "限制"
 
 #: src/tauon/t_modules/t_generator.py:440
 #: src/tauon/t_modules/t_generator.py:443
-#, fuzzy
 msgid "tracks"
-msgstr "曲目"
+msgstr "首曲目"
 
 #: src/tauon/t_modules/t_generator.py:441
 msgid "stop at {N} minutes"
-msgstr ""
+msgstr "在 {N} 分钟处停止"
 
 #: src/tauon/t_modules/t_generator.py:443
-#, fuzzy
 msgid "Max per artist"
-msgstr "按艺术家排序年份"
+msgstr "每位艺术家上限"
 
 #: src/tauon/t_modules/t_generator.py:444
-#, fuzzy
 msgid "at most {N} per artist"
-msgstr "按艺术家排序年份"
+msgstr "每位艺术家至多 {N} 首"
 
 #: src/tauon/t_modules/t_generator.py:449
-#, fuzzy
 msgid "Option"
 msgstr "选项"
 
 #: src/tauon/t_modules/t_generator.py:449
 #: src/tauon/t_modules/t_generator_ui.py:1073
-#, fuzzy
 msgid "Auto update"
-msgstr "自动缩放"
+msgstr "自动更新"
 
 #: src/tauon/t_modules/t_generator.py:506
-#, fuzzy
 msgid "all playlists"
-msgstr "获取播放列表"
+msgstr "所有播放列表"
 
 #: src/tauon/t_modules/t_generator.py:506
 msgid "from"
-msgstr ""
+msgstr "来自"
 
 #: src/tauon/t_modules/t_generator.py:519
-#, fuzzy
 msgid "Unknown code: {C}"
-msgstr "未知曲目"
+msgstr "未知代码：{C}"
 
 #: src/tauon/t_modules/t_generator.py:522
 msgid "Enter a value for {K}"
-msgstr ""
+msgstr "请输入 {K} 的值"
 
 #: src/tauon/t_modules/t_generator.py:526
 msgid ""
 "Nothing is taken yet. Choose all tracks, an artist, a genre or a search."
-msgstr ""
+msgstr "尚未选取任何曲目。请选择所有曲目、艺术家、流派或搜索。"
 
 #: src/tauon/t_modules/t_generator.py:530
 msgid "A step runs before any tracks are taken, so it does nothing."
-msgstr ""
+msgstr "此步骤在选取曲目之前运行，因此不起作用。"
 
 #: src/tauon/t_modules/t_generator.py:566
 msgid "Playlist…"
 msgstr "播放列表…"
 
 #: src/tauon/t_modules/t_generator.py:572
-#, fuzzy
 msgid "Artist…"
-msgstr "艺术家"
+msgstr "艺术家…"
 
 #: src/tauon/t_modules/t_generator.py:573
-#, fuzzy
 msgid "Genre…"
-msgstr "流派"
+msgstr "流派…"
 
 #: src/tauon/t_modules/t_generator.py:574 src/tauon/t_modules/t_main.py:65167
 #: src/tauon/t_modules/t_main.py:65211 src/tauon/t_modules/t_main.py:65300
-#, fuzzy
 msgid "Search…"
-msgstr "搜索中…"
+msgstr "搜索…"
 
 #: src/tauon/t_modules/t_generator.py:575
-#, fuzzy
 msgid "Folder…"
-msgstr "修改文件夹…"
+msgstr "文件夹…"
 
 #: src/tauon/t_modules/t_generator.py:576
 msgid "Label…"
-msgstr ""
+msgstr "厂牌…"
 
 #: src/tauon/t_modules/t_generator.py:577
-#, fuzzy
 msgid "File type…"
-msgstr "正在复制文件…"
+msgstr "文件类型…"
 
 #: src/tauon/t_modules/t_generator.py:579
-#, fuzzy
 msgid "Exact match"
-msgstr "提取存档"
+msgstr "精确匹配"
 
 #: src/tauon/t_modules/t_generator.py:580
 msgid "Genre (exact)…"
-msgstr ""
+msgstr "流派（精确）…"
 
 #: src/tauon/t_modules/t_generator.py:581
 msgid "Genre (multi-value)…"
-msgstr ""
+msgstr "流派（多值）…"
 
 #: src/tauon/t_modules/t_generator.py:582
 msgid "Label (exact)…"
-msgstr ""
+msgstr "厂牌（精确）…"
 
 #: src/tauon/t_modules/t_generator.py:583
-#, fuzzy
 msgid "Search (exact text)…"
-msgstr "搜索文本…"
+msgstr "搜索（精确文本）…"
 
 #: src/tauon/t_modules/t_generator.py:585 src/tauon/t_modules/t_main.py:36023
 msgid "Services"
 msgstr "服务"
 
 #: src/tauon/t_modules/t_generator.py:588
-#, fuzzy
 msgid "Jellyfin playlist…"
-msgstr "播放列表…"
+msgstr "Jellyfin 播放列表…"
 
 #: src/tauon/t_modules/t_generator.py:590
-#, fuzzy
 msgid "Subsonic playlist…"
-msgstr "Subsonic 媒体库。"
+msgstr "Subsonic 播放列表…"
 
 #: src/tauon/t_modules/t_generator.py:591
-#, fuzzy
 msgid "Tauon Satellite playlist"
-msgstr "目标播放列表"
+msgstr "Tauon Satellite 播放列表"
 
 #: src/tauon/t_modules/t_generator.py:592
-#, fuzzy
 msgid "Tidal playlist…"
-msgstr "播放列表…"
+msgstr "Tidal 播放列表…"
 
 #: src/tauon/t_modules/t_generator.py:593
 msgid "Tidal favourite albums"
-msgstr ""
+msgstr "Tidal 收藏专辑"
 
 #: src/tauon/t_modules/t_generator.py:594
 msgid "Tidal favourite tracks"
-msgstr ""
+msgstr "Tidal 收藏曲目"
 
 #: src/tauon/t_modules/t_generator.py:595
-#, fuzzy
 msgid "Tidal artist…"
-msgstr "原始"
+msgstr "Tidal 艺术家…"
 
 #: src/tauon/t_modules/t_generator.py:596
 msgid "Tidal mix…"
-msgstr ""
+msgstr "Tidal 混音…"
 
 #: src/tauon/t_modules/t_generator.py:601 src/tauon/t_modules/t_main.py:47716
-#, fuzzy
 msgid "Filter"
-msgstr "筛选器"
+msgstr "筛选"
 
 #: src/tauon/t_modules/t_generator.py:602
-#, fuzzy
 msgid "Year…"
-msgstr "年份"
+msgstr "年份…"
 
 #: src/tauon/t_modules/t_generator.py:603 src/tauon/t_modules/t_main.py:65148
 #: src/tauon/t_modules/t_main.py:65193 src/tauon/t_modules/t_main.py:65240
 #: src/tauon/t_modules/t_main.py:65283
-#, fuzzy
 msgid "Rating…"
-msgstr "评分"
+msgstr "评分…"
 
 #: src/tauon/t_modules/t_generator.py:604
-#, fuzzy
 msgid "Album rating…"
-msgstr "专辑评分"
+msgstr "专辑评分…"
 
 #: src/tauon/t_modules/t_generator.py:605
-#, fuzzy
 msgid "Play count…"
-msgstr "播放次数"
+msgstr "播放次数…"
 
 #: src/tauon/t_modules/t_generator.py:606
 msgid "Length…"
-msgstr ""
+msgstr "时长…"
 
 #: src/tauon/t_modules/t_generator.py:607
 msgid "Album length…"
-msgstr ""
+msgstr "专辑时长…"
 
 #: src/tauon/t_modules/t_generator.py:608
-#, fuzzy
 msgid "Play time…"
-msgstr "播放时间"
+msgstr "播放时间…"
 
 #: src/tauon/t_modules/t_generator.py:609
 msgid "Recently modified…"
-msgstr ""
+msgstr "最近修改…"
 
 #: src/tauon/t_modules/t_generator.py:610
 msgid "Modified since date…"
-msgstr ""
+msgstr "自某日期起修改…"
 
 #: src/tauon/t_modules/t_generator.py:611
 msgid "Skips…"
-msgstr ""
+msgstr "跳过次数…"
 
 #: src/tauon/t_modules/t_generator.py:621
-#, fuzzy
 msgid "Keep matching…"
-msgstr "搜索中…"
+msgstr "保留匹配项…"
 
 #: src/tauon/t_modules/t_generator.py:622
-#, fuzzy
 msgid "Exclude matching…"
-msgstr "搜索中…"
+msgstr "排除匹配项…"
 
 #: src/tauon/t_modules/t_generator.py:623
 msgid "Comment contains…"
-msgstr ""
+msgstr "备注包含…"
 
 #: src/tauon/t_modules/t_generator.py:624
-#, fuzzy
 msgid "Not in playlist…"
-msgstr "没有艺术家"
+msgstr "不在播放列表中…"
 
 #: src/tauon/t_modules/t_generator.py:627
 msgid "Shuffle tracks"
@@ -1956,72 +1782,60 @@ msgid "Shuffle albums"
 msgstr "随机播放专辑"
 
 #: src/tauon/t_modules/t_generator.py:645
-#, fuzzy
 msgid "Column…"
-msgstr "列"
+msgstr "列…"
 
 #: src/tauon/t_modules/t_generator.py:646
-#, fuzzy
 msgid "Reverse tracks"
 msgstr "反转曲目"
 
 #: src/tauon/t_modules/t_generator.py:647
-#, fuzzy
 msgid "Reverse albums"
 msgstr "反转专辑"
 
 #: src/tauon/t_modules/t_generator.py:650
-#, fuzzy
 msgid "Number of tracks…"
-msgstr "曲目数量限制"
+msgstr "曲目数量…"
 
 #: src/tauon/t_modules/t_generator.py:651
-#, fuzzy
 msgid "Total time…"
-msgstr "总播放时间"
+msgstr "总时长…"
 
 #: src/tauon/t_modules/t_generator.py:652
-#, fuzzy
 msgid "Max per artist…"
-msgstr "按艺术家排序年份"
+msgstr "每位艺术家上限…"
 
 #: src/tauon/t_modules/t_generator.py:668
-#, fuzzy
 msgid "Unplayed"
-msgstr "尚未"
+msgstr "未播放"
 
 #: src/tauon/t_modules/t_generator.py:670
 msgid "Recently added"
-msgstr ""
+msgstr "最近添加"
 
 #: src/tauon/t_modules/t_generator.py:673
-#, fuzzy
 msgid "Top rated albums"
-msgstr "最高评分的专辑"
+msgstr "评分最高的专辑"
 
 #: src/tauon/t_modules/t_generator.py:674
-#, fuzzy
 msgid "Most played"
-msgstr "尚未"
+msgstr "播放最多"
 
 #: src/tauon/t_modules/t_generator.py:676
 msgid "One-hour mix"
-msgstr ""
+msgstr "一小时混合"
 
 #: src/tauon/t_modules/t_generator.py:677
-#, fuzzy
 msgid "Album roulette"
-msgstr "专辑封面"
+msgstr "专辑轮盘"
 
 #: src/tauon/t_modules/t_generator.py:678
-#, fuzzy
 msgid "Hi-res only"
-msgstr "仅曲目"
+msgstr "仅高解析度"
 
 #: src/tauon/t_modules/t_generator.py:680
-#, fuzzy
 msgid "Auto-sorting"
-msgstr "自动导出"
+msgstr "自动排序"
 
 #: src/tauon/t_modules/t_generator_ui.py:276
 #: src/tauon/t_modules/t_main.py:14764 src/tauon/t_modules/t_main.py:18648
@@ -2034,69 +1848,60 @@ msgstr "新建播放列表"
 
 #: src/tauon/t_modules/t_generator_ui.py:465
 #: src/tauon/t_modules/t_generator_ui.py:466
-#, fuzzy
 msgid "+ Add step"
-msgstr "+ 添加电台"
+msgstr "+ 添加步骤"
 
 #: src/tauon/t_modules/t_generator_ui.py:470
-#, fuzzy
 msgid "All playlists"
-msgstr "获取播放列表"
+msgstr "所有播放列表"
 
 #: src/tauon/t_modules/t_generator_ui.py:470
 msgid "From"
-msgstr ""
+msgstr "来自"
 
 #: src/tauon/t_modules/t_generator_ui.py:471
 msgid "Take"
-msgstr ""
+msgstr "选取"
 
 #: src/tauon/t_modules/t_generator_ui.py:472
 msgid "+ Filter, sort or limit"
-msgstr ""
+msgstr "+ 筛选、排序或限制"
 
 #: src/tauon/t_modules/t_generator_ui.py:472
 msgid "Then"
-msgstr ""
+msgstr "然后"
 
 #: src/tauon/t_modules/t_generator_ui.py:491
-#, fuzzy
 msgid "Close the quotation mark…"
-msgstr "关闭引文…"
+msgstr "请闭合引号…"
 
 #: src/tauon/t_modules/t_generator_ui.py:497
-#, fuzzy
 msgid "Disabled. This is a normal playlist."
-msgstr "好的，现在这是一个正常的播放列表。"
+msgstr "已禁用。这是一个普通播放列表。"
 
 #: src/tauon/t_modules/t_generator_ui.py:500
 msgid "Playlist not found"
 msgstr "未找到播放列表"
 
 #: src/tauon/t_modules/t_generator_ui.py:502
-#, fuzzy
 msgid "No tracks match"
-msgstr "已导入 {N} 个评分"
+msgstr "没有匹配的曲目"
 
 #: src/tauon/t_modules/t_generator_ui.py:504
-#, fuzzy
 msgid "Some codes could not run"
-msgstr "部分曲目无法重新扫描"
+msgstr "部分代码无法运行"
 
 #: src/tauon/t_modules/t_generator_ui.py:506
-#, fuzzy
 msgid "Ready. {N} track in playlist"
-msgstr "播放列表中的曲目"
+msgstr "就绪。播放列表中有 {N} 首曲目"
 
 #: src/tauon/t_modules/t_generator_ui.py:506
-#, fuzzy
 msgid "Ready. {N} tracks in playlist"
-msgstr "播放列表中的曲目"
+msgstr "就绪。播放列表中有 {N} 首曲目"
 
 #: src/tauon/t_modules/t_generator_ui.py:511
-#, fuzzy
 msgid "No tracks"
-msgstr "{N} 曲目"
+msgstr "没有曲目"
 
 #: src/tauon/t_modules/t_generator_ui.py:518
 #: src/tauon/t_modules/t_main.py:49341 src/tauon/t_modules/t_main.py:49482
@@ -2110,45 +1915,43 @@ msgstr "{N} 曲目"
 
 #: src/tauon/t_modules/t_generator_ui.py:519
 msgid "{H} h {M} m"
-msgstr ""
+msgstr "{H} 小时 {M} 分"
 
 #: src/tauon/t_modules/t_generator_ui.py:676
-#, fuzzy
 msgid "Unknown code"
-msgstr "未知"
+msgstr "未知代码"
 
 #: src/tauon/t_modules/t_generator_ui.py:686
 msgid "Kept as written. Fix it here or remove it."
-msgstr ""
+msgstr "已按原样保留。请在此修正或将其移除。"
 
 #: src/tauon/t_modules/t_generator_ui.py:712
 msgid "Renaming that playlist updates this."
-msgstr ""
+msgstr "重命名该播放列表会更新此处。"
 
 #: src/tauon/t_modules/t_generator_ui.py:737
 msgid "No settings. Drag the step to move it."
-msgstr ""
+msgstr "无设置。拖动步骤可移动它。"
 
 #: src/tauon/t_modules/t_generator_ui.py:822
 msgid "Regenerates on playlist entry and after importing music."
-msgstr ""
+msgstr "进入播放列表时和导入音乐后重新生成。"
 
 #: src/tauon/t_modules/t_generator_ui.py:824
 msgid "Off. Use Regenerate to update it."
-msgstr ""
+msgstr "已关闭。使用“重新生成”来更新。"
 
 #: src/tauon/t_modules/t_generator_ui.py:826
 msgid "Off. Shuffled playlists don't update unless this is ticked."
-msgstr ""
+msgstr "已关闭。除非勾选此项，否则随机播放列表不会更新。"
 
 #: src/tauon/t_modules/t_generator_ui.py:827
 msgid "Following the global setting: updates on entry and after imports."
-msgstr ""
+msgstr "遵循全局设置：进入时和导入后更新。"
 
 #: src/tauon/t_modules/t_generator_ui.py:964
-#, fuzzy
 msgid "Smart playlist"
-msgstr "目标播放列表"
+msgstr "智能播放列表"
 
 #: src/tauon/t_modules/t_generator_ui.py:970
 msgid "Playlist name"
@@ -2158,22 +1961,20 @@ msgstr "播放列表名称"
 #: src/tauon/t_modules/t_generator_ui.py:975
 #: src/tauon/t_modules/t_tagedit_ui.py:2139
 #: src/tauon/t_modules/t_tagedit_ui.py:2155
-#, fuzzy
 msgid "Presets"
-msgstr "预设已就绪"
+msgstr "预设"
 
 #: src/tauon/t_modules/t_generator_ui.py:986
 msgid "Click a step to edit it. Drag to reorder."
-msgstr ""
+msgstr "点击步骤进行编辑，拖动可重新排序。"
 
 #: src/tauon/t_modules/t_generator_ui.py:988
 msgid "This generator has several stages, so it's shown as one list."
-msgstr ""
+msgstr "此生成器包含多个阶段，因此显示为一个列表。"
 
 #: src/tauon/t_modules/t_generator_ui.py:1066
-#, fuzzy
 msgid "Generator code"
-msgstr "生成"
+msgstr "生成器代码"
 
 #: src/tauon/t_modules/t_generator_ui.py:1083
 #: src/tauon/t_modules/t_generator_ui.py:1087
@@ -2193,13 +1994,12 @@ msgid "Cancel"
 msgstr "取消"
 
 #: src/tauon/t_modules/t_generator_ui.py:1099
-#, fuzzy
 msgid "Convert to normal playlist"
-msgstr "移至下一个播放列表。"
+msgstr "转换为普通播放列表"
 
 #: src/tauon/t_modules/t_generator_ui.py:1105
 msgid "Keep the current tracks and remove the generator"
-msgstr ""
+msgstr "保留当前曲目并移除生成器"
 
 #: src/tauon/t_modules/t_guitar_chords.py:93
 msgid "Insufficient metadata to search"
@@ -2243,23 +2043,20 @@ msgid "Check username and password."
 msgstr "检查用户名和密码。"
 
 #: src/tauon/t_modules/t_jellyfin.py:201
-#, fuzzy
 msgid "Couldn't sign in to Jellyfin"
-msgstr "连接 Jellyfin 时出错"
+msgstr "无法登录 Jellyfin"
 
 #: src/tauon/t_modules/t_jellyfin.py:596 src/tauon/t_modules/t_main.py:22066
 #: src/tauon/t_modules/t_main.py:22076
 #: src/tauon/t_modules/t_remote_playlists.py:91
 #: src/tauon/t_modules/t_remote_playlists.py:95
 #: src/tauon/t_modules/t_subsonic.py:465
-#, fuzzy
 msgid "Could not connect to the server"
-msgstr "无法与服务器建立连接。"
+msgstr "无法连接到服务器"
 
 #: src/tauon/t_modules/t_jellyfin.py:639
-#, fuzzy
 msgid "Error fetching Jellyfin playlist"
-msgstr "创建 Spotify 播放列表时出错"
+msgstr "获取 Jellyfin 播放列表时出错"
 
 #: src/tauon/t_modules/t_jellyfin.py:827
 msgid "Error connecting to Jellyfin"
@@ -2278,29 +2075,27 @@ msgid "Jellyfin Collection"
 msgstr "Jellyfin 合集"
 
 #: src/tauon/t_modules/t_main.py:1495
-#, fuzzy
 msgid "Couldn't write rating to file"
-msgstr "无法将歌词写入文件"
+msgstr "无法将评分写入文件"
 
 #: src/tauon/t_modules/t_main.py:1518
-#, fuzzy
 msgid "Also write ratings into your music file tags on disk?"
-msgstr "同时将歌词保存到磁盘上的文件"
+msgstr "同时将评分写入磁盘上音乐文件的标签？"
 
 #: src/tauon/t_modules/t_main.py:1519
 msgid ""
 "Ratings are kept in Tauon either way. Change this later in Settings › "
 "Library › Ratings."
 msgstr ""
+"无论如何评分都会保存在 Tauon 中。之后可在 设置 › 媒体库 › 评分 中更改。"
 
 #: src/tauon/t_modules/t_main.py:1744
 msgid "Mouse back"
-msgstr ""
+msgstr "鼠标后退键"
 
 #: src/tauon/t_modules/t_main.py:1746
-#, fuzzy
 msgid "Mouse forward"
-msgstr "前进"
+msgstr "鼠标前进键"
 
 #: src/tauon/t_modules/t_main.py:3075
 msgid "Rescanning folders…"
@@ -2347,28 +2142,24 @@ msgid "Logout will complete on app restart."
 msgstr "应用程序重启后注销将完成。"
 
 #: src/tauon/t_modules/t_main.py:5642
-#, fuzzy
 msgid "Already connected to {service}"
-msgstr "已连接到 Last.fm"
+msgstr "已连接到 {service}"
 
 #: src/tauon/t_modules/t_main.py:5646
 msgid "Authorise an account in settings"
 msgstr "在设置中授权账号"
 
 #: src/tauon/t_modules/t_main.py:5646
-#, fuzzy
 msgid "No {service} account registered"
-msgstr "未注册 Last.Fm 账号"
+msgstr "未注册 {service} 账户"
 
 #: src/tauon/t_modules/t_main.py:5657
-#, fuzzy
 msgid "Connection to {service} was successful."
-msgstr "连接到 Maloja 服务器已成功。"
+msgstr "已成功连接到 {service}。"
 
 #: src/tauon/t_modules/t_main.py:5665
-#, fuzzy
 msgid "Error connecting to {service} network"
-msgstr "连接 Last.fm 网络时出错"
+msgstr "连接 {service} 网络时出错"
 
 #: src/tauon/t_modules/t_main.py:5684 src/tauon/t_modules/t_main.py:5697
 msgid "Error communicating with Last.fm network"
@@ -2380,9 +2171,8 @@ msgstr "错误：未连接到 last.fm"
 
 #: src/tauon/t_modules/t_main.py:5724 src/tauon/t_modules/t_main.py:5730
 #: src/tauon/t_modules/t_main.py:21944
-#, fuzzy
 msgid "Scrobble scan cancelled"
-msgstr "记录播放和喜爱。"
+msgstr "播放记录扫描已取消"
 
 #: src/tauon/t_modules/t_main.py:5740
 msgid "Scanning failed. Try again?"
@@ -2401,31 +2191,28 @@ msgid "There was an error, try re-log in"
 msgstr "出现错误，请尝试重新登录"
 
 #: src/tauon/t_modules/t_main.py:6151
-#, fuzzy
 msgid "Friend loves scan cancelled"
-msgstr "预设下载已取消"
+msgstr "好友喜爱扫描已取消"
 
 #: src/tauon/t_modules/t_main.py:6168
 msgid "There was an error getting friends loves"
 msgstr "获取好友喜爱时出错"
 
 #: src/tauon/t_modules/t_main.py:6177
-#, fuzzy
 msgid "Friend loves scan complete"
-msgstr "文件夹移动完成。"
+msgstr "好友喜爱扫描完成"
 
 #: src/tauon/t_modules/t_main.py:6178
 msgid "{N} tracks in your library are loved by friends"
-msgstr ""
+msgstr "你的媒体库中有 {N} 首曲目被好友喜爱"
 
 #: src/tauon/t_modules/t_main.py:6191
 msgid "No username found"
 msgstr "未找到用户名"
 
 #: src/tauon/t_modules/t_main.py:6199
-#, fuzzy
 msgid "Loved tracks scan cancelled"
-msgstr "{N} 曲目"
+msgstr "喜爱曲目扫描已取消"
 
 #: src/tauon/t_modules/t_main.py:6202
 msgid "User has no loved tracks."
@@ -2537,11 +2324,11 @@ msgstr "此布局没有播放面板"
 
 #: src/tauon/t_modules/t_main.py:10715
 msgid "Switch to Full Panel"
-msgstr ""
+msgstr "切换到完整面板"
 
 #: src/tauon/t_modules/t_main.py:10715 src/tauon/t_modules/t_main.py:65460
 msgid "Switch to Compact Panel"
-msgstr ""
+msgstr "切换到紧凑面板"
 
 #: src/tauon/t_modules/t_main.py:10802 src/tauon/t_modules/t_main.py:64733
 msgid "A/B Repeat"
@@ -2725,7 +2512,7 @@ msgstr "没有有效的歌词源。"
 
 #: src/tauon/t_modules/t_main.py:11616
 msgid "Turn one on in Settings › Library › Lyrics."
-msgstr ""
+msgstr "可在 设置 › 媒体库 › 歌词 中开启一个。"
 
 #: src/tauon/t_modules/t_main.py:11625
 msgid "Let's be polite and try later."
@@ -2751,48 +2538,40 @@ msgid "Insufficient metadata to get lyrics"
 msgstr "元数据不足，无法获取歌词"
 
 #: src/tauon/t_modules/t_main.py:11797
-#, fuzzy
 msgid "Cleared lyrics in Tauon only"
-msgstr "仅在 Tauon 中清除了同步歌词"
+msgstr "仅在 Tauon 中清除了歌词"
 
 #: src/tauon/t_modules/t_main.py:11798
-#, fuzzy
 msgid "The .txt file was kept because \"Save lyrics edits to tags\" is off."
-msgstr "由于“将同步歌词保存到 .lrc”已关闭，保留了 .lrc 文件。"
+msgstr "由于“将歌词编辑保存到标签”已关闭，.txt 文件已保留。"
 
 #: src/tauon/t_modules/t_main.py:11806
-#, fuzzy
 msgid "Could not delete lyrics file"
-msgstr "无法将歌词写入文件"
+msgstr "无法删除歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11806
-#, fuzzy
 msgid "The .txt file could not be deleted."
-msgstr "无法删除 .lrc 文件。"
+msgstr "无法删除 .txt 文件。"
 
 #: src/tauon/t_modules/t_main.py:11808
-#, fuzzy
 msgid "Deleted lyrics file"
-msgstr "删除曲目文件"
+msgstr "已删除歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11854
-#, fuzzy
 msgid "Could not delete synced lyrics file"
-msgstr "无法清除同步歌词"
+msgstr "无法删除同步歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11855
 msgid "The .lrc file could not be deleted."
 msgstr "无法删除 .lrc 文件。"
 
 #: src/tauon/t_modules/t_main.py:11864
-#, fuzzy
 msgid "Also removed from tags"
-msgstr "已从标签中移除"
+msgstr "也已从标签中移除"
 
 #: src/tauon/t_modules/t_main.py:11864 src/tauon/t_modules/t_main.py:11866
-#, fuzzy
 msgid "Deleted synced lyrics file"
-msgstr "已清除同步歌词"
+msgstr "已删除同步歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11868
 msgid "Cleared synced lyrics"
@@ -2815,14 +2594,12 @@ msgid "No synced lyrics were cleared"
 msgstr "未清除任何同步歌词"
 
 #: src/tauon/t_modules/t_main.py:11900
-#, fuzzy
 msgid "Delete Lyrics File"
-msgstr "删除曲目文件"
+msgstr "删除歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11904
-#, fuzzy
 msgid "Delete Synced Lyrics File"
-msgstr "清除同步歌词"
+msgstr "删除同步歌词文件"
 
 #: src/tauon/t_modules/t_main.py:11961 src/tauon/t_modules/t_main.py:11979
 msgid "Could not write lyrics to file"
@@ -2830,7 +2607,7 @@ msgstr "无法将歌词写入文件"
 
 #: src/tauon/t_modules/t_main.py:11962
 msgid "We don't know how to write lyrics to the filetype: "
-msgstr "不知道如何向这种文件类型写入歌词："
+msgstr "不知道如何向这种文件类型写入歌词： "
 
 #: src/tauon/t_modules/t_main.py:11963 src/tauon/t_modules/t_main.py:11981
 msgid "(We still saved to the internal database)"
@@ -2973,19 +2750,16 @@ msgid "Folder not found"
 msgstr "找不到文件夹"
 
 #: src/tauon/t_modules/t_main.py:12635
-#, fuzzy
 msgid "Add Music Folder"
-msgstr "导入音乐文件夹"
+msgstr "添加音乐文件夹"
 
 #: src/tauon/t_modules/t_main.py:12635 src/tauon/t_modules/t_tagedit_ui.py:2167
-#, fuzzy
 msgid "Add"
-msgstr "添加…"
+msgstr "添加"
 
 #: src/tauon/t_modules/t_main.py:12639 src/tauon/t_modules/t_main.py:12648
-#, fuzzy
 msgid "Could not open a folder picker"
-msgstr "无法保存主题文件"
+msgstr "无法打开文件夹选择器"
 
 #: src/tauon/t_modules/t_main.py:12660 src/tauon/t_modules/t_main.py:24595
 msgid "Could not access! Possible insufficient Flatpak permissions."
@@ -2994,7 +2768,7 @@ msgstr "无法访问，可能是Flatpak权限不完全。"
 #: src/tauon/t_modules/t_main.py:12661 src/tauon/t_modules/t_main.py:12677
 #: src/tauon/t_modules/t_main.py:24596 src/tauon/t_modules/t_main.py:24603
 msgid " For details, see {link}"
-msgstr "有关详细信息，请参阅 {link}"
+msgstr " 有关详细信息，请参阅 {link}"
 
 #: src/tauon/t_modules/t_main.py:12676 src/tauon/t_modules/t_main.py:24602
 msgid "The target may be lost on reboot without necessary Flatpak permissions."
@@ -3005,19 +2779,16 @@ msgid "Path may be transient! Continue? Press \"No\" for more information."
 msgstr "路径可能是临时的！要继续吗？按“否”查看更多信息。"
 
 #: src/tauon/t_modules/t_main.py:12686
-#, fuzzy
 msgid "No music found"
-msgstr "未找到结果"
+msgstr "未找到音乐"
 
 #: src/tauon/t_modules/t_main.py:12688
-#, fuzzy
 msgid "Imported 1 track"
-msgstr "导入曲目"
+msgstr "已导入 1 首曲目"
 
 #: src/tauon/t_modules/t_main.py:12690
-#, fuzzy
 msgid "Imported {N} tracks"
-msgstr "导入曲目"
+msgstr "已导入 {N} 首曲目"
 
 #: src/tauon/t_modules/t_main.py:12713
 msgid "This includes the conversion of a lossy codec to a lossless one!"
@@ -3084,18 +2855,16 @@ msgid "Top Genres"
 msgstr "热门类型"
 
 #: src/tauon/t_modules/t_main.py:13147
-#, fuzzy
 msgid "Sync with Server"
-msgstr "同步到设备"
+msgstr "与服务器同步"
 
 #: src/tauon/t_modules/t_main.py:13151
 msgid "Cannot sync when in transcode inplace mode"
 msgstr "在转码模式下无法同步"
 
 #: src/tauon/t_modules/t_main.py:13165
-#, fuzzy
 msgid "Sync failed"
-msgstr "已同步"
+msgstr "同步失败"
 
 #: src/tauon/t_modules/t_main.py:13181
 msgid "No target folder selected"
@@ -3106,9 +2875,8 @@ msgid "Target folder could not be found"
 msgstr "找不到目标文件夹"
 
 #: src/tauon/t_modules/t_main.py:13202 src/tauon/t_modules/t_main.py:13374
-#, fuzzy
 msgid "Sync canceled"
-msgstr "同步完成"
+msgstr "同步已取消"
 
 #: src/tauon/t_modules/t_main.py:13217
 msgid "Multiple folders to sync have the same name. Skipping."
@@ -3145,7 +2913,7 @@ msgstr "剩余 {N} 个文件夹"
 
 #: src/tauon/t_modules/t_main.py:13377
 msgid "Sync finished with errors"
-msgstr ""
+msgstr "同步完成，但有错误"
 
 #: src/tauon/t_modules/t_main.py:13379
 msgid "Sync completed"
@@ -3181,7 +2949,7 @@ msgstr "导出完成。"
 
 #: src/tauon/t_modules/t_main.py:13468 src/tauon/t_modules/t_main.py:16070
 msgid "Saved as: "
-msgstr "保存为："
+msgstr "保存为： "
 
 #: src/tauon/t_modules/t_main.py:13513 src/tauon/t_modules/t_main.py:65046
 #: src/tauon/t_modules/t_main.py:65047
@@ -3226,7 +2994,7 @@ msgstr "没有找到不完整的专辑。"
 
 #: src/tauon/t_modules/t_main.py:13731
 msgid "Codec: "
-msgstr "编解码器："
+msgstr "编解码器： "
 
 #: src/tauon/t_modules/t_main.py:13782 src/tauon/t_modules/t_main.py:65052
 #: src/tauon/t_modules/t_main.py:65053
@@ -3328,12 +3096,11 @@ msgstr "导入文件缺失"
 
 #: src/tauon/t_modules/t_main.py:14245
 msgid "Custom layouts failed to load; see the log."
-msgstr ""
+msgstr "自定义布局加载失败，请查看日志。"
 
 #: src/tauon/t_modules/t_main.py:14245
-#, fuzzy
 msgid "Layouts folder unavailable"
-msgstr "没有可用布局。"
+msgstr "布局文件夹不可用"
 
 #: src/tauon/t_modules/t_main.py:14275
 msgid "Transcoding tracks from network locations is not supported"
@@ -3380,14 +3147,12 @@ msgid "Could not find a folder with the artist's name to match level at."
 msgstr "无法找到与艺术家姓名相匹配的文件夹。"
 
 #: src/tauon/t_modules/t_main.py:14651
-#, fuzzy
 msgid "Moved 1 file to trash"
-msgstr "将文件夹移动到系统回收站"
+msgstr "已将 1 个文件移至回收站"
 
 #: src/tauon/t_modules/t_main.py:14653
-#, fuzzy
 msgid "Moved {N} files to trash"
-msgstr "将文件夹移动到系统回收站"
+msgstr "已将 {N} 个文件移至回收站"
 
 #: src/tauon/t_modules/t_main.py:14670
 msgid "Error deleting file"
@@ -3398,69 +3163,57 @@ msgid "Error deleting one or more files"
 msgstr "删除一个或多个文件时出错"
 
 #: src/tauon/t_modules/t_main.py:14674
-#, fuzzy
 msgid "Deleted {N} of {T} files"
-msgstr "删除文件"
+msgstr "已删除 {N} / {T} 个文件"
 
 #: src/tauon/t_modules/t_main.py:14676
-#, fuzzy
 msgid "Deleted 1 file"
-msgstr "删除文件。"
+msgstr "已删除 1 个文件"
 
 #: src/tauon/t_modules/t_main.py:14678
-#, fuzzy
 msgid "Deleted {N} files"
-msgstr "删除文件"
+msgstr "已删除 {N} 个文件"
 
 #: src/tauon/t_modules/t_main.py:14732
-#, fuzzy
 msgid "Un-Ban Track"
-msgstr "未知曲目"
+msgstr "取消屏蔽曲目"
 
 #: src/tauon/t_modules/t_main.py:14733 src/tauon/t_modules/t_main.py:65149
-#, fuzzy
 msgid "Ban Track"
-msgstr "随机曲目"
+msgstr "屏蔽曲目"
 
 #: src/tauon/t_modules/t_main.py:14748
-#, fuzzy
 msgid "Un-Ban Folder"
-msgstr "重新扫描文件夹"
+msgstr "取消屏蔽文件夹"
 
 #: src/tauon/t_modules/t_main.py:14749 src/tauon/t_modules/t_main.py:65194
 #: src/tauon/t_modules/t_main.py:65284
-#, fuzzy
 msgid "Ban Folder"
-msgstr "重新扫描文件夹"
+msgstr "屏蔽文件夹"
 
 #: src/tauon/t_modules/t_main.py:14787
-#, fuzzy
 msgid "Added to {name}"
-msgstr "重命名为：{name}"
+msgstr "已添加到 {name}"
 
 #: src/tauon/t_modules/t_main.py:14844
-#, fuzzy
 msgid "Love Tracks"
-msgstr "喜欢曲目"
+msgstr "喜爱曲目"
 
 #: src/tauon/t_modules/t_main.py:14844
-#, fuzzy
 msgid "Un-Love Tracks"
-msgstr "取消喜欢曲目"
+msgstr "取消喜爱曲目"
 
 #: src/tauon/t_modules/t_main.py:14866
-#, fuzzy
 msgid "Un-Ban Tracks"
-msgstr "未知曲目"
+msgstr "取消屏蔽曲目"
 
 #: src/tauon/t_modules/t_main.py:14866 src/tauon/t_modules/t_main.py:65241
-#, fuzzy
 msgid "Ban Tracks"
-msgstr "曲目"
+msgstr "屏蔽曲目"
 
 #: src/tauon/t_modules/t_main.py:14988
 msgid "A selected CUE track shares its file with unselected tracks"
-msgstr ""
+msgstr "所选的某个 CUE 曲目与未选中的曲目共用同一文件"
 
 #: src/tauon/t_modules/t_main.py:14996 src/tauon/t_modules/t_main.py:15019
 msgid "Cannot delete a network track"
@@ -3468,12 +3221,11 @@ msgstr "无法删除网络曲目"
 
 #: src/tauon/t_modules/t_main.py:15009
 msgid "The playlist changed, nothing was deleted"
-msgstr ""
+msgstr "播放列表已更改，未删除任何内容"
 
 #: src/tauon/t_modules/t_main.py:15022
-#, fuzzy
 msgid "This CUE track shares its file with other tracks"
-msgstr "这个曲目是一个网络曲目。"
+msgstr "此 CUE 曲目与其他曲目共用同一文件"
 
 #: src/tauon/t_modules/t_main.py:15040
 msgid "Cannot physically delete"
@@ -3704,9 +3456,8 @@ msgid "Hide bar"
 msgstr "隐藏分栏"
 
 #: src/tauon/t_modules/t_main.py:15639 src/tauon/t_modules/t_main.py:65008
-#, fuzzy
 msgid "Restore Sorting"
-msgstr "搜索中..."
+msgstr "恢复排序"
 
 #: src/tauon/t_modules/t_main.py:15643
 msgid "Enable Magnet Mode"
@@ -3735,53 +3486,46 @@ msgid "Play History"
 msgstr "播放历史记录"
 
 #: src/tauon/t_modules/t_main.py:16094
-#, fuzzy
 msgid "Ratings are already being written"
-msgstr "电台已在："
+msgstr "正在写入评分"
 
 #: src/tauon/t_modules/t_main.py:16133
-#, fuzzy
 msgid "Wrote {N} ratings to files"
-msgstr "已导入 {N} 个评分"
+msgstr "已将 {N} 个评分写入文件"
 
 #: src/tauon/t_modules/t_main.py:16135
-#, fuzzy
 msgid "Stopped."
-msgstr "停止"
+msgstr "已停止。"
 
 #: src/tauon/t_modules/t_main.py:16137
 msgid "{N} files couldn't be processed. See the log for details."
-msgstr ""
+msgstr "有 {N} 个文件无法处理。详情请查看日志。"
 
 #: src/tauon/t_modules/t_main.py:16146
-#, fuzzy
 msgid "Clear all track ratings?"
-msgstr "曲目评分"
+msgstr "清除所有曲目评分？"
 
 #: src/tauon/t_modules/t_main.py:16147
 msgid ""
 "This removes them from Tauon's database. Ratings saved in your music files "
 "are not changed."
-msgstr ""
+msgstr "这会将它们从 Tauon 的数据库中移除。保存在音乐文件中的评分不会更改。"
 
 #: src/tauon/t_modules/t_main.py:16154
-#, fuzzy
 msgid "Track ratings cleared"
-msgstr "曲目评分"
+msgstr "已清除曲目评分"
 
 #: src/tauon/t_modules/t_main.py:16160
-#, fuzzy
 msgid "Clear all album ratings?"
-msgstr "专辑评分"
+msgstr "清除所有专辑评分？"
 
 #: src/tauon/t_modules/t_main.py:16160
 msgid "This can't be undone."
-msgstr ""
+msgstr "此操作无法撤销。"
 
 #: src/tauon/t_modules/t_main.py:16165
-#, fuzzy
 msgid "Album ratings cleared"
-msgstr "专辑评分"
+msgstr "已清除专辑评分"
 
 #: src/tauon/t_modules/t_main.py:16173
 msgid "Stop Cast"
@@ -3830,7 +3574,7 @@ msgstr "您将曲目添加到生成器播放列表。 您想清除生成器吗�
 
 #: src/tauon/t_modules/t_main.py:17143
 msgid "Station is already in: "
-msgstr "电台已在："
+msgstr "电台已在： "
 
 #: src/tauon/t_modules/t_main.py:17146 src/tauon/t_modules/t_main.py:39272
 msgid "Added station to: "
@@ -3839,7 +3583,7 @@ msgstr "已将电台添加到： "
 #: src/tauon/t_modules/t_main.py:17170 src/tauon/t_modules/t_main.py:17188
 #: src/tauon/t_modules/t_main.py:31107
 msgid "Artist: "
-msgstr "艺术家："
+msgstr "艺术家： "
 
 #: src/tauon/t_modules/t_main.py:17231
 msgid "Filter Small Artists"
@@ -3899,25 +3643,22 @@ msgid "This playlist has no generator"
 msgstr "此播放列表没有生成器"
 
 #: src/tauon/t_modules/t_main.py:19502
-#, fuzzy
 msgid "Error fetching Subsonic playlist"
-msgstr "创建 Spotify 播放列表时出错"
+msgstr "获取 Subsonic 播放列表时出错"
 
 #: src/tauon/t_modules/t_main.py:20184
 msgid "OK. This playlist will automatically sort on import from now on"
 msgstr "好的。 从现在开始，此播放列表将在导入时自动排序"
 
 #: src/tauon/t_modules/t_main.py:20185
-#, fuzzy
 msgid ""
 "You can remove or edit this behavior with \"Smart Playlist…\" in the "
 "playlist tab menu"
-msgstr "您可以通过“其他…”>“编辑生成器…”删除或编辑此行为"
+msgstr "你可以通过播放列表标签菜单中的“智能播放列表…”移除或编辑此行为"
 
 #: src/tauon/t_modules/t_main.py:20192
-#, fuzzy
 msgid "Upload to {service}"
-msgstr "上传到 catbox.moe"
+msgstr "上传到 {service}"
 
 #: src/tauon/t_modules/t_main.py:20212
 msgid "A regen is already in progress…"
@@ -3958,18 +3699,16 @@ msgid "Unpin"
 msgstr "取消置顶"
 
 #: src/tauon/t_modules/t_main.py:20523 src/tauon/t_modules/t_main.py:64966
-#, fuzzy
 msgid "New Folder"
-msgstr "打开文件夹"
+msgstr "新建文件夹"
 
 #: src/tauon/t_modules/t_main.py:20581
 msgid "Unpin from Top Panel"
-msgstr ""
+msgstr "从顶部面板取消固定"
 
 #: src/tauon/t_modules/t_main.py:20581 src/tauon/t_modules/t_main.py:64970
-#, fuzzy
 msgid "Pin to Top Panel"
-msgstr "顶部面板中的选项卡"
+msgstr "固定到顶部面板"
 
 #: src/tauon/t_modules/t_main.py:20656
 msgid "Unlock"
@@ -4046,38 +3785,32 @@ msgid "Encoding warning: Missing one or more files"
 msgstr "编码警告：缺少一个或多个文件"
 
 #: src/tauon/t_modules/t_main.py:21129
-#, fuzzy
 msgid "Encoding warning: A file with the output name already exists"
-msgstr "同名文件夹已存在"
+msgstr "编码警告：已存在同名的输出文件"
 
 #: src/tauon/t_modules/t_main.py:21141
-#, fuzzy
 msgid "Encoding warning: Could not write transcoded file"
-msgstr "编码警告：缺少一个或多个文件"
+msgstr "编码警告：无法写入转码后的文件"
 
 #: src/tauon/t_modules/t_main.py:21161
-#, fuzzy
 msgid "Encoding warning: Could not remove original file"
-msgstr "编码警告：缺少一个或多个文件"
+msgstr "编码警告：无法移除原始文件"
 
 #: src/tauon/t_modules/t_main.py:21421
-#, fuzzy
 msgid "Error setting rating"
-msgstr "启动 Spotify 时出错"
+msgstr "设置评分时出错"
 
 #: src/tauon/t_modules/t_main.py:21421
-#, fuzzy
 msgid "{count} track(s) failed"
-msgstr "{N} 曲目"
+msgstr "{count} 首曲目失败"
 
 #: src/tauon/t_modules/t_main.py:21426
 msgid "Rated {stars}/5"
-msgstr ""
+msgstr "已评为 {stars}/5"
 
 #: src/tauon/t_modules/t_main.py:21426
-#, fuzzy
 msgid "Rating cleared"
-msgstr "评分"
+msgstr "已清除评分"
 
 #: src/tauon/t_modules/t_main.py:21479
 msgid "No exact matching artist could be found in this playlist"
@@ -4120,40 +3853,36 @@ msgid "Enter two-factor code"
 msgstr "输入两步验证码"
 
 #: src/tauon/t_modules/t_main.py:22066
-#, fuzzy
 msgid "Check the server URL, username and password."
-msgstr "检查用户名和密码。"
+msgstr "请检查服务器 URL、用户名和密码。"
 
 #: src/tauon/t_modules/t_main.py:22073
 msgid "Connected to the other Tauon"
-msgstr ""
+msgstr "已连接到另一个 Tauon"
 
 #: src/tauon/t_modules/t_main.py:22077
 msgid "Check the IP, and that the other Tauon has its web server on."
-msgstr ""
+msgstr "请检查 IP，以及另一个 Tauon 是否已开启网络服务器。"
 
 #: src/tauon/t_modules/t_main.py:22425
 msgid "End of playlist"
 msgstr "播放列表末尾"
 
 #: src/tauon/t_modules/t_main.py:22532
-#, fuzzy
 msgid "Failed updating ListenBrainz love status"
-msgstr "更新 last.fm 最爱状态失败"
+msgstr "更新 ListenBrainz 喜爱状态失败"
 
 #: src/tauon/t_modules/t_main.py:22593
-#, fuzzy
 msgid "Error updating love to {service}!"
-msgstr "更新最爱到 last.fm 失败！"
+msgstr "向 {service} 更新喜爱时出错！"
 
 #: src/tauon/t_modules/t_main.py:22594
 msgid "Maybe check your internet connection and try again?"
 msgstr "检查你的网络连接然后再试试？"
 
 #: src/tauon/t_modules/t_main.py:22612
-#, fuzzy
 msgid "Failed updating {service} love status"
-msgstr "更新 last.fm 最爱状态失败"
+msgstr "更新 {service} 喜爱状态失败"
 
 #: src/tauon/t_modules/t_main.py:23328 src/tauon/t_modules/t_main.py:72701
 msgid "Permission error encountered while writing database"
@@ -4257,12 +3986,11 @@ msgstr "尝试检查登录凭据以及服务器是否可访问。"
 
 #: src/tauon/t_modules/t_main.py:25203
 msgid "No music library found on the server"
-msgstr ""
+msgstr "在服务器上未找到音乐库"
 
 #: src/tauon/t_modules/t_main.py:25496
-#, fuzzy
 msgid "Error importing PLEX library"
-msgstr "导入 XSPF 播放列表时出错。"
+msgstr "导入 PLEX 媒体库时出错"
 
 #: src/tauon/t_modules/t_main.py:25561
 msgid "PLEX Collection"
@@ -4282,7 +4010,7 @@ msgstr "未在目标上找到播放列表"
 
 #: src/tauon/t_modules/t_main.py:26663
 msgid "Plain"
-msgstr ""
+msgstr "纯文本"
 
 #: src/tauon/t_modules/t_main.py:26663 src/tauon/t_modules/t_main.py:59590
 #: src/tauon/t_modules/t_main.py:59596
@@ -4290,9 +4018,8 @@ msgid "Synced"
 msgstr "已同步"
 
 #: src/tauon/t_modules/t_main.py:27043
-#, fuzzy
 msgid "No lyrics"
-msgstr "有歌词"
+msgstr "无歌词"
 
 #: src/tauon/t_modules/t_main.py:28545
 msgid "Automatic"
@@ -4304,7 +4031,7 @@ msgstr "原始"
 
 #: src/tauon/t_modules/t_main.py:28546
 msgid "Auto theme algorithm: "
-msgstr "自动主题算法："
+msgstr "自动主题算法： "
 
 #: src/tauon/t_modules/t_main.py:28751
 msgid "No embedded album art."
@@ -4332,7 +4059,7 @@ msgstr "目标文件夹或文件"
 
 #: src/tauon/t_modules/t_main.py:30567
 msgid "Will overwrite existing file: "
-msgstr "将覆盖现有文件："
+msgstr "将覆盖现有文件： "
 
 #: src/tauon/t_modules/t_main.py:30570
 msgid "Will save with playlist name:"
@@ -4383,104 +4110,92 @@ msgid "Playlist exported"
 msgstr "播放列表已导出"
 
 #: src/tauon/t_modules/t_main.py:30806
-#, fuzzy
 msgid "Merged {N} duplicate tracks"
-msgstr "未发现重复项"
+msgstr "已合并 {N} 首重复曲目"
 
 #: src/tauon/t_modules/t_main.py:30807
-#, fuzzy
 msgid "Relocated {N} tracks"
-msgstr "{N} 曲目"
+msgstr "已重新定位 {N} 首曲目"
 
 #: src/tauon/t_modules/t_main.py:30842
-#, fuzzy
 msgid "Searching… {N} files"
-msgstr "搜索中…"
+msgstr "正在搜索… {N} 个文件"
 
 #: src/tauon/t_modules/t_main.py:30843 src/tauon/t_modules/t_main.py:47607
-#, fuzzy
 msgid "Checking…"
-msgstr "正在连接…"
+msgstr "正在检查…"
 
 #: src/tauon/t_modules/t_main.py:30845
-#, fuzzy
 msgid "That path doesn't exist"
-msgstr "备份文件不存在"
+msgstr "该路径不存在"
 
 #: src/tauon/t_modules/t_main.py:30847
-#, fuzzy
 msgid "Something went wrong checking that path"
-msgstr "出了点问题"
+msgstr "检查该路径时出错"
 
 #: src/tauon/t_modules/t_main.py:30849
-#, fuzzy
 msgid "No missing tracks found there"
-msgstr "标记找不到的为已找到"
+msgstr "在那里未找到缺失的曲目"
 
 #: src/tauon/t_modules/t_main.py:30852
-#, fuzzy
 msgid "{N} still missing"
-msgstr "导入文件缺失"
+msgstr "仍缺失 {N} 首"
 
 #: src/tauon/t_modules/t_main.py:30854
 msgid "{N} re-imported copies merged"
-msgstr ""
+msgstr "已合并 {N} 个重新导入的副本"
 
 #: src/tauon/t_modules/t_main.py:30856
-#, fuzzy
 msgid "Search stopped early"
-msgstr "在维基百科上搜索艺术家"
+msgstr "搜索提前停止"
 
 #: src/tauon/t_modules/t_main.py:30857
-#, fuzzy
 msgid "{N} tracks will be relocated"
-msgstr "已导入 {N} 个评分"
+msgstr "将重新定位 {N} 首曲目"
 
 #: src/tauon/t_modules/t_main.py:30920
-#, fuzzy
 msgid "Relocate Music Folder"
-msgstr "导入音乐文件夹"
+msgstr "重新定位音乐文件夹"
 
 #: src/tauon/t_modules/t_main.py:30935
 msgid "Drop your music folder, an album, or a track here"
-msgstr ""
+msgstr "将你的音乐文件夹、专辑或曲目拖放到此处"
 
 #: src/tauon/t_modules/t_main.py:30946
 msgid "or type the path below"
-msgstr ""
+msgstr "或在下方输入路径"
 
 #: src/tauon/t_modules/t_main.py:30951
 msgid "Missing"
-msgstr ""
+msgstr "缺失"
 
 #: src/tauon/t_modules/t_main.py:30971
 msgid "New location of the track, its album, or your music folder"
-msgstr ""
+msgstr "曲目、其专辑或你的音乐文件夹的新位置"
 
 #: src/tauon/t_modules/t_main.py:31003
 msgid "Matched by file name and size"
-msgstr ""
+msgstr "按文件名和大小匹配"
 
 #: src/tauon/t_modules/t_main.py:31027
-#, fuzzy
 msgid "Relocate"
-msgstr "重新加载"
+msgstr "重新定位"
 
 #: src/tauon/t_modules/t_main.py:31130
 msgid "Year: "
-msgstr "年份："
+msgstr "年份： "
 
 #: src/tauon/t_modules/t_main.py:31153
 msgid "Composer: "
-msgstr "作曲家："
+msgstr "作曲家： "
 
 #: src/tauon/t_modules/t_main.py:31178
 msgid "Label: "
-msgstr ""
+msgstr "厂牌： "
 
 #: src/tauon/t_modules/t_main.py:31247
 msgid "Genre: "
-msgstr "类型："
+msgstr "流派： "
 
 #: src/tauon/t_modules/t_main.py:31337
 msgid "Added 1 track to playlist: {name}"
@@ -4531,61 +4246,52 @@ msgid "No results found"
 msgstr "未找到结果"
 
 #: src/tauon/t_modules/t_main.py:32309
-#, fuzzy
 msgid "Duplicate tracks found"
-msgstr "未发现重复项"
+msgstr "发现重复曲目"
 
 #: src/tauon/t_modules/t_main.py:32311
 msgid "This action would add a duplicate track."
-msgstr ""
+msgstr "此操作会添加一首重复曲目。"
 
 #: src/tauon/t_modules/t_main.py:32312
 msgid "This action would add {N} duplicate tracks."
-msgstr ""
+msgstr "此操作会添加 {N} 首重复曲目。"
 
 #: src/tauon/t_modules/t_main.py:32314
-#, fuzzy
 msgid "Add duplicates"
-msgstr "重复的"
+msgstr "添加重复项"
 
 #: src/tauon/t_modules/t_main.py:32315
-#, fuzzy
 msgid "Skip duplicates"
-msgstr "重复的"
+msgstr "跳过重复项"
 
 #: src/tauon/t_modules/t_main.py:32453
-#, fuzzy
 msgid "Could not move 1 file to the trash"
-msgstr "无法将存档移至垃圾箱"
+msgstr "无法将 1 个文件移至回收站"
 
 #: src/tauon/t_modules/t_main.py:32454
-#, fuzzy
 msgid "Could not move {N} files to the trash"
-msgstr "无法将存档移至垃圾箱"
+msgstr "无法将 {N} 个文件移至回收站"
 
 #: src/tauon/t_modules/t_main.py:32455
 msgid "Delete permanently? This can't be undone."
-msgstr ""
+msgstr "永久删除？此操作无法撤销。"
 
 #: src/tauon/t_modules/t_main.py:32456
-#, fuzzy
 msgid "Delete Permanently"
-msgstr "已删除主题"
+msgstr "永久删除"
 
 #: src/tauon/t_modules/t_main.py:32459
-#, fuzzy
 msgid "Move 1 file to the trash?"
-msgstr "将文件夹移动到系统回收站"
+msgstr "将 1 个文件移至回收站？"
 
 #: src/tauon/t_modules/t_main.py:32460
-#, fuzzy
 msgid "Move {N} files to the trash?"
-msgstr "将文件夹移动到系统回收站"
+msgstr "将 {N} 个文件移至回收站？"
 
 #: src/tauon/t_modules/t_main.py:32462
-#, fuzzy
 msgid "Move to Trash"
-msgstr "文件已移至回收站"
+msgstr "移至回收站"
 
 #: src/tauon/t_modules/t_main.py:32598 src/tauon/t_modules/t_main.py:32641
 msgid "Cancelling…"
@@ -4620,14 +4326,12 @@ msgid "Open GPL license"
 msgstr "打开 GPL 许可证"
 
 #: src/tauon/t_modules/t_main.py:33016
-#, fuzzy
 msgid "Copied"
-msgstr "已复制颜色"
+msgstr "已复制"
 
 #: src/tauon/t_modules/t_main.py:33034
-#, fuzzy
 msgid "Copy version"
-msgstr "压缩"
+msgstr "复制版本号"
 
 #: src/tauon/t_modules/t_main.py:33046
 msgid "This program comes with absolutely no warranty."
@@ -4834,9 +4538,8 @@ msgstr "显示阈值标记"
 
 #: src/tauon/t_modules/t_main.py:35024 src/tauon/t_modules/t_main.py:35089
 #: src/tauon/t_modules/t_main.py:35375 src/tauon/t_modules/t_main.py:36157
-#, fuzzy
 msgid "Scrobble Radios"
-msgstr "记录播放和喜爱。"
+msgstr "记录电台播放"
 
 #: src/tauon/t_modules/t_main.py:35040
 msgid "Token-based scrobbling."
@@ -4937,7 +4640,7 @@ msgstr "操作"
 #: src/tauon/t_modules/t_main.py:35201 src/tauon/t_modules/t_main.py:35485
 #: src/tauon/t_modules/t_main.py:35524
 msgid "Add music from this server, or check the connection."
-msgstr ""
+msgstr "从此服务器添加音乐，或检查连接。"
 
 #: src/tauon/t_modules/t_main.py:35208
 msgid "Continue"
@@ -4947,7 +4650,7 @@ msgstr "继续"
 #: src/tauon/t_modules/t_main.py:35491 src/tauon/t_modules/t_main.py:35530
 #: src/tauon/t_modules/t_main.py:35564
 msgid "Add music…"
-msgstr ""
+msgstr "添加音乐…"
 
 #: src/tauon/t_modules/t_main.py:35218 src/tauon/t_modules/t_main.py:35312
 #: src/tauon/t_modules/t_main.py:35416 src/tauon/t_modules/t_main.py:35492
@@ -4992,11 +4695,11 @@ msgstr "如果你的服务器自行 scrobble，请禁用此项。"
 
 #: src/tauon/t_modules/t_main.py:35300 src/tauon/t_modules/t_main.py:36160
 msgid "Don't refetch while editing generators"
-msgstr ""
+msgstr "编辑生成器时不要重新获取"
 
 #: src/tauon/t_modules/t_main.py:35301
 msgid "Reuse the last fetched library while you type a generator query."
-msgstr ""
+msgstr "输入生成器查询时复用上次获取的媒体库。"
 
 #: src/tauon/t_modules/t_main.py:35339
 msgid "Connection looked successful but the API key was invalid."
@@ -5055,9 +4758,8 @@ msgid "Disable if Jellyfin scrobbles on its own."
 msgstr "如果 Jellyfin 自行 scrobble，请禁用此项。"
 
 #: src/tauon/t_modules/t_main.py:35509
-#, fuzzy
 msgid "Stream playlists from another Tauon instance."
-msgstr "从另一个 Tauon 实例获取播放列表。"
+msgstr "从另一个 Tauon 实例流式传输播放列表。"
 
 #: src/tauon/t_modules/t_main.py:35514
 msgid "IP"
@@ -5077,7 +4779,7 @@ msgstr "正在等待重定向。"
 
 #: src/tauon/t_modules/t_main.py:35555
 msgid "Sign in to TIDAL."
-msgstr ""
+msgstr "登录 TIDAL。"
 
 #: src/tauon/t_modules/t_main.py:35558
 msgid "Status"
@@ -5156,14 +4858,12 @@ msgid "Audio"
 msgstr "音频"
 
 #: src/tauon/t_modules/t_main.py:35998 src/tauon/t_modules/t_main.py:52127
-#, fuzzy
 msgid "Output"
-msgstr "导出"
+msgstr "输出"
 
 #: src/tauon/t_modules/t_main.py:35999 src/tauon/t_modules/t_main.py:48051
-#, fuzzy
 msgid "Playback"
-msgstr "播放菜单"
+msgstr "播放"
 
 #: src/tauon/t_modules/t_main.py:36000
 msgid "ReplayGain"
@@ -5174,13 +4874,12 @@ msgid "Equalizer"
 msgstr "均衡器"
 
 #: src/tauon/t_modules/t_main.py:36002
-#, fuzzy
 msgid "Cache"
-msgstr "缓存大小"
+msgstr "缓存"
 
 #: src/tauon/t_modules/t_main.py:36004
 msgid "Appearance"
-msgstr ""
+msgstr "外观"
 
 #: src/tauon/t_modules/t_main.py:36005 src/tauon/t_modules/t_main.py:37018
 msgid "Theme"
@@ -5199,32 +4898,28 @@ msgid "Layouts"
 msgstr "布局"
 
 #: src/tauon/t_modules/t_main.py:36009
-#, fuzzy
 msgid "In context menus"
-msgstr "右键菜单：背景"
+msgstr "在右键菜单中"
 
 #: src/tauon/t_modules/t_main.py:36011
 msgid "Library"
 msgstr "媒体库"
 
 #: src/tauon/t_modules/t_main.py:36012 src/tauon/t_modules/t_main.py:47877
-#, fuzzy
 msgid "Playlists"
-msgstr "播放列表："
+msgstr "播放列表"
 
 #: src/tauon/t_modules/t_main.py:36013
 msgid "Imports"
 msgstr "导入"
 
 #: src/tauon/t_modules/t_main.py:36014 src/tauon/t_modules/t_main.py:46794
-#, fuzzy
 msgid "Ratings"
 msgstr "评分"
 
 #: src/tauon/t_modules/t_main.py:36015
-#, fuzzy
 msgid "Multiple artists"
-msgstr "<多选>"
+msgstr "多位艺术家"
 
 #: src/tauon/t_modules/t_main.py:36016
 msgid "Transcode"
@@ -5244,28 +4939,24 @@ msgid "Stats"
 msgstr "统计"
 
 #: src/tauon/t_modules/t_main.py:36020
-#, fuzzy
 msgid "Album chart"
-msgstr "{N} 专辑排行榜"
+msgstr "专辑墙"
 
 #: src/tauon/t_modules/t_main.py:36022
-#, fuzzy
 msgid "Connect"
 msgstr "连接"
 
 #: src/tauon/t_modules/t_main.py:36024
-#, fuzzy
 msgid "Account"
-msgstr "账号"
+msgstr "账户"
 
 #: src/tauon/t_modules/t_main.py:36028
 msgid "Sharing"
-msgstr ""
+msgstr "分享"
 
 #: src/tauon/t_modules/t_main.py:36030
-#, fuzzy
 msgid "System"
-msgstr "系统错误！"
+msgstr "系统"
 
 #: src/tauon/t_modules/t_main.py:36031
 msgid "Files"
@@ -5273,17 +4964,16 @@ msgstr "文件"
 
 #: src/tauon/t_modules/t_main.py:36032
 msgid "Input and export"
-msgstr ""
+msgstr "输入与导出"
 
 #: src/tauon/t_modules/t_main.py:36033
 msgid "Diagnostics"
-msgstr ""
+msgstr "诊断"
 
 #: src/tauon/t_modules/t_main.py:36042 src/tauon/t_modules/t_main.py:36681
 #: src/tauon/t_modules/t_main.py:36682
-#, fuzzy
 msgid "Output device"
-msgstr "音频输出设备"
+msgstr "输出设备"
 
 #: src/tauon/t_modules/t_main.py:36043 src/tauon/t_modules/t_main.py:36722
 msgid "Audio stack"
@@ -5295,17 +4985,15 @@ msgstr "避免重新采样"
 
 #: src/tauon/t_modules/t_main.py:36045 src/tauon/t_modules/t_main.py:36757
 msgid "Force stereo output"
-msgstr ""
+msgstr "强制立体声输出"
 
 #: src/tauon/t_modules/t_main.py:36046 src/tauon/t_modules/t_main.py:36764
-#, fuzzy
 msgid "Custom device buffer"
-msgstr "设备缓冲长度"
+msgstr "自定义设备缓冲"
 
 #: src/tauon/t_modules/t_main.py:36047 src/tauon/t_modules/t_main.py:36768
-#, fuzzy
 msgid "Device buffer"
-msgstr "设备缓冲长度"
+msgstr "设备缓冲"
 
 #: src/tauon/t_modules/t_main.py:36048 src/tauon/t_modules/t_main.py:36789
 msgid "Direct DSD output"
@@ -5313,12 +5001,11 @@ msgstr "DSD 直通输出"
 
 #: src/tauon/t_modules/t_main.py:36049 src/tauon/t_modules/t_main.py:36821
 msgid "Pre-roll silence"
-msgstr ""
+msgstr "预播放静音"
 
 #: src/tauon/t_modules/t_main.py:36050 src/tauon/t_modules/t_main.py:36824
-#, fuzzy
 msgid "Pre-roll duration"
-msgstr "播放列表时长"
+msgstr "预播放时长"
 
 #: src/tauon/t_modules/t_main.py:36051 src/tauon/t_modules/t_main.py:36837
 msgid "Fade on pause and stop"
@@ -5346,11 +5033,11 @@ msgstr "重启后继续播放"
 
 #: src/tauon/t_modules/t_main.py:36057 src/tauon/t_modules/t_main.py:36851
 msgid "Skip bans in shuffle"
-msgstr ""
+msgstr "随机播放时跳过已屏蔽项"
 
 #: src/tauon/t_modules/t_main.py:36058 src/tauon/t_modules/t_main.py:36852
 msgid "Skip bans in normal playback"
-msgstr ""
+msgstr "正常播放时跳过已屏蔽项"
 
 #: src/tauon/t_modules/t_main.py:36059 src/tauon/t_modules/t_main.py:36862
 msgid "Resume from suspend"
@@ -5358,9 +5045,8 @@ msgstr "从挂起恢复"
 
 #: src/tauon/t_modules/t_main.py:36060 src/tauon/t_modules/t_main.py:36868
 #: src/tauon/t_modules/t_main.py:52268
-#, fuzzy
 msgid "Mode"
-msgstr "开发模式"
+msgstr "模式"
 
 #: src/tauon/t_modules/t_main.py:36061 src/tauon/t_modules/t_main.py:36878
 #: src/tauon/t_modules/t_main.py:52273
@@ -5377,12 +5063,11 @@ msgstr "启用均衡器"
 
 #: src/tauon/t_modules/t_main.py:36064 src/tauon/t_modules/t_main.py:36799
 msgid "Headphone crossfeed (bs2b)"
-msgstr ""
+msgstr "耳机交叉馈送（bs2b）"
 
 #: src/tauon/t_modules/t_main.py:36065 src/tauon/t_modules/t_main.py:36811
-#, fuzzy
 msgid "Crossfeed preset"
-msgstr "选择预设"
+msgstr "交叉馈送预设"
 
 #: src/tauon/t_modules/t_main.py:36066 src/tauon/t_modules/t_main.py:36964
 msgid "Cache local files"
@@ -5402,66 +5087,59 @@ msgstr "缓存大小"
 
 #: src/tauon/t_modules/t_main.py:36070 src/tauon/t_modules/t_main.py:37289
 msgid "Read ratings on tag scan"
-msgstr ""
+msgstr "扫描标签时读取评分"
 
 #: src/tauon/t_modules/t_main.py:36071 src/tauon/t_modules/t_main.py:37296
-#, fuzzy
 msgid "Write ratings to tags"
-msgstr "正在获取图像…"
+msgstr "将评分写入标签"
 
 #: src/tauon/t_modules/t_main.py:36072 src/tauon/t_modules/t_main.py:37300
-#, fuzzy
 msgid "Write all ratings"
-msgstr "曲目评分"
+msgstr "写入所有评分"
 
 #: src/tauon/t_modules/t_main.py:36073 src/tauon/t_modules/t_main.py:37303
-#, fuzzy
 msgid "Clear track ratings"
-msgstr "曲目评分"
+msgstr "清除曲目评分"
 
 #: src/tauon/t_modules/t_main.py:36074 src/tauon/t_modules/t_main.py:37306
-#, fuzzy
 msgid "Clear album ratings"
-msgstr "专辑评分"
+msgstr "清除专辑评分"
 
 #: src/tauon/t_modules/t_main.py:36076 src/tauon/t_modules/t_main.py:37723
 msgid "Keep scrobbles while offline"
-msgstr ""
+msgstr "离线时保留播放记录"
 
 #: src/tauon/t_modules/t_main.py:36077 src/tauon/t_modules/t_main.py:37737
-#, fuzzy
 msgid "Discard waiting scrobbles"
-msgstr "正在扫描 Scrobbles…"
+msgstr "丢弃等待中的播放记录"
 
 #: src/tauon/t_modules/t_main.py:36079 src/tauon/t_modules/t_main.py:36993
 msgid "Skin"
-msgstr ""
+msgstr "皮肤"
 
 #: src/tauon/t_modules/t_main.py:36080 src/tauon/t_modules/t_main.py:37094
-#, fuzzy
 msgid "Background style"
 msgstr "背景样式"
 
 #: src/tauon/t_modules/t_main.py:36081 src/tauon/t_modules/t_main.py:37009
 msgid "Ambient motion"
-msgstr ""
+msgstr "环境动效"
 
 #: src/tauon/t_modules/t_main.py:36082 src/tauon/t_modules/t_main.py:37012
 msgid "Side panel spectrum"
-msgstr ""
+msgstr "侧边栏频谱"
 
 #: src/tauon/t_modules/t_main.py:36083 src/tauon/t_modules/t_main.py:37108
 msgid "Glass mode"
-msgstr ""
+msgstr "玻璃模式"
 
 #: src/tauon/t_modules/t_main.py:36084 src/tauon/t_modules/t_main.py:37112
 msgid "Glass intensity"
-msgstr ""
+msgstr "玻璃强度"
 
 #: src/tauon/t_modules/t_main.py:36085 src/tauon/t_modules/t_main.py:37118
-#, fuzzy
 msgid "Darken tracklist"
-msgstr "曲目列表"
+msgstr "加深曲目列表"
 
 #: src/tauon/t_modules/t_main.py:36086 src/tauon/t_modules/t_main.py:37128
 msgid "Emit track change notifications"
@@ -5526,40 +5204,35 @@ msgstr "单色托盘图标"
 
 #: src/tauon/t_modules/t_main.py:36101 src/tauon/t_modules/t_main.py:37244
 msgid "Layout cycling order"
-msgstr ""
+msgstr "布局切换顺序"
 
 #: src/tauon/t_modules/t_main.py:36102 src/tauon/t_modules/t_main.py:37246
-#, fuzzy
 msgid "Layout files"
-msgstr "布局"
+msgstr "布局文件"
 
 #: src/tauon/t_modules/t_main.py:36103 src/tauon/t_modules/t_main.py:37250
 msgid "Gallery thumbnail size and titles"
-msgstr ""
+msgstr "收藏缩略图大小与标题"
 
 #: src/tauon/t_modules/t_main.py:36104 src/tauon/t_modules/t_main.py:37251
 msgid "Tracklist columns, font size and row height"
-msgstr ""
+msgstr "曲目列表的列、字号与行高"
 
 #: src/tauon/t_modules/t_main.py:36105 src/tauon/t_modules/t_main.py:37252
-#, fuzzy
 msgid "Track menu search links"
-msgstr "曲目菜单附加项"
+msgstr "曲目菜单中的搜索链接"
 
 #: src/tauon/t_modules/t_main.py:36106 src/tauon/t_modules/t_main.py:37253
-#, fuzzy
 msgid "Tabs and top-panel visualiser"
-msgstr "顶部面板可视化器"
+msgstr "标签页与顶部面板可视化"
 
 #: src/tauon/t_modules/t_main.py:36107 src/tauon/t_modules/t_main.py:37254
-#, fuzzy
 msgid "Centred side panel and art zoom"
-msgstr "居中元数据侧栏"
+msgstr "居中侧边栏与封面缩放"
 
 #: src/tauon/t_modules/t_main.py:36108 src/tauon/t_modules/t_main.py:37255
-#, fuzzy
 msgid "Showcase visualiser and wide mode"
-msgstr "显示展示可视化"
+msgstr "展示视图可视化与宽屏模式"
 
 #: src/tauon/t_modules/t_main.py:36110 src/tauon/t_modules/t_main.py:37261
 msgid "Auto fetch artist data"
@@ -5571,7 +5244,7 @@ msgstr "自动重新加载播放列表"
 
 #: src/tauon/t_modules/t_main.py:36112 src/tauon/t_modules/t_main.py:37265
 msgid "Ignore leading \"The\" when sorting artists"
-msgstr ""
+msgstr "艺术家排序时忽略开头的“The”"
 
 #: src/tauon/t_modules/t_main.py:36113 src/tauon/t_modules/t_main.py:37269
 msgid "Extract archives"
@@ -5586,9 +5259,8 @@ msgid "Trash archive after extraction"
 msgstr "解压后删除压缩包"
 
 #: src/tauon/t_modules/t_main.py:36116 src/tauon/t_modules/t_main.py:37276
-#, fuzzy
 msgid "Sort tracks on import"
-msgstr "已导入 {N} 个评分"
+msgstr "导入时对曲目排序"
 
 #: src/tauon/t_modules/t_main.py:36117 src/tauon/t_modules/t_main.py:37273
 msgid "Always extract to Music folder"
@@ -5600,39 +5272,35 @@ msgstr "录制电台"
 
 #: src/tauon/t_modules/t_main.py:36119 src/tauon/t_modules/t_main.py:37321
 msgid "Display separator"
-msgstr ""
+msgstr "显示分隔符"
 
 #: src/tauon/t_modules/t_main.py:36120 src/tauon/t_modules/t_main.py:37334
 msgid "Split on semicolon"
-msgstr ""
+msgstr "按分号拆分"
 
 #: src/tauon/t_modules/t_main.py:36121 src/tauon/t_modules/t_main.py:37336
 msgid "Split on middle dot"
-msgstr ""
+msgstr "按间隔号拆分"
 
 #: src/tauon/t_modules/t_main.py:36122 src/tauon/t_modules/t_main.py:37338
-#, fuzzy
 msgid "Split on bullet"
-msgstr "以行分割"
+msgstr "按圆点拆分"
 
 #: src/tauon/t_modules/t_main.py:36124 src/tauon/t_modules/t_main.py:37354
 msgid "Save opus as .ogg"
 msgstr "将 Opus 保存为 .ogg"
 
 #: src/tauon/t_modules/t_main.py:36126 src/tauon/t_modules/t_main.py:37359
-#, fuzzy
 msgid "Embed album art"
-msgstr "没有嵌入专辑封面。"
+msgstr "嵌入专辑封面"
 
 #: src/tauon/t_modules/t_main.py:36127 src/tauon/t_modules/t_main.py:37360
-#, fuzzy
 msgid "Copy album art"
-msgstr "复制专辑网址"
+msgstr "复制专辑封面"
 
 #: src/tauon/t_modules/t_main.py:36128 src/tauon/t_modules/t_main.py:37361
-#, fuzzy
 msgid "Output folder"
-msgstr "打开输出文件夹"
+msgstr "输出文件夹"
 
 #: src/tauon/t_modules/t_main.py:36129 src/tauon/t_modules/t_main.py:37362
 msgid "Save to output folder"
@@ -5647,9 +5315,8 @@ msgid "Target folder"
 msgstr "目标文件夹"
 
 #: src/tauon/t_modules/t_main.py:36132 src/tauon/t_modules/t_main.py:37388
-#, fuzzy
 msgid "Mounted device"
-msgstr "同步到设备"
+msgstr "已挂载的设备"
 
 #: src/tauon/t_modules/t_main.py:36133 src/tauon/t_modules/t_main.py:37389
 msgid "Delete other folders in target"
@@ -5692,14 +5359,12 @@ msgid "Enable Discord Rich Presence"
 msgstr "启用 Discord Rich Presence"
 
 #: src/tauon/t_modules/t_main.py:36146 src/tauon/t_modules/t_main.py:37794
-#, fuzzy
 msgid "Discord card order"
-msgstr "卡片顺序"
+msgstr "Discord 卡片顺序"
 
 #: src/tauon/t_modules/t_main.py:36147 src/tauon/t_modules/t_main.py:37801
-#, fuzzy
 msgid "Member list shows"
-msgstr "成员列表显示："
+msgstr "成员列表显示"
 
 #: src/tauon/t_modules/t_main.py:36148 src/tauon/t_modules/t_main.py:37807
 msgid "Clean title (Removes .feat etc)"
@@ -5726,9 +5391,8 @@ msgid "Auto-search lyrics"
 msgstr "自动搜索歌词"
 
 #: src/tauon/t_modules/t_main.py:36154 src/tauon/t_modules/t_main.py:37816
-#, fuzzy
 msgid "Search within lyrics"
-msgstr "带歌词的曲目"
+msgstr "在歌词中搜索"
 
 #: src/tauon/t_modules/t_main.py:36165 src/tauon/t_modules/t_main.py:37841
 msgid "Open config file"
@@ -5752,14 +5416,12 @@ msgid "Enable gamepad input"
 msgstr "启用手柄输入"
 
 #: src/tauon/t_modules/t_main.py:36170 src/tauon/t_modules/t_main.py:37866
-#, fuzzy
 msgid "Export playlists to"
-msgstr "导入播放列表"
+msgstr "将播放列表导出到"
 
 #: src/tauon/t_modules/t_main.py:36171 src/tauon/t_modules/t_main.py:37879
-#, fuzzy
 msgid "Export folder"
-msgstr "分类"
+msgstr "导出文件夹"
 
 #: src/tauon/t_modules/t_main.py:36172 src/tauon/t_modules/t_main.py:37888
 msgid "Auto-import playlists from this folder"
@@ -5782,66 +5444,60 @@ msgid "Toggle Console"
 msgstr "切换控制台"
 
 #: src/tauon/t_modules/t_main.py:36181 src/tauon/t_modules/t_main.py:37558
-#, fuzzy
 msgid "Level {N}"
-msgstr "1 级"
+msgstr "等级 {N}"
 
 #: src/tauon/t_modules/t_main.py:36265
 msgid "restart"
-msgstr ""
+msgstr "需重启"
 
 #: src/tauon/t_modules/t_main.py:36329
 msgid "Original plays files as they are."
-msgstr ""
+msgstr "“原始”会按原样播放文件。"
 
 #: src/tauon/t_modules/t_main.py:36329
-#, fuzzy
 msgid "Stream format"
-msgstr "文件格式"
+msgstr "流格式"
 
 #: src/tauon/t_modules/t_main.py:36336
 msgid "Kbps, converted by the server."
-msgstr ""
+msgstr "Kbps，由服务器转换。"
 
 #: src/tauon/t_modules/t_main.py:36336
-#, fuzzy
 msgid "Stream bitrate"
-msgstr "采样率"
+msgstr "流比特率"
 
 #: src/tauon/t_modules/t_main.py:36557
 msgid "Copy login link"
-msgstr ""
+msgstr "复制登录链接"
 
 #: src/tauon/t_modules/t_main.py:36574
-#, fuzzy
 msgid "Copied link to clipboard"
-msgstr "将文本复制到剪贴板"
+msgstr "已将链接复制到剪贴板"
 
 #: src/tauon/t_modules/t_main.py:36675
 msgid "Audio controls are only available with the PHAzOR backend."
 msgstr "音频控制仅在使用 PHAzOR 后端时可用。"
 
 #: src/tauon/t_modules/t_main.py:36685
-#, fuzzy
 msgid "No output devices detected. Try refreshing audio or restarting Tauon."
-msgstr "请尝试刷新音频或重启 Tauon。"
+msgstr "未检测到输出设备。请尝试刷新音频或重启 Tauon。"
 
 #: src/tauon/t_modules/t_main.py:36732
 msgid "Target bit-perfect"
-msgstr ""
+msgstr "力求比特完美"
 
 #: src/tauon/t_modules/t_main.py:36733
 msgid "Overrides volume, ReplayGain, EQ, crossfeed, speed and crossfades."
-msgstr ""
+msgstr "会覆盖音量、ReplayGain、均衡器、交叉馈送、速度和淡入淡出。"
 
 #: src/tauon/t_modules/t_main.py:36741
-#, fuzzy
 msgid "Disable volume control"
-msgstr "禁用列"
+msgstr "禁用音量控制"
 
 #: src/tauon/t_modules/t_main.py:36765
 msgid "Raise it if playback crackles under load. Adds latency."
-msgstr ""
+msgstr "如果负载下播放有爆音，请调高此值。会增加延迟。"
 
 #: src/tauon/t_modules/t_main.py:36779
 msgid "Bypasses volume, EQ and ReplayGain."
@@ -5861,11 +5517,11 @@ msgstr "此平台不支持。"
 
 #: src/tauon/t_modules/t_main.py:36795
 msgid "Inactive in Direct DSD mode."
-msgstr ""
+msgstr "在直接 DSD 模式下不起作用。"
 
 #: src/tauon/t_modules/t_main.py:36797
 msgid "Reduces stereo fatigue on headphones."
-msgstr ""
+msgstr "减轻耳机听音的立体声疲劳。"
 
 #: src/tauon/t_modules/t_main.py:36813 src/tauon/t_modules/t_main.py:71208
 #: src/tauon/t_modules/t_tagedit_ui.py:2402
@@ -5874,7 +5530,7 @@ msgstr "默认"
 
 #: src/tauon/t_modules/t_main.py:36821
 msgid "Wait for DAC resynchronization."
-msgstr ""
+msgstr "等待 DAC 重新同步。"
 
 #: src/tauon/t_modules/t_main.py:36844
 msgid "Repeat"
@@ -5916,7 +5572,7 @@ msgstr "非活动"
 
 #: src/tauon/t_modules/t_main.py:36892
 msgid "Applied to this track"
-msgstr ""
+msgstr "已应用于此曲目"
 
 #: src/tauon/t_modules/t_main.py:36895
 msgid "Active"
@@ -5940,11 +5596,11 @@ msgstr "Tauon"
 
 #: src/tauon/t_modules/t_main.py:36996
 msgid "Candy Factory"
-msgstr ""
+msgstr "Candy Factory"
 
 #: src/tauon/t_modules/t_main.py:37013
 msgid "Glass bars under the art in the side panel"
-msgstr ""
+msgstr "侧边栏封面下方的玻璃频谱条"
 
 #: src/tauon/t_modules/t_main.py:37026
 msgid "Edit"
@@ -5997,43 +5653,40 @@ msgid "New Empty Slot"
 msgstr "新建空槽位"
 
 #: src/tauon/t_modules/t_main.py:37246
-#, fuzzy
 msgid "Open Layouts Folder"
-msgstr "打开输出文件夹"
+msgstr "打开布局文件夹"
 
 #: src/tauon/t_modules/t_main.py:37247
 msgid "Share a layout by copying its .tlayout file"
-msgstr ""
+msgstr "复制 .tlayout 文件即可分享布局"
 
 #: src/tauon/t_modules/t_main.py:37250
 msgid "Right-click the gallery"
-msgstr ""
+msgstr "右键单击收藏视图"
 
 #: src/tauon/t_modules/t_main.py:37251 src/tauon/t_modules/t_main.py:37252
 msgid "Right-click a track › Layout…"
-msgstr ""
+msgstr "右键单击曲目 › 布局…"
 
 #: src/tauon/t_modules/t_main.py:37253 src/tauon/t_modules/t_main.py:37992
-#, fuzzy
 msgid "Right-click the top panel"
-msgstr "在顶部面板显示标签页。"
+msgstr "右键单击顶部面板"
 
 #: src/tauon/t_modules/t_main.py:37254
 msgid "Right-click the side-panel art"
-msgstr ""
+msgstr "右键单击侧边栏封面"
 
 #: src/tauon/t_modules/t_main.py:37255
 msgid "Right-click the showcase view"
-msgstr ""
+msgstr "右键单击展示视图"
 
 #: src/tauon/t_modules/t_main.py:37261
 msgid "Fetch artist data while the panel is open."
 msgstr "面板打开时获取艺术家数据。"
 
 #: src/tauon/t_modules/t_main.py:37263
-#, fuzzy
 msgid "Regenerate smart playlists when you return to them."
-msgstr "返回播放列表时重新扫描。"
+msgstr "返回智能播放列表时重新生成。"
 
 #: src/tauon/t_modules/t_main.py:37269
 msgid "Extract supported archives on drag and drop."
@@ -6054,15 +5707,15 @@ msgstr "曲目将保存到“已保存的电台曲目”播放列表中。"
 
 #: src/tauon/t_modules/t_main.py:37290
 msgid "Unrated tracks take the rating saved in their file."
-msgstr ""
+msgstr "未评分的曲目采用其文件中保存的评分。"
 
 #: src/tauon/t_modules/t_main.py:37293
 msgid "Not set yet. You'll be asked the first time you rate a track."
-msgstr ""
+msgstr "尚未设置。第一次给曲目评分时会询问你。"
 
 #: src/tauon/t_modules/t_main.py:37295
 msgid "Saves FMPS_RATING, plus POPM in MP3s."
-msgstr ""
+msgstr "保存 FMPS_RATING，MP3 文件另存 POPM。"
 
 #: src/tauon/t_modules/t_main.py:37300
 msgid "Write"
@@ -6070,78 +5723,71 @@ msgstr "作家"
 
 #: src/tauon/t_modules/t_main.py:37301
 msgid "Save every rated track's rating into its file."
-msgstr ""
+msgstr "将每首已评分曲目的评分保存到其文件中。"
 
 #: src/tauon/t_modules/t_main.py:37303 src/tauon/t_modules/t_main.py:37306
-#, fuzzy
 msgid "Clear…"
-msgstr "清空"
+msgstr "清除…"
 
 #: src/tauon/t_modules/t_main.py:37304
 msgid "Only Tauon's database. Files are not changed."
-msgstr ""
+msgstr "仅限 Tauon 的数据库，不会更改文件。"
 
 #: src/tauon/t_modules/t_main.py:37324
-#, fuzzy
 msgid "Custom"
-msgstr "自定义主题"
+msgstr "自定义"
 
 #: src/tauon/t_modules/t_main.py:37326
 msgid "Joins multi-value artist tags"
-msgstr ""
+msgstr "连接多值艺术家标签"
 
 #: src/tauon/t_modules/t_main.py:37329
-#, fuzzy
 msgid "Custom separator"
-msgstr "自定义布局"
+msgstr "自定义分隔符"
 
 #: src/tauon/t_modules/t_main.py:37332
-#, fuzzy
 msgid "Artist A"
-msgstr "艺术家："
+msgstr "艺术家 A"
 
 #: src/tauon/t_modules/t_main.py:37332
-#, fuzzy
 msgid "Artist B"
-msgstr "艺术家："
+msgstr "艺术家 B"
 
 #: src/tauon/t_modules/t_main.py:37332
 msgid "Preview: {example}"
-msgstr ""
+msgstr "预览：{example}"
 
 #: src/tauon/t_modules/t_main.py:37334
 msgid "Splits single-value tags like \"A; B\""
-msgstr ""
+msgstr "拆分类似“A; B”的单值标签"
 
 #: src/tauon/t_modules/t_main.py:37336
 msgid "Splits single-value tags like \"A · B\""
-msgstr ""
+msgstr "拆分类似“A · B”的单值标签"
 
 #: src/tauon/t_modules/t_main.py:37338
 msgid "Splits single-value tags like \"A • B\""
-msgstr ""
+msgstr "拆分类似“A • B”的单值标签"
 
 #: src/tauon/t_modules/t_main.py:37339
 msgid "ARTISTS tags are used when present. Changes apply after Rescan Tags."
-msgstr ""
+msgstr "存在 ARTISTS 标签时会使用它们。更改在“重新扫描标签”后生效。"
 
 #: src/tauon/t_modules/t_main.py:37360
 msgid "Save the album cover as cover.jpg in the output folder."
-msgstr ""
+msgstr "将专辑封面另存为输出文件夹中的 cover.jpg。"
 
 #: src/tauon/t_modules/t_main.py:37361 src/tauon/t_modules/t_main.py:37764
 msgid "Open"
-msgstr ""
+msgstr "打开"
 
 #: src/tauon/t_modules/t_main.py:37374 src/tauon/t_modules/t_main.py:37376
-#, fuzzy
 msgid "Source playlist"
-msgstr "源播放列表"
+msgstr "来源播放列表"
 
 #: src/tauon/t_modules/t_main.py:37376
-#, fuzzy
 msgid "None selected"
-msgstr "未选择设备"
+msgstr "未选择"
 
 #: src/tauon/t_modules/t_main.py:37377 src/tauon/t_modules/t_main.py:37397
 msgid "Right click tab > Misc… > Set as sync playlist"
@@ -6161,7 +5807,7 @@ msgstr "确保设备已安装且路径可访问。"
 
 #: src/tauon/t_modules/t_main.py:37388
 msgid "Detect"
-msgstr ""
+msgstr "检测"
 
 #: src/tauon/t_modules/t_main.py:37397
 msgid "Select a source playlist"
@@ -6180,14 +5826,12 @@ msgid "Current playlist"
 msgstr "当前播放列表"
 
 #: src/tauon/t_modules/t_main.py:37471
-#, fuzzy
 msgid "Library tracks"
-msgstr "单曲循环"
+msgstr "媒体库曲目"
 
 #: src/tauon/t_modules/t_main.py:37472
-#, fuzzy
 msgid "Library albums"
-msgstr "媒体库名称"
+msgstr "媒体库专辑"
 
 #: src/tauon/t_modules/t_main.py:37473
 msgid "Total playtime"
@@ -6206,9 +5850,8 @@ msgid "No font set in config"
 msgstr "配置中未设置字体"
 
 #: src/tauon/t_modules/t_main.py:37547
-#, fuzzy
 msgid "From playlist"
-msgstr "获取播放列表"
+msgstr "来自播放列表"
 
 #: src/tauon/t_modules/t_main.py:37551
 msgid "Grid"
@@ -6219,14 +5862,12 @@ msgid "Cascade"
 msgstr "级联"
 
 #: src/tauon/t_modules/t_main.py:37561
-#, fuzzy
 msgid "{N} across"
-msgstr "{N} 曲目"
+msgstr "每行 {N} 个"
 
 #: src/tauon/t_modules/t_main.py:37562
-#, fuzzy
 msgid "{N} rows"
-msgstr "{N} 曲目"
+msgstr "{N} 行"
 
 #: src/tauon/t_modules/t_main.py:37575
 msgid "Background"
@@ -6242,14 +5883,12 @@ msgid "{N} albums"
 msgstr "{N} 专辑"
 
 #: src/tauon/t_modules/t_main.py:37595
-#, fuzzy
 msgid "only {N} in the playlist"
-msgstr "播放下一个播放列表"
+msgstr "播放列表中仅有 {N} 个"
 
 #: src/tauon/t_modules/t_main.py:37597
-#, fuzzy
 msgid "Chart size"
-msgstr "缓存大小"
+msgstr "专辑墙大小"
 
 #: src/tauon/t_modules/t_main.py:37599
 msgid "Generating…"
@@ -6263,71 +5902,61 @@ msgstr "生成"
 #: src/tauon/t_modules/t_main.py:37636 src/tauon/t_modules/t_main.py:37639
 #: src/tauon/t_modules/t_main.py:37642 src/tauon/t_modules/t_main.py:37644
 #: src/tauon/t_modules/t_main.py:37646
-#, fuzzy
 msgid "Not connected"
-msgstr "未连接。"
+msgstr "未连接"
 
 #: src/tauon/t_modules/t_main.py:37629 src/tauon/t_modules/t_main.py:37642
-#, fuzzy
 msgid "Signed in"
-msgstr "已登录。"
+msgstr "已登录"
 
 #: src/tauon/t_modules/t_main.py:37633
-#, fuzzy
 msgid "Token saved"
-msgstr "令牌已保存。"
+msgstr "令牌已保存"
 
 #: src/tauon/t_modules/t_main.py:37637 src/tauon/t_modules/t_main.py:37639
 #: src/tauon/t_modules/t_main.py:37644 src/tauon/t_modules/t_main.py:37646
-#, fuzzy
 msgid "Configured"
-msgstr "重新加载配置"
+msgstr "已配置"
 
 #: src/tauon/t_modules/t_main.py:37649
-#, fuzzy
 msgid "Artwork on"
-msgstr "封面来源。"
+msgstr "封面已开启"
 
 #: src/tauon/t_modules/t_main.py:37650
-#, fuzzy
 msgid "Playlist sync"
-msgstr "播放列表名称"
+msgstr "播放列表同步"
 
 #: src/tauon/t_modules/t_main.py:37724
 msgid "Send them when the service is back, even after a restart."
-msgstr ""
+msgstr "服务恢复后发送，即使重启也会保留。"
 
 #: src/tauon/t_modules/t_main.py:37727
-#, fuzzy
 msgid "No scrobbles waiting"
-msgstr "播放记录"
+msgstr "没有等待中的播放记录"
 
 #: src/tauon/t_modules/t_main.py:37729
-#, fuzzy
 msgid "1 scrobble waiting"
-msgstr "播放记录"
+msgstr "1 条播放记录等待中"
 
 #: src/tauon/t_modules/t_main.py:37731
-#, fuzzy
 msgid "{N} scrobbles waiting"
-msgstr "剩余 {N} 个文件夹"
+msgstr "{N} 条播放记录等待中"
 
 #: src/tauon/t_modules/t_main.py:37744
 msgid "Discard 1 waiting scrobble?"
-msgstr ""
+msgstr "丢弃 1 条等待中的播放记录？"
 
 #: src/tauon/t_modules/t_main.py:37744
 msgid "Discard {N} waiting scrobbles?"
-msgstr ""
+msgstr "丢弃 {N} 条等待中的播放记录？"
 
 #: src/tauon/t_modules/t_main.py:37745
-#, fuzzy
 msgid "They will not be sent."
-msgstr "将不会安装 FFmpeg。"
+msgstr "它们将不会被发送。"
 
 #: src/tauon/t_modules/t_main.py:37753
 msgid "Trusted networks only: port 7814 is not hardened."
-msgstr ""
+msgstr "仅限可信网络：端口 7814 未做安全加固。"
 
 #: src/tauon/t_modules/t_main.py:37757
 msgid "Notice: This API is not security hardened."
@@ -6343,9 +5972,8 @@ msgid "Start the web server for remote playback."
 msgstr "启动用于远程播放的 Web 服务器。"
 
 #: src/tauon/t_modules/t_main.py:37764
-#, fuzzy
 msgid "Listen Along page"
-msgstr "打开一起听页面"
+msgstr "一起听页面"
 
 #: src/tauon/t_modules/t_main.py:37767
 msgid "Disabled"
@@ -6377,7 +6005,7 @@ msgstr "歌曲"
 
 #: src/tauon/t_modules/t_main.py:37816
 msgid "Global search also matches lyrics text"
-msgstr ""
+msgstr "全局搜索也会匹配歌词文本"
 
 #: src/tauon/t_modules/t_main.py:37825
 msgid "API source"
@@ -6388,215 +6016,204 @@ msgid "Scraping source"
 msgstr "抓取来源"
 
 #: src/tauon/t_modules/t_main.py:37868
-#, fuzzy
 msgid "Same folder"
-msgstr "目标文件夹"
+msgstr "相同文件夹"
 
 #: src/tauon/t_modules/t_main.py:37869
-#, fuzzy
 msgid "Chosen folder"
-msgstr "目标文件夹"
+msgstr "选定的文件夹"
 
 #: src/tauon/t_modules/t_main.py:37886
-#, fuzzy
 msgid "This folder doesn't exist."
-msgstr "源文件夹不存在。"
+msgstr "此文件夹不存在。"
 
 #: src/tauon/t_modules/t_main.py:37889
-#, fuzzy
 msgid "Runs during Database… › \"Reload All Folders\" only."
-msgstr "仅在“重新扫描所有文件夹”期间运行。"
+msgstr "仅在 数据库… › “重新加载所有文件夹” 时运行。"
 
 #: src/tauon/t_modules/t_main.py:37991
 msgid "Main menu"
-msgstr ""
+msgstr "主菜单"
 
 #: src/tauon/t_modules/t_main.py:37993
 msgid "Top panel › Side panel button"
-msgstr ""
+msgstr "顶部面板 › 侧边栏按钮"
 
 #: src/tauon/t_modules/t_main.py:37994
 msgid "Top panel › Layout button"
-msgstr ""
+msgstr "顶部面板 › 布局按钮"
 
 #: src/tauon/t_modules/t_main.py:37995
 msgid "Right-click a playlist tab"
-msgstr ""
+msgstr "右键单击播放列表标签"
 
 #: src/tauon/t_modules/t_main.py:37996
 msgid "Right-click a folder tab"
-msgstr ""
+msgstr "右键单击文件夹标签"
 
 #: src/tauon/t_modules/t_main.py:37997
 msgid "Right-click a playlist folder"
-msgstr ""
+msgstr "右键单击播放列表文件夹"
 
 #: src/tauon/t_modules/t_main.py:37998
 msgid "Right-click empty space in the playlist list"
-msgstr ""
+msgstr "右键单击播放列表列表中的空白处"
 
 #: src/tauon/t_modules/t_main.py:37999
 msgid "Right-click a track"
-msgstr ""
+msgstr "右键单击曲目"
 
 #: src/tauon/t_modules/t_main.py:38000
 msgid "Right-click a selection of tracks"
-msgstr ""
+msgstr "右键单击选中的多首曲目"
 
 #: src/tauon/t_modules/t_main.py:38001
 msgid "Right-click an album heading in the tracklist"
-msgstr ""
+msgstr "右键单击曲目列表中的专辑标题"
 
 #: src/tauon/t_modules/t_main.py:38002
 msgid "Right-click empty space in the tracklist"
-msgstr ""
+msgstr "右键单击曲目列表中的空白处"
 
 #: src/tauon/t_modules/t_main.py:38003
 msgid "Right-click a tracklist column heading"
-msgstr ""
+msgstr "右键单击曲目列表的列标题"
 
 #: src/tauon/t_modules/t_main.py:38004
 msgid "Right-click the top edge of the tracklist"
-msgstr ""
+msgstr "右键单击曲目列表的顶部边缘"
 
 #: src/tauon/t_modules/t_main.py:38005
 msgid "Right-click a tag in the tracklist tag strip"
-msgstr ""
+msgstr "右键单击曲目列表标签栏中的标签"
 
 #: src/tauon/t_modules/t_main.py:38006
 msgid "Right-click an album in the gallery"
-msgstr ""
+msgstr "右键单击收藏视图中的专辑"
 
 #: src/tauon/t_modules/t_main.py:38007
 msgid "Right-click empty space in the gallery"
-msgstr ""
+msgstr "右键单击收藏视图中的空白处"
 
 #: src/tauon/t_modules/t_main.py:38008
 msgid "Right-click the side-panel album art"
-msgstr ""
+msgstr "右键单击侧边栏专辑封面"
 
 #: src/tauon/t_modules/t_main.py:38009
-#, fuzzy
 msgid "Right-click the MilkDrop visualiser"
-msgstr "切换 Milkdrop 可视化器"
+msgstr "右键单击 MilkDrop 可视化"
 
 #: src/tauon/t_modules/t_main.py:38010
 msgid "Right-click the track info in the side panel"
-msgstr ""
+msgstr "右键单击侧边栏中的曲目信息"
 
 #: src/tauon/t_modules/t_main.py:38011
-#, fuzzy
 msgid "Right-click the lyrics"
-msgstr "带歌词的曲目"
+msgstr "右键单击歌词"
 
 #: src/tauon/t_modules/t_main.py:38012
 msgid "Right-click empty space in the showcase view"
-msgstr ""
+msgstr "右键单击展示视图中的空白处"
 
 #: src/tauon/t_modules/t_main.py:38013
 msgid "Right-click a queued track"
-msgstr ""
+msgstr "右键单击队列中的曲目"
 
 #: src/tauon/t_modules/t_main.py:38014
-#, fuzzy
 msgid "Right-click the artist info panel"
-msgstr "显示艺术家信息面板"
+msgstr "右键单击艺术家信息面板"
 
 #: src/tauon/t_modules/t_main.py:38015
 msgid "Right-click an artist in the artist list"
-msgstr ""
+msgstr "右键单击艺术家列表中的艺术家"
 
 #: src/tauon/t_modules/t_main.py:38016
 msgid "Right-click a track in the folder navigator"
-msgstr ""
+msgstr "右键单击文件夹导航器中的曲目"
 
 #: src/tauon/t_modules/t_main.py:38017
 msgid "Right-click a folder in the folder navigator"
-msgstr ""
+msgstr "右键单击文件夹导航器中的文件夹"
 
 #: src/tauon/t_modules/t_main.py:38018
 msgid "Right-click a radio station"
-msgstr ""
+msgstr "右键单击电台"
 
 #: src/tauon/t_modules/t_main.py:38019
 msgid "Radio list › Station options button"
-msgstr ""
+msgstr "电台列表 › 电台选项按钮"
 
 #: src/tauon/t_modules/t_main.py:38020
 msgid "Right-click a radio tab"
-msgstr ""
+msgstr "右键单击电台标签"
 
 #: src/tauon/t_modules/t_main.py:38021
 msgid "Right-click the bottom panel"
-msgstr ""
+msgstr "右键单击底部面板"
 
 #: src/tauon/t_modules/t_main.py:38022
-#, fuzzy
 msgid "Bottom panel › Extras button"
-msgstr "底部面板：文字"
+msgstr "底部面板 › 附加功能按钮"
 
 #: src/tauon/t_modules/t_main.py:38023
 msgid "Right-click the stop button"
-msgstr ""
+msgstr "右键单击停止按钮"
 
 #: src/tauon/t_modules/t_main.py:38024
 msgid "Right-click the shuffle button"
-msgstr ""
+msgstr "右键单击随机播放按钮"
 
 #: src/tauon/t_modules/t_main.py:38025
 msgid "Right-click the repeat button"
-msgstr ""
+msgstr "右键单击重复按钮"
 
 #: src/tauon/t_modules/t_main.py:38026
 msgid "Right-click the spectrogram widget"
-msgstr ""
+msgstr "右键单击声谱图组件"
 
 #: src/tauon/t_modules/t_main.py:38027
 msgid "Right-click the album flow widget"
-msgstr ""
+msgstr "右键单击专辑流组件"
 
 #: src/tauon/t_modules/t_main.py:38028
 msgid "Right-click the compact gallery widget"
-msgstr ""
+msgstr "右键单击紧凑收藏组件"
 
 #: src/tauon/t_modules/t_main.py:38033
 msgid "Custom layout edit mode › Right-click a widget"
-msgstr ""
+msgstr "自定义布局编辑模式 › 右键单击组件"
 
 #: src/tauon/t_modules/t_main.py:38034
 msgid "Custom layout edit mode › Right-click a tab"
-msgstr ""
+msgstr "自定义布局编辑模式 › 右键单击标签页"
 
 #: src/tauon/t_modules/t_main.py:38056
 msgid "Menus"
-msgstr ""
+msgstr "菜单"
 
 #: src/tauon/t_modules/t_main.py:38119
 msgid "1 match"
-msgstr ""
+msgstr "1 个匹配"
 
 #: src/tauon/t_modules/t_main.py:38119
-#, fuzzy
 msgid "{N} matches"
-msgstr "非活动"
+msgstr "{N} 个匹配"
 
 #: src/tauon/t_modules/t_main.py:38121 src/tauon/t_modules/t_main.py:47736
-#, fuzzy
 msgid "No matches"
-msgstr "没有匹配的电台"
+msgstr "无匹配"
 
 #: src/tauon/t_modules/t_main.py:38125
 msgid "Try \"fade\", \"scale\" or \"scrobble\"."
-msgstr ""
+msgstr "试试“淡入淡出”、“缩放”或“播放记录”。"
 
 #: src/tauon/t_modules/t_main.py:38147
 msgid "Go to"
-msgstr ""
+msgstr "转到"
 
 #: src/tauon/t_modules/t_main.py:38259
-#, fuzzy
 msgid "Search settings"
-msgstr "正在搜索电台…"
+msgstr "搜索设置"
 
 #: src/tauon/t_modules/t_main.py:38757
 msgid "Tauon SHUFFLE!"
@@ -6608,11 +6225,11 @@ msgstr "专辑随机播放"
 
 #: src/tauon/t_modules/t_main.py:38861
 msgid "Menu"
-msgstr ""
+msgstr "菜单"
 
 #: src/tauon/t_modules/t_main.py:38893
 msgid "Side panel, Right-click: Choose panel"
-msgstr ""
+msgstr "侧边栏，右键：选择面板"
 
 #: src/tauon/t_modules/t_main.py:39562
 msgid "It looks like something is being downloaded…"
@@ -6623,23 +6240,20 @@ msgid "Let's check back later…"
 msgstr "我们稍后再查看…"
 
 #: src/tauon/t_modules/t_main.py:40289 src/tauon/t_modules/t_main.py:40857
-#, fuzzy
 msgid "Play, Right-click: Go to playing"
-msgstr "播放，右键：转到当前播放"
+msgstr "播放，右键：转到正在播放"
 
 #: src/tauon/t_modules/t_main.py:40429
-#, fuzzy
 msgid "Back, Right-click: Toggle repeat, Middle-click: Revert"
-msgstr "后退，右键:切换循环，中键:返回"
+msgstr "上一首，右键：切换重复，中键：返回"
 
 #: src/tauon/t_modules/t_main.py:40452
 msgid "Playback menu"
 msgstr "播放菜单"
 
 #: src/tauon/t_modules/t_main.py:42615
-#, fuzzy
 msgid "Disc {N}"
-msgstr "碟片"
+msgstr "碟片 {N}"
 
 #: src/tauon/t_modules/t_main.py:43473
 msgid "Playlist is empty"
@@ -6694,23 +6308,20 @@ msgid "Couldn't reach the station directory. Try again in a moment."
 msgstr "无法连接电台目录。请稍后重试。"
 
 #: src/tauon/t_modules/t_main.py:45721 src/tauon/t_modules/t_phazor.py:2040
-#, fuzzy
 msgid "Check the address and your connection."
-msgstr "有 %d 个入站连接。"
+msgstr "请检查地址和网络连接。"
 
 #: src/tauon/t_modules/t_main.py:45721 src/tauon/t_modules/t_phazor.py:2040
-#, fuzzy
 msgid "Couldn't play the station"
-msgstr "无法保存电台图片"
+msgstr "无法播放该电台"
 
 #: src/tauon/t_modules/t_main.py:45756
 msgid "Recording only works with HTTP streams."
-msgstr ""
+msgstr "录制仅支持 HTTP 流。"
 
 #: src/tauon/t_modules/t_main.py:45756
-#, fuzzy
 msgid "This station can't be recorded"
-msgstr "现在将录制曲目。"
+msgstr "此电台无法录制"
 
 #: src/tauon/t_modules/t_main.py:45961
 msgid "Search text…"
@@ -6785,11 +6396,11 @@ msgid "Enter a stream URL"
 msgstr "输入流地址"
 
 #: src/tauon/t_modules/t_main.py:46372
-#, fuzzy
 msgid ""
 "Could not validate URL. Must start with http://, https://, rtsp://, rtmp:// "
 "or mms://"
-msgstr "无法验证 URL。必须以 https:// 或 http:// 开头"
+msgstr ""
+"无法验证 URL。必须以 http://、https://、rtsp://、rtmp:// 或 mms:// 开头"
 
 #: src/tauon/t_modules/t_main.py:46533 src/tauon/t_modules/t_main.py:46539
 #: src/tauon/t_modules/t_main.py:46546
@@ -6829,9 +6440,8 @@ msgid "Row height"
 msgstr "行高"
 
 #: src/tauon/t_modules/t_main.py:46770
-#, fuzzy
 msgid "Baseline"
-msgstr "基线偏移"
+msgstr "基线"
 
 #: src/tauon/t_modules/t_main.py:46782
 msgid "Loves"
@@ -6842,23 +6452,20 @@ msgid "Playcount lines"
 msgstr "播放次数行"
 
 #: src/tauon/t_modules/t_main.py:46787
-#, fuzzy
 msgid "Hide artist"
-msgstr "隐藏分栏"
+msgstr "隐藏艺术家"
 
 #: src/tauon/t_modules/t_main.py:46790
-#, fuzzy
 msgid "Only current album"
-msgstr "当前播放列表"
+msgstr "仅当前专辑"
 
 #: src/tauon/t_modules/t_main.py:46791
 msgid "Dim brackets"
-msgstr ""
+msgstr "淡化括号"
 
 #: src/tauon/t_modules/t_main.py:46793
-#, fuzzy
 msgid "Track rows"
-msgstr "曲目"
+msgstr "曲目行"
 
 #: src/tauon/t_modules/t_main.py:46795
 msgid "Track ratings"
@@ -6873,28 +6480,24 @@ msgid "Star hints"
 msgstr "星级提示"
 
 #: src/tauon/t_modules/t_main.py:46798
-#, fuzzy
 msgid "Whole stars only"
-msgstr "只展示"
+msgstr "仅整星"
 
 #: src/tauon/t_modules/t_main.py:46800
-#, fuzzy
 msgid "Album titles"
-msgstr "专辑艺术家"
+msgstr "专辑标题"
 
 #: src/tauon/t_modules/t_main.py:46804
 msgid "Left align"
 msgstr "左对齐"
 
 #: src/tauon/t_modules/t_main.py:46807
-#, fuzzy
 msgid "Header bar"
-msgstr "隐藏分栏"
+msgstr "标题栏"
 
 #: src/tauon/t_modules/t_main.py:46808
-#, fuzzy
 msgid "Full album art"
-msgstr "显示完整专辑"
+msgstr "完整专辑封面"
 
 #: src/tauon/t_modules/t_main.py:46810 src/tauon/t_modules/t_main.py:59906
 msgid "Scroll bar"
@@ -6902,12 +6505,11 @@ msgstr "滚动条"
 
 #: src/tauon/t_modules/t_main.py:46811 src/tauon/t_modules/t_main.py:64405
 msgid "Left"
-msgstr ""
+msgstr "左"
 
 #: src/tauon/t_modules/t_main.py:46812 src/tauon/t_modules/t_main.py:64405
-#, fuzzy
 msgid "Right"
-msgstr "行高"
+msgstr "右"
 
 #: src/tauon/t_modules/t_main.py:47070 src/tauon/t_modules/t_main.py:48114
 msgid "View"
@@ -6915,25 +6517,23 @@ msgstr "视图"
 
 #: src/tauon/t_modules/t_main.py:47078
 msgid "Density"
-msgstr ""
+msgstr "密度"
 
 #: src/tauon/t_modules/t_main.py:47081
 msgid "Thin"
-msgstr ""
+msgstr "细"
 
 #: src/tauon/t_modules/t_main.py:47084
 msgid "Thick"
-msgstr ""
+msgstr "粗"
 
 #: src/tauon/t_modules/t_main.py:47089
-#, fuzzy
 msgid "Album title style"
-msgstr "专辑艺术家"
+msgstr "专辑标题样式"
 
 #: src/tauon/t_modules/t_main.py:47092
-#, fuzzy
 msgid "Compact"
-msgstr "组件"
+msgstr "紧凑"
 
 #: src/tauon/t_modules/t_main.py:47094
 msgid "Full"
@@ -6941,91 +6541,79 @@ msgstr "完全"
 
 #: src/tauon/t_modules/t_main.py:47098
 msgid "Text"
-msgstr ""
+msgstr "文字"
 
 #: src/tauon/t_modules/t_main.py:47111
 msgid "Columns view only"
-msgstr ""
+msgstr "仅列视图"
 
 #: src/tauon/t_modules/t_main.py:47111
-#, fuzzy
 msgid "Standard view only"
-msgstr "标准"
+msgstr "仅标准视图"
 
 #: src/tauon/t_modules/t_main.py:47216
 msgid "Fill in the server details first"
-msgstr ""
+msgstr "请先填写服务器信息"
 
 #: src/tauon/t_modules/t_main.py:47269
-#, fuzzy
 msgid "Import {path}"
-msgstr "导入播放列表"
+msgstr "导入 {path}"
 
 #: src/tauon/t_modules/t_main.py:47273
-#, fuzzy
 msgid "Pick folder…"
-msgstr "正在删除文件夹…"
+msgstr "选择文件夹…"
 
 #: src/tauon/t_modules/t_main.py:47276 src/tauon/t_modules/t_main.py:47873
-#, fuzzy
 msgid "Remote server"
-msgstr "移除边框"
+msgstr "远程服务器"
 
 #: src/tauon/t_modules/t_main.py:47287
 msgid "Music"
 msgstr "音乐"
 
 #: src/tauon/t_modules/t_main.py:47296
-#, fuzzy
 msgid "Favourite albums"
-msgstr "导入专辑"
+msgstr "收藏的专辑"
 
 #: src/tauon/t_modules/t_main.py:47296
-#, fuzzy
 msgid "Favourite tracks"
-msgstr "导入曲目"
+msgstr "收藏的曲目"
 
 #: src/tauon/t_modules/t_main.py:47380
 msgid "Everything"
-msgstr ""
+msgstr "全部"
 
 #: src/tauon/t_modules/t_main.py:47384
-#, fuzzy
 msgid "Pick library…"
-msgstr "Subsonic 媒体库。"
+msgstr "选择媒体库…"
 
 #: src/tauon/t_modules/t_main.py:47386
-#, fuzzy
 msgid "Pick playlist…"
-msgstr "播放列表…"
+msgstr "选择播放列表…"
 
 #: src/tauon/t_modules/t_main.py:47605
-#, fuzzy
 msgid "● Connected"
-msgstr "未连接。"
+msgstr "● 已连接"
 
 #: src/tauon/t_modules/t_main.py:47609
 msgid "Not reachable · Set up…"
-msgstr ""
+msgstr "无法访问 · 设置…"
 
 #: src/tauon/t_modules/t_main.py:47610
 msgid "Set up…"
-msgstr ""
+msgstr "设置…"
 
 #: src/tauon/t_modules/t_main.py:47677
-#, fuzzy
 msgid "Loading libraries…"
-msgstr "正在加载国家/地区…"
+msgstr "正在加载媒体库…"
 
 #: src/tauon/t_modules/t_main.py:47677
-#, fuzzy
 msgid "Loading playlists…"
-msgstr "正在自动导入播放列表…"
+msgstr "正在加载播放列表…"
 
 #: src/tauon/t_modules/t_main.py:47682
-#, fuzzy
 msgid "Couldn't connect to the server"
-msgstr "无法与服务器建立连接。"
+msgstr "无法连接到服务器"
 
 #: src/tauon/t_modules/t_main.py:47684 src/tauon/t_modules/t_main.py:53511
 msgid "Retry"
@@ -7033,222 +6621,195 @@ msgstr "重试"
 
 #: src/tauon/t_modules/t_main.py:47700
 msgid "No libraries on this server"
-msgstr ""
+msgstr "此服务器上没有媒体库"
 
 #: src/tauon/t_modules/t_main.py:47700
-#, fuzzy
 msgid "No playlists on this server"
-msgstr "没有播放列表名称"
+msgstr "此服务器上没有播放列表"
 
 #: src/tauon/t_modules/t_main.py:47775
 msgid "Smart"
-msgstr ""
+msgstr "智能"
 
 #: src/tauon/t_modules/t_main.py:47867
-#, fuzzy
 msgid "Add music"
-msgstr "重复的"
+msgstr "添加音乐"
 
 #: src/tauon/t_modules/t_main.py:47867
-#, fuzzy
 msgid "Welcome to Tauon"
-msgstr "欢迎使用 v7.2.0！"
+msgstr "欢迎使用 Tauon"
 
 #: src/tauon/t_modules/t_main.py:47870
-#, fuzzy
 msgid "Add a folder to import contents to current playlist"
-msgstr "添加到当前播放列表："
+msgstr "添加文件夹，将其内容导入当前播放列表"
 
 #: src/tauon/t_modules/t_main.py:47877
-#, fuzzy
 msgid "Libraries"
 msgstr "媒体库"
 
 #: src/tauon/t_modules/t_main.py:47899
-#, fuzzy
 msgid "Or drag files and folders into this window"
-msgstr "打开 Tauon 使用的文件和文件夹。"
+msgstr "或将文件和文件夹拖入此窗口"
 
 #: src/tauon/t_modules/t_main.py:48007
 msgid "Shortcuts reset to defaults. The old file is input.txt.bak"
-msgstr ""
+msgstr "快捷键已恢复为默认。旧文件为 input.txt.bak"
 
 #: src/tauon/t_modules/t_main.py:48009
-#, fuzzy
 msgid "Couldn't reset the shortcuts"
-msgstr "无法保存电台图片"
+msgstr "无法重置快捷键"
 
 #: src/tauon/t_modules/t_main.py:48019
-#, fuzzy
 msgid "Search the library"
-msgstr "搜索GuitarParty"
+msgstr "搜索媒体库"
 
 #: src/tauon/t_modules/t_main.py:48019
-#, fuzzy
 msgid "Start typing"
-msgstr "开始同步"
+msgstr "直接开始输入"
 
 #: src/tauon/t_modules/t_main.py:48021
 msgid "Double-click it"
-msgstr ""
+msgstr "双击它"
 
 #: src/tauon/t_modules/t_main.py:48021
-#, fuzzy
 msgid "Play a track"
-msgstr "播放后端"
+msgstr "播放曲目"
 
 #: src/tauon/t_modules/t_main.py:48022
-#, fuzzy
 msgid "Middle-click a track or album"
-msgstr "中键单击（曲目或专辑）。"
+msgstr "中键单击曲目或专辑"
 
 #: src/tauon/t_modules/t_main.py:48022 src/tauon/t_modules/t_main.py:48102
 msgid "Add to queue"
 msgstr "添加到队列"
 
 #: src/tauon/t_modules/t_main.py:48023
-#, fuzzy
 msgid "More menu items"
-msgstr "右键菜单：文字"
+msgstr "更多菜单项"
 
 #: src/tauon/t_modules/t_main.py:48023
 msgid "Shift + right-click"
-msgstr ""
+msgstr "Shift + 右键单击"
 
 #: src/tauon/t_modules/t_main.py:48024
-#, fuzzy
 msgid "Delete a playlist"
-msgstr "所选播放列表："
+msgstr "删除播放列表"
 
 #: src/tauon/t_modules/t_main.py:48024
-#, fuzzy
 msgid "Middle-click its tab"
-msgstr "中键单击（曲目或专辑）。"
+msgstr "中键单击其标签"
 
 #: src/tauon/t_modules/t_main.py:48025
 msgid "Scroll over the tabs"
-msgstr ""
+msgstr "在标签上滚动"
 
 #: src/tauon/t_modules/t_main.py:48025
-#, fuzzy
 msgid "Switch playlists"
-msgstr "获取播放列表"
+msgstr "切换播放列表"
 
 #: src/tauon/t_modules/t_main.py:48026
-#, fuzzy
 msgid "Merge playlists"
-msgstr "目标播放列表"
+msgstr "合并播放列表"
 
 #: src/tauon/t_modules/t_main.py:48026
 msgid "Shift-drag a tab onto another"
-msgstr ""
+msgstr "按住 Shift 将标签拖到另一个上"
 
 #: src/tauon/t_modules/t_main.py:48027
 msgid "Middle-click the side-panel button"
-msgstr ""
+msgstr "中键单击侧边栏按钮"
 
 #: src/tauon/t_modules/t_main.py:48027 src/tauon/t_modules/t_main.py:48121
-#, fuzzy
 msgid "Last left panel"
-msgstr "曲目列表"
+msgstr "上次的左侧面板"
 
 #: src/tauon/t_modules/t_main.py:48028
-#, fuzzy
 msgid "Jump to a position"
-msgstr "切换艺术图位置"
+msgstr "跳转到某个位置"
 
 #: src/tauon/t_modules/t_main.py:48028
 msgid "Right-click the scroll bar"
-msgstr ""
+msgstr "右键单击滚动条"
 
 #: src/tauon/t_modules/t_main.py:48029
 msgid "Shift-drag the side-panel edge"
-msgstr ""
+msgstr "按住 Shift 拖动侧边栏边缘"
 
 #: src/tauon/t_modules/t_main.py:48029
 msgid "Widen past the art"
-msgstr ""
+msgstr "加宽到超出封面"
 
 #: src/tauon/t_modules/t_main.py:48030
 msgid "Scroll over the seek bar"
-msgstr ""
+msgstr "在进度条上滚动"
 
 #: src/tauon/t_modules/t_main.py:48030
 msgid "Seek"
-msgstr ""
+msgstr "跳转"
 
 #: src/tauon/t_modules/t_main.py:48031
 msgid "Right-click Back"
-msgstr ""
+msgstr "右键单击“上一首”"
 
 #: src/tauon/t_modules/t_main.py:48031 src/tauon/t_modules/t_main.py:48062
-#, fuzzy
 msgid "Toggle repeat"
-msgstr "切换间隙"
+msgstr "切换重复"
 
 #: src/tauon/t_modules/t_main.py:48032
 msgid "Right-click Forward"
-msgstr ""
+msgstr "右键单击“下一首”"
 
 #: src/tauon/t_modules/t_main.py:48032 src/tauon/t_modules/t_main.py:48061
-#, fuzzy
 msgid "Toggle shuffle"
-msgstr "切换控制台"
+msgstr "切换随机播放"
 
 #: src/tauon/t_modules/t_main.py:48033
-#, fuzzy
 msgid "Right-click Stop"
-msgstr "单击以播放"
+msgstr "右键单击“停止”"
 
 #: src/tauon/t_modules/t_main.py:48033
-#, fuzzy
 msgid "Stop after track or album"
-msgstr "跟踪后停止"
+msgstr "在曲目或专辑结束后停止"
 
 #: src/tauon/t_modules/t_main.py:48034
 msgid "More shuffle and repeat modes"
-msgstr ""
+msgstr "更多随机和重复模式"
 
 #: src/tauon/t_modules/t_main.py:48034
 msgid "Right-click their buttons"
-msgstr ""
+msgstr "右键单击它们的按钮"
 
 #: src/tauon/t_modules/t_main.py:48039
-#, fuzzy
 msgid "Transfer play counts"
-msgstr "播放次数"
+msgstr "转移播放次数"
 
 #: src/tauon/t_modules/t_main.py:48040
-#, fuzzy
 msgid "Delete playlist even if locked"
-msgstr "播放列表已锁定"
+msgstr "即使已锁定也删除播放列表"
 
 #: src/tauon/t_modules/t_main.py:48043
 msgid "Right-click the seek bar"
-msgstr ""
+msgstr "右键单击进度条"
 
 #: src/tauon/t_modules/t_main.py:48046
 msgid "Middle-click the seek bar"
-msgstr ""
+msgstr "中键单击进度条"
 
 #: src/tauon/t_modules/t_main.py:48046
 msgid "Time cursor"
-msgstr ""
+msgstr "时间光标"
 
 #: src/tauon/t_modules/t_main.py:48047
-#, fuzzy
 msgid "Middle-click Back"
-msgstr "中键单击（曲目或专辑）。"
+msgstr "中键单击“上一首”"
 
 #: src/tauon/t_modules/t_main.py:48047 src/tauon/t_modules/t_main.py:48066
-#, fuzzy
 msgid "Back to the skipped track"
-msgstr "曲目已添加到喜欢的曲目"
+msgstr "返回被跳过的曲目"
 
 #: src/tauon/t_modules/t_main.py:48048
-#, fuzzy
 msgid "Middle-click Forward"
-msgstr "中键单击（曲目或专辑）。"
+msgstr "中键单击“下一首”"
 
 #: src/tauon/t_modules/t_main.py:48048 src/tauon/t_modules/t_main.py:48065
 #: src/tauon/t_modules/t_main.py:65493
@@ -7256,241 +6817,204 @@ msgid "Radio Random"
 msgstr "随机电台"
 
 #: src/tauon/t_modules/t_main.py:48052
-#, fuzzy
 msgid "Play / pause"
-msgstr "播放/暂停"
+msgstr "播放 / 暂停"
 
 #: src/tauon/t_modules/t_main.py:48056
-#, fuzzy
 msgid "Play the selected track"
-msgstr "总是显示已选择"
+msgstr "播放选中的曲目"
 
 #: src/tauon/t_modules/t_main.py:48057
-#, fuzzy
 msgid "Seek back / forward"
-msgstr "首选艺术家背景"
+msgstr "后退 / 快进"
 
 #: src/tauon/t_modules/t_main.py:48058
-#, fuzzy
 msgid "Previous track"
 msgstr "上一首曲目"
 
 #: src/tauon/t_modules/t_main.py:48059
-#, fuzzy
 msgid "Next track"
 msgstr "下一首曲目"
 
 #: src/tauon/t_modules/t_main.py:48060
-#, fuzzy
 msgid "Restart the track"
-msgstr "单曲循环"
+msgstr "从头播放曲目"
 
 #: src/tauon/t_modules/t_main.py:48063
-#, fuzzy
 msgid "Random track"
 msgstr "随机曲目"
 
 #: src/tauon/t_modules/t_main.py:48064
-#, fuzzy
 msgid "Random album"
 msgstr "随机专辑"
 
 #: src/tauon/t_modules/t_main.py:48067
 msgid "Volume down / up"
-msgstr ""
+msgstr "降低 / 提高音量"
 
 #: src/tauon/t_modules/t_main.py:48068
 msgid "Mute"
-msgstr ""
+msgstr "静音"
 
 #: src/tauon/t_modules/t_main.py:48070
-#, fuzzy
 msgid "Navigation"
-msgstr "文件夹导航器"
+msgstr "导航"
 
 #: src/tauon/t_modules/t_main.py:48071
-#, fuzzy
 msgid "Switch playlist"
-msgstr "获取播放列表"
+msgstr "切换播放列表"
 
 #: src/tauon/t_modules/t_main.py:48072
-#, fuzzy
 msgid "Go to playlist 1 to 9"
-msgstr "获取播放列表"
+msgstr "转到播放列表 1 到 9"
 
 #: src/tauon/t_modules/t_main.py:48073
-#, fuzzy
 msgid "Show the playing track"
-msgstr "在标题栏中显示正在播放"
+msgstr "显示正在播放的曲目"
 
 #: src/tauon/t_modules/t_main.py:48074
-#, fuzzy
 msgid "Show the previous track"
-msgstr "上一首曲目"
+msgstr "显示上一首曲目"
 
 #: src/tauon/t_modules/t_main.py:48075
-#, fuzzy
 msgid "Move the selection"
-msgstr "Koel 合集"
+msgstr "移动选择"
 
 #: src/tauon/t_modules/t_main.py:48076
 msgid "Gallery left / right"
-msgstr ""
+msgstr "收藏视图左移 / 右移"
 
 #: src/tauon/t_modules/t_main.py:48077
 msgid "Extend the selection"
-msgstr ""
+msgstr "扩展选择"
 
 #: src/tauon/t_modules/t_main.py:48078
-#, fuzzy
 msgid "Playlist top / bottom"
-msgstr "播放列表已导出"
+msgstr "播放列表顶部 / 底部"
 
 #: src/tauon/t_modules/t_main.py:48079
 msgid "Page up / down"
-msgstr ""
+msgstr "上一页 / 下一页"
 
 #: src/tauon/t_modules/t_main.py:48080
-#, fuzzy
 msgid "Find the playing artist"
-msgstr "转到正在播放"
+msgstr "查找正在播放的艺术家"
 
 #: src/tauon/t_modules/t_main.py:48081
-#, fuzzy
 msgid "Close / go back"
-msgstr "靠近托盘"
+msgstr "关闭 / 返回"
 
 #: src/tauon/t_modules/t_main.py:48085
-#, fuzzy
 msgid "Global search"
 msgstr "全局搜索"
 
 #: src/tauon/t_modules/t_main.py:48086
-#, fuzzy
 msgid "Find in this playlist"
-msgstr "播放列表末尾"
+msgstr "在此播放列表中查找"
 
 #: src/tauon/t_modules/t_main.py:48087
 msgid "Search lyrics for the selected track"
-msgstr ""
+msgstr "为选中的曲目搜索歌词"
 
 #: src/tauon/t_modules/t_main.py:48088
-#, fuzzy
 msgid "Lyrics substitute search"
-msgstr "替换搜索…"
+msgstr "歌词替代搜索"
 
 #: src/tauon/t_modules/t_main.py:48090
-#, fuzzy
 msgid "Tracks & playlists"
-msgstr "播放列表中的曲目"
+msgstr "曲目与播放列表"
 
 #: src/tauon/t_modules/t_main.py:48091
-#, fuzzy
 msgid "Select all"
-msgstr "所选播放列表："
+msgstr "全选"
 
 #: src/tauon/t_modules/t_main.py:48092
 msgid "Copy / paste"
-msgstr ""
+msgstr "复制 / 粘贴"
 
 #: src/tauon/t_modules/t_main.py:48093
 msgid "Cut"
 msgstr "剪切"
 
 #: src/tauon/t_modules/t_main.py:48094
-#, fuzzy
 msgid "Remove from the playlist"
-msgstr "已从标签中移除"
+msgstr "从播放列表中移除"
 
 #: src/tauon/t_modules/t_main.py:48095
 msgid "Undo"
-msgstr ""
+msgstr "撤销"
 
 #: src/tauon/t_modules/t_main.py:48096
-#, fuzzy
 msgid "Love the selected track"
-msgstr "喜欢的曲目"
+msgstr "喜爱选中的曲目"
 
 #: src/tauon/t_modules/t_main.py:48097
-#, fuzzy
 msgid "Love the playing track"
-msgstr "加载曲目时出错"
+msgstr "喜爱正在播放的曲目"
 
 #: src/tauon/t_modules/t_main.py:48098
 msgid "Rate the selected track 1 to 5"
-msgstr ""
+msgstr "为选中的曲目评 1 到 5 星"
 
 #: src/tauon/t_modules/t_main.py:48099
 msgid "Rate the playing track 1 to 5"
-msgstr ""
+msgstr "为正在播放的曲目评 1 到 5 星"
 
 #: src/tauon/t_modules/t_main.py:48100
 msgid "Clear the selected track's rating"
-msgstr ""
+msgstr "清除选中曲目的评分"
 
 #: src/tauon/t_modules/t_main.py:48101
 msgid "Clear the playing track's rating"
-msgstr ""
+msgstr "清除正在播放曲目的评分"
 
 #: src/tauon/t_modules/t_main.py:48103
-#, fuzzy
 msgid "Clear the queue"
 msgstr "清空队列"
 
 #: src/tauon/t_modules/t_main.py:48104
-#, fuzzy
 msgid "Track info"
-msgstr "曲目评分"
+msgstr "曲目信息"
 
 #: src/tauon/t_modules/t_main.py:48105
-#, fuzzy
 msgid "Playing track info"
-msgstr "播放时间"
+msgstr "正在播放的曲目信息"
 
 #: src/tauon/t_modules/t_main.py:48106
-#, fuzzy
 msgid "New playlist"
 msgstr "新建播放列表"
 
 #: src/tauon/t_modules/t_main.py:48107
-#, fuzzy
 msgid "Rename playlist"
-msgstr "循环播放列表"
+msgstr "重命名播放列表"
 
 #: src/tauon/t_modules/t_main.py:48108
-#, fuzzy
 msgid "Delete playlist"
-msgstr "所选播放列表："
+msgstr "删除播放列表"
 
 #: src/tauon/t_modules/t_main.py:48109
-#, fuzzy
 msgid "New smart playlist"
-msgstr "下一个播放列表"
+msgstr "新建智能播放列表"
 
 #: src/tauon/t_modules/t_main.py:48110
-#, fuzzy
 msgid "Edit smart playlist"
-msgstr "目标播放列表"
+msgstr "编辑智能播放列表"
 
 #: src/tauon/t_modules/t_main.py:48111
-#, fuzzy
 msgid "Regenerate playlist"
-msgstr "循环播放列表"
+msgstr "重新生成播放列表"
 
 #: src/tauon/t_modules/t_main.py:48112
-#, fuzzy
 msgid "Toggle album headings"
-msgstr "切换列"
+msgstr "切换专辑标题"
 
 #: src/tauon/t_modules/t_main.py:48115
-#, fuzzy
 msgid "Next layout"
-msgstr "下一个播放列表"
+msgstr "下一个布局"
 
 #: src/tauon/t_modules/t_main.py:48116
-#, fuzzy
 msgid "Previous layout"
-msgstr "前一个"
+msgstr "上一个布局"
 
 #: src/tauon/t_modules/t_main.py:48117 src/tauon/t_modules/t_main.py:56501
 #: src/tauon/t_modules/t_main.py:56504
@@ -7499,74 +7023,64 @@ msgstr "收藏"
 
 #: src/tauon/t_modules/t_main.py:48118
 msgid "Gallery with keyboard control"
-msgstr ""
+msgstr "可用键盘控制的收藏视图"
 
 #: src/tauon/t_modules/t_main.py:48120
-#, fuzzy
 msgid "Left panel"
-msgstr "左对齐"
+msgstr "左侧面板"
 
 #: src/tauon/t_modules/t_main.py:48122
-#, fuzzy
 msgid "Side panel"
-msgstr "歌词"
+msgstr "侧边栏"
 
 #: src/tauon/t_modules/t_main.py:48123
 msgid "Side panel art"
-msgstr ""
+msgstr "侧边栏封面"
 
 #: src/tauon/t_modules/t_main.py:48125
-#, fuzzy
 msgid "Artist info"
-msgstr "艺术家："
+msgstr "艺术家信息"
 
 #: src/tauon/t_modules/t_main.py:48126
-#, fuzzy
 msgid "Mini mode"
 msgstr "迷你模式"
 
 #: src/tauon/t_modules/t_main.py:48127
 msgid "Full screen"
-msgstr ""
+msgstr "全屏"
 
 #: src/tauon/t_modules/t_main.py:48128
-#, fuzzy
 msgid "Next / previous theme"
-msgstr "上个主题"
+msgstr "下一个 / 上一个主题"
 
 #: src/tauon/t_modules/t_main.py:48129
-#, fuzzy
 msgid "Auto theme from album art"
-msgstr "从专辑艺术图自动创建主题"
+msgstr "根据专辑封面自动生成主题"
 
 #: src/tauon/t_modules/t_main.py:48130
-#, fuzzy
 msgid "Reload theme"
-msgstr "已删除主题"
+msgstr "重新加载主题"
 
 #: src/tauon/t_modules/t_main.py:48131
 msgid "Window opacity up / down"
-msgstr ""
+msgstr "提高 / 降低窗口不透明度"
 
 #: src/tauon/t_modules/t_main.py:48133 src/tauon/t_modules/t_tagedit_ui.py:373
-#, fuzzy
 msgid "Other"
 msgstr "其他"
 
 #: src/tauon/t_modules/t_main.py:48134 src/tauon/t_modules/t_main.py:48290
 #: src/tauon/t_modules/t_main.py:65534
 msgid "Keyboard Shortcuts"
-msgstr ""
+msgstr "键盘快捷键"
 
 #: src/tauon/t_modules/t_main.py:48135
-#, fuzzy
 msgid "Open the transcode folder"
-msgstr "转码文件夹"
+msgstr "打开转码文件夹"
 
 #: src/tauon/t_modules/t_main.py:48136
-#, fuzzy
 msgid "Console"
-msgstr "切换控制台"
+msgstr "控制台"
 
 #: src/tauon/t_modules/t_main.py:48139
 msgid "Advanced"
@@ -7574,7 +7088,7 @@ msgstr "高级"
 
 #: src/tauon/t_modules/t_main.py:48140
 msgid "Mouse"
-msgstr ""
+msgstr "鼠标"
 
 #: src/tauon/t_modules/t_main.py:48296
 msgid "Online Manual"
@@ -7582,20 +7096,19 @@ msgstr "在线手册"
 
 #: src/tauon/t_modules/t_main.py:48298
 msgid "Click again to reset"
-msgstr ""
+msgstr "再次点击以重置"
 
 #: src/tauon/t_modules/t_main.py:48298
-#, fuzzy
 msgid "Reset to defaults"
-msgstr "重置翻转"
+msgstr "恢复默认"
 
 #: src/tauon/t_modules/t_main.py:48316
 msgid "Keys come from input.txt; edits apply after a restart."
-msgstr ""
+msgstr "按键设置来自 input.txt，修改后需重启才能生效。"
 
 #: src/tauon/t_modules/t_main.py:48317
 msgid "Esc to close"
-msgstr ""
+msgstr "按 Esc 关闭"
 
 #: src/tauon/t_modules/t_main.py:49349 src/tauon/t_modules/t_main.py:49490
 msgid "{N} album"
@@ -7670,13 +7183,12 @@ msgid "Auto-Stop Here"
 msgstr "在此自动停止"
 
 #: src/tauon/t_modules/t_main.py:50526
-#, fuzzy
 msgid "Auto Queue"
-msgstr "追加到队列"
+msgstr "自动加入队列"
 
 #: src/tauon/t_modules/t_main.py:50527
 msgid "Override Repeat"
-msgstr ""
+msgstr "覆盖重复"
 
 #: src/tauon/t_modules/t_main.py:50528 src/tauon/t_modules/t_main.py:65504
 msgid "Clear Queue"
@@ -7703,9 +7215,8 @@ msgid "Auto-Stop"
 msgstr "自动停止"
 
 #: src/tauon/t_modules/t_main.py:51077
-#, fuzzy
 msgid "Remove track from queue"
-msgstr "移除堆栈"
+msgstr "从队列中移除曲目"
 
 #: src/tauon/t_modules/t_main.py:51329
 msgid "Queue is Empty"
@@ -7729,222 +7240,205 @@ msgid "{N} Tracks"
 msgstr "{N} 曲目"
 
 #: src/tauon/t_modules/t_main.py:52108
-#, fuzzy
 msgid "Source"
-msgstr "源代码"
+msgstr "来源"
 
 #: src/tauon/t_modules/t_main.py:52148
 msgid "Rate"
-msgstr ""
+msgstr "采样率"
 
 #: src/tauon/t_modules/t_main.py:52157
-#, fuzzy
 msgid "Direct"
-msgstr "重定向"
+msgstr "直接"
 
 #: src/tauon/t_modules/t_main.py:52158
 msgid "Mixed into others"
-msgstr ""
+msgstr "混入其他声道"
 
 #: src/tauon/t_modules/t_main.py:52159
-#, fuzzy
 msgid "Not played"
-msgstr "尚未"
+msgstr "未播放"
 
 #: src/tauon/t_modules/t_main.py:52160
 msgid "Device speaker"
-msgstr ""
+msgstr "设备扬声器"
 
 #: src/tauon/t_modules/t_main.py:52201 src/tauon/t_modules/t_main.py:52346
 msgid "IDLE"
-msgstr ""
+msgstr "空闲"
 
 #: src/tauon/t_modules/t_main.py:52203
 msgid "ALBUM"
-msgstr ""
+msgstr "专辑"
 
 #: src/tauon/t_modules/t_main.py:52205
 msgid "TRACK"
-msgstr ""
+msgstr "曲目"
 
 #: src/tauon/t_modules/t_main.py:52207
 msgid "NO TAG"
-msgstr ""
+msgstr "无标签"
 
 #: src/tauon/t_modules/t_main.py:52209
 msgid "PRE-AMP"
-msgstr ""
+msgstr "前级增益"
 
 #: src/tauon/t_modules/t_main.py:52211
 msgid "OFF"
-msgstr ""
+msgstr "关"
 
 #: src/tauon/t_modules/t_main.py:52214 src/tauon/t_modules/t_main.py:52303
 msgid "Gain"
-msgstr ""
+msgstr "增益"
 
 #: src/tauon/t_modules/t_main.py:52270
-#, fuzzy
 msgid "Album gain"
-msgstr "专辑评分"
+msgstr "专辑增益"
 
 #: src/tauon/t_modules/t_main.py:52270
-#, fuzzy
 msgid "Track gain"
-msgstr "曲目评分"
+msgstr "曲目增益"
 
 #: src/tauon/t_modules/t_main.py:52275
 msgid "Limited by peak"
-msgstr ""
+msgstr "受峰值限制"
 
 #: src/tauon/t_modules/t_main.py:52277
-#, fuzzy
 msgid "Compressing"
-msgstr "压缩"
+msgstr "正在压缩"
 
 #: src/tauon/t_modules/t_main.py:52279
-#, fuzzy
 msgid "Compressor ready"
-msgstr "预设已就绪"
+msgstr "压缩器就绪"
 
 #: src/tauon/t_modules/t_main.py:52302
 msgid "Volume {percent}%"
-msgstr ""
+msgstr "音量 {percent}%"
 
 #: src/tauon/t_modules/t_main.py:52304
 msgid "EQ"
-msgstr ""
+msgstr "均衡器"
 
 #: src/tauon/t_modules/t_main.py:52305
 msgid "Crossfeed"
-msgstr ""
+msgstr "交叉馈送"
 
 #: src/tauon/t_modules/t_main.py:52306 src/tauon/t_modules/t_main.py:65522
 msgid "Tempo"
-msgstr ""
+msgstr "速度"
 
 #: src/tauon/t_modules/t_main.py:52307
 msgid "Resampled"
-msgstr ""
+msgstr "已重采样"
 
 #: src/tauon/t_modules/t_main.py:52308
-#, fuzzy
 msgid "Device resamples"
-msgstr "避免重新采样"
+msgstr "设备重采样"
 
 #: src/tauon/t_modules/t_main.py:52309
 msgid "Channels mixed"
-msgstr ""
+msgstr "声道已混合"
 
 #: src/tauon/t_modules/t_main.py:52310
 msgid "Over 24 bit"
-msgstr ""
+msgstr "超过 24 位"
 
 #: src/tauon/t_modules/t_main.py:52311
-#, fuzzy
 msgid "Fading"
-msgstr "内边距"
+msgstr "淡入淡出中"
 
 #: src/tauon/t_modules/t_main.py:52312
-#, fuzzy
 msgid "PipeWire volume"
-msgstr "PipeWire"
+msgstr "PipeWire 音量"
 
 #: src/tauon/t_modules/t_main.py:52313
-#, fuzzy
 msgid "Other audio playing"
-msgstr "沒有播放"
+msgstr "有其他音频在播放"
 
 #: src/tauon/t_modules/t_main.py:52314
-#, fuzzy
 msgid "Through a filter"
-msgstr "切换筛选器"
+msgstr "经过滤波器"
 
 #: src/tauon/t_modules/t_main.py:52314
-#, fuzzy
 msgid "Through {name}"
-msgstr "重命名"
+msgstr "经过 {name}"
 
 #: src/tauon/t_modules/t_main.py:52315
 msgid "Device takes {bits} bit"
-msgstr ""
+msgstr "设备接收 {bits} 位"
 
 #: src/tauon/t_modules/t_main.py:52316
 msgid "Bluetooth codec"
-msgstr ""
+msgstr "蓝牙编解码器"
 
 #: src/tauon/t_modules/t_main.py:52317
-#, fuzzy
 msgid "Dither"
-msgstr "其他"
+msgstr "抖动"
 
 #: src/tauon/t_modules/t_main.py:52318 src/tauon/t_modules/t_main.py:65519
 msgid "Speed"
-msgstr ""
+msgstr "播放速度"
 
 #: src/tauon/t_modules/t_main.py:52348
 msgid "CHECKING"
-msgstr ""
+msgstr "检查中"
 
 #: src/tauon/t_modules/t_main.py:52351
 msgid "BIT-PERFECT"
-msgstr ""
+msgstr "比特完美"
 
 #: src/tauon/t_modules/t_main.py:52351
 msgid "UNALTERED"
-msgstr ""
+msgstr "未改动"
 
 #: src/tauon/t_modules/t_main.py:52354
 msgid "ALTERED"
-msgstr ""
+msgstr "已改动"
 
 #: src/tauon/t_modules/t_main.py:52358 src/tauon/t_modules/t_main.py:65453
 #: src/tauon/t_modules/t_main.py:65482
 msgid "Signal"
-msgstr "Signal"
+msgstr "信号"
 
 #: src/tauon/t_modules/t_main.py:52368
 msgid "Needs a newer build of PHAzOR"
-msgstr ""
+msgstr "需要更新版本的 PHAzOR"
 
 #: src/tauon/t_modules/t_main.py:52374
 msgid "Waiting for FFmpeg to report the source"
-msgstr ""
+msgstr "正在等待 FFmpeg 报告音源信息"
 
 #: src/tauon/t_modules/t_main.py:52378
 msgid "DSD sent as is"
-msgstr ""
+msgstr "DSD 原样发送"
 
 #: src/tauon/t_modules/t_main.py:52381
 msgid "Rendered source, nothing added"
-msgstr ""
+msgstr "渲染后的音源，未添加任何处理"
 
 #: src/tauon/t_modules/t_main.py:52383
 msgid "DSD converted to PCM, nothing added"
-msgstr ""
+msgstr "DSD 已转换为 PCM，未添加任何处理"
 
 #: src/tauon/t_modules/t_main.py:52385
 msgid "Lossy source, nothing added"
-msgstr ""
+msgstr "有损音源，未添加任何处理"
 
 #: src/tauon/t_modules/t_main.py:52387
-#, fuzzy
 msgid "straight to {device}"
-msgstr "同步到设备"
+msgstr "直接送往 {device}"
 
 #: src/tauon/t_modules/t_main.py:52387 src/tauon/t_modules/t_main.py:52392
-#, fuzzy
 msgid "the device"
-msgstr "同步到设备"
+msgstr "设备"
 
 #: src/tauon/t_modules/t_main.py:52390
 msgid "Leaves PHAzOR as decoded; the sound server is not checked"
-msgstr ""
+msgstr "PHAzOR 解码后即输出；未检查声音服务器"
 
 #: src/tauon/t_modules/t_main.py:52392
-#, fuzzy
 msgid "Straight to {device}"
-msgstr "同步到设备"
+msgstr "直接送往 {device}"
 
 #: src/tauon/t_modules/t_main.py:52435
 msgid "No artist name found"
@@ -8072,7 +7566,7 @@ msgstr "正在播放"
 
 #: src/tauon/t_modules/t_main.py:53866
 msgid "Nothing playing"
-msgstr "沒有播放"
+msgstr "没有播放"
 
 #: src/tauon/t_modules/t_main.py:53869
 msgid "Choose a station to start listening"
@@ -8095,28 +7589,24 @@ msgid "No MilkDrop presets found"
 msgstr "未找到 MilkDrop 预设"
 
 #: src/tauon/t_modules/t_main.py:55475
-#, fuzzy
 msgid "Filter presets…"
-msgstr "正在解压预设…"
+msgstr "筛选预设…"
 
 #: src/tauon/t_modules/t_main.py:55504
 msgid "{count} of {total}"
-msgstr ""
+msgstr "{count} / {total}"
 
 #: src/tauon/t_modules/t_main.py:55528
-#, fuzzy
 msgid "No favorite presets yet"
-msgstr "尚无已保存的电台"
+msgstr "暂无收藏的预设"
 
 #: src/tauon/t_modules/t_main.py:55530
-#, fuzzy
 msgid "No matching favorite presets"
-msgstr "未找到匹配的艺术家结果"
+msgstr "没有匹配的收藏预设"
 
 #: src/tauon/t_modules/t_main.py:55532
-#, fuzzy
 msgid "No matching presets"
-msgstr "没有匹配的电台"
+msgstr "没有匹配的预设"
 
 #: src/tauon/t_modules/t_main.py:55757 src/tauon/t_modules/t_main.py:59508
 msgid "Playing"
@@ -8716,7 +8206,7 @@ msgstr "无法上传你的歌词，原因不明。"
 
 #: src/tauon/t_modules/t_main.py:62175
 msgid "Lyrics upload failed with error code: "
-msgstr "歌词上传失败，错误代码："
+msgstr "歌词上传失败，错误代码： "
 
 #: src/tauon/t_modules/t_main.py:62307
 msgid "Folder copy error."
@@ -8807,40 +8297,35 @@ msgstr "替换…"
 
 #: src/tauon/t_modules/t_main.py:64403
 msgid "Insert Cell…"
-msgstr ""
+msgstr "插入单元格…"
 
 #: src/tauon/t_modules/t_main.py:64405
 msgid "Above"
-msgstr ""
+msgstr "上方"
 
 #: src/tauon/t_modules/t_main.py:64405
 msgid "Below"
-msgstr ""
+msgstr "下方"
 
 #: src/tauon/t_modules/t_main.py:64410
-#, fuzzy
 msgid "Split into Columns…"
-msgstr "显示列"
+msgstr "拆分为列…"
 
 #: src/tauon/t_modules/t_main.py:64410
-#, fuzzy
 msgid "Split into Rows…"
-msgstr "以行分割"
+msgstr "拆分为行…"
 
 #: src/tauon/t_modules/t_main.py:64418
-#, fuzzy
 msgid "Split into Tabs…"
-msgstr "以行分割"
+msgstr "拆分为标签页…"
 
 #: src/tauon/t_modules/t_main.py:64425
-#, fuzzy
 msgid "Remove Widget"
-msgstr "移除图片"
+msgstr "移除组件"
 
 #: src/tauon/t_modules/t_main.py:64429
-#, fuzzy
 msgid "Delete Cell"
-msgstr "删除行"
+msgstr "删除单元格"
 
 #: src/tauon/t_modules/t_main.py:64436 src/tauon/t_modules/t_main.py:65171
 #: src/tauon/t_modules/t_main.py:65215 src/tauon/t_modules/t_main.py:65259
@@ -8929,20 +8414,19 @@ msgstr "重置标签名称"
 
 #: src/tauon/t_modules/t_main.py:64472
 msgid "Add Tab"
-msgstr ""
+msgstr "添加标签页"
 
 #: src/tauon/t_modules/t_main.py:64473
 msgid "Move Tab Left"
-msgstr ""
+msgstr "左移标签页"
 
 #: src/tauon/t_modules/t_main.py:64474
 msgid "Move Tab Right"
-msgstr ""
+msgstr "右移标签页"
 
 #: src/tauon/t_modules/t_main.py:64475
-#, fuzzy
 msgid "Remove Tab"
-msgstr "删除"
+msgstr "移除标签页"
 
 #: src/tauon/t_modules/t_main.py:64534
 msgid "Exit Edit Mode"
@@ -8997,9 +8481,8 @@ msgid "Center title text"
 msgstr "居中标题文本"
 
 #: src/tauon/t_modules/t_main.py:64689 src/tauon/t_modules/t_main.py:64714
-#, fuzzy
 msgid "Show release year"
-msgstr "显示发行说明"
+msgstr "显示发行年份"
 
 #: src/tauon/t_modules/t_main.py:64695 src/tauon/t_modules/t_main.py:64716
 msgid "Single click to play"
@@ -9078,35 +8561,32 @@ msgid "lock"
 msgstr "锁定"
 
 #: src/tauon/t_modules/t_main.py:64774
-#, fuzzy
 msgid "Text Size"
-msgstr "文本基线"
+msgstr "文字大小"
 
 #: src/tauon/t_modules/t_main.py:64776
-#, fuzzy
 msgid "Centre Lyrics"
-msgstr "清空歌词"
+msgstr "歌词居中"
 
 #: src/tauon/t_modules/t_main.py:64781
 msgid "Word Sync…"
-msgstr ""
+msgstr "逐字同步…"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "By Line"
-msgstr ""
+msgstr "按行"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "Word Step"
-msgstr ""
+msgstr "逐字跳进"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "Word Sweep"
-msgstr ""
+msgstr "逐字扫过"
 
 #: src/tauon/t_modules/t_main.py:64790
-#, fuzzy
 msgid "Estimate When Missing"
-msgstr "缺少自定义图片文件"
+msgstr "缺失时估算"
 
 #: src/tauon/t_modules/t_main.py:64797
 msgid "Search GuitarParty"
@@ -9211,7 +8691,7 @@ msgstr "选择预设"
 
 #: src/tauon/t_modules/t_main.py:64916 src/tauon/t_modules/t_video.py:586
 msgid "Fullscreen"
-msgstr ""
+msgstr "全屏"
 
 #: src/tauon/t_modules/t_main.py:64925
 msgid "Open Preset Folder"
@@ -9224,70 +8704,64 @@ msgid "Rename"
 msgstr "重命名"
 
 #: src/tauon/t_modules/t_main.py:64936
-#, fuzzy
 msgid "Remove from Folder"
-msgstr "已从 .lrc 中移除"
+msgstr "从文件夹中移除"
 
 #: src/tauon/t_modules/t_main.py:64971
-#, fuzzy
 msgid "Colour…"
-msgstr "上色"
+msgstr "颜色…"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Blue"
-msgstr ""
+msgstr "蓝色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Cyan"
-msgstr ""
+msgstr "青色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Green"
-msgstr ""
+msgstr "绿色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Orange"
-msgstr ""
+msgstr "橙色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Pink"
-msgstr ""
+msgstr "粉色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Purple"
-msgstr ""
+msgstr "紫色"
 
 #: src/tauon/t_modules/t_main.py:64973
-#, fuzzy
 msgid "Red"
-msgstr "就绪"
+msgstr "红色"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Yellow"
-msgstr ""
+msgstr "黄色"
 
 #: src/tauon/t_modules/t_main.py:64978
-#, fuzzy
 msgid "New Subfolder"
-msgstr "目标文件夹"
+msgstr "新建子文件夹"
 
 #: src/tauon/t_modules/t_main.py:64982
-#, fuzzy
 msgid "Delete Folder"
-msgstr "删除文件"
+msgstr "删除文件夹"
 
 #: src/tauon/t_modules/t_main.py:64984
-#, fuzzy
 msgid "Upload to Server"
-msgstr "Maloja 服务器"
+msgstr "上传到服务器"
 
 #: src/tauon/t_modules/t_main.py:64986
 msgid "Send Edits to Server"
-msgstr ""
+msgstr "将编辑发送到服务器"
 
 #: src/tauon/t_modules/t_main.py:64988
 msgid "Refresh at Startup"
-msgstr ""
+msgstr "启动时刷新"
 
 #: src/tauon/t_modules/t_main.py:64991
 msgid "Regenerate"
@@ -9295,12 +8769,11 @@ msgstr "重新生成"
 
 #: src/tauon/t_modules/t_main.py:64992
 msgid "Derive…"
-msgstr ""
+msgstr "派生…"
 
 #: src/tauon/t_modules/t_main.py:64993
-#, fuzzy
 msgid "Smart Playlist…"
-msgstr "播放列表…"
+msgstr "智能播放列表…"
 
 #: src/tauon/t_modules/t_main.py:64994
 msgid "Sort…"
@@ -9323,14 +8796,12 @@ msgid "Sort by Filepath"
 msgstr "按文件路径排序"
 
 #: src/tauon/t_modules/t_main.py:65003
-#, fuzzy
 msgid "Sort by Artist | Album A-Z"
-msgstr "复制\"艺术家 - 专辑\""
+msgstr "按 艺术家 | 专辑 A-Z 排序"
 
 #: src/tauon/t_modules/t_main.py:65004
-#, fuzzy
 msgid "Sort by Album Artist | Album A-Z"
-msgstr "复制\"艺术家 - 专辑\""
+msgstr "按 专辑艺术家 | 专辑 A-Z 排序"
 
 #: src/tauon/t_modules/t_main.py:65005
 msgid "Sort Track Numbers"
@@ -9412,28 +8883,27 @@ msgstr "有注释的"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "1 Star"
-msgstr ""
+msgstr "1 星"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "2 Stars"
-msgstr ""
+msgstr "2 星"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "3 Stars"
-msgstr ""
+msgstr "3 星"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "4 Stars"
-msgstr ""
+msgstr "4 星"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "5 Stars"
-msgstr ""
+msgstr "5 星"
 
 #: src/tauon/t_modules/t_main.py:65136
-#, fuzzy
 msgid "Clear Rating"
-msgstr "评分"
+msgstr "清除评分"
 
 #: src/tauon/t_modules/t_main.py:65146 src/tauon/t_modules/t_main.py:65192
 #: src/tauon/t_modules/t_main.py:65238 src/tauon/t_modules/t_main.py:65282
@@ -9447,15 +8917,13 @@ msgstr "喜爱"
 
 #: src/tauon/t_modules/t_main.py:65151 src/tauon/t_modules/t_main.py:65196
 #: src/tauon/t_modules/t_main.py:65243 src/tauon/t_modules/t_main.py:65286
-#, fuzzy
 msgid "Add to Playlist"
-msgstr "播放列表末尾"
+msgstr "添加到播放列表"
 
 #: src/tauon/t_modules/t_main.py:65153 src/tauon/t_modules/t_main.py:65198
 #: src/tauon/t_modules/t_main.py:65245 src/tauon/t_modules/t_main.py:65288
-#, fuzzy
 msgid "Play Next"
-msgstr "现在播放"
+msgstr "下一首播放"
 
 #: src/tauon/t_modules/t_main.py:65154 src/tauon/t_modules/t_main.py:65199
 msgid "Show in Gallery"
@@ -9463,9 +8931,8 @@ msgstr "在收藏中显示"
 
 #: src/tauon/t_modules/t_main.py:65156 src/tauon/t_modules/t_main.py:65201
 #: src/tauon/t_modules/t_main.py:65247 src/tauon/t_modules/t_main.py:65290
-#, fuzzy
 msgid "Edit Tags…"
-msgstr "编辑…"
+msgstr "编辑标签…"
 
 #: src/tauon/t_modules/t_main.py:65158 src/tauon/t_modules/t_main.py:65203
 #: src/tauon/t_modules/t_main.py:65250 src/tauon/t_modules/t_main.py:65292
@@ -9503,9 +8970,8 @@ msgstr "修正乱码"
 
 #: src/tauon/t_modules/t_main.py:65182 src/tauon/t_modules/t_main.py:65227
 #: src/tauon/t_modules/t_main.py:65269 src/tauon/t_modules/t_main.py:65321
-#, fuzzy
 msgid "Locate Missing Files…"
-msgstr "正在加载国家/地区…"
+msgstr "查找缺失的文件…"
 
 #: src/tauon/t_modules/t_main.py:65183 src/tauon/t_modules/t_main.py:65228
 #: src/tauon/t_modules/t_main.py:65322
@@ -9524,9 +8990,8 @@ msgstr "在 Genius 上搜索曲目"
 
 #: src/tauon/t_modules/t_main.py:65187 src/tauon/t_modules/t_main.py:65232
 #: src/tauon/t_modules/t_main.py:65326
-#, fuzzy
 msgid "Search Artist on RYM"
-msgstr "在 Sonemic 上搜索艺术家"
+msgstr "在 RYM 上搜索艺术家"
 
 #: src/tauon/t_modules/t_main.py:65188 src/tauon/t_modules/t_main.py:65233
 #: src/tauon/t_modules/t_main.py:65327
@@ -9624,9 +9089,8 @@ msgid "Show bar"
 msgstr "显示分栏"
 
 #: src/tauon/t_modules/t_main.py:65397
-#, fuzzy
 msgid "Add Folder…"
-msgstr "修改文件夹…"
+msgstr "添加文件夹…"
 
 #: src/tauon/t_modules/t_main.py:65409
 msgid "Settings"
@@ -9721,32 +9185,28 @@ msgid "Square Large"
 msgstr "方形(大)"
 
 #: src/tauon/t_modules/t_main.py:65457 src/tauon/t_modules/t_main.py:65486
-#, fuzzy
 msgid "Lyrics Drawer"
-msgstr "歌词"
+msgstr "歌词抽屉"
 
 #: src/tauon/t_modules/t_main.py:65463
 msgid "Show Album Art"
 msgstr "显示专辑封面"
 
 #: src/tauon/t_modules/t_main.py:65467
-#, fuzzy
 msgid "Show Waveform"
-msgstr "显示栏"
+msgstr "显示波形"
 
 #: src/tauon/t_modules/t_main.py:65471
-#, fuzzy
 msgid "Smooth Progress"
-msgstr "平滑滚动"
+msgstr "平滑进度"
 
 #: src/tauon/t_modules/t_main.py:65476
 msgid "Copy Title to Clipboard"
 msgstr "将标题复制到剪贴板"
 
 #: src/tauon/t_modules/t_main.py:65478 src/tauon/t_modules/t_main.py:70596
-#, fuzzy
 msgid "Audio Info"
-msgstr "音频"
+msgstr "音频信息"
 
 #: src/tauon/t_modules/t_main.py:65488
 msgid "Random Track"
@@ -9849,18 +9309,16 @@ msgid "Rescan folders complete."
 msgstr "重新扫描文件夹完成。"
 
 #: src/tauon/t_modules/t_main.py:70523
-#, fuzzy
 msgid "Add files…"
-msgstr "添加行"
+msgstr "添加文件…"
 
 #: src/tauon/t_modules/t_main.py:70547
-#, fuzzy
 msgid "Import in progress…"
-msgstr "正在复制文件…"
+msgstr "正在导入…"
 
 #: src/tauon/t_modules/t_main.py:70631
 msgid "Channel status needs a newer build of PHAzOR"
-msgstr ""
+msgstr "声道状态需要更新版本的 PHAzOR"
 
 #: src/tauon/t_modules/t_main.py:70814 src/tauon/t_modules/t_main.py:70833
 #: src/tauon/t_modules/t_main.py:70853 src/tauon/t_modules/t_main.py:70876
@@ -9984,39 +9442,36 @@ msgstr "无流媒体"
 
 #: src/tauon/t_modules/t_phazor.py:1305
 msgid "The server no longer has this file."
-msgstr ""
+msgstr "服务器上已没有此文件。"
 
 #: src/tauon/t_modules/t_phazor.py:1305 src/tauon/t_modules/t_phazor.py:1316
 #: src/tauon/t_modules/t_phazor.py:1322
-#, fuzzy
 msgid "Couldn't load the track"
-msgstr "无法清除同步歌词"
+msgstr "无法加载曲目"
 
 #: src/tauon/t_modules/t_phazor.py:1313
 msgid "The server could not transcode this track"
-msgstr ""
+msgstr "服务器无法转码此曲目"
 
 #: src/tauon/t_modules/t_phazor.py:1314
 msgid "Try setting Stream format to Original in this server's settings."
-msgstr ""
+msgstr "请尝试在此服务器的设置中将“流格式”设为“原始”。"
 
 #: src/tauon/t_modules/t_phazor.py:1461
 msgid "Multiple tracks could not be loaded"
 msgstr "多首曲目无法加载"
 
 #: src/tauon/t_modules/t_phazor.py:1982
-#, fuzzy
 msgid "Lost the connection to the server"
-msgstr "无法与服务器建立连接。"
+msgstr "与服务器的连接已断开"
 
 #: src/tauon/t_modules/t_phazor.py:2036
 msgid "The connection may have dropped. Press play to try again."
-msgstr ""
+msgstr "连接可能已中断。按播放重试。"
 
 #: src/tauon/t_modules/t_phazor.py:2036
-#, fuzzy
 msgid "The station stopped streaming"
-msgstr "选择一个电台开始收听"
+msgstr "电台已停止推流"
 
 #: src/tauon/t_modules/t_phazor.py:2154
 msgid "This device does not accept direct DSD"
@@ -10032,93 +9487,83 @@ msgstr "加载曲目时出错"
 
 #: src/tauon/t_modules/t_phazor.py:3079
 msgid "Press play to carry on from here."
-msgstr ""
+msgstr "按播放从此处继续。"
 
 #: src/tauon/t_modules/t_remote_playlists.py:151
-#, fuzzy
 msgid "Couldn't import some playlists"
-msgstr "导入音乐文件夹"
+msgstr "部分播放列表无法导入"
 
 #: src/tauon/t_modules/t_remote_playlists.py:155
-#, fuzzy
 msgid "Imported {count} playlists"
-msgstr "导入播放列表"
+msgstr "已导入 {count} 个播放列表"
 
 #: src/tauon/t_modules/t_remote_playlists.py:157
-#, fuzzy
 msgid "Updated {count} playlists"
-msgstr "已更新 Spotify 播放列表"
+msgstr "已更新 {count} 个播放列表"
 
 #: src/tauon/t_modules/t_remote_playlists.py:159
 msgid "Imported {added} playlists, updated {updated}"
-msgstr ""
+msgstr "已导入 {added} 个播放列表，更新 {updated} 个"
 
 #: src/tauon/t_modules/t_remote_playlists.py:165
 msgid "Wait for the music import to finish"
-msgstr ""
+msgstr "请等待音乐导入完成"
 
 #: src/tauon/t_modules/t_remote_playlists.py:184
-#, fuzzy
 msgid "Couldn't load playlists"
-msgstr "自动重新加载播放列表"
+msgstr "无法加载播放列表"
 
 #: src/tauon/t_modules/t_remote_playlists.py:188
-#, fuzzy
 msgid "No playlists to import"
-msgstr "没有播放列表名称"
+msgstr "没有可导入的播放列表"
 
 #: src/tauon/t_modules/t_server_sync.py:433
-#, fuzzy
 msgid "This playlist was deleted on {service}"
-msgstr "此播放列表没有生成器"
+msgstr "此播放列表已在 {service} 上删除"
 
 #: src/tauon/t_modules/t_server_sync.py:434
 msgid "It's kept here as an ordinary playlist."
-msgstr ""
+msgstr "它作为普通播放列表保留在这里。"
 
 #: src/tauon/t_modules/t_server_sync.py:440
-#, fuzzy
 msgid "Error fetching {service} playlist"
-msgstr "创建 Spotify 播放列表时出错"
+msgstr "获取 {service} 播放列表时出错"
 
 #: src/tauon/t_modules/t_server_sync.py:474
-#, fuzzy
 msgid "Couldn't update the playlist on {service}"
-msgstr "无法与 Maloja 服务器通信。"
+msgstr "无法更新 {service} 上的播放列表"
 
 #: src/tauon/t_modules/t_server_sync.py:590
 msgid "None of these tracks are from a server"
-msgstr ""
+msgstr "这些曲目都不是来自服务器"
 
 #: src/tauon/t_modules/t_server_sync.py:601
-#, fuzzy
 msgid "Couldn't create the playlist on {service}"
-msgstr "无法与 Maloja 服务器通信。"
+msgstr "无法在 {service} 上创建播放列表"
 
 #: src/tauon/t_modules/t_server_sync.py:603
 msgid "{N} tracks from elsewhere were left out"
-msgstr ""
+msgstr "已略过 {N} 首来自其他位置的曲目"
 
 #: src/tauon/t_modules/t_server_sync.py:606
 msgid "Uploaded a copy to {service}"
-msgstr ""
+msgstr "已将副本上传到 {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:607
 msgid "It's a smart playlist, so later changes stay here."
-msgstr ""
+msgstr "这是智能播放列表，之后的更改只保留在这里。"
 
 #: src/tauon/t_modules/t_server_sync.py:621
 msgid "Uploaded to {service}"
-msgstr ""
+msgstr "已上传到 {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:622
 msgid "Edits made here are sent to the server."
-msgstr ""
+msgstr "在这里所做的编辑会发送到服务器。"
 
 #: src/tauon/t_modules/t_stream.py:364
-#, fuzzy
 msgid "Couldn't connect to the station"
-msgstr "无法保存电台图片"
+msgstr "无法连接到电台"
 
 #: src/tauon/t_modules/t_stream.py:874
 msgid "Data malformation detected. Stream aborted."
@@ -10127,146 +9572,132 @@ msgstr "检测到数据畸形。流已中止。"
 #: src/tauon/t_modules/t_subsonic.py:268 src/tauon/t_modules/t_subsonic.py:274
 #: src/tauon/t_modules/t_subsonic.py:280 src/tauon/t_modules/t_subsonic.py:288
 #: src/tauon/t_modules/t_subsonic.py:313
-#, fuzzy
 msgid "Error listing albums from Subsonic server"
-msgstr "连接 Airsonic 服务器时出错"
+msgstr "从 Subsonic 服务器列出专辑时出错"
 
 #: src/tauon/t_modules/t_subsonic.py:842
-#, fuzzy
 msgid "See the log for details."
-msgstr "有关详细信息，请参阅 {link} 许可证。"
+msgstr "详情请查看日志。"
 
 #: src/tauon/t_modules/t_subsonic.py:842
-#, fuzzy
 msgid "The Subsonic server reported an error"
-msgstr "Maloja 服务器返回错误。"
+msgstr "Subsonic 服务器报告了错误"
 
 #: src/tauon/t_modules/t_subsonic.py:1092
 #: src/tauon/t_modules/t_subsonic.py:1097
 #: src/tauon/t_modules/t_subsonic.py:1107
 #: src/tauon/t_modules/t_subsonic.py:1115
 #: src/tauon/t_modules/t_subsonic.py:1384
-#, fuzzy
 msgid "Error connecting to Subsonic server"
-msgstr "连接 Airsonic 服务器时出错"
+msgstr "连接 Subsonic 服务器时出错"
 
 #: src/tauon/t_modules/t_subsonic.py:1174
-#, fuzzy
 msgid "Error reading Subsonic directory!"
-msgstr "读取 Airsonic 目录时出错！"
+msgstr "读取 Subsonic 目录时出错！"
 
 #: src/tauon/t_modules/t_subsonic.py:1273
-#, fuzzy
 msgid "Some albums could not be read from the server"
-msgstr "部分曲目无法重新扫描"
+msgstr "部分专辑无法从服务器读取"
 
 #: src/tauon/t_modules/t_subsonic.py:1422
-#, fuzzy
 msgid "Subsonic Collection"
-msgstr "Airsonic 合集"
+msgstr "Subsonic 收藏"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:186
 msgid "Only local audio files without CUE subtracks can be edited."
-msgstr ""
+msgstr "只能编辑没有 CUE 子曲目的本地音频文件。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:247
 #: src/tauon/t_modules/t_tagedit_ui.py:254
-#, fuzzy
 msgid "Cannot open tag editor"
-msgstr "简单的标签编辑器"
+msgstr "无法打开标签编辑器"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:259
-#, fuzzy
 msgid "Reading tags… {N}/{T}"
-msgstr "正在重新扫描标签…剩余 {N} 个"
+msgstr "正在读取标签… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:302
-#, fuzzy
 msgid "Could not read {file}"
-msgstr "无法保存主题文件"
+msgstr "无法读取 {file}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:368
-#, fuzzy
 msgid "Front cover"
-msgstr "字体大小"
+msgstr "封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:369
 msgid "Back cover"
-msgstr ""
+msgstr "封底"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:370
 msgid "Leaflet"
-msgstr ""
+msgstr "内页"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:371
 msgid "Media"
-msgstr ""
+msgstr "盘面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:388
 msgid "Image {N}: {T}"
-msgstr ""
+msgstr "图片 {N}：{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:399
 #: src/tauon/t_modules/t_tagedit_ui.py:1971
 msgid "All images"
-msgstr ""
+msgstr "所有图片"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:415
 msgid "Could not change embedded artwork"
-msgstr ""
+msgstr "无法更改嵌入的封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:426
 msgid "Could not preview embedded artwork"
-msgstr ""
+msgstr "无法预览嵌入的封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:464
-#, fuzzy
 msgid "Could not use that artwork"
-msgstr "无法使用该电台图片"
+msgstr "无法使用该封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:506
 msgid "Invalid tag value"
-msgstr ""
+msgstr "无效的标签值"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:641
 msgid "New value"
-msgstr ""
+msgstr "新值"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:693
-#, fuzzy
 msgid "Cannot remove tag"
-msgstr "无法移动"
+msgstr "无法移除标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:714
 msgid "This tag has a structured value; edit it as a whole."
-msgstr ""
+msgstr "此标签的值有结构，请整体编辑。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:717
 msgid ""
 "This tag stores one value; use a distinct description or language for "
 "another entry."
-msgstr ""
+msgstr "此标签只存储一个值；如需另一条目，请使用不同的描述或语言。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:725
 msgid "Cannot add tag value"
-msgstr ""
+msgstr "无法添加标签值"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:804
 msgid "Restore each file's original value in the current track scope."
-msgstr ""
+msgstr "在当前曲目范围内恢复每个文件的原始值。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:830
 msgid "No tag changes to save."
-msgstr ""
+msgstr "没有需要保存的标签更改。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:879
-#, fuzzy
 msgid "Could not write tags"
-msgstr "无法将歌词写入文件"
+msgstr "无法写入标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:895
 msgid "Tags saved, but the library could not be refreshed"
-msgstr ""
+msgstr "标签已保存，但无法刷新媒体库"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:897
 msgid "{N} files rewritten"
@@ -10274,438 +9705,393 @@ msgstr "重写 {N} 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:947
 msgid "No text could be repaired automatically."
-msgstr ""
+msgstr "没有可自动修复的文本。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:952
 msgid "{N} fields fixed in {F} files; review before writing tags."
-msgstr ""
+msgstr "已在 {F} 个文件中修复 {N} 个字段；写入标签前请检查。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:954
 msgid "Encoding not detected for {N} files."
-msgstr ""
+msgstr "有 {N} 个文件未检测到编码。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:959
-#, fuzzy
 msgid "Could not fix Mojibake"
-msgstr "修正乱码"
+msgstr "无法修复乱码"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:971
 msgid "These files have different album names. Analyse them as one album?"
-msgstr ""
+msgstr "这些文件的专辑名称不同。要将它们作为一张专辑分析吗？"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:972
 msgid "Album gain would be measured across all {N} files in the tag editor."
-msgstr ""
+msgstr "专辑增益将以标签编辑器中全部 {N} 个文件为整体测量。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:974
-#, fuzzy
 msgid "Analyse as one album"
-msgstr "总是在专辑结束后停止"
+msgstr "作为一张专辑分析"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:975
-#, fuzzy
 msgid "Track gain only"
-msgstr "曲目评分"
+msgstr "仅曲目增益"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:983
 msgid "Only one track of this album is selected. Analyse it anyway?"
-msgstr ""
+msgstr "只选中了此专辑的一首曲目。仍要分析吗？"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:984
 msgid ""
 "{N} more tracks of “{A}” are in this folder; album gain will only reflect "
 "this track."
-msgstr ""
+msgstr "此文件夹中还有“{A}”的 {N} 首曲目；专辑增益将只反映这一首曲目。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1073
-#, fuzzy
 msgid "Analysing ReplayGain… {N}/{T}"
-msgstr "正在重新扫描标签…剩余 {N} 个"
+msgstr "正在分析 ReplayGain… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1090
 msgid "Could not analyse ReplayGain"
-msgstr ""
+msgstr "无法分析 ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1104
-#, fuzzy
 msgid "Could not stage ReplayGain tags"
-msgstr "忽略 ReplayGain 标签。"
+msgstr "无法暂存 ReplayGain 标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1111
 msgid "Track ReplayGain measured for 1 file; review, then Write tags to save."
-msgstr ""
+msgstr "已测量 1 个文件的曲目 ReplayGain；请检查后点击“写入标签”保存。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1113
 msgid ""
 "Track ReplayGain measured for {N} files; review, then Write tags to save."
-msgstr ""
+msgstr "已测量 {N} 个文件的曲目 ReplayGain；请检查后点击“写入标签”保存。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1119
 msgid "ReplayGain measured for 1 file; review, then Write tags to save."
-msgstr ""
+msgstr "已测量 1 个文件的 ReplayGain；请检查后点击“写入标签”保存。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1121
 msgid "ReplayGain measured for {N} files; review, then Write tags to save."
-msgstr ""
+msgstr "已测量 {N} 个文件的 ReplayGain；请检查后点击“写入标签”保存。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1124
-#, fuzzy
 msgid "ReplayGain tags are already up to date."
-msgstr "未找到重播增益标签。"
+msgstr "ReplayGain 标签已是最新。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1128
 msgid "{N} silent files skipped."
-msgstr ""
+msgstr "已跳过 {N} 个静音文件。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1156
-#, fuzzy
 msgid "Unsynced lyrics"
-msgstr "显示同步歌词"
+msgstr "非同步歌词"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1157
-#, fuzzy
 msgid "Synced lyrics"
-msgstr "显示同步歌词"
+msgstr "同步歌词"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1159
 msgid "BPM"
-msgstr ""
+msgstr "BPM"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1160
-#, fuzzy
 msgid "Copyright"
-msgstr "复制"
+msgstr "版权"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1161
 msgid "ISRC"
-msgstr ""
+msgstr "ISRC"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1162
 msgid "Language"
-msgstr ""
+msgstr "语言"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1163
-#, fuzzy
 msgid "Grouping"
-msgstr "切换分组"
+msgstr "分组"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1164
-#, fuzzy
 msgid "Subtitle"
-msgstr "显示标题"
+msgstr "副标题"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1170
 msgid "Credits"
 msgstr "贡献者"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1172
-#, fuzzy
 msgid "Original artist"
-msgstr "原始"
+msgstr "原唱艺术家"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1173
 msgid "Conductor"
-msgstr ""
+msgstr "指挥"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1174
 msgid "Remixer"
-msgstr ""
+msgstr "混音师"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1175
-#, fuzzy
 msgid "Lyricist"
-msgstr "歌词"
+msgstr "作词"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1176
 msgid "Encoded by"
-msgstr ""
+msgstr "编码者"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1180
-#, fuzzy
 msgid "Sort order"
-msgstr "分类"
+msgstr "排序方式"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1212
 msgid "Upgrade ID3 tags to v2.4"
-msgstr ""
+msgstr "将 ID3 标签升级到 v2.4"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1214
-#, fuzzy
 msgid "Analyse ReplayGain"
-msgstr "回放增益"
+msgstr "分析 ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1217
-#, fuzzy
 msgid "Automatically split slashes"
-msgstr "导入时自动重新加载"
+msgstr "自动按斜杠拆分"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1254
 msgid ""
 "{N} ID3 files will upgrade to v2.4 on Write tags; {S} other formats kept."
-msgstr ""
+msgstr "写入标签时 {N} 个 ID3 文件将升级到 v2.4；{S} 个其他格式保持不变。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1260
 msgid "Cannot safely upgrade these tags"
-msgstr ""
+msgstr "无法安全升级这些标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1276
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
-#, fuzzy
 msgid "All selected files"
-msgstr "删除文件"
+msgstr "所有选中的文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1309
-#, fuzzy
 msgid "Choose tracks"
-msgstr "喜爱的曲目"
+msgstr "选择曲目"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1320
 msgid "Filter by filename or title"
-msgstr ""
+msgstr "按文件名或标题筛选"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
 msgid "Apply edits to the full selection"
-msgstr ""
+msgstr "将编辑应用于全部选中项"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1464
-#, fuzzy
 msgid "Loading album tracks…"
-msgstr "正在加载国家/地区…"
+msgstr "正在加载专辑曲目…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Loading more editions…"
-msgstr "加载艺术家列表…"
+msgstr "正在加载更多版本…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Starting fingerprint scan…"
-msgstr "正在获取好友数据…"
+msgstr "正在开始指纹扫描…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1525
 msgid "Unexpected lookup failure; check the application log."
-msgstr ""
+msgstr "查询意外失败；请查看应用程序日志。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 msgid "No selected files match this edition."
-msgstr ""
+msgstr "没有选中的文件与此版本匹配。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 #: src/tauon/t_modules/t_tagedit_ui.py:1559
-#, fuzzy
 msgid "Could not apply this album"
-msgstr "无法保存主题文件"
+msgstr "无法应用此专辑"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1556
-#, fuzzy
 msgid "{N} matched files loaded into the editor."
-msgstr "{N} 个匹配的曲目是最新的。"
+msgstr "已将 {N} 个匹配的文件载入编辑器。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1577
-#, fuzzy
 msgid "Untitled"
-msgstr "标题"
+msgstr "无标题"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 msgid "Unmatched"
-msgstr ""
+msgstr "未匹配"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Loading tracks…"
-msgstr "正在加载国家/地区…"
+msgstr "正在加载曲目…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1607
 #: src/tauon/t_modules/t_tagedit_ui.py:2766
 msgid "MusicBrainz Scan"
-msgstr ""
+msgstr "MusicBrainz 扫描"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1615
 msgid "{N} selected file(s)"
-msgstr ""
+msgstr "已选择 {N} 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1623
 msgid "Select an album to compare tags."
-msgstr ""
+msgstr "选择一张专辑来对比标签。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1662
-#, fuzzy
 msgid "No matching album editions found."
-msgstr "未找到匹配的艺术家结果"
+msgstr "未找到匹配的专辑版本。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1677
-#, fuzzy
 msgid "Retry tracks"
-msgstr "单曲循环"
+msgstr "重试曲目"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1685
-#, fuzzy
 msgid "Use this album"
-msgstr "取消保存 Spotify 专辑"
+msgstr "使用此专辑"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1725
 msgid "{N}/{T} matched"
-msgstr ""
+msgstr "已匹配 {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Could not load tracks"
-msgstr "无法清除同步歌词"
+msgstr "无法加载曲目"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "After"
-msgstr ""
+msgstr "之后"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "Before"
-msgstr ""
+msgstr "之前"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1870
 msgid "Insert a separator to add another value to this tag."
-msgstr ""
+msgstr "插入分隔符以为此标签添加另一个值。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1889
 msgid "Different values"
-msgstr ""
+msgstr "值不相同"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1903
 msgid "Track title"
 msgstr "曲目标题"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1906
-#, fuzzy
 msgid "Album artist"
 msgstr "专辑艺术家"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1907
-#, fuzzy
 msgid "Year / date"
-msgstr "最新年份"
+msgstr "年份 / 日期"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1908
 msgid "Original year / date"
-msgstr ""
+msgstr "原始年份 / 日期"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1909
-#, fuzzy
 msgid "Track number / total"
-msgstr "每张专辑的曲目数"
+msgstr "曲目编号 / 总数"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1910
-#, fuzzy
 msgid "Disc number / total"
-msgstr "光盘号"
+msgstr "碟片编号 / 总数"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1944
-#, fuzzy
 msgid "Track rating"
 msgstr "曲目评分"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1957
 msgid "Mixed"
-msgstr ""
+msgstr "混合"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1967
-#, fuzzy
 msgid "Embedded album art"
-msgstr "没有嵌入专辑封面。"
+msgstr "嵌入的专辑封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1969
 msgid "Image {N}"
-msgstr ""
+msgstr "图片 {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2011
-#, fuzzy
 msgid "No embedded art"
-msgstr "没有嵌入专辑封面。"
+msgstr "没有嵌入的封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2018
-#, fuzzy
 msgid "Drop an image to replace art"
-msgstr "将图片拖到此处以替换"
+msgstr "拖入图片以替换封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2019
 msgid "Mixed artwork; first file shown"
-msgstr ""
+msgstr "封面不一致；显示第一个文件的"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2021
-#, fuzzy
 msgid "{N} embedded image(s)"
-msgstr "没有嵌入专辑封面。"
+msgstr "{N} 张嵌入图片"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2036
-#, fuzzy
 msgid "Remove all art"
-msgstr "重复的"
+msgstr "移除所有封面"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2041
 msgid ""
 "Change the selected image or the first image of the selected type in each "
 "active file."
-msgstr ""
+msgstr "更改每个活动文件中选中的图片，或所选类型的第一张图片。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2047
-#, fuzzy
 msgid "Artwork changed"
-msgstr "封面来源。"
+msgstr "封面已更改"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2077
 msgid "Native key"
-msgstr ""
+msgstr "原生键名"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2078
 msgid "Value / type"
-msgstr ""
+msgstr "值 / 类型"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2137
-#, fuzzy
 msgid "Add key"
-msgstr "API 密钥"
+msgstr "添加键"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2181
 msgid "Select a tag to edit; add custom text by name."
-msgstr ""
+msgstr "选择要编辑的标签；按名称添加自定义文本。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2193
-#, fuzzy
 msgid "Text value"
-msgstr "文本基线"
+msgstr "文本值"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2195
 msgid "{N}/{T} files"
-msgstr ""
+msgstr "{N}/{T} 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2205
 msgid "Binary or structured tag: preserved without modification."
-msgstr ""
+msgstr "二进制或结构化标签：原样保留，不做修改。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2232
 msgid "Different values; editing replaces this entry in each file."
-msgstr ""
+msgstr "值不相同；编辑会替换每个文件中的此条目。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2299
-#, fuzzy
 msgid "Missing tag"
-msgstr "正在获取图像…"
+msgstr "缺少标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2303
-#, fuzzy
 msgid "No filename"
-msgstr "文件名"
+msgstr "无文件名"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2305
 msgid "Same name as another file"
-msgstr ""
+msgstr "与另一个文件同名"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2307
-#, fuzzy
 msgid "File already exists"
-msgstr "已存在同名主题"
+msgstr "文件已存在"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2372
 msgid "Files renamed, but the tag editor could not reload them"
-msgstr ""
+msgstr "文件已重命名，但标签编辑器无法重新加载它们"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2376
 msgid "Rename complete."
@@ -10716,35 +10102,34 @@ msgid "{N} / {T} filenames were written."
 msgstr "已写入 {N} / {T} 个文件名。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2390
-#, fuzzy
 msgid "Filename template"
-msgstr "重命名完成。"
+msgstr "文件名模板"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2410
 msgid ""
 "<tn> track number, <artist>, <albumartist>, <title>, <album>, <date>, "
 "<genre>, <ext>"
 msgstr ""
+"<tn> 曲目编号、<artist>、<albumartist>、<title>、<album>、<date>、<genre>、"
+"<ext>"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2417
-#, fuzzy
 msgid "Current name"
-msgstr "当前播放列表"
+msgstr "当前名称"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2418
-#, fuzzy
 msgid "New name"
-msgstr "重命名"
+msgstr "新名称"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2453
 msgid "{A}–{B} of {N}"
-msgstr ""
+msgstr "{A}–{B}，共 {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2460
 msgid ""
 "Write the tag changes on the Main or Misc tab, or discard them, before "
 "renaming."
-msgstr ""
+msgstr "重命名前，请在“主要”或“其他”标签页写入标签更改，或将其丢弃。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2462
 msgid "Warning: This may change the file extension"
@@ -10756,71 +10141,64 @@ msgstr "警告：文件名可能不唯一"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
 msgid "1 file will be skipped"
-msgstr ""
+msgstr "将跳过 1 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
-#, fuzzy
 msgid "{N} files will be skipped"
-msgstr "已处理 {N} 个文件"
+msgstr "将跳过 {N} 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename 1 file"
-msgstr "重命名失败。"
+msgstr "重命名 1 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename {N} files"
-msgstr "已移除 {N} 个喜欢。"
+msgstr "重命名 {N} 个文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2483
 msgid "Renames the files in the current track scope"
-msgstr ""
+msgstr "重命名当前曲目范围内的文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
 msgid "Main"
-msgstr ""
+msgstr "主要"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
 msgid "Misc"
 msgstr "其它"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2663
-#, fuzzy
 msgid "Could not load album tracks"
-msgstr "无法清除同步歌词"
+msgstr "无法加载专辑曲目"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2701
-#, fuzzy
 msgid "Tag editor"
-msgstr "简单的标签编辑器"
+msgstr "标签编辑器"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active file"
-msgstr ""
+msgstr "{N} 个活动文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active files"
-msgstr ""
+msgstr "{N} 个活动文件"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2717
-#, fuzzy
 msgid "Writing tags…"
-msgstr "正在获取图像…"
+msgstr "正在写入标签…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2752
 msgid "Tools"
-msgstr ""
+msgstr "工具"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2783
-#, fuzzy
 msgid "Write tags"
-msgstr "作家"
+msgstr "写入标签"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2788
 msgid ""
 "Save the fields and every pending file, including tracks outside this view."
-msgstr ""
+msgstr "保存字段和所有待处理的文件，包括此视图之外的曲目。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2792
 msgid "Discard"
@@ -10831,10 +10209,11 @@ msgid ""
 "Multiple ID3v2.3 values may not work in other players. Tools can upgrade to "
 "ID3v2.4."
 msgstr ""
+"多个 ID3v2.3 值可能在其他播放器中无法正常使用。可通过“工具”升级到 ID3v2.4。"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2810
 msgid "Changes pending"
-msgstr ""
+msgstr "有待保存的更改"
 
 #: src/tauon/t_modules/t_tidal.py:47 src/tauon/t_modules/t_tidal.py:70
 msgid "Tidalapi package not loaded"
@@ -10846,12 +10225,11 @@ msgstr "无法加载 TIDAL 登录信息，请尝试重新登录"
 
 #: src/tauon/t_modules/t_video.py:55
 msgid "{rate} fps"
-msgstr ""
+msgstr "{rate} fps"
 
 #: src/tauon/t_modules/t_video.py:586
-#, fuzzy
 msgid "Fill Window"
-msgstr "窗口"
+msgstr "填满窗口"
 
 #~ msgid "Errored"
 #~ msgstr "出错"

@@ -6530,9 +6530,8 @@ msgid "Whole stars only"
 msgstr "Hanya bintang penuh"
 
 #: src/tauon/t_modules/t_main.py:46800
-#, fuzzy
 msgid "Album titles"
-msgstr "Artis Album"
+msgstr "Judul album"
 
 #: src/tauon/t_modules/t_main.py:46804
 msgid "Left align"
@@ -8115,262 +8114,244 @@ msgid "Text btn: text hover"
 msgstr "Tombol teks: teks saat disorot"
 
 #: src/tauon/t_modules/t_main.py:59914
-#, fuzzy
 msgid "Tab btn: BG active"
-msgstr "Tampilkan teks judul"
+msgstr "Tombol tab: latar aktif"
 
 #: src/tauon/t_modules/t_main.py:59915
 msgid "Tab btn: text active"
-msgstr ""
+msgstr "Tombol tab: teks aktif"
 
 #: src/tauon/t_modules/t_main.py:59916
 msgid "Dynamic accents"
-msgstr ""
+msgstr "Aksen dinamis"
 
 #: src/tauon/t_modules/t_main.py:59917
 msgid "Context menu: BG"
-msgstr ""
+msgstr "Menu konteks: latar"
 
 #: src/tauon/t_modules/t_main.py:59918
-#, fuzzy
 msgid "Context menu: text"
-msgstr "Tampilkan teks judul"
+msgstr "Menu konteks: teks"
 
 #: src/tauon/t_modules/t_main.py:59919
 msgid "Context menu: invalid text"
-msgstr ""
+msgstr "Menu konteks: teks tidak valid"
 
 #: src/tauon/t_modules/t_main.py:59920
 msgid "Context menu: highlight"
-msgstr ""
+msgstr "Menu konteks: sorotan"
 
 #: src/tauon/t_modules/t_main.py:59921
-#, fuzzy
 msgid "Boxes: background"
-msgstr "Gunakan album art sebagai latar belakang"
+msgstr "Kotak: latar belakang"
 
 #: src/tauon/t_modules/t_main.py:59922
-#, fuzzy
 msgid "Boxes: title text"
-msgstr "Tampilkan teks judul"
+msgstr "Kotak: teks judul"
 
 #: src/tauon/t_modules/t_main.py:59923
-#, fuzzy
 msgid "Boxes: body text"
-msgstr "Tampilkan teks judul"
+msgstr "Kotak: teks isi"
 
 #: src/tauon/t_modules/t_main.py:59924
-#, fuzzy
 msgid "Boxes: sub text"
-msgstr "Tampilkan teks judul"
+msgstr "Kotak: subteks"
 
 #: src/tauon/t_modules/t_main.py:59925
-#, fuzzy
 msgid "Boxes: input text"
-msgstr "Tampilkan teks judul"
+msgstr "Kotak: teks masukan"
 
 #: src/tauon/t_modules/t_main.py:59926
-#, fuzzy
 msgid "Mini: BG"
-msgstr "Kecil"
+msgstr "Mini: latar"
 
 #: src/tauon/t_modules/t_main.py:59927
 msgid "Mini: text 1"
-msgstr ""
+msgstr "Mini: teks 1"
 
 #: src/tauon/t_modules/t_main.py:59928
 msgid "Mini: text 2"
-msgstr ""
+msgstr "Mini: teks 2"
 
 #: src/tauon/t_modules/t_main.py:61793
 msgid "Files missing or inaccessible"
-msgstr ""
+msgstr "Berkas hilang atau tidak dapat diakses"
 
 #: src/tauon/t_modules/t_main.py:61794
 msgid "If you're using Flatpak, you should probably follow this:"
-msgstr ""
+msgstr "Jika Anda menggunakan Flatpak, sebaiknya ikuti ini:"
 
 #: src/tauon/t_modules/t_main.py:61802
 msgid "Bad permissions"
-msgstr ""
+msgstr "Izin tidak memadai"
 
 #: src/tauon/t_modules/t_main.py:61803
 msgid "We don't have permissions to access {file}"
-msgstr ""
+msgstr "Kami tidak memiliki izin untuk mengakses {file}"
 
 #: src/tauon/t_modules/t_main.py:61811
 msgid "Can't import that"
-msgstr ""
+msgstr "Tidak dapat mengimpor itu"
 
 #: src/tauon/t_modules/t_main.py:61812
 msgid "We can't import the file {path} and we're not sure why."
-msgstr ""
+msgstr "Kami tidak dapat mengimpor berkas {path} dan tidak tahu sebabnya."
 
 #: src/tauon/t_modules/t_main.py:61853
-#, fuzzy
 msgid "You attempted to drop an archive."
-msgstr "Ekstrak arsip"
+msgstr "Anda mencoba menjatuhkan sebuah arsip."
 
 #: src/tauon/t_modules/t_main.py:61854
 msgid "However the \"extract archive\" function is not enabled."
-msgstr ""
+msgstr "Namun fungsi \"ekstrak arsip\" tidak diaktifkan."
 
 #: src/tauon/t_modules/t_main.py:61864
 msgid "Skipping oversize zip file (>4GB)"
-msgstr ""
+msgstr "Melewati berkas zip yang terlalu besar (>4GB)"
 
 #: src/tauon/t_modules/t_main.py:61881 src/tauon/t_modules/t_main.py:61886
 #: src/tauon/t_modules/t_main.py:61894
-#, fuzzy
 msgid "Failed to extract zip archive."
-msgstr "Ekstrak arsip"
+msgstr "Gagal mengekstrak arsip zip."
 
 #: src/tauon/t_modules/t_main.py:61882
 msgid ""
 "The archive is encrypted. You'll need to extract it manually with the "
 "password."
 msgstr ""
+"Arsip ini terenkripsi. Anda perlu mengekstraknya secara manual dengan kata "
+"sandi."
 
 #: src/tauon/t_modules/t_main.py:61887 src/tauon/t_modules/t_main.py:61895
 msgid ""
 "Maybe archive is corrupted? Does disk have enough space and have write "
 "permission?"
-msgstr ""
+msgstr "Mungkin arsipnya rusak? Apakah ruang disk cukup dan ada izin menulis?"
 
 #: src/tauon/t_modules/t_main.py:61911
-#, fuzzy
 msgid "Failed to extract rar archive."
-msgstr "Ekstrak arsip"
+msgstr "Gagal mengekstrak arsip rar."
 
 #: src/tauon/t_modules/t_main.py:61927
-#, fuzzy
 msgid "Failed to extract 7z archive."
-msgstr "Ekstrak arsip"
+msgstr "Gagal mengekstrak arsip 7z."
 
 #: src/tauon/t_modules/t_main.py:61955
-#, fuzzy
 msgid "Could not move archive to trash"
-msgstr "Berkas dipindahkan ke tempat sampah"
+msgstr "Tidak dapat memindahkan arsip ke tempat sampah"
 
 #: src/tauon/t_modules/t_main.py:62074
 msgid "Permission error accessing one or more files"
 msgstr "Kesalahan izin saat mengakses salah satu berkas atau lebih"
 
 #: src/tauon/t_modules/t_main.py:62117
-#, fuzzy
 msgid "Connection error"
-msgstr "Kesalahan tidak diketahui."
+msgstr "Kesalahan koneksi"
 
 #: src/tauon/t_modules/t_main.py:62118
 msgid "We can't upload your lyrics because we can't connect to the server."
 msgstr ""
+"Kami tidak dapat mengunggah lirik Anda karena tidak dapat terhubung ke "
+"server."
 
 #: src/tauon/t_modules/t_main.py:62119
 msgid "Are you offline?"
-msgstr ""
+msgstr "Apakah Anda sedang luring?"
 
 #: src/tauon/t_modules/t_main.py:62139
-#, fuzzy
 msgid "The following file is missing:"
-msgstr "Nilai satu dari lainnya hilang."
+msgstr "Berkas berikut tidak ditemukan:"
 
 #: src/tauon/t_modules/t_main.py:62148
 msgid "We don't have the proper permissions to run the file:"
-msgstr ""
+msgstr "Kami tidak memiliki izin yang sesuai untuk menjalankan berkas:"
 
 #: src/tauon/t_modules/t_main.py:62157
 msgid "We can't upload your lyrics, and we don't know why."
-msgstr ""
+msgstr "Kami tidak dapat mengunggah lirik Anda, dan tidak tahu sebabnya."
 
 #: src/tauon/t_modules/t_main.py:62175
 msgid "Lyrics upload failed with error code: "
-msgstr ""
+msgstr "Pengunggahan lirik gagal dengan kode kesalahan: "
 
 #: src/tauon/t_modules/t_main.py:62307
-#, fuzzy
 msgid "Folder copy error."
-msgstr "Pindai ulang folder selesai."
+msgstr "Kesalahan menyalin folder."
 
 #: src/tauon/t_modules/t_main.py:62307
-#, fuzzy
 msgid "The target and source are the same."
-msgstr "Tidak ada sumber lirik yang diaktifkan."
+msgstr "Tujuan dan sumbernya sama."
 
 #: src/tauon/t_modules/t_main.py:62318
-#, fuzzy
 msgid "Some files may have been written."
-msgstr " nama berkas telah ditulis."
+msgstr "Beberapa berkas mungkin sudah tertulis."
 
 #: src/tauon/t_modules/t_main.py:62318
-#, fuzzy
 msgid "The folder copy has failed!"
-msgstr "Tidak ada folder target yang dipilih"
+msgstr "Penyalinan folder gagal!"
 
 #: src/tauon/t_modules/t_main.py:62327
-#, fuzzy
 msgid "Could not delete {name}"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat menghapus {name}"
 
 #: src/tauon/t_modules/t_main.py:62327
 msgid "Something has gone horribly wrong!"
-msgstr ""
+msgstr "Terjadi kesalahan yang sangat parah!"
 
 #: src/tauon/t_modules/t_main.py:62332
-#, fuzzy
 msgid "Folder move complete."
-msgstr "Ganti nama selesai."
+msgstr "Pemindahan folder selesai."
 
 #: src/tauon/t_modules/t_main.py:62332 src/tauon/t_modules/t_main.py:62334
-#, fuzzy
 msgid "Folder name: {name}"
-msgstr "Bagan Folder"
+msgstr "Nama folder: {name}"
 
 #: src/tauon/t_modules/t_main.py:62334
-#, fuzzy
 msgid "Folder copy complete."
-msgstr "Pindai ulang folder selesai."
+msgstr "Penyalinan folder selesai."
 
 #: src/tauon/t_modules/t_main.py:62367
-#, fuzzy
 msgid "Cleaning complete."
-msgstr "Ganti nama selesai."
+msgstr "Pembersihan selesai."
 
 #: src/tauon/t_modules/t_main.py:62368
 msgid "{N} items were removed from the database."
-msgstr ""
+msgstr "{N} item dihapus dari basis data."
 
 #: src/tauon/t_modules/t_main.py:62493
 msgid "The transcode was canceled before completion."
-msgstr ""
+msgstr "Transkode dibatalkan sebelum selesai."
 
 #: src/tauon/t_modules/t_main.py:62494
 msgid "Incomplete files will remain."
-msgstr ""
+msgstr "Berkas yang belum lengkap akan tetap ada."
 
 #: src/tauon/t_modules/t_main.py:62497
 msgid "Press F9 to show output."
-msgstr ""
+msgstr "Tekan F9 untuk menampilkan keluaran."
 
 #: src/tauon/t_modules/t_main.py:62499
 msgid ""
 "Note that any associated output picture is a thumbnail and not an exact copy."
 msgstr ""
+"Perhatikan bahwa gambar keluaran terkait hanya berupa gambar mini, bukan "
+"salinan persis."
 
 #: src/tauon/t_modules/t_main.py:62502
-#, fuzzy
 msgid "Encoding complete."
-msgstr "Sinkronisasi selesai"
+msgstr "Pengodean selesai."
 
 #: src/tauon/t_modules/t_main.py:62535
 msgid ""
 "Rescanning network tracks is unsupported, please reimport your playlist "
 "instead."
 msgstr ""
+"Pemindaian ulang trek jaringan tidak didukung, silakan impor ulang daftar "
+"putar Anda."
 
 #: src/tauon/t_modules/t_main.py:62535
-#, fuzzy
 msgid "Some tracks could not be rescanned"
-msgstr "Folder tidak dapat dibuang."
+msgstr "Beberapa trek tidak dapat dipindai ulang"
 
 #: src/tauon/t_modules/t_main.py:64369
 msgid "Playlists + Queue"
@@ -8378,206 +8359,184 @@ msgstr "Daftar Putar + Antrian"
 
 #: src/tauon/t_modules/t_main.py:64392 src/tauon/t_modules/t_main.py:64396
 msgid "Add…"
-msgstr ""
+msgstr "Tambah…"
 
 #: src/tauon/t_modules/t_main.py:64396
 msgid "Replace…"
-msgstr ""
+msgstr "Ganti…"
 
 #: src/tauon/t_modules/t_main.py:64403
 msgid "Insert Cell…"
-msgstr ""
+msgstr "Sisipkan Sel…"
 
 #: src/tauon/t_modules/t_main.py:64405
 msgid "Above"
-msgstr ""
+msgstr "Di atas"
 
 #: src/tauon/t_modules/t_main.py:64405
 msgid "Below"
-msgstr ""
+msgstr "Di bawah"
 
 #: src/tauon/t_modules/t_main.py:64410
-#, fuzzy
 msgid "Split into Columns…"
-msgstr "Kolom"
+msgstr "Pisah menjadi Kolom…"
 
 #: src/tauon/t_modules/t_main.py:64410
 msgid "Split into Rows…"
-msgstr ""
+msgstr "Pisah menjadi Baris…"
 
 #: src/tauon/t_modules/t_main.py:64418
 msgid "Split into Tabs…"
-msgstr ""
+msgstr "Pisah menjadi Tab…"
 
 #: src/tauon/t_modules/t_main.py:64425
-#, fuzzy
 msgid "Remove Widget"
-msgstr "Hapus Ini"
+msgstr "Hapus Widget"
 
 #: src/tauon/t_modules/t_main.py:64429
-#, fuzzy
 msgid "Delete Cell"
-msgstr "Hapus berkas"
+msgstr "Hapus Sel"
 
 #: src/tauon/t_modules/t_main.py:64436 src/tauon/t_modules/t_main.py:65171
 #: src/tauon/t_modules/t_main.py:65215 src/tauon/t_modules/t_main.py:65259
 msgid "Layout…"
-msgstr ""
+msgstr "Tata Letak…"
 
 #: src/tauon/t_modules/t_main.py:64438
-#, fuzzy
 msgid "Lock Vertical"
-msgstr "Kunci Panel"
+msgstr "Kunci Vertikal"
 
 #: src/tauon/t_modules/t_main.py:64439
-#, fuzzy
 msgid "Unlock Vertical"
-msgstr "Buka Kunci Panel"
+msgstr "Buka Kunci Vertikal"
 
 #: src/tauon/t_modules/t_main.py:64440
 msgid "Lock Horizontal"
-msgstr ""
+msgstr "Kunci Horizontal"
 
 #: src/tauon/t_modules/t_main.py:64441
-#, fuzzy
 msgid "Unlock Horizontal"
-msgstr "Buka Kunci Panel"
+msgstr "Buka Kunci Horizontal"
 
 #: src/tauon/t_modules/t_main.py:64442
-#, fuzzy
 msgid "Inset Square"
-msgstr "Persegi"
+msgstr "Persegi Sisipan"
 
 #: src/tauon/t_modules/t_main.py:64443
 msgid "Remove Inset Square"
-msgstr ""
+msgstr "Hapus Persegi Sisipan"
 
 #: src/tauon/t_modules/t_main.py:64444
-#, fuzzy
 msgid "Square Max"
-msgstr "Persegi"
+msgstr "Persegi Maks"
 
 #: src/tauon/t_modules/t_main.py:64445
 msgid "Remove Square Max"
-msgstr ""
+msgstr "Hapus Persegi Maks"
 
 #: src/tauon/t_modules/t_main.py:64446
 msgid "Gutter"
-msgstr ""
+msgstr "Celah"
 
 #: src/tauon/t_modules/t_main.py:64447
-#, fuzzy
 msgid "Padding"
-msgstr "Gunakan padding"
+msgstr "Padding"
 
 #: src/tauon/t_modules/t_main.py:64448
 msgid "Border"
-msgstr ""
+msgstr "Bingkai"
 
 #: src/tauon/t_modules/t_main.py:64449
-#, fuzzy
 msgid "Remove Border"
-msgstr "Hapus"
+msgstr "Hapus Bingkai"
 
 #: src/tauon/t_modules/t_main.py:64450
 msgid "Make Stack Resizable"
-msgstr ""
+msgstr "Jadikan Tumpukan Dapat Diubah Ukurannya"
 
 #: src/tauon/t_modules/t_main.py:64451
 msgid "Make Stack Not Resizable"
-msgstr ""
+msgstr "Jadikan Tumpukan Tidak Dapat Diubah Ukurannya"
 
 #: src/tauon/t_modules/t_main.py:64453
 msgid "Load Template…"
-msgstr ""
+msgstr "Muat Templat…"
 
 #: src/tauon/t_modules/t_main.py:64457
-#, fuzzy
 msgid "Rename Layout…"
-msgstr "Ganti Nama Trek…"
+msgstr "Ganti Nama Tata Letak…"
 
 #: src/tauon/t_modules/t_main.py:64458
-#, fuzzy
 msgid "Delete Slot"
-msgstr "Hapus berkas"
+msgstr "Hapus Slot"
 
 #: src/tauon/t_modules/t_main.py:64459
-#, fuzzy
 msgid "New Slot"
-msgstr "Daftar putar baru"
+msgstr "Slot Baru"
 
 #: src/tauon/t_modules/t_main.py:64469
-#, fuzzy
 msgid "Rename Tab…"
-msgstr "Ganti Nama Trek…"
+msgstr "Ganti Nama Tab…"
 
 #: src/tauon/t_modules/t_main.py:64470
-#, fuzzy
 msgid "Reset Tab Name"
-msgstr "Setel Ulang Cache Gambar"
+msgstr "Atur Ulang Nama Tab"
 
 #: src/tauon/t_modules/t_main.py:64472
 msgid "Add Tab"
-msgstr ""
+msgstr "Tambah Tab"
 
 #: src/tauon/t_modules/t_main.py:64473
 msgid "Move Tab Left"
-msgstr ""
+msgstr "Pindahkan Tab ke Kiri"
 
 #: src/tauon/t_modules/t_main.py:64474
 msgid "Move Tab Right"
-msgstr ""
+msgstr "Pindahkan Tab ke Kanan"
 
 #: src/tauon/t_modules/t_main.py:64475
-#, fuzzy
 msgid "Remove Tab"
-msgstr "Hapus Ini"
+msgstr "Hapus Tab"
 
 #: src/tauon/t_modules/t_main.py:64534
-#, fuzzy
 msgid "Exit Edit Mode"
-msgstr "Lirik"
+msgstr "Keluar dari Mode Edit"
 
 #: src/tauon/t_modules/t_main.py:64534 src/tauon/t_modules/t_main.py:64569
-#, fuzzy
 msgid "Enter Edit Mode"
-msgstr "Tema otomatis diaktifkan"
+msgstr "Masuk Mode Edit"
 
 #: src/tauon/t_modules/t_main.py:64610
-#, fuzzy
 msgid "Stacks"
-msgstr "Trek"
+msgstr "Tumpukan"
 
 #: src/tauon/t_modules/t_main.py:64615
 msgid "CD"
-msgstr ""
+msgstr "CD"
 
 #: src/tauon/t_modules/t_main.py:64620
 msgid "Vinyl"
-msgstr ""
+msgstr "Piringan Hitam"
 
 #: src/tauon/t_modules/t_main.py:64631
-#, fuzzy
 msgid "Albums per row"
-msgstr "Artis Album"
+msgstr "Album per baris"
 
 #: src/tauon/t_modules/t_main.py:64636
 msgid "Spacing"
-msgstr ""
+msgstr "Jarak"
 
 #: src/tauon/t_modules/t_main.py:64641
 msgid "Row spacing"
-msgstr ""
+msgstr "Jarak baris"
 
 #: src/tauon/t_modules/t_main.py:64647
-#, fuzzy
 msgid "Show Titles"
 msgstr "Tampilkan Judul"
 
 #: src/tauon/t_modules/t_main.py:64647 src/tauon/t_modules/t_main.py:64650
-#, fuzzy
 msgid "Hide Titles"
-msgstr "Sembunyikan Lirik"
+msgstr "Sembunyikan Judul"
 
 #: src/tauon/t_modules/t_main.py:64670
 msgid "Thumbnail size"
@@ -8588,23 +8547,20 @@ msgid "Show titles"
 msgstr "Tampilkan Judul"
 
 #: src/tauon/t_modules/t_main.py:64682 src/tauon/t_modules/t_main.py:64712
-#, fuzzy
 msgid "Center title text"
-msgstr "Tampilkan teks judul"
+msgstr "Ratakan teks judul ke tengah"
 
 #: src/tauon/t_modules/t_main.py:64689 src/tauon/t_modules/t_main.py:64714
-#, fuzzy
 msgid "Show release year"
-msgstr "Tampilkan tahun rilis album"
+msgstr "Tampilkan tahun rilis"
 
 #: src/tauon/t_modules/t_main.py:64695 src/tauon/t_modules/t_main.py:64716
 msgid "Single click to play"
 msgstr "Sekali klik untuk putar"
 
 #: src/tauon/t_modules/t_main.py:64701 src/tauon/t_modules/t_main.py:64718
-#, fuzzy
 msgid "Scroll by row"
-msgstr "Tampilkan bilah"
+msgstr "Gulir per baris"
 
 #: src/tauon/t_modules/t_main.py:64707 src/tauon/t_modules/t_main.py:64720
 msgid "Combine multi-discs"
@@ -8671,40 +8627,36 @@ msgid "Collapse All"
 msgstr "Ciutkan Semua"
 
 #: src/tauon/t_modules/t_main.py:64766 src/tauon/t_modules/t_main.py:65335
-#, fuzzy
 msgid "lock"
-msgstr "Buka Kunci"
+msgstr "kunci"
 
 #: src/tauon/t_modules/t_main.py:64774
-#, fuzzy
 msgid "Text Size"
-msgstr "Gambar Berikutnya"
+msgstr "Ukuran Teks"
 
 #: src/tauon/t_modules/t_main.py:64776
-#, fuzzy
 msgid "Centre Lyrics"
-msgstr "Bersihkan Lirik"
+msgstr "Lirik di Tengah"
 
 #: src/tauon/t_modules/t_main.py:64781
 msgid "Word Sync…"
-msgstr ""
+msgstr "Sinkronisasi Kata…"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "By Line"
-msgstr ""
+msgstr "Per Baris"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "Word Step"
-msgstr ""
+msgstr "Langkah Kata"
 
 #: src/tauon/t_modules/t_main.py:64783
 msgid "Word Sweep"
-msgstr ""
+msgstr "Sapuan Kata"
 
 #: src/tauon/t_modules/t_main.py:64790
-#, fuzzy
 msgid "Estimate When Missing"
-msgstr "Nilai satu dari lainnya hilang."
+msgstr "Perkirakan Jika Tidak Ada"
 
 #: src/tauon/t_modules/t_main.py:64797
 msgid "Search GuitarParty"
@@ -8719,14 +8671,12 @@ msgid "Clear Chord Lyrics"
 msgstr "Bersihkan Lirik Chord"
 
 #: src/tauon/t_modules/t_main.py:64803
-#, fuzzy
 msgid "Prefer Synced"
-msgstr "Sinkronkan..."
+msgstr "Utamakan Tersinkron"
 
 #: src/tauon/t_modules/t_main.py:64807 src/tauon/t_modules/t_main.py:64845
-#, fuzzy
 msgid "Lyrics Editor"
-msgstr "Lirik"
+msgstr "Editor Lirik"
 
 #: src/tauon/t_modules/t_main.py:64809 src/tauon/t_modules/t_main.py:64847
 #: src/tauon/t_modules/t_main.py:65024
@@ -8750,29 +8700,24 @@ msgid "Clear Lyrics"
 msgstr "Bersihkan Lirik"
 
 #: src/tauon/t_modules/t_main.py:64814 src/tauon/t_modules/t_main.py:64852
-#, fuzzy
 msgid "Clear Synced Lyrics"
-msgstr "Bersihkan Lirik"
+msgstr "Bersihkan Lirik Tersinkron"
 
 #: src/tauon/t_modules/t_main.py:64815 src/tauon/t_modules/t_main.py:64853
-#, fuzzy
 msgid "Toggle art panel"
-msgstr "Toggle Lirik"
+msgstr "Alihkan panel sampul"
 
 #: src/tauon/t_modules/t_main.py:64816 src/tauon/t_modules/t_main.py:64854
-#, fuzzy
 msgid "Toggle art position"
-msgstr "Toggle Lirik"
+msgstr "Alihkan posisi sampul"
 
 #: src/tauon/t_modules/t_main.py:64835
-#, fuzzy
 msgid "Show Showcase Visualiser"
-msgstr "Perlihatkan visualisasi"
+msgstr "Tampilkan Visualisasi Etalase"
 
 #: src/tauon/t_modules/t_main.py:64842
-#, fuzzy
 msgid "Prefer Synced Lyrics"
-msgstr "Bersihkan Lirik"
+msgstr "Utamakan Lirik Tersinkron"
 
 #: src/tauon/t_modules/t_main.py:64857 src/tauon/t_modules/t_main.py:65306
 msgid "Open Image"
@@ -8791,41 +8736,36 @@ msgid "Quick-Fetch Cover Art"
 msgstr "Ambil Cepat Gambar Sampul"
 
 #: src/tauon/t_modules/t_main.py:64880
-#, fuzzy
 msgid "Use Centered Style"
-msgstr "Gunakan style centered"
+msgstr "Gunakan Gaya Tengah"
 
 #: src/tauon/t_modules/t_main.py:64892
-#, fuzzy
 msgid "Zoom Art to Fit"
-msgstr "Perluas album art agar sesuai"
+msgstr "Perbesar Sampul agar Pas"
 
 #: src/tauon/t_modules/t_main.py:64905 src/tauon/t_modules/t_main.py:64907
-#, fuzzy
 msgid "MilkDrop Visualiser"
-msgstr "Panel-atas visualiser"
+msgstr "Visualisasi MilkDrop"
 
 #: src/tauon/t_modules/t_main.py:64911
 msgid "Cut Out"
-msgstr ""
+msgstr "Potong"
 
 #: src/tauon/t_modules/t_main.py:64913
 msgid "Favorite This Preset"
-msgstr ""
+msgstr "Favoritkan Preset Ini"
 
 #: src/tauon/t_modules/t_main.py:64915
-#, fuzzy
 msgid "Choose Preset"
-msgstr "Judul trek"
+msgstr "Pilih Preset"
 
 #: src/tauon/t_modules/t_main.py:64916 src/tauon/t_modules/t_video.py:586
 msgid "Fullscreen"
-msgstr ""
+msgstr "Layar Penuh"
 
 #: src/tauon/t_modules/t_main.py:64925
-#, fuzzy
 msgid "Open Preset Folder"
-msgstr "Buka Folder"
+msgstr "Buka Folder Preset"
 
 #: src/tauon/t_modules/t_main.py:64934 src/tauon/t_modules/t_main.py:64938
 #: src/tauon/t_modules/t_main.py:64969 src/tauon/t_modules/t_main.py:71229
@@ -8834,69 +8774,64 @@ msgid "Rename"
 msgstr "Ganti nama"
 
 #: src/tauon/t_modules/t_main.py:64936
-#, fuzzy
 msgid "Remove from Folder"
-msgstr "Lagu dihapus dari trek yang disukai"
+msgstr "Hapus dari Folder"
 
 #: src/tauon/t_modules/t_main.py:64971
 msgid "Colour…"
-msgstr ""
+msgstr "Warna…"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Blue"
-msgstr ""
+msgstr "Biru"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Cyan"
-msgstr ""
+msgstr "Sian"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Green"
-msgstr ""
+msgstr "Hijau"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Orange"
-msgstr ""
+msgstr "Oranye"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Pink"
-msgstr ""
+msgstr "Merah Muda"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Purple"
-msgstr ""
+msgstr "Ungu"
 
 #: src/tauon/t_modules/t_main.py:64973
-#, fuzzy
 msgid "Red"
-msgstr "Muat ulang"
+msgstr "Merah"
 
 #: src/tauon/t_modules/t_main.py:64973
 msgid "Yellow"
-msgstr ""
+msgstr "Kuning"
 
 #: src/tauon/t_modules/t_main.py:64978
-#, fuzzy
 msgid "New Subfolder"
-msgstr "Tidak ada folder target yang dipilih"
+msgstr "Subfolder Baru"
 
 #: src/tauon/t_modules/t_main.py:64982
-#, fuzzy
 msgid "Delete Folder"
-msgstr "Hapus berkas"
+msgstr "Hapus Folder"
 
 #: src/tauon/t_modules/t_main.py:64984
-#, fuzzy
 msgid "Upload to Server"
-msgstr "Peladen Maloja"
+msgstr "Unggah ke Server"
 
 #: src/tauon/t_modules/t_main.py:64986
 msgid "Send Edits to Server"
-msgstr ""
+msgstr "Kirim Perubahan ke Server"
 
 #: src/tauon/t_modules/t_main.py:64988
 msgid "Refresh at Startup"
-msgstr ""
+msgstr "Segarkan saat Mulai"
 
 #: src/tauon/t_modules/t_main.py:64991
 msgid "Regenerate"
@@ -8904,12 +8839,11 @@ msgstr "Hasilkan ulang"
 
 #: src/tauon/t_modules/t_main.py:64992
 msgid "Derive…"
-msgstr ""
+msgstr "Turunkan…"
 
 #: src/tauon/t_modules/t_main.py:64993
-#, fuzzy
 msgid "Smart Playlist…"
-msgstr "Daftar putar…"
+msgstr "Daftar Putar Pintar…"
 
 #: src/tauon/t_modules/t_main.py:64994
 msgid "Sort…"
@@ -8932,14 +8866,12 @@ msgid "Sort by Filepath"
 msgstr "Urutkan berdasarkan Lokasi berkas"
 
 #: src/tauon/t_modules/t_main.py:65003
-#, fuzzy
 msgid "Sort by Artist | Album A-Z"
-msgstr "Salin \"Artis - Album\""
+msgstr "Urutkan menurut Artis | Album A-Z"
 
 #: src/tauon/t_modules/t_main.py:65004
-#, fuzzy
 msgid "Sort by Album Artist | Album A-Z"
-msgstr "Salin \"Artis - Album\""
+msgstr "Urutkan menurut Artis Album | Album A-Z"
 
 #: src/tauon/t_modules/t_main.py:65005
 msgid "Sort Track Numbers"
@@ -8964,14 +8896,12 @@ msgid "Append Playing"
 msgstr "Tambahkan Sedang Memainkan"
 
 #: src/tauon/t_modules/t_main.py:65021
-#, fuzzy
 msgid "Import/Export…"
-msgstr "Impor Spotify…"
+msgstr "Impor/Ekspor…"
 
 #: src/tauon/t_modules/t_main.py:65023
-#, fuzzy
 msgid "Toggle Grouping"
-msgstr "Toggle kolom"
+msgstr "Alihkan Pengelompokan"
 
 #: src/tauon/t_modules/t_main.py:65025
 msgid "Export Playlist Stats"
@@ -9023,28 +8953,27 @@ msgstr "Memiliki Komentar"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "1 Star"
-msgstr ""
+msgstr "1 Bintang"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "2 Stars"
-msgstr ""
+msgstr "2 Bintang"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "3 Stars"
-msgstr ""
+msgstr "3 Bintang"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "4 Stars"
-msgstr ""
+msgstr "4 Bintang"
 
 #: src/tauon/t_modules/t_main.py:65136
 msgid "5 Stars"
-msgstr ""
+msgstr "5 Bintang"
 
 #: src/tauon/t_modules/t_main.py:65136
-#, fuzzy
 msgid "Clear Rating"
-msgstr "Penilaian"
+msgstr "Hapus Penilaian"
 
 #: src/tauon/t_modules/t_main.py:65146 src/tauon/t_modules/t_main.py:65192
 #: src/tauon/t_modules/t_main.py:65238 src/tauon/t_modules/t_main.py:65282
@@ -9053,21 +8982,18 @@ msgstr "Info Trek…"
 
 #: src/tauon/t_modules/t_main.py:65147 src/tauon/t_modules/t_main.py:65239
 #: src/tauon/t_modules/t_main.py:65514
-#, fuzzy
 msgid "Love"
-msgstr "Disukai"
+msgstr "Sukai"
 
 #: src/tauon/t_modules/t_main.py:65151 src/tauon/t_modules/t_main.py:65196
 #: src/tauon/t_modules/t_main.py:65243 src/tauon/t_modules/t_main.py:65286
-#, fuzzy
 msgid "Add to Playlist"
-msgstr "Akhir Daftar Putar"
+msgstr "Tambahkan ke Daftar Putar"
 
 #: src/tauon/t_modules/t_main.py:65153 src/tauon/t_modules/t_main.py:65198
 #: src/tauon/t_modules/t_main.py:65245 src/tauon/t_modules/t_main.py:65288
-#, fuzzy
 msgid "Play Next"
-msgstr "Putar Sekarang"
+msgstr "Putar Berikutnya"
 
 #: src/tauon/t_modules/t_main.py:65154 src/tauon/t_modules/t_main.py:65199
 msgid "Show in Gallery"
@@ -9075,9 +9001,8 @@ msgstr "Perlihatkan di Galeri"
 
 #: src/tauon/t_modules/t_main.py:65156 src/tauon/t_modules/t_main.py:65201
 #: src/tauon/t_modules/t_main.py:65247 src/tauon/t_modules/t_main.py:65290
-#, fuzzy
 msgid "Edit Tags…"
-msgstr "Sunting…"
+msgstr "Edit Tag…"
 
 #: src/tauon/t_modules/t_main.py:65158 src/tauon/t_modules/t_main.py:65203
 #: src/tauon/t_modules/t_main.py:65250 src/tauon/t_modules/t_main.py:65292
@@ -9101,9 +9026,8 @@ msgstr "Salin \"Artis - Trek\""
 
 #: src/tauon/t_modules/t_main.py:65169 src/tauon/t_modules/t_main.py:65213
 #: src/tauon/t_modules/t_main.py:65302
-#, fuzzy
 msgid "Copy TIDAL Album URL"
-msgstr "Salin URL Album"
+msgstr "Salin URL Album TIDAL"
 
 #: src/tauon/t_modules/t_main.py:65180
 msgid "Lyrics…"
@@ -9117,7 +9041,7 @@ msgstr "Perbaiki Mojibake"
 #: src/tauon/t_modules/t_main.py:65182 src/tauon/t_modules/t_main.py:65227
 #: src/tauon/t_modules/t_main.py:65269 src/tauon/t_modules/t_main.py:65321
 msgid "Locate Missing Files…"
-msgstr ""
+msgstr "Cari Berkas yang Hilang…"
 
 #: src/tauon/t_modules/t_main.py:65183 src/tauon/t_modules/t_main.py:65228
 #: src/tauon/t_modules/t_main.py:65322
@@ -9136,9 +9060,8 @@ msgstr "Cari Trek di Genius"
 
 #: src/tauon/t_modules/t_main.py:65187 src/tauon/t_modules/t_main.py:65232
 #: src/tauon/t_modules/t_main.py:65326
-#, fuzzy
 msgid "Search Artist on RYM"
-msgstr "Cari Artis di Sonemic"
+msgstr "Cari Artis di RYM"
 
 #: src/tauon/t_modules/t_main.py:65188 src/tauon/t_modules/t_main.py:65233
 #: src/tauon/t_modules/t_main.py:65327
@@ -9184,33 +9107,28 @@ msgid "Enqueue Album Next"
 msgstr "Antrekan Album Berikutnya"
 
 #: src/tauon/t_modules/t_main.py:65346
-#, fuzzy
 msgid "Always stop after album"
-msgstr "Album Peringkat Teratas"
+msgstr "Selalu berhenti setelah album"
 
 #: src/tauon/t_modules/t_main.py:65347
-#, fuzzy
 msgid "Always stop after track"
-msgstr "Trek dengan Nilai Tertinggi"
+msgstr "Selalu berhenti setelah trek"
 
 #: src/tauon/t_modules/t_main.py:65348
-#, fuzzy
 msgid "Stop after album"
-msgstr "Album Peringkat Teratas"
+msgstr "Berhenti setelah album"
 
 #: src/tauon/t_modules/t_main.py:65349
-#, fuzzy
 msgid "Stop after track"
-msgstr "Trek dengan Nilai Tertinggi"
+msgstr "Berhenti setelah trek"
 
 #: src/tauon/t_modules/t_main.py:65350
 msgid "Continue Play"
-msgstr ""
+msgstr "Lanjutkan Putar"
 
 #: src/tauon/t_modules/t_main.py:65353
-#, fuzzy
 msgid "Show Tabs"
-msgstr "Tampilkan bilah"
+msgstr "Tampilkan Tab"
 
 #: src/tauon/t_modules/t_main.py:65360
 msgid "Level Meter"
@@ -9241,9 +9159,8 @@ msgid "Show bar"
 msgstr "Tampilkan bilah"
 
 #: src/tauon/t_modules/t_main.py:65397
-#, fuzzy
 msgid "Add Folder…"
-msgstr "Ubah Folder…"
+msgstr "Tambah Folder…"
 
 #: src/tauon/t_modules/t_main.py:65409
 msgid "Settings"
@@ -9254,14 +9171,12 @@ msgid "Database…"
 msgstr "Basisdata…"
 
 #: src/tauon/t_modules/t_main.py:65415
-#, fuzzy
 msgid "Enabled saving state"
-msgstr "Aktifkan Status Simpan"
+msgstr "Penyimpanan status diaktifkan"
 
 #: src/tauon/t_modules/t_main.py:65419
-#, fuzzy
 msgid "Disabled saving state"
-msgstr "Nonaktifkan Keadaan Tetap"
+msgstr "Penyimpanan status dinonaktifkan"
 
 #: src/tauon/t_modules/t_main.py:65421
 msgid "Dev Mode"
@@ -9280,9 +9195,8 @@ msgid "Export as CSV"
 msgstr "Ekspor sebagai CSV"
 
 #: src/tauon/t_modules/t_main.py:65430
-#, fuzzy
 msgid "Reload All Folders"
-msgstr "Pindai Ulang Semua Folder"
+msgstr "Muat Ulang Semua Folder"
 
 #: src/tauon/t_modules/t_main.py:65431
 msgid "Play History to Playlist"
@@ -9293,9 +9207,8 @@ msgid "Reset Image Cache"
 msgstr "Setel Ulang Cache Gambar"
 
 #: src/tauon/t_modules/t_main.py:65433
-#, fuzzy
 msgid "Clear Artist Cache"
-msgstr "Cari Artis di Bandcamp"
+msgstr "Bersihkan Cache Artis"
 
 #: src/tauon/t_modules/t_main.py:65435
 msgid "Remove Network Tracks"
@@ -9311,16 +9224,15 @@ msgstr "Cari Album yang Tidak Lengkap"
 
 #: src/tauon/t_modules/t_main.py:65438
 msgid "Mark Missing as Found"
-msgstr ""
+msgstr "Tandai yang Hilang sebagai Ditemukan"
 
 #: src/tauon/t_modules/t_main.py:65441
 msgid "Chromecast…"
 msgstr "Chromecast…"
 
 #: src/tauon/t_modules/t_main.py:65449 src/tauon/t_modules/t_main.py:65479
-#, fuzzy
 msgid "Mini Mode"
-msgstr "Kecil"
+msgstr "Mode Mini"
 
 #: src/tauon/t_modules/t_main.py:65450 src/tauon/t_modules/t_main.py:65480
 msgid "Tab"
@@ -9343,33 +9255,28 @@ msgid "Square Large"
 msgstr "Persegi Lebar"
 
 #: src/tauon/t_modules/t_main.py:65457 src/tauon/t_modules/t_main.py:65486
-#, fuzzy
 msgid "Lyrics Drawer"
-msgstr "Lirik"
+msgstr "Laci Lirik"
 
 #: src/tauon/t_modules/t_main.py:65463
-#, fuzzy
 msgid "Show Album Art"
-msgstr "Artis Album"
+msgstr "Tampilkan Sampul Album"
 
 #: src/tauon/t_modules/t_main.py:65467
-#, fuzzy
 msgid "Show Waveform"
-msgstr "Tampilkan bilah"
+msgstr "Tampilkan Bentuk Gelombang"
 
 #: src/tauon/t_modules/t_main.py:65471
-#, fuzzy
 msgid "Smooth Progress"
-msgstr "Maloja adalah peladen scrobble yang di hosting sendiri."
+msgstr "Progres Halus"
 
 #: src/tauon/t_modules/t_main.py:65476
 msgid "Copy Title to Clipboard"
 msgstr "Judul URL disalin ke papan klip"
 
 #: src/tauon/t_modules/t_main.py:65478 src/tauon/t_modules/t_main.py:70596
-#, fuzzy
 msgid "Audio Info"
-msgstr "Audio"
+msgstr "Info Audio"
 
 #: src/tauon/t_modules/t_main.py:65488
 msgid "Random Track"
@@ -9420,9 +9327,8 @@ msgid "Toggle Thumbnails"
 msgstr "Toggle Thumbnail"
 
 #: src/tauon/t_modules/t_main.py:65575
-#, fuzzy
 msgid "Toggle Filter"
-msgstr "Toggle Lirik"
+msgstr "Alihkan Filter"
 
 #: src/tauon/t_modules/t_main.py:65577
 msgid "Download Artist Data"
@@ -9438,16 +9344,15 @@ msgstr "Sunting…"
 
 #: src/tauon/t_modules/t_main.py:65584
 msgid "Dismiss"
-msgstr ""
+msgstr "Tutup"
 
 #: src/tauon/t_modules/t_main.py:65656
 msgid "ERROR: No backend found"
-msgstr ""
+msgstr "KESALAHAN: Tidak ada backend yang ditemukan"
 
 #: src/tauon/t_modules/t_main.py:66734 src/tauon/t_modules/t_main.py:66751
-#, fuzzy
 msgid "Various Artists"
-msgstr "Artis"
+msgstr "Berbagai Artis"
 
 #: src/tauon/t_modules/t_main.py:68794
 msgid "Disabled auto theme"
@@ -9462,32 +9367,28 @@ msgid "First select a source track by copying it into clipboard"
 msgstr "Pertama pilih sumber trek dengan menyalinnya ke papan klip"
 
 #: src/tauon/t_modules/t_main.py:69220
-#, fuzzy
 msgid "Track already has lyrics"
-msgstr "Lagu sudah disukai"
+msgstr "Trek sudah memiliki lirik"
 
 #: src/tauon/t_modules/t_main.py:69406
-#, fuzzy
 msgid "Error loading theme file"
-msgstr "Kesalahan saat menghapus berkas"
+msgstr "Kesalahan memuat berkas tema"
 
 #: src/tauon/t_modules/t_main.py:69797
 msgid "Rescan folders complete."
 msgstr "Pindai ulang folder selesai."
 
 #: src/tauon/t_modules/t_main.py:70523
-#, fuzzy
 msgid "Add files…"
-msgstr "Tambahkan Stasiun"
+msgstr "Tambah berkas…"
 
 #: src/tauon/t_modules/t_main.py:70547
-#, fuzzy
 msgid "Import in progress…"
-msgstr "Mengimpor daftar putar Spotify..."
+msgstr "Impor sedang berlangsung…"
 
 #: src/tauon/t_modules/t_main.py:70631
 msgid "Channel status needs a newer build of PHAzOR"
-msgstr ""
+msgstr "Status kanal memerlukan versi PHAzOR yang lebih baru"
 
 #: src/tauon/t_modules/t_main.py:70814 src/tauon/t_modules/t_main.py:70833
 #: src/tauon/t_modules/t_main.py:70853 src/tauon/t_modules/t_main.py:70876
@@ -9547,32 +9448,32 @@ msgstr "Hapus beberapa berkas yang tidak perlu dari folder"
 
 #: src/tauon/t_modules/t_main.py:71288
 msgid "PATH"
-msgstr ""
+msgstr "JALUR"
 
 #: src/tauon/t_modules/t_main.py:71299
 msgid "OLD"
-msgstr ""
+msgstr "LAMA"
 
 #: src/tauon/t_modules/t_main.py:71306
 msgid "NEW"
-msgstr ""
+msgstr "BARU"
 
 #: src/tauon/t_modules/t_main.py:71409
 msgid "Folder filter mode. Enter path segment."
-msgstr ""
+msgstr "Mode filter folder. Masukkan bagian jalur."
 
 #: src/tauon/t_modules/t_main.py:71417
 msgid "UP / DOWN to navigate. SHIFT + RETURN for new playlist."
 msgstr ""
+"ATAS / BAWAH untuk bernavigasi. SHIFT + RETURN untuk daftar putar baru."
 
 #: src/tauon/t_modules/t_main.py:71419
 msgid "Quick find"
-msgstr ""
+msgstr "Pencarian cepat"
 
 #: src/tauon/t_modules/t_main.py:71523
-#, fuzzy
 msgid "Search Results"
-msgstr "Cari teks…"
+msgstr "Hasil Pencarian"
 
 #: src/tauon/t_modules/t_main.py:71770
 msgid "Loved track"
@@ -9583,900 +9484,846 @@ msgid "Un-Loved track"
 msgstr "Lagu yang tidak disukai"
 
 #: src/tauon/t_modules/t_main.py:71984
-#, fuzzy
 msgid "Lines copied to clipboard"
-msgstr "URL disalin ke papan klip"
+msgstr "Baris disalin ke papan klip"
 
 #: src/tauon/t_modules/t_main.py:72077
 msgid "Position"
-msgstr ""
+msgstr "Posisi"
 
 #: src/tauon/t_modules/t_main.py:72078
-#, fuzzy
 msgid "Metadata"
-msgstr "Muat Ulang Metadata"
+msgstr "Metadata"
 
 #: src/tauon/t_modules/t_main.py:72079
 msgid "Decoded"
-msgstr ""
+msgstr "Didekode"
 
 #: src/tauon/t_modules/t_main.py:72080
 msgid "Buffered"
-msgstr ""
+msgstr "Di-buffer"
 
 #: src/tauon/t_modules/t_main.py:72081
 msgid "PCM {n} ms"
-msgstr ""
+msgstr "PCM {n} md"
 
 #: src/tauon/t_modules/t_main.py:72096
 msgid "No stream"
-msgstr ""
+msgstr "Tidak ada stream"
 
 #: src/tauon/t_modules/t_phazor.py:1305
 msgid "The server no longer has this file."
-msgstr ""
+msgstr "Server tidak lagi memiliki berkas ini."
 
 #: src/tauon/t_modules/t_phazor.py:1305 src/tauon/t_modules/t_phazor.py:1316
 #: src/tauon/t_modules/t_phazor.py:1322
-#, fuzzy
 msgid "Couldn't load the track"
-msgstr "Tampilkan lirik sinkron"
+msgstr "Tidak dapat memuat trek"
 
 #: src/tauon/t_modules/t_phazor.py:1313
 msgid "The server could not transcode this track"
-msgstr ""
+msgstr "Server tidak dapat mentranskode trek ini"
 
 #: src/tauon/t_modules/t_phazor.py:1314
 msgid "Try setting Stream format to Original in this server's settings."
-msgstr ""
+msgstr "Coba atur Format stream ke Asli di pengaturan server ini."
 
 #: src/tauon/t_modules/t_phazor.py:1461
-#, fuzzy
 msgid "Multiple tracks could not be loaded"
-msgstr "Folder tidak dapat dibuang."
+msgstr "Beberapa trek tidak dapat dimuat"
 
 #: src/tauon/t_modules/t_phazor.py:1982
-#, fuzzy
 msgid "Lost the connection to the server"
-msgstr "Tidak dapat mengestabilisasikan sambungan ke peladen."
+msgstr "Koneksi ke server terputus"
 
 #: src/tauon/t_modules/t_phazor.py:2036
 msgid "The connection may have dropped. Press play to try again."
-msgstr ""
+msgstr "Koneksi mungkin terputus. Tekan putar untuk mencoba lagi."
 
 #: src/tauon/t_modules/t_phazor.py:2036
 msgid "The station stopped streaming"
-msgstr ""
+msgstr "Stasiun berhenti melakukan streaming"
 
 #: src/tauon/t_modules/t_phazor.py:2154
 msgid "This device does not accept direct DSD"
-msgstr ""
+msgstr "Perangkat ini tidak menerima DSD langsung"
 
 #: src/tauon/t_modules/t_phazor.py:2155
 msgid "Playing as PCM instead. Turn the setting off and on again to retry."
 msgstr ""
+"Diputar sebagai PCM. Matikan lalu nyalakan lagi pengaturan untuk mencoba "
+"ulang."
 
 #: src/tauon/t_modules/t_phazor.py:2775
 msgid "Error loading track"
-msgstr ""
+msgstr "Kesalahan memuat trek"
 
 #: src/tauon/t_modules/t_phazor.py:3079
 msgid "Press play to carry on from here."
-msgstr ""
+msgstr "Tekan putar untuk melanjutkan dari sini."
 
 #: src/tauon/t_modules/t_remote_playlists.py:151
-#, fuzzy
 msgid "Couldn't import some playlists"
-msgstr "Error membuat playlist Spotify"
+msgstr "Beberapa daftar putar tidak dapat diimpor"
 
 #: src/tauon/t_modules/t_remote_playlists.py:155
-#, fuzzy
 msgid "Imported {count} playlists"
-msgstr "Impor daftar putar"
+msgstr "{count} daftar putar diimpor"
 
 #: src/tauon/t_modules/t_remote_playlists.py:157
-#, fuzzy
 msgid "Updated {count} playlists"
-msgstr "Daftar putar Spotify diperbarui"
+msgstr "{count} daftar putar diperbarui"
 
 #: src/tauon/t_modules/t_remote_playlists.py:159
 msgid "Imported {added} playlists, updated {updated}"
-msgstr ""
+msgstr "{added} daftar putar diimpor, {updated} diperbarui"
 
 #: src/tauon/t_modules/t_remote_playlists.py:165
 msgid "Wait for the music import to finish"
-msgstr ""
+msgstr "Tunggu hingga impor musik selesai"
 
 #: src/tauon/t_modules/t_remote_playlists.py:184
-#, fuzzy
 msgid "Couldn't load playlists"
-msgstr "Otomatis buat ulang daftar putar"
+msgstr "Tidak dapat memuat daftar putar"
 
 #: src/tauon/t_modules/t_remote_playlists.py:188
-#, fuzzy
 msgid "No playlists to import"
-msgstr "Nama Daftar Putar"
+msgstr "Tidak ada daftar putar untuk diimpor"
 
 #: src/tauon/t_modules/t_server_sync.py:433
 msgid "This playlist was deleted on {service}"
-msgstr ""
+msgstr "Daftar putar ini telah dihapus di {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:434
 msgid "It's kept here as an ordinary playlist."
-msgstr ""
+msgstr "Daftar putar ini tetap disimpan di sini sebagai daftar putar biasa."
 
 #: src/tauon/t_modules/t_server_sync.py:440
-#, fuzzy
 msgid "Error fetching {service} playlist"
-msgstr "kesalahan membuat daftar putar Spotify"
+msgstr "Kesalahan mengambil daftar putar {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:474
-#, fuzzy
 msgid "Couldn't update the playlist on {service}"
-msgstr "Terjadi kesalahan saat membuat chart"
+msgstr "Tidak dapat memperbarui daftar putar di {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:590
 msgid "None of these tracks are from a server"
-msgstr ""
+msgstr "Tidak ada trek ini yang berasal dari server"
 
 #: src/tauon/t_modules/t_server_sync.py:601
-#, fuzzy
 msgid "Couldn't create the playlist on {service}"
-msgstr "Terjadi kesalahan saat membuat chart"
+msgstr "Tidak dapat membuat daftar putar di {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:603
 msgid "{N} tracks from elsewhere were left out"
-msgstr ""
+msgstr "{N} trek dari sumber lain tidak disertakan"
 
 #: src/tauon/t_modules/t_server_sync.py:606
 msgid "Uploaded a copy to {service}"
-msgstr ""
+msgstr "Salinan diunggah ke {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:607
 msgid "It's a smart playlist, so later changes stay here."
-msgstr ""
+msgstr "Ini daftar putar pintar, jadi perubahan berikutnya tetap di sini."
 
 #: src/tauon/t_modules/t_server_sync.py:621
 msgid "Uploaded to {service}"
-msgstr ""
+msgstr "Diunggah ke {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:622
 msgid "Edits made here are sent to the server."
-msgstr ""
+msgstr "Perubahan yang dibuat di sini dikirim ke server."
 
 #: src/tauon/t_modules/t_stream.py:364
-#, fuzzy
 msgid "Couldn't connect to the station"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat terhubung ke stasiun"
 
 #: src/tauon/t_modules/t_stream.py:874
 msgid "Data malformation detected. Stream aborted."
-msgstr ""
+msgstr "Data rusak terdeteksi. Stream dihentikan."
 
 #: src/tauon/t_modules/t_subsonic.py:268 src/tauon/t_modules/t_subsonic.py:274
 #: src/tauon/t_modules/t_subsonic.py:280 src/tauon/t_modules/t_subsonic.py:288
 #: src/tauon/t_modules/t_subsonic.py:313
-#, fuzzy
 msgid "Error listing albums from Subsonic server"
-msgstr "Error saat menyambungkan ke server PLEX"
+msgstr "Kesalahan mengambil daftar album dari server Subsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:842
 msgid "See the log for details."
-msgstr ""
+msgstr "Lihat log untuk detailnya."
 
 #: src/tauon/t_modules/t_subsonic.py:842
 msgid "The Subsonic server reported an error"
-msgstr ""
+msgstr "Server Subsonic melaporkan kesalahan"
 
 #: src/tauon/t_modules/t_subsonic.py:1092
 #: src/tauon/t_modules/t_subsonic.py:1097
 #: src/tauon/t_modules/t_subsonic.py:1107
 #: src/tauon/t_modules/t_subsonic.py:1115
 #: src/tauon/t_modules/t_subsonic.py:1384
-#, fuzzy
 msgid "Error connecting to Subsonic server"
-msgstr "Error saat menyambungkan ke server PLEX"
+msgstr "Kesalahan menghubungkan ke server Subsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:1174
-#, fuzzy
 msgid "Error reading Subsonic directory!"
-msgstr "Error saat memulai Spotify"
+msgstr "Kesalahan membaca direktori Subsonic!"
 
 #: src/tauon/t_modules/t_subsonic.py:1273
-#, fuzzy
 msgid "Some albums could not be read from the server"
-msgstr "Folder tidak dapat dibuang."
+msgstr "Beberapa album tidak dapat dibaca dari server"
 
 #: src/tauon/t_modules/t_subsonic.py:1422
-#, fuzzy
 msgid "Subsonic Collection"
-msgstr "Koleksi Jellyfin"
+msgstr "Koleksi Subsonic"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:186
 msgid "Only local audio files without CUE subtracks can be edited."
-msgstr ""
+msgstr "Hanya berkas audio lokal tanpa subtrek CUE yang dapat diedit."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:247
 #: src/tauon/t_modules/t_tagedit_ui.py:254
-#, fuzzy
 msgid "Cannot open tag editor"
-msgstr "Penyunting tag sederhana"
+msgstr "Tidak dapat membuka editor tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:259
 msgid "Reading tags… {N}/{T}"
-msgstr ""
+msgstr "Membaca tag… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:302
-#, fuzzy
 msgid "Could not read {file}"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat membaca {file}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:368
-#, fuzzy
 msgid "Front cover"
-msgstr "Ukuran Font"
+msgstr "Sampul depan"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:369
 msgid "Back cover"
-msgstr ""
+msgstr "Sampul belakang"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:370
 msgid "Leaflet"
-msgstr ""
+msgstr "Buklet"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:371
 msgid "Media"
-msgstr ""
+msgstr "Media"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:388
 msgid "Image {N}: {T}"
-msgstr ""
+msgstr "Gambar {N}: {T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:399
 #: src/tauon/t_modules/t_tagedit_ui.py:1971
 msgid "All images"
-msgstr ""
+msgstr "Semua gambar"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:415
 msgid "Could not change embedded artwork"
-msgstr ""
+msgstr "Tidak dapat mengubah sampul tersemat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:426
 msgid "Could not preview embedded artwork"
-msgstr ""
+msgstr "Tidak dapat menampilkan pratinjau sampul tersemat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:464
-#, fuzzy
 msgid "Could not use that artwork"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat menggunakan sampul itu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:506
 msgid "Invalid tag value"
-msgstr ""
+msgstr "Nilai tag tidak valid"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:641
 msgid "New value"
-msgstr ""
+msgstr "Nilai baru"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:693
-#, fuzzy
 msgid "Cannot remove tag"
-msgstr "Penyunting tag sederhana"
+msgstr "Tidak dapat menghapus tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:714
 msgid "This tag has a structured value; edit it as a whole."
-msgstr ""
+msgstr "Tag ini memiliki nilai terstruktur; edit sebagai satu kesatuan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:717
 msgid ""
 "This tag stores one value; use a distinct description or language for "
 "another entry."
 msgstr ""
+"Tag ini menyimpan satu nilai; gunakan deskripsi atau bahasa berbeda untuk "
+"entri lain."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:725
 msgid "Cannot add tag value"
-msgstr ""
+msgstr "Tidak dapat menambahkan nilai tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:804
 msgid "Restore each file's original value in the current track scope."
-msgstr ""
+msgstr "Pulihkan nilai asli setiap berkas dalam cakupan trek saat ini."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:830
 msgid "No tag changes to save."
-msgstr ""
+msgstr "Tidak ada perubahan tag untuk disimpan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:879
-#, fuzzy
 msgid "Could not write tags"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat menulis tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:895
 msgid "Tags saved, but the library could not be refreshed"
-msgstr ""
+msgstr "Tag disimpan, tetapi pustaka tidak dapat disegarkan"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:897
-#, fuzzy
 msgid "{N} files rewritten"
-msgstr "%d berkas ditulis ulang"
+msgstr "{N} berkas ditulis ulang"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:947
 msgid "No text could be repaired automatically."
-msgstr ""
+msgstr "Tidak ada teks yang dapat diperbaiki secara otomatis."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:952
 msgid "{N} fields fixed in {F} files; review before writing tags."
-msgstr ""
+msgstr "{N} kolom diperbaiki di {F} berkas; tinjau sebelum menulis tag."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:954
 msgid "Encoding not detected for {N} files."
-msgstr ""
+msgstr "Pengodean tidak terdeteksi untuk {N} berkas."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:959
-#, fuzzy
 msgid "Could not fix Mojibake"
-msgstr "Perbaiki Mojibake"
+msgstr "Tidak dapat memperbaiki Mojibake"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:971
 msgid "These files have different album names. Analyse them as one album?"
 msgstr ""
+"Berkas-berkas ini memiliki nama album yang berbeda. Analisis sebagai satu "
+"album?"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:972
 msgid "Album gain would be measured across all {N} files in the tag editor."
-msgstr ""
+msgstr "Gain album akan diukur dari semua {N} berkas di editor tag."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:974
-#, fuzzy
 msgid "Analyse as one album"
-msgstr "Album Peringkat Teratas"
+msgstr "Analisis sebagai satu album"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:975
-#, fuzzy
 msgid "Track gain only"
-msgstr "Rating trek"
+msgstr "Hanya gain trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:983
 msgid "Only one track of this album is selected. Analyse it anyway?"
-msgstr ""
+msgstr "Hanya satu trek dari album ini yang dipilih. Tetap analisis?"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:984
 msgid ""
 "{N} more tracks of “{A}” are in this folder; album gain will only reflect "
 "this track."
 msgstr ""
+"Ada {N} trek lain dari “{A}” di folder ini; gain album hanya akan "
+"mencerminkan trek ini."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1073
 msgid "Analysing ReplayGain… {N}/{T}"
-msgstr ""
+msgstr "Menganalisis ReplayGain… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1090
 msgid "Could not analyse ReplayGain"
-msgstr ""
+msgstr "Tidak dapat menganalisis ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1104
-#, fuzzy
 msgid "Could not stage ReplayGain tags"
-msgstr "Replay Gain"
+msgstr "Tidak dapat menyiapkan tag ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1111
 msgid "Track ReplayGain measured for 1 file; review, then Write tags to save."
 msgstr ""
+"ReplayGain trek diukur untuk 1 berkas; tinjau, lalu Tulis tag untuk "
+"menyimpan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1113
 msgid ""
 "Track ReplayGain measured for {N} files; review, then Write tags to save."
 msgstr ""
+"ReplayGain trek diukur untuk {N} berkas; tinjau, lalu Tulis tag untuk "
+"menyimpan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1119
 msgid "ReplayGain measured for 1 file; review, then Write tags to save."
 msgstr ""
+"ReplayGain diukur untuk 1 berkas; tinjau, lalu Tulis tag untuk menyimpan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1121
 msgid "ReplayGain measured for {N} files; review, then Write tags to save."
 msgstr ""
+"ReplayGain diukur untuk {N} berkas; tinjau, lalu Tulis tag untuk menyimpan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1124
-#, fuzzy
 msgid "ReplayGain tags are already up to date."
-msgstr "Tidak ada lagu dengan lirik."
+msgstr "Tag ReplayGain sudah terbaru."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1128
 msgid "{N} silent files skipped."
-msgstr ""
+msgstr "{N} berkas senyap dilewati."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1156
-#, fuzzy
 msgid "Unsynced lyrics"
-msgstr "Tampilkan lirik sinkron"
+msgstr "Lirik tidak tersinkron"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1157
-#, fuzzy
 msgid "Synced lyrics"
-msgstr "Tampilkan lirik sinkron"
+msgstr "Lirik tersinkron"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1159
 msgid "BPM"
-msgstr ""
+msgstr "BPM"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1160
-#, fuzzy
 msgid "Copyright"
-msgstr "Salin"
+msgstr "Hak cipta"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1161
 msgid "ISRC"
-msgstr ""
+msgstr "ISRC"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1162
 msgid "Language"
-msgstr ""
+msgstr "Bahasa"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1163
-#, fuzzy
 msgid "Grouping"
-msgstr "Toggle kolom"
+msgstr "Pengelompokan"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1164
-#, fuzzy
 msgid "Subtitle"
-msgstr "Tampilkan Judul"
+msgstr "Subjudul"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1170
 msgid "Credits"
 msgstr "Kredit"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1172
-#, fuzzy
 msgid "Original artist"
-msgstr "Rating trek"
+msgstr "Artis asli"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1173
 msgid "Conductor"
-msgstr ""
+msgstr "Konduktor"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1174
 msgid "Remixer"
-msgstr ""
+msgstr "Remixer"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1175
-#, fuzzy
 msgid "Lyricist"
-msgstr "Lirik"
+msgstr "Penulis lirik"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1176
 msgid "Encoded by"
-msgstr ""
+msgstr "Dikodekan oleh"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1180
-#, fuzzy
 msgid "Sort order"
-msgstr "Hapus"
+msgstr "Urutan sortir"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1212
 msgid "Upgrade ID3 tags to v2.4"
-msgstr ""
+msgstr "Tingkatkan tag ID3 ke v2.4"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1214
-#, fuzzy
 msgid "Analyse ReplayGain"
-msgstr "Replay Gain"
+msgstr "Analisis ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1217
 msgid "Automatically split slashes"
-msgstr ""
+msgstr "Pisahkan garis miring secara otomatis"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1254
 msgid ""
 "{N} ID3 files will upgrade to v2.4 on Write tags; {S} other formats kept."
 msgstr ""
+"{N} berkas ID3 akan ditingkatkan ke v2.4 saat Tulis tag; {S} format lain "
+"dipertahankan."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1260
 msgid "Cannot safely upgrade these tags"
-msgstr ""
+msgstr "Tidak dapat meningkatkan tag ini dengan aman"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1276
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
-#, fuzzy
 msgid "All selected files"
-msgstr "Hapus berkas"
+msgstr "Semua berkas terpilih"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1309
-#, fuzzy
 msgid "Choose tracks"
-msgstr "Trek yang disukai"
+msgstr "Pilih trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1320
 msgid "Filter by filename or title"
-msgstr ""
+msgstr "Filter menurut nama berkas atau judul"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
 msgid "Apply edits to the full selection"
-msgstr ""
+msgstr "Terapkan perubahan ke seluruh pilihan"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1464
-#, fuzzy
 msgid "Loading album tracks…"
-msgstr "Memuat Bagan Folder…"
+msgstr "Memuat trek album…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Loading more editions…"
-msgstr "Memuat Daftar Artis…"
+msgstr "Memuat edisi lainnya…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Starting fingerprint scan…"
-msgstr "Mendapatkan data teman…"
+msgstr "Memulai pemindaian sidik jari…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1525
 msgid "Unexpected lookup failure; check the application log."
-msgstr ""
+msgstr "Pencarian gagal secara tak terduga; periksa log aplikasi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 msgid "No selected files match this edition."
-msgstr ""
+msgstr "Tidak ada berkas terpilih yang cocok dengan edisi ini."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 #: src/tauon/t_modules/t_tagedit_ui.py:1559
-#, fuzzy
 msgid "Could not apply this album"
-msgstr "Tidak dapat mendeteksi otomatis lokasi perangkat yang di mount."
+msgstr "Tidak dapat menerapkan album ini"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1556
-#, fuzzy
 msgid "{N} matched files loaded into the editor."
-msgstr "{N} trek cocok. {T} diperbarui."
+msgstr "{N} berkas yang cocok dimuat ke editor."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1577
-#, fuzzy
 msgid "Untitled"
-msgstr "Judul"
+msgstr "Tanpa judul"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 msgid "Unmatched"
-msgstr ""
+msgstr "Tidak cocok"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Loading tracks…"
-msgstr "Memuat…"
+msgstr "Memuat trek…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1607
 #: src/tauon/t_modules/t_tagedit_ui.py:2766
 msgid "MusicBrainz Scan"
-msgstr ""
+msgstr "Pemindaian MusicBrainz"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1615
 msgid "{N} selected file(s)"
-msgstr ""
+msgstr "{N} berkas terpilih"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1623
 msgid "Select an album to compare tags."
-msgstr ""
+msgstr "Pilih album untuk membandingkan tag."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1662
-#, fuzzy
 msgid "No matching album editions found."
-msgstr "Tidak ditemukan hasil artis yang cocok"
+msgstr "Tidak ditemukan edisi album yang cocok."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1677
-#, fuzzy
 msgid "Retry tracks"
-msgstr "Ulangi trek"
+msgstr "Coba lagi trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1685
-#, fuzzy
 msgid "Use this album"
-msgstr "Batal simpan Album Spotify"
+msgstr "Gunakan album ini"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1725
 msgid "{N}/{T} matched"
-msgstr ""
+msgstr "{N}/{T} cocok"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Could not load tracks"
-msgstr "Tampilkan lirik sinkron"
+msgstr "Tidak dapat memuat trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "After"
-msgstr ""
+msgstr "Sesudah"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "Before"
-msgstr ""
+msgstr "Sebelum"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1870
 msgid "Insert a separator to add another value to this tag."
-msgstr ""
+msgstr "Sisipkan pemisah untuk menambahkan nilai lain ke tag ini."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1889
 msgid "Different values"
-msgstr ""
+msgstr "Nilai berbeda"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1903
 msgid "Track title"
 msgstr "Judul trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1906
-#, fuzzy
 msgid "Album artist"
-msgstr "Artis Album"
+msgstr "Artis album"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1907
-#, fuzzy
 msgid "Year / date"
-msgstr "Tahun berdasarkan yang Terbaru"
+msgstr "Tahun / tanggal"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1908
 msgid "Original year / date"
-msgstr ""
+msgstr "Tahun / tanggal asli"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1909
-#, fuzzy
 msgid "Track number / total"
-msgstr "Nomor Trek"
+msgstr "Nomor trek / total"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1910
-#, fuzzy
 msgid "Disc number / total"
-msgstr "Nomor Disk"
+msgstr "Nomor disk / total"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1944
-#, fuzzy
 msgid "Track rating"
-msgstr "Rating trek"
+msgstr "Penilaian trek"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1957
 msgid "Mixed"
-msgstr ""
+msgstr "Campuran"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1967
-#, fuzzy
 msgid "Embedded album art"
-msgstr "Tidak menemukan album yang tidak lengkap."
+msgstr "Sampul album tersemat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1969
 msgid "Image {N}"
-msgstr ""
+msgstr "Gambar {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2011
-#, fuzzy
 msgid "No embedded art"
-msgstr "Tidak menemukan album yang tidak lengkap."
+msgstr "Tidak ada sampul tersemat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2018
 msgid "Drop an image to replace art"
-msgstr ""
+msgstr "Jatuhkan gambar untuk mengganti sampul"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2019
 msgid "Mixed artwork; first file shown"
-msgstr ""
+msgstr "Sampul berbeda-beda; berkas pertama ditampilkan"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2021
-#, fuzzy
 msgid "{N} embedded image(s)"
-msgstr "Tidak menemukan album yang tidak lengkap."
+msgstr "{N} gambar tersemat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2036
-#, fuzzy
 msgid "Remove all art"
-msgstr "Hapus Duplikat"
+msgstr "Hapus semua sampul"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2041
 msgid ""
 "Change the selected image or the first image of the selected type in each "
 "active file."
 msgstr ""
+"Ubah gambar terpilih atau gambar pertama dari jenis terpilih di setiap "
+"berkas aktif."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2047
 msgid "Artwork changed"
-msgstr ""
+msgstr "Sampul diubah"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2077
 msgid "Native key"
-msgstr ""
+msgstr "Kunci asli"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2078
 msgid "Value / type"
-msgstr ""
+msgstr "Nilai / jenis"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2137
-#, fuzzy
 msgid "Add key"
-msgstr "Key API"
+msgstr "Tambah kunci"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2181
 msgid "Select a tag to edit; add custom text by name."
-msgstr ""
+msgstr "Pilih tag untuk diedit; tambahkan teks khusus berdasarkan nama."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2193
-#, fuzzy
 msgid "Text value"
-msgstr "Gambar Berikutnya"
+msgstr "Nilai teks"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2195
 msgid "{N}/{T} files"
-msgstr ""
+msgstr "{N}/{T} berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2205
 msgid "Binary or structured tag: preserved without modification."
-msgstr ""
+msgstr "Tag biner atau terstruktur: dipertahankan tanpa diubah."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2232
 msgid "Different values; editing replaces this entry in each file."
-msgstr ""
+msgstr "Nilai berbeda; mengedit akan mengganti entri ini di setiap berkas."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2299
-#, fuzzy
 msgid "Missing tag"
-msgstr "Mengambil..."
+msgstr "Tag tidak ada"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2303
-#, fuzzy
 msgid "No filename"
-msgstr "Nama Berkas"
+msgstr "Tidak ada nama berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2305
 msgid "Same name as another file"
-msgstr ""
+msgstr "Nama sama dengan berkas lain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2307
-#, fuzzy
 msgid "File already exists"
-msgstr "Filter Artis Kecil"
+msgstr "Berkas sudah ada"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2372
 msgid "Files renamed, but the tag editor could not reload them"
-msgstr ""
+msgstr "Berkas diganti namanya, tetapi editor tag tidak dapat memuatnya ulang"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2376
 msgid "Rename complete."
 msgstr "Ganti nama selesai."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2376
-#, fuzzy
 msgid "{N} / {T} filenames were written."
-msgstr " nama berkas telah ditulis."
+msgstr "{N} / {T} nama berkas ditulis."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2390
-#, fuzzy
 msgid "Filename template"
-msgstr "Ganti nama selesai."
+msgstr "Templat nama berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2410
 msgid ""
 "<tn> track number, <artist>, <albumartist>, <title>, <album>, <date>, "
 "<genre>, <ext>"
 msgstr ""
+"<tn> nomor trek, <artist>, <albumartist>, <title>, <album>, <date>, <genre>, "
+"<ext>"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2417
-#, fuzzy
 msgid "Current name"
-msgstr "Dapatkan daftar putar"
+msgstr "Nama saat ini"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2418
-#, fuzzy
 msgid "New name"
-msgstr "Ganti nama"
+msgstr "Nama baru"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2453
 msgid "{A}–{B} of {N}"
-msgstr ""
+msgstr "{A}–{B} dari {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2460
 msgid ""
 "Write the tag changes on the Main or Misc tab, or discard them, before "
 "renaming."
 msgstr ""
+"Tulis perubahan tag di tab Utama atau Lain-lain, atau buang, sebelum "
+"mengganti nama."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2462
 msgid "Warning: This may change the file extension"
-msgstr ""
+msgstr "Peringatan: Ini dapat mengubah ekstensi berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2464
 msgid "Warning: The filename might not be unique"
-msgstr ""
+msgstr "Peringatan: Nama berkas mungkin tidak unik"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
 msgid "1 file will be skipped"
-msgstr ""
+msgstr "1 berkas akan dilewati"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
-#, fuzzy
 msgid "{N} files will be skipped"
-msgstr "%d berkas diproses"
+msgstr "{N} berkas akan dilewati"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename 1 file"
-msgstr "Ganti nama selesai."
+msgstr "Ganti nama 1 berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename {N} files"
-msgstr "Hapus {N} loves."
+msgstr "Ganti nama {N} berkas"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2483
 msgid "Renames the files in the current track scope"
-msgstr ""
+msgstr "Mengganti nama berkas dalam cakupan trek saat ini"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
 msgid "Main"
-msgstr ""
+msgstr "Utama"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
-#, fuzzy
 msgid "Misc"
-msgstr "Lain-lain…"
+msgstr "Lain-lain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2663
-#, fuzzy
 msgid "Could not load album tracks"
-msgstr "Tampilkan lirik sinkron"
+msgstr "Tidak dapat memuat trek album"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2701
-#, fuzzy
 msgid "Tag editor"
-msgstr "Penyunting tag sederhana"
+msgstr "Editor tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active file"
-msgstr ""
+msgstr "{N} berkas aktif"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active files"
-msgstr ""
+msgstr "{N} berkas aktif"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2717
-#, fuzzy
 msgid "Writing tags…"
-msgstr "Mengambil..."
+msgstr "Menulis tag…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2752
 msgid "Tools"
-msgstr ""
+msgstr "Alat"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2783
 msgid "Write tags"
-msgstr ""
+msgstr "Tulis tag"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2788
 msgid ""
 "Save the fields and every pending file, including tracks outside this view."
 msgstr ""
+"Simpan kolom dan semua berkas yang tertunda, termasuk trek di luar tampilan "
+"ini."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2792
-#, fuzzy
 msgid "Discard"
-msgstr "Disk"
+msgstr "Buang"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2807
 msgid ""
 "Multiple ID3v2.3 values may not work in other players. Tools can upgrade to "
 "ID3v2.4."
 msgstr ""
+"Beberapa nilai ID3v2.3 mungkin tidak berfungsi di pemutar lain. Alat dapat "
+"meningkatkan ke ID3v2.4."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2810
 msgid "Changes pending"
-msgstr ""
+msgstr "Perubahan tertunda"
 
 #: src/tauon/t_modules/t_tidal.py:47 src/tauon/t_modules/t_tidal.py:70
 msgid "Tidalapi package not loaded"
-msgstr ""
+msgstr "Paket tidalapi tidak dimuat"
 
 #: src/tauon/t_modules/t_tidal.py:97
 msgid "Failed to load TIDAL login, please try log in again"
-msgstr ""
+msgstr "Gagal memuat login TIDAL, silakan coba masuk lagi"
 
 #: src/tauon/t_modules/t_video.py:55
 msgid "{rate} fps"
-msgstr ""
+msgstr "{rate} fps"
 
 #: src/tauon/t_modules/t_video.py:586
-#, fuzzy
 msgid "Fill Window"
-msgstr "Jendela"
+msgstr "Isi Jendela"
 
 #~ msgid "Errored"
 #~ msgstr "Galat"

@@ -9589,57 +9589,53 @@ msgid "No playlists to import"
 msgstr "Brak list do zaimportowania"
 
 #: src/tauon/t_modules/t_server_sync.py:433
-#, fuzzy
 msgid "This playlist was deleted on {service}"
-msgstr "Ta lista nie ma generatora"
+msgstr "Ta lista odtwarzania została usunięta w {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:434
 msgid "It's kept here as an ordinary playlist."
-msgstr ""
+msgstr "Zostaje tutaj jako zwykła lista odtwarzania."
 
 #: src/tauon/t_modules/t_server_sync.py:440
-#, fuzzy
 msgid "Error fetching {service} playlist"
-msgstr "Błąd tworzenia listy Spotify"
+msgstr "Błąd pobierania listy odtwarzania {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:474
-#, fuzzy
 msgid "Couldn't update the playlist on {service}"
-msgstr "Nie udało się skomunikować z serwerem Maloja."
+msgstr "Nie udało się zaktualizować listy odtwarzania w {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:590
 msgid "None of these tracks are from a server"
-msgstr ""
+msgstr "Żaden z tych utworów nie pochodzi z serwera"
 
 #: src/tauon/t_modules/t_server_sync.py:601
-#, fuzzy
 msgid "Couldn't create the playlist on {service}"
-msgstr "Nie udało się skomunikować z serwerem Maloja."
+msgstr "Nie udało się utworzyć listy odtwarzania w {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:603
 msgid "{N} tracks from elsewhere were left out"
-msgstr ""
+msgstr "Pominięte utwory z innych źródeł: {N}"
 
 #: src/tauon/t_modules/t_server_sync.py:606
 msgid "Uploaded a copy to {service}"
-msgstr ""
+msgstr "Przesłano kopię do {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:607
 msgid "It's a smart playlist, so later changes stay here."
 msgstr ""
+"To inteligentna lista odtwarzania, więc późniejsze zmiany zostają tutaj."
 
 #: src/tauon/t_modules/t_server_sync.py:621
 msgid "Uploaded to {service}"
-msgstr ""
+msgstr "Przesłano do {service}"
 
 #: src/tauon/t_modules/t_server_sync.py:622
 msgid "Edits made here are sent to the server."
-msgstr ""
+msgstr "Zmiany wprowadzone tutaj są wysyłane na serwer."
 
 #: src/tauon/t_modules/t_stream.py:364
-#, fuzzy
 msgid "Couldn't connect to the station"
-msgstr "Nie udało się zapisać obrazu stacji"
+msgstr "Nie udało się połączyć ze stacją"
 
 #: src/tauon/t_modules/t_stream.py:874
 msgid "Data malformation detected. Stream aborted."
@@ -9648,146 +9644,134 @@ msgstr "Wykryto nieprawidłowe dane. Przesłanie przerwane."
 #: src/tauon/t_modules/t_subsonic.py:268 src/tauon/t_modules/t_subsonic.py:274
 #: src/tauon/t_modules/t_subsonic.py:280 src/tauon/t_modules/t_subsonic.py:288
 #: src/tauon/t_modules/t_subsonic.py:313
-#, fuzzy
 msgid "Error listing albums from Subsonic server"
-msgstr "Błąd połączenia z serwerem Airsonic"
+msgstr "Błąd pobierania listy albumów z serwera Subsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:842
-#, fuzzy
 msgid "See the log for details."
-msgstr "Zobacz {link} szczegóły licencji."
+msgstr "Szczegóły znajdziesz w logu."
 
 #: src/tauon/t_modules/t_subsonic.py:842
-#, fuzzy
 msgid "The Subsonic server reported an error"
-msgstr "Serwer Maloja zwrócił błąd."
+msgstr "Serwer Subsonic zgłosił błąd"
 
 #: src/tauon/t_modules/t_subsonic.py:1092
 #: src/tauon/t_modules/t_subsonic.py:1097
 #: src/tauon/t_modules/t_subsonic.py:1107
 #: src/tauon/t_modules/t_subsonic.py:1115
 #: src/tauon/t_modules/t_subsonic.py:1384
-#, fuzzy
 msgid "Error connecting to Subsonic server"
-msgstr "Błąd połączenia z serwerem Airsonic"
+msgstr "Błąd połączenia z serwerem Subsonic"
 
 #: src/tauon/t_modules/t_subsonic.py:1174
-#, fuzzy
 msgid "Error reading Subsonic directory!"
-msgstr "Błąd odczytu katalogu Airsonic!"
+msgstr "Błąd odczytu katalogu Subsonic!"
 
 #: src/tauon/t_modules/t_subsonic.py:1273
-#, fuzzy
 msgid "Some albums could not be read from the server"
-msgstr "Nie udało się przeskanować ponownie części utworów"
+msgstr "Nie udało się odczytać części albumów z serwera"
 
 #: src/tauon/t_modules/t_subsonic.py:1422
-#, fuzzy
 msgid "Subsonic Collection"
-msgstr "Kolekcja Airsonic"
+msgstr "Kolekcja Subsonic"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:186
 msgid "Only local audio files without CUE subtracks can be edited."
-msgstr ""
+msgstr "Można edytować tylko lokalne pliki audio bez podutworów CUE."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:247
 #: src/tauon/t_modules/t_tagedit_ui.py:254
-#, fuzzy
 msgid "Cannot open tag editor"
-msgstr "Prosty edytor tagów"
+msgstr "Nie można otworzyć edytora tagów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:259
-#, fuzzy
 msgid "Reading tags… {N}/{T}"
-msgstr "Ponowne skanowanie tagów…  {N} pozostało"
+msgstr "Odczytywanie tagów… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:302
-#, fuzzy
 msgid "Could not read {file}"
-msgstr "Nie udało się zapisać pliku motywu"
+msgstr "Nie udało się odczytać {file}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:368
-#, fuzzy
 msgid "Front cover"
-msgstr "Rozmiar czcionki"
+msgstr "Przednia okładka"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:369
 msgid "Back cover"
-msgstr ""
+msgstr "Tylna okładka"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:370
 msgid "Leaflet"
-msgstr ""
+msgstr "Książeczka"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:371
 msgid "Media"
-msgstr ""
+msgstr "Nośnik"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:388
 msgid "Image {N}: {T}"
-msgstr ""
+msgstr "Obraz {N}: {T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:399
 #: src/tauon/t_modules/t_tagedit_ui.py:1971
 msgid "All images"
-msgstr ""
+msgstr "Wszystkie obrazy"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:415
 msgid "Could not change embedded artwork"
-msgstr ""
+msgstr "Nie udało się zmienić osadzonej okładki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:426
 msgid "Could not preview embedded artwork"
-msgstr ""
+msgstr "Nie udało się wyświetlić podglądu osadzonej okładki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:464
-#, fuzzy
 msgid "Could not use that artwork"
-msgstr "Nie udało się użyć tego obrazu stacji"
+msgstr "Nie udało się użyć tej okładki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:506
 msgid "Invalid tag value"
-msgstr ""
+msgstr "Nieprawidłowa wartość tagu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:641
 msgid "New value"
-msgstr ""
+msgstr "Nowa wartość"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:693
-#, fuzzy
 msgid "Cannot remove tag"
-msgstr "Nie można przenieść"
+msgstr "Nie można usunąć tagu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:714
 msgid "This tag has a structured value; edit it as a whole."
-msgstr ""
+msgstr "Ten tag ma wartość strukturalną; edytuj ją w całości."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:717
 msgid ""
 "This tag stores one value; use a distinct description or language for "
 "another entry."
 msgstr ""
+"Ten tag przechowuje jedną wartość; dla kolejnego wpisu użyj innego opisu lub "
+"języka."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:725
 msgid "Cannot add tag value"
-msgstr ""
+msgstr "Nie można dodać wartości tagu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:804
 msgid "Restore each file's original value in the current track scope."
-msgstr ""
+msgstr "Przywróć oryginalną wartość każdego pliku w bieżącym zakresie utworów."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:830
 msgid "No tag changes to save."
-msgstr ""
+msgstr "Brak zmian tagów do zapisania."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:879
-#, fuzzy
 msgid "Could not write tags"
-msgstr "Nie można zapisać tekstu do pliku"
+msgstr "Nie udało się zapisać tagów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:895
 msgid "Tags saved, but the library could not be refreshed"
-msgstr ""
+msgstr "Tagi zapisane, ale nie udało się odświeżyć biblioteki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:897
 msgid "{N} files rewritten"
@@ -9795,438 +9779,407 @@ msgstr "Przepisano {N} plików"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:947
 msgid "No text could be repaired automatically."
-msgstr ""
+msgstr "Nie udało się automatycznie naprawić żadnego tekstu."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:952
 msgid "{N} fields fixed in {F} files; review before writing tags."
-msgstr ""
+msgstr "Naprawione pola: {N} w plikach: {F}; sprawdź przed zapisaniem tagów."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:954
 msgid "Encoding not detected for {N} files."
-msgstr ""
+msgstr "Nie wykryto kodowania w plikach: {N}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:959
-#, fuzzy
 msgid "Could not fix Mojibake"
-msgstr "Napraw Mojibake"
+msgstr "Nie udało się naprawić Mojibake"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:971
 msgid "These files have different album names. Analyse them as one album?"
-msgstr ""
+msgstr "Te pliki mają różne nazwy albumów. Analizować je jako jeden album?"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:972
 msgid "Album gain would be measured across all {N} files in the tag editor."
 msgstr ""
+"Wzmocnienie albumu zostanie zmierzone dla wszystkich plików w edytorze tagów "
+"({N})."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:974
-#, fuzzy
 msgid "Analyse as one album"
-msgstr "Zawsze zatrzymuj na końcu albumu"
+msgstr "Analizuj jako jeden album"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:975
-#, fuzzy
 msgid "Track gain only"
-msgstr "Oceny utworów"
+msgstr "Tylko wzmocnienie utworu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:983
 msgid "Only one track of this album is selected. Analyse it anyway?"
-msgstr ""
+msgstr "Zaznaczono tylko jeden utwór z tego albumu. Analizować mimo to?"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:984
 msgid ""
 "{N} more tracks of “{A}” are in this folder; album gain will only reflect "
 "this track."
 msgstr ""
+"W tym folderze są jeszcze inne utwory z „{A}” ({N}); wzmocnienie albumu "
+"będzie uwzględniać tylko ten utwór."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1073
-#, fuzzy
 msgid "Analysing ReplayGain… {N}/{T}"
-msgstr "Ponowne skanowanie tagów…  {N} pozostało"
+msgstr "Analizowanie ReplayGain… {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1090
 msgid "Could not analyse ReplayGain"
-msgstr ""
+msgstr "Nie udało się przeanalizować ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1104
-#, fuzzy
 msgid "Could not stage ReplayGain tags"
-msgstr "Ignoruj tagi ReplayGain."
+msgstr "Nie udało się przygotować tagów ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1111
 msgid "Track ReplayGain measured for 1 file; review, then Write tags to save."
 msgstr ""
+"Zmierzono ReplayGain utworu dla 1 pliku; sprawdź, a potem kliknij Zapisz "
+"tagi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1113
 msgid ""
 "Track ReplayGain measured for {N} files; review, then Write tags to save."
 msgstr ""
+"Zmierzono ReplayGain utworów dla plików: {N}; sprawdź, a potem kliknij "
+"Zapisz tagi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1119
 msgid "ReplayGain measured for 1 file; review, then Write tags to save."
 msgstr ""
+"Zmierzono ReplayGain dla 1 pliku; sprawdź, a potem kliknij Zapisz tagi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1121
 msgid "ReplayGain measured for {N} files; review, then Write tags to save."
 msgstr ""
+"Zmierzono ReplayGain dla plików: {N}; sprawdź, a potem kliknij Zapisz tagi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1124
-#, fuzzy
 msgid "ReplayGain tags are already up to date."
-msgstr "Nie znaleziono tagów ReplayGain."
+msgstr "Tagi ReplayGain są już aktualne."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1128
 msgid "{N} silent files skipped."
-msgstr ""
+msgstr "Pominięte ciche pliki: {N}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1156
-#, fuzzy
 msgid "Unsynced lyrics"
-msgstr "Pokaż dynamiczny tekst"
+msgstr "Tekst niezsynchronizowany"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1157
-#, fuzzy
 msgid "Synced lyrics"
-msgstr "Pokaż dynamiczny tekst"
+msgstr "Tekst zsynchronizowany"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1159
 msgid "BPM"
-msgstr ""
+msgstr "BPM"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1160
-#, fuzzy
 msgid "Copyright"
-msgstr "Kopiuj"
+msgstr "Prawa autorskie"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1161
 msgid "ISRC"
-msgstr ""
+msgstr "ISRC"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1162
 msgid "Language"
-msgstr ""
+msgstr "Język"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1163
-#, fuzzy
 msgid "Grouping"
-msgstr "Przełącz grupowanie"
+msgstr "Grupowanie"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1164
-#, fuzzy
 msgid "Subtitle"
-msgstr "Pokaż tytuły"
+msgstr "Podtytuł"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1170
 msgid "Credits"
 msgstr "Podziękowania"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1172
-#, fuzzy
 msgid "Original artist"
-msgstr "Oryginalny"
+msgstr "Oryginalny wykonawca"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1173
 msgid "Conductor"
-msgstr ""
+msgstr "Dyrygent"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1174
 msgid "Remixer"
-msgstr ""
+msgstr "Remikser"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1175
-#, fuzzy
 msgid "Lyricist"
-msgstr "Tekst"
+msgstr "Autor tekstu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1176
 msgid "Encoded by"
-msgstr ""
+msgstr "Zakodowane przez"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1180
-#, fuzzy
 msgid "Sort order"
-msgstr "Sortowniki"
+msgstr "Kolejność sortowania"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1212
 msgid "Upgrade ID3 tags to v2.4"
-msgstr ""
+msgstr "Zaktualizuj tagi ID3 do v2.4"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1214
-#, fuzzy
 msgid "Analyse ReplayGain"
-msgstr "ReplayGain"
+msgstr "Analizuj ReplayGain"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1217
-#, fuzzy
 msgid "Automatically split slashes"
-msgstr "Automatyczne ponowne ładowanie przy imporcie"
+msgstr "Automatycznie dziel po ukośnikach"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1254
 msgid ""
 "{N} ID3 files will upgrade to v2.4 on Write tags; {S} other formats kept."
 msgstr ""
+"Pliki ID3 zaktualizowane do v2.4 przy zapisie tagów: {N}; inne formaty bez "
+"zmian: {S}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1260
 msgid "Cannot safely upgrade these tags"
-msgstr ""
+msgstr "Nie można bezpiecznie zaktualizować tych tagów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1276
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
-#, fuzzy
 msgid "All selected files"
-msgstr "Skasuj pliki"
+msgstr "Wszystkie zaznaczone pliki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1309
-#, fuzzy
 msgid "Choose tracks"
-msgstr "Ulubione utwory"
+msgstr "Wybierz utwory"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1320
 msgid "Filter by filename or title"
-msgstr ""
+msgstr "Filtruj według nazwy pliku lub tytułu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1343
 msgid "Apply edits to the full selection"
-msgstr ""
+msgstr "Zastosuj zmiany do całego zaznaczenia"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1464
-#, fuzzy
 msgid "Loading album tracks…"
-msgstr "Wczytywanie krajów…"
+msgstr "Wczytywanie utworów albumu…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Loading more editions…"
-msgstr "Ładowanie listy artystów…"
+msgstr "Wczytywanie kolejnych wydań…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1466
-#, fuzzy
 msgid "Starting fingerprint scan…"
-msgstr "Pobieranie danych znajomych…"
+msgstr "Rozpoczynanie skanowania odcisków…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1525
 msgid "Unexpected lookup failure; check the application log."
-msgstr ""
+msgstr "Nieoczekiwany błąd wyszukiwania; sprawdź log aplikacji."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 msgid "No selected files match this edition."
-msgstr ""
+msgstr "Żaden zaznaczony plik nie pasuje do tego wydania."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1545
 #: src/tauon/t_modules/t_tagedit_ui.py:1559
-#, fuzzy
 msgid "Could not apply this album"
-msgstr "Nie udało się zapisać pliku motywu"
+msgstr "Nie udało się zastosować tego albumu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1556
-#, fuzzy
 msgid "{N} matched files loaded into the editor."
-msgstr "{N} pasujących utworów zaktualizowane."
+msgstr "Pasujące pliki wczytane do edytora: {N}."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1577
-#, fuzzy
 msgid "Untitled"
-msgstr "Tytuł"
+msgstr "Bez tytułu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 msgid "Unmatched"
-msgstr ""
+msgstr "Niedopasowane"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1590
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Loading tracks…"
-msgstr "Wczytywanie krajów…"
+msgstr "Wczytywanie utworów…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1607
 #: src/tauon/t_modules/t_tagedit_ui.py:2766
 msgid "MusicBrainz Scan"
-msgstr ""
+msgstr "Skanowanie MusicBrainz"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1615
 msgid "{N} selected file(s)"
-msgstr ""
+msgstr "Zaznaczone pliki: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1623
 msgid "Select an album to compare tags."
-msgstr ""
+msgstr "Wybierz album, aby porównać tagi."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1662
-#, fuzzy
 msgid "No matching album editions found."
-msgstr "Brak pasujących artystów"
+msgstr "Nie znaleziono pasujących wydań albumu."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1677
-#, fuzzy
 msgid "Retry tracks"
-msgstr "Powtarzaj utwór"
+msgstr "Ponów utwory"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1685
-#, fuzzy
 msgid "Use this album"
-msgstr "Porzuć Albumy Spotify"
+msgstr "Użyj tego albumu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1725
 msgid "{N}/{T} matched"
-msgstr ""
+msgstr "Dopasowano {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1727
-#, fuzzy
 msgid "Could not load tracks"
-msgstr "Nie udało się wyczyścić zsynchronizowanych tekstów"
+msgstr "Nie udało się wczytać utworów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "After"
-msgstr ""
+msgstr "Po"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1796
 msgid "Before"
-msgstr ""
+msgstr "Przed"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1870
 msgid "Insert a separator to add another value to this tag."
-msgstr ""
+msgstr "Wstaw separator, aby dodać kolejną wartość do tego tagu."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1889
 msgid "Different values"
-msgstr ""
+msgstr "Różne wartości"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1903
 msgid "Track title"
 msgstr "Tytuł utworu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1906
-#, fuzzy
 msgid "Album artist"
-msgstr "Artysta Albumu"
+msgstr "Artysta albumu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1907
-#, fuzzy
 msgid "Year / date"
-msgstr "Rok od najnowszego"
+msgstr "Rok / data"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1908
 msgid "Original year / date"
-msgstr ""
+msgstr "Oryginalny rok / data"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1909
-#, fuzzy
 msgid "Track number / total"
-msgstr "Liczba utworów na album"
+msgstr "Numer utworu / łącznie"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1910
-#, fuzzy
 msgid "Disc number / total"
-msgstr "Numer dysku"
+msgstr "Numer płyty / łącznie"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1944
-#, fuzzy
 msgid "Track rating"
-msgstr "Oceny utworów"
+msgstr "Ocena utworu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1957
 msgid "Mixed"
-msgstr ""
+msgstr "Mieszane"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1967
-#, fuzzy
 msgid "Embedded album art"
-msgstr "Brak osadzonej grafiki albumu."
+msgstr "Osadzona okładka albumu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:1969
 msgid "Image {N}"
-msgstr ""
+msgstr "Obraz {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2011
-#, fuzzy
 msgid "No embedded art"
-msgstr "Brak osadzonej grafiki albumu."
+msgstr "Brak osadzonej okładki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2018
-#, fuzzy
 msgid "Drop an image to replace art"
-msgstr "Upuść tutaj obraz, aby go zastąpić"
+msgstr "Upuść obraz, aby zastąpić okładkę"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2019
 msgid "Mixed artwork; first file shown"
-msgstr ""
+msgstr "Różne okładki; pokazano pierwszy plik"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2021
-#, fuzzy
 msgid "{N} embedded image(s)"
-msgstr "Brak osadzonej grafiki albumu."
+msgstr "Osadzone obrazy: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2036
-#, fuzzy
 msgid "Remove all art"
-msgstr "Usuń maksymalny kwadrat"
+msgstr "Usuń wszystkie okładki"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2041
 msgid ""
 "Change the selected image or the first image of the selected type in each "
 "active file."
 msgstr ""
+"Zmień zaznaczony obraz lub pierwszy obraz wybranego typu w każdym aktywnym "
+"pliku."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2047
-#, fuzzy
 msgid "Artwork changed"
-msgstr "Źródła okładek."
+msgstr "Okładka zmieniona"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2077
 msgid "Native key"
-msgstr ""
+msgstr "Klucz natywny"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2078
 msgid "Value / type"
-msgstr ""
+msgstr "Wartość / typ"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2137
-#, fuzzy
 msgid "Add key"
-msgstr "Klucz API"
+msgstr "Dodaj klucz"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2181
 msgid "Select a tag to edit; add custom text by name."
-msgstr ""
+msgstr "Wybierz tag do edycji; dodaj własny tekst według nazwy."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2193
-#, fuzzy
 msgid "Text value"
-msgstr "Linia bazowa tekstu"
+msgstr "Wartość tekstowa"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2195
 msgid "{N}/{T} files"
-msgstr ""
+msgstr "Pliki: {N}/{T}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2205
 msgid "Binary or structured tag: preserved without modification."
-msgstr ""
+msgstr "Tag binarny lub strukturalny: zachowany bez zmian."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2232
 msgid "Different values; editing replaces this entry in each file."
-msgstr ""
+msgstr "Różne wartości; edycja zastąpi ten wpis w każdym pliku."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2299
-#, fuzzy
 msgid "Missing tag"
-msgstr "Wyszukiwanie obrazu…"
+msgstr "Brak tagu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2303
-#, fuzzy
 msgid "No filename"
-msgstr "Nazwa pliku"
+msgstr "Brak nazwy pliku"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2305
 msgid "Same name as another file"
-msgstr ""
+msgstr "Taka sama nazwa jak inny plik"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2307
-#, fuzzy
 msgid "File already exists"
-msgstr "Motyw o takim tytule już istnieje"
+msgstr "Plik już istnieje"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2372
 msgid "Files renamed, but the tag editor could not reload them"
-msgstr ""
+msgstr "Zmieniono nazwy plików, ale edytor tagów nie mógł ich ponownie wczytać"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2376
 msgid "Rename complete."
@@ -10237,35 +10190,36 @@ msgid "{N} / {T} filenames were written."
 msgstr "{N} / {T} nazw plików zapisanych."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2390
-#, fuzzy
 msgid "Filename template"
-msgstr "Zmiana nazwy zakończona."
+msgstr "Szablon nazwy pliku"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2410
 msgid ""
 "<tn> track number, <artist>, <albumartist>, <title>, <album>, <date>, "
 "<genre>, <ext>"
 msgstr ""
+"<tn> numer utworu, <artist>, <albumartist>, <title>, <album>, <date>, "
+"<genre>, <ext>"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2417
-#, fuzzy
 msgid "Current name"
-msgstr "Bieżąca lista odtwarzania"
+msgstr "Obecna nazwa"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2418
-#, fuzzy
 msgid "New name"
-msgstr "Zmień nazwę"
+msgstr "Nowa nazwa"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2453
 msgid "{A}–{B} of {N}"
-msgstr ""
+msgstr "{A}–{B} z {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2460
 msgid ""
 "Write the tag changes on the Main or Misc tab, or discard them, before "
 "renaming."
 msgstr ""
+"Przed zmianą nazw zapisz zmiany tagów na karcie Główne lub Różne albo je "
+"odrzuć."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2462
 msgid "Warning: This may change the file extension"
@@ -10277,72 +10231,65 @@ msgstr "Ostrzeżenie: Nazwa pliku może nie być unikalna"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
 msgid "1 file will be skipped"
-msgstr ""
+msgstr "1 plik zostanie pominięty"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2468
-#, fuzzy
 msgid "{N} files will be skipped"
-msgstr "{N} plików przetworzone"
+msgstr "Pliki do pominięcia: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename 1 file"
-msgstr "Nieudana zmiana nazwy."
+msgstr "Zmień nazwę 1 pliku"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2476
-#, fuzzy
 msgid "Rename {N} files"
-msgstr "Usunięto {N} polubień."
+msgstr "Zmień nazwy plików ({N})"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2483
 msgid "Renames the files in the current track scope"
-msgstr ""
+msgstr "Zmienia nazwy plików w bieżącym zakresie utworów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
 msgid "Main"
-msgstr ""
+msgstr "Główne"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2492
-#, fuzzy
 msgid "Misc"
-msgstr "Różne…"
+msgstr "Różne"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2663
-#, fuzzy
 msgid "Could not load album tracks"
-msgstr "Nie udało się wyczyścić zsynchronizowanych tekstów"
+msgstr "Nie udało się wczytać utworów albumu"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2701
-#, fuzzy
 msgid "Tag editor"
-msgstr "Prosty edytor tagów"
+msgstr "Edytor tagów"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active file"
-msgstr ""
+msgstr "Aktywne pliki: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2704
 msgid "{N} active files"
-msgstr ""
+msgstr "Aktywne pliki: {N}"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2717
-#, fuzzy
 msgid "Writing tags…"
-msgstr "Wyszukiwanie obrazu…"
+msgstr "Zapisywanie tagów…"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2752
 msgid "Tools"
-msgstr ""
+msgstr "Narzędzia"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2783
-#, fuzzy
 msgid "Write tags"
-msgstr "Zapisz"
+msgstr "Zapisz tagi"
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2788
 msgid ""
 "Save the fields and every pending file, including tracks outside this view."
 msgstr ""
+"Zapisz pola i wszystkie oczekujące pliki, także utwory poza tym widokiem."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2792
 msgid "Discard"
@@ -10353,10 +10300,12 @@ msgid ""
 "Multiple ID3v2.3 values may not work in other players. Tools can upgrade to "
 "ID3v2.4."
 msgstr ""
+"Wiele wartości ID3v2.3 może nie działać w innych odtwarzaczach. Narzędzia "
+"mogą zaktualizować do ID3v2.4."
 
 #: src/tauon/t_modules/t_tagedit_ui.py:2810
 msgid "Changes pending"
-msgstr ""
+msgstr "Oczekujące zmiany"
 
 #: src/tauon/t_modules/t_tidal.py:47 src/tauon/t_modules/t_tidal.py:70
 msgid "Tidalapi package not loaded"
@@ -10370,12 +10319,11 @@ msgstr ""
 
 #: src/tauon/t_modules/t_video.py:55
 msgid "{rate} fps"
-msgstr ""
+msgstr "{rate} kl./s"
 
 #: src/tauon/t_modules/t_video.py:586
-#, fuzzy
 msgid "Fill Window"
-msgstr "Okno"
+msgstr "Wypełnij okno"
 
 #~ msgid "Errored"
 #~ msgstr "Błędne"
