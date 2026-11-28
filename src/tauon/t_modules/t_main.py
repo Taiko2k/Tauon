@@ -404,10 +404,11 @@ try:
 
 	# We've already logged this once to INFO from t_draw, so just log to DEBUG
 	logging.debug("Found jxlpy for JPEG XL support")
-except ModuleNotFoundError:
-	logging.warning("Unable to import jxlpy, JPEG XL support will be disabled.")
-except Exception:
-	logging.exception("Unknown error trying to import jxlpy, JPEG XL support will be disabled.")
+except ImportError as e:
+	# Also covers a jxlpy built against an older libjxl
+	logging.warning(f"Unable to import jxlpy, JPEG XL support will be disabled: {e}")
+except Exception as e:
+	logging.warning(f"Unknown error trying to import jxlpy, JPEG XL support will be disabled: {e}")
 
 if not sys.platform == "darwin":
 	try:
