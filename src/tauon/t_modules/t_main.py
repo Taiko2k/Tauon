@@ -8910,6 +8910,8 @@ class Tauon:
 		self.id_to_pl = self.pctl.id_to_pl
 
 		self.copied_track: int | None = None
+		# Hash of the system clipboard text when tracks were last copied internally
+		self.cargo_clipboard_hash: bytes | None = None
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		self.stream_feeder = None  # set by player4; exposes network download stats
 		self.channel_status:  ChannelStatusView = ChannelStatusView(self)
@@ -15493,6 +15495,7 @@ class Tauon:
 
 		for item in self.gui.shift_selection:
 			self.pctl.cargo.append(self.pctl.default_playlist[item])
+		self.mark_cargo_copied()
 
 	def cut_selection(self) -> None:
 		self.sel_to_car()
@@ -24629,10 +24632,6 @@ class Tauon:
 		# if self.inp.key_shift_down:
 		self.gui.lightning_copy = True
 
-		clip = copy_from_clipboard()
-		if "file://" in clip:
-			copy_to_clipboard("")
-
 		self.pctl.cargo = []
 		if self.pctl.default_playlist:
 			for item in self.gui.shift_selection:
@@ -24646,6 +24645,16 @@ class Tauon:
 		if len(self.pctl.cargo) == 1:
 			self.copied_track = self.pctl.cargo[0]
 
+		self.mark_cargo_copied()
+
+	@staticmethod
+	def clipboard_hash(text: str) -> bytes:
+		return hashlib.sha256(text.encode("utf-8", "surrogateescape")).digest()
+
+	def mark_cargo_copied(self) -> None:
+		"""Remember the system clipboard state so paste can tell which clipboard changed last."""
+		self.cargo_clipboard_hash = self.clipboard_hash(copy_from_clipboard())
+
 	def s_cut(self) -> None:
 		self.s_copy()
 		self.del_selected()
@@ -24655,40 +24664,48 @@ class Tauon:
 
 	def paste(self, playlist_no: int | None = None, track_id: int | None = None, target_position: int | None = None) -> None:
 		clip = copy_from_clipboard()
+		# Tracks copied in Tauon after the system clipboard last changed take priority
+		if self.pctl.cargo and self.clipboard_hash(clip) == self.cargo_clipboard_hash:
+			clip = ""
 		logging.info(clip)
+		found = False
 		if "tidal.com/album/" in clip:
 			logging.info(clip)
 			num = clip.split("/")[-1].split("?")[0]
 			if num and num.isnumeric():
 				logging.info(num)
 				self.tidal.append_album(num)
-			clip = False
+			clip = ""
+			found = True
 
 		elif "tidal.com/playlist/" in clip:
 			logging.info(clip)
 			num = clip.split("/")[-1].split("?")[0]
 			self.tidal.playlist(num)
-			clip = False
+			clip = ""
+			found = True
 
 		elif "tidal.com/mix/" in clip:
 			logging.info(clip)
 			num = clip.split("/")[-1].split("?")[0]
 			self.tidal.mix(num)
-			clip = False
+			clip = ""
+			found = True
 
 		elif "tidal.com/browse/track/" in clip:
 			logging.info(clip)
 			num = clip.split("/")[-1].split("?")[0]
 			self.tidal.track(num)
-			clip = False
+			clip = ""
+			found = True
 
 		elif "tidal.com/browse/artist/" in clip:
 			logging.info(clip)
 			num = clip.split("/")[-1].split("?")[0]
 			self.tidal.artist(num)
-			clip = False
+			clip = ""
+			found = True
 
-		found = False
 		if clip:
 			clip = clip.split("\n")
 			for i, line in enumerate(clip):
