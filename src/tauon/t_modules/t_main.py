@@ -37890,14 +37890,16 @@ class Over:
 
 	def settings_body_diagnostics(self, rows: SettingsRows) -> None:
 		tauon = self.tauon
-		debug_path = self.user_directory / "debug"
-		debug_state = debug_path.exists()
+		# Older instructions put the flag in the data directory, which __main__ also reads
+		debug_paths = (tauon.config_directory / "debug", self.user_directory / "debug")
+		debug_state = any(path.exists() for path in debug_paths)
 		new_debug_state = rows.switch(debug_state, _("Enable debug mode"))
 		if not debug_state and new_debug_state:
-			with debug_path.open("a"):
+			with debug_paths[0].open("a"):
 				pass
 		elif debug_state and not new_debug_state:
-			os.remove(debug_path)
+			for path in debug_paths:
+				path.unlink(missing_ok=True)
 		console_show = rows.switch(tauon.console.show, _("Toggle Console"))
 		if console_show != tauon.console.show:
 			tauon.console.show = console_show
@@ -48035,7 +48037,7 @@ class ShortcutsSheet:
 		]
 		# Only shown in debug mode
 		advanced: list[tuple] = []
-		if (tauon.user_directory / "debug").exists():
+		if (tauon.config_directory / "debug").exists() or (tauon.user_directory / "debug").exists():
 			advanced.append((_("Transfer play counts"), ("transfer-playtime-to",)))
 			advanced.append((_("Delete playlist even if locked"), ("delete-playlist-force",)))
 		# The two playback panels differ in a few gestures
