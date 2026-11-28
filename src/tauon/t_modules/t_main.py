@@ -1635,6 +1635,8 @@ class Input:
 		self.level_2_enter:       bool = False
 		self.backspace_press:      int = 0
 		self.mouse_wheel:        float = 0
+		# Bumped per wheel event, so a handler can tell a new event from one it already used
+		self.wheel_serial:       int = 0
 		self.mouse_wheel_precise: bool = False
 		self.mouse_down:          bool = False
 		self.mouse_up:            bool = False
@@ -38609,6 +38611,49 @@ class Fields:
 		self.field_array = []
 
 class TopPanel:
+	WHEEL_LATCH_SECONDS = 0.5
+
+	def wheel_cycle_playlist(self) -> None:
+		"""Cycle playlists by the wheel, once per wheel event."""
+		inp = self.inp
+		gui = self.gui
+		pctl = self.pctl
+		# Switching playlists can change layout mid-frame and render the panel again this frame
+		if inp.wheel_serial == self.wheel_serial_used:
+			return
+		self.wheel_serial_used = inp.wheel_serial
+		self.wheel_latch_until = time.monotonic() + self.WHEEL_LATCH_SECONDS
+		self.wheel_latch_position = inp.to_screen(*inp.mouse_position)
+
+		# Skips hidden playlists
+		pctl.cycle_playlist_pinned(inp.mouse_wheel)
+		gui.request_tracklist_redraw()
+		if not self.prefs.tabs_on_top:
+			if pctl.active_playlist_viewing not in self.last_shown_tabs:
+				gui.mode_toast_text = pctl.multi_playlist[pctl.active_playlist_viewing].title
+				self.tauon.toast_mode_timer.set()
+				gui.frame_callback_list.append(TestTimer(1))
+			else:
+				self.tauon.toast_mode_timer.force_set(10)
+				gui.mode_toast_text = ""
+
+	def latched_wheel(self) -> None:
+		"""Keep a wheel scroll that started on the tabs cycling playlists while the cursor
+		stays put, even if the new layout moved the panel away. Run before anything else reads the wheel."""
+		inp = self.inp
+		if inp.mouse_wheel == 0 or time.monotonic() > self.wheel_latch_until:
+			return
+		if len(self.pctl.multi_playlist) < 2:
+			return
+		lx, ly = self.wheel_latch_position
+		mx, my = inp.mouse_position
+		slack = 10 * self.gui.scale
+		if abs(mx - lx) > slack or abs(my - ly) > slack:
+			self.wheel_latch_until = 0.0
+			return
+		self.wheel_cycle_playlist()
+		inp.mouse_wheel = 0
+
 	def __init__(self, tauon: Tauon) -> None:
 		self.tauon:          Tauon = tauon
 		self.ddt:            TDraw = tauon.ddt
@@ -38643,6 +38688,12 @@ class TopPanel:
 		self.prime_tab = self.gui.saved_prime_tab
 		self.prime_side = self.gui.saved_prime_direction  # 0=left, 1=right
 		self.shown_tabs = []
+		# Wheel tab cycling: the last event used, and a short latch that keeps cycling
+		# when a layout change moves the panel out from under a still cursor
+		self.wheel_serial_used = -1
+		self.wheel_latch_until = 0.0
+		self.wheel_latch_position: tuple[float, float] = (0, 0)
+		self.last_shown_tabs: list = []
 		# Sort keys of pinned folder tabs among playlist indexes, by folder uuid
 		self.folder_keys: dict[int, float] = {}
 
@@ -39575,21 +39626,9 @@ class TopPanel:
 			tauon.radio_view.drag = None
 
 		# Scroll anywhere on panel to cycle playlist
-		# (This is a bit complicated because we need to skip over hidden playlists)
+		self.last_shown_tabs = shown
 		if self.inp.mouse_wheel != 0 and 1 < self.inp.mouse_position[1] < gui.panelY + 1 and len(pctl.multi_playlist) > 1 and self.inp.mouse_position[0] > 5:
-
-			pctl.cycle_playlist_pinned(self.inp.mouse_wheel)
-			# TODO (Flynn): does this one need a smooth scrolling update?
-
-			gui.request_tracklist_redraw()
-			if not prefs.tabs_on_top:
-				if pctl.active_playlist_viewing not in shown:  # and not gui.lsp:
-					gui.mode_toast_text = pctl.multi_playlist[pctl.active_playlist_viewing].title
-					tauon.toast_mode_timer.set()
-					gui.frame_callback_list.append(TestTimer(1))
-				else:
-					tauon.toast_mode_timer.force_set(10)
-					gui.mode_toast_text = ""
+			self.wheel_cycle_playlist()
 		# ---------
 		# Right-hand status indicators
 
@@ -68054,6 +68093,7 @@ def main(holder: Holder) -> None:
 					inp.scroll_debug_last_mode = event_mode
 					inp.scroll_debug_last_log = now
 				inp.mouse_wheel += scroll_y
+				inp.wheel_serial += 1
 				# if logging.getLogger().isEnabledFor(logging.DEBUG):
 				# 	logging.debug(
 				# 		"Wheel event accumulate mode=%s scroll_y=%.3f wheel_after=%.3f",
@@ -69655,6 +69695,9 @@ def main(holder: Holder) -> None:
 			# MAIN mode only: the mouse it neutralises is restored in
 			# custom.render(), which mini mode never reaches — running here in
 			# mini mode left the mini modes with no mouse input at all.
+			if gui.mode == GuiMode.MAIN and not Menu.active and not gui.custom_edit:
+				tauon.top_panel.latched_wheel()
+
 			if gui.custom_mode and gui.mode == GuiMode.MAIN:
 				tauon.custom.handle_input()
 
