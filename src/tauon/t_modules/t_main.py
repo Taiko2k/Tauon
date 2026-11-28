@@ -3180,6 +3180,9 @@ class PlayerCtl:
 			self.tauon.align_tracklist()
 		self.gui.shift_selection = [self.selected_in_playlist]
 
+		if not quiet and id != self.gui.previous_playlist_id:
+			self.tauon.apply_playlist_default_layout()
+
 		code = self.gen_codes.get(id)
 		if code is not None and self.tauon.check_auto_update_okay(code, self.active_playlist_viewing):
 			self.gui.regen_single_id = id
@@ -8912,6 +8915,9 @@ class Tauon:
 		self.copied_track: int | None = None
 		# Hash of the system clipboard text when tracks were last copied internally
 		self.cargo_clipboard_hash: bytes | None = None
+		# Layout of playlists without a default layout, saved on entering one that has a default
+		self.shared_layout: dict | None = None
+		self.shared_layout_saved: bool = False
 		self.aud:                        CDLL = ctypes.cdll.LoadLibrary(str(get_phazor_path(self.pctl)))
 		self.stream_feeder = None  # set by player4; exposes network download stats
 		self.channel_status:  ChannelStatusView = ChannelStatusView(self)
@@ -13398,6 +13404,73 @@ class Tauon:
 			self.prefs.sync_playlist = None
 		else:
 			self.prefs.sync_playlist = self.pctl.pl_to_id(pl)
+
+	def current_layout_snapshot(self) -> dict | None:
+		"""The active layout as stored in TauonPlaylist.default_layout, or None if no layout entry matches."""
+		items = self.custom.layout_items()
+		pos = self.view_box.current_layout_index(items)
+		if pos == -1:
+			return None
+		kind, ref = items[pos]
+		title = self.custom.slot_title(ref) if kind == "slot" else None
+		return {"pos": pos, "kind": kind, "ref": ref, "title": title}
+
+	def layout_snapshot_valid(self, snapshot: dict | None) -> bool:
+		"""Whether a layout snapshot still names the same layout, i.e. it wasn't since deleted or reordered."""
+		if not snapshot:
+			return False
+		items = self.custom.layout_items()
+		pos = snapshot.get("pos")
+		if not isinstance(pos, int) or not 0 <= pos < len(items):
+			return False
+		kind, ref = items[pos]
+		if (kind, ref) != (snapshot.get("kind"), snapshot.get("ref")):
+			return False
+		return kind != "slot" or self.custom.slot_title(ref) == snapshot.get("title")
+
+	def valid_default_layout(self, pl: int) -> dict | None:
+		"""The playlist's default layout, or None if unset or no longer valid."""
+		default = self.pctl.multi_playlist[pl].default_layout
+		return default if self.layout_snapshot_valid(default) else None
+
+	def show_layout_snapshot(self, snapshot: dict) -> None:
+		if self.view_box.current_layout_index(self.custom.layout_items()) != snapshot["pos"]:
+			self.view_box.apply_layout(snapshot["kind"], snapshot["ref"])
+
+	def toggle_default_layout(self, pl: int) -> None:
+		playlist = self.pctl.multi_playlist[pl]
+		if self.valid_default_layout(pl):
+			playlist.default_layout = None
+			return
+		snapshot = self.current_layout_snapshot()
+		if snapshot is None:
+			self.show_message(_("The current view isn't a layout that can be set as default"))
+			return
+		playlist.default_layout = snapshot
+
+	def default_layout_deco(self, pl: int) -> Decorator:
+		text = _("Unset Default Layout") if self.valid_default_layout(pl) else _("Use Current Layout as Default")
+		return Decorator(self.colours.menu_text, self.colours.menu_background, text)
+
+	def apply_playlist_default_layout(self) -> None:
+		"""On entering a playlist, show its default layout, or restore the layout shared by playlists without one."""
+		playlist = self.pctl.multi_playlist[self.pctl.active_playlist_viewing]
+		default = playlist.default_layout
+		if default is not None and not self.layout_snapshot_valid(default):
+			playlist.default_layout = default = None
+		if self.gui.custom_edit or self.prefs.shuffle_lock:
+			return
+		if default is not None:
+			# Remember the layout of the playlists without a default, once per run of default playlists
+			if not self.shared_layout_saved:
+				self.shared_layout = self.current_layout_snapshot()
+				self.shared_layout_saved = True
+			self.show_layout_snapshot(default)
+		elif self.shared_layout_saved:
+			if self.layout_snapshot_valid(self.shared_layout):
+				self.show_layout_snapshot(self.shared_layout)
+			self.shared_layout = None
+			self.shared_layout_saved = False
 
 	def sync_playlist_deco(self, pl: int) -> Decorator:
 		text = _("Set as Sync Playlist")
@@ -65041,6 +65114,8 @@ def main(holder: Holder) -> None:
 
 	tab_menu.add(MenuItem(_("Toggle Grouping"), tauon.pl_toggle_playlist_break, pass_ref=True))
 	tab_menu.add_sub(_("Misc…"), 175)
+	tab_menu.add_to_sub(2, MenuItem(_("Use Current Layout as Default"), tauon.toggle_default_layout, tauon.default_layout_deco,
+		pass_ref=True, pass_ref_deco=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Export Playlist Stats"), tauon.export_stats, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Export Albums CSV"), tauon.export_playlist_albums, pass_ref=True))
 	tab_menu.add_to_sub(2, MenuItem(_("Transcode All"), tauon.convert_playlist, pass_ref=True))

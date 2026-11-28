@@ -178,6 +178,8 @@ class TauonPlaylist:
 	export_type: str = "xspf"
 	file_size: int = 0  # if this is different from last time we'll rescan it
 	pre_sort_ids: list[int] = field(default_factory=list)  # Order before the first column sort, empty when none
+	# Layout shown on entering the playlist: {"pos", "kind", "ref", "title"} as captured from the layout order
+	default_layout: dict | None = None
 
 
 def restore_track_order(saved: list[int], current: list[int]) -> list[int]:
