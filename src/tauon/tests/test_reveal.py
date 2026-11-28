@@ -1,4 +1,4 @@
-"""Fallback order of t_reveal: portal, then FileManager1, then xdg-open"""
+"""Fallback order of t_reveal: FileManager1 then portal (reversed in Flatpak), then xdg-open"""
 
 from __future__ import annotations
 
@@ -10,8 +10,16 @@ import pytest
 from tauon.t_modules import t_reveal
 
 
+NO_REPLY = "org.freedesktop.DBus.Error.NoReply"
+
+
 class FakeDBusException(Exception):
-	pass
+	def __init__(self, message, name="org.freedesktop.DBus.Error.Failed"):
+		super().__init__(message)
+		self.name = name
+
+	def get_dbus_name(self):
+		return self.name
 
 
 class FakeObject:
@@ -21,7 +29,7 @@ class FakeObject:
 
 	def Get(self, interface, prop, **_kw):
 		if self.bus.portal_error:
-			raise FakeDBusException("portal broken")
+			raise FakeDBusException("portal broken", self.bus.portal_error)
 		return self.bus.portal_version
 
 	def OpenDirectory(self, parent, fd, options, **_kw):
@@ -30,13 +38,13 @@ class FakeObject:
 
 	def ShowItems(self, uris, startup_id, **_kw):
 		if self.bus.manager_error:
-			raise FakeDBusException("no reply")
+			raise FakeDBusException("manager broken", self.bus.manager_error)
 		self.bus.calls.append(("ShowItems", uris))
 		self.bus.startup_ids.append(startup_id)
 
 
 class FakeBus:
-	def __init__(self, names, portal_version=4, portal_error=False, manager_error=False):
+	def __init__(self, names, portal_version=4, portal_error=None, manager_error=None):
 		self.names = names
 		self.portal_version = portal_version
 		self.portal_error = portal_error
@@ -78,39 +86,89 @@ def setup(monkeypatch, tmp_path):
 	return str(track), opened, use
 
 
-def test_portal_first(setup):
+def uri(path):
+	return f"file://{path.replace(' ', '%20')}"
+
+
+def test_file_manager_first(setup):
 	path, opened, use = setup
 	bus = FakeBus({t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME})
+	use(bus)
+	assert t_reveal.reveal_file(path) == "FileManager1"
+	assert bus.calls == [("ShowItems", [uri(path)])]
+	assert opened == []
+	assert bus.closed
+
+
+def test_portal_first_in_flatpak(setup):
+	path, opened, use = setup
+	bus = FakeBus({t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME})
+	use(bus)
+	assert t_reveal.reveal_file(path, sandboxed=True) == "portal"
+	assert bus.calls == [("OpenDirectory", "")]
+	assert opened == []
+
+
+@pytest.mark.parametrize("bus_kw", [
+	{"names": {t_reveal.PORTAL_NAME}},
+	{"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "manager_error": "org.freedesktop.DBus.Error.Failed"},
+])
+def test_portal_when_file_manager_unusable(setup, bus_kw):
+	path, opened, use = setup
+	bus = FakeBus(**bus_kw)
 	use(bus)
 	assert t_reveal.reveal_file(path) == "portal"
 	assert bus.calls == [("OpenDirectory", "")]
 	assert opened == []
-	assert bus.closed
 
 
 @pytest.mark.parametrize("bus_kw", [
 	{"names": {t_reveal.FILE_MANAGER_NAME}},
 	{"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "portal_version": 2},
-	{"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "portal_error": True},
+	{"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "portal_error": "org.freedesktop.DBus.Error.Failed"},
 ])
-def test_file_manager_when_portal_unusable(setup, bus_kw):
+def test_file_manager_when_portal_unusable_in_flatpak(setup, bus_kw):
 	path, opened, use = setup
 	bus = FakeBus(**bus_kw)
 	use(bus)
-	assert t_reveal.reveal_file(path) == "FileManager1"
-	assert bus.calls == [("ShowItems", [f"file://{path.replace(' ', '%20')}"])]
+	assert t_reveal.reveal_file(path, sandboxed=True) == "FileManager1"
+	assert bus.calls == [("ShowItems", [uri(path)])]
 	assert opened == []
 
 
 @pytest.mark.parametrize("bus_kw", [
 	{"names": set()},
-	{"names": {t_reveal.FILE_MANAGER_NAME}, "manager_error": True},
+	{"names": {t_reveal.FILE_MANAGER_NAME}, "manager_error": "org.freedesktop.DBus.Error.Failed"},
 ])
 def test_xdg_open_last(setup, bus_kw):
 	path, opened, use = setup
 	use(FakeBus(**bus_kw))
 	assert t_reveal.reveal_file(path) == "xdg-open"
 	assert opened == [path]
+
+
+@pytest.mark.parametrize(("bus_kw", "sandboxed"), [
+	({"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "manager_error": NO_REPLY}, False),
+	({"names": {t_reveal.PORTAL_NAME, t_reveal.FILE_MANAGER_NAME}, "portal_error": NO_REPLY}, True),
+])
+def test_timeout_stops_fallback(setup, bus_kw, sandboxed):
+	path, opened, use = setup
+	bus = FakeBus(**bus_kw)
+	use(bus)
+	assert t_reveal.reveal_file(path, sandboxed=sandboxed) == "timeout"
+	assert bus.calls == []
+	assert opened == []
+	assert bus.closed
+
+
+def test_ignored_while_busy(setup):
+	path, opened, use = setup
+	bus = FakeBus({t_reveal.FILE_MANAGER_NAME})
+	use(bus)
+	with t_reveal.busy:
+		assert t_reveal.reveal_file(path) == "busy"
+	assert bus.calls == []
+	assert t_reveal.reveal_file(path) == "FileManager1"
 
 
 def test_missing_file_skips_dbus(setup):

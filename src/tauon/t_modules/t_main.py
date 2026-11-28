@@ -11008,7 +11008,7 @@ class Tauon:
 		else:
 			# D-Bus calls can block while a portal or file manager starts
 			token = self.wayland_activation.request_token()
-			threading.Thread(target=reveal_file, args=(track.fullpath, token), daemon=True).start()
+			threading.Thread(target=reveal_file, args=(track.fullpath, token, self.flatpak_mode), daemon=True).start()
 
 	def menu_open_folder(self, ref: MenuTrackRef) -> None:
 		self.open_folder(ref.track_id)

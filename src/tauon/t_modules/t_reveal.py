@@ -7,6 +7,7 @@ from __future__ import annotations
 import logging
 import os
 import subprocess
+import threading
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -24,6 +25,12 @@ FILE_MANAGER_PATH = "/org/freedesktop/FileManager1"
 # Long enough for a cold start of the portal or file manager. Blocks a worker thread only.
 CHECK_TIMEOUT = 5
 OPEN_TIMEOUT = 10
+
+# The request may still be delivered, so falling back would open a second window
+TIMEOUT_ERRORS = ("org.freedesktop.DBus.Error.NoReply", "org.freedesktop.DBus.Error.Timeout")
+
+# One reveal at a time, so repeat clicks don't queue up behind a slow one
+busy = threading.Lock()
 
 
 def name_available(bus: BusConnection, name: str) -> bool:
@@ -68,11 +75,23 @@ def open_parent(path: str, token: str | None = None) -> None:
 	subprocess.Popen(["xdg-open", os.path.dirname(path) + "/"], env=env)
 
 
-def reveal_file(path: str, token: str | None = None) -> str:
-	"""Try the portal, then FileManager1, then plain xdg-open. Blocking; call from a thread. Returns the method used.
+def reveal_file(path: str, token: str | None = None, sandboxed: bool = False) -> str:
+	"""Try FileManager1, the portal, then plain xdg-open. Blocking; call from a thread. Returns the method used.
 
 	token is an xdg-activation token (t_wayland_activation) so the file manager may take focus on Wayland.
+	Outside a sandbox FileManager1 goes first: the portal deadlocks for 25 s while it activates the
+	file manager (xdg-desktop-portal#2093, fixed after 1.22.1). In Flatpak only the portal is reachable.
 	"""
+	if not busy.acquire(blocking=False):
+		logging.info("Already revealing a file, ignoring")
+		return "busy"
+	try:
+		return reveal(path, token, sandboxed)
+	finally:
+		busy.release()
+
+
+def reveal(path: str, token: str | None, sandboxed: bool) -> str:
 	if not os.path.isfile(path):
 		open_parent(path, token)
 		return "xdg-open"
@@ -84,12 +103,23 @@ def reveal_file(path: str, token: str | None = None) -> str:
 		logging.exception("No session bus to reveal a file")
 		open_parent(path, token)
 		return "xdg-open"
+	attempts = [
+		("FileManager1", lambda: via_file_manager(bus, path, token)),
+		("portal", lambda: via_portal(dbus, bus, path, token)),
+	]
+	if sandboxed:
+		attempts.reverse()
 	try:
-		for name, attempt in (("portal", lambda: via_portal(dbus, bus, path, token)), ("FileManager1", lambda: via_file_manager(bus, path, token))):
+		for name, attempt in attempts:
 			try:
 				if attempt():
 					return name
-			except (dbus.exceptions.DBusException, OSError, ValueError, TypeError):
+			except dbus.exceptions.DBusException as e:
+				if e.get_dbus_name() in TIMEOUT_ERRORS:
+					logging.warning("Revealing a file through %s timed out, not trying further", name)
+					return "timeout"
+				logging.exception("Revealing a file through %s failed", name)
+			except (OSError, ValueError, TypeError):
 				logging.exception("Revealing a file through %s failed", name)
 	finally:
 		bus.close()
