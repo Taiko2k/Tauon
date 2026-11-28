@@ -16,6 +16,7 @@ Changelog
  - Added bit-perfect setting
  - Added disable volume control setting
  - Added add to playlist to track menu
+ - Added per playlist layout default option
  - Improved folder import speed
  - Previous and next now stay within the album on repeat album
  - XDG Config and State are now used
