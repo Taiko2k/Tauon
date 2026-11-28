@@ -15084,7 +15084,7 @@ class Tauon:
 				else:
 					self.show_message(_("Folder sent to trash."), old, mode="done")
 			else:
-				self.show_message(_("Hmm, its still there"), old, mode="error")
+				self.show_message(_("Hmm, it's still there"), old, mode="error")
 
 			if self.prefs.album_mode:
 				self.prep_gal()
@@ -32656,12 +32656,12 @@ class NagBox:
 	DONATE_URL = "https://github.com/sponsors/Taiko2k"
 	PATREON_URL = "https://www.patreon.com/taiko2k"
 	CHANGELOG_ITEMS = (
-		("Added disc subtitle support!", False),
-		("New album header tracklist option with album art", False),
-		("Network remote items are now in the Add Music dialogue", False),
-		("Improved network buffering and seeking performance", False),
-		("Multi-language LRC files are now supported", False),
-		("And lots more!", False),
+		("", False),
+		("", False),
+		("", False),
+		("", False),
+		("", False),
+		("", False),
 	)
 
 	def __init__(self, tauon: Tauon) -> None:
@@ -32756,7 +32756,7 @@ class NagBox:
 		self.ddt.text((inner_x, inner_y), version_text, self.colours.box_title_text, 217, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, inner_y + round(27 * scale), 4, inner_w, round(42 * scale)),
-			_("Improved edition."),
+			"",
 			self.colours.box_title_text,
 			12,
 			bg=panel_fill,
@@ -32769,7 +32769,7 @@ class NagBox:
 		self.ddt.rect((inner_x, changelog_y + changelog_h - round(1 * scale), inner_w, round(1 * scale)), divider)
 		self.ddt.text(
 			(inner_x + round(16 * scale), changelog_y + round(13 * scale)),
-			_("Changelog Highlights"),
+			"",
 			self.colours.box_text,
 			213,
 			bg=section_fill,
@@ -32779,6 +32779,8 @@ class NagBox:
 		row_gap = round(18 * scale)
 		bullet_colour = ColourRGBA(140, 124, 255, 255)
 		for item, removed in self.CHANGELOG_ITEMS:
+			if not item:
+				continue
 			text_colour = self.colours.box_text_label if removed else self.colours.box_text
 			self.ddt.rect(
 				(inner_x + round(17 * scale), row_y + round(5 * scale), round(6 * scale), round(6 * scale)),
@@ -32795,48 +32797,49 @@ class NagBox:
 			row_y += row_gap
 
 		support_y = changelog_y + changelog_h + round(16 * scale)
-		# The two trailing spaces are deliberate: without them the trailing emoji
-		# gets clipped when rendered. Keep them here and in translations.
-		self.ddt.text((inner_x, support_y), _("Please support the project! ❤️  "), self.colours.box_text, 213, bg=panel_fill)
+		self.ddt.text((inner_x, support_y), "", self.colours.box_text, 213, bg=panel_fill)
 		self.ddt.text(
 			(inner_x, support_y + round(19 * scale)),
-			_("Special thanks to everyone who donated."),
+			"",
 			self.colours.box_text,
 			12,
 			bg=panel_fill,
 			max_w=inner_w,
 		)
 		donate_y = support_y + round(37 * scale)
-		donate_link = self.tauon.draw_linked_text(
-			(inner_x, donate_y),
-			_("If you haven't, please consider donating at https://github.com/sponsors/Taiko2k"),
-			self.colours.box_text,
-			12,
-			replace=_("GitHub Sponsors"),
-		)
-		self.tauon.link_activate(inner_x, donate_y, donate_link, click=self.gui.level_2_click)
-		patreon_x = inner_x + donate_link[0] + donate_link[1] + self.ddt.get_text_w(" ", 12)
-		patreon_prefix = _("or on my ")
-		self.ddt.text(
-			(patreon_x, donate_y),
-			patreon_prefix,
-			self.colours.box_text,
-			12,
-			bg=panel_fill,
-		)
-		patreon_link_x = patreon_x + self.ddt.get_text_w(patreon_prefix, 12)
-		patreon_link = self.tauon.draw_linked_text(
-			(patreon_link_x, donate_y),
-			self.PATREON_URL,
-			self.colours.box_text,
-			12,
-			force=True,
-			replace="Patreon.",
-		)
-		self.tauon.link_activate(patreon_link_x, donate_y, patreon_link, click=self.gui.level_2_click)
+		donate_text = ""
+		# Links draw only with text, since the Patreon link would show on its own
+		if donate_text:
+			donate_link = self.tauon.draw_linked_text(
+				(inner_x, donate_y),
+				donate_text,
+				self.colours.box_text,
+				12,
+				replace="",
+			)
+			self.tauon.link_activate(inner_x, donate_y, donate_link, click=self.gui.level_2_click)
+			patreon_x = inner_x + donate_link[0] + donate_link[1] + self.ddt.get_text_w(" ", 12)
+			patreon_prefix = ""
+			self.ddt.text(
+				(patreon_x, donate_y),
+				patreon_prefix,
+				self.colours.box_text,
+				12,
+				bg=panel_fill,
+			)
+			patreon_link_x = patreon_x + self.ddt.get_text_w(patreon_prefix, 12)
+			patreon_link = self.tauon.draw_linked_text(
+				(patreon_link_x, donate_y),
+				self.PATREON_URL,
+				self.colours.box_text,
+				12,
+				force=True,
+				replace="",
+			)
+			self.tauon.link_activate(patreon_link_x, donate_y, patreon_link, click=self.gui.level_2_click)
 		self.ddt.text(
 			(inner_x, support_y + round(55 * scale)),
-			_("Your continued support helps keep this app alive."),
+			"",
 			self.colours.box_text,
 			12,
 			bg=panel_fill,
@@ -59217,7 +59220,7 @@ class TimedLyricsEdit:
 						# if user clicks the giant TIME button while it's grayed out, start playing
 
 			# lyrics search status
-			if btx_top + widths[2] + x_gap + max( self.ddt.get_text_w(_("Searching…"), self.font), self.ddt.get_text_w(_("Errored"), self.font) ) > self.window_size[0]:
+			if btx_top + widths[2] + x_gap + max( self.ddt.get_text_w(_("Searching…"), self.font), self.ddt.get_text_w(_("Failed"), self.font) ) > self.window_size[0]:
 				btx_top = (25 - 15*hide_art) * self.gui.scale
 				bty_top -= self.yy+10*self.gui.scale
 			else:
@@ -65302,7 +65305,7 @@ def main(holder: Holder) -> None:
 	gallery_menu.add_to_sub(0, MenuItem(_("Previous"), tauon.cycle_offset_back, tauon.cycle_image_gal_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Open Image"), tauon.menu_open_image, tauon.menu_open_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_open_image_disable_test))
 	gallery_menu.add_to_sub(0, MenuItem(_("Extract Image"), tauon.menu_save_embed_img, tauon.menu_extract_image_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_save_embed_img_disable_test))
-	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image <combined>"), tauon.menu_delete_track_image, tauon.menu_delete_track_image_deco, pass_ref=True, pass_ref_deco=True))
+	gallery_menu.add_to_sub(0, MenuItem(_("Delete Image"), tauon.menu_delete_track_image, tauon.menu_delete_track_image_deco, pass_ref=True, pass_ref_deco=True))
 	gallery_menu.add_to_sub(0, MenuItem(_("Quick-Fetch Cover Art"), tauon.menu_download_art1_fire, tauon.menu_dl_art_deco, pass_ref=True, pass_ref_deco=True, disable_test=tauon.menu_download_art1_fire_disable_test))
 
 	# Sets the album rating
