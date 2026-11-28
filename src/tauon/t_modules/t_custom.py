@@ -1474,27 +1474,7 @@ class FeuxBar:
 
 	def _time_texts(self) -> tuple[str, str | None]:
 		"""The readout for gui.display_time_mode, as (time, total or None)."""
-		gui = self.gui
-		pctl = self.pctl
-		mode = gui.display_time_mode
-		if mode == 0:
-			return get_display_time(pctl.playing_time), None
-		if mode == 1:
-			if pctl.playing_state == PlayingState.STOPPED:
-				return "-" + get_display_time(0), None
-			return "-" + get_display_time(pctl.playing_length - pctl.playing_time), None
-		if mode == 2:
-			text_time = get_display_time(pctl.playing_time)
-			text_total = get_display_time(pctl.playing_length)
-		else:
-			self.tauon.bottom_bar1.update_dtm3()
-			text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
-			text_total = get_display_time(gui.dtm3_total)
-		if pctl.playing_state == PlayingState.STOPPED:
-			text_total = get_display_time(0)
-		elif pctl.playing_state == PlayingState.URL_STREAM:
-			text_total = "-- : --"
-		return text_time, text_total
+		return self.tauon.bottom_bar1.time_texts()
 
 	def _time_w(self, text: str) -> int:
 		"""Width of a time readout measured with the font's widest digit, so
@@ -2012,7 +1992,7 @@ class FeuxBar:
 			rect = (bar_right + self._s(4), mid - self._s(13), right - bar_right - self._s(8), self._s(26))
 			self.fields.add(rect)
 			if self.coll(rect) and inp.mouse_click:
-				gui.display_time_mode = (gui.display_time_mode + 1) % 4
+				self.tauon.bottom_bar1.next_time_mode()
 				inp.mouse_click = False
 				gui.request_frame()
 

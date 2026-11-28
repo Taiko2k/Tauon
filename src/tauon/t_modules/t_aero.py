@@ -3485,7 +3485,7 @@ class AquaBar:
 			times_rect = (round(right - times_w - self._s(4)), round(line_y - self._s(10)), round(times_w + self._s(8)), self._s(20))
 			tauon.fields.add(times_rect)
 			if tauon.coll(times_rect) and inp.mouse_click:
-				gui.display_time_mode = (gui.display_time_mode + 1) % 4
+				tauon.bottom_bar1.next_time_mode()
 				inp.mouse_click = False
 				gui.request_frame()
 		text_room = width - times_w - self._s(12)

@@ -204,6 +204,7 @@ from tauon.t_modules.t_extra import (  # noqa: E402
 	genre_correct,
 	get_artist_safe,
 	get_artist_strip_feat,
+	get_clock_time,
 	get_display_time,
 	get_dsd_rate_name,
 	get_filesize_string,
@@ -39667,15 +39668,56 @@ class BottomBarType1:
 						gui.dtm3_cum += pctl.master_library[item].length
 		gui.dtm3_index = track.index
 
+	# Elapsed, remaining, elapsed / length, album elapsed / album length, elapsed / remaining
+	TIME_MODES = 5
+
+	def next_time_mode(self) -> None:
+		self.gui.display_time_mode = (self.gui.display_time_mode + 1) % self.TIME_MODES
+
+	def time_texts(self) -> tuple[str, str | None]:
+		"""The readout for gui.display_time_mode, as (time, total or None).
+
+		Times switch to h:mm:ss for the whole track once its length (or the
+		album's, in mode 3) reaches an hour, so the width holds steady.
+		"""
+		gui = self.gui
+		pctl = self.pctl
+		mode = gui.display_time_mode
+		stopped = pctl.playing_state == PlayingState.STOPPED
+		hours = pctl.playing_length >= 3600
+		remaining = 0 if stopped else pctl.playing_length - pctl.playing_time
+		if mode == 0:
+			return get_clock_time(pctl.playing_time, hours), None
+		if mode == 1:
+			return "-" + get_clock_time(remaining, hours), None
+		if mode == 3:
+			self.update_dtm3()
+			hours = gui.dtm3_total >= 3600
+			text_time = get_clock_time(gui.dtm3_cum + pctl.playing_time, hours)
+			text_total = get_clock_time(gui.dtm3_total, hours)
+		else:
+			text_time = get_clock_time(pctl.playing_time, hours)
+			if mode == 4:
+				text_total = "-" + get_clock_time(remaining, hours)
+			else:
+				text_total = get_clock_time(pctl.playing_length, hours)
+		if stopped:
+			text_total = get_clock_time(0)
+			if mode == 4:
+				text_total = "-" + text_total
+		elif pctl.playing_state == PlayingState.URL_STREAM:
+			text_total = "-- : --"
+		return text_time, text_total
+
 	def time_layout(self) -> tuple[list[tuple[float, str, ColourRGBA]], float]:
 		"""Lay out the time display as (x, text, colour) items.
 
 		Positions match the original fixed layout for the default font, and only
-		move where a wider font would make texts collide or run off the window.
+		move where a wider font or an h:mm:ss readout would make texts collide
+		or run past where mm:ss ends.
 		Also returns how far that pushed the display's left edge out.
 		"""
 		gui = self.gui
-		pctl = self.pctl
 		ddt = self.ddt
 		colours = self.colours
 		scale = gui.scale
@@ -39689,48 +39731,44 @@ class BottomBarType1:
 		def width(text: str) -> int:
 			return max(ddt.get_text_w(text, font), ddt.get_text_w(text.translate(wide_digits), font))
 
-		x = self.window_size[0] - 57 * scale
-		items: list[tuple[float, str, ColourRGBA]] = []
-		left_extra = 0
-
-		if gui.display_time_mode in (0, 1):
-			time_x = x + 1 * scale
-			if gui.display_time_mode == 0:
-				text_time = get_display_time(pctl.playing_time)
-			elif pctl.playing_state == PlayingState.STOPPED:
-				text_time = get_display_time(0)
+		def lay_out(text_time: str, text_total: str | None) -> tuple[list[tuple[float, str, ColourRGBA]], float]:
+			x = self.window_size[0] - 57 * scale
+			items: list[tuple[float, str, ColourRGBA]] = []
+			left_extra = 0
+			if text_total is None:
+				time_x = x + 1 * scale
+				minus = text_time.startswith("-")
+				if minus:
+					text_time = text_time[1:]
+				items.append((time_x, text_time, colours.time_playing))
+				if minus:
+					minus_x = min(x - 5 * scale, time_x - 1.5 * scale - width("-"))
+					left_extra = x - 5 * scale - minus_x
+					items.append((minus_x, "-", colours.time_playing))
 			else:
-				text_time = get_display_time(pctl.playing_length - pctl.playing_time)
-			items.append((time_x, text_time, colours.time_playing))
-			if gui.display_time_mode == 1:
-				minus_x = min(x - 5 * scale, time_x - 1.5 * scale - width("-"))
-				left_extra = x - 5 * scale - minus_x
-				items.append((minus_x, "-", colours.time_playing))
-		else:
-			x -= 4
-			if gui.display_time_mode == 2:
-				text_time = get_display_time(pctl.playing_time)
-				text_total = get_display_time(pctl.playing_length)
-			else:
-				self.update_dtm3()
-				text_time = get_display_time(gui.dtm3_cum + pctl.playing_time)
-				text_total = get_display_time(gui.dtm3_total)
-			if pctl.playing_state == PlayingState.STOPPED:
-				text_total = get_display_time(0)
-			elif pctl.playing_state == PlayingState.URL_STREAM:
-				text_total = "-- : --"
+				x -= 4
+				slash_x = x + 10 * scale
+				time_x = min(x - 25 * scale, slash_x - 2 * scale - width(text_time))
+				total_x = max(x + 17 * scale, slash_x + width("/") + 1.5 * scale)
+				left_extra = x - 25 * scale - time_x
+				items.append((time_x, text_time, colours.time_playing))
+				items.append((slash_x, "/", colours.time_sub))
+				items.append((total_x, text_total, colours.time_sub))
+			return items, left_extra
 
-			slash_x = x + 10 * scale
-			time_x = min(x - 25 * scale, slash_x - 2 * scale - width(text_time))
-			total_x = max(x + 17 * scale, slash_x + width("/") + 1.5 * scale)
-			left_extra = x - 25 * scale - time_x
-			items.append((time_x, text_time, colours.time_playing))
-			items.append((slash_x, "/", colours.time_sub))
-			items.append((total_x, text_total, colours.time_sub))
+		def end_of(items: list[tuple[float, str, ColourRGBA]]) -> float:
+			return max(item_x + width(text) for item_x, text, _ in items)
 
-		# Keep the rightmost text inside the window
-		end = max(item_x + width(text) for item_x, text, _ in items)
-		overflow = max(0, end - (self.window_size[0] - 2 * scale))
+		text_time, text_total = self.time_texts()
+		items, left_extra = lay_out(text_time, text_total)
+
+		# A longer readout (h:mm:ss) keeps the right edge mm:ss would have,
+		# and everything stays inside the window
+		def short(text: str) -> str:
+			return ("-" if text.startswith("-") else "") + "00:00"
+		short_items, _ = lay_out(short(text_time), None if text_total is None else short(text_total))
+		limit = min(end_of(short_items), self.window_size[0] - 2 * scale)
+		overflow = max(0, end_of(items) - limit)
 		if overflow:
 			items = [(item_x - overflow, text, colour) for item_x, text, colour in items]
 
@@ -39867,7 +39905,8 @@ class BottomBarType1:
 			bargetX = max(bargetX, self.seek_bar_position[0])
 			bargetX -= self.seek_bar_position[0]
 			seek = bargetX / self.seek_bar_size[0]
-			gui.cur_time = get_display_time(pctl.playing_object().length * seek)
+			length = pctl.playing_object().length
+			gui.cur_time = get_clock_time(length * seek, length >= 3600)
 
 		if self.seek_down is True and self.inp.mouse_position[0] == 0:
 			self.seek_down = False
@@ -39954,11 +39993,13 @@ class BottomBarType1:
 			if self.coll(
 				[self.seek_bar_position[0] - 50, self.seek_bar_position[1] - 50, self.seek_bar_size[0] + 50, self.seek_bar_size[1] + 100]):
 				if self.inp.mouse_position[0] > self.seek_bar_position[0] - 1:
-					cur = [self.inp.mouse_position[0] - 40, self.seek_bar_position[1] - 25, 42, 19]
+					# Grow leftward from the cursor to fit h:mm:ss
+					cur_w = max(42, ddt.get_text_w(gui.cur_time, 213) + 6)
+					cur = [self.inp.mouse_position[0] + 2 - cur_w, self.seek_bar_position[1] - 25, cur_w, 19]
 					ddt.rect(cur, colours.grey(15))
 					# ddt.rect_r(cur, colours.grey(80))
 					ddt.text(
-						(self.inp.mouse_position[0] - 40 + 3, self.seek_bar_position[1] - 24), gui.cur_time,
+						(cur[0] + 3, self.seek_bar_position[1] - 24), gui.cur_time,
 						colours.grey(180), 213,
 						bg=colours.grey(15))
 
@@ -40186,14 +40227,12 @@ class BottomBarType1:
 		y = window_size[1] - 29 * gui.scale
 
 		r_start = x - 10 * gui.scale - time_extra
-		if gui.display_time_mode in (2, 3):
+		if gui.display_time_mode >= 2:
 			r_start -= 20 * gui.scale
 		rect = (r_start, y - 3 * gui.scale, 80 * gui.scale + time_extra, 27 * gui.scale)
 		# ddt.rect_r(rect, [255, 0, 0, 40], True)
 		if inp.mouse_click and self.coll(rect):
-			gui.display_time_mode += 1
-			if gui.display_time_mode > 3:
-				gui.display_time_mode = 0
+			self.next_time_mode()
 			time_items, time_extra = self.time_layout()
 
 		for time_x, text_time, colour in time_items:
@@ -40630,9 +40669,12 @@ class BottomBarType_ao1:
 		self.ddt.rect_a((0, self.window_size[1] - self.gui.panelBY), (self.window_size[0], self.gui.panelBY), self.colours.bottom_panel_colour)
 		sdl3.set_render_draw_blend_mode(self.renderer, sdl3.SDL_BLENDMODE_BLEND)
 
-		right_offset = 0
+		# Shares the compact panel's time layout
+		time_items, time_extra = self.tauon.bottom_bar1.time_layout()
+
+		right_offset = time_extra
 		if self.gui.display_time_mode >= 2:
-			right_offset = 22 * self.gui.scale
+			right_offset += 22 * self.gui.scale
 
 		if self.window_size[0] < 670 * self.gui.scale:
 			right_offset -= 90 * self.gui.scale
@@ -40751,81 +40793,18 @@ class BottomBarType_ao1:
 		x = self.window_size[0] - 57 * self.gui.scale
 		y = self.window_size[1] - 35 * self.gui.scale
 
-		r_start = x - 10 * self.gui.scale
-		if self.gui.display_time_mode in (2, 3):
+		bar1 = self.tauon.bottom_bar1
+		r_start = x - 10 * self.gui.scale - time_extra
+		if self.gui.display_time_mode >= 2:
 			r_start -= 20 * self.gui.scale
-		rect = (r_start, y - 3 * self.gui.scale, 80 * self.gui.scale, 27 * self.gui.scale)
+		rect = (r_start, y - 3 * self.gui.scale, 80 * self.gui.scale + time_extra, 27 * self.gui.scale)
 		# ddt.rect_r(rect, [255, 0, 0, 40], True)
 		if self.inp.mouse_click and self.coll(rect):
-			self.gui.display_time_mode += 1
-			if self.gui.display_time_mode > 3:
-				self.gui.display_time_mode = 0
+			bar1.next_time_mode()
+			time_items, time_extra = bar1.time_layout()
 
-		if self.gui.display_time_mode == 0:
-			text_time = get_display_time(self.pctl.playing_time)
-			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
-		elif self.gui.display_time_mode == 1:
-			if self.pctl.playing_state == PlayingState.STOPPED:
-				text_time = get_display_time(0)
-			else:
-				text_time = get_display_time(self.pctl.playing_length - self.pctl.playing_time)
-			self.ddt.text((x + 1 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
-			self.ddt.text((x - 5 * self.gui.scale, y), "-", self.colours.time_playing, self.fonts.bottom_panel_time)
-		elif self.gui.display_time_mode == 2:
-			self.colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.bottom_panel_colour)
-
-			x -= 4
-			text_time = get_display_time(self.pctl.playing_time)
-			self.ddt.text((x - 25 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
-
-			offset1 = 10 * self.gui.scale
-
-			offset2 = offset1 + 7 * self.gui.scale
-
-			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
-			text_time = get_display_time(self.pctl.playing_length)
-			if self.pctl.playing_state == PlayingState.STOPPED:
-				text_time = get_display_time(0)
-			elif self.pctl.playing_state == PlayingState.URL_STREAM:
-				text_time = "-- : --"
-			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
-
-		elif self.gui.display_time_mode == PlayingState.URL_STREAM:
-			self.colours.time_sub = alpha_blend(ColourRGBA(255, 255, 255, 80), self.colours.bottom_panel_colour)
-
-			track = self.pctl.playing_object()
-			if track and track.index != self.gui.dtm3_index:
-
-				self.gui.dtm3_cum = 0
-				self.gui.dtm3_total = 0
-				run = True
-				collected = []
-				for item in self.pctl.default_playlist:
-					if self.pctl.master_library[item].parent_folder_path == track.parent_folder_path:
-						if item not in collected:
-							collected.append(item)
-							self.gui.dtm3_total += self.pctl.master_library[item].length
-							if item == track.index:
-								run = False
-							if run:
-								self.gui.dtm3_cum += self.pctl.master_library[item].length
-				self.gui.dtm3_index = track.index
-
-			x -= 4
-			text_time = get_display_time(self.gui.dtm3_cum + self.pctl.playing_time)
-
-			self.ddt.text((x - 25 * self.gui.scale, y), text_time, self.colours.time_playing, self.fonts.bottom_panel_time)
-
-			offset1 = 10 * self.gui.scale
-			offset2 = offset1 + 7 * self.gui.scale
-
-			self.ddt.text((x + offset1, y), "/", self.colours.time_sub, self.fonts.bottom_panel_time)
-			text_time = get_display_time(self.gui.dtm3_total)
-			if self.pctl.playing_state == PlayingState.STOPPED:
-				text_time = get_display_time(0)
-			elif self.pctl.playing_state == PlayingState.URL_STREAM:
-				text_time = "-- : --"
-			self.ddt.text((x + offset2, y), text_time, self.colours.time_sub, self.fonts.bottom_panel_time)
+		for time_x, text_time, colour in time_items:
+			self.ddt.text((time_x, y), text_time, colour, self.fonts.bottom_panel_time)
 
 		# BUTTONS
 		# bottom buttons

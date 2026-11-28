@@ -557,6 +557,18 @@ def get_display_time(seconds: float) -> str:
 	return str(result[0]).zfill(2) + ":" + str(result[1]).zfill(2)
 
 
+def get_clock_time(seconds: float, hours: bool = False) -> str:
+	"""Format seconds as mm:ss, or h:mm:ss from an hour up (or always, if `hours`)."""
+	if math.isinf(seconds) or math.isnan(seconds):
+		logging.error("Infinite/NaN time passed to get_clock_time()!")
+		return "??:??"
+	m, s = divmod(max(0, int(seconds)), 60)
+	h, m = divmod(m, 60)
+	if h or hours:
+		return f"{h:d}:{m:02d}:{s:02d}"
+	return f"{m:02d}:{s:02d}"
+
+
 def get_hms_time(seconds: float) -> str:
 	m, s = divmod(round(seconds), 60)
 	h, m = divmod(m, 60)
